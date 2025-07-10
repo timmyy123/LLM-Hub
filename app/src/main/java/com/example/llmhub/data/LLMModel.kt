@@ -14,6 +14,7 @@ data class LLMModel(
     val source: String,
     val supportsVision: Boolean,
     val requirements: ModelRequirements,
+    val modelFormat: String = "gguf", // "gguf" or "task" (MediaPipe format)
     var isDownloaded: Boolean = false,
     var downloadProgress: Float = 0f,
     var downloadedBytes: Long = 0L,

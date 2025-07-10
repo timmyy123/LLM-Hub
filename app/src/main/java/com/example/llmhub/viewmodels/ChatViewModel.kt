@@ -5,17 +5,24 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.llmhub.data.*
-import com.example.llmhub.inference.LlamaInferenceService
+import com.example.llmhub.inference.MediaPipeInferenceService
 import com.example.llmhub.repository.ChatRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import java.io.File
+import kotlinx.coroutines.Job
+import com.example.llmhub.data.localFileName
 
 class ChatViewModel : ViewModel() {
 
+    // keep a single inference engine instance across all ChatViewModel objects
+    companion object {
+        private var sharedInferenceService: MediaPipeInferenceService? = null
+    }
+
     private lateinit var repository: ChatRepository
-    private lateinit var inferenceService: LlamaInferenceService
+    private lateinit var inferenceService: MediaPipeInferenceService
 
     private val _messages = MutableStateFlow<List<MessageEntity>>(emptyList())
     val messages: StateFlow<List<MessageEntity>> = _messages.asStateFlow()
@@ -32,10 +39,16 @@ class ChatViewModel : ViewModel() {
     private var currentChatId: String? = null
     private var currentModel: LLMModel? = null
 
+    // Keep reference to the running generation so the UI can interrupt it
+    private var generationJob: Job? = null
+
     fun initializeChat(chatId: String, context: Context) {
         val database = LlmHubDatabase.getDatabase(context)
         repository = ChatRepository(database.chatDao(), database.messageDao())
-        inferenceService = LlamaInferenceService(context)
+        // reuse a single inference engine instance to avoid reloading the model every time
+        inferenceService = sharedInferenceService ?: MediaPipeInferenceService(context).also {
+            sharedInferenceService = it
+        }
 
         viewModelScope.launch {
             loadAvailableModels(context)
@@ -85,56 +98,69 @@ class ChatViewModel : ViewModel() {
             }
 
             _isLoading.value = true
-            delay(500) // Shorter delay
+            delay(500) // Short delay just for UX (optional)
 
             if (currentModel != null && currentModel!!.isDownloaded) {
                 val prompt = if (attachmentUri != null) "Image attached: $messageText" else messageText
 
-                // Insert placeholder assistant message; we'll update it with tokens
-                val placeholderId = repository.addMessage(chatId, "", isFromUser = false)
+                // Insert a visible placeholder so the bubble stays rendered while tokens stream
+                val placeholderId = repository.addMessage(chatId, "…", isFromUser = false)
 
-                // Collect tokens
-                val job = launch {
-                    val sb = StringBuilder()
-                    inferenceService.tokenStream().collect { piece ->
-                        sb.append(piece)
-                        repository.updateMessageContent(placeholderId, sb.toString())
+                // Run generation with streaming tokens
+                generationJob = launch {
+                    try {
+                        // Use the new MediaPipe streaming API
+                        val responseStream = inferenceService.generateResponseStream(prompt, currentModel!!)
+                        val sb = StringBuilder()
+                        
+                        responseStream.collect { piece ->
+                            if (piece == "[DONE]") {
+                                // Generation completed
+                                _isLoading.value = false
+                                return@collect
+                            }
+                            sb.append(piece)
+                            repository.updateMessageContent(placeholderId, sb.toString())
+                        }
+                    } catch (e: Exception) {
+                        // Handle errors
+                        repository.updateMessageContent(placeholderId, "Error: ${e.message}")
+                        _isLoading.value = false
                     }
                 }
-
-                // Run generation (blocking IO)
-                inferenceService.generateResponse(prompt, currentModel!!)
-
-                job.cancel() // Stop collecting
             } else {
                 repository.addMessage(chatId, "Please download a model to start chatting.", isFromUser = false)
+                _isLoading.value = false
             }
-
-            _isLoading.value = false
         }
+    }
+
+    /** Interrupt the current response generation if one is running */
+    fun stopGeneration() {
+        generationJob?.cancel()
+        generationJob = null
+        _isLoading.value = false
     }
 
     fun switchModel(newModel: LLMModel) {
         viewModelScope.launch {
             _isLoading.value = true
-            val success = inferenceService.loadModel(newModel)
-            if (success) {
-                currentModel = newModel
-                val updatedChat = _currentChat.value?.copy(modelName = newModel.name)
-                if (updatedChat != null) {
-                    currentChatId?.let { repository.updateChatModel(it, newModel.name) }
-                    _currentChat.value = updatedChat
-                }
-            } else {
-                // TODO: Show an error message to the user
+            
+            // MediaPipe automatically loads models when needed, no separate loadModel() call
+            currentModel = newModel
+            val updatedChat = _currentChat.value?.copy(modelName = newModel.name)
+            if (updatedChat != null) {
+                currentChatId?.let { repository.updateChatModel(it, newModel.name) }
+                _currentChat.value = updatedChat
             }
+            
             _isLoading.value = false
         }
     }
 
     override fun onCleared() {
         viewModelScope.launch {
-            inferenceService.releaseModel()
+            inferenceService.onCleared()
         }
         super.onCleared()
     }
@@ -143,13 +169,19 @@ class ChatViewModel : ViewModel() {
         viewModelScope.launch {
             val modelsDir = File(context.filesDir, "models")
             val downloadedModels = ModelData.models.mapNotNull { model ->
-                val modelFile = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
+                // Preferred file naming scheme (derived from URL)
+                val primaryFile = File(modelsDir, model.localFileName())
+                val legacyFile = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
 
-                if (modelFile.exists()) {
-                    model.copy(isDownloaded = true)
-                } else {
-                    null
+                // Migrate legacy file if needed
+                if (!primaryFile.exists() && legacyFile.exists()) {
+                    legacyFile.renameTo(primaryFile)
                 }
+
+                if (!primaryFile.exists()) return@mapNotNull null
+
+                val minSize = 10 * 1024 * 1024
+                if (primaryFile.length() >= minSize) model.copy(isDownloaded = true, sizeBytes = primaryFile.length()) else null
             }
             _availableModels.value = downloadedModels
         }

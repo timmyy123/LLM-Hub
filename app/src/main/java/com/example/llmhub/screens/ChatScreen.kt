@@ -120,6 +120,11 @@ fun ChatScreen(
                         }
                     },
                     actions = {
+                        if (isLoading) {
+                            IconButton(onClick = { viewModel.stopGeneration() }) {
+                                Icon(Icons.Default.Stop, contentDescription = "Stop generating")
+                            }
+                        }
                         IconButton(onClick = onNavigateToSettings) {
                             Icon(Icons.Default.Settings, contentDescription = "Settings")
                         }

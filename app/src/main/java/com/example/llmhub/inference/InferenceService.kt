@@ -8,79 +8,148 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import androidx.annotation.Keep
 import java.io.File
+import com.example.llmhub.data.localFileName
+import com.google.mediapipe.tasks.genai.llminference.LlmInference
+import com.google.mediapipe.tasks.genai.llminference.LlmInferenceSession
+import android.util.Log
 
 /**
  * Interface for a service that can run model inference.
  */
 interface InferenceService {
     suspend fun generateResponse(prompt: String, model: LLMModel): String
+    suspend fun generateResponseStream(prompt: String, model: LLMModel): SharedFlow<String>
+    suspend fun onCleared()
 }
 
 /**
- * A placeholder implementation of the InferenceService.
- *
- * This class is designed to be replaced with a real implementation that uses a native
- * inference library (e.g., llama.cpp) to run GGUF models locally.
- *
- * @param context The application context.
+ * MediaPipe-based implementation of InferenceService that supports GPU acceleration
+ * and real-time streaming inference.
  */
-class LlamaInferenceService(private val context: Context) : InferenceService {
-
-    private var isModelLoaded = false
-
-    init {
-        System.loadLibrary("llm-hub-jni")
-    }
-
-    private external fun initLlama(modelPath: String): Int
-    private external fun generateResponse(prompt: String): String
-    private external fun releaseLlama()
-
-    companion object {
-        // Shared flow emitting each token sent from native side
-        private val _tokens = MutableSharedFlow<String>(extraBufferCapacity = 64)
-        val tokens: SharedFlow<String> = _tokens
-
-        /** Called from native (JNI) for every generated token */
-        @JvmStatic
-        @Keep
-        fun onNativeToken(text: String) {
-            _tokens.tryEmit(text)
-        }
-    }
-
-    // Make flow accessible for callers
-    fun tokenStream(): SharedFlow<String> = tokens
-
-    suspend fun loadModel(model: LLMModel): Boolean = withContext(Dispatchers.IO) {
-        if (isModelLoaded) {
-            releaseModel()
-        }
-        val modelsDir = File(context.filesDir, "models")
-        val modelFile = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
-
-        if (!modelFile.exists()) return@withContext false
-
-        val result = initLlama(modelFile.absolutePath)
-        isModelLoaded = result == 0
-        isModelLoaded
-    }
-
-    suspend fun releaseModel() = withContext(Dispatchers.IO) {
-        if (isModelLoaded) {
-            releaseLlama()
-            isModelLoaded = false
-        }
-    }
-
-    override suspend fun generateResponse(prompt: String, model: LLMModel): String {
-        return withContext(Dispatchers.IO) {
-            if (!isModelLoaded) {
-                if (!loadModel(model)) {
-                    return@withContext "Error: Could not load model ${model.name}"
+class MediaPipeInferenceService(private val context: Context) : InferenceService {
+    
+    private var llmInference: LlmInference? = null
+    private var session: LlmInferenceSession? = null
+    private var currentModel: LLMModel? = null
+    
+    private val responseFlow = MutableSharedFlow<String>(extraBufferCapacity = 100)
+    
+    private suspend fun ensureModelLoaded(model: LLMModel) {
+        if (currentModel?.name != model.name) {
+            // Release existing model
+            session?.close()
+            llmInference?.close()
+            
+            // Load new model
+            val modelFile = File(context.filesDir, "models/${model.localFileName()}")
+            if (!modelFile.exists()) {
+                throw IllegalStateException("Model file not found: ${modelFile.absolutePath}")
+            }
+            
+            withContext(Dispatchers.IO) {
+                try {
+                    // Configure LLM inference options with correct API
+                    val options = LlmInference.LlmInferenceOptions.builder()
+                        .setModelPath(modelFile.absolutePath)
+                        .setMaxTokens(2048)
+                        .setMaxTopK(40)  // Correct method name
+                        .setPreferredBackend(LlmInference.Backend.GPU)  // Enable GPU acceleration
+                        .build()
+                    
+                    // Create LLM inference engine
+                    llmInference = LlmInference.createFromOptions(context, options)
+                    
+                    // Create session with proper configuration
+                    session = LlmInferenceSession.createFromOptions(
+                        llmInference!!,
+                        LlmInferenceSession.LlmInferenceSessionOptions.builder()
+                            .setTemperature(0.8f)
+                            .build()
+                    )
+                    
+                    currentModel = model
+                    Log.d("MediaPipeInference", "Successfully loaded model: ${model.name}")
+                    
+                } catch (e: Exception) {
+                    Log.e("MediaPipeInference", "Failed to load model: ${model.name}", e)
+                    throw RuntimeException("Failed to load model: ${e.message}", e)
                 }
             }
-            generateResponse(prompt)
+        }
+    }
+    
+    override suspend fun generateResponse(prompt: String, model: LLMModel): String {
+        ensureModelLoaded(model)
+        
+        return withContext(Dispatchers.IO) {
+            try {
+                val responseBuilder = StringBuilder()
+                var isComplete = false
+                
+                // Add query to session
+                session!!.addQueryChunk(prompt)
+                
+                // Generate response synchronously
+                session!!.generateResponseAsync { partialResult, done ->
+                    responseBuilder.append(partialResult)
+                    if (done) {
+                        isComplete = true
+                    }
+                }
+                
+                // Wait for completion (simple polling)
+                while (!isComplete) {
+                    Thread.sleep(10)
+                }
+                
+                responseBuilder.toString()
+                
+            } catch (e: Exception) {
+                Log.e("MediaPipeInference", "Inference failed", e)
+                "Error: ${e.message}"
+            }
+        }
+    }
+    
+    override suspend fun generateResponseStream(prompt: String, model: LLMModel): SharedFlow<String> {
+        ensureModelLoaded(model)
+        
+        withContext(Dispatchers.IO) {
+            try {
+                // Add query to session
+                session!!.addQueryChunk(prompt)
+                
+                // Generate streaming response
+                session!!.generateResponseAsync { partialResult, done ->
+                    responseFlow.tryEmit(partialResult)
+                    if (done) {
+                        // Signal completion
+                        responseFlow.tryEmit("[DONE]")
+                    }
+                }
+                
+            } catch (e: Exception) {
+                Log.e("MediaPipeInference", "Streaming inference failed", e)
+                responseFlow.tryEmit("Error: ${e.message}")
+                responseFlow.tryEmit("[DONE]")
+            }
+        }
+        
+        return responseFlow
+    }
+    
+    override suspend fun onCleared() {
+        withContext(Dispatchers.IO) {
+            try {
+                session?.close()
+                llmInference?.close()
+                session = null
+                llmInference = null
+                currentModel = null
+                Log.d("MediaPipeInference", "Resources released")
+            } catch (e: Exception) {
+                Log.e("MediaPipeInference", "Error releasing resources", e)
+            }
         }
     }
 } 

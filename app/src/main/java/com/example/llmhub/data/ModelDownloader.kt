@@ -11,6 +11,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import kotlin.math.roundToLong
 import android.util.Log
+import com.example.llmhub.data.localFileName
 
 private const val TAG = "ModelDownloader"
 
@@ -32,11 +33,18 @@ class ModelDownloader(
         if (!modelsDir.exists()) {
             modelsDir.mkdirs()
         }
-        val modelFile = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
+        val modelFile = File(modelsDir, model.localFileName())
         // Remove any existing file so we don't mistakenly think a previous partial file is complete
         if (modelFile.exists()) {
             Log.w(TAG, "Existing file found for ${model.name}. Deleting before re-download.")
             modelFile.delete()
+        } else {
+            // If an old file name (based on model name) exists, rename it to the new scheme so we
+            // keep the user’s previous download.
+            val legacyFile = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
+            if (legacyFile.exists()) {
+                legacyFile.renameTo(modelFile)
+            }
         }
 
         val url = URL(model.url)
@@ -44,7 +52,8 @@ class ModelDownloader(
             requestMethod = "GET"
             connectTimeout = 15_000
             readTimeout = 60_000
-            // Resume with system's default buffering; we stream manually.
+            instanceFollowRedirects = true // Explicitly follow redirects.
+            setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
             if (!hfToken.isNullOrBlank()) {
                 setRequestProperty("Authorization", "Bearer $hfToken")
             }
@@ -53,12 +62,12 @@ class ModelDownloader(
         val responseCode = connection.responseCode
         if (responseCode !in 200..299) {
             connection.disconnect()
-            throw RuntimeException("Download failed with HTTP $responseCode")
+            throw RuntimeException("Download failed with HTTP $responseCode at final URL ${connection.url}")
         }
 
-        Log.i(TAG, "Connected. HTTP $responseCode")
+        Log.i(TAG, "Connected. HTTP $responseCode, final URL: ${connection.url}")
 
-        val totalBytes = connection.contentLengthLong.takeIf { it > 0 } ?: model.sizeBytes
+        val totalBytes = if (connection.contentLengthLong > 0) connection.contentLengthLong else model.sizeBytes
         Log.i(TAG, "Total bytes (Content-Length or fallback): $totalBytes")
 
         val safeTotal = if (totalBytes <= 0) Long.MAX_VALUE else totalBytes
@@ -83,7 +92,7 @@ class ModelDownloader(
 
                     val currentTime = System.currentTimeMillis()
                     val elapsedTime = currentTime - lastEmitTime
-                    if (elapsedTime > 250) {
+                    if (elapsedTime > 1000) {
                         val computed = if (elapsedTime > 0) (bytesSinceLastEmit * 1000 / elapsedTime) else 0L
                         if (computed > 0) lastSpeed = computed
                         val speed = if (lastSpeed > 0) lastSpeed else computed

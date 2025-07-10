@@ -369,6 +369,7 @@ ggml_add_backend(METAL)
 ggml_add_backend(MUSA)
 ggml_add_backend(RPC)
 ggml_add_backend(SYCL)
+set(ggml_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/..) # HACK: vulkan needs this
 ggml_add_backend(Vulkan)
 ggml_add_backend(OpenCL)
 

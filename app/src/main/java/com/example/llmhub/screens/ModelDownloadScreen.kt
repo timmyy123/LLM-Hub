@@ -143,10 +143,10 @@ fun ModelItem(
                         // Indeterminate progress when total size is unknown
                         LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                     } else {
-                        LinearProgressIndicator(
-                            progress = { model.downloadProgress },
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                    LinearProgressIndicator(
+                        progress = { model.downloadProgress },
+                        modifier = Modifier.fillMaxWidth()
+                    )
                     }
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -158,14 +158,14 @@ fun ModelItem(
                     ) {
                         val totalDisplayBytes = model.totalBytes ?: model.sizeBytes
                         if (totalDisplayBytes > 0) {
-                            Text(
-                                text = String.format(
-                                    "%.1fMB / %.1fMB",
-                                    model.downloadedBytes / 1_000_000f,
+                        Text(
+                            text = String.format(
+                                "%.1fMB / %.1fMB",
+                                model.downloadedBytes / 1_000_000f,
                                     totalDisplayBytes / 1_000_000f
-                                ),
-                                style = MaterialTheme.typography.bodySmall
-                            )
+                            ),
+                            style = MaterialTheme.typography.bodySmall
+                        )
                         } else {
                             Text(
                                 text = String.format("%.1fMB", model.downloadedBytes / 1_000_000f),
@@ -183,7 +183,7 @@ fun ModelItem(
                 // Not downloaded
                 Button(onClick = { onDownload(model) }) {
                     if (model.sizeBytes > 0) {
-                        Text("Download (${formatBytes(model.sizeBytes)})")
+                    Text("Download (${formatBytes(model.sizeBytes)})")
                     } else {
                         Text("Download")
                     }

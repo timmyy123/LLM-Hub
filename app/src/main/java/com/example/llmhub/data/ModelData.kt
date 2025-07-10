@@ -2,69 +2,125 @@ package com.example.llmhub.data
 
 object ModelData {
     val models = listOf(
-        // Text Models
+        // MediaPipe GPU-Optimized Models (Recommended)
         LLMModel(
-            name = "Gemma 3 1B",
-            description = "Google Gemma-3 1B instruction-tuned (quantised Q4_K_M)",
-            url = "https://huggingface.co/MaziyarPanahi/gemma-3-1b-it-GGUF/resolve/main/gemma-3-1b-it.Q4_K_S.gguf?download=true",
+            name = "Gemma-3 1B Instruction (MediaPipe)",
+            description = "Google Gemma-3 1B instruction-tuned, optimized for MediaPipe with GPU acceleration. Fast and efficient.",
+            url = "https://storage.googleapis.com/mediapipe-models/llm_inference/gemma-3-1b-it-int4.task",
             category = "text",
-            sizeBytes = 0L,
-            source = "MaziyarPanahi",
+            sizeBytes = 1_100_000_000L, // ~1.1 GB
+            source = "Google",
             supportsVision = false,
-            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 4)
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            modelFormat = "task"
         ),
+        
         LLMModel(
-            name = "Llama 3.2 1B",
-            description = "Meta Llama-3.2 1B Instruct (Q4_K_M)",
-            url = "https://huggingface.co/unsloth/Llama-3.2-1B/resolve/main/llama-3.2-1b-instruct.Q4_K_M.gguf?download=true",
-            category = "text",
-            sizeBytes = 0L,
-            source = "unsloth",
-            supportsVision = false,
-            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 4)
-        ),
-        LLMModel(
-            name = "Llama 3.2 3B",
-            description = "Meta Llama-3.2 3B Instruct (Q4_K_M)",
-            url = "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/llama-3.2-3b-instruct.Q4_K_M.gguf?download=true",
-            category = "text",
-            sizeBytes = 0L,
-            source = "bartowski",
-            supportsVision = false,
-            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6)
-        ),
-        LLMModel(
-            name = "Phi-4 Mini",
-            description = "Microsoft Phi-4 Mini Instruct (Q4_K_M).",
-            url = "https://huggingface.co/Mungert/Phi-4-mini-instruct.gguf/resolve/main/phi-4-mini-q4_k_m.gguf",
-            category = "text",
-            sizeBytes = 0L,
-            source = "Microsoft",
-            supportsVision = false,
-            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6)
+            name = "Gemma-3N 2B Vision (MediaPipe)", 
+            description = "Google Gemma-3N 2B with vision capabilities. Supports text + image input with GPU acceleration.",
+            url = "https://storage.googleapis.com/mediapipe-models/llm_inference/gemma-3n-E2B-it-int4.task",
+            category = "vision",
+            sizeBytes = 3_100_000_000L, // ~3.1 GB
+            source = "Google",
+            supportsVision = true,
+            requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 8),
+            modelFormat = "task"
         ),
 
-        // Vision-capable models
+        // Keep Your Preferred Models (Updated for MediaPipe)
         LLMModel(
-            name = "Gemma 3 4B",
-            description = "Google Gemma-3 4B instruction-tuned (Q4_0)",
-            // Official Google mirror requires auth token; pass via authorization header
-            url = "https://huggingface.co/MaziyarPanahi/gemma-3-4b-it-GGUF/resolve/main/gemma-3-4b-it.Q4_K_S.gguf?download=true",
-            category = "vision",
-            sizeBytes = 0L,
-            source = "MaziyarPanahi",
-            supportsVision = true,
-            requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 8)
+            name = "Phi-4 14B Instruction",
+            description = "Microsoft Phi-4 14B instruction-tuned model. High reasoning capability. (Requires conversion to .task format)",
+            url = "https://huggingface.co/microsoft/Phi-4/resolve/main/model.safetensors",
+            category = "text", 
+            sizeBytes = 8_400_000_000L, // ~8.4 GB
+            source = "Microsoft",
+            supportsVision = false,
+            requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
+            modelFormat = "gguf" // Note: Needs conversion to .task for MediaPipe
         ),
+
         LLMModel(
-            name = "Gemma 3 12B",
-            description = "Google Gemma-3 12B instruction-tuned (Q4_0)",
-            url = "https://huggingface.co/MaziyarPanahi/gemma-3-12b-it-GGUF/resolve/main/gemma-3-12b-it.Q4_K_S.gguf?download=true",
+            name = "Gemma-3 12B Instruction", 
+            description = "Google Gemma-3 12B instruction-tuned. High quality responses. (Requires conversion to .task format)",
+            url = "https://huggingface.co/google/gemma-3-12b-it/resolve/main/model.safetensors",
+            category = "text",
+            sizeBytes = 12_600_000_000L, // ~12.6 GB
+            source = "Google", 
+            supportsVision = false,
+            requirements = ModelRequirements(minRamGB = 16, recommendedRamGB = 20),
+            modelFormat = "gguf" // Note: Needs conversion to .task for MediaPipe
+        ),
+
+        // Additional MediaPipe-Ready Models
+        LLMModel(
+            name = "Gemma-2 2B Instruction (MediaPipe)",
+            description = "Google Gemma-2 2B instruction-tuned, MediaPipe optimized with GPU support. Good balance of size and quality.",
+            url = "https://storage.googleapis.com/mediapipe-models/llm_inference/gemma-2-2b-it-int4.task",
+            category = "text",
+            sizeBytes = 2_200_000_000L, // ~2.2 GB
+            source = "Google",
+            supportsVision = false,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            modelFormat = "task"
+        ),
+
+        LLMModel(
+            name = "Gemma-3N 4B Vision (MediaPipe)",
+            description = "Google Gemma-3N 4B with enhanced vision capabilities. High-quality multimodal responses with GPU acceleration.",
+            url = "https://storage.googleapis.com/mediapipe-models/llm_inference/gemma-3n-E4B-it-int4.task", 
             category = "vision",
-            sizeBytes = 0L,
-            source = "MaziyarPanahi",
+            sizeBytes = 4_400_000_000L, // ~4.4 GB
+            source = "Google",
             supportsVision = true,
-            requirements = ModelRequirements(minRamGB = 10, recommendedRamGB = 14)
+            requirements = ModelRequirements(minRamGB = 8, recommendedRamGB = 12),
+            modelFormat = "task"
+        ),
+
+        // Lightweight Options
+        LLMModel(
+            name = "TinyLlama 1.1B Chat",
+            description = "Compact 1.1B parameter model optimized for mobile devices. Fast inference on older hardware.",
+            url = "https://huggingface.co/TinyLlama/TinyLlama-1.1B-Chat-v1.0/resolve/main/pytorch_model.bin",
+            category = "text",
+            sizeBytes = 1_100_000_000L, // ~1.1 GB
+            source = "TinyLlama Team",
+            supportsVision = false,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            modelFormat = "gguf" // Note: Needs conversion to .task for MediaPipe
         )
     )
+    
+    /**
+     * Get information about model conversion for MediaPipe.
+     * Users need to convert HuggingFace models to .task format.
+     */
+    fun getConversionInstructions(): String {
+        return """
+        MediaPipe Model Conversion Instructions:
+        
+        1. Install MediaPipe Python package:
+           pip install mediapipe
+           
+        2. Convert HuggingFace model to .task format:
+           python -c "
+           import mediapipe as mp
+           from mediapipe.tasks.python.genai import converter
+           
+           config = converter.ConversionConfig(
+               input_ckpt='path/to/model',
+               ckpt_format='safetensors',
+               output_dir='output_path',
+               backend='gpu'  # Enable GPU acceleration
+           )
+           converter.convert_checkpoint(config)
+           "
+           
+        3. Push the .task file to your device:
+           adb push output_path/model.task /data/local/tmp/llm/
+           
+        For detailed instructions visit:
+        https://ai.google.dev/edge/mediapipe/solutions/genai/llm_inference/android
+        """.trimIndent()
+    }
 } 

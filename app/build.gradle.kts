@@ -46,12 +46,7 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
-    externalNativeBuild {
-        cmake {
-            path = file("src/main/cpp/CMakeLists.txt")
-            version = "3.22.1"
-        }
-    }
+    // Removed externalNativeBuild - now using MediaPipe instead of native llama.cpp
 }
 
 dependencies {
@@ -102,6 +97,8 @@ dependencies {
     implementation("io.ktor:ktor-client-content-negotiation:2.3.6")
     implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.6")
 
+    // MediaPipe LLM Inference for on-device AI with GPU acceleration
+    implementation("com.google.mediapipe:tasks-genai:0.10.24")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
