@@ -2,125 +2,123 @@ package com.example.llmhub.data
 
 object ModelData {
     val models = listOf(
-        // MediaPipe GPU-Optimized Models (Recommended)
+        // 📥 DIRECT DOWNLOAD - Ready-to-use MediaPipe models from HuggingFace
         LLMModel(
-            name = "Gemma-3 1B Instruction (MediaPipe)",
-            description = "Google Gemma-3 1B instruction-tuned, optimized for MediaPipe with GPU acceleration. Fast and efficient.",
-            url = "https://storage.googleapis.com/mediapipe-models/llm_inference/gemma-3-1b-it-int4.task",
+            name = "Gemma-3 1B (INT4) 📥 Direct Download",
+            description = "Google Gemma-3 1B with INT4 quantization. Optimized for mobile devices with fast inference speed. Ready to download from HuggingFace (529MB)",
+            url = "https://huggingface.co/AfiOne/gemma3-1b-it-int4.task/resolve/main/gemma3-1b-it-int4.task?download=true",
             category = "text",
-            sizeBytes = 1_100_000_000L, // ~1.1 GB
-            source = "Google",
+            sizeBytes = 529_000_000L, // 529 MB
+            source = "Google via HuggingFace",
+            supportsVision = false,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            modelFormat = "task"
+        ),
+
+        LLMModel(
+            name = "Gemma-3 1B (INT8) 📥 Direct Download",
+            description = "Higher quality INT8 version of Gemma-3 1B. Better accuracy with larger size. Ready to download from HuggingFace (~1GB)",
+            url = "https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/gemma3-1b-it-int8.task?download=true",
+            category = "text", 
+            sizeBytes = 1_005_000_000L, // ~1 GB
+            source = "Google via HuggingFace",
             supportsVision = false,
             requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
             modelFormat = "task"
         ),
-        
+
         LLMModel(
-            name = "Gemma-3N 2B Vision (MediaPipe)", 
-            description = "Google Gemma-3N 2B with vision capabilities. Supports text + image input with GPU acceleration.",
-            url = "https://storage.googleapis.com/mediapipe-models/llm_inference/gemma-3n-E2B-it-int4.task",
-            category = "vision",
-            sizeBytes = 3_100_000_000L, // ~3.1 GB
-            source = "Google",
-            supportsVision = true,
+            name = "Gemma-3 4B 📥 Direct Download",
+            description = "4B parameter model for better quality and reasoning. Requires more RAM but provides superior performance. Ready to download from HuggingFace (~4GB)",
+            url = "https://huggingface.co/litert-community/Gemma3-4B-IT/resolve/main/gemma3-4b-it-int4.task?download=true",
+            category = "text",
+            sizeBytes = 4_000_000_000L, // ~4 GB
+            source = "Google via HuggingFace",
+            supportsVision = false,
             requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 8),
             modelFormat = "task"
         ),
 
-        // Keep Your Preferred Models (Updated for MediaPipe)
         LLMModel(
-            name = "Phi-4 14B Instruction",
-            description = "Microsoft Phi-4 14B instruction-tuned model. High reasoning capability. (Requires conversion to .task format)",
-            url = "https://huggingface.co/microsoft/Phi-4/resolve/main/model.safetensors",
-            category = "text", 
-            sizeBytes = 8_400_000_000L, // ~8.4 GB
-            source = "Microsoft",
-            supportsVision = false,
-            requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
-            modelFormat = "gguf" // Note: Needs conversion to .task for MediaPipe
-        ),
-
-        LLMModel(
-            name = "Gemma-3 12B Instruction", 
-            description = "Google Gemma-3 12B instruction-tuned. High quality responses. (Requires conversion to .task format)",
-            url = "https://huggingface.co/google/gemma-3-12b-it/resolve/main/model.safetensors",
+            name = "Gemma-3 12B 🔧 Conversion Required",
+            description = "12B parameter model for highest quality reasoning. Requires conversion from QAT safetensors to MediaPipe .task format (~12GB after conversion). Best for complex tasks but needs powerful hardware.",
+            url = "https://huggingface.co/google/gemma-3-12b-it-qat-q4_0-unquantized",
             category = "text",
-            sizeBytes = 12_600_000_000L, // ~12.6 GB
-            source = "Google", 
+            sizeBytes = 12_000_000_000L, // ~12 GB
+            source = "Google via HuggingFace",
             supportsVision = false,
             requirements = ModelRequirements(minRamGB = 16, recommendedRamGB = 20),
-            modelFormat = "gguf" // Note: Needs conversion to .task for MediaPipe
+            modelFormat = "safetensors" // Needs conversion to .task
         ),
 
-        // Additional MediaPipe-Ready Models
         LLMModel(
-            name = "Gemma-2 2B Instruction (MediaPipe)",
-            description = "Google Gemma-2 2B instruction-tuned, MediaPipe optimized with GPU support. Good balance of size and quality.",
-            url = "https://storage.googleapis.com/mediapipe-models/llm_inference/gemma-2-2b-it-int4.task",
-            category = "text",
-            sizeBytes = 2_200_000_000L, // ~2.2 GB
-            source = "Google",
-            supportsVision = false,
+            name = "Gemma-3n E2B Vision 📥 Direct Download",
+            description = "Multimodal model with vision capabilities (2B effective parameters). Can analyze images and respond to visual questions. Ready to download from HuggingFace (~2.9GB)",
+            url = "https://huggingface.co/google/gemma-3n-E2B-it-litert-preview/resolve/main/gemma-3n-e2b-it-int4.task?download=true",
+            category = "vision",
+            sizeBytes = 2_900_000_000L, // ~2.9 GB
+            source = "Google via HuggingFace",
+            supportsVision = true,
             requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
             modelFormat = "task"
         ),
 
         LLMModel(
-            name = "Gemma-3N 4B Vision (MediaPipe)",
-            description = "Google Gemma-3N 4B with enhanced vision capabilities. High-quality multimodal responses with GPU acceleration.",
-            url = "https://storage.googleapis.com/mediapipe-models/llm_inference/gemma-3n-E4B-it-int4.task", 
+            name = "Gemma-3n E4B Vision 📥 Direct Download",
+            description = "Larger multimodal model with enhanced vision capabilities (4B effective parameters). Better image understanding and visual reasoning. Ready to download from HuggingFace (~4.2GB)",
+            url = "https://huggingface.co/google/gemma-3n-E4B-it-litert-preview/resolve/main/gemma-3n-e4b-it-int4.task?download=true",
             category = "vision",
-            sizeBytes = 4_400_000_000L, // ~4.4 GB
-            source = "Google",
+            sizeBytes = 4_200_000_000L, // ~4.2 GB
+            source = "Google via HuggingFace",
             supportsVision = true,
-            requirements = ModelRequirements(minRamGB = 8, recommendedRamGB = 12),
+            requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 8),
             modelFormat = "task"
-        ),
-
-        // Lightweight Options
-        LLMModel(
-            name = "TinyLlama 1.1B Chat",
-            description = "Compact 1.1B parameter model optimized for mobile devices. Fast inference on older hardware.",
-            url = "https://huggingface.co/TinyLlama/TinyLlama-1.1B-Chat-v1.0/resolve/main/pytorch_model.bin",
-            category = "text",
-            sizeBytes = 1_100_000_000L, // ~1.1 GB
-            source = "TinyLlama Team",
-            supportsVision = false,
-            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
-            modelFormat = "gguf" // Note: Needs conversion to .task for MediaPipe
         )
     )
-    
+
     /**
-     * Get information about model conversion for MediaPipe.
-     * Users need to convert HuggingFace models to .task format.
+     * Current Status and Next Steps
      */
-    fun getConversionInstructions(): String {
+    fun getStatusMessage(): String {
         return """
-        MediaPipe Model Conversion Instructions:
+        🎯 GEMMA-3 MODELS FOR ANDROID - COMPLETE GUIDE
         
-        1. Install MediaPipe Python package:
-           pip install mediapipe
-           
-        2. Convert HuggingFace model to .task format:
-           python -c "
-           import mediapipe as mp
-           from mediapipe.tasks.python.genai import converter
-           
-           config = converter.ConversionConfig(
-               input_ckpt='path/to/model',
-               ckpt_format='safetensors',
-               output_dir='output_path',
-               backend='gpu'  # Enable GPU acceleration
-           )
-           converter.convert_checkpoint(config)
-           "
-           
-        3. Push the .task file to your device:
-           adb push output_path/model.task /data/local/tmp/llm/
-           
-        For detailed instructions visit:
-        https://ai.google.dev/edge/mediapipe/solutions/genai/llm_inference/android
+        📱 READY FOR DIRECT DOWNLOAD (MediaPipe .task format):
+        
+        ✅ TEXT MODELS:
+        • Gemma-3 1B INT4 (529MB) - Fastest, mobile-optimized
+        • Gemma-3 1B INT8 (1GB) - Better quality 
+        • Gemma-3 4B INT4 (4GB) - Best balance of speed/quality
+        
+        🖼️ VISION MODELS (Text + Images):
+        • Gemma-3n E2B (2.9GB) - Can analyze images
+        • Gemma-3n E4B (4.2GB) - Enhanced image understanding
+        
+        🔧 CONVERSION REQUIRED:
+        • Gemma-3 12B QAT (12GB) - Highest quality (needs conversion)
+        
+        📥 HOW TO DOWNLOAD:
+        Your app's download feature now works with direct HuggingFace URLs!
+        Just tap the download button next to any model with "📥 Direct Download"
+        
+        🚀 QUICK START OPTIONS:
+        
+        1. **Use Download Feature in App** (Recommended):
+           - Open your Android app
+           - Go to Models section  
+           - Tap download on any "📥 Direct Download" model
+           - Models download directly from HuggingFace
+        
+        2. **Manual Download (if needed)**:
+           python public/download_gemma3_mediapipe.py download gemma-3-1b-int4
+        
+        3. **Convert 12B Model**:
+           python public/convert_gemma3_to_mediapipe.py convert gemma-3-12b
+        
+        📱 STATUS: Your Android app is ready to download and use all these models!
+        The MediaPipe integration should work smoothly now.
+        
+        🔗 All tools are in your 'public/' folder for advanced usage.
         """.trimIndent()
     }
 } 

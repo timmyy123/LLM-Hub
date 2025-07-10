@@ -13,6 +13,7 @@ import kotlinx.coroutines.delay
 import java.io.File
 import kotlinx.coroutines.Job
 import com.example.llmhub.data.localFileName
+import android.util.Log
 
 class ChatViewModel : ViewModel() {
 
@@ -167,22 +168,52 @@ class ChatViewModel : ViewModel() {
 
     private fun loadAvailableModels(context: Context) {
         viewModelScope.launch {
-            val modelsDir = File(context.filesDir, "models")
             val downloadedModels = ModelData.models.mapNotNull { model ->
-                // Preferred file naming scheme (derived from URL)
-                val primaryFile = File(modelsDir, model.localFileName())
-                val legacyFile = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
-
-                // Migrate legacy file if needed
-                if (!primaryFile.exists() && legacyFile.exists()) {
-                    legacyFile.renameTo(primaryFile)
+                var isAvailable = false
+                var actualSize = model.sizeBytes
+                
+                // Check if model is available in assets (priority)
+                val assetPath = if (model.url.startsWith("file://models/")) {
+                    model.url.removePrefix("file://")
+                } else {
+                    "models/${model.localFileName()}"
                 }
+                
+                try {
+                    context.assets.open(assetPath).use { inputStream ->
+                        actualSize = inputStream.available().toLong()
+                        isAvailable = true
+                        Log.d("ChatViewModel", "Found model in assets: $assetPath (${actualSize / (1024*1024)} MB)")
+                    }
+                } catch (e: Exception) {
+                    // Model not in assets, check files directory
+                    val modelsDir = File(context.filesDir, "models")
+                    val primaryFile = File(modelsDir, model.localFileName())
+                    val legacyFile = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
 
-                if (!primaryFile.exists()) return@mapNotNull null
+                    // Migrate legacy file if needed
+                    if (!primaryFile.exists() && legacyFile.exists()) {
+                        legacyFile.renameTo(primaryFile)
+                    }
 
-                val minSize = 10 * 1024 * 1024
-                if (primaryFile.length() >= minSize) model.copy(isDownloaded = true, sizeBytes = primaryFile.length()) else null
+                    if (primaryFile.exists()) {
+                        val minSize = 10 * 1024 * 1024
+                        if (primaryFile.length() >= minSize) {
+                            isAvailable = true
+                            actualSize = primaryFile.length()
+                            Log.d("ChatViewModel", "Found model in files: ${primaryFile.absolutePath} (${actualSize / (1024*1024)} MB)")
+                        }
+                    }
+                }
+                
+                if (isAvailable) {
+                    model.copy(isDownloaded = true, sizeBytes = actualSize)
+                } else {
+                    null
+                }
             }
+            
+            Log.d("ChatViewModel", "Available models: ${downloadedModels.map { it.name }}")
             _availableModels.value = downloadedModels
         }
     }

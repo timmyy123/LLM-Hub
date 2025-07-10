@@ -4,19 +4,17 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Memory
-import androidx.compose.material.icons.filled.TextFields
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.llmhub.data.LLMModel
+import com.example.llmhub.data.ModelData
 import com.example.llmhub.viewmodels.ModelDownloadViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -28,6 +26,7 @@ fun ModelDownloadScreen(
     val models by viewModel.models.collectAsState()
     val textModels = models.filter { it.category == "text" }
     val visionModels = models.filter { it.category == "vision" }
+    var showInstructions by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -40,6 +39,14 @@ fun ModelDownloadScreen(
                             contentDescription = "Back"
                         )
                     }
+                },
+                actions = {
+                    IconButton(onClick = { showInstructions = !showInstructions }) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = "Instructions"
+                        )
+                    }
                 }
             )
         }
@@ -50,6 +57,58 @@ fun ModelDownloadScreen(
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp)
         ) {
+            // Instructions Card
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = "Warning",
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "MediaPipe Model Conversion Required",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "MediaPipe requires .task format models. The download button will download safetensors files that need manual conversion.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        
+                        if (showInstructions) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = ModelData.getStatusMessage(),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        TextButton(
+                            onClick = { showInstructions = !showInstructions }
+                        ) {
+                            Text(
+                                text = if (showInstructions) "Hide Instructions" else "Show Conversion Instructions",
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+                }
+            }
+
             item {
                 Text(
                     text = "Text Models",
@@ -71,7 +130,7 @@ fun ModelDownloadScreen(
 
             item {
                 Text(
-                    text = "Vision Models",
+                    text = "Vision Models", 
                     style = MaterialTheme.typography.headlineSmall,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
