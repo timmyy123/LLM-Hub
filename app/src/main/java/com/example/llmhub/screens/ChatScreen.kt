@@ -57,25 +57,10 @@ fun ChatScreen(
     // Auto-scroll to bottom when a new message finishes
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
-            listState.animateScrollToItem(maxOf(0, messages.size - 1))
+            listState.animateScrollToItem(0)
         }
     }
 
-    // Auto-scroll during streaming to keep the new message in view
-    LaunchedEffect(streamingContents) {
-        if (streamingContents.isNotEmpty() && messages.isNotEmpty()) {
-            val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
-            // Only scroll if user is at the bottom, to avoid interrupting them.
-            if (lastVisibleItem == null || lastVisibleItem.index == messages.size - 1) {
-                // Instantly scroll to the bottom of the last message as it grows.
-                // This avoids the "flicker" from rapidly restarting animations.
-                scope.launch {
-                    listState.scrollToItem(maxOf(0, messages.size - 1), scrollOffset = Int.MAX_VALUE)
-                }
-            }
-        }
-    }
-    
     // Initialize chat
     LaunchedEffect(chatId) {
         viewModel.initializeChat(chatId, context)
@@ -189,11 +174,10 @@ fun ChatScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
-                        // REMOVED imePadding() - let keyboard overlay instead
                     state = listState,
                     contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                    // REMOVED reverseLayout = true
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    reverseLayout = true
                 ) {
                     if (messages.isEmpty() && !isLoading) {
                         item {
@@ -205,7 +189,7 @@ fun ChatScreen(
                         }
                     }
                     
-                    items(messages) { message ->
+                    items(messages.reversed(), key = { it.id }) { message ->
                         val streamingText = streamingContents[message.id] ?: ""
                         val isFinished = streamingText.isEmpty()
                         MessageBubble(
