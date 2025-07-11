@@ -64,8 +64,15 @@ fun ChatScreen(
     // Auto-scroll during streaming to keep the new message in view
     LaunchedEffect(streamingContents) {
         if (streamingContents.isNotEmpty() && messages.isNotEmpty()) {
-            // Scroll to bottom of last message as it grows
-            listState.animateScrollToItem(maxOf(0, messages.size - 1), scrollOffset = Int.MAX_VALUE)
+            val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
+            // Only scroll if user is at the bottom, to avoid interrupting them.
+            if (lastVisibleItem == null || lastVisibleItem.index == messages.size - 1) {
+                // Instantly scroll to the bottom of the last message as it grows.
+                // This avoids the "flicker" from rapidly restarting animations.
+                scope.launch {
+                    listState.scrollToItem(maxOf(0, messages.size - 1), scrollOffset = Int.MAX_VALUE)
+                }
+            }
         }
     }
     
@@ -237,13 +244,13 @@ fun ChatScreen(
 
                 // Message input
                 Box(modifier = Modifier.imePadding()) {
-                    MessageInput(
-                        onSendMessage = { text, attachmentUri ->
-                            viewModel.sendMessage(text, attachmentUri)
-                        },
-                        enabled = !isLoading && !isLoadingModel && currentChat != null,
-                        supportsAttachments = viewModel.currentModelSupportsVision()
-                    )
+                MessageInput(
+                    onSendMessage = { text, attachmentUri ->
+                        viewModel.sendMessage(text, attachmentUri)
+                    },
+                    enabled = !isLoading && !isLoadingModel && currentChat != null,
+                    supportsAttachments = viewModel.currentModelSupportsVision()
+                )
                 }
             }
         }
