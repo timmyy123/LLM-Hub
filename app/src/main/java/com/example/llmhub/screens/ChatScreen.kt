@@ -236,13 +236,15 @@ fun ChatScreen(
                 }
 
                 // Message input
-                MessageInput(
-                    onSendMessage = { text, attachmentUri ->
-                        viewModel.sendMessage(text, attachmentUri)
-                    },
-                    enabled = !isLoading && !isLoadingModel && currentChat != null,
-                    supportsAttachments = viewModel.currentModelSupportsVision()
-                )
+                Box(modifier = Modifier.imePadding()) {
+                    MessageInput(
+                        onSendMessage = { text, attachmentUri ->
+                            viewModel.sendMessage(text, attachmentUri)
+                        },
+                        enabled = !isLoading && !isLoadingModel && currentChat != null,
+                        supportsAttachments = viewModel.currentModelSupportsVision()
+                    )
+                }
             }
         }
     }
