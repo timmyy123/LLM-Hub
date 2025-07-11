@@ -14,6 +14,7 @@ import java.io.File
 import kotlinx.coroutines.Job
 import com.example.llmhub.data.localFileName
 import android.util.Log
+import kotlinx.coroutines.CancellationException
 
 class ChatViewModel : ViewModel() {
 
@@ -190,8 +191,6 @@ class ChatViewModel : ViewModel() {
 
                 // Run generation with streaming tokens
                 generationJob = launch {
-                    var finalContent: String? = null
-                    var generationTimeMs: Long = 0
                     val generationStartTime = System.currentTimeMillis()
 
                     try {
@@ -221,37 +220,28 @@ class ChatViewModel : ViewModel() {
                             }
                         }
 
-                        // This section now executes after the stream is fully collected
-                        finalContent = _streamingContents.value[placeholderId] ?: ""
-                        generationTimeMs = System.currentTimeMillis() - generationStartTime
+                        // SUCCESS: This section now executes only after the stream is fully collected
+                        val finalContent = _streamingContents.value[placeholderId] ?: ""
+                        val time = System.currentTimeMillis() - generationStartTime
+                        finalizeMessage(placeholderId, finalContent, time)
 
                     } catch (e: Exception) {
                         if (e is kotlinx.coroutines.CancellationException) {
+                            // CANCEL: Save partial progress
                             Log.d("ChatViewModel", "Generation was cancelled by user.")
-                            // Save whatever was partially generated
-                            finalContent = _streamingContents.value[placeholderId] ?: ""
-                            generationTimeMs = System.currentTimeMillis() - generationStartTime
+                            val finalContent = _streamingContents.value[placeholderId] ?: ""
+                            val time = System.currentTimeMillis() - generationStartTime
+                            finalizeMessage(placeholderId, finalContent, time)
                         } else {
+                            // OTHER ERROR
                             Log.e("ChatViewModel", "Error during generation", e)
-                            finalContent = _streamingContents.value[placeholderId]
                             repository.updateMessageContent(placeholderId, "Error: ${e.message}")
                         }
                     } finally {
                         _isLoading.value = false
                         _isLoadingModel.value = false
                         
-                        // Finalize the message content and stats, even if cancelled
-                        if (finalContent != null) {
-                            val estimatedTokens = if (finalContent!!.isNotBlank()) {
-                                finalContent!!.split(Regex("\\s+|[.,!?;:]")).filter { it.isNotBlank() }.size
-                            } else { 1 }
-                            val tokensPerSecond = if (generationTimeMs > 0) (estimatedTokens * 1000.0) / generationTimeMs else 0.0
-
-                            repository.updateMessageContent(placeholderId, finalContent!!)
-                            repository.updateMessageStats(placeholderId, estimatedTokens, tokensPerSecond)
-                        }
-
-                        // Clear streaming state for this message
+                        // Clear streaming state for this message, regardless of outcome
                         val updatedStreaming = _streamingContents.value.toMutableMap()
                         updatedStreaming.remove(placeholderId)
                         _streamingContents.value = updatedStreaming
@@ -261,6 +251,30 @@ class ChatViewModel : ViewModel() {
                 repository.addMessage(chatId, "Please download a model to start chatting.", isFromUser = false)
                 _isLoading.value = false
             }
+        }
+    }
+
+    /**
+     * Helper to save the final message content and its token stats.
+     * This is called on successful completion or on cancellation.
+     */
+    private suspend fun finalizeMessage(placeholderId: String, finalContent: String, generationTimeMs: Long) {
+        // Always persist the content so that the placeholder ("…") is replaced by whatever
+        // text was generated, even if it is empty when the user cancelled almost immediately.
+        repository.updateMessageContent(placeholderId, finalContent)
+
+        // Only compute token statistics if we have any content to analyse.
+        if (finalContent.isNotBlank()) {
+            // Approximate tokenisation: empirical average ~4 characters per token across English text.
+            // This gives results closer to what web AI UIs display (OpenAI, Claude, etc.).
+            val estimatedTokens = kotlin.math.ceil(finalContent.length / 4.0).toInt().coerceAtLeast(1)
+            val tokensPerSecond = if (generationTimeMs > 0) {
+                (estimatedTokens * 1000.0) / generationTimeMs
+            } else {
+                0.0
+            }
+
+            repository.updateMessageStats(placeholderId, estimatedTokens, tokensPerSecond)
         }
     }
 
@@ -276,6 +290,20 @@ class ChatViewModel : ViewModel() {
 
     fun switchModel(newModel: LLMModel) {
         viewModelScope.launch {
+            // Ensure ongoing generation is fully cancelled before switching models to avoid
+            // MediaPipe graph errors (e.g., DetokenizerCalculator id >= 0) that can happen
+            // when a new session starts while the previous one is still cleaning up.
+            generationJob?.let { job ->
+                job.cancel()
+                // Wait for the coroutine (and its awaitClose cleanup) to finish
+                try {
+                    job.join()
+                } catch (ignored: CancellationException) {
+                    // Expected when job is already cancelled
+                }
+                generationJob = null
+            }
+
             _isLoading.value = true
             _isLoadingModel.value = true
             

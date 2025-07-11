@@ -16,6 +16,11 @@ class ChatRepository(
     fun getAllChats(): Flow<List<ChatEntity>> {
         return chatDao.getAllChats()
     }
+
+    /** Chats that have at least one message. Use for the drawer. */
+    fun getActiveChats(): Flow<List<ChatEntity>> {
+        return chatDao.getNonEmptyChats()
+    }
     
     suspend fun getAllChatsWithLastMessage(): List<ChatWithLastMessage> {
         val chats = chatDao.getAllChats()

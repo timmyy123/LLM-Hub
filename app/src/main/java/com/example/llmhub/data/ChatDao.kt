@@ -11,6 +11,10 @@ interface ChatDao {
     
     @Query("SELECT * FROM chats WHERE id = :chatId")
     suspend fun getChatById(chatId: String): ChatEntity?
+
+    /** Return chats that already have at least one message. */
+    @Query("SELECT * FROM chats WHERE id IN (SELECT DISTINCT chatId FROM messages) ORDER BY updatedAt DESC")
+    fun getNonEmptyChats(): Flow<List<ChatEntity>>
     
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertChat(chat: ChatEntity): Long

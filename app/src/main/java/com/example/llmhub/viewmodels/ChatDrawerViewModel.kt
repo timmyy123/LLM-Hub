@@ -21,7 +21,7 @@ class ChatDrawerViewModel(application: Application) : AndroidViewModel(applicati
         val database = LlmHubDatabase.getDatabase(application)
         repository = ChatRepository(database.chatDao(), database.messageDao())
 
-        allChats = repository.getAllChats()
+        allChats = repository.getActiveChats()
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
