@@ -13,11 +13,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.llmhub.components.ChatDrawer
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.ui.input.pointer.pointerInput
 import com.example.llmhub.components.MessageBubble
 import com.example.llmhub.components.MessageInput
 import com.example.llmhub.data.MessageEntity
@@ -47,20 +52,20 @@ fun ChatScreen(
     var modelMenuExpanded by remember { mutableStateOf(false) }
     
     val listState = rememberLazyListState()
+    val focusManager = LocalFocusManager.current
     
-    // Auto-scroll behaviour
+    // Auto-scroll to bottom when a new message finishes
     LaunchedEffect(messages.size) {
-        // When a message finishes (size changes), animate to bottom once
         if (messages.isNotEmpty()) {
             listState.animateScrollToItem(maxOf(0, messages.size - 1))
         }
     }
 
-    // During streaming, keep list pinned to bottom without animation (smoother)
+    // Auto-scroll during streaming to keep the new message in view
     LaunchedEffect(streamingContents) {
-        if (streamingContents.isNotEmpty()) {
-            // Keep bottom of the last bubble in view
-            listState.scrollToItem(maxOf(0, messages.size - 1), Int.MAX_VALUE)
+        if (streamingContents.isNotEmpty() && messages.isNotEmpty()) {
+            // Scroll to bottom of last message as it grows
+            listState.animateScrollToItem(maxOf(0, messages.size - 1), scrollOffset = Int.MAX_VALUE)
         }
     }
     
@@ -166,15 +171,22 @@ fun ChatScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
+                    .pointerInput(Unit) {
+                        // Dismiss keyboard when tapping anywhere in the chat window
+                        detectTapGestures(onTap = { focusManager.clearFocus() })
+                    }
+                    // REMOVED imePadding() from here
             ) {
                 // Messages list
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
+                        // REMOVED imePadding() - let keyboard overlay instead
                     state = listState,
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
+                    // REMOVED reverseLayout = true
                 ) {
                     if (messages.isEmpty() && !isLoading) {
                         item {
@@ -222,7 +234,7 @@ fun ChatScreen(
                         }
                     }
                 }
-                
+
                 // Message input
                 MessageInput(
                     onSendMessage = { text, attachmentUri ->

@@ -16,6 +16,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.llmhub.data.LLMModel
 import com.example.llmhub.data.ModelData
 import com.example.llmhub.viewmodels.ModelDownloadViewModel
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.input.pointer.pointerInput
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,6 +27,7 @@ fun ModelDownloadScreen(
 ) {
     val models by viewModel.models.collectAsState()
     val textModels = models.filter { it.category == "text" }
+    val grouped = textModels.groupBy { it.name.substringBefore("(").trim() }
 
     Scaffold(
         topBar = {
@@ -54,12 +57,49 @@ fun ModelDownloadScreen(
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
-            items(textModels) { model ->
-                ModelItem(
-                    model = model,
-                    onDownload = { viewModel.downloadModel(it) },
-                    onDelete = { viewModel.deleteModel(it) }
-                )
+            grouped.forEach { (family, variants) ->
+                // Each family gets one expandable card
+                item {
+                    var expanded by remember { mutableStateOf(false) }
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .clickable { expanded = !expanded },
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
+                            Text(
+                                family,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Icon(
+                                imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = if (expanded) "Collapse" else "Expand"
+                            )
+                        }
+
+                        if (expanded) {
+                            Column(modifier = Modifier.padding(bottom = 8.dp)) {
+                                variants.forEach { model ->
+                                    ModelItem(
+                                        model = model,
+                                        onDownload = { viewModel.downloadModel(it) },
+                                        onDelete = { viewModel.deleteModel(it) },
+                                        onCancel = { viewModel.cancelDownload(it) }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -69,7 +109,8 @@ fun ModelDownloadScreen(
 fun ModelItem(
     model: LLMModel,
     onDownload: (LLMModel) -> Unit,
-    onDelete: (LLMModel) -> Unit
+    onDelete: (LLMModel) -> Unit,
+    onCancel: (LLMModel) -> Unit = {}
 ) {
     Card(
         modifier = Modifier
@@ -131,6 +172,14 @@ fun ModelItem(
                             text = formatSpeed(model.downloadSpeedBytesPerSec ?: 0),
                             style = MaterialTheme.typography.bodySmall
                         )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Cancel button
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Button(onClick = { onCancel(model) }) {
+                        Text("Cancel")
                     }
                 }
             } else {

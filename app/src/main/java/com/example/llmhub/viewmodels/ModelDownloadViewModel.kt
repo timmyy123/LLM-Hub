@@ -33,6 +33,8 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
 
     private var lastProgressMap: MutableMap<String, Pair<Long, Float>> = mutableMapOf()
 
+    private val downloadJobs = mutableMapOf<String, kotlinx.coroutines.Job>()
+
     init {
         // Load HF token from preferences, with your provided token as default
         val prefs = context.getSharedPreferences("model_prefs", Context.MODE_PRIVATE)
@@ -125,7 +127,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
             ) 
         }
 
-        viewModelScope.launch {
+        val job = viewModelScope.launch {
             var latestStatus: com.example.llmhub.data.DownloadStatus? = null
             modelDownloader.downloadModel(model)
                 .catch { exception ->
@@ -199,6 +201,28 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                         )
                     }
                 }
+        }
+
+        downloadJobs[model.name] = job
+    }
+
+    fun cancelDownload(model: LLMModel) {
+        downloadJobs[model.name]?.cancel()
+        downloadJobs.remove(model.name)
+
+        // Delete partial file if exists
+        val modelsDir = File(context.filesDir, "models")
+        val file = File(modelsDir, model.localFileName())
+        if (file.exists()) file.delete()
+
+        // Reset UI state
+        updateModel(model.name) {
+            it.copy(
+                downloadProgress = 0f,
+                downloadedBytes = 0L,
+                totalBytes = null,
+                downloadSpeedBytesPerSec = null
+            )
         }
     }
 
