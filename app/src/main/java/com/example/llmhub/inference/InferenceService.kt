@@ -4,6 +4,7 @@ import android.content.Context
 import com.example.llmhub.data.LLMModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import androidx.annotation.Keep
@@ -12,6 +13,9 @@ import com.example.llmhub.data.localFileName
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.google.mediapipe.tasks.genai.llminference.LlmInferenceSession
 import android.util.Log
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flowOn
 
 /**
  * Interface for a service that can run model inference.
@@ -19,7 +23,7 @@ import android.util.Log
 interface InferenceService {
     suspend fun loadModel(model: LLMModel): Boolean
     suspend fun generateResponse(prompt: String, model: LLMModel): String
-    suspend fun generateResponseStream(prompt: String, model: LLMModel): SharedFlow<String>
+    suspend fun generateResponseStream(prompt: String, model: LLMModel): Flow<String>
     suspend fun onCleared()
 }
 
@@ -137,15 +141,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         // Create LLM inference engine from file
         llmInference = LlmInference.createFromOptions(context, options)
         
-        // Create session with proper configuration for sampling
-        val sessionOptions = LlmInferenceSession.LlmInferenceSessionOptions.builder()
-            .setTopK(40)
-            .setTemperature(0.8f)
-            .setRandomSeed(1234)
-            .build()
-
-        session = LlmInferenceSession.createFromOptions(llmInference!!, sessionOptions)
-        
+        // DO NOT create session here. Create it per-request.
         currentModel = model
         Log.d("MediaPipeInference", "Successfully loaded model from file: ${model.name}")
     }
@@ -159,15 +155,19 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         ensureModelLoaded(model)
         
         return withContext(Dispatchers.IO) {
+            val responseBuilder = StringBuilder()
+            var localSession: LlmInferenceSession? = null
             try {
-                val responseBuilder = StringBuilder()
+                // Create a new session for each request to ensure a clean state
+                localSession = createNewSession()
+
                 var isComplete = false
                 
                 // Add query to session
-                session!!.addQueryChunk(prompt)
+                localSession.addQueryChunk(prompt)
                 
                 // Generate response synchronously
-                session!!.generateResponseAsync { partialResult, done ->
+                localSession.generateResponseAsync { partialResult, done ->
                     responseBuilder.append(partialResult)
                     if (done) {
                         isComplete = true
@@ -184,38 +184,49 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             } catch (e: Exception) {
                 Log.e("MediaPipeInference", "Inference failed", e)
                 "Error: ${e.message}"
+            } finally {
+                localSession?.close()
             }
         }
     }
     
-    override suspend fun generateResponseStream(prompt: String, model: LLMModel): SharedFlow<String> {
+    override suspend fun generateResponseStream(prompt: String, model: LLMModel): Flow<String> = callbackFlow {
         ensureModelLoaded(model)
         
-        // Create a new flow for each request to avoid interference
-        val responseFlow = MutableSharedFlow<String>(extraBufferCapacity = 100)
-        
-        withContext(Dispatchers.IO) {
-            try {
-                // Add query to session
-                session!!.addQueryChunk(prompt)
-                
-                // Generate streaming response
-                session!!.generateResponseAsync { partialResult, done ->
-                    responseFlow.tryEmit(partialResult)
-                    if (done) {
-                        // Signal completion
-                        responseFlow.tryEmit("[DONE]")
-                    }
-                }
-                
-            } catch (e: Exception) {
-                Log.e("MediaPipeInference", "Streaming inference failed", e)
-                responseFlow.tryEmit("Error: ${e.message}")
-                responseFlow.tryEmit("[DONE]")
-            }
+        val localSession = try {
+            createNewSession()
+        } catch (e: Exception) {
+            Log.e("MediaPipeInference", "Failed to create new session", e)
+            close(e)
+            return@callbackFlow
         }
         
-        return responseFlow
+        try {
+            localSession.addQueryChunk(prompt)
+            localSession.generateResponseAsync { partialResult, done ->
+                trySend(partialResult)
+                if (done) {
+                    close()
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("MediaPipeInference", "Streaming inference failed", e)
+            close(e)
+        }
+
+        awaitClose {
+            Log.d("MediaPipeInference", "Closing session and resources.")
+            localSession.close()
+        }
+    }.flowOn(Dispatchers.IO)
+
+    private fun createNewSession(): LlmInferenceSession {
+        val sessionOptions = LlmInferenceSession.LlmInferenceSessionOptions.builder()
+            .setTopK(40)
+            .setTemperature(0.8f)
+            .setRandomSeed(System.currentTimeMillis().toInt()) // Use different seed
+            .build()
+        return LlmInferenceSession.createFromOptions(llmInference!!, sessionOptions)
     }
     
     override suspend fun onCleared() {

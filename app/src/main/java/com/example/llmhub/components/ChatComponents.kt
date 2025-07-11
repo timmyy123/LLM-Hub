@@ -27,7 +27,6 @@ import com.example.llmhub.viewmodels.ChatViewModel
 @Composable
 fun MessageBubble(
     message: MessageEntity,
-    tokenStats: ChatViewModel.TokenStats? = null,
     streamingContent: String = ""
 ) {
     val isUser = message.isFromUser
@@ -57,10 +56,11 @@ fun MessageBubble(
             }
             
             // Show token statistics for assistant messages after completion
-            if (!isUser && tokenStats != null && streamingContent.isEmpty()) {
+            val hasStats = message.tokenCount != null && message.tokensPerSecond != null
+            if (!isUser && hasStats && streamingContent.isEmpty()) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "${tokenStats.tokenCount} tokens • ${String.format("%.1f", tokenStats.tokensPerSecond)} tok/sec",
+                    text = "${message.tokenCount} tokens • ${String.format("%.1f", message.tokensPerSecond!!)} tok/sec",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 12.dp)

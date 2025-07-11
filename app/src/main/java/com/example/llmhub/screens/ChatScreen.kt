@@ -47,7 +47,6 @@ fun ChatScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val availableModels by viewModel.availableModels.collectAsState()
     val streamingContents by viewModel.streamingContents.collectAsState()
-    val tokenStats by viewModel.tokenStats.collectAsState()
     val isLoadingModel by viewModel.isLoadingModel.collectAsState()
     var modelMenuExpanded by remember { mutableStateOf(false) }
     
@@ -191,10 +190,8 @@ fun ChatScreen(
                     
                     items(messages.reversed(), key = { it.id }) { message ->
                         val streamingText = streamingContents[message.id] ?: ""
-                        val isFinished = streamingText.isEmpty()
                         MessageBubble(
                             message = message,
-                            tokenStats = if (!message.isFromUser && isFinished && message == messages.lastOrNull { !it.isFromUser }) tokenStats else null,
                             streamingContent = streamingText
                         )
                     }

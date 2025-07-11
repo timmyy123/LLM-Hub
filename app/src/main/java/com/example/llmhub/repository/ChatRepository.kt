@@ -55,6 +55,10 @@ class ChatRepository(
         messageDao.deleteMessagesForChat(chatId)
     }
     
+    suspend fun deleteAllChats() {
+        chatDao.deleteAllChats()
+    }
+    
     suspend fun addMessage(chatId: String, content: String, isFromUser: Boolean, attachmentPath: String? = null, attachmentType: String? = null): String {
         val message = MessageEntity(
             chatId = chatId,
@@ -77,6 +81,11 @@ class ChatRepository(
         val msg = messageDao.getMessageById(messageId) ?: return
         if (msg.content == newContent) return
         messageDao.updateMessage(msg.copy(content = newContent))
+    }
+    
+    suspend fun updateMessageStats(messageId: String, tokenCount: Int, tokensPerSecond: Double) {
+        val msg = messageDao.getMessageById(messageId) ?: return
+        messageDao.updateMessage(msg.copy(tokenCount = tokenCount, tokensPerSecond = tokensPerSecond))
     }
     
     suspend fun getChatById(chatId: String): ChatEntity? {

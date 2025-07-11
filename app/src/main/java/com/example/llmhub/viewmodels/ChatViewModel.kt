@@ -41,10 +41,6 @@ class ChatViewModel : ViewModel() {
     private val _streamingContents = MutableStateFlow<Map<String, String>>(emptyMap())
     val streamingContents: StateFlow<Map<String, String>> = _streamingContents.asStateFlow()
     
-    // Token counting for speed calculation
-    private val _tokenStats = MutableStateFlow<TokenStats?>(null)
-    val tokenStats: StateFlow<TokenStats?> = _tokenStats.asStateFlow()
-    
     // Model loading state
     private val _isLoadingModel = MutableStateFlow(false)
     val isLoadingModel: StateFlow<Boolean> = _isLoadingModel.asStateFlow()
@@ -55,12 +51,6 @@ class ChatViewModel : ViewModel() {
     // Keep reference to the running generation so the UI can interrupt it
     private var generationJob: Job? = null
 
-    data class TokenStats(
-        val tokenCount: Int,
-        val tokensPerSecond: Double,
-        val generationTimeMs: Long
-    )
-    
     fun hasDownloadedModels(): Boolean {
         return _availableModels.value.isNotEmpty()
     }
@@ -72,6 +62,9 @@ class ChatViewModel : ViewModel() {
         inferenceService = sharedInferenceService ?: MediaPipeInferenceService(context).also {
             sharedInferenceService = it
         }
+
+        // Stop collecting from any previous chat's message flow
+        generationJob?.cancel()
 
         viewModelScope.launch {
             // Load the models synchronously so we know what's available before creating/attaching a chat
@@ -88,7 +81,7 @@ class ChatViewModel : ViewModel() {
                 currentModel = null
 
                 // Begin collecting messages for the newly created chat
-                repository.getMessagesForChat(newChatId).collect { messageList ->
+                repository.getMessagesForChat(newChatId).collectLatest { messageList ->
                     _messages.value = messageList
                 }
             } else {
@@ -97,7 +90,12 @@ class ChatViewModel : ViewModel() {
                 _currentChat.value = chat
                 currentModel = _availableModels.value.find { it.name == chat?.modelName }
                     ?: ModelData.models.find { it.name == chat?.modelName }
-                repository.getMessagesForChat(chatId).collect { messageList ->
+                
+                if (currentModel != null && !currentModel!!.isDownloaded) {
+                    currentModel = null // Model associated with chat is not downloaded
+                }
+                
+                repository.getMessagesForChat(chatId).collectLatest { messageList ->
                     _messages.value = messageList
                 }
             }
@@ -171,16 +169,20 @@ class ChatViewModel : ViewModel() {
                 attachmentType = determineAttachmentType(attachmentUri)
             )
 
-            if (_messages.value.isEmpty()) {
+            // The first message sets the title
+            if (_messages.value.size == 1) {
                 repository.updateChatTitle(chatId, messageText.take(50))
                 _currentChat.value = repository.getChatById(chatId)
             }
 
             _isLoading.value = true
-            _tokenStats.value = null
+            // _tokenStats.value = null // No longer need separate token stats state
 
             if (currentModel != null && currentModel!!.isDownloaded) {
-                val prompt = if (attachmentUri != null) "Image attached: $messageText" else messageText
+                // Pass the conversation history to the model
+                val history = _messages.value.map {
+                    (if (it.isFromUser) "user: " else "model: ") + it.content
+                }.joinToString(separator = "\n")
 
                 // Insert a visible placeholder so the bubble stays rendered while tokens stream
                 val placeholderId = repository.addMessage(chatId, "…", isFromUser = false)
@@ -188,6 +190,10 @@ class ChatViewModel : ViewModel() {
 
                 // Run generation with streaming tokens
                 generationJob = launch {
+                    var finalContent: String? = null
+                    var generationTimeMs: Long = 0
+                    val generationStartTime = System.currentTimeMillis()
+
                     try {
                         // Pre-load model separately from generation timing
                         _isLoadingModel.value = true
@@ -197,46 +203,11 @@ class ChatViewModel : ViewModel() {
                         
                         _isLoadingModel.value = false
                         
-                        // Now start the actual generation timing
-                        val generationStartTime = System.currentTimeMillis()
-                        val responseStream = inferenceService.generateResponseStream(prompt, currentModel!!)
+                        val responseStream = inferenceService.generateResponseStream(history, currentModel!!)
                         var lastUpdateTime = 0L
                         val updateIntervalMs = 50L // Update UI every 50ms instead of every token
                         
                         responseStream.collect { piece ->
-                            if (piece == "[DONE]") {
-                                // Final update and generation completed
-                                val finalContent = _streamingContents.value[placeholderId] ?: ""
-                                val generationEndTime = System.currentTimeMillis()
-                                val generationTimeMs = generationEndTime - generationStartTime
-                                
-                                // Calculate tokens per second (estimate tokens by splitting on spaces and punctuation)
-                                val estimatedTokens = if (finalContent.isNotBlank()) {
-                                    finalContent.split(Regex("\\s+|[.,!?;:]")).filter { it.isNotBlank() }.size
-                                } else {
-                                    // Fallback: count pieces received if final content is empty
-                                    1 // At minimum 1 token if we got any response
-                                }
-                                val tokensPerSecond = if (generationTimeMs > 0) (estimatedTokens * 1000.0) / generationTimeMs else 0.0
-                                
-                                // Update database with final content first
-                                repository.updateMessageContent(placeholderId, finalContent)
-                                
-                                // Set token stats only if this is still the most recent generation
-                                // (to avoid showing stats from an older request if multiple are running)
-                                if (_isLoading.value) {
-                                    _tokenStats.value = TokenStats(estimatedTokens, tokensPerSecond, generationTimeMs)
-                                }
-                                
-                                // Clear only this message's streaming content after everything is done
-                                val updatedStreaming = _streamingContents.value.toMutableMap()
-                                updatedStreaming.remove(placeholderId)
-                                _streamingContents.value = updatedStreaming
-                                
-                                _isLoading.value = false
-                                return@collect
-                            }
-                            
                             // Append piece to the content for the specific message
                             val updated = _streamingContents.value.toMutableMap()
                             updated[placeholderId] = (updated[placeholderId] ?: "") + piece
@@ -249,18 +220,41 @@ class ChatViewModel : ViewModel() {
                                 lastUpdateTime = currentTime
                             }
                         }
+
+                        // This section now executes after the stream is fully collected
+                        finalContent = _streamingContents.value[placeholderId] ?: ""
+                        generationTimeMs = System.currentTimeMillis() - generationStartTime
+
                     } catch (e: Exception) {
-                        // Handle errors
+                        if (e is kotlinx.coroutines.CancellationException) {
+                            Log.d("ChatViewModel", "Generation was cancelled by user.")
+                            // Save whatever was partially generated
+                            finalContent = _streamingContents.value[placeholderId] ?: ""
+                            generationTimeMs = System.currentTimeMillis() - generationStartTime
+                        } else {
+                            Log.e("ChatViewModel", "Error during generation", e)
+                            finalContent = _streamingContents.value[placeholderId]
+                            repository.updateMessageContent(placeholderId, "Error: ${e.message}")
+                        }
+                    } finally {
+                        _isLoading.value = false
                         _isLoadingModel.value = false
                         
-                        // Clear only this message's streaming content on error
+                        // Finalize the message content and stats, even if cancelled
+                        if (finalContent != null) {
+                            val estimatedTokens = if (finalContent!!.isNotBlank()) {
+                                finalContent!!.split(Regex("\\s+|[.,!?;:]")).filter { it.isNotBlank() }.size
+                            } else { 1 }
+                            val tokensPerSecond = if (generationTimeMs > 0) (estimatedTokens * 1000.0) / generationTimeMs else 0.0
+
+                            repository.updateMessageContent(placeholderId, finalContent!!)
+                            repository.updateMessageStats(placeholderId, estimatedTokens, tokensPerSecond)
+                        }
+
+                        // Clear streaming state for this message
                         val updatedStreaming = _streamingContents.value.toMutableMap()
                         updatedStreaming.remove(placeholderId)
                         _streamingContents.value = updatedStreaming
-                        
-                        _tokenStats.value = null
-                        repository.updateMessageContent(placeholderId, "Error: ${e.message}")
-                        _isLoading.value = false
                     }
                 }
             } else {
@@ -277,7 +271,7 @@ class ChatViewModel : ViewModel() {
         _isLoading.value = false
         _isLoadingModel.value = false
         // Note: Don't clear streaming contents here to preserve partial responses
-        _tokenStats.value = null
+        // _tokenStats.value = null // No longer needed
     }
 
     fun switchModel(newModel: LLMModel) {

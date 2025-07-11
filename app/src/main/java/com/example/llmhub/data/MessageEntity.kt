@@ -2,6 +2,7 @@ package com.example.llmhub.data
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import java.util.UUID
 
@@ -14,7 +15,8 @@ import java.util.UUID
             childColumns = ["chatId"],
             onDelete = ForeignKey.CASCADE
         )
-    ]
+    ],
+    indices = [Index(value = ["chatId"])]
 )
 data class MessageEntity(
     @PrimaryKey
@@ -24,5 +26,7 @@ data class MessageEntity(
     val isFromUser: Boolean,
     val timestamp: Long = System.currentTimeMillis(),
     val attachmentPath: String? = null, // For images/files
-    val attachmentType: String? = null // image, document, etc.
+    val attachmentType: String? = null, // image, document, etc.
+    val tokenCount: Int? = null,
+    val tokensPerSecond: Double? = null
 ) 
