@@ -41,14 +41,17 @@ fun ChatScreen(
     val currentChat by viewModel.currentChat.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val availableModels by viewModel.availableModels.collectAsState()
+    val streamingContents by viewModel.streamingContents.collectAsState()
+    val tokenStats by viewModel.tokenStats.collectAsState()
+    val isLoadingModel by viewModel.isLoadingModel.collectAsState()
     var modelMenuExpanded by remember { mutableStateOf(false) }
     
     val listState = rememberLazyListState()
     
-    // Auto-scroll to bottom when new messages arrive
-    LaunchedEffect(messages.size) {
-        if (messages.isNotEmpty()) {
-            listState.animateScrollToItem(messages.size - 1)
+    // Auto-scroll to bottom when new messages arrive or content streams
+    LaunchedEffect(messages.size, streamingContents) {
+        if (messages.isNotEmpty() || streamingContents.isNotEmpty()) {
+            listState.animateScrollToItem(maxOf(0, messages.size - 1))
         }
     }
     
@@ -91,61 +94,58 @@ fun ChatScreen(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = {
-                        Column {
-                            Text(currentChat?.title ?: "New Chat")
-                            // Show current model with dropdown capability
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.clickable { if (availableModels.isNotEmpty()) modelMenuExpanded = true }
-                            ) {
-                                Text(
-                                    text = viewModel.currentChat.value?.modelName ?: "No model",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                            }
-                        }
-                    },
+                    title = { Text(currentChat?.title ?: "New Chat") },
                     navigationIcon = {
-                        IconButton(
-                            onClick = {
-                                scope.launch {
-                                    drawerState.open()
-                                }
+                        IconButton(onClick = {
+                            scope.launch {
+                                drawerState.open()
                             }
-                        ) {
-                            Icon(Icons.Default.Menu, contentDescription = "Menu")
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = "Menu"
+                            )
                         }
                     },
                     actions = {
-                        if (isLoading) {
-                            IconButton(onClick = { viewModel.stopGeneration() }) {
-                                Icon(Icons.Default.Stop, contentDescription = "Stop generating")
-                            }
-                        }
-                        IconButton(onClick = onNavigateToSettings) {
-                            Icon(Icons.Default.Settings, contentDescription = "Settings")
-                        }
-                        DropdownMenu(
-                            expanded = modelMenuExpanded,
-                            onDismissRequest = { modelMenuExpanded = false }
-                        ) {
-                            availableModels.forEach { model ->
-                                DropdownMenuItem(
-                                    text = { Text(model.name) },
-                                    onClick = {
-                                        modelMenuExpanded = false
-                                        viewModel.switchModel(model)
-                                    }
+                        // Model selector
+                        Box {
+                            TextButton(
+                                onClick = { modelMenuExpanded = !modelMenuExpanded },
+                                enabled = availableModels.isNotEmpty()
+                            ) {
+                                Text(
+                                    text = currentChat?.modelName?.take(20) ?: "No model",
+                                    maxLines = 1
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.ArrowDropDown,
+                                    contentDescription = "Select model"
                                 )
                             }
-                            if (availableModels.isEmpty()) {
-                                DropdownMenuItem(
-                                    text = { Text("No downloaded models") },
-                                    enabled = false,
-                                    onClick = {}
+                            
+                            DropdownMenu(
+                                expanded = modelMenuExpanded,
+                                onDismissRequest = { modelMenuExpanded = false }
+                            ) {
+                                availableModels.forEach { model ->
+                                    DropdownMenuItem(
+                                        text = { Text(model.name) },
+                                        onClick = {
+                                            viewModel.switchModel(model)
+                                            modelMenuExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                        
+                        // Stop generation button (only show when loading)
+                        if (isLoading) {
+                            IconButton(onClick = { viewModel.stopGeneration() }) {
+                                Icon(
+                                    imageVector = Icons.Default.Stop,
+                                    contentDescription = "Stop generation"
                                 )
                             }
                         }
@@ -171,16 +171,43 @@ fun ChatScreen(
                         item {
                             WelcomeMessage(
                                 currentModel = currentChat?.modelName ?: "No model selected",
-                                onNavigateToModels = onNavigateToModels
+                                onNavigateToModels = onNavigateToModels,
+                                hasDownloadedModels = viewModel.hasDownloadedModels()
                             )
                         }
                     }
                     
                     items(messages) { message ->
-                        MessageBubble(message = message)
+                        val streamingText = streamingContents[message.id] ?: ""
+                        val isFinished = streamingText.isEmpty()
+                        MessageBubble(
+                            message = message,
+                            tokenStats = if (!message.isFromUser && isFinished && message == messages.lastOrNull { !it.isFromUser }) tokenStats else null,
+                            streamingContent = streamingText
+                        )
                     }
                     
-                    if (isLoading) {
+                    if (isLoadingModel) {
+                        item {
+                            Row(
+                                modifier = Modifier.padding(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Loading model...",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                    
+                    if (isLoading && streamingContents.isEmpty() && !isLoadingModel) {
                         item {
                             TypingIndicator()
                         }
@@ -192,7 +219,7 @@ fun ChatScreen(
                     onSendMessage = { text, attachmentUri ->
                         viewModel.sendMessage(text, attachmentUri)
                     },
-                    enabled = !isLoading && currentChat != null,
+                    enabled = !isLoading && !isLoadingModel && currentChat != null,
                     supportsAttachments = viewModel.currentModelSupportsVision()
                 )
             }
@@ -203,7 +230,8 @@ fun ChatScreen(
 @Composable
 private fun WelcomeMessage(
     currentModel: String,
-    onNavigateToModels: () -> Unit
+    onNavigateToModels: () -> Unit,
+    hasDownloadedModels: Boolean
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -228,18 +256,37 @@ private fun WelcomeMessage(
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
             Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "Current model: $currentModel",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            if (currentModel == "No model selected") {
+            
+            if (!hasDownloadedModels) {
+                Text(
+                    text = "No models downloaded",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Spacer(modifier = Modifier.height(8.dp))
                 FilledTonalButton(onClick = onNavigateToModels) {
                     Icon(Icons.Default.GetApp, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Download a Model")
                 }
+            } else if (currentModel == "No model selected" || currentModel == "No model downloaded") {
+                Text(
+                    text = "Ready to chat! Please select a model above.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            } else {
+                Text(
+                    text = "Current model: $currentModel",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Start chatting by typing a message below!",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             }
         }
     }

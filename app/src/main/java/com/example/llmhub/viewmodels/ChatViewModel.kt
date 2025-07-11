@@ -37,11 +37,33 @@ class ChatViewModel : ViewModel() {
     private val _availableModels = MutableStateFlow<List<LLMModel>>(emptyList())
     val availableModels: StateFlow<List<LLMModel>> = _availableModels.asStateFlow()
 
+    // Streaming response state (per message)
+    private val _streamingContents = MutableStateFlow<Map<String, String>>(emptyMap())
+    val streamingContents: StateFlow<Map<String, String>> = _streamingContents.asStateFlow()
+    
+    // Token counting for speed calculation
+    private val _tokenStats = MutableStateFlow<TokenStats?>(null)
+    val tokenStats: StateFlow<TokenStats?> = _tokenStats.asStateFlow()
+    
+    // Model loading state
+    private val _isLoadingModel = MutableStateFlow(false)
+    val isLoadingModel: StateFlow<Boolean> = _isLoadingModel.asStateFlow()
+
     private var currentChatId: String? = null
     private var currentModel: LLMModel? = null
 
     // Keep reference to the running generation so the UI can interrupt it
     private var generationJob: Job? = null
+
+    data class TokenStats(
+        val tokenCount: Int,
+        val tokensPerSecond: Double,
+        val generationTimeMs: Long
+    )
+    
+    fun hasDownloadedModels(): Boolean {
+        return _availableModels.value.isNotEmpty()
+    }
 
     fun initializeChat(chatId: String, context: Context) {
         val database = LlmHubDatabase.getDatabase(context)
@@ -52,14 +74,18 @@ class ChatViewModel : ViewModel() {
         }
 
         viewModelScope.launch {
-            loadAvailableModels(context)
+            // Load the models synchronously so we know what's available before creating/attaching a chat
+            loadAvailableModelsSync(context)
 
             if (chatId == "new") {
-                val defaultModel = _availableModels.value.firstOrNull()
-                val newChatId = repository.createNewChat("New Chat", defaultModel?.name ?: "No model downloaded")
+                // Do NOT auto-select a model; let user choose if any are downloaded
+                val newChatId = repository.createNewChat(
+                    "New Chat",
+                    if (_availableModels.value.isEmpty()) "No model downloaded" else "No model selected"
+                )
                 currentChatId = newChatId
                 _currentChat.value = repository.getChatById(newChatId)
-                currentModel = defaultModel
+                currentModel = null
 
                 // Begin collecting messages for the newly created chat
                 repository.getMessagesForChat(newChatId).collect { messageList ->
@@ -76,6 +102,58 @@ class ChatViewModel : ViewModel() {
                 }
             }
         }
+    }
+
+    /**
+     * Load downloaded models synchronously so callers can rely on the result immediately.
+     */
+    private suspend fun loadAvailableModelsSync(context: Context) {
+        val downloadedModels = ModelData.models.mapNotNull { model ->
+            var isAvailable = false
+            var actualSize = model.sizeBytes
+
+            // Check if model is available in assets (priority)
+            val assetPath = if (model.url.startsWith("file://models/")) {
+                model.url.removePrefix("file://")
+            } else {
+                "models/${model.localFileName()}"
+            }
+
+            try {
+                context.assets.open(assetPath).use { inputStream ->
+                    actualSize = inputStream.available().toLong()
+                    isAvailable = true
+                    Log.d("ChatViewModel", "Found model in assets: $assetPath (${actualSize / (1024*1024)} MB)")
+                }
+            } catch (e: Exception) {
+                // Model not in assets, check files directory
+                val modelsDir = File(context.filesDir, "models")
+                val primaryFile = File(modelsDir, model.localFileName())
+                val legacyFile = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
+
+                // Migrate legacy file if needed
+                if (!primaryFile.exists() && legacyFile.exists()) {
+                    legacyFile.renameTo(primaryFile)
+                }
+
+                if (primaryFile.exists()) {
+                    val minSize = 10 * 1024 * 1024
+                    if (primaryFile.length() >= minSize) {
+                        isAvailable = true
+                        actualSize = primaryFile.length()
+                        Log.d("ChatViewModel", "Found model in files: ${primaryFile.absolutePath} (${actualSize / (1024*1024)} MB)")
+                    }
+                }
+            }
+
+            if (isAvailable) {
+                model.copy(isDownloaded = true, sizeBytes = actualSize)
+            } else {
+                null
+            }
+        }
+
+        _availableModels.value = downloadedModels
     }
 
     fun sendMessage(text: String, attachmentUri: Uri?) {
@@ -99,32 +177,88 @@ class ChatViewModel : ViewModel() {
             }
 
             _isLoading.value = true
-            delay(500) // Short delay just for UX (optional)
+            _tokenStats.value = null
 
             if (currentModel != null && currentModel!!.isDownloaded) {
                 val prompt = if (attachmentUri != null) "Image attached: $messageText" else messageText
 
                 // Insert a visible placeholder so the bubble stays rendered while tokens stream
                 val placeholderId = repository.addMessage(chatId, "…", isFromUser = false)
+                _streamingContents.value = mapOf(placeholderId to "") // Initialize with empty string
 
                 // Run generation with streaming tokens
                 generationJob = launch {
                     try {
-                        // Use the new MediaPipe streaming API
+                        // Pre-load model separately from generation timing
+                        _isLoadingModel.value = true
+                        
+                        // Ensure model is loaded first
+                        inferenceService.loadModel(currentModel!!)
+                        
+                        _isLoadingModel.value = false
+                        
+                        // Now start the actual generation timing
+                        val generationStartTime = System.currentTimeMillis()
                         val responseStream = inferenceService.generateResponseStream(prompt, currentModel!!)
-                        val sb = StringBuilder()
+                        var lastUpdateTime = 0L
+                        val updateIntervalMs = 50L // Update UI every 50ms instead of every token
                         
                         responseStream.collect { piece ->
                             if (piece == "[DONE]") {
-                                // Generation completed
+                                // Final update and generation completed
+                                val finalContent = _streamingContents.value[placeholderId] ?: ""
+                                val generationEndTime = System.currentTimeMillis()
+                                val generationTimeMs = generationEndTime - generationStartTime
+                                
+                                // Calculate tokens per second (estimate tokens by splitting on spaces and punctuation)
+                                val estimatedTokens = if (finalContent.isNotBlank()) {
+                                    finalContent.split(Regex("\\s+|[.,!?;:]")).filter { it.isNotBlank() }.size
+                                } else {
+                                    // Fallback: count pieces received if final content is empty
+                                    1 // At minimum 1 token if we got any response
+                                }
+                                val tokensPerSecond = if (generationTimeMs > 0) (estimatedTokens * 1000.0) / generationTimeMs else 0.0
+                                
+                                // Update database with final content first
+                                repository.updateMessageContent(placeholderId, finalContent)
+                                
+                                // Set token stats only if this is still the most recent generation
+                                // (to avoid showing stats from an older request if multiple are running)
+                                if (_isLoading.value) {
+                                    _tokenStats.value = TokenStats(estimatedTokens, tokensPerSecond, generationTimeMs)
+                                }
+                                
+                                // Clear only this message's streaming content after everything is done
+                                val updatedStreaming = _streamingContents.value.toMutableMap()
+                                updatedStreaming.remove(placeholderId)
+                                _streamingContents.value = updatedStreaming
+                                
                                 _isLoading.value = false
                                 return@collect
                             }
-                            sb.append(piece)
-                            repository.updateMessageContent(placeholderId, sb.toString())
+                            
+                            // Append piece to the content for the specific message
+                            val updated = _streamingContents.value.toMutableMap()
+                            updated[placeholderId] = (updated[placeholderId] ?: "") + piece
+                            _streamingContents.value = updated
+                            
+                            // Debounced database updates to reduce blinking
+                            val currentTime = System.currentTimeMillis()
+                            if (currentTime - lastUpdateTime > updateIntervalMs) {
+                                repository.updateMessageContent(placeholderId, updated[placeholderId] ?: "")
+                                lastUpdateTime = currentTime
+                            }
                         }
                     } catch (e: Exception) {
                         // Handle errors
+                        _isLoadingModel.value = false
+                        
+                        // Clear only this message's streaming content on error
+                        val updatedStreaming = _streamingContents.value.toMutableMap()
+                        updatedStreaming.remove(placeholderId)
+                        _streamingContents.value = updatedStreaming
+                        
+                        _tokenStats.value = null
                         repository.updateMessageContent(placeholderId, "Error: ${e.message}")
                         _isLoading.value = false
                     }
@@ -141,13 +275,16 @@ class ChatViewModel : ViewModel() {
         generationJob?.cancel()
         generationJob = null
         _isLoading.value = false
+        _isLoadingModel.value = false
+        // Note: Don't clear streaming contents here to preserve partial responses
+        _tokenStats.value = null
     }
 
     fun switchModel(newModel: LLMModel) {
         viewModelScope.launch {
             _isLoading.value = true
+            _isLoadingModel.value = true
             
-            // MediaPipe automatically loads models when needed, no separate loadModel() call
             currentModel = newModel
             val updatedChat = _currentChat.value?.copy(modelName = newModel.name)
             if (updatedChat != null) {
@@ -155,6 +292,15 @@ class ChatViewModel : ViewModel() {
                 _currentChat.value = updatedChat
             }
             
+            // Pre-load the model when switching
+            try {
+                // Trigger model loading without generating content
+                inferenceService.loadModel(newModel)
+            } catch (e: Exception) {
+                // Model loading will happen on first actual use
+            }
+            
+            _isLoadingModel.value = false
             _isLoading.value = false
         }
     }
@@ -164,58 +310,6 @@ class ChatViewModel : ViewModel() {
             inferenceService.onCleared()
         }
         super.onCleared()
-    }
-
-    private fun loadAvailableModels(context: Context) {
-        viewModelScope.launch {
-            val downloadedModels = ModelData.models.mapNotNull { model ->
-                var isAvailable = false
-                var actualSize = model.sizeBytes
-                
-                // Check if model is available in assets (priority)
-                val assetPath = if (model.url.startsWith("file://models/")) {
-                    model.url.removePrefix("file://")
-                } else {
-                    "models/${model.localFileName()}"
-                }
-                
-                try {
-                    context.assets.open(assetPath).use { inputStream ->
-                        actualSize = inputStream.available().toLong()
-                        isAvailable = true
-                        Log.d("ChatViewModel", "Found model in assets: $assetPath (${actualSize / (1024*1024)} MB)")
-                    }
-                } catch (e: Exception) {
-                    // Model not in assets, check files directory
-                    val modelsDir = File(context.filesDir, "models")
-                    val primaryFile = File(modelsDir, model.localFileName())
-                    val legacyFile = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
-
-                    // Migrate legacy file if needed
-                    if (!primaryFile.exists() && legacyFile.exists()) {
-                        legacyFile.renameTo(primaryFile)
-                    }
-
-                    if (primaryFile.exists()) {
-                        val minSize = 10 * 1024 * 1024
-                        if (primaryFile.length() >= minSize) {
-                            isAvailable = true
-                            actualSize = primaryFile.length()
-                            Log.d("ChatViewModel", "Found model in files: ${primaryFile.absolutePath} (${actualSize / (1024*1024)} MB)")
-                        }
-                    }
-                }
-                
-                if (isAvailable) {
-                    model.copy(isDownloaded = true, sizeBytes = actualSize)
-                } else {
-                    null
-                }
-            }
-            
-            Log.d("ChatViewModel", "Available models: ${downloadedModels.map { it.name }}")
-            _availableModels.value = downloadedModels
-        }
     }
     
     fun currentModelSupportsVision(): Boolean {

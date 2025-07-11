@@ -15,14 +15,21 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.llmhub.data.MessageEntity
+import com.example.llmhub.viewmodels.ChatViewModel
 
 /**
- * Simple chat bubble that shows user/assistant messages. Aligns right for user and left for assistant.
+ * Enhanced chat bubble that shows user/assistant messages with optional token statistics.
+ * Aligns right for user and left for assistant.
  */
 @Composable
-fun MessageBubble(message: MessageEntity) {
+fun MessageBubble(
+    message: MessageEntity,
+    tokenStats: ChatViewModel.TokenStats? = null,
+    streamingContent: String = ""
+) {
     val isUser = message.isFromUser
     val bubbleColor = if (isUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
     val textColor = if (isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
@@ -31,18 +38,34 @@ fun MessageBubble(message: MessageEntity) {
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
     ) {
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(12.dp))
-                .background(bubbleColor)
-                .padding(12.dp)
-                .widthIn(max = 280.dp)
-        ) {
-            Text(
-                text = message.content,
-                color = textColor,
-                style = MaterialTheme.typography.bodyMedium
-            )
+        Column {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(bubbleColor)
+                    .padding(12.dp)
+                    .widthIn(max = 280.dp)
+            ) {
+                // Show streaming content for assistant messages during generation, otherwise show message content
+                val displayContent = if (!isUser && streamingContent.isNotEmpty()) streamingContent else message.content
+                
+                Text(
+                    text = displayContent,
+                    color = textColor,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            
+            // Show token statistics for assistant messages after completion
+            if (!isUser && tokenStats != null && streamingContent.isEmpty()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "${tokenStats.tokenCount} tokens • ${String.format("%.1f", tokenStats.tokensPerSecond)} tok/sec",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 12.dp)
+                )
+            }
         }
     }
 }

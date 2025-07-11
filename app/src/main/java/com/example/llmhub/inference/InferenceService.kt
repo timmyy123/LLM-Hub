@@ -17,6 +17,7 @@ import android.util.Log
  * Interface for a service that can run model inference.
  */
 interface InferenceService {
+    suspend fun loadModel(model: LLMModel): Boolean
     suspend fun generateResponse(prompt: String, model: LLMModel): String
     suspend fun generateResponseStream(prompt: String, model: LLMModel): SharedFlow<String>
     suspend fun onCleared()
@@ -31,8 +32,6 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
     private var llmInference: LlmInference? = null
     private var session: LlmInferenceSession? = null
     private var currentModel: LLMModel? = null
-    
-    private val responseFlow = MutableSharedFlow<String>(extraBufferCapacity = 100)
     
     private suspend fun ensureModelLoaded(model: LLMModel) {
         if (currentModel?.name != model.name) {
@@ -124,6 +123,11 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         Log.d("MediaPipeInference", "Successfully loaded model from file: ${model.name}")
     }
     
+    override suspend fun loadModel(model: LLMModel): Boolean {
+        ensureModelLoaded(model)
+        return true // Indicate success
+    }
+
     override suspend fun generateResponse(prompt: String, model: LLMModel): String {
         ensureModelLoaded(model)
         
@@ -159,6 +163,9 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
     
     override suspend fun generateResponseStream(prompt: String, model: LLMModel): SharedFlow<String> {
         ensureModelLoaded(model)
+        
+        // Create a new flow for each request to avoid interference
+        val responseFlow = MutableSharedFlow<String>(extraBufferCapacity = 100)
         
         withContext(Dispatchers.IO) {
             try {

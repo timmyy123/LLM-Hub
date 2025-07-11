@@ -25,8 +25,6 @@ fun ModelDownloadScreen(
 ) {
     val models by viewModel.models.collectAsState()
     val textModels = models.filter { it.category == "text" }
-    val visionModels = models.filter { it.category == "vision" }
-    var showInstructions by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -39,14 +37,6 @@ fun ModelDownloadScreen(
                             contentDescription = "Back"
                         )
                     }
-                },
-                actions = {
-                    IconButton(onClick = { showInstructions = !showInstructions }) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = "Instructions"
-                        )
-                    }
                 }
             )
         }
@@ -57,85 +47,14 @@ fun ModelDownloadScreen(
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp)
         ) {
-            // Instructions Card
-            item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Warning,
-                                contentDescription = "Warning",
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "MediaPipe Model Conversion Required",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "MediaPipe requires .task format models. The download button will download safetensors files that need manual conversion.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        
-                        if (showInstructions) {
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(
-                                text = ModelData.getStatusMessage(),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        TextButton(
-                            onClick = { showInstructions = !showInstructions }
-                        ) {
-                            Text(
-                                text = if (showInstructions) "Hide Instructions" else "Show Conversion Instructions",
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
-                }
-            }
-
             item {
                 Text(
-                    text = "Text Models",
+                    text = "Available Models",
                     style = MaterialTheme.typography.headlineSmall,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
             items(textModels) { model ->
-                ModelItem(
-                    model = model,
-                    onDownload = { viewModel.downloadModel(it) },
-                    onDelete = { viewModel.deleteModel(it) }
-                )
-            }
-
-            item {
-                Divider(modifier = Modifier.padding(vertical = 16.dp))
-            }
-
-            item {
-                Text(
-                    text = "Vision Models", 
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-            }
-            items(visionModels) { model ->
                 ModelItem(
                     model = model,
                     onDownload = { viewModel.downloadModel(it) },
@@ -164,30 +83,6 @@ fun ModelItem(
             Text(text = model.description, style = MaterialTheme.typography.bodyMedium)
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Vision Support and RAM Requirements
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = if (model.supportsVision) Icons.Default.Visibility else Icons.Default.TextFields,
-                        contentDescription = "Vision Support",
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = if (model.supportsVision) "Vision" else "Text")
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Memory,
-                        contentDescription = "RAM",
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = "${model.requirements.minRamGB}GB - ${model.requirements.recommendedRamGB}GB RAM")
-                }
-            }
             Spacer(modifier = Modifier.height(16.dp))
 
             // Download Button and Progress
