@@ -31,9 +31,9 @@ object ModelData {
         LLMModel(
             name = "Gemma-3 4B (INT4)",
             description = "4B parameter model with INT4 quantization for better quality and reasoning. Requires more RAM but provides superior performance. Ready to download from HuggingFace (~2.3GB)",
-            url = "https://huggingface.co/litert-community/Gemma3-4B-IT/resolve/main/gemma3-4b-it-int4.task?download=true",
+            url = "https://huggingface.co/litert-community/Gemma3-4B-IT/resolve/main/gemma3-4b-it-int4-web.task?download=true",
             category = "text",
-            sizeBytes = 2_300_000_000L, // ~2.3 GB
+            sizeBytes = 2_560_000_000L, // 2.56 GB
             source = "Google via HuggingFace",
             supportsVision = false,
             requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
@@ -43,9 +43,9 @@ object ModelData {
         LLMModel(
             name = "Gemma-3 4B (INT8)",
             description = "4B parameter model with INT8 quantization for highest quality. Better accuracy and reasoning capabilities. Ready to download from HuggingFace (~4.3GB)",
-            url = "https://huggingface.co/litert-community/Gemma3-4B-IT/resolve/main/gemma3-4b-it-int8.task?download=true",
+            url = "https://huggingface.co/litert-community/Gemma3-4B-IT/resolve/main/gemma3-4b-it-int8-web.task?download=true",
             category = "text",
-            sizeBytes = 4_300_000_000L, // ~4.3 GB  
+            sizeBytes = 3_900_000_000L, // 3.9 GB
             source = "Google via HuggingFace",
             supportsVision = false,
             requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 8),

@@ -18,22 +18,45 @@ import androidx.lifecycle.AndroidViewModel
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import com.example.llmhub.data.localFileName
+import android.content.Context
 
 class ModelDownloadViewModel(application: Application) : AndroidViewModel(application) {
     private val _models = MutableStateFlow<List<LLMModel>>(emptyList())
     val models: StateFlow<List<LLMModel>> = _models.asStateFlow()
+    
+    private val _hfToken = MutableStateFlow<String?>(null)
+    val hfToken: StateFlow<String?> = _hfToken.asStateFlow()
 
     private val ktorClient = HttpClient(Android)
-    private val modelDownloader = ModelDownloader(ktorClient, application.applicationContext)
+    private val context = application.applicationContext
+    private var modelDownloader: ModelDownloader
 
     private var lastProgressMap: MutableMap<String, Pair<Long, Float>> = mutableMapOf()
 
     init {
+        // Load HF token from preferences, with your provided token as default
+        val prefs = context.getSharedPreferences("model_prefs", Context.MODE_PRIVATE)
+        val savedToken = prefs.getString("hf_token", "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")
+        _hfToken.value = savedToken
+        
+        // Initialize ModelDownloader with token
+        modelDownloader = ModelDownloader(ktorClient, context, savedToken)
+        
         loadModels()
     }
 
+    fun setHuggingFaceToken(token: String?) {
+        // Save token to preferences
+        val prefs = context.getSharedPreferences("model_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putString("hf_token", token).apply()
+        
+        _hfToken.value = token
+        
+        // Recreate ModelDownloader with new token
+        modelDownloader = ModelDownloader(ktorClient, context, token)
+    }
+
     private fun loadModels() {
-        val context = getApplication<Application>().applicationContext
         val modelsDir = File(context.filesDir, "models")
         if (!modelsDir.exists()) modelsDir.mkdirs()
 
@@ -45,7 +68,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
             // Older builds used a filename derived from the human-readable model name.
             val legacyFile = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
 
-            // If legacy exists but primary doesn’t, rename so we unify the scheme.
+            // If legacy exists but primary doesn't, rename so we unify the scheme.
             if (!primaryFile.exists() && legacyFile.exists()) {
                 legacyFile.renameTo(primaryFile)
             }
@@ -69,6 +92,14 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                     val conn = url.openConnection() as java.net.HttpURLConnection
                     conn.requestMethod = "HEAD"
                     conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+                    
+                    // Add HF token if available for HEAD requests
+                    _hfToken.value?.let { token ->
+                        if (token.isNotBlank()) {
+                            conn.setRequestProperty("Authorization", "Bearer $token")
+                        }
+                    }
+                    
                     conn.connectTimeout = 10_000
                     conn.readTimeout = 10_000
                     val size = conn.contentLengthLong
@@ -84,18 +115,33 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
     }
 
     fun downloadModel(model: LLMModel) {
-        // Immediately flip UI into downloading state
-        updateModel(model.name) { it.copy(downloadProgress = 0.0001f, downloadedBytes = 0L) }
+        // Immediately flip UI into downloading state with clear progress indicators
+        updateModel(model.name) { 
+            it.copy(
+                downloadProgress = 0.0001f, 
+                downloadedBytes = 0L,
+                totalBytes = if (it.sizeBytes > 0) it.sizeBytes else null,
+                downloadSpeedBytesPerSec = 0L
+            ) 
+        }
 
         viewModelScope.launch {
             var latestStatus: com.example.llmhub.data.DownloadStatus? = null
             modelDownloader.downloadModel(model)
-                .catch {
-                    // Handle exceptions
-                    updateModel(model.name) { it.copy(downloadProgress = 0f) }
+                .catch { exception ->
+                    // Handle exceptions with better error reporting
+                    android.util.Log.e("ModelDownloadViewModel", "Download failed for ${model.name}: ${exception.message}", exception)
+                    updateModel(model.name) { 
+                        it.copy(
+                            downloadProgress = 0f,
+                            downloadedBytes = 0L,
+                            totalBytes = null,
+                            downloadSpeedBytesPerSec = null
+                        ) 
+                    }
                 }
                 .onCompletion { cause ->
-                    val modelsDir = File(getApplication<Application>().filesDir, "models")
+                    val modelsDir = File(context.filesDir, "models")
                     val primaryFile = File(modelsDir, model.localFileName())
                     val legacyFile  = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
                     if (!primaryFile.exists() && legacyFile.exists()) {
@@ -137,10 +183,16 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                 }
                 .collect { status ->
                     latestStatus = status
-                    updateModel(model.name) {
+                    updateModel(model.name, rateLimit = true) {
+                        val progress = if (status.totalBytes > 0) {
+                            kotlin.math.min(0.999f, status.downloadedBytes.toFloat() / status.totalBytes)
+                        } else {
+                            // If total bytes unknown, show indeterminate progress
+                            -1f
+                        }
                         it.copy(
                             sizeBytes = if (status.totalBytes > it.sizeBytes) status.totalBytes else it.sizeBytes,
-                            downloadProgress = kotlin.math.min(0.999f, status.downloadedBytes.toFloat() / status.totalBytes),
+                            downloadProgress = progress,
                             downloadedBytes = status.downloadedBytes,
                             totalBytes = status.totalBytes,
                             downloadSpeedBytesPerSec = status.downloadSpeedBytesPerSec
@@ -154,7 +206,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         // Physically remove the file from the app's private storage so that
         // the model will no longer be detected as «downloaded» next time we
         // build the list (e.g. after an app restart).
-        val modelsDir = File(getApplication<Application>().filesDir, "models")
+        val modelsDir = File(context.filesDir, "models")
         val primaryFile = File(modelsDir, model.localFileName())
         val legacyFile = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
         if (primaryFile.exists()) primaryFile.delete()
@@ -183,12 +235,12 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         if (modelIndex != -1) {
             val updatedModel = updateAction(currentModels[modelIndex])
 
-            // If rateLimit is enabled, only propagate when progress advanced ≥0.5% or ≥5 MB.
+            // If rateLimit is enabled, only propagate when progress advanced ≥0.1% or ≥1 MB.
             if (rateLimit) {
                 val prev = lastProgressMap[modelName]
                 val deltaBytes = (updatedModel.downloadedBytes - (prev?.first ?: 0L))
                 val deltaProgress = kotlin.math.abs(updatedModel.downloadProgress - (prev?.second ?: 0f))
-                if (deltaBytes < 5_000_000 && deltaProgress < 0.005f) {
+                if (deltaBytes < 1_000_000 && deltaProgress < 0.001f) {
                     return
                 }
                 lastProgressMap[modelName] = Pair(updatedModel.downloadedBytes, updatedModel.downloadProgress)

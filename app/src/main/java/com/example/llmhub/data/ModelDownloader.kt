@@ -79,35 +79,51 @@ class ModelDownloader(
         emit(DownloadStatus(downloadedBytes, safeTotal, 0))
         Log.d(TAG, "Start downloading ${model.name}")
 
-        connection.inputStream.use { input ->
-            modelFile.outputStream().use { output ->
-                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                while (true) {
-                    val read = input.read(buffer)
-                    if (read == -1) break
-                    output.write(buffer, 0, read)
+        try {
+            connection.inputStream.use { input ->
+                modelFile.outputStream().use { output ->
+                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                    while (true) {
+                        val read = input.read(buffer)
+                        if (read == -1) break
+                        output.write(buffer, 0, read)
 
-                    downloadedBytes += read
-                    bytesSinceLastEmit += read
+                        downloadedBytes += read
+                        bytesSinceLastEmit += read
 
-                    val currentTime = System.currentTimeMillis()
-                    val elapsedTime = currentTime - lastEmitTime
-                    if (elapsedTime > 1000) {
-                        val computed = if (elapsedTime > 0) (bytesSinceLastEmit * 1000 / elapsedTime) else 0L
-                        if (computed > 0) lastSpeed = computed
-                        val speed = if (lastSpeed > 0) lastSpeed else computed
-                        emit(DownloadStatus(downloadedBytes, safeTotal, speed))
-                        Log.d(TAG, "Progress ${downloadedBytes}/${safeTotal} bytes. Speed ${speed} B/s")
-                        lastEmitTime = currentTime
-                        bytesSinceLastEmit = 0L
-                    }
+                        val currentTime = System.currentTimeMillis()
+                        val elapsedTime = currentTime - lastEmitTime
+                        
+                        // Emit progress more frequently initially, then every second
+                        val shouldEmit = if (downloadedBytes < 10_000_000) { // First 10MB
+                            elapsedTime > 250 // Every 250ms
+                        } else {
+                            elapsedTime > 1000 // Every 1 second
+                        }
+                        
+                        if (shouldEmit) {
+                            val computed = if (elapsedTime > 0) (bytesSinceLastEmit * 1000 / elapsedTime) else 0L
+                            if (computed > 0) lastSpeed = computed
+                            val speed = if (lastSpeed > 0) lastSpeed else computed
+                            emit(DownloadStatus(downloadedBytes, safeTotal, speed))
+                            Log.d(TAG, "Progress ${downloadedBytes}/${safeTotal} bytes. Speed ${speed} B/s")
+                            lastEmitTime = currentTime
+                            bytesSinceLastEmit = 0L
+                        }
 
-                    if (safeTotal != Long.MAX_VALUE && downloadedBytes >= safeTotal) {
-                        emit(DownloadStatus(downloadedBytes, safeTotal, lastSpeed))
-                        Log.d(TAG, "Progress ${downloadedBytes}/${safeTotal} bytes. Speed ${lastSpeed} B/s")
+                        if (safeTotal != Long.MAX_VALUE && downloadedBytes >= safeTotal) {
+                            emit(DownloadStatus(downloadedBytes, safeTotal, lastSpeed))
+                            Log.d(TAG, "Final progress ${downloadedBytes}/${safeTotal} bytes. Speed ${lastSpeed} B/s")
+                            break
+                        }
                     }
                 }
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "Download error for ${model.name}: ${e.message}", e)
+            throw e
+        } finally {
+            connection.disconnect()
         }
 
         Log.i(TAG, "Finished downloading ${model.name}. Total bytes written: $downloadedBytes")
