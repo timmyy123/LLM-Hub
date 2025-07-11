@@ -101,23 +101,50 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
     
     private suspend fun loadModelFromFile(modelFile: File, model: LLMModel) {
         // Configure LLM inference options for file loading
-        val options = LlmInference.LlmInferenceOptions.builder()
+        // Determine backend based on model type - some models have GPU compatibility issues
+        val useCpu = modelFile.name.contains("Phi-4", ignoreCase = true) ||
+                     modelFile.name.contains("phi", ignoreCase = true) ||
+                     modelFile.name.contains("Llama", ignoreCase = true)
+
+        val backend = if (useCpu) {
+            LlmInference.Backend.CPU
+        } else {
+            LlmInference.Backend.GPU
+        }
+        
+        // Dynamically detect the maximum context window from the filename pattern `_ekvXXXX`
+        // For example: `..._ekv1280.task` -> 1280 tokens, `..._ekv4096.task` -> 4096 tokens.
+        val maxTokens = Regex("_ekv(\\d+)")
+            .find(modelFile.name)
+            ?.groups?.get(1)
+            ?.value
+            ?.toIntOrNull()
+            ?.coerceAtLeast(1280) // Ensure a sensible lower bound
+            ?: 2048 // Default when pattern not present
+
+        val optionsBuilder = LlmInference.LlmInferenceOptions.builder()
             .setModelPath(modelFile.absolutePath)  // Use file path
-            .setMaxTokens(2048)
-            .setMaxTopK(40)
-            .setPreferredBackend(LlmInference.Backend.GPU)  // Enable GPU acceleration
-            .build()
+            .setMaxTokens(maxTokens)
+            .setPreferredBackend(backend)
+
+        // When using CPU, we rely on the backend's default thread management
+        if (backend == LlmInference.Backend.CPU) {
+            Log.d("MediaPipeInference", "CPU backend selected. Using default thread management.")
+        }
+
+        val options = optionsBuilder.build()
         
         // Create LLM inference engine from file
         llmInference = LlmInference.createFromOptions(context, options)
         
-        // Create session with proper configuration
-        session = LlmInferenceSession.createFromOptions(
-            llmInference!!,
-            LlmInferenceSession.LlmInferenceSessionOptions.builder()
-                .setTemperature(0.8f)
-                .build()
-        )
+        // Create session with proper configuration for sampling
+        val sessionOptions = LlmInferenceSession.LlmInferenceSessionOptions.builder()
+            .setTopK(40)
+            .setTemperature(0.8f)
+            .setRandomSeed(1234)
+            .build()
+
+        session = LlmInferenceSession.createFromOptions(llmInference!!, sessionOptions)
         
         currentModel = model
         Log.d("MediaPipeInference", "Successfully loaded model from file: ${model.name}")

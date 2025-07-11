@@ -48,10 +48,18 @@ fun ChatScreen(
     
     val listState = rememberLazyListState()
     
-    // Auto-scroll to bottom when new messages arrive or content streams
-    LaunchedEffect(messages.size, streamingContents) {
-        if (messages.isNotEmpty() || streamingContents.isNotEmpty()) {
+    // Auto-scroll behaviour
+    LaunchedEffect(messages.size) {
+        // When a message finishes (size changes), animate to bottom once
+        if (messages.isNotEmpty()) {
             listState.animateScrollToItem(maxOf(0, messages.size - 1))
+        }
+    }
+
+    // During streaming, keep list pinned to bottom without animation (smoother)
+    LaunchedEffect(streamingContents) {
+        if (streamingContents.isNotEmpty()) {
+            listState.scrollToItem(maxOf(0, messages.size - 1))
         }
     }
     
