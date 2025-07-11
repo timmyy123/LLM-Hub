@@ -15,6 +15,7 @@ import kotlinx.coroutines.Job
 import com.example.llmhub.data.localFileName
 import android.util.Log
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.withContext
 
 class ChatViewModel : ViewModel() {
 
@@ -222,20 +223,38 @@ class ChatViewModel : ViewModel() {
 
                         // SUCCESS: This section now executes only after the stream is fully collected
                         val finalContent = _streamingContents.value[placeholderId] ?: ""
+                        Log.d("ChatViewModel", "Generation completed successfully")
+                        Log.d("ChatViewModel", "Final content length: ${finalContent.length}")
+                        // Ensure the final content is saved to database before computing stats
+                        repository.updateMessageContent(placeholderId, finalContent)
                         val time = System.currentTimeMillis() - generationStartTime
+                        Log.d("ChatViewModel", "About to call finalizeMessage for success")
                         finalizeMessage(placeholderId, finalContent, time)
 
                     } catch (e: Exception) {
-                        if (e is kotlinx.coroutines.CancellationException) {
+                        val finalContent = _streamingContents.value[placeholderId] ?: ""
+                        val time = System.currentTimeMillis() - generationStartTime
+                        
+                        Log.d("ChatViewModel", "Exception caught: ${e.javaClass.simpleName}: ${e.message}")
+                        Log.d("ChatViewModel", "Final content length: ${finalContent.length}")
+                        Log.d("ChatViewModel", "Generation time: ${time}ms")
+                        
+                        // Handle both CancellationException and JobCancellationException (which extends CancellationException)
+                        if (e is kotlinx.coroutines.CancellationException || e.javaClass.simpleName.contains("Cancellation")) {
                             // CANCEL: Save partial progress
                             Log.d("ChatViewModel", "Generation was cancelled by user.")
-                            val finalContent = _streamingContents.value[placeholderId] ?: ""
-                            val time = System.currentTimeMillis() - generationStartTime
-                            finalizeMessage(placeholderId, finalContent, time)
+                            Log.d("ChatViewModel", "About to call finalizeMessage for cancellation")
                         } else {
-                            // OTHER ERROR
-                            Log.e("ChatViewModel", "Error during generation", e)
-                            repository.updateMessageContent(placeholderId, "Error: ${e.message}")
+                            // ERROR: MediaPipe or other error
+                            Log.e("ChatViewModel", "MediaPipe generation error: ${e.message}", e)
+                            Log.d("ChatViewModel", "About to call finalizeMessage for error")
+                        }
+                        
+                        // ALWAYS save final content and call finalizeMessage (for both cancel and error) even if the parent Job is cancelled
+                        withContext(kotlinx.coroutines.NonCancellable) {
+                            repository.updateMessageContent(placeholderId, finalContent)
+                            Log.d("ChatViewModel", "About to call finalizeMessage (NonCancellable)")
+                            finalizeMessage(placeholderId, finalContent, time)
                         }
                     } finally {
                         _isLoading.value = false
@@ -259,10 +278,6 @@ class ChatViewModel : ViewModel() {
      * This is called on successful completion or on cancellation.
      */
     private suspend fun finalizeMessage(placeholderId: String, finalContent: String, generationTimeMs: Long) {
-        // Always persist the content so that the placeholder ("…") is replaced by whatever
-        // text was generated, even if it is empty when the user cancelled almost immediately.
-        repository.updateMessageContent(placeholderId, finalContent)
-
         // Only compute token statistics if we have any content to analyse.
         if (finalContent.isNotBlank()) {
             // Approximate tokenisation: empirical average ~4 characters per token across English text.
@@ -274,7 +289,10 @@ class ChatViewModel : ViewModel() {
                 0.0
             }
 
+            Log.d("ChatViewModel", "Saving stats for message $placeholderId: $estimatedTokens tokens, ${String.format("%.1f", tokensPerSecond)} tok/sec")
             repository.updateMessageStats(placeholderId, estimatedTokens, tokensPerSecond)
+        } else {
+            Log.d("ChatViewModel", "No stats to save for message $placeholderId - content is blank")
         }
     }
 

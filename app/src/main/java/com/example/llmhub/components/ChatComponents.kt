@@ -57,7 +57,9 @@ fun MessageBubble(
             
             // Show token statistics for assistant messages after completion
             val hasStats = message.tokenCount != null && message.tokensPerSecond != null
-            if (!isUser && hasStats && streamingContent.isEmpty()) {
+            // Show stats if we have them and the message has real content (not just the placeholder "…")
+            val showStats = !isUser && hasStats && message.content != "…"
+            if (showStats) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "${message.tokenCount} tokens • ${String.format("%.1f", message.tokensPerSecond!!)} tok/sec",

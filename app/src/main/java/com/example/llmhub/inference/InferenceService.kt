@@ -201,22 +201,39 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             return@callbackFlow
         }
         
+        var isGenerationComplete = false
+        
         try {
             localSession.addQueryChunk(prompt)
             localSession.generateResponseAsync { partialResult, done ->
-                trySend(partialResult)
+                if (!isClosedForSend) {
+                    trySend(partialResult)
+                }
                 if (done) {
+                    isGenerationComplete = true
                     close()
                 }
             }
         } catch (e: Exception) {
             Log.e("MediaPipeInference", "Streaming inference failed", e)
+            isGenerationComplete = true
             close(e)
         }
 
         awaitClose {
             Log.d("MediaPipeInference", "Closing session and resources.")
-            localSession.close()
+            try {
+                // If generation is still in progress, we need to wait a bit before closing
+                if (!isGenerationComplete) {
+                    Log.d("MediaPipeInference", "Waiting for generation to complete before cleanup...")
+                    // Give it a short time to finish naturally
+                    Thread.sleep(100)
+                }
+                localSession.close()
+            } catch (e: Exception) {
+                Log.w("MediaPipeInference", "Error during session cleanup: ${e.message}")
+                // Continue cleanup even if session close fails
+            }
         }
     }.flowOn(Dispatchers.IO)
 
