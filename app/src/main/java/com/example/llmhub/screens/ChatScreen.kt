@@ -59,7 +59,8 @@ fun ChatScreen(
     // During streaming, keep list pinned to bottom without animation (smoother)
     LaunchedEffect(streamingContents) {
         if (streamingContents.isNotEmpty()) {
-            listState.scrollToItem(maxOf(0, messages.size - 1))
+            // Keep bottom of the last bubble in view
+            listState.scrollToItem(maxOf(0, messages.size - 1), Int.MAX_VALUE)
         }
     }
     
