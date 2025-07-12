@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.SavedStateHandle
 import com.example.llmhub.data.*
-import com.example.llmhub.inference.MediaPipeInferenceService
+import com.example.llmhub.inference.InferenceService
 import com.example.llmhub.repository.ChatRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -19,21 +19,16 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 
 class ChatViewModel(
+    private val inferenceService: InferenceService,
+    private val repository: ChatRepository,
     private val savedStateHandle: SavedStateHandle = SavedStateHandle()
 ) : ViewModel() {
 
-    // keep a single inference engine instance across all ChatViewModel objects
     companion object {
-        private var sharedInferenceService: MediaPipeInferenceService? = null
-        
-        // Keys for SavedStateHandle
         private const val KEY_CURRENT_CHAT_ID = "current_chat_id"
         private const val KEY_CURRENT_MODEL_NAME = "current_model_name"
         private const val KEY_IS_GENERATING = "is_generating"
     }
-
-    private lateinit var repository: ChatRepository
-    private lateinit var inferenceService: MediaPipeInferenceService
 
     private val _messages = MutableStateFlow<List<MessageEntity>>(emptyList())
     val messages: StateFlow<List<MessageEntity>> = _messages.asStateFlow()
@@ -54,6 +49,10 @@ class ChatViewModel(
     // Model loading state
     private val _isLoadingModel = MutableStateFlow(false)
     val isLoadingModel: StateFlow<Boolean> = _isLoadingModel.asStateFlow()
+    
+    // Currently loaded model (global state) - now reflects the inference service state
+    private val _currentlyLoadedModel = MutableStateFlow<LLMModel?>(null)
+    val currentlyLoadedModel: StateFlow<LLMModel?> = _currentlyLoadedModel.asStateFlow()
 
     private var currentChatId: String?
         get() = savedStateHandle.get<String>(KEY_CURRENT_CHAT_ID)
@@ -74,6 +73,8 @@ class ChatViewModel(
         set(value) {
             field = value
             currentModelName = value?.name
+            // Sync with the inference service's currently loaded model
+            syncCurrentlyLoadedModel()
         }
 
     // Keep reference to the running generation so the UI can interrupt it
@@ -113,33 +114,59 @@ class ChatViewModel(
         }
     }
 
-    fun initializeChat(chatId: String, context: Context) {
-        val database = LlmHubDatabase.getDatabase(context)
-        repository = ChatRepository(database.chatDao(), database.messageDao())
-        // reuse a single inference engine instance to avoid reloading the model every time
-        inferenceService = sharedInferenceService ?: MediaPipeInferenceService(context).also {
-            sharedInferenceService = it
+    private fun syncCurrentlyLoadedModel() {
+        viewModelScope.launch {
+            val loadedModel = inferenceService.getCurrentlyLoadedModel()
+            _currentlyLoadedModel.value = loadedModel
         }
+    }
 
+    fun initializeChat(chatId: String, context: Context) {
+        // Sync the currently loaded model from inference service
+        syncCurrentlyLoadedModel()
+        
         // Stop collecting from any previous chat's message flow
         generationJob?.cancel()
 
-        // Check if we need to restore generation state after configuration change
-        checkAndRestoreGenerationState(context)
+        // Close previous chat session if switching chats
+        if (currentChatId != null && currentChatId != chatId) {
+            Log.d("ChatViewModel", "Switching from chat ${currentChatId} to chat $chatId")
+            viewModelScope.launch {
+                try {
+                    inferenceService.closeChatSession(currentChatId!!)
+                } catch (e: Exception) {
+                    Log.w("ChatViewModel", "Error closing previous chat session: ${e.message}")
+                }
+            }
+        }
+
+        // Remember the previously loaded model to preserve it across chat switches
+        // Use the inference service's currently loaded model as the source of truth
+        val previousModel = inferenceService.getCurrentlyLoadedModel()
+        Log.d("ChatViewModel", "Current model before switch: ${previousModel?.name ?: "None"}")
 
         viewModelScope.launch {
             // Load the models synchronously so we know what's available before creating/attaching a chat
             loadAvailableModelsSync(context)
 
             if (chatId == "new") {
-                // Do NOT auto-select a model; let user choose if any are downloaded
+                // For new chats, preserve the current model if one is loaded
                 val newChatId = repository.createNewChat(
                     "New Chat",
-                    if (_availableModels.value.isEmpty()) "No model downloaded" else "No model selected"
+                    if (_availableModels.value.isEmpty()) "No model downloaded" else 
+                    (previousModel?.name ?: "No model selected")
                 )
                 currentChatId = newChatId
                 _currentChat.value = repository.getChatById(newChatId)
-                currentModel = null
+                
+                // Preserve the current model for new chats
+                currentModel = previousModel
+                
+                // If we have a model, update the chat to use it
+                if (previousModel != null) {
+                    repository.updateChatModel(newChatId, previousModel.name)
+                    _currentChat.value = repository.getChatById(newChatId)
+                }
 
                 // Begin collecting messages for the newly created chat
                 repository.getMessagesForChat(newChatId).collectLatest { messageList ->
@@ -153,9 +180,35 @@ class ChatViewModel(
                     ?: ModelData.models.find { it.name == chat?.modelName }
                 
                 if (foundModel != null && foundModel.isDownloaded) {
+                    // Use the model associated with this chat
+                    Log.d("ChatViewModel", "Using chat-specific model: ${foundModel.name}")
                     currentModel = foundModel
+                    // Ensure the model is loaded in the inference service
+                    viewModelScope.launch {
+                        try {
+                            inferenceService.loadModel(foundModel)
+                        } catch (e: Exception) {
+                            Log.w("ChatViewModel", "Failed to load model for chat: ${e.message}")
+                        }
+                    }
+                } else if (previousModel != null && previousModel.isDownloaded) {
+                    // Fallback to the previously loaded model and assign it to this chat
+                    Log.d("ChatViewModel", "Using previous model for chat: ${previousModel.name}")
+                    currentModel = previousModel
+                    repository.updateChatModel(chatId, previousModel.name)
+                    _currentChat.value = repository.getChatById(chatId)
+                    // Ensure the model is loaded in the inference service
+                    viewModelScope.launch {
+                        try {
+                            inferenceService.loadModel(previousModel)
+                        } catch (e: Exception) {
+                            Log.w("ChatViewModel", "Failed to load previous model for chat: ${e.message}")
+                        }
+                    }
                 } else {
-                    currentModel = null // Model associated with chat is not downloaded
+                    // No valid model available
+                    Log.d("ChatViewModel", "No valid model available for chat")
+                    currentModel = null
                 }
                 
                 repository.getMessagesForChat(chatId).collectLatest { messageList ->
@@ -215,6 +268,12 @@ class ChatViewModel(
         }
 
         _availableModels.value = downloadedModels
+        
+        // If we have a current model but it's not in the available models, clear it
+        if (currentModel != null && !downloadedModels.any { it.name == currentModel?.name }) {
+            Log.d("ChatViewModel", "Current model ${currentModel?.name} is no longer available")
+            currentModel = null
+        }
     }
 
     fun sendMessage(text: String, attachmentUri: Uri?) {
@@ -242,6 +301,15 @@ class ChatViewModel(
             isGenerating = true
 
             if (currentModel != null && currentModel!!.isDownloaded) {
+                // Ensure the model is loaded in the inference service before generating
+                try {
+                    inferenceService.loadModel(currentModel!!)
+                    // Sync the currently loaded model state
+                    syncCurrentlyLoadedModel()
+                } catch (e: Exception) {
+                    Log.w("ChatViewModel", "Failed to ensure model is loaded: ${e.message}")
+                }
+                
                 // Pass the conversation history to the model with context window management
                 val history = buildContextAwareHistory(_messages.value)
 
@@ -288,7 +356,7 @@ class ChatViewModel(
                                         continuationHistory
                                     }
                                     
-                                    val responseStream = inferenceService.generateResponseStream(currentPrompt, currentModel!!)
+                                    val responseStream = inferenceService.generateResponseStreamWithSession(currentPrompt, currentModel!!, chatId)
                                     var lastUpdateTime = 0L
                                     val updateIntervalMs = 50L // Update UI every 50ms instead of every token
                                     var segmentEnded = false
@@ -512,6 +580,8 @@ class ChatViewModel(
             try {
                 // Trigger model loading without generating content
                 inferenceService.loadModel(newModel)
+                // Sync the currently loaded model state
+                syncCurrentlyLoadedModel()
             } catch (e: Exception) {
                 // Model loading will happen on first actual use
             }
@@ -524,9 +594,29 @@ class ChatViewModel(
 
     override fun onCleared() {
         viewModelScope.launch {
+            // Close the current chat session to free up resources
+            currentChatId?.let { chatId ->
+                try {
+                    inferenceService.closeChatSession(chatId)
+                } catch (e: Exception) {
+                    Log.w("ChatViewModel", "Error closing chat session: ${e.message}")
+                }
+            }
             inferenceService.onCleared()
         }
         super.onCleared()
+    }
+    
+    fun closeCurrentChatSession() {
+        currentChatId?.let { chatId ->
+            viewModelScope.launch {
+                try {
+                    inferenceService.closeChatSession(chatId)
+                } catch (e: Exception) {
+                    Log.w("ChatViewModel", "Error closing chat session: ${e.message}")
+                }
+            }
+        }
     }
     
     fun currentModelSupportsVision(): Boolean {
@@ -546,56 +636,94 @@ class ChatViewModel(
 
     /**
      * Build context-aware history that respects the model's context window limits.
-     * This implements a sliding window approach similar to ChatGPT.
+     * This implements conversation-pair-aware truncation to maintain context flow.
      */
     private fun buildContextAwareHistory(messages: List<MessageEntity>): String {
         val model = currentModel ?: return ""
         
         // Use the model's actual context window size with some safety margin
-        val maxContextTokens = (model.contextWindowSize * 0.8).toInt() // Use 80% of max to leave room for response
+        val maxContextTokens = (model.contextWindowSize * 0.75).toInt() // Use 75% of max to leave room for response
         val maxContextChars = maxContextTokens * 4 // Rough character limit (1 token ≈ 4 characters)
         
         Log.d("ChatViewModel", "Context window: Model ${model.name} has ${model.contextWindowSize} tokens, using ${maxContextTokens} tokens (${maxContextChars} chars)")
         
-        // Always keep the system prompt/instruction if we had one
-        val systemPrompt = "You are a helpful AI assistant. Provide clear, accurate, and helpful responses."
+        // Convert messages to conversation pairs for better context management
+        val conversationPairs = mutableListOf<Pair<MessageEntity?, MessageEntity>>()
+        var currentUserMessage: MessageEntity? = null
         
-        // Convert messages to string format
-        val messageStrings = messages.map { message ->
-            val prefix = if (message.isFromUser) "user: " else "model: "
-            prefix + message.content
+        for (message in messages) {
+            if (message.isFromUser) {
+                currentUserMessage = message
+            } else {
+                // Assistant message - pair with previous user message if available
+                conversationPairs.add(Pair(currentUserMessage, message))
+                currentUserMessage = null
+            }
         }
         
-        // If total length is within limits, return full history
-        val fullHistory = messageStrings.joinToString(separator = "\n")
+        // If there's a pending user message without response, add it
+        if (currentUserMessage != null) {
+            conversationPairs.add(Pair(currentUserMessage, MessageEntity(
+                id = "pending",
+                chatId = currentUserMessage.chatId,
+                content = "",
+                isFromUser = false,
+                timestamp = System.currentTimeMillis()
+            )))
+        }
+        
+        // Convert pairs to formatted strings
+        val pairStrings = conversationPairs.map { (userMsg, assistantMsg) ->
+            val userPart = if (userMsg != null) "user: ${userMsg.content}" else ""
+            val assistantPart = if (assistantMsg.content.isNotEmpty()) "assistant: ${assistantMsg.content}" else ""
+            
+            listOf(userPart, assistantPart).filter { it.isNotEmpty() }.joinToString("\n")
+        }
+        
+        // Calculate total length
+        val fullHistory = pairStrings.joinToString(separator = "\n\n")
+        
+        // If full history fits, return it
         if (fullHistory.length <= maxContextChars) {
+            Log.d("ChatViewModel", "Full conversation history fits in context window (${fullHistory.length} chars)")
             return fullHistory
         }
         
-        // Otherwise, implement sliding window: keep recent messages that fit within limit
-        val recentMessages = mutableListOf<String>()
+        // Otherwise, implement smart truncation
+        val recentPairs = mutableListOf<String>()
         var currentLength = 0
         
-        // Add messages from most recent backwards until we hit the limit
-        for (i in messageStrings.indices.reversed()) {
-            val message = messageStrings[i]
-            if (currentLength + message.length + 1 <= maxContextChars) { // +1 for newline
-                recentMessages.add(0, message) // Add to beginning
-                currentLength += message.length + 1
+        // Always keep the last few conversation pairs (minimum viable context)
+        val minimumPairs = 3
+        
+        // Add pairs from most recent backwards until we hit the limit
+        for (i in pairStrings.indices.reversed()) {
+            val pairString = pairStrings[i]
+            val pairLength = pairString.length + 2 // +2 for double newline separator
+            
+            if (currentLength + pairLength <= maxContextChars) {
+                recentPairs.add(0, pairString) // Add to beginning
+                currentLength += pairLength
+            } else if (recentPairs.size < minimumPairs) {
+                // Force include minimum pairs even if they exceed limit slightly
+                recentPairs.add(0, pairString)
+                currentLength += pairLength
+                Log.d("ChatViewModel", "Forced inclusion of essential conversation pair (exceeds limit)")
             } else {
                 break
             }
         }
         
-        // Ensure we have at least the last few exchanges
-        if (recentMessages.size < 4 && messageStrings.size >= 4) {
-            // Take last 4 messages (2 exchanges) regardless of length
-            recentMessages.clear()
-            recentMessages.addAll(messageStrings.takeLast(4))
+        // If we had to truncate, add context summary
+        val truncatedCount = pairStrings.size - recentPairs.size
+        val result = if (truncatedCount > 0) {
+            val contextSummary = "[Previous conversation context: ${truncatedCount} earlier exchanges were truncated to fit context window]"
+            listOf(contextSummary, recentPairs.joinToString("\n\n")).joinToString("\n\n")
+        } else {
+            recentPairs.joinToString("\n\n")
         }
         
-        val result = recentMessages.joinToString(separator = "\n")
-        Log.d("ChatViewModel", "Context window management: Original ${fullHistory.length} chars, trimmed to ${result.length} chars (${recentMessages.size} messages)")
+        Log.d("ChatViewModel", "Context window management: Original ${fullHistory.length} chars (${pairStrings.size} pairs), trimmed to ${result.length} chars (${recentPairs.size} pairs, ${truncatedCount} truncated)")
         
         return result
     }

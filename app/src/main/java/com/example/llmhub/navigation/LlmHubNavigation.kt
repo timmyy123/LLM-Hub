@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import com.example.llmhub.screens.ChatScreen
 import com.example.llmhub.screens.SettingsScreen
 import com.example.llmhub.screens.ModelDownloadScreen
+import com.example.llmhub.viewmodels.ChatViewModelFactory
 
 sealed class Screen(val route: String) {
     object Chat : Screen("chat/{chatId}") {
@@ -19,6 +20,7 @@ sealed class Screen(val route: String) {
 @Composable
 fun LlmHubNavigation(
     navController: NavHostController,
+    chatViewModelFactory: ChatViewModelFactory,
     startDestination: String = Screen.Chat.createRoute()
 ) {
     NavHost(
@@ -31,6 +33,7 @@ fun LlmHubNavigation(
             val chatId = backStackEntry.arguments?.getString("chatId") ?: "new"
             ChatScreen(
                 chatId = chatId,
+                viewModelFactory = chatViewModelFactory,
                 onNavigateToSettings = {
                     navController.navigate(Screen.Settings.route)
                 },
@@ -64,4 +67,4 @@ fun LlmHubNavigation(
             )
         }
     }
-} 
+}

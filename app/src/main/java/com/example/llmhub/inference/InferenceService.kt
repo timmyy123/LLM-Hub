@@ -24,7 +24,12 @@ interface InferenceService {
     suspend fun loadModel(model: LLMModel): Boolean
     suspend fun generateResponse(prompt: String, model: LLMModel): String
     suspend fun generateResponseStream(prompt: String, model: LLMModel): Flow<String>
+    suspend fun generateResponseStreamWithSession(prompt: String, model: LLMModel, chatId: String): Flow<String>
+    suspend fun getChatSession(chatId: String): LlmInferenceSession?
+    suspend fun createChatSession(chatId: String): LlmInferenceSession
+    suspend fun closeChatSession(chatId: String)
     suspend fun onCleared()
+    fun getCurrentlyLoadedModel(): LLMModel?
 }
 
 /**
@@ -36,6 +41,42 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
     private var llmInference: LlmInference? = null
     private var session: LlmInferenceSession? = null
     private var currentModel: LLMModel? = null
+    private var currentChatId: String? = null
+    
+    // Keep track of conversation state per chat
+    private val chatSessions = mutableMapOf<String, LlmInferenceSession>()
+    
+    override suspend fun loadModel(model: LLMModel): Boolean {
+        return try {
+            ensureModelLoaded(model)
+            true
+        } catch (e: Exception) {
+            Log.e("MediaPipeInference", "Failed to load model: ${e.message}", e)
+            false
+        }
+    }
+    
+    override suspend fun getChatSession(chatId: String): LlmInferenceSession? {
+        return chatSessions[chatId]
+    }
+    
+    override suspend fun createChatSession(chatId: String): LlmInferenceSession {
+        val model = currentModel ?: throw IllegalStateException("No model loaded - call loadModel first")
+        ensureModelLoaded(model)
+        val newSession = createNewSession()
+        chatSessions[chatId] = newSession
+        return newSession
+    }
+    
+    override suspend fun closeChatSession(chatId: String) {
+        chatSessions.remove(chatId)?.let { session ->
+            try {
+                session.close()
+            } catch (e: Exception) {
+                Log.w("MediaPipeInference", "Error closing session for chat $chatId: ${e.message}")
+            }
+        }
+    }
     
     private suspend fun ensureModelLoaded(model: LLMModel) {
         if (currentModel?.name != model.name) {
@@ -151,11 +192,6 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         currentModel = model
         Log.d("MediaPipeInference", "Successfully loaded model from file: ${model.name}")
     }
-    
-    override suspend fun loadModel(model: LLMModel): Boolean {
-        ensureModelLoaded(model)
-        return true // Indicate success
-    }
 
     override suspend fun generateResponse(prompt: String, model: LLMModel): String {
         ensureModelLoaded(model)
@@ -243,6 +279,44 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         }
     }.flowOn(Dispatchers.IO)
 
+    override suspend fun generateResponseStreamWithSession(prompt: String, model: LLMModel, chatId: String): Flow<String> = callbackFlow {
+        ensureModelLoaded(model)
+        
+        // Get or create persistent session for this chat
+        val localSession = try {
+            getChatSession(chatId) ?: createChatSession(chatId)
+        } catch (e: Exception) {
+            Log.e("MediaPipeInference", "Failed to get/create session for chat $chatId", e)
+            close(e)
+            return@callbackFlow
+        }
+        
+        var isGenerationComplete = false
+        
+        try {
+            localSession.addQueryChunk(prompt)
+            localSession.generateResponseAsync { partialResult, done ->
+                if (!isClosedForSend) {
+                    trySend(partialResult)
+                }
+                if (done) {
+                    isGenerationComplete = true
+                    close()
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("MediaPipeInference", "Streaming inference failed for chat $chatId", e)
+            isGenerationComplete = true
+            close(e)
+        }
+
+        awaitClose {
+            Log.d("MediaPipeInference", "Generation complete for chat $chatId")
+            // NOTE: We don't close the session here because we want to keep it for future use
+            // The session will be closed when the chat is explicitly closed or app shuts down
+        }
+    }.flowOn(Dispatchers.IO)
+
     private fun createNewSession(): LlmInferenceSession {
         val sessionOptions = LlmInferenceSession.LlmInferenceSessionOptions.builder()
             .setTopK(40)
@@ -255,6 +329,17 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
     override suspend fun onCleared() {
         withContext(Dispatchers.IO) {
             try {
+                // Close all chat sessions
+                chatSessions.values.forEach { session ->
+                    try {
+                        session.close()
+                    } catch (e: Exception) {
+                        Log.w("MediaPipeInference", "Error closing chat session: ${e.message}")
+                    }
+                }
+                chatSessions.clear()
+                
+                // Close main session and inference engine
                 session?.close()
                 llmInference?.close()
                 session = null
@@ -266,4 +351,8 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             }
         }
     }
-} 
+
+    override fun getCurrentlyLoadedModel(): LLMModel? {
+        return currentModel
+    }
+}

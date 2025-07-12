@@ -1,5 +1,6 @@
 package com.example.llmhub.screens
 
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -12,53 +13,34 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
-import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.createSavedStateHandle
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.MutableCreationExtras
 import com.example.llmhub.components.ChatDrawer
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.ui.input.pointer.pointerInput
 import com.example.llmhub.components.MessageBubble
 import com.example.llmhub.components.MessageInput
-import com.example.llmhub.data.MessageEntity
 import com.example.llmhub.viewmodels.ChatViewModel
+import com.example.llmhub.viewmodels.ChatViewModelFactory
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
     chatId: String,
+    viewModelFactory: ChatViewModelFactory,
     onNavigateToSettings: () -> Unit,
     onNavigateToModels: () -> Unit,
-    onNavigateToChat: (String) -> Unit,
-    viewModel: ChatViewModel = viewModel(
-        factory = object : ViewModelProvider.Factory {
-            override fun <T : androidx.lifecycle.ViewModel> create(
-                modelClass: Class<T>,
-                extras: CreationExtras
-            ): T {
-                val savedStateHandle = extras.createSavedStateHandle()
-                @Suppress("UNCHECKED_CAST")
-                return ChatViewModel(savedStateHandle) as T
-            }
-        }
-    )
+    onNavigateToChat: (String) -> Unit
 ) {
+    val viewModel: ChatViewModel = viewModel(
+        key = "chat_$chatId",
+        factory = viewModelFactory
+    )
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
-    val scope = rememberCoroutineScope()
     
     val messages by viewModel.messages.collectAsState()
     val currentChat by viewModel.currentChat.collectAsState()
@@ -66,6 +48,7 @@ fun ChatScreen(
     val availableModels by viewModel.availableModels.collectAsState()
     val streamingContents by viewModel.streamingContents.collectAsState()
     val isLoadingModel by viewModel.isLoadingModel.collectAsState()
+    val currentlyLoadedModel by viewModel.currentlyLoadedModel.collectAsState()
     var modelMenuExpanded by remember { mutableStateOf(false) }
     
     val listState = rememberLazyListState()
@@ -88,25 +71,25 @@ fun ChatScreen(
         drawerContent = {
             ChatDrawer(
                 onNavigateToChat = { newChatId ->
-                    scope.launch {
+                    coroutineScope.launch {
                         drawerState.close()
                     }
                     onNavigateToChat(newChatId)
                 },
                 onCreateNewChat = {
-                    scope.launch {
+                    coroutineScope.launch {
                         drawerState.close()
                     }
                     onNavigateToChat("new")
                 },
                 onNavigateToSettings = {
-                    scope.launch {
+                    coroutineScope.launch {
                         drawerState.close()
                     }
                     onNavigateToSettings()
                 },
                 onNavigateToModels = {
-                    scope.launch {
+                    coroutineScope.launch {
                         drawerState.close()
                     }
                     onNavigateToModels()
@@ -120,7 +103,7 @@ fun ChatScreen(
                     title = { Text(currentChat?.title ?: "New Chat") },
                     navigationIcon = {
                         IconButton(onClick = {
-                            scope.launch {
+                            coroutineScope.launch {
                                 drawerState.open()
                             }
                         }) {
@@ -138,7 +121,7 @@ fun ChatScreen(
                                 enabled = availableModels.isNotEmpty()
                             ) {
                                 Text(
-                                    text = currentChat?.modelName?.take(20) ?: "No model",
+                                    text = currentlyLoadedModel?.name?.take(25) ?: "Select model",
                                     maxLines = 1
                                 )
                                 Icon(
@@ -153,7 +136,22 @@ fun ChatScreen(
                             ) {
                                 availableModels.forEach { model ->
                                     DropdownMenuItem(
-                                        text = { Text(model.name) },
+                                        text = { 
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(model.name)
+                                                if (model.name == currentlyLoadedModel?.name) {
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Icon(
+                                                        imageVector = Icons.Default.Check,
+                                                        contentDescription = "Currently loaded",
+                                                        tint = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.size(16.dp)
+                                                    )
+                                                }
+                                            }
+                                        },
                                         onClick = {
                                             viewModel.switchModel(model)
                                             modelMenuExpanded = false
@@ -338,4 +336,4 @@ private fun TypingIndicator() {
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
-} 
+}
