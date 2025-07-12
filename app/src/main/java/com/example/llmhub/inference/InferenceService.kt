@@ -28,6 +28,7 @@ interface InferenceService {
     suspend fun getChatSession(chatId: String): LlmInferenceSession?
     suspend fun createChatSession(chatId: String): LlmInferenceSession
     suspend fun closeChatSession(chatId: String)
+    suspend fun resetChatSession(chatId: String)
     suspend fun onCleared()
     fun getCurrentlyLoadedModel(): LLMModel?
 }
@@ -71,6 +72,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
     override suspend fun closeChatSession(chatId: String) {
         chatSessions.remove(chatId)?.let { session ->
             try {
+                Log.d("MediaPipeInference", "Closing session for chat $chatId")
                 session.close()
             } catch (e: Exception) {
                 Log.w("MediaPipeInference", "Error closing session for chat $chatId: ${e.message}")
@@ -78,8 +80,27 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         }
     }
     
+    // Force close and recreate session for a chat (useful for error recovery)
+    override suspend fun resetChatSession(chatId: String) {
+        Log.d("MediaPipeInference", "Resetting session for chat $chatId")
+        closeChatSession(chatId)
+        // Session will be recreated on next use
+    }
+    
     private suspend fun ensureModelLoaded(model: LLMModel) {
         if (currentModel?.name != model.name) {
+            Log.d("MediaPipeInference", "Model changed from ${currentModel?.name} to ${model.name}, clearing all sessions")
+            
+            // Close all existing chat sessions first
+            chatSessions.values.forEach { session ->
+                try {
+                    session.close()
+                } catch (e: Exception) {
+                    Log.w("MediaPipeInference", "Error closing chat session during model switch: ${e.message}")
+                }
+            }
+            chatSessions.clear()
+            
             // Release existing model
             session?.close()
             llmInference?.close()
@@ -283,7 +304,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         ensureModelLoaded(model)
         
         // Get or create persistent session for this chat
-        val localSession = try {
+        var localSession = try {
             getChatSession(chatId) ?: createChatSession(chatId)
         } catch (e: Exception) {
             Log.e("MediaPipeInference", "Failed to get/create session for chat $chatId", e)
@@ -292,6 +313,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         }
         
         var isGenerationComplete = false
+        var sessionRecreated = false
         
         try {
             localSession.addQueryChunk(prompt)
@@ -305,13 +327,48 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 }
             }
         } catch (e: Exception) {
-            Log.e("MediaPipeInference", "Streaming inference failed for chat $chatId", e)
-            isGenerationComplete = true
-            close(e)
+            Log.e("MediaPipeInference", "Streaming inference failed for chat $chatId: ${e.message}", e)
+            
+            // If we get a MediaPipe session error, try to recover by creating a new session
+            if (e.message?.contains("DetokenizerCalculator") == true || 
+                e.message?.contains("id >= 0") == true ||
+                e.message?.contains("Please create a new Session") == true) {
+                
+                Log.w("MediaPipeInference", "Detected MediaPipe session error, attempting recovery for chat $chatId")
+                
+                try {
+                    // Close the old session and create a new one
+                    closeChatSession(chatId)
+                    localSession = createChatSession(chatId)
+                    sessionRecreated = true
+                    
+                    // Retry the generation with the new session
+                    localSession.addQueryChunk(prompt)
+                    localSession.generateResponseAsync { partialResult, done ->
+                        if (!isClosedForSend) {
+                            trySend(partialResult)
+                        }
+                        if (done) {
+                            isGenerationComplete = true
+                            close()
+                        }
+                    }
+                    
+                    Log.d("MediaPipeInference", "Successfully recovered from MediaPipe session error for chat $chatId")
+                    
+                } catch (recoveryException: Exception) {
+                    Log.e("MediaPipeInference", "Failed to recover from MediaPipe session error for chat $chatId", recoveryException)
+                    isGenerationComplete = true
+                    close(recoveryException)
+                }
+            } else {
+                isGenerationComplete = true
+                close(e)
+            }
         }
 
         awaitClose {
-            Log.d("MediaPipeInference", "Generation complete for chat $chatId")
+            Log.d("MediaPipeInference", "Generation complete for chat $chatId (session recreated: $sessionRecreated)")
             // NOTE: We don't close the session here because we want to keep it for future use
             // The session will be closed when the chat is explicitly closed or app shuts down
         }

@@ -93,6 +93,13 @@ fun ChatScreen(
                         drawerState.close()
                     }
                     onNavigateToModels()
+                },
+                onClearAllChats = {
+                    coroutineScope.launch {
+                        drawerState.close()
+                    }
+                    viewModel.clearAllChatsAndCreateNew(context)
+                    onNavigateToChat("new")
                 }
             )
         }

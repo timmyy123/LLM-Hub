@@ -133,7 +133,10 @@ class ChatViewModel(
             Log.d("ChatViewModel", "Switching from chat ${currentChatId} to chat $chatId")
             viewModelScope.launch {
                 try {
-                    inferenceService.closeChatSession(currentChatId!!)
+                    // Close the previous chat session specifically
+                    inferenceService.resetChatSession(currentChatId!!)
+                    
+                    Log.d("ChatViewModel", "Completed session cleanup for chat switch")
                 } catch (e: Exception) {
                     Log.w("ChatViewModel", "Error closing previous chat session: ${e.message}")
                 }
@@ -173,11 +176,18 @@ class ChatViewModel(
                     _messages.value = messageList
                 }
             } else {
-                currentChatId = chatId
+                // Check if the chat still exists
                 val chat = repository.getChatById(chatId)
+                if (chat == null) {
+                    Log.e("ChatViewModel", "Chat $chatId does not exist, creating new chat instead")
+                    initializeChat("new", context)
+                    return@launch
+                }
+                
+                currentChatId = chatId
                 _currentChat.value = chat
-                val foundModel = _availableModels.value.find { it.name == chat?.modelName }
-                    ?: ModelData.models.find { it.name == chat?.modelName }
+                val foundModel = _availableModels.value.find { it.name == chat.modelName }
+                    ?: ModelData.models.find { it.name == chat.modelName }
                 
                 if (foundModel != null && foundModel.isDownloaded) {
                     // Use the model associated with this chat
@@ -187,6 +197,8 @@ class ChatViewModel(
                     viewModelScope.launch {
                         try {
                             inferenceService.loadModel(foundModel)
+                            // Sync the currently loaded model state
+                            syncCurrentlyLoadedModel()
                         } catch (e: Exception) {
                             Log.w("ChatViewModel", "Failed to load model for chat: ${e.message}")
                         }
@@ -201,6 +213,8 @@ class ChatViewModel(
                     viewModelScope.launch {
                         try {
                             inferenceService.loadModel(previousModel)
+                            // Sync the currently loaded model state
+                            syncCurrentlyLoadedModel()
                         } catch (e: Exception) {
                             Log.w("ChatViewModel", "Failed to load previous model for chat: ${e.message}")
                         }
@@ -210,6 +224,9 @@ class ChatViewModel(
                     Log.d("ChatViewModel", "No valid model available for chat")
                     currentModel = null
                 }
+                
+                // Always ensure we have a fresh session for the chat
+                resetChatSession(chatId)
                 
                 repository.getMessagesForChat(chatId).collectLatest { messageList ->
                     _messages.value = messageList
@@ -277,12 +294,30 @@ class ChatViewModel(
     }
 
     fun sendMessage(text: String, attachmentUri: Uri?) {
-        val chatId = currentChatId ?: return
+        val chatId = currentChatId
+        if (chatId == null) {
+            Log.e("ChatViewModel", "No current chat ID available")
+            return
+        }
         val messageText = text.trim()
 
         if (messageText.isEmpty() && attachmentUri == null) return
 
         viewModelScope.launch {
+            // Check if the current chat still exists
+            val currentChat = repository.getChatById(chatId)
+            if (currentChat == null) {
+                Log.e("ChatViewModel", "Current chat $chatId does not exist, cannot send message")
+                return@launch
+            }
+
+            // Verify we have a working model
+            if (currentModel == null || !currentModel!!.isDownloaded) {
+                Log.e("ChatViewModel", "No valid model available for chat $chatId")
+                repository.addMessage(chatId, "Please download a model to start chatting.", isFromUser = false)
+                return@launch
+            }
+
             repository.addMessage(
                 chatId = chatId,
                 content = if (messageText.isNotEmpty()) messageText else "Shared a file",
@@ -308,6 +343,23 @@ class ChatViewModel(
                     syncCurrentlyLoadedModel()
                 } catch (e: Exception) {
                     Log.w("ChatViewModel", "Failed to ensure model is loaded: ${e.message}")
+                    repository.addMessage(chatId, "Failed to load model. Please try again.", isFromUser = false)
+                    _isLoading.value = false
+                    isGenerating = false
+                    return@launch
+                }
+                
+                // Ensure we have a proper session context for this chat
+                try {
+                    // Reset the specific chat session to ensure clean state
+                    inferenceService.resetChatSession(chatId)
+                    Log.d("ChatViewModel", "Reset chat session for chat: $chatId")
+                } catch (e: Exception) {
+                    Log.w("ChatViewModel", "Failed to reset chat session for chat $chatId: ${e.message}")
+                    repository.addMessage(chatId, "Failed to initialize chat session. Please try again.", isFromUser = false)
+                    _isLoading.value = false
+                    isGenerating = false
+                    return@launch
                 }
                 
                 // Pass the conversation history to the model with context window management
@@ -569,6 +621,15 @@ class ChatViewModel(
             _isLoadingModel.value = true
             isGenerating = true
             
+            // Clear all existing sessions before switching models
+            try {
+                inferenceService.onCleared()
+                delay(500) // Give extra time for cleanup when switching models
+                Log.d("ChatViewModel", "Cleared all sessions before model switch")
+            } catch (e: Exception) {
+                Log.w("ChatViewModel", "Error clearing sessions before model switch: ${e.message}")
+            }
+            
             currentModel = newModel
             val updatedChat = _currentChat.value?.copy(modelName = newModel.name)
             if (updatedChat != null) {
@@ -582,7 +643,9 @@ class ChatViewModel(
                 inferenceService.loadModel(newModel)
                 // Sync the currently loaded model state
                 syncCurrentlyLoadedModel()
+                Log.d("ChatViewModel", "Successfully loaded new model: ${newModel.name}")
             } catch (e: Exception) {
+                Log.w("ChatViewModel", "Failed to load new model: ${e.message}")
                 // Model loading will happen on first actual use
             }
             
@@ -640,18 +703,22 @@ class ChatViewModel(
      */
     private fun buildContextAwareHistory(messages: List<MessageEntity>): String {
         val model = currentModel ?: return ""
+        val currentChatId = currentChatId ?: return ""
+        
+        // Filter messages to only include current chat messages
+        val chatMessages = messages.filter { it.chatId == currentChatId }
         
         // Use the model's actual context window size with some safety margin
         val maxContextTokens = (model.contextWindowSize * 0.75).toInt() // Use 75% of max to leave room for response
         val maxContextChars = maxContextTokens * 4 // Rough character limit (1 token ≈ 4 characters)
         
-        Log.d("ChatViewModel", "Context window: Model ${model.name} has ${model.contextWindowSize} tokens, using ${maxContextTokens} tokens (${maxContextChars} chars)")
+        Log.d("ChatViewModel", "Context window: Model ${model.name} has ${model.contextWindowSize} tokens, using ${maxContextTokens} tokens (${maxContextChars} chars) for chat $currentChatId with ${chatMessages.size} messages")
         
         // Convert messages to conversation pairs for better context management
         val conversationPairs = mutableListOf<Pair<MessageEntity?, MessageEntity>>()
         var currentUserMessage: MessageEntity? = null
         
-        for (message in messages) {
+        for (message in chatMessages) {
             if (message.isFromUser) {
                 currentUserMessage = message
             } else {
@@ -671,6 +738,8 @@ class ChatViewModel(
                 timestamp = System.currentTimeMillis()
             )))
         }
+        
+        Log.d("ChatViewModel", "Built ${conversationPairs.size} conversation pairs from ${chatMessages.size} chat messages")
         
         // Convert pairs to formatted strings
         val pairStrings = conversationPairs.map { (userMsg, assistantMsg) ->
@@ -725,6 +794,85 @@ class ChatViewModel(
         
         Log.d("ChatViewModel", "Context window management: Original ${fullHistory.length} chars (${pairStrings.size} pairs), trimmed to ${result.length} chars (${recentPairs.size} pairs, ${truncatedCount} truncated)")
         
+        // Debug: Log first 200 chars of context to verify it's correct
+        val preview = result.take(200) + if (result.length > 200) "..." else ""
+        Log.d("ChatViewModel", "Context preview for chat $currentChatId: $preview")
+        
         return result
+    }
+
+    fun clearAllChatsAndCreateNew(context: Context) {
+        viewModelScope.launch {
+            // Close current chat session
+            currentChatId?.let { chatId ->
+                try {
+                    inferenceService.closeChatSession(chatId)
+                } catch (e: Exception) {
+                    Log.w("ChatViewModel", "Error closing chat session during clear all: ${e.message}")
+                }
+            }
+            
+            // Clear all chats from database
+            repository.deleteAllChats()
+            
+            // Clear current state
+            currentChatId = null
+            _currentChat.value = null
+            _messages.value = emptyList()
+            _streamingContents.value = emptyMap()
+            
+            // Create a new empty chat
+            initializeNewChat(context)
+        }
+    }
+    
+    private suspend fun initializeNewChat(context: Context) {
+        // Load available models first
+        loadAvailableModelsSync(context)
+        
+        // Get the currently loaded model from inference service
+        val currentModel = inferenceService.getCurrentlyLoadedModel()
+        
+        // Create new chat with appropriate model
+        val newChatId = repository.createNewChat(
+            "New Chat",
+            if (_availableModels.value.isEmpty()) "No model downloaded" else 
+            (currentModel?.name ?: "No model selected")
+        )
+        
+        // Set as current chat
+        currentChatId = newChatId
+        _currentChat.value = repository.getChatById(newChatId)
+        
+        // If we have a model, update the chat to use it
+        if (currentModel != null) {
+            repository.updateChatModel(newChatId, currentModel.name)
+            _currentChat.value = repository.getChatById(newChatId)
+            this.currentModel = currentModel
+        }
+        
+        // Start collecting messages for the new chat in a separate coroutine
+        viewModelScope.launch {
+            repository.getMessagesForChat(newChatId).collectLatest { messageList ->
+                _messages.value = messageList
+            }
+        }
+        
+        Log.d("ChatViewModel", "Created new chat $newChatId after clearing all chats")
+    }
+
+    private fun resetChatSession(chatId: String) {
+        viewModelScope.launch {
+            try {
+                Log.d("ChatViewModel", "Resetting chat session for chat $chatId")
+                
+                // Use the new reset method which handles MediaPipe session errors
+                inferenceService.resetChatSession(chatId)
+                
+                Log.d("ChatViewModel", "Successfully reset chat session for chat $chatId")
+            } catch (e: Exception) {
+                Log.w("ChatViewModel", "Error during session reset for chat $chatId: ${e.message}")
+            }
+        }
     }
 }

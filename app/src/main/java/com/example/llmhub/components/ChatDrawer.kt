@@ -27,6 +27,7 @@ fun ChatDrawer(
     onCreateNewChat: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToModels: () -> Unit,
+    onClearAllChats: (() -> Unit)? = null,
     viewModel: ChatDrawerViewModel = viewModel()
 ) {
     // Now gets chats from the view model
@@ -41,7 +42,11 @@ fun ChatDrawer(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        viewModel.deleteAllChats()
+                        if (onClearAllChats != null) {
+                            onClearAllChats()
+                        } else {
+                            viewModel.deleteAllChats()
+                        }
                         showDeleteAllDialog = false
                     }
                 ) {
