@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.llmhub.data.MessageEntity
 import com.example.llmhub.viewmodels.ChatViewModel
+import dev.jeziellago.compose.markdowntext.MarkdownText
 
 /**
  * Enhanced chat bubble that shows user/assistant messages with optional token statistics.
@@ -43,15 +44,24 @@ fun MessageBubble(
                     .clip(RoundedCornerShape(12.dp))
                     .background(bubbleColor)
                     .padding(12.dp)
-                    .widthIn(max = 280.dp)
+                    .run { 
+                        if (isUser) {
+                            // User messages: fit content with max width
+                            this.wrapContentWidth().widthIn(max = 280.dp)
+                        } else {
+                            // Assistant messages: use wider width
+                            this.widthIn(max = 280.dp)
+                        }
+                    }
             ) {
                 // Show streaming content for assistant messages during generation, otherwise show message content
                 val displayContent = if (!isUser && streamingContent.isNotEmpty()) streamingContent else message.content
                 
-                Text(
-                    text = displayContent,
+                MarkdownText(
+                    markdown = displayContent,
                     color = textColor,
-                    style = MaterialTheme.typography.bodyMedium
+                    fontSize = MaterialTheme.typography.bodyMedium.fontSize,
+                    modifier = if (isUser) Modifier.wrapContentWidth() else Modifier.fillMaxWidth()
                 )
             }
             

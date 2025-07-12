@@ -188,51 +188,91 @@ class ChatViewModel : ViewModel() {
 
                 // Insert a visible placeholder so the bubble stays rendered while tokens stream
                 val placeholderId = repository.addMessage(chatId, "…", isFromUser = false)
-                _streamingContents.value = mapOf(placeholderId to "") // Initialize with empty string
-
-                // Run generation with streaming tokens
-                generationJob = launch {
-                    val generationStartTime = System.currentTimeMillis()
-
-                    try {
-                        // Pre-load model separately from generation timing
-                        _isLoadingModel.value = true
-                        
-                        // Ensure model is loaded first
-                        inferenceService.loadModel(currentModel!!)
-                        
-                        _isLoadingModel.value = false
-                        
-                        val responseStream = inferenceService.generateResponseStream(history, currentModel!!)
-                        var lastUpdateTime = 0L
-                        val updateIntervalMs = 50L // Update UI every 50ms instead of every token
-                        
-                        responseStream.collect { piece ->
-                            // Append piece to the content for the specific message
-                            val updated = _streamingContents.value.toMutableMap()
-                            updated[placeholderId] = (updated[placeholderId] ?: "") + piece
-                            _streamingContents.value = updated
+                _streamingContents.value = mapOf(placeholderId to "") // Initialize with empty string                        // Run generation with streaming tokens
+                        generationJob = launch {
+                            val generationStartTime = System.currentTimeMillis()
+                            var totalContent = ""
                             
-                            // Debounced database updates to reduce blinking
-                            val currentTime = System.currentTimeMillis()
-                            if (currentTime - lastUpdateTime > updateIntervalMs) {
-                                repository.updateMessageContent(placeholderId, updated[placeholderId] ?: "")
-                                lastUpdateTime = currentTime
-                            }
-                        }
-
-                        // SUCCESS: This section now executes only after the stream is fully collected
-                        val finalContent = _streamingContents.value[placeholderId] ?: ""
-                        Log.d("ChatViewModel", "Generation completed successfully")
-                        Log.d("ChatViewModel", "Final content length: ${finalContent.length}")
-                        // Ensure the final content is saved to database before computing stats
-                        repository.updateMessageContent(placeholderId, finalContent)
-                        val time = System.currentTimeMillis() - generationStartTime
-                        Log.d("ChatViewModel", "About to call finalizeMessage for success")
-                        finalizeMessage(placeholderId, finalContent, time)
+                            try {
+                                // Pre-load model separately from generation timing
+                                _isLoadingModel.value = true
+                                
+                                // Ensure model is loaded first
+                                inferenceService.loadModel(currentModel!!)
+                                
+                                _isLoadingModel.value = false
+                                
+                                // Continue generation until we get a complete response
+                                var continuationCount = 0
+                                val maxContinuations = 10 // Prevent infinite loops
+                                
+                                while (continuationCount < maxContinuations) {
+                                    var currentSegment = ""
+                                    val segmentStartTime = System.currentTimeMillis()
+                                    
+                                    // Build the prompt for this segment
+                                    val currentPrompt = if (continuationCount == 0) {
+                                        // First generation: use full history
+                                        history
+                                    } else {
+                                        // Continuation: create a more natural continuation prompt
+                                        // Remove the last incomplete sentence and continue from there
+                                        val lastCompleteContent = totalContent.trimEnd()
+                                        "$history\nmodel: $lastCompleteContent"
+                                    }
+                                    
+                                    val responseStream = inferenceService.generateResponseStream(currentPrompt, currentModel!!)
+                                    var lastUpdateTime = 0L
+                                    val updateIntervalMs = 50L // Update UI every 50ms instead of every token
+                                    var segmentEnded = false
+                                    
+                                    responseStream.collect { piece ->
+                                        currentSegment += piece
+                                        totalContent += piece
+                                        
+                                        // Update UI with the complete content so far
+                                        val updated = _streamingContents.value.toMutableMap()
+                                        updated[placeholderId] = totalContent
+                                        _streamingContents.value = updated
+                                        
+                                        // Debounced database updates to reduce blinking
+                                        val currentTime = System.currentTimeMillis()
+                                        if (currentTime - lastUpdateTime > updateIntervalMs) {
+                                            repository.updateMessageContent(placeholderId, totalContent)
+                                            lastUpdateTime = currentTime
+                                        }
+                                    }
+                                    
+                                    // Check if this segment looks like it was truncated
+                                    val segmentTime = System.currentTimeMillis() - segmentStartTime
+                                    val isLikelyTruncated = isResponseTruncated(currentSegment, segmentTime)
+                                    
+                                    Log.d("ChatViewModel", "Segment ${continuationCount + 1}: length=${currentSegment.length}, time=${segmentTime}ms, truncated=$isLikelyTruncated")
+                                    Log.d("ChatViewModel", "Segment ends with: '${currentSegment.takeLast(20)}'")
+                                    
+                                    if (!isLikelyTruncated) {
+                                        // Response appears complete
+                                        Log.d("ChatViewModel", "Response appears complete, stopping continuation")
+                                        break
+                                    }
+                                    
+                                    continuationCount++
+                                    Log.d("ChatViewModel", "Detected truncation, continuing generation (attempt ${continuationCount})")
+                                    
+                                    // Small delay to prevent overwhelming the model
+                                    delay(100)
+                                }                                // SUCCESS: This section now executes only after the stream is fully collected
+                                val finalContent = totalContent
+                                Log.d("ChatViewModel", "Generation completed successfully with ${continuationCount} continuations")
+                                Log.d("ChatViewModel", "Final content length: ${finalContent.length}")
+                                // Ensure the final content is saved to database before computing stats
+                                repository.updateMessageContent(placeholderId, finalContent)
+                                val time = System.currentTimeMillis() - generationStartTime
+                                Log.d("ChatViewModel", "About to call finalizeMessage for success")
+                                finalizeMessage(placeholderId, finalContent, time)
 
                     } catch (e: Exception) {
-                        val finalContent = _streamingContents.value[placeholderId] ?: ""
+                        val finalContent = totalContent
                         val time = System.currentTimeMillis() - generationStartTime
                         
                         Log.d("ChatViewModel", "Exception caught: ${e.javaClass.simpleName}: ${e.message}")
@@ -294,6 +334,38 @@ class ChatViewModel : ViewModel() {
         } else {
             Log.d("ChatViewModel", "No stats to save for message $placeholderId - content is blank")
         }
+    }
+    
+    /**
+     * Heuristic to detect if a response was truncated due to token limits.
+     * This looks for patterns that suggest the model stopped mid-sentence.
+     */
+    private fun isResponseTruncated(content: String, generationTimeMs: Long): Boolean {
+        if (content.isBlank()) return false
+        
+        val trimmed = content.trim()
+        Log.d("ChatViewModel", "Checking truncation for content ending with: '${trimmed.takeLast(10)}'")
+        
+        // Check if it ends with proper sentence completion
+        val endsWithProperPunctuation = trimmed.matches(Regex(".*[.!?][)\\]\"']*\\s*$"))
+        
+        // Check for abrupt endings that suggest truncation
+        val endsWithIncompletePattern = trimmed.matches(Regex(".*[,;:]\\s*$")) || // Ends with comma, semicolon, or colon
+                trimmed.matches(Regex(".*\\b(and|or|but|the|a|an|to|for|with|in|on|at|by|from|of|as|if|when|where|while|until|because|since|although|though|however|therefore|thus|hence|moreover|furthermore|nevertheless|nonetheless|meanwhile|otherwise|instead|besides|additionally|finally|consequently|specifically|particularly|especially|importantly|significantly|unfortunately|surprisingly|interestingly|obviously|clearly|essentially|basically|generally|typically|usually|normally|commonly|frequently|occasionally|rarely|sometimes|often|always|never|perhaps|possibly|probably|likely|certainly|definitely|absolutely|completely|entirely|totally|quite|rather|very|extremely|incredibly|remarkably|surprisingly|unfortunately|hopefully|thankfully|luckily|fortunately|regrettably|sadly|happily|proudly|confidently|eagerly|patiently|carefully|quickly|slowly|quietly|loudly|gently|firmly|softly|harshly|kindly|warmly|coolly|coldly|hotly|angrily|calmly|peacefully|violently|suddenly|gradually|immediately|eventually|ultimately|initially|originally|previously|recently|currently|presently|temporarily|permanently|briefly|extensively|thoroughly|partially|completely|entirely|fully|barely|hardly|scarcely|almost|nearly|approximately|roughly|exactly|precisely|specifically|generally|particularly|especially|mainly|primarily|chiefly|largely|mostly|partly|somewhat|quite|rather|fairly|pretty|really|truly|actually|literally|virtually|practically|essentially|basically|fundamentally|inherently|naturally|obviously|clearly|apparently|evidently|presumably|supposedly|allegedly|reportedly|seemingly|apparently|presumably|supposedly|allegedly|reportedly|seemingly)\\s*$", RegexOption.IGNORE_CASE)) || // Ends with common incomplete words
+                trimmed.matches(Regex(".*\\b\\w+[-']\\s*$")) // Ends with hyphenated/apostrophe word (incomplete)
+        
+        // Check generation time - if it's very short and content is minimal, it might be truncated
+        val isVeryShort = generationTimeMs < 1000 && content.length < 50
+        
+        // Check for markdown code blocks that weren't closed
+        val unclosedCodeBlocks = content.count { it == '`' } % 2 != 0
+        
+        // Consider it truncated if it has indicators of incompleteness AND doesn't end with proper punctuation
+        val result = !endsWithProperPunctuation && (endsWithIncompletePattern || isVeryShort || unclosedCodeBlocks)
+        
+        Log.d("ChatViewModel", "Truncation check: endsWithProperPunctuation=$endsWithProperPunctuation, endsWithIncompletePattern=$endsWithIncompletePattern, isVeryShort=$isVeryShort, unclosedCodeBlocks=$unclosedCodeBlocks, result=$result")
+        
+        return result
     }
 
     /** Interrupt the current response generation if one is running */
