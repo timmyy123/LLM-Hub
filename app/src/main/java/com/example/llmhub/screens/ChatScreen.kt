@@ -16,6 +16,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.MutableCreationExtras
 import com.example.llmhub.components.ChatDrawer
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.foundation.clickable
@@ -36,7 +43,18 @@ fun ChatScreen(
     onNavigateToSettings: () -> Unit,
     onNavigateToModels: () -> Unit,
     onNavigateToChat: (String) -> Unit,
-    viewModel: ChatViewModel = viewModel()
+    viewModel: ChatViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : androidx.lifecycle.ViewModel> create(
+                modelClass: Class<T>,
+                extras: CreationExtras
+            ): T {
+                val savedStateHandle = extras.createSavedStateHandle()
+                @Suppress("UNCHECKED_CAST")
+                return ChatViewModel(savedStateHandle) as T
+            }
+        }
+    )
 ) {
     val context = LocalContext.current
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -60,7 +78,7 @@ fun ChatScreen(
         }
     }
 
-    // Initialize chat
+    // Initialize chat - only run once per chatId or when context changes
     LaunchedEffect(chatId) {
         viewModel.initializeChat(chatId, context)
     }

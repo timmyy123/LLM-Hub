@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.SavedStateHandle
 import com.example.llmhub.data.*
 import com.example.llmhub.inference.MediaPipeInferenceService
 import com.example.llmhub.repository.ChatRepository
@@ -17,11 +18,18 @@ import android.util.Log
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 
-class ChatViewModel : ViewModel() {
+class ChatViewModel(
+    private val savedStateHandle: SavedStateHandle = SavedStateHandle()
+) : ViewModel() {
 
     // keep a single inference engine instance across all ChatViewModel objects
     companion object {
         private var sharedInferenceService: MediaPipeInferenceService? = null
+        
+        // Keys for SavedStateHandle
+        private const val KEY_CURRENT_CHAT_ID = "current_chat_id"
+        private const val KEY_CURRENT_MODEL_NAME = "current_model_name"
+        private const val KEY_IS_GENERATING = "is_generating"
     }
 
     private lateinit var repository: ChatRepository
@@ -47,14 +55,62 @@ class ChatViewModel : ViewModel() {
     private val _isLoadingModel = MutableStateFlow(false)
     val isLoadingModel: StateFlow<Boolean> = _isLoadingModel.asStateFlow()
 
-    private var currentChatId: String? = null
+    private var currentChatId: String?
+        get() = savedStateHandle.get<String>(KEY_CURRENT_CHAT_ID)
+        set(value) = savedStateHandle.set(KEY_CURRENT_CHAT_ID, value)
+    
+    private var currentModelName: String?
+        get() = savedStateHandle.get<String>(KEY_CURRENT_MODEL_NAME)
+        set(value) = savedStateHandle.set(KEY_CURRENT_MODEL_NAME, value)
+    
+    private var isGenerating: Boolean
+        get() = savedStateHandle.get<Boolean>(KEY_IS_GENERATING) ?: false
+        set(value) = savedStateHandle.set(KEY_IS_GENERATING, value)
+    
     private var currentModel: LLMModel? = null
+        get() = field ?: currentModelName?.let { modelName ->
+            _availableModels.value.find { it.name == modelName }
+        }
+        set(value) {
+            field = value
+            currentModelName = value?.name
+        }
 
     // Keep reference to the running generation so the UI can interrupt it
     private var generationJob: Job? = null
 
     fun hasDownloadedModels(): Boolean {
         return _availableModels.value.isNotEmpty()
+    }
+
+    /**
+     * Check if we need to restore generation state after configuration change
+     */
+    private fun checkAndRestoreGenerationState(context: Context) {
+        if (isGenerating && generationJob?.isActive != true) {
+            // Generation was interrupted by configuration change, try to restore
+            Log.d("ChatViewModel", "Detected interrupted generation, checking for incomplete messages")
+            
+            viewModelScope.launch {
+                val chatId = currentChatId ?: return@launch
+                val messages = repository.getMessagesForChatSync(chatId)
+                
+                // Find the last message that might be incomplete
+                val lastBotMessage = messages.lastOrNull { !it.isFromUser }
+                if (lastBotMessage != null && lastBotMessage.content.trim() == "…") {
+                    Log.d("ChatViewModel", "Found incomplete message, cleaning up generation state")
+                    // Clean up the incomplete message placeholder
+                    val updatedStreaming = _streamingContents.value.toMutableMap()
+                    updatedStreaming.remove(lastBotMessage.id)
+                    _streamingContents.value = updatedStreaming
+                    
+                    // Reset generation state
+                    isGenerating = false
+                    _isLoading.value = false
+                    _isLoadingModel.value = false
+                }
+            }
+        }
     }
 
     fun initializeChat(chatId: String, context: Context) {
@@ -67,6 +123,9 @@ class ChatViewModel : ViewModel() {
 
         // Stop collecting from any previous chat's message flow
         generationJob?.cancel()
+
+        // Check if we need to restore generation state after configuration change
+        checkAndRestoreGenerationState(context)
 
         viewModelScope.launch {
             // Load the models synchronously so we know what's available before creating/attaching a chat
@@ -90,10 +149,12 @@ class ChatViewModel : ViewModel() {
                 currentChatId = chatId
                 val chat = repository.getChatById(chatId)
                 _currentChat.value = chat
-                currentModel = _availableModels.value.find { it.name == chat?.modelName }
+                val foundModel = _availableModels.value.find { it.name == chat?.modelName }
                     ?: ModelData.models.find { it.name == chat?.modelName }
                 
-                if (currentModel != null && !currentModel!!.isDownloaded) {
+                if (foundModel != null && foundModel.isDownloaded) {
+                    currentModel = foundModel
+                } else {
                     currentModel = null // Model associated with chat is not downloaded
                 }
                 
@@ -178,7 +239,7 @@ class ChatViewModel : ViewModel() {
             }
 
             _isLoading.value = true
-            // _tokenStats.value = null // No longer need separate token stats state
+            isGenerating = true
 
             if (currentModel != null && currentModel!!.isDownloaded) {
                 // Pass the conversation history to the model with context window management
@@ -317,6 +378,7 @@ class ChatViewModel : ViewModel() {
                     } finally {
                         _isLoading.value = false
                         _isLoadingModel.value = false
+                        isGenerating = false
                         
                         // Clear streaming state for this message, regardless of outcome
                         val updatedStreaming = _streamingContents.value.toMutableMap()
@@ -327,6 +389,7 @@ class ChatViewModel : ViewModel() {
             } else {
                 repository.addMessage(chatId, "Please download a model to start chatting.", isFromUser = false)
                 _isLoading.value = false
+                isGenerating = false
             }
         }
     }
@@ -413,6 +476,7 @@ class ChatViewModel : ViewModel() {
         generationJob = null
         _isLoading.value = false
         _isLoadingModel.value = false
+        isGenerating = false
         // Note: Don't clear streaming contents here to preserve partial responses
         // _tokenStats.value = null // No longer needed
     }
@@ -435,6 +499,7 @@ class ChatViewModel : ViewModel() {
 
             _isLoading.value = true
             _isLoadingModel.value = true
+            isGenerating = true
             
             currentModel = newModel
             val updatedChat = _currentChat.value?.copy(modelName = newModel.name)
@@ -453,6 +518,7 @@ class ChatViewModel : ViewModel() {
             
             _isLoadingModel.value = false
             _isLoading.value = false
+            isGenerating = false
         }
     }
 

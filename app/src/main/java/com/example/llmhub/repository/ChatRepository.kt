@@ -32,6 +32,10 @@ class ChatRepository(
         return messageDao.getMessagesForChat(chatId)
     }
     
+    suspend fun getMessagesForChatSync(chatId: String): List<MessageEntity> {
+        return messageDao.getMessagesForChatSync(chatId)
+    }
+    
     suspend fun createNewChat(title: String, modelName: String): String {
         val chat = ChatEntity(
             title = title,
@@ -98,4 +102,3 @@ class ChatRepository(
     }
 }
 
- 
