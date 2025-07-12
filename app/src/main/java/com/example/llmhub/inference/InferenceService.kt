@@ -118,7 +118,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         
         // Dynamically detect the maximum context window from the filename pattern `_ekvXXXX`
         // For example: `..._ekv1280.task` -> 1280 tokens, `..._ekv4096.task` -> 4096 tokens.
-        val maxTokens = Regex("_ekv(\\d+)")
+        val contextWindowSize = Regex("_ekv(\\d+)")
             .find(modelFile.name)
             ?.groups?.get(1)
             ?.value
@@ -126,10 +126,16 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             ?.coerceAtLeast(1280) // Ensure a sensible lower bound
             ?: 2048 // Default when pattern not present
 
+        // Set maxTokens for OUTPUT generation (not context window)
+        // Use a reasonable output limit that allows for longer responses
+        val maxOutputTokens = 4096 // Allow up to 4096 tokens per generation (much higher than previous ~2000)
+
         val optionsBuilder = LlmInference.LlmInferenceOptions.builder()
             .setModelPath(modelFile.absolutePath)  // Use file path
-            .setMaxTokens(maxTokens)
+            .setMaxTokens(maxOutputTokens) // This is for output generation, not context window
             .setPreferredBackend(backend)
+
+        Log.d("MediaPipeInference", "Model: ${modelFile.name}, Context Window: $contextWindowSize, Max Output Tokens: $maxOutputTokens")
 
         // When using CPU, we rely on the backend's default thread management
         if (backend == LlmInference.Backend.CPU) {

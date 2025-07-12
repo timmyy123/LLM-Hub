@@ -181,10 +181,8 @@ class ChatViewModel : ViewModel() {
             // _tokenStats.value = null // No longer need separate token stats state
 
             if (currentModel != null && currentModel!!.isDownloaded) {
-                // Pass the conversation history to the model
-                val history = _messages.value.map {
-                    (if (it.isFromUser) "user: " else "model: ") + it.content
-                }.joinToString(separator = "\n")
+                // Pass the conversation history to the model with context window management
+                val history = buildContextAwareHistory(_messages.value)
 
                 // Insert a visible placeholder so the bubble stays rendered while tokens stream
                 val placeholderId = repository.addMessage(chatId, "…", isFromUser = false)
@@ -202,33 +200,47 @@ class ChatViewModel : ViewModel() {
                                 
                                 _isLoadingModel.value = false
                                 
-                                // Continue generation until we get a complete response
+                                // Continue generation with context window management
                                 var continuationCount = 0
-                                val maxContinuations = 10 // Prevent infinite loops
+                                val maxContinuations = 2 // Further reduced since we have better context management
                                 
                                 while (continuationCount < maxContinuations) {
                                     var currentSegment = ""
                                     val segmentStartTime = System.currentTimeMillis()
                                     
-                                    // Build the prompt for this segment
+                                    // Build the prompt for this segment with context window management
                                     val currentPrompt = if (continuationCount == 0) {
-                                        // First generation: use full history
+                                        // First generation: use context-aware history
                                         history
                                     } else {
-                                        // Continuation: create a more natural continuation prompt
-                                        // Remove the last incomplete sentence and continue from there
-                                        val lastCompleteContent = totalContent.trimEnd()
-                                        "$history\nmodel: $lastCompleteContent"
+                                        // Continuation: build a new context-aware history including the current response
+                                        val allMessages = _messages.value.toMutableList()
+                                        // Add the current partial response as a temporary message for context
+                                        allMessages.add(MessageEntity(
+                                            id = "temp-${System.currentTimeMillis()}", // Temporary ID as String
+                                            chatId = currentChatId ?: "",
+                                            content = totalContent.trimEnd(),
+                                            isFromUser = false,
+                                            timestamp = System.currentTimeMillis()
+                                        ))
+                                        val continuationHistory = buildContextAwareHistory(allMessages)
+                                        continuationHistory
                                     }
                                     
                                     val responseStream = inferenceService.generateResponseStream(currentPrompt, currentModel!!)
                                     var lastUpdateTime = 0L
                                     val updateIntervalMs = 50L // Update UI every 50ms instead of every token
                                     var segmentEnded = false
+                                    var segmentHasContent = false
                                     
                                     responseStream.collect { piece ->
                                         currentSegment += piece
                                         totalContent += piece
+                                        
+                                        // Check if we're getting meaningful content
+                                        if (piece.trim().isNotEmpty()) {
+                                            segmentHasContent = true
+                                        }
                                         
                                         // Update UI with the complete content so far
                                         val updated = _streamingContents.value.toMutableMap()
@@ -247,8 +259,14 @@ class ChatViewModel : ViewModel() {
                                     val segmentTime = System.currentTimeMillis() - segmentStartTime
                                     val isLikelyTruncated = isResponseTruncated(currentSegment, segmentTime)
                                     
-                                    Log.d("ChatViewModel", "Segment ${continuationCount + 1}: length=${currentSegment.length}, time=${segmentTime}ms, truncated=$isLikelyTruncated")
+                                    Log.d("ChatViewModel", "Segment ${continuationCount + 1}: length=${currentSegment.length}, time=${segmentTime}ms, hasContent=$segmentHasContent, truncated=$isLikelyTruncated")
                                     Log.d("ChatViewModel", "Segment ends with: '${currentSegment.takeLast(20)}'")
+                                    
+                                    // If the segment has no meaningful content, stop continuing
+                                    if (!segmentHasContent && continuationCount > 0) {
+                                        Log.d("ChatViewModel", "Segment has no meaningful content, stopping continuation")
+                                        break
+                                    }
                                     
                                     if (!isLikelyTruncated) {
                                         // Response appears complete
@@ -344,28 +362,49 @@ class ChatViewModel : ViewModel() {
         if (content.isBlank()) return false
         
         val trimmed = content.trim()
-        Log.d("ChatViewModel", "Checking truncation for content ending with: '${trimmed.takeLast(10)}'")
+        Log.d("ChatViewModel", "Checking truncation for content ending with: '${trimmed.takeLast(20)}'")
         
-        // Check if it ends with proper sentence completion
+        // First check: If the content is just whitespace or newlines, the model has reached its limit
+        val lastChars = content.takeLast(10)
+        val isOnlyWhitespace = lastChars.all { it.isWhitespace() }
+        if (isOnlyWhitespace && content.length > 10) {
+            Log.d("ChatViewModel", "Model output is only whitespace - stopping continuation")
+            return false // Don't continue if model is only outputting whitespace
+        }
+        
+        // Second check: If the content is very short with minimal generation time, it might be truncated
+        val isVeryShort = generationTimeMs < 1000 && trimmed.length < 50
+        
+        // Third check: Look for clear signs of completion
         val endsWithProperPunctuation = trimmed.matches(Regex(".*[.!?][)\\]\"']*\\s*$"))
         
-        // Check for abrupt endings that suggest truncation
+        // Fourth check: Look for clear signs of incompleteness
         val endsWithIncompletePattern = trimmed.matches(Regex(".*[,;:]\\s*$")) || // Ends with comma, semicolon, or colon
-                trimmed.matches(Regex(".*\\b(and|or|but|the|a|an|to|for|with|in|on|at|by|from|of|as|if|when|where|while|until|because|since|although|though|however|therefore|thus|hence|moreover|furthermore|nevertheless|nonetheless|meanwhile|otherwise|instead|besides|additionally|finally|consequently|specifically|particularly|especially|importantly|significantly|unfortunately|surprisingly|interestingly|obviously|clearly|essentially|basically|generally|typically|usually|normally|commonly|frequently|occasionally|rarely|sometimes|often|always|never|perhaps|possibly|probably|likely|certainly|definitely|absolutely|completely|entirely|totally|quite|rather|very|extremely|incredibly|remarkably|surprisingly|unfortunately|hopefully|thankfully|luckily|fortunately|regrettably|sadly|happily|proudly|confidently|eagerly|patiently|carefully|quickly|slowly|quietly|loudly|gently|firmly|softly|harshly|kindly|warmly|coolly|coldly|hotly|angrily|calmly|peacefully|violently|suddenly|gradually|immediately|eventually|ultimately|initially|originally|previously|recently|currently|presently|temporarily|permanently|briefly|extensively|thoroughly|partially|completely|entirely|fully|barely|hardly|scarcely|almost|nearly|approximately|roughly|exactly|precisely|specifically|generally|particularly|especially|mainly|primarily|chiefly|largely|mostly|partly|somewhat|quite|rather|fairly|pretty|really|truly|actually|literally|virtually|practically|essentially|basically|fundamentally|inherently|naturally|obviously|clearly|apparently|evidently|presumably|supposedly|allegedly|reportedly|seemingly|apparently|presumably|supposedly|allegedly|reportedly|seemingly)\\s*$", RegexOption.IGNORE_CASE)) || // Ends with common incomplete words
+                trimmed.matches(Regex(".*\\b(and|or|but|the|a|an|to|for|with|in|on|at|by|from|of|as|if|when|where|while|until|because|since|although|though|however|therefore|thus|hence|moreover|furthermore|nevertheless|nonetheless|meanwhile|otherwise|instead|besides|additionally|finally|consequently|specifically|particularly|especially|importantly|significantly|unfortunately|surprisingly|interestingly|obviously|clearly|essentially|basically|generally|typically|usually|normally|commonly|frequently|occasionally|rarely|sometimes|often|always|never|perhaps|possibly|probably|likely|certainly|definitely|absolutely|completely|entirely|totally|quite|rather|very|extremely|incredibly|remarkably|surprisingly|unfortunately|hopefully|thankfully|luckily|fortunately|regrettably|sadly|happily|proudly|confidently|eagerly|patiently|carefully|quickly|slowly|quietly|loudly|gently|firmly|softly|harshly|kindly|warmly|coolly|coldly|hotly|angrily|calmly|peacefully|violently|suddenly|gradually|immediately|eventually|ultimately|initially|originally|previously|recently|currently|presently|temporarily|permanently|briefly|extensively|thoroughly|partially|completely|entirely|fully|barely|hardly|scarcely|almost|nearly|approximately|roughly|exactly|precisely|specifically|generally|particularly|especially|mainly|primarily|chiefly|largely|mostly|partly|somewhat|quite|rather|fairly|pretty|really|truly|actually|literally|virtually|practically|essentially|basically|fundamentally|inherently|naturally|obviously|clearly|apparently|evidently|presumably|supposedly|allegedly|reportedly|seemingly)\\s*$", RegexOption.IGNORE_CASE)) || // Ends with common incomplete words
                 trimmed.matches(Regex(".*\\b\\w+[-']\\s*$")) // Ends with hyphenated/apostrophe word (incomplete)
         
-        // Check generation time - if it's very short and content is minimal, it might be truncated
-        val isVeryShort = generationTimeMs < 1000 && content.length < 50
-        
-        // Check for markdown code blocks that weren't closed
+        // Fifth check: Look for unclosed markdown code blocks
         val unclosedCodeBlocks = content.count { it == '`' } % 2 != 0
         
-        // Consider it truncated if it has indicators of incompleteness AND doesn't end with proper punctuation
-        val result = !endsWithProperPunctuation && (endsWithIncompletePattern || isVeryShort || unclosedCodeBlocks)
+        // Sixth check: If content is getting repetitive (same phrases repeating), don't continue
+        val words = trimmed.split(Regex("\\s+"))
+        val isRepetitive = if (words.size > 20) {
+            val lastTenWords = words.takeLast(10).joinToString(" ")
+            val beforeTenWords = words.dropLast(10).takeLast(10).joinToString(" ")
+            lastTenWords == beforeTenWords
+        } else false
         
-        Log.d("ChatViewModel", "Truncation check: endsWithProperPunctuation=$endsWithProperPunctuation, endsWithIncompletePattern=$endsWithIncompletePattern, isVeryShort=$isVeryShort, unclosedCodeBlocks=$unclosedCodeBlocks, result=$result")
+        if (isRepetitive) {
+            Log.d("ChatViewModel", "Content is repetitive - stopping continuation")
+            return false
+        }
         
-        return result
+        // Only continue if we have clear signs of incompleteness AND the content is meaningful
+        val shouldContinue = !endsWithProperPunctuation && (endsWithIncompletePattern || isVeryShort || unclosedCodeBlocks)
+        
+        Log.d("ChatViewModel", "Truncation check: endsWithProperPunctuation=$endsWithProperPunctuation, endsWithIncompletePattern=$endsWithIncompletePattern, isVeryShort=$isVeryShort, unclosedCodeBlocks=$unclosedCodeBlocks, isOnlyWhitespace=$isOnlyWhitespace, isRepetitive=$isRepetitive, shouldContinue=$shouldContinue")
+        
+        return shouldContinue
     }
 
     /** Interrupt the current response generation if one is running */
@@ -438,4 +477,60 @@ class ChatViewModel : ViewModel() {
             else -> "file"
         }
     }
-} 
+
+    /**
+     * Build context-aware history that respects the model's context window limits.
+     * This implements a sliding window approach similar to ChatGPT.
+     */
+    private fun buildContextAwareHistory(messages: List<MessageEntity>): String {
+        val model = currentModel ?: return ""
+        
+        // Use the model's actual context window size with some safety margin
+        val maxContextTokens = (model.contextWindowSize * 0.8).toInt() // Use 80% of max to leave room for response
+        val maxContextChars = maxContextTokens * 4 // Rough character limit (1 token ≈ 4 characters)
+        
+        Log.d("ChatViewModel", "Context window: Model ${model.name} has ${model.contextWindowSize} tokens, using ${maxContextTokens} tokens (${maxContextChars} chars)")
+        
+        // Always keep the system prompt/instruction if we had one
+        val systemPrompt = "You are a helpful AI assistant. Provide clear, accurate, and helpful responses."
+        
+        // Convert messages to string format
+        val messageStrings = messages.map { message ->
+            val prefix = if (message.isFromUser) "user: " else "model: "
+            prefix + message.content
+        }
+        
+        // If total length is within limits, return full history
+        val fullHistory = messageStrings.joinToString(separator = "\n")
+        if (fullHistory.length <= maxContextChars) {
+            return fullHistory
+        }
+        
+        // Otherwise, implement sliding window: keep recent messages that fit within limit
+        val recentMessages = mutableListOf<String>()
+        var currentLength = 0
+        
+        // Add messages from most recent backwards until we hit the limit
+        for (i in messageStrings.indices.reversed()) {
+            val message = messageStrings[i]
+            if (currentLength + message.length + 1 <= maxContextChars) { // +1 for newline
+                recentMessages.add(0, message) // Add to beginning
+                currentLength += message.length + 1
+            } else {
+                break
+            }
+        }
+        
+        // Ensure we have at least the last few exchanges
+        if (recentMessages.size < 4 && messageStrings.size >= 4) {
+            // Take last 4 messages (2 exchanges) regardless of length
+            recentMessages.clear()
+            recentMessages.addAll(messageStrings.takeLast(4))
+        }
+        
+        val result = recentMessages.joinToString(separator = "\n")
+        Log.d("ChatViewModel", "Context window management: Original ${fullHistory.length} chars, trimmed to ${result.length} chars (${recentMessages.size} messages)")
+        
+        return result
+    }
+}

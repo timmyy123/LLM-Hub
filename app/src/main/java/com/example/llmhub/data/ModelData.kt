@@ -12,6 +12,7 @@ object ModelData {
             source = "Google via LiteRT Community",
             supportsVision = false,
             requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            contextWindowSize = 2048,
             modelFormat = "task"
         ),
         LLMModel(
@@ -23,6 +24,7 @@ object ModelData {
             source = "Google via LiteRT Community",
             supportsVision = false,
             requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 1280,
             modelFormat = "task"
         ),
         LLMModel(
@@ -34,6 +36,7 @@ object ModelData {
             source = "Google via LiteRT Community",
             supportsVision = false,
             requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 2048,
             modelFormat = "task"
         ),
         LLMModel(
@@ -45,6 +48,7 @@ object ModelData {
             source = "Google via LiteRT Community",
             supportsVision = false,
             requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 5),
+            contextWindowSize = 4096,
             modelFormat = "task"
         ),
 
@@ -58,6 +62,7 @@ object ModelData {
             source = "Meta via LiteRT Community",
             supportsVision = false,
             requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 1280,
             modelFormat = "task"
         ),
         
@@ -70,6 +75,7 @@ object ModelData {
             source = "Meta via LiteRT Community",
             supportsVision = false,
             requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 1280,
             modelFormat = "task"
         ),
 
@@ -82,6 +88,7 @@ object ModelData {
             source = "Microsoft via LiteRT Community",
             supportsVision = false,
             requirements = ModelRequirements(minRamGB = 5, recommendedRamGB = 7),
+            contextWindowSize = 1280,
             modelFormat = "task"
         )
     )
