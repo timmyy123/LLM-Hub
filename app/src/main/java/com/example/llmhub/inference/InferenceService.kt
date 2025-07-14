@@ -28,282 +28,232 @@ interface InferenceService {
     suspend fun generateResponse(prompt: String, model: LLMModel): String
     suspend fun generateResponseStream(prompt: String, model: LLMModel): Flow<String>
     suspend fun generateResponseStreamWithSession(prompt: String, model: LLMModel, chatId: String): Flow<String>
-    suspend fun getChatSession(chatId: String): LlmInferenceSession?
-    suspend fun createChatSession(chatId: String): LlmInferenceSession
-    suspend fun ensureChatSession(chatId: String): LlmInferenceSession
-    suspend fun closeChatSession(chatId: String)
     suspend fun resetChatSession(chatId: String)
-    suspend fun flushAllSessions()
     suspend fun onCleared()
     fun getCurrentlyLoadedModel(): LLMModel?
 }
 
 /**
- * MediaPipe-based implementation of InferenceService that supports GPU acceleration
- * and real-time streaming inference.
+ * Data class to hold MediaPipe LLM inference engine and session
+ */
+data class LlmModelInstance(val engine: LlmInference, var session: LlmInferenceSession)
+
+/**
+ * MediaPipe-based implementation of InferenceService inspired by Google AI Edge Gallery.
+ * Uses a simplified session management approach: one session per chat that gets reset as needed.
  */
 class MediaPipeInferenceService(private val context: Context) : InferenceService {
     
-    private var llmInference: LlmInference? = null
-    private var session: LlmInferenceSession? = null
+    private var modelInstance: LlmModelInstance? = null
     private var currentModel: LLMModel? = null
-    private var currentChatId: String? = null
     
-    // Keep track of conversation state per chat
+    // Keep track of sessions per chat - simplified approach
     private val chatSessions = mutableMapOf<String, LlmInferenceSession>()
     
     // Mutex to prevent race conditions during session operations
     private val sessionMutex = Mutex()
     
+    companion object {
+        private const val TAG = "MediaPipeInference"
+        private const val DEFAULT_MAX_TOKENS = 4096
+        private const val DEFAULT_TOP_K = 40
+        private const val DEFAULT_TOP_P = 0.8f
+        private const val DEFAULT_TEMPERATURE = 0.8f
+    }
+
     override suspend fun loadModel(model: LLMModel): Boolean {
         return try {
             ensureModelLoaded(model)
             true
         } catch (e: Exception) {
-            Log.e("MediaPipeInference", "Failed to load model: ${e.message}", e)
+            Log.e(TAG, "Failed to load model: ${e.message}", e)
             false
         }
     }
-    
-    override suspend fun getChatSession(chatId: String): LlmInferenceSession? {
-        return chatSessions[chatId]
-    }
-    
-    override suspend fun createChatSession(chatId: String): LlmInferenceSession {
-        return sessionMutex.withLock {
-            val model = currentModel ?: throw IllegalStateException("No model loaded - call loadModel first")
-            ensureModelLoaded(model)
-            
-            // Make sure we don't have an old session lingering
-            chatSessions.remove(chatId)?.let { oldSession ->
-                try {
-                    oldSession.close()
-                    // Give MediaPipe more time to clean up the old session
-                    delay(200)
-                } catch (e: Exception) {
-                    Log.w("MediaPipeInference", "Error closing old session during creation for chat $chatId: ${e.message}")
-                }
-            }
-            
-            // Additional delay to ensure MediaPipe has fully cleaned up
-            delay(100)
-            
-            val newSession = createNewSession()
-            chatSessions[chatId] = newSession
-            Log.d("MediaPipeInference", "Created new session for chat $chatId")
-            newSession
-        }
-    }
-    
-    // Ensure session exists or create it
-    override suspend fun ensureChatSession(chatId: String): LlmInferenceSession {
-        return sessionMutex.withLock {
-            // Check if session exists without lock (since we're already inside withLock)
-            chatSessions[chatId] ?: run {
-                // Create new session without calling createChatSession to avoid deadlock
-                val model = currentModel ?: throw IllegalStateException("No model loaded - call loadModel first")
-                ensureModelLoaded(model)
-                
-                // Additional delay to ensure MediaPipe has fully cleaned up
-                delay(100)
-                
-                val newSession = createNewSession()
-                chatSessions[chatId] = newSession
-                Log.d("MediaPipeInference", "Created new session for chat $chatId (via ensureChatSession)")
-                newSession
-            }
-        }
-    }
-    
-    override suspend fun closeChatSession(chatId: String) {
-        chatSessions.remove(chatId)?.let { session ->
-            try {
-                Log.d("MediaPipeInference", "Closing session for chat $chatId")
-                // Try to close gracefully, but don't wait too long
-                withContext(Dispatchers.IO) {
-                    session.close()
-                }
-            } catch (e: Exception) {
-                Log.w("MediaPipeInference", "Error closing session for chat $chatId: ${e.message}")
-                // Continue even if close fails - the session will be garbage collected
-            }
-        }
-    }
-    
-    // Force close and recreate session for a chat (useful for error recovery)
+
     override suspend fun resetChatSession(chatId: String) {
         sessionMutex.withLock {
-            Log.d("MediaPipeInference", "Resetting session for chat $chatId")
+            Log.d(TAG, "Resetting session for chat $chatId")
             
-            // Force close the session and remove from tracking
+            // Close existing session if it exists
             chatSessions.remove(chatId)?.let { session ->
                 try {
-                    Log.d("MediaPipeInference", "Force closing session for chat $chatId")
-                    withContext(Dispatchers.IO) {
-                        session.close()
-                    }
-                    // Give MediaPipe time to clean up internal state
-                    delay(400)
-                } catch (e: Exception) {
-                    Log.w("MediaPipeInference", "Error force closing session for chat $chatId: ${e.message}")
-                }
-            }
-            
-            // Additional cleanup - ensure no lingering references
-            try {
-                // Give MediaPipe additional time to fully clean up
-                delay(300)
-            } catch (e: Exception) {
-                Log.w("MediaPipeInference", "Error during cleanup delay: ${e.message}")
-            }
-            
-            // Session will be recreated on next use
-            Log.d("MediaPipeInference", "Session reset completed for chat $chatId")
-        }
-    }
-    
-    // Flush all sessions to prevent cross-contamination
-    override suspend fun flushAllSessions() {
-        sessionMutex.withLock {
-            Log.d("MediaPipeInference", "Flushing all sessions")
-            chatSessions.values.forEach { session ->
-                try {
                     session.close()
+                    Log.d(TAG, "Closed old session for chat $chatId")
                 } catch (e: Exception) {
-                    Log.w("MediaPipeInference", "Error closing session during flush: ${e.message}")
+                    Log.w(TAG, "Error closing session for chat $chatId: ${e.message}")
                 }
             }
-            chatSessions.clear()
-            delay(500) // Give MediaPipe time to clean up
-            Log.d("MediaPipeInference", "All sessions flushed")
+            
+            // Give MediaPipe time to clean up
+            delay(200)
+            Log.d(TAG, "Session reset completed for chat $chatId")
         }
     }
 
     private suspend fun ensureModelLoaded(model: LLMModel) {
         if (currentModel?.name != model.name) {
-            Log.d("MediaPipeInference", "Model changed from ${currentModel?.name} to ${model.name}, clearing all sessions")
+            Log.d(TAG, "Model changed from ${currentModel?.name} to ${model.name}, reloading")
             
-            // Close all existing chat sessions first
-            chatSessions.values.forEach { session ->
+            // Close all existing sessions when switching models
+            sessionMutex.withLock {
+                chatSessions.values.forEach { session ->
+                    try {
+                        session.close()
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Error closing session during model switch: ${e.message}")
+                    }
+                }
+                chatSessions.clear()
+            }
+            
+            // Release existing model instance
+            modelInstance?.let { instance ->
                 try {
-                    session.close()
+                    instance.session.close()
                 } catch (e: Exception) {
-                    Log.w("MediaPipeInference", "Error closing chat session during model switch: ${e.message}")
+                    Log.w(TAG, "Error closing main session: ${e.message}")
+                }
+                try {
+                    instance.engine.close()
+                } catch (e: Exception) {
+                    Log.w(TAG, "Error closing engine: ${e.message}")
                 }
             }
-            chatSessions.clear()
-            
-            // Release existing model
-            session?.close()
-            llmInference?.close()
             
             withContext(Dispatchers.IO) {
+                loadModelFromPath(model)
+            }
+        }
+    }
+
+    private suspend fun loadModelFromPath(model: LLMModel) {
+        try {
+            // Determine model path
+            val modelAssetPath = if (model.url.startsWith("file://models/")) {
+                model.url.removePrefix("file://")
+            } else {
+                "models/${model.localFileName()}"
+            }
+            
+            Log.d(TAG, "Loading model from: $modelAssetPath")
+            
+            // Check if model exists in assets folder
+            val modelFile = try {
+                context.assets.open(modelAssetPath).use { 
+                    // File exists in assets, copy to files directory
+                    val targetFile = File(context.filesDir, "models/${model.localFileName()}")
+                    targetFile.parentFile?.mkdirs()
+                    
+                    if (!targetFile.exists()) {
+                        targetFile.outputStream().use { outputStream ->
+                            context.assets.open(modelAssetPath).use { inputStream ->
+                                inputStream.copyTo(outputStream)
+                            }
+                        }
+                        Log.d(TAG, "Copied model to ${targetFile.absolutePath}")
+                    }
+                    targetFile
+                }
+            } catch (e: Exception) {
+                // Try to find model in files directory
+                val modelFile = File(context.filesDir, modelAssetPath)
+                if (modelFile.exists()) {
+                    Log.d(TAG, "Model found in files directory: ${modelFile.absolutePath}")
+                    modelFile
+                } else {
+                    throw IllegalStateException("Model not found in assets or files: $modelAssetPath")
+                }
+            }
+            
+            // Determine backend - some models have GPU compatibility issues
+            val useCpu = modelFile.name.contains("Phi-4", ignoreCase = true) ||
+                         modelFile.name.contains("phi", ignoreCase = true) ||
+                         modelFile.name.contains("Llama", ignoreCase = true)
+
+            val backend = if (useCpu) {
+                LlmInference.Backend.CPU
+            } else {
+                LlmInference.Backend.GPU
+            }
+            
+            Log.d(TAG, "Using backend: $backend for model: ${modelFile.name}")
+            
+            // Create LLM inference options
+            val optionsBuilder = LlmInference.LlmInferenceOptions.builder()
+                .setModelPath(modelFile.absolutePath)
+                .setMaxTokens(DEFAULT_MAX_TOKENS)
+                .setPreferredBackend(backend)
+            
+            val options = optionsBuilder.build()
+            
+            // Create LLM inference engine
+            val llmInference = LlmInference.createFromOptions(context, options)
+            
+            // Create initial session
+            val session = createSession(llmInference)
+            
+            // Store model instance
+            modelInstance = LlmModelInstance(engine = llmInference, session = session)
+            currentModel = model
+            
+            Log.d(TAG, "Successfully loaded model: ${model.name}")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to load model: ${model.name}", e)
+            throw RuntimeException("Failed to load model: ${e.message}", e)
+        }
+    }
+
+    private fun createSession(engine: LlmInference): LlmInferenceSession {
+        val sessionOptions = LlmInferenceSession.LlmInferenceSessionOptions.builder()
+            .setTopK(DEFAULT_TOP_K)
+            .setTemperature(DEFAULT_TEMPERATURE)
+            .setTopP(DEFAULT_TOP_P)
+            .setRandomSeed(System.currentTimeMillis().toInt())
+            .build()
+        
+        return LlmInferenceSession.createFromOptions(engine, sessionOptions)
+    }
+
+    private suspend fun getOrCreateChatSession(chatId: String): LlmInferenceSession {
+        return sessionMutex.withLock {
+            chatSessions[chatId] ?: run {
+                val engine = modelInstance?.engine 
+                    ?: throw IllegalStateException("No model loaded - call loadModel first")
+                
+                Log.d(TAG, "Creating new session for chat $chatId")
+                val newSession = createSession(engine)
+                chatSessions[chatId] = newSession
+                newSession
+            }
+        }
+    }
+
+    private suspend fun resetSession(chatId: String): LlmInferenceSession {
+        sessionMutex.withLock {
+            Log.d(TAG, "Resetting session for chat $chatId")
+            
+            // Close old session if exists
+            chatSessions.remove(chatId)?.let { oldSession ->
                 try {
-                    // Determine model path based on URL format
-                    val modelAssetPath = if (model.url.startsWith("file://models/")) {
-                        // Local asset reference: file://models/gemma3-1b-it-int4.task -> models/gemma3-1b-it-int4.task
-                        model.url.removePrefix("file://")
-                    } else {
-                        // Try to find model in assets based on filename
-                        "models/${model.localFileName()}"
-                    }
-                    
-                    Log.d("MediaPipeInference", "Loading model from assets: $modelAssetPath")
-                    
-                    // Check if model exists in assets folder
-                    try {
-                        context.assets.open(modelAssetPath).use { 
-                            // File exists in assets
-                        }
-                    } catch (e: Exception) {
-                        // Try alternative path: check if model exists in files directory
-                        val modelFile = File(context.filesDir, modelAssetPath)
-                        if (modelFile.exists()) {
-                            Log.d("MediaPipeInference", "Model found in files directory: ${modelFile.absolutePath}")
-                            loadModelFromFile(modelFile, model)
-                            return@withContext
-                        } else {
-                            throw IllegalStateException("Model not found in assets or files: $modelAssetPath")
-                        }
-                    }
-                    
-                    // Load model from assets using MediaPipe's direct asset loading
-                    loadModelFromAssets(modelAssetPath, model)
-                    
+                    oldSession.close()
+                    delay(200) // Give MediaPipe time to clean up
                 } catch (e: Exception) {
-                    Log.e("MediaPipeInference", "Failed to load model: ${model.name}", e)
-                    throw RuntimeException("Failed to load model: ${e.message}", e)
+                    Log.w(TAG, "Error closing old session for chat $chatId: ${e.message}")
                 }
             }
+            
+            // Create new session
+            val engine = modelInstance?.engine 
+                ?: throw IllegalStateException("No model loaded")
+            
+            val newSession = createSession(engine)
+            chatSessions[chatId] = newSession
+            Log.d(TAG, "Created new session for chat $chatId")
+            
+            return newSession
         }
-    }
-    
-    private suspend fun loadModelFromAssets(assetPath: String, model: LLMModel) {
-        // MediaPipe LLM Inference doesn't support direct asset loading
-        // Copy from assets to files directory first
-        val modelFile = File(context.filesDir, "models/${model.localFileName()}")
-        
-        if (!modelFile.exists()) {
-            // Copy from assets to files directory
-            modelFile.parentFile?.mkdirs()
-            context.assets.open(assetPath).use { inputStream ->
-                modelFile.outputStream().use { outputStream ->
-                    inputStream.copyTo(outputStream)
-                }
-            }
-        }
-        
-        // Now load from file
-        loadModelFromFile(modelFile, model)
-    }
-    
-    private suspend fun loadModelFromFile(modelFile: File, model: LLMModel) {
-        // Configure LLM inference options for file loading
-        // Determine backend based on model type - some models have GPU compatibility issues
-        val useCpu = modelFile.name.contains("Phi-4", ignoreCase = true) ||
-                     modelFile.name.contains("phi", ignoreCase = true) ||
-                     modelFile.name.contains("Llama", ignoreCase = true)
-
-        val backend = if (useCpu) {
-            LlmInference.Backend.CPU
-        } else {
-            LlmInference.Backend.GPU
-        }
-        
-        // Dynamically detect the maximum context window from the filename pattern `_ekvXXXX`
-        // For example: `..._ekv1280.task` -> 1280 tokens, `..._ekv4096.task` -> 4096 tokens.
-        val contextWindowSize = Regex("_ekv(\\d+)")
-            .find(modelFile.name)
-            ?.groups?.get(1)
-            ?.value
-            ?.toIntOrNull()
-            ?.coerceAtLeast(1280) // Ensure a sensible lower bound
-            ?: 2048 // Default when pattern not present
-
-        // Set maxTokens for OUTPUT generation (not context window)
-        // Use a reasonable output limit that allows for longer responses
-        val maxOutputTokens = 4096 // Allow up to 4096 tokens per generation (much higher than previous ~2000)
-
-        val optionsBuilder = LlmInference.LlmInferenceOptions.builder()
-            .setModelPath(modelFile.absolutePath)  // Use file path
-            .setMaxTokens(maxOutputTokens) // This is for output generation, not context window
-            .setPreferredBackend(backend)
-
-        Log.d("MediaPipeInference", "Model: ${modelFile.name}, Context Window: $contextWindowSize, Max Output Tokens: $maxOutputTokens")
-
-        // When using CPU, we rely on the backend's default thread management
-        if (backend == LlmInference.Backend.CPU) {
-            Log.d("MediaPipeInference", "CPU backend selected. Using default thread management.")
-        }
-
-        val options = optionsBuilder.build()
-        
-        // Create LLM inference engine from file
-        llmInference = LlmInference.createFromOptions(context, options)
-        
-        // DO NOT create session here. Create it per-request.
-        currentModel = model
-        Log.d("MediaPipeInference", "Successfully loaded model from file: ${model.name}")
     }
 
     override suspend fun generateResponse(prompt: String, model: LLMModel): String {
@@ -313,9 +263,11 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             val responseBuilder = StringBuilder()
             var localSession: LlmInferenceSession? = null
             try {
-                // Create a new session for each request to ensure a clean state
-                localSession = createNewSession()
-
+                // Create a new session for each single request to ensure clean state
+                val engine = modelInstance?.engine
+                    ?: throw IllegalStateException("No model loaded")
+                
+                localSession = createSession(engine)
                 var isComplete = false
                 
                 // Add query to session
@@ -337,7 +289,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 responseBuilder.toString()
                 
             } catch (e: Exception) {
-                Log.e("MediaPipeInference", "Inference failed", e)
+                Log.e(TAG, "Inference failed", e)
                 "Error: ${e.message}"
             } finally {
                 localSession?.close()
@@ -349,9 +301,11 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         ensureModelLoaded(model)
         
         val localSession = try {
-            createNewSession()
+            val engine = modelInstance?.engine
+                ?: throw IllegalStateException("No model loaded")
+            createSession(engine)
         } catch (e: Exception) {
-            Log.e("MediaPipeInference", "Failed to create new session", e)
+            Log.e(TAG, "Failed to create new session", e)
             close(e)
             return@callbackFlow
         }
@@ -370,24 +324,22 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 }
             }
         } catch (e: Exception) {
-            Log.e("MediaPipeInference", "Streaming inference failed", e)
+            Log.e(TAG, "Streaming inference failed", e)
             isGenerationComplete = true
             close(e)
         }
 
         awaitClose {
-            Log.d("MediaPipeInference", "Closing session and resources.")
+            Log.d(TAG, "Closing session and resources.")
             try {
                 // If generation is still in progress, we need to wait a bit before closing
                 if (!isGenerationComplete) {
-                    Log.d("MediaPipeInference", "Waiting for generation to complete before cleanup...")
-                    // Give it a short time to finish naturally
+                    Log.d(TAG, "Waiting for generation to complete before cleanup...")
                     Thread.sleep(100)
                 }
                 localSession.close()
             } catch (e: Exception) {
-                Log.w("MediaPipeInference", "Error during session cleanup: ${e.message}")
-                // Continue cleanup even if session close fails
+                Log.w(TAG, "Error during session cleanup: ${e.message}")
             }
         }
     }.flowOn(Dispatchers.IO)
@@ -395,33 +347,15 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
     override suspend fun generateResponseStreamWithSession(prompt: String, model: LLMModel, chatId: String): Flow<String> = callbackFlow {
         ensureModelLoaded(model)
         
-        // Always create a fresh session for each generation to avoid corruption
         var localSession: LlmInferenceSession? = null
-        
         var isGenerationComplete = false
-        var sessionRecreated = false
         
         try {
-            // Force create a new session for each generation to prevent corruption
-            sessionMutex.withLock {
-                // Remove any existing session for this chat
-                chatSessions.remove(chatId)?.let { oldSession ->
-                    try {
-                        oldSession.close()
-                        delay(100)
-                    } catch (e: Exception) {
-                        Log.w("MediaPipeInference", "Error closing old session: ${e.message}")
-                    }
-                }
-                
-                // Create completely fresh session
-                localSession = createNewSession()
-                chatSessions[chatId] = localSession!!
-                Log.d("MediaPipeInference", "Created fresh session for chat $chatId")
-            }
+            // Get or create session for this chat
+            localSession = getOrCreateChatSession(chatId)
             
-            localSession!!.addQueryChunk(prompt)
-            localSession!!.generateResponseAsync { partialResult, done ->
+            localSession.addQueryChunk(prompt)
+            localSession.generateResponseAsync { partialResult, done ->
                 if (!isClosedForSend) {
                     trySend(partialResult)
                 }
@@ -430,37 +364,22 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                     close()
                 }
             }
-        } catch (e: Exception) {
-            Log.e("MediaPipeInference", "Streaming inference failed for chat $chatId: ${e.message}", e)
             
-            // If we get a MediaPipe session error, try to recover by creating a new session
-            if (e.message?.contains("DetokenizerCalculator") == true || 
-                e.message?.contains("id >= 0") == true ||
-                e.message?.contains("No id available to be decoded") == true ||
-                e.message?.contains("LlmExecutorCalculator") == true ||
-                e.message?.contains("Please create a new Session") == true ||
-                e.message?.contains("INVALID_ARGUMENT") == true ||
-                e.message?.contains("Failed to add query chunk") == true ||
-                e.message?.contains("Graph has errors") == true) {
-                
-                Log.w("MediaPipeInference", "Detected MediaPipe session error, attempting recovery for chat $chatId")
+        } catch (e: Exception) {
+            Log.e(TAG, "Streaming inference failed for chat $chatId: ${e.message}", e)
+            
+            // Check if this is a MediaPipe session error and try to recover
+            if (isMediaPipeSessionError(e)) {
+                Log.w(TAG, "Detected MediaPipe session error, attempting recovery for chat $chatId")
                 
                 try {
-                    // Complete session cleanup and recreation
-                    sessionMutex.withLock {
-                        chatSessions.remove(chatId)
-                        delay(1000) // Even longer delay for recovery
-                        
-                        localSession = createNewSession()
-                        chatSessions[chatId] = localSession!!
-                        sessionRecreated = true
-                    }
+                    // Reset the session and retry
+                    localSession = resetSession(chatId)
                     
-                    Log.d("MediaPipeInference", "Created new session for recovery, attempting generation retry")
+                    Log.d(TAG, "Created new session for recovery, attempting generation retry")
                     
-                    // Retry the generation with the new session
-                    localSession!!.addQueryChunk(prompt)
-                    localSession!!.generateResponseAsync { partialResult, done ->
+                    localSession.addQueryChunk(prompt)
+                    localSession.generateResponseAsync { partialResult, done ->
                         if (!isClosedForSend) {
                             trySend(partialResult)
                         }
@@ -470,10 +389,10 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                         }
                     }
                     
-                    Log.d("MediaPipeInference", "Successfully recovered from MediaPipe session error for chat $chatId")
+                    Log.d(TAG, "Successfully recovered from MediaPipe session error for chat $chatId")
                     
                 } catch (recoveryException: Exception) {
-                    Log.e("MediaPipeInference", "Failed to recover from MediaPipe session error for chat $chatId", recoveryException)
+                    Log.e(TAG, "Failed to recover from MediaPipe session error for chat $chatId", recoveryException)
                     isGenerationComplete = true
                     close(recoveryException)
                 }
@@ -484,63 +403,65 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         }
 
         awaitClose {
-            Log.d("MediaPipeInference", "Generation complete for chat $chatId (session recreated: $sessionRecreated)")
-            // NOTE: We don't close the session here because we want to keep it for future use
-            // The session will be closed when the chat is explicitly closed or app shuts down
+            Log.d(TAG, "Generation complete for chat $chatId")
+            // Don't close the session here - keep it for future use in this chat
         }
     }.flowOn(Dispatchers.IO)
 
-    private fun createNewSession(): LlmInferenceSession {
-        val sessionOptions = LlmInferenceSession.LlmInferenceSessionOptions.builder()
-            .setTopK(40)
-            .setTemperature(0.8f)
-            .setRandomSeed(System.currentTimeMillis().toInt()) // Use different seed
-            .build()
-        
-        return try {
-            LlmInferenceSession.createFromOptions(llmInference!!, sessionOptions)
-        } catch (e: Exception) {
-            Log.e("MediaPipeInference", "Failed to create new session: ${e.message}", e)
-            throw RuntimeException("Failed to create MediaPipe session", e)
-        }
+    /**
+     * Check if the exception is a known MediaPipe session error
+     */
+    private fun isMediaPipeSessionError(e: Exception): Boolean {
+        val errorMessage = e.message?.lowercase() ?: ""
+        return errorMessage.contains("detokenizercalculator") ||
+                errorMessage.contains("id >= 0") ||
+                errorMessage.contains("no id available to be decoded") ||
+                errorMessage.contains("llmexecutorcalculator") ||
+                errorMessage.contains("please create a new session") ||
+                errorMessage.contains("invalid_argument") ||
+                errorMessage.contains("failed to add query chunk") ||
+                errorMessage.contains("graph has errors")
     }
-    
+
     override suspend fun onCleared() {
         withContext(Dispatchers.IO) {
             try {
-                Log.d("MediaPipeInference", "Clearing all resources and sessions")
+                Log.d(TAG, "Clearing all resources and sessions")
                 
-                // Close all chat sessions with error handling
+                // Close all chat sessions
                 val sessionCount = chatSessions.size
-                chatSessions.values.forEach { session ->
+                sessionMutex.withLock {
+                    chatSessions.values.forEach { session ->
+                        try {
+                            session.close()
+                        } catch (e: Exception) {
+                            Log.w(TAG, "Error closing chat session during cleanup: ${e.message}")
+                        }
+                    }
+                    chatSessions.clear()
+                }
+                
+                // Close model instance
+                modelInstance?.let { instance ->
                     try {
-                        session.close()
+                        instance.session.close()
                     } catch (e: Exception) {
-                        Log.w("MediaPipeInference", "Error closing chat session during cleanup: ${e.message}")
+                        Log.w(TAG, "Error closing main session during cleanup: ${e.message}")
+                    }
+                    
+                    try {
+                        instance.engine.close()
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Error closing LLM inference during cleanup: ${e.message}")
                     }
                 }
-                chatSessions.clear()
                 
-                // Close main session and inference engine
-                try {
-                    session?.close()
-                } catch (e: Exception) {
-                    Log.w("MediaPipeInference", "Error closing main session during cleanup: ${e.message}")
-                }
-                
-                try {
-                    llmInference?.close()
-                } catch (e: Exception) {
-                    Log.w("MediaPipeInference", "Error closing LLM inference during cleanup: ${e.message}")
-                }
-                
-                session = null
-                llmInference = null
+                modelInstance = null
                 currentModel = null
                 
-                Log.d("MediaPipeInference", "Resources released (closed $sessionCount sessions)")
+                Log.d(TAG, "Resources released (closed $sessionCount sessions)")
             } catch (e: Exception) {
-                Log.e("MediaPipeInference", "Error releasing resources", e)
+                Log.e(TAG, "Error releasing resources", e)
             }
         }
     }

@@ -142,8 +142,8 @@ class ChatViewModel(
             
             viewModelScope.launch {
                 try {
-                    // Flush all sessions to prevent cross-contamination
-                    inferenceService.flushAllSessions()
+                    // Reset chat session to prevent cross-contamination between chats
+                    inferenceService.resetChatSession(previousChatId)
                     
                     Log.d("ChatViewModel", "Completed session cleanup for chat switch")
                 } catch (e: Exception) {
@@ -239,22 +239,14 @@ class ChatViewModel(
                     // Reset session when switching to ensure clean state
                     resetChatSession(chatId)
                 } else {
-                    // Even if not switching, check if we need to reset the session
+                    // For the same chat, still do a reset to ensure clean state
+                    // This helps prevent session corruption issues when switching between chats
                     viewModelScope.launch {
                         try {
-                            val existingSession = inferenceService.getChatSession(chatId)
-                            if (existingSession == null) {
-                                Log.d("ChatViewModel", "No session exists for chat $chatId, will create on first use")
-                            } else {
-                                Log.d("ChatViewModel", "Session exists for chat $chatId, will reuse")
-                                // For existing sessions, do a quick reset to ensure clean state
-                                // This helps prevent session corruption issues
-                                resetChatSession(chatId)
-                            }
-                        } catch (e: Exception) {
-                            Log.w("ChatViewModel", "Error checking session for chat $chatId: ${e.message}")
-                            // If we can't check the session, reset it to be safe
                             resetChatSession(chatId)
+                            Log.d("ChatViewModel", "Reset session for current chat $chatId to ensure clean state")
+                        } catch (e: Exception) {
+                            Log.w("ChatViewModel", "Error resetting session for chat $chatId: ${e.message}")
                         }
                     }
                 }
@@ -380,27 +372,9 @@ class ChatViewModel(
                     return@launch
                 }
                 
-                // Ensure we have a proper session context for this chat
-                try {
-                    // Ensure session exists for the current chat
-                    inferenceService.ensureChatSession(chatId)
-                    Log.d("ChatViewModel", "Session ensured for chat $chatId")
-                } catch (e: Exception) {
-                    Log.w("ChatViewModel", "Error ensuring chat session for chat $chatId: ${e.message}")
-                    // Try to recover by resetting and creating a new session
-                    try {
-                        inferenceService.resetChatSession(chatId)
-                        delay(100)
-                        inferenceService.createChatSession(chatId)
-                        Log.d("ChatViewModel", "Successfully recovered session for chat $chatId")
-                    } catch (recoveryException: Exception) {
-                        Log.e("ChatViewModel", "Failed to recover session for chat $chatId: ${recoveryException.message}")
-                        repository.addMessage(chatId, "Error: Failed to initialize chat session. Please try again.", isFromUser = false)
-                        _isLoading.value = false
-                        isGenerating = false
-                        return@launch
-                    }
-                }
+                // Session management is now handled internally by the inference service
+                // No need to manually ensure or create sessions
+                Log.d("ChatViewModel", "Starting generation for chat $chatId")
                 
                 // Pass the conversation history to the model with context window management
                 val history = buildContextAwareHistory(_messages.value)
@@ -697,13 +671,10 @@ class ChatViewModel(
 
     override fun onCleared() {
         viewModelScope.launch {
-            // Close the current chat session to free up resources
+            // Clean up resources
             currentChatId?.let { chatId ->
-                try {
-                    inferenceService.closeChatSession(chatId)
-                } catch (e: Exception) {
-                    Log.w("ChatViewModel", "Error closing chat session: ${e.message}")
-                }
+                // Session cleanup is now handled by the inference service
+                Log.d("ChatViewModel", "Chat session cleanup delegated to inference service")
             }
             inferenceService.onCleared()
         }
@@ -714,9 +685,11 @@ class ChatViewModel(
         currentChatId?.let { chatId ->
             viewModelScope.launch {
                 try {
-                    inferenceService.closeChatSession(chatId)
+                    // Reset the session instead of closing it
+                    inferenceService.resetChatSession(chatId)
+                    Log.d("ChatViewModel", "Reset session for chat $chatId")
                 } catch (e: Exception) {
-                    Log.w("ChatViewModel", "Error closing chat session: ${e.message}")
+                    Log.w("ChatViewModel", "Error resetting chat session: ${e.message}")
                 }
             }
         }
@@ -843,12 +816,13 @@ class ChatViewModel(
 
     fun clearAllChatsAndCreateNew(context: Context) {
         viewModelScope.launch {
-            // Close current chat session
+            // Reset current chat session
             currentChatId?.let { chatId ->
                 try {
-                    inferenceService.closeChatSession(chatId)
+                    inferenceService.resetChatSession(chatId)
+                    Log.d("ChatViewModel", "Reset session for chat $chatId during clear all")
                 } catch (e: Exception) {
-                    Log.w("ChatViewModel", "Error closing chat session during clear all: ${e.message}")
+                    Log.w("ChatViewModel", "Error resetting chat session during clear all: ${e.message}")
                 }
             }
             
