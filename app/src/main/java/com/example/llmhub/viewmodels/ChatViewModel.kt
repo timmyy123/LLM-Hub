@@ -376,6 +376,18 @@ class ChatViewModel(
                 // No need to manually ensure or create sessions
                 Log.d("ChatViewModel", "Starting generation for chat $chatId")
                 
+                // Check if we should reset the session before generating to prevent token overflow
+                val shouldResetSession = shouldResetSessionBeforeMessage(messageText, chatId)
+                if (shouldResetSession) {
+                    Log.d("ChatViewModel", "Proactively resetting session for chat $chatId before generation")
+                    try {
+                        inferenceService.resetChatSession(chatId)
+                        Log.d("ChatViewModel", "Successfully reset session for chat $chatId")
+                    } catch (e: Exception) {
+                        Log.w("ChatViewModel", "Error resetting session for chat $chatId: ${e.message}")
+                    }
+                }
+                
                 // Pass the conversation history to the model with context window management
                 val history = buildContextAwareHistory(_messages.value)
 
@@ -812,6 +824,49 @@ class ChatViewModel(
         Log.d("ChatViewModel", "Context preview for chat $currentChatId: $preview")
         
         return result
+    }
+
+    /**
+     * Check if we should reset the session before sending a message to prevent token overflow
+     */
+    private suspend fun shouldResetSessionBeforeMessage(message: String, chatId: String): Boolean {
+        val model = currentModel ?: return false
+        
+        try {
+            // Get the current conversation history that would be sent
+            val history = buildContextAwareHistory(_messages.value)
+            val fullPrompt = if (history.isNotEmpty()) {
+                "$history\n\nuser: $message\nassistant:"
+            } else {
+                "user: $message\nassistant:"
+            }
+            
+            // Rough estimate of token count (1 token ≈ 4 characters)
+            val estimatedTokens = fullPrompt.length / 4
+            val maxTokens = minOf(model.contextWindowSize, extractCacheSizeFromUrl(model.url) ?: model.contextWindowSize)
+            val tokenThreshold = (maxTokens * 0.7).toInt() // Reset at 70% to be safe
+            
+            Log.d("ChatViewModel", "Token check for chat $chatId: ~$estimatedTokens tokens, threshold: $tokenThreshold, max: $maxTokens")
+            
+            if (estimatedTokens > tokenThreshold) {
+                Log.w("ChatViewModel", "Token usage approaching limit ($estimatedTokens > $tokenThreshold), recommending session reset")
+                return true
+            }
+            
+        } catch (e: Exception) {
+            Log.w("ChatViewModel", "Error checking token usage for chat $chatId: ${e.message}")
+        }
+        
+        return false
+    }
+
+    /**
+     * Extract cache size from model URL (e.g., ekv2048 -> 2048)
+     */
+    private fun extractCacheSizeFromUrl(url: String): Int? {
+        val ekvPattern = Regex("ekv(\\d+)")
+        val match = ekvPattern.find(url)
+        return match?.groupValues?.get(1)?.toIntOrNull()
     }
 
     fun clearAllChatsAndCreateNew(context: Context) {

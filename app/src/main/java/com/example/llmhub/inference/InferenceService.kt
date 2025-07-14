@@ -52,10 +52,39 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
     
     companion object {
         private const val TAG = "MediaPipeInference"
-        private const val DEFAULT_MAX_TOKENS = 4096
+        private const val DEFAULT_MAX_TOKENS = 1024
         private const val DEFAULT_TOP_K = 40
         private const val DEFAULT_TOP_P = 0.8f
         private const val DEFAULT_TEMPERATURE = 0.8f
+        
+        /**
+         * Determine the correct max tokens based on model's context window size.
+         * The maxTokens must not exceed the model's internal cache size.
+         * For models with "ekvXXXX" in the filename, XXXX is the cache limit.
+         */
+        private fun getMaxTokensForModel(model: LLMModel): Int {
+            // Use the model's context window size, but respect cache limitations
+            val contextWindowSize = model.contextWindowSize
+            
+            // Extract cache size from model URL if available (e.g., ekv2048 means 2048 token cache)
+            val cacheSize = extractCacheSizeFromUrl(model.url) ?: contextWindowSize
+            
+            // Use the smaller of context window size or cache size
+            val maxTokens = minOf(contextWindowSize, cacheSize)
+            
+            Log.d(TAG, "Model: ${model.name}")
+            Log.d(TAG, "Context window: $contextWindowSize, Cache size: $cacheSize, Max tokens: $maxTokens")
+            return maxTokens
+        }
+        
+        /**
+         * Extract cache size from model URL (e.g., ekv2048 -> 2048)
+         */
+        private fun extractCacheSizeFromUrl(url: String): Int? {
+            val ekvPattern = Regex("ekv(\\d+)")
+            val match = ekvPattern.find(url)
+            return match?.groupValues?.get(1)?.toIntOrNull()
+        }
     }
 
     override suspend fun loadModel(model: LLMModel): Boolean {
@@ -197,10 +226,21 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             
             Log.d(TAG, "Using backend: $backend for model: ${modelFile.name}")
             
+            // Determine max tokens based on model configuration
+            val maxTokens = getMaxTokensForModel(model)
+            
+            Log.d(TAG, "Model configuration:")
+            Log.d(TAG, "  - Name: ${model.name}")
+            Log.d(TAG, "  - File: ${modelFile.name}")
+            Log.d(TAG, "  - Path: ${modelFile.absolutePath}")
+            Log.d(TAG, "  - Context window: ${model.contextWindowSize}")
+            Log.d(TAG, "  - Max tokens: $maxTokens")
+            Log.d(TAG, "  - Backend: $backend")
+            
             // Create LLM inference options
             val optionsBuilder = LlmInference.LlmInferenceOptions.builder()
                 .setModelPath(modelFile.absolutePath)
-                .setMaxTokens(DEFAULT_MAX_TOKENS)
+                .setMaxTokens(maxTokens)
                 .setPreferredBackend(backend)
             
             val options = optionsBuilder.build()
@@ -341,8 +381,54 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 Log.d(TAG, "No previous generation to cancel: ${e.message}")
             }
             
-            session.addQueryChunk(prompt)
-            session.generateResponseAsync { partialResult, done ->
+            // Check token count and reset session if approaching limit (Gallery approach)
+            val maxTokens = getMaxTokensForModel(model)
+            val currentTokens = session.sizeInTokens(prompt)
+            val promptTokens = session.sizeInTokens(prompt) - session.sizeInTokens("")
+            
+            Log.d(TAG, "Token usage for chat $chatId:")
+            Log.d(TAG, "  - Current session tokens: $currentTokens")
+            Log.d(TAG, "  - Prompt tokens: $promptTokens")
+            Log.d(TAG, "  - Max tokens: $maxTokens")
+            
+            // If adding the prompt would exceed ~80% of max tokens, reset the session
+            val tokenThreshold = (maxTokens * 0.8).toInt()
+            if (currentTokens + promptTokens > tokenThreshold) {
+                Log.w(TAG, "Token count ($currentTokens + $promptTokens = ${currentTokens + promptTokens}) approaching limit ($maxTokens)")
+                Log.w(TAG, "Resetting session for chat $chatId to prevent OUT_OF_RANGE error")
+                
+                // Reset session before it gets full
+                sessionMutex.withLock {
+                    try {
+                        session.close()
+                        Log.d(TAG, "Closed session due to token limit approach")
+                        
+                        // Create new session
+                        val newSession = LlmInferenceSession.createFromOptions(
+                            instance.engine,
+                            LlmInferenceSession.LlmInferenceSessionOptions.builder()
+                                .setTopK(DEFAULT_TOP_K)
+                                .setTopP(DEFAULT_TOP_P)
+                                .setTemperature(DEFAULT_TEMPERATURE)
+                                .build()
+                        )
+                        instance.session = newSession
+                        Log.d(TAG, "Created fresh session for chat $chatId")
+                        
+                        // Give MediaPipe time to clean up
+                        delay(500)
+                        
+                    } catch (resetException: Exception) {
+                        Log.e(TAG, "Failed to reset session before token limit: ${resetException.message}")
+                        throw resetException
+                    }
+                }
+            }
+            
+            // Now use the session (either existing or freshly reset)
+            val currentSession = instance.session
+            currentSession.addQueryChunk(prompt)
+            currentSession.generateResponseAsync { partialResult, done ->
                 if (!isClosedForSend) {
                     trySend(partialResult)
                 }
@@ -356,8 +442,8 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             Log.e(TAG, "Streaming inference failed for chat $chatId: ${e.message}", e)
             
             // Check if this is a MediaPipe session error and try to recover
-            if (isMediaPipeSessionError(e)) {
-                Log.w(TAG, "Detected MediaPipe session error, attempting recovery for chat $chatId")
+            if (isMediaPipeSessionError(e) || isTokenLimitError(e)) {
+                Log.w(TAG, "Detected MediaPipe session/token error, attempting recovery for chat $chatId")
                 
                 try {
                     // First try normal reset
@@ -443,6 +529,21 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 errorMessage.contains("graph has errors") ||
                 errorMessage.contains("previous invocation still processing") ||
                 errorMessage.contains("wait for done=true")
+    }
+
+    /**
+     * Check if the exception is a token limit error
+     */
+    private fun isTokenLimitError(e: Exception): Boolean {
+        val errorMessage = e.message?.lowercase() ?: ""
+        return errorMessage.contains("max number of tokens") ||
+                errorMessage.contains("maximum cache size") ||
+                errorMessage.contains("out_of_range") ||
+                errorMessage.contains("current_step") ||
+                errorMessage.contains("input_size") ||
+                errorMessage.contains("token limit") ||
+                errorMessage.contains("exceeded") ||
+                errorMessage.contains("larger than the maximum")
     }
 
     override suspend fun onCleared() {
