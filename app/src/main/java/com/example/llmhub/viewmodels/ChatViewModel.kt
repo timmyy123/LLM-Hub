@@ -11,6 +11,7 @@ import com.example.llmhub.repository.ChatRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import java.io.File
 import kotlinx.coroutines.Job
 import com.example.llmhub.data.localFileName
@@ -140,15 +141,14 @@ class ChatViewModel(
             // Clear any streaming state
             _streamingContents.value = emptyMap()
             
-            viewModelScope.launch {
-                try {
-                    // Reset chat session to prevent cross-contamination between chats
+            // Reset chat session synchronously to prevent session conflicts
+            try {
+                runBlocking {
                     inferenceService.resetChatSession(previousChatId)
-                    
-                    Log.d("ChatViewModel", "Completed session cleanup for chat switch")
-                } catch (e: Exception) {
-                    Log.w("ChatViewModel", "Error during session cleanup: ${e.message}")
                 }
+                Log.d("ChatViewModel", "Completed session cleanup for chat switch")
+            } catch (e: Exception) {
+                Log.w("ChatViewModel", "Error during session cleanup: ${e.message}")
             }
         }
 

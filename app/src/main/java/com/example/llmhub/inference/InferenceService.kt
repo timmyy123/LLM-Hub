@@ -39,16 +39,13 @@ interface InferenceService {
 data class LlmModelInstance(val engine: LlmInference, var session: LlmInferenceSession)
 
 /**
- * MediaPipe-based implementation of InferenceService inspired by Google AI Edge Gallery.
- * Uses a simplified session management approach: one session per chat that gets reset as needed.
+ * MediaPipe-based implementation of InferenceService following Google AI Edge Gallery pattern.
+ * Uses a single session approach: one session per model that gets reset as needed.
  */
 class MediaPipeInferenceService(private val context: Context) : InferenceService {
     
     private var modelInstance: LlmModelInstance? = null
     private var currentModel: LLMModel? = null
-    
-    // Keep track of sessions per chat - simplified approach
-    private val chatSessions = mutableMapOf<String, LlmInferenceSession>()
     
     // Mutex to prevent race conditions during session operations
     private val sessionMutex = Mutex()
@@ -75,18 +72,51 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         sessionMutex.withLock {
             Log.d(TAG, "Resetting session for chat $chatId")
             
-            // Close existing session if it exists
-            chatSessions.remove(chatId)?.let { session ->
+            val instance = modelInstance ?: return@withLock
+            
+            // Close current session and create a new one (Gallery approach)
+            try {
+                // First try to cancel any ongoing generation
                 try {
-                    session.close()
-                    Log.d(TAG, "Closed old session for chat $chatId")
+                    instance.session.cancelGenerateResponseAsync()
+                    Log.d(TAG, "Cancelled ongoing generation")
                 } catch (e: Exception) {
-                    Log.w(TAG, "Error closing session for chat $chatId: ${e.message}")
+                    Log.d(TAG, "No ongoing generation to cancel or cancel failed: ${e.message}")
+                }
+                
+                // Small delay to let cancellation complete
+                delay(100)
+                
+                instance.session.close()
+                Log.d(TAG, "Closed existing session")
+                
+                // Create new session with same options
+                val newSession = LlmInferenceSession.createFromOptions(
+                    instance.engine,
+                    LlmInferenceSession.LlmInferenceSessionOptions.builder()
+                        .setTopK(DEFAULT_TOP_K)
+                        .setTopP(DEFAULT_TOP_P)
+                        .setTemperature(DEFAULT_TEMPERATURE)
+                        .build()
+                )
+                instance.session = newSession
+                Log.d(TAG, "Created new session for chat $chatId")
+                
+                // Give MediaPipe time to clean up (Gallery uses 500ms)
+                delay(500)
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "Error resetting session for chat $chatId: ${e.message}", e)
+                // On error, try to recreate the entire model instance
+                try {
+                    currentModel?.let { model ->
+                        loadModelFromPath(model)
+                    }
+                } catch (retryException: Exception) {
+                    Log.e(TAG, "Failed to recreate model instance: ${retryException.message}", retryException)
                 }
             }
             
-            // Give MediaPipe time to clean up
-            delay(200)
             Log.d(TAG, "Session reset completed for chat $chatId")
         }
     }
@@ -95,24 +125,12 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         if (currentModel?.name != model.name) {
             Log.d(TAG, "Model changed from ${currentModel?.name} to ${model.name}, reloading")
             
-            // Close all existing sessions when switching models
-            sessionMutex.withLock {
-                chatSessions.values.forEach { session ->
-                    try {
-                        session.close()
-                    } catch (e: Exception) {
-                        Log.w(TAG, "Error closing session during model switch: ${e.message}")
-                    }
-                }
-                chatSessions.clear()
-            }
-            
-            // Release existing model instance
+            // Release existing model instance when switching models
             modelInstance?.let { instance ->
                 try {
                     instance.session.close()
                 } catch (e: Exception) {
-                    Log.w(TAG, "Error closing main session: ${e.message}")
+                    Log.w(TAG, "Error closing session: ${e.message}")
                 }
                 try {
                     instance.engine.close()
@@ -216,46 +234,6 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         return LlmInferenceSession.createFromOptions(engine, sessionOptions)
     }
 
-    private suspend fun getOrCreateChatSession(chatId: String): LlmInferenceSession {
-        return sessionMutex.withLock {
-            chatSessions[chatId] ?: run {
-                val engine = modelInstance?.engine 
-                    ?: throw IllegalStateException("No model loaded - call loadModel first")
-                
-                Log.d(TAG, "Creating new session for chat $chatId")
-                val newSession = createSession(engine)
-                chatSessions[chatId] = newSession
-                newSession
-            }
-        }
-    }
-
-    private suspend fun resetSession(chatId: String): LlmInferenceSession {
-        sessionMutex.withLock {
-            Log.d(TAG, "Resetting session for chat $chatId")
-            
-            // Close old session if exists
-            chatSessions.remove(chatId)?.let { oldSession ->
-                try {
-                    oldSession.close()
-                    delay(200) // Give MediaPipe time to clean up
-                } catch (e: Exception) {
-                    Log.w(TAG, "Error closing old session for chat $chatId: ${e.message}")
-                }
-            }
-            
-            // Create new session
-            val engine = modelInstance?.engine 
-                ?: throw IllegalStateException("No model loaded")
-            
-            val newSession = createSession(engine)
-            chatSessions[chatId] = newSession
-            Log.d(TAG, "Created new session for chat $chatId")
-            
-            return newSession
-        }
-    }
-
     override suspend fun generateResponse(prompt: String, model: LLMModel): String {
         ensureModelLoaded(model)
         
@@ -347,15 +325,24 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
     override suspend fun generateResponseStreamWithSession(prompt: String, model: LLMModel, chatId: String): Flow<String> = callbackFlow {
         ensureModelLoaded(model)
         
-        var localSession: LlmInferenceSession? = null
         var isGenerationComplete = false
         
         try {
-            // Get or create session for this chat
-            localSession = getOrCreateChatSession(chatId)
+            // Use the single session from the model instance (Gallery approach)
+            val instance = modelInstance ?: throw IllegalStateException("No model loaded")
+            val session = instance.session
             
-            localSession.addQueryChunk(prompt)
-            localSession.generateResponseAsync { partialResult, done ->
+            // Check if previous generation is still processing and cancel it
+            try {
+                session.cancelGenerateResponseAsync()
+                Log.d(TAG, "Cancelled any previous generation for chat $chatId")
+                delay(100) // Wait for cancellation to complete
+            } catch (e: Exception) {
+                Log.d(TAG, "No previous generation to cancel: ${e.message}")
+            }
+            
+            session.addQueryChunk(prompt)
+            session.generateResponseAsync { partialResult, done ->
                 if (!isClosedForSend) {
                     trySend(partialResult)
                 }
@@ -373,13 +360,17 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 Log.w(TAG, "Detected MediaPipe session error, attempting recovery for chat $chatId")
                 
                 try {
-                    // Reset the session and retry
-                    localSession = resetSession(chatId)
+                    // First try normal reset
+                    resetChatSession(chatId)
+                    
+                    // Use the new session
+                    val instance = modelInstance ?: throw IllegalStateException("No model loaded after reset")
+                    val session = instance.session
                     
                     Log.d(TAG, "Created new session for recovery, attempting generation retry")
                     
-                    localSession.addQueryChunk(prompt)
-                    localSession.generateResponseAsync { partialResult, done ->
+                    session.addQueryChunk(prompt)
+                    session.generateResponseAsync { partialResult, done ->
                         if (!isClosedForSend) {
                             trySend(partialResult)
                         }
@@ -392,9 +383,38 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                     Log.d(TAG, "Successfully recovered from MediaPipe session error for chat $chatId")
                     
                 } catch (recoveryException: Exception) {
-                    Log.e(TAG, "Failed to recover from MediaPipe session error for chat $chatId", recoveryException)
-                    isGenerationComplete = true
-                    close(recoveryException)
+                    Log.e(TAG, "Normal recovery failed for chat $chatId, trying force recreate", recoveryException)
+                    
+                    // Last resort: force recreate everything
+                    try {
+                        if (forceRecreateSession()) {
+                            val instance = modelInstance ?: throw IllegalStateException("No model loaded after force recreate")
+                            val session = instance.session
+                            
+                            Log.d(TAG, "Force recreated session, attempting generation retry")
+                            
+                            session.addQueryChunk(prompt)
+                            session.generateResponseAsync { partialResult, done ->
+                                if (!isClosedForSend) {
+                                    trySend(partialResult)
+                                }
+                                if (done) {
+                                    isGenerationComplete = true
+                                    close()
+                                }
+                            }
+                            
+                            Log.d(TAG, "Successfully recovered using force recreate for chat $chatId")
+                        } else {
+                            Log.e(TAG, "Force recreate failed for chat $chatId")
+                            isGenerationComplete = true
+                            close(Exception("Failed to recover session after multiple attempts"))
+                        }
+                    } catch (forceException: Exception) {
+                        Log.e(TAG, "Force recreate attempt failed for chat $chatId", forceException)
+                        isGenerationComplete = true
+                        close(forceException)
+                    }
                 }
             } else {
                 isGenerationComplete = true
@@ -404,7 +424,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
 
         awaitClose {
             Log.d(TAG, "Generation complete for chat $chatId")
-            // Don't close the session here - keep it for future use in this chat
+            // Don't close the session here - it's managed by the model instance
         }
     }.flowOn(Dispatchers.IO)
 
@@ -420,7 +440,9 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 errorMessage.contains("please create a new session") ||
                 errorMessage.contains("invalid_argument") ||
                 errorMessage.contains("failed to add query chunk") ||
-                errorMessage.contains("graph has errors")
+                errorMessage.contains("graph has errors") ||
+                errorMessage.contains("previous invocation still processing") ||
+                errorMessage.contains("wait for done=true")
     }
 
     override suspend fun onCleared() {
@@ -428,38 +450,27 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             try {
                 Log.d(TAG, "Clearing all resources and sessions")
                 
-                // Close all chat sessions
-                val sessionCount = chatSessions.size
                 sessionMutex.withLock {
-                    chatSessions.values.forEach { session ->
+                    // Close model instance
+                    modelInstance?.let { instance ->
                         try {
-                            session.close()
+                            instance.session.close()
                         } catch (e: Exception) {
-                            Log.w(TAG, "Error closing chat session during cleanup: ${e.message}")
+                            Log.w(TAG, "Error closing session during cleanup: ${e.message}")
+                        }
+                        
+                        try {
+                            instance.engine.close()
+                        } catch (e: Exception) {
+                            Log.w(TAG, "Error closing LLM inference during cleanup: ${e.message}")
                         }
                     }
-                    chatSessions.clear()
-                }
-                
-                // Close model instance
-                modelInstance?.let { instance ->
-                    try {
-                        instance.session.close()
-                    } catch (e: Exception) {
-                        Log.w(TAG, "Error closing main session during cleanup: ${e.message}")
-                    }
                     
-                    try {
-                        instance.engine.close()
-                    } catch (e: Exception) {
-                        Log.w(TAG, "Error closing LLM inference during cleanup: ${e.message}")
-                    }
+                    modelInstance = null
+                    currentModel = null
                 }
                 
-                modelInstance = null
-                currentModel = null
-                
-                Log.d(TAG, "Resources released (closed $sessionCount sessions)")
+                Log.d(TAG, "Resources released")
             } catch (e: Exception) {
                 Log.e(TAG, "Error releasing resources", e)
             }
@@ -468,5 +479,54 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
 
     override fun getCurrentlyLoadedModel(): LLMModel? {
         return currentModel
+    }
+
+    /**
+     * Force recreate the entire session when reset fails (last resort recovery)
+     */
+    private suspend fun forceRecreateSession(): Boolean {
+        return sessionMutex.withLock {
+            try {
+                Log.d(TAG, "Force recreating session as last resort")
+                val currentModelBackup = currentModel
+                
+                // Close everything
+                modelInstance?.let { instance ->
+                    try {
+                        instance.session.close()
+                    } catch (e: Exception) {
+                        Log.d(TAG, "Error closing session during force recreate: ${e.message}")
+                    }
+                    try {
+                        instance.engine.close()
+                    } catch (e: Exception) {
+                        Log.d(TAG, "Error closing engine during force recreate: ${e.message}")
+                    }
+                }
+                
+                modelInstance = null
+                currentModel = null
+                
+                // Wait longer for cleanup
+                delay(1000)
+                
+                // Reload the model if we had one
+                if (currentModelBackup != null) {
+                    try {
+                        loadModelFromPath(currentModelBackup)
+                        Log.d(TAG, "Successfully force recreated session")
+                        return@withLock true
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to reload model during force recreate: ${e.message}", e)
+                    }
+                }
+                
+                Log.e(TAG, "Force recreate failed")
+                return@withLock false
+            } catch (e: Exception) {
+                Log.e(TAG, "Exception during force recreate: ${e.message}", e)
+                return@withLock false
+            }
+        }
     }
 }
