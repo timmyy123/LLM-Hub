@@ -445,6 +445,7 @@ class ChatViewModel(
                                     
                                     // Extract images from recent messages for multimodal models
                     val images = if (currentModel!!.supportsVision) {
+                        Log.d("ChatViewModel", "Current model supports vision: ${currentModel!!.name}")
                         val recentMessages = _messages.value.takeLast(10)
                         Log.d("ChatViewModel", "Checking ${recentMessages.size} recent messages for images")
                         
@@ -454,14 +455,19 @@ class ChatViewModel(
                         // Check if the current message has an image attachment
                         if (processedAttachmentUri != null) {
                             try {
+                                Log.d("ChatViewModel", "Loading current message image from URI: $processedAttachmentUri")
                                 val bitmap = loadImageFromUri(context, processedAttachmentUri)
                                 if (bitmap != null) {
                                     currentImages.add(bitmap)
                                     Log.d("ChatViewModel", "Added current message image: ${bitmap.width}x${bitmap.height}")
+                                } else {
+                                    Log.w("ChatViewModel", "Failed to load bitmap from current message URI")
                                 }
                             } catch (e: Exception) {
                                 Log.e("ChatViewModel", "Failed to load current message image", e)
                             }
+                        } else {
+                            Log.d("ChatViewModel", "No current message image attachment")
                         }
                         
                         // Add images from recent messages (for context)
@@ -469,8 +475,15 @@ class ChatViewModel(
                         currentImages.addAll(contextImages)
                         
                         Log.d("ChatViewModel", "Total images for generation: ${currentImages.size} (current: ${if (processedAttachmentUri != null) 1 else 0}, context: ${contextImages.size})")
+                        
+                        // Log details of each image
+                        currentImages.forEachIndexed { index, bitmap ->
+                            Log.d("ChatViewModel", "Image $index: ${bitmap.width}x${bitmap.height}, config: ${bitmap.config}")
+                        }
+                        
                         currentImages
                     } else {
+                        Log.d("ChatViewModel", "Current model does not support vision: ${currentModel!!.name}")
                         emptyList()
                     }
                     

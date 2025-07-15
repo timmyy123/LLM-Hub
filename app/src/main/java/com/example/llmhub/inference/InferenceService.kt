@@ -21,6 +21,7 @@ import android.util.Log
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flowOn
+import android.app.ActivityManager
 
 /**
  * Interface for a service that can run model inference.
@@ -33,6 +34,7 @@ interface InferenceService {
     suspend fun resetChatSession(chatId: String)
     suspend fun onCleared()
     fun getCurrentlyLoadedModel(): LLMModel?
+    fun getMemoryWarningForImages(images: List<Bitmap>): String?
 }
 
 /**
@@ -43,11 +45,22 @@ data class LlmModelInstance(val engine: LlmInference, var session: LlmInferenceS
 /**
  * MediaPipe-based implementation of InferenceService following Google AI Edge Gallery pattern.
  * Uses a single session approach: one session per model that gets reset as needed.
+ * 
+ * Memory Management Strategy:
+ * - Device RAM <= 6GB: Force CPU backend for vision models (GPU + Vision causes crashes)
+ * - Device RAM 6-8GB: Use GPU for text-only, CPU for vision (warnings shown)
+ * - Device RAM > 8GB: GPU + Vision allowed without restrictions
+ * 
+ * Backend Selection Logic:
+ * - Models with known GPU issues (Phi, Llama): Always use CPU
+ * - Vision models on low memory devices: Use CPU to prevent crashes
+ * - Text-only or high memory devices: Use GPU for performance
  */
 class MediaPipeInferenceService(private val context: Context) : InferenceService {
     
     private var modelInstance: LlmModelInstance? = null
     private var currentModel: LLMModel? = null
+    private var currentBackend: LlmInference.Backend? = null
     
     // Mutex to prevent race conditions during session operations
     private val sessionMutex = Mutex()
@@ -86,6 +99,78 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             val ekvPattern = Regex("ekv(\\d+)")
             val match = ekvPattern.find(url)
             return match?.groupValues?.get(1)?.toIntOrNull()
+        }
+        
+        /**
+         * Get device total memory in GB
+         */
+        private fun getDeviceMemoryGB(context: Context): Double {
+            val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+            val memoryInfo = ActivityManager.MemoryInfo()
+            activityManager.getMemoryInfo(memoryInfo)
+            return memoryInfo.totalMem / (1024.0 * 1024.0 * 1024.0) // Convert bytes to GB
+        }
+        
+        /**
+         * Determine optimal backend based on device memory and vision usage
+         * Memory-aware strategy:
+         * - <= 6GB RAM: Force CPU for vision models (GPU + Vision causes OOM)
+         * - 6-8GB RAM: GPU for text-only, CPU for vision (hybrid approach)
+         * - > 8GB RAM: GPU with vision allowed (sufficient memory)
+         */
+        private fun determineOptimalBackend(
+            context: Context,
+            model: LLMModel,
+            willUseImages: Boolean
+        ): LlmInference.Backend {
+            val deviceMemoryGB = getDeviceMemoryGB(context)
+            
+            // Check for models with known GPU compatibility issues
+            val hasGpuCompatibilityIssues = model.localFileName().contains("Phi-4", ignoreCase = true) ||
+                                           model.localFileName().contains("phi", ignoreCase = true) ||
+                                           model.localFileName().contains("Llama", ignoreCase = true)
+            
+            Log.d(TAG, "Memory-aware backend selection:")
+            Log.d(TAG, "  - Device memory: ${String.format("%.1f", deviceMemoryGB)}GB")
+            Log.d(TAG, "  - Model supports vision: ${model.supportsVision}")
+            Log.d(TAG, "  - Expected to use images: $willUseImages")
+            Log.d(TAG, "  - Has GPU compatibility issues: $hasGpuCompatibilityIssues")
+            
+            return when {
+                // Force CPU for models with known GPU issues
+                hasGpuCompatibilityIssues -> {
+                    Log.d(TAG, "  → CPU backend (GPU compatibility issues)")
+                    LlmInference.Backend.CPU
+                }
+                
+                // Very low memory devices: CPU for vision, GPU for text
+                deviceMemoryGB <= 6.0 -> {
+                    if (model.supportsVision) {
+                        Log.d(TAG, "  → CPU backend (low memory + vision model)")
+                        LlmInference.Backend.CPU
+                    } else {
+                        Log.d(TAG, "  → GPU backend (low memory + text-only model)")
+                        LlmInference.Backend.GPU
+                    }
+                }
+                
+                // Medium memory devices: CPU for vision usage, GPU for text
+                deviceMemoryGB <= 8.0 -> {
+                    if (model.supportsVision && willUseImages) {
+                        Log.d(TAG, "  → CPU backend (medium memory + vision with images)")
+                        LlmInference.Backend.CPU
+                    } else {
+                        Log.d(TAG, "  → GPU backend (medium memory + text or vision without images)")
+                        LlmInference.Backend.GPU
+                    }
+                }
+                
+                // High memory devices: GPU is safe for everything
+                else -> {
+                    Log.d(TAG, "  → GPU backend (high memory device)")
+                    LlmInference.Backend.GPU
+                }
+            }
         }
     }
 
@@ -208,18 +293,12 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 }
             }
             
-            // Determine backend - some models have GPU compatibility issues
-            val useCpu = modelFile.name.contains("Phi-4", ignoreCase = true) ||
-                         modelFile.name.contains("phi", ignoreCase = true) ||
-                         modelFile.name.contains("Llama", ignoreCase = true)
-
-            val backend = if (useCpu) {
-                LlmInference.Backend.CPU
-            } else {
-                LlmInference.Backend.GPU
-            }
+            // Determine backend using memory-aware selection
+            // For loading, assume images might be used for vision models
+            val willUseImages = model.supportsVision
+            val backend = determineOptimalBackend(context, model, willUseImages)
             
-            Log.d(TAG, "Using backend: $backend for model: ${modelFile.name}")
+            Log.d(TAG, "Selected backend: $backend for model: ${modelFile.name}")
             
             // Determine max tokens based on model configuration
             val maxTokens = getMaxTokensForModel(model)
@@ -239,10 +318,13 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 .setMaxTokens(maxTokens)
                 .setPreferredBackend(backend)
                 
-            // Enable vision modality for multimodal models
+            // Enable vision modality for multimodal models (following Google AI Edge Gallery pattern)
             if (model.supportsVision) {
                 optionsBuilder.setMaxNumImages(10) // Allow up to 10 images per session
                 Log.d(TAG, "  - Enabled vision modality with max 10 images")
+            } else {
+                optionsBuilder.setMaxNumImages(0) // Explicitly disable for non-vision models
+                Log.d(TAG, "  - Vision modality disabled (maxNumImages=0)")
             }
             
             val options = optionsBuilder.build()
@@ -250,14 +332,17 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             // Create LLM inference engine
             val llmInference = LlmInference.createFromOptions(context, options)
             
+            // Set current model BEFORE creating session (critical for vision modality)
+            currentModel = model
+            
             // Create initial session
             val session = createSession(llmInference)
             
-            // Store model instance
+            // Store model instance and backend
             modelInstance = LlmModelInstance(engine = llmInference, session = session)
-            currentModel = model
+            currentBackend = backend
             
-            Log.d(TAG, "Successfully loaded model: ${model.name}")
+            Log.d(TAG, "Successfully loaded model: ${model.name} with backend: $backend")
             
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load model: ${model.name}", e)
@@ -277,20 +362,43 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             .setTopP(DEFAULT_TOP_P)
             .setRandomSeed(System.currentTimeMillis().toInt())
             
-        // Enable vision modality for multimodal models
+        // Enable vision modality for multimodal models (following Google AI Edge Gallery pattern)
         if (model?.supportsVision == true) {
-            val graphOptions = com.google.mediapipe.tasks.genai.llminference.GraphOptions.builder()
-                .setEnableVisionModality(true)
-                .build()
-            sessionOptionsBuilder.setGraphOptions(graphOptions)
-            Log.d(TAG, "Session created with vision modality ENABLED for model ${model.name}")
+            try {
+                val graphOptions = com.google.mediapipe.tasks.genai.llminference.GraphOptions.builder()
+                    .setEnableVisionModality(true)
+                    .build()
+                sessionOptionsBuilder.setGraphOptions(graphOptions)
+                Log.d(TAG, "Session created with vision modality ENABLED for model ${model.name}")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to enable vision modality for model ${model.name}: ${e.message}", e)
+                // Continue without vision modality - this might be the issue
+                throw e  // Don't continue if vision fails - this is critical for vision models
+            }
         } else {
-            Log.d(TAG, "Vision modality NOT enabled for model ${model?.name} (supportsVision: ${model?.supportsVision})")
+            // Explicitly disable vision modality for non-vision models
+            try {
+                val graphOptions = com.google.mediapipe.tasks.genai.llminference.GraphOptions.builder()
+                    .setEnableVisionModality(false)
+                    .build()
+                sessionOptionsBuilder.setGraphOptions(graphOptions)
+                Log.d(TAG, "Session created with vision modality DISABLED for model ${model?.name}")
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to disable vision modality for model ${model?.name}: ${e.message}", e)
+                // Continue without setting graph options for non-vision models
+            }
         }
         
         val sessionOptions = sessionOptionsBuilder.build()
         
-        return LlmInferenceSession.createFromOptions(engine, sessionOptions)
+        try {
+            val session = LlmInferenceSession.createFromOptions(engine, sessionOptions)
+            Log.d(TAG, "Successfully created session for model ${model?.name}")
+            return session
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to create session for model ${model?.name}: ${e.message}", e)
+            throw e
+        }
     }
 
     override suspend fun generateResponse(prompt: String, model: LLMModel): String {
@@ -384,6 +492,16 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
     override suspend fun generateResponseStreamWithSession(prompt: String, model: LLMModel, chatId: String, images: List<Bitmap>): Flow<String> = callbackFlow {
         ensureModelLoaded(model)
         
+        // Check memory constraints for vision usage
+        if (images.isNotEmpty() && model.supportsVision) {
+            val memoryWarning = checkMemoryConstraintsForVision(images)
+            if (memoryWarning != null) {
+                Log.w(TAG, memoryWarning)
+                // In a real app, you might want to show this warning to the user
+                // For now, we'll continue but the user should be aware of potential issues
+            }
+        }
+        
         var isGenerationComplete = false
         
         try {
@@ -440,21 +558,36 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             // Now use the session (either existing or freshly reset)
             val currentSession = instance.session
             
-            // Add text query first (required for multimodal models)
+            // CRITICAL: For vision models, text query MUST be added before images
+            // This is required by MediaPipe's vision implementation
             if (prompt.trim().isNotEmpty()) {
+                Log.d(TAG, "Adding text query to session for chat $chatId: '${prompt.take(100)}...'")
                 currentSession.addQueryChunk(prompt)
+            } else if (images.isNotEmpty() && model.supportsVision) {
+                // If we have images but no text, add a default query for vision models
+                Log.d(TAG, "Adding default vision query for images in chat $chatId")
+                currentSession.addQueryChunk("What do you see in this image?")
             }
             
-            // Add images if provided and model supports vision
+            // Add images AFTER text query (MediaPipe requirement for vision models)
             if (images.isNotEmpty() && model.supportsVision) {
                 Log.d(TAG, "Adding ${images.size} images to session for chat $chatId")
                 for ((index, image) in images.withIndex()) {
                     try {
                         Log.d(TAG, "Adding image $index (${image.width}x${image.height}) to session")
-                        currentSession.addImage(BitmapImageBuilder(image).build())
+                        
+                        // Validate image dimensions
+                        if (image.width <= 0 || image.height <= 0) {
+                            Log.e(TAG, "Invalid image dimensions: ${image.width}x${image.height}")
+                            continue
+                        }
+                        
+                        // Create MediaPipe image and add to session
+                        val mpImage = BitmapImageBuilder(image).build()
+                        currentSession.addImage(mpImage)
                         Log.d(TAG, "Successfully added image $index to session")
                     } catch (e: Exception) {
-                        Log.e(TAG, "Failed to add image $index to session: ${e.message}")
+                        Log.e(TAG, "Failed to add image $index to session: ${e.message}", e)
                     }
                 }
             } else if (images.isNotEmpty() && !model.supportsVision) {
@@ -490,19 +623,25 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                     
                     Log.d(TAG, "Created new session for recovery, attempting generation retry")
                     
-                    // Re-add text query first
+                    // Re-add text query first (CRITICAL for vision models)
                     if (prompt.trim().isNotEmpty()) {
+                        Log.d(TAG, "Re-adding text query to recovery session for chat $chatId")
                         session.addQueryChunk(prompt)
+                    } else if (images.isNotEmpty() && model.supportsVision) {
+                        Log.d(TAG, "Adding default vision query for recovery session")
+                        session.addQueryChunk("What do you see in this image?")
                     }
                     
                     // Re-add images if provided and model supports vision
                     if (images.isNotEmpty() && model.supportsVision) {
                         Log.d(TAG, "Re-adding ${images.size} images to recovery session for chat $chatId")
-                        for (image in images) {
+                        for ((index, image) in images.withIndex()) {
                             try {
+                                Log.d(TAG, "Re-adding image $index (${image.width}x${image.height}) to recovery session")
                                 session.addImage(BitmapImageBuilder(image).build())
+                                Log.d(TAG, "Successfully re-added image $index to recovery session")
                             } catch (e: Exception) {
-                                Log.e(TAG, "Failed to add image to recovery session: ${e.message}")
+                                Log.e(TAG, "Failed to add image $index to recovery session: ${e.message}")
                             }
                         }
                     }
@@ -530,19 +669,25 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                             
                             Log.d(TAG, "Force recreated session, attempting generation retry")
                             
-                            // Re-add text query first
+                            // Re-add text query first (CRITICAL for vision models)
                             if (prompt.trim().isNotEmpty()) {
+                                Log.d(TAG, "Re-adding text query to force recreated session for chat $chatId")
                                 session.addQueryChunk(prompt)
+                            } else if (images.isNotEmpty() && model.supportsVision) {
+                                Log.d(TAG, "Adding default vision query for force recreated session")
+                                session.addQueryChunk("What do you see in this image?")
                             }
                             
                             // Re-add images if provided and model supports vision
                             if (images.isNotEmpty() && model.supportsVision) {
                                 Log.d(TAG, "Re-adding ${images.size} images to force recreated session for chat $chatId")
-                                for (image in images) {
+                                for ((index, image) in images.withIndex()) {
                                     try {
+                                        Log.d(TAG, "Re-adding image $index (${image.width}x${image.height}) to force recreated session")
                                         session.addImage(BitmapImageBuilder(image).build())
+                                        Log.d(TAG, "Successfully re-added image $index to force recreated session")
                                     } catch (e: Exception) {
-                                        Log.e(TAG, "Failed to add image to force recreated session: ${e.message}")
+                                        Log.e(TAG, "Failed to add image $index to force recreated session: ${e.message}")
                                     }
                                 }
                             }
@@ -696,5 +841,35 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 return@withLock false
             }
         }
+    }
+    
+    /**
+     * Provide user-friendly memory guidance for vision usage
+     */
+    private fun checkMemoryConstraintsForVision(images: List<Bitmap>): String? {
+        if (images.isEmpty()) return null
+        
+        val model = currentModel ?: return null
+        if (!model.supportsVision) return null
+        
+        val deviceMemoryGB = getDeviceMemoryGB(context)
+        val backend = currentBackend
+        
+        return when {
+            deviceMemoryGB <= 6.0 -> {
+                "⚠️ Low memory device (${String.format("%.1f", deviceMemoryGB)}GB RAM): Vision models may cause crashes. Consider using text-only queries."
+            }
+            deviceMemoryGB <= 8.0 && backend == LlmInference.Backend.GPU -> {
+                "⚠️ Medium memory device (${String.format("%.1f", deviceMemoryGB)}GB RAM): GPU + Vision may be unstable. Reduce image size or use text-only if crashes occur."
+            }
+            deviceMemoryGB <= 8.0 && backend == LlmInference.Backend.CPU -> {
+                "ℹ️ Using CPU backend for vision on ${String.format("%.1f", deviceMemoryGB)}GB RAM device for stability."
+            }
+            else -> null // No warning needed for high memory devices
+        }
+    }
+
+    override fun getMemoryWarningForImages(images: List<Bitmap>): String? {
+        return checkMemoryConstraintsForVision(images)
     }
 }
