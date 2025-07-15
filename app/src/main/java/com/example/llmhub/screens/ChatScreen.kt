@@ -127,10 +127,24 @@ fun ChatScreen(
                                 onClick = { modelMenuExpanded = !modelMenuExpanded },
                                 enabled = availableModels.isNotEmpty()
                             ) {
-                                Text(
-                                    text = currentlyLoadedModel?.name?.take(25) ?: "Select model",
-                                    maxLines = 1
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = currentlyLoadedModel?.name?.take(25) ?: "Select model",
+                                        maxLines = 1
+                                    )
+                                    // Show vision indicator
+                                    if (currentlyLoadedModel?.supportsVision == true) {
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Icon(
+                                            Icons.Default.RemoveRedEye,
+                                            contentDescription = "Vision model",
+                                            modifier = Modifier.size(16.dp),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
                                 Icon(
                                     imageVector = Icons.Default.ArrowDropDown,
                                     contentDescription = "Select model"
@@ -148,6 +162,18 @@ fun ChatScreen(
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 Text(model.name)
+                                                
+                                                // Show vision indicator
+                                                if (model.supportsVision) {
+                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                    Icon(
+                                                        Icons.Default.RemoveRedEye,
+                                                        contentDescription = "Vision model",
+                                                        modifier = Modifier.size(14.dp),
+                                                        tint = MaterialTheme.colorScheme.primary
+                                                    )
+                                                }
+                                                
                                                 if (model.name == currentlyLoadedModel?.name) {
                                                     Spacer(modifier = Modifier.width(8.dp))
                                                     Icon(

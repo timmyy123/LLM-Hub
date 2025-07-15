@@ -90,6 +90,32 @@ object ModelData {
             requirements = ModelRequirements(minRamGB = 5, recommendedRamGB = 7),
             contextWindowSize = 1280,
             modelFormat = "task"
+        ),
+
+        // Gemma-3n Models (Multimodal - Text + Vision)
+        LLMModel(
+            name = "Gemma-3n E2B (Vision+Text)",
+            description = "Google Gemma-3n E2B with multimodal capabilities (text and vision). Effective 2B parameters with selective parameter activation. Supports 4k context window and multimodal input including text and images. Ready to download from HuggingFace (2.8GB)",
+            url = "https://huggingface.co/google/gemma-3n-E2B-it-litert-preview/resolve/main/gemma-3n-E2B-it-int4.task?download=true",
+            category = "multimodal",
+            sizeBytes = 2800000000L, // 2.8 GB (estimated)
+            source = "Google (LiteRT Preview)",
+            supportsVision = true,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 4096,
+            modelFormat = "task"
+        ),
+        LLMModel(
+            name = "Gemma-3n E4B (Vision+Text)",
+            description = "Google Gemma-3n E4B with multimodal capabilities (text and vision). Effective 4B parameters with selective parameter activation. Supports 4k context window and multimodal input including text and images. Ready to download from HuggingFace (4.2GB)",
+            url = "https://huggingface.co/google/gemma-3n-E4B-it-litert-preview/resolve/main/gemma-3n-E4B-it-int4.task?download=true",
+            category = "multimodal",
+            sizeBytes = 4200000000L, // 4.2 GB (estimated)
+            source = "Google (LiteRT Preview)",
+            supportsVision = true,
+            requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 8),
+            contextWindowSize = 4096,
+            modelFormat = "task"
         )
     )
 
@@ -110,12 +136,19 @@ object ModelData {
         • Gemma-3 1B (INT8, 2k context) - 1.07GB
         • Gemma-3 1B (INT8, 4k context) - 1.05GB
         
+        🔹 GEMMA-3N SERIES (Google - Multimodal):
+        • Gemma-3n E2B (Vision+Text, 4k context) - 2.8GB
+        • Gemma-3n E4B (Vision+Text, 4k context) - 4.2GB
+        
         🔹 LLAMA-3.2 SERIES (Meta):
         • Llama-3.2 1B (INT8, 1.2k context) - 1.29GB
         • Llama-3.2 3B (INT8, 1.2k context) - 3.3GB
         
         🔹 PHI-4 SERIES (Microsoft):
         • Phi-4 Mini (INT8, 1.2k context) - 3.94GB
+        
+        🖼️ VISION MODELS:
+        Models with vision support allow you to upload images and ask questions about them!
         
         📥 HOW TO DOWNLOAD:
         Your app's download feature now works with direct HuggingFace URLs!
@@ -125,4 +158,4 @@ object ModelData {
         The MediaPipe integration should work smoothly now.
         """.trimIndent()
     }
-} 
+}

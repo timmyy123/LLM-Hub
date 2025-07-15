@@ -7,6 +7,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,6 +19,15 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.llmhub.data.MessageEntity
 import com.example.llmhub.viewmodels.ChatViewModel
 import dev.jeziellago.compose.markdowntext.MarkdownText
@@ -92,38 +103,96 @@ fun MessageInput(
     enabled: Boolean,
     supportsAttachments: Boolean
 ) {
-    val uriHandler = LocalUriHandler.current // For future attachment picker stub
+    val context = LocalContext.current
     var text by remember { mutableStateOf("") }
     var attachmentUri by remember { mutableStateOf<Uri?>(null) }
+    var showImagePreview by remember { mutableStateOf(false) }
+    
+    // Image picker launcher
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            attachmentUri = it
+            showImagePreview = true
+        }
+    }
 
     Column {
+        // Image attachment preview
         if (attachmentUri != null) {
-            // Simple chip to show attached file path
-            AssistChip(
-                onClick = { /* Could preview attachment */ },
-                label = { Text("Attachment added") },
-                trailingIcon = {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Image preview
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(attachmentUri)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Selected image",
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { showImagePreview = true },
+                        contentScale = ContentScale.Crop
+                    )
+                    
+                    Spacer(modifier = Modifier.width(12.dp))
+                    
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Image attached",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "Tap to preview",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                        )
+                    }
+                    
                     IconButton(onClick = { attachmentUri = null }) {
-                        Icon(Icons.Default.AttachFile, contentDescription = "Remove attachment")
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Remove attachment",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
                     }
                 }
-            )
-            Spacer(Modifier.height(4.dp))
+            }
         }
 
+        // Message input row
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 8.dp, vertical = 4.dp)
         ) {
+            // Image attachment button (for vision models)
             if (supportsAttachments) {
-                IconButton(onClick = {
-                    // Placeholder: open external picker link (would use ActivityResult in real app)
-                    // For now we'll just simulate attaching a dummy Uri
-                    attachmentUri = Uri.parse("dummy://attachment")
-                }, enabled = enabled) {
-                    Icon(Icons.Default.AttachFile, contentDescription = "Attach")
+                IconButton(
+                    onClick = {
+                        imagePickerLauncher.launch("image/*")
+                    },
+                    enabled = enabled
+                ) {
+                    Icon(
+                        Icons.Default.Image,
+                        contentDescription = "Add image",
+                        tint = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    )
                 }
             }
 
@@ -131,11 +200,17 @@ fun MessageInput(
                 value = text,
                 onValueChange = { text = it },
                 modifier = Modifier.weight(1f),
-                placeholder = { Text("Type a message") },
+                placeholder = { 
+                    Text(
+                        if (supportsAttachments) "Type a message or add an image..." 
+                        else "Type a message"
+                    )
+                },
                 enabled = enabled,
                 singleLine = false,
                 maxLines = 4
             )
+            
             IconButton(
                 onClick = {
                     if (text.isNotBlank() || attachmentUri != null) {
@@ -147,6 +222,76 @@ fun MessageInput(
                 enabled = enabled && (text.isNotBlank() || attachmentUri != null)
             ) {
                 Icon(Icons.Default.Send, contentDescription = "Send")
+            }
+        }
+    }
+    
+    // Full-screen image preview dialog
+    if (showImagePreview && attachmentUri != null) {
+        Dialog(onDismissRequest = { showImagePreview = false }) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.8f),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Column {
+                    // Header
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Image Preview",
+                            style = MaterialTheme.typography.headlineSmall
+                        )
+                        IconButton(onClick = { showImagePreview = false }) {
+                            Icon(Icons.Default.Close, contentDescription = "Close")
+                        }
+                    }
+                    
+                    // Image
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(attachmentUri)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Image preview",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .padding(16.dp)
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Fit
+                    )
+                    
+                    // Actions
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        OutlinedButton(
+                            onClick = { 
+                                attachmentUri = null
+                                showImagePreview = false
+                            }
+                        ) {
+                            Text("Remove")
+                        }
+                        
+                        Button(
+                            onClick = { showImagePreview = false }
+                        ) {
+                            Text("Keep")
+                        }
+                    }
+                }
             }
         }
     }

@@ -2,6 +2,8 @@ package com.example.llmhub.viewmodels
 
 import android.content.Context
 import android.net.Uri
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.SavedStateHandle
@@ -434,7 +436,14 @@ class ChatViewModel(
                                         continuationHistory
                                     }
                                     
-                                    val responseStream = inferenceService.generateResponseStreamWithSession(currentPrompt, currentModel!!, chatId)
+                                    // Extract images from recent messages for multimodal models
+                    val images = if (currentModel!!.supportsVision) {
+                        extractImagesFromAttachments(_messages.value.takeLast(10))
+                    } else {
+                        emptyList()
+                    }
+                    
+                    val responseStream = inferenceService.generateResponseStreamWithSession(currentPrompt, currentModel!!, chatId, images)
                                     var lastUpdateTime = 0L
                                     val updateIntervalMs = 50L // Update UI every 50ms instead of every token
                                     var segmentEnded = false
@@ -947,6 +956,51 @@ class ChatViewModel(
                 Log.d("ChatViewModel", "Successfully reset chat session for chat $chatId")
             } catch (e: Exception) {
                 Log.w("ChatViewModel", "Error during session reset for chat $chatId: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * Extract images from message attachments for multimodal model support
+     */
+    private suspend fun extractImagesFromAttachments(context: Context, messages: List<MessageEntity>): List<Bitmap> {
+        val images = mutableListOf<Bitmap>()
+        
+        for (message in messages) {
+            if (message.attachmentPath != null && message.attachmentType == "image") {
+                try {
+                    val uri = Uri.parse(message.attachmentPath)
+                    val bitmap = loadImageFromUri(context, uri)
+                    if (bitmap != null) {
+                        images.add(bitmap)
+                        Log.d("ChatViewModel", "Loaded image from attachment: ${message.attachmentPath}")
+                    }
+                } catch (e: Exception) {
+                    Log.w("ChatViewModel", "Failed to load image from attachment: ${message.attachmentPath}", e)
+                }
+            }
+        }
+        
+        return images
+    }
+
+    /**
+     * Load a bitmap from a URI
+     */
+    private suspend fun loadImageFromUri(context: Context, uri: Uri): Bitmap? {
+        return withContext(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val inputStream = context.contentResolver.openInputStream(uri)
+                if (inputStream != null) {
+                    val bitmap = BitmapFactory.decodeStream(inputStream)
+                    inputStream.close()
+                    bitmap
+                } else {
+                    null
+                }
+            } catch (e: Exception) {
+                Log.e("ChatViewModel", "Failed to load image from URI: $uri", e)
+                null
             }
         }
     }

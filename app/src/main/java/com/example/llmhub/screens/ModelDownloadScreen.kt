@@ -27,7 +27,9 @@ fun ModelDownloadScreen(
 ) {
     val models by viewModel.models.collectAsState()
     val textModels = models.filter { it.category == "text" }
-    val grouped = textModels.groupBy { it.name.substringBefore("(").trim() }
+    val multimodalModels = models.filter { it.category == "multimodal" }
+    val textGrouped = textModels.groupBy { it.name.substringBefore("(").trim() }
+    val multimodalGrouped = multimodalModels.groupBy { it.name.substringBefore("(").trim() }
 
     Scaffold(
         topBar = {
@@ -57,44 +59,125 @@ fun ModelDownloadScreen(
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
-            grouped.forEach { (family, variants) ->
-                // Each family gets one expandable card
+            
+            // Text Models Section
+            if (textGrouped.isNotEmpty()) {
                 item {
-                    var expanded by remember { mutableStateOf(false) }
+                    Text(
+                        text = "Text Models",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                
+                textGrouped.forEach { (family, variants) ->
+                    // Each family gets one expandable card
+                    item {
+                        var expanded by remember { mutableStateOf(false) }
 
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                            .clickable { expanded = !expanded },
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
+                        Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp)
+                                .padding(vertical = 4.dp)
+                                .clickable { expanded = !expanded },
                         ) {
-                            Text(
-                                family,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.weight(1f)
-                            )
-                            Icon(
-                                imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                contentDescription = if (expanded) "Collapse" else "Expand"
-                            )
-                        }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                            ) {
+                                Text(
+                                    family,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Icon(
+                                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                    contentDescription = if (expanded) "Collapse" else "Expand"
+                                )
+                            }
 
-                        if (expanded) {
-                            Column(modifier = Modifier.padding(bottom = 8.dp)) {
-                                variants.forEach { model ->
-                                    ModelItem(
-                                        model = model,
-                                        onDownload = { viewModel.downloadModel(it) },
-                                        onDelete = { viewModel.deleteModel(it) },
-                                        onCancel = { viewModel.cancelDownload(it) }
-                                    )
+                            if (expanded) {
+                                Column(modifier = Modifier.padding(bottom = 8.dp)) {
+                                    variants.forEach { model ->
+                                        ModelItem(
+                                            model = model,
+                                            onDownload = { viewModel.downloadModel(it) },
+                                            onDelete = { viewModel.deleteModel(it) },
+                                            onCancel = { viewModel.cancelDownload(it) }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Multimodal Models Section
+            if (multimodalGrouped.isNotEmpty()) {
+                item {
+                    Text(
+                        text = "Multimodal Models (Vision + Text)",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                
+                multimodalGrouped.forEach { (family, variants) ->
+                    // Each family gets one expandable card
+                    item {
+                        var expanded by remember { mutableStateOf(false) }
+
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                                .clickable { expanded = !expanded },
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                            ) {
+                                Text(
+                                    family,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                
+                                // Vision indicator
+                                Icon(
+                                    Icons.Default.RemoveRedEye,
+                                    contentDescription = "Vision support",
+                                    modifier = Modifier.size(20.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                
+                                Spacer(modifier = Modifier.width(8.dp))
+                                
+                                Icon(
+                                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                    contentDescription = if (expanded) "Collapse" else "Expand"
+                                )
+                            }
+
+                            if (expanded) {
+                                Column(modifier = Modifier.padding(bottom = 8.dp)) {
+                                    variants.forEach { model ->
+                                        ModelItem(
+                                            model = model,
+                                            onDownload = { viewModel.downloadModel(it) },
+                                            onDelete = { viewModel.deleteModel(it) },
+                                            onCancel = { viewModel.cancelDownload(it) }
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -118,8 +201,49 @@ fun ModelItem(
             .padding(vertical = 8.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = model.name, style = MaterialTheme.typography.titleLarge)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = model.name,
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.weight(1f)
+                )
+                
+                // Vision indicator
+                if (model.supportsVision) {
+                    Icon(
+                        Icons.Default.RemoveRedEye,
+                        contentDescription = "Vision support",
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+            
             Text(text = "Source: ${model.source}", style = MaterialTheme.typography.bodySmall)
+            
+            if (model.supportsVision) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 4.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Image,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Supports image input",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+            
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = model.description, style = MaterialTheme.typography.bodyMedium)
             Spacer(modifier = Modifier.height(16.dp))
@@ -157,7 +281,7 @@ fun ModelItem(
                             text = String.format(
                                 "%.1fMB / %.1fMB",
                                 model.downloadedBytes / 1_000_000f,
-                                    totalDisplayBytes / 1_000_000f
+                                totalDisplayBytes / 1_000_000f
                             ),
                             style = MaterialTheme.typography.bodySmall
                         )

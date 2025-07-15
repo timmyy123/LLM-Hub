@@ -1,6 +1,7 @@
 package com.example.llmhub.inference
 
 import android.content.Context
+import android.graphics.Bitmap
 import com.example.llmhub.data.LLMModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -15,6 +16,7 @@ import java.io.File
 import com.example.llmhub.data.localFileName
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.google.mediapipe.tasks.genai.llminference.LlmInferenceSession
+import com.google.mediapipe.framework.image.BitmapImageBuilder
 import android.util.Log
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
@@ -27,7 +29,7 @@ interface InferenceService {
     suspend fun loadModel(model: LLMModel): Boolean
     suspend fun generateResponse(prompt: String, model: LLMModel): String
     suspend fun generateResponseStream(prompt: String, model: LLMModel): Flow<String>
-    suspend fun generateResponseStreamWithSession(prompt: String, model: LLMModel, chatId: String): Flow<String>
+    suspend fun generateResponseStreamWithSession(prompt: String, model: LLMModel, chatId: String, images: List<Bitmap> = emptyList()): Flow<String>
     suspend fun resetChatSession(chatId: String)
     suspend fun onCleared()
     fun getCurrentlyLoadedModel(): LLMModel?
@@ -120,14 +122,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 Log.d(TAG, "Closed existing session")
                 
                 // Create new session with same options
-                val newSession = LlmInferenceSession.createFromOptions(
-                    instance.engine,
-                    LlmInferenceSession.LlmInferenceSessionOptions.builder()
-                        .setTopK(DEFAULT_TOP_K)
-                        .setTopP(DEFAULT_TOP_P)
-                        .setTemperature(DEFAULT_TEMPERATURE)
-                        .build()
-                )
+                val newSession = createSession(instance.engine)
                 instance.session = newSession
                 Log.d(TAG, "Created new session for chat $chatId")
                 
@@ -236,12 +231,19 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             Log.d(TAG, "  - Context window: ${model.contextWindowSize}")
             Log.d(TAG, "  - Max tokens: $maxTokens")
             Log.d(TAG, "  - Backend: $backend")
+            Log.d(TAG, "  - Supports vision: ${model.supportsVision}")
             
             // Create LLM inference options
             val optionsBuilder = LlmInference.LlmInferenceOptions.builder()
                 .setModelPath(modelFile.absolutePath)
                 .setMaxTokens(maxTokens)
                 .setPreferredBackend(backend)
+                
+            // Enable vision modality for multimodal models
+            if (model.supportsVision) {
+                optionsBuilder.setMaxNumImages(10) // Allow up to 10 images per session
+                Log.d(TAG, "  - Enabled vision modality with max 10 images")
+            }
             
             val options = optionsBuilder.build()
             
@@ -264,12 +266,24 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
     }
 
     private fun createSession(engine: LlmInference): LlmInferenceSession {
-        val sessionOptions = LlmInferenceSession.LlmInferenceSessionOptions.builder()
+        val model = currentModel
+        val sessionOptionsBuilder = LlmInferenceSession.LlmInferenceSessionOptions.builder()
             .setTopK(DEFAULT_TOP_K)
             .setTemperature(DEFAULT_TEMPERATURE)
             .setTopP(DEFAULT_TOP_P)
             .setRandomSeed(System.currentTimeMillis().toInt())
-            .build()
+            
+        // Enable vision modality for multimodal models
+        if (model?.supportsVision == true) {
+            sessionOptionsBuilder.setGraphOptions(
+                com.google.mediapipe.tasks.genai.llminference.GraphOptions.builder()
+                    .setEnableVisionModality(true)
+                    .build()
+            )
+            Log.d(TAG, "Session created with vision modality enabled")
+        }
+        
+        val sessionOptions = sessionOptionsBuilder.build()
         
         return LlmInferenceSession.createFromOptions(engine, sessionOptions)
     }
@@ -362,7 +376,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         }
     }.flowOn(Dispatchers.IO)
 
-    override suspend fun generateResponseStreamWithSession(prompt: String, model: LLMModel, chatId: String): Flow<String> = callbackFlow {
+    override suspend fun generateResponseStreamWithSession(prompt: String, model: LLMModel, chatId: String, images: List<Bitmap>): Flow<String> = callbackFlow {
         ensureModelLoaded(model)
         
         var isGenerationComplete = false
@@ -404,14 +418,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                         Log.d(TAG, "Closed session due to token limit approach")
                         
                         // Create new session
-                        val newSession = LlmInferenceSession.createFromOptions(
-                            instance.engine,
-                            LlmInferenceSession.LlmInferenceSessionOptions.builder()
-                                .setTopK(DEFAULT_TOP_K)
-                                .setTopP(DEFAULT_TOP_P)
-                                .setTemperature(DEFAULT_TEMPERATURE)
-                                .build()
-                        )
+                        val newSession = createSession(instance.engine)
                         instance.session = newSession
                         Log.d(TAG, "Created fresh session for chat $chatId")
                         
@@ -427,7 +434,26 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             
             // Now use the session (either existing or freshly reset)
             val currentSession = instance.session
-            currentSession.addQueryChunk(prompt)
+            
+            // Add text query first (required for multimodal models)
+            if (prompt.trim().isNotEmpty()) {
+                currentSession.addQueryChunk(prompt)
+            }
+            
+            // Add images if provided and model supports vision
+            if (images.isNotEmpty() && model.supportsVision) {
+                Log.d(TAG, "Adding ${images.size} images to session for chat $chatId")
+                for (image in images) {
+                    try {
+                        currentSession.addImage(BitmapImageBuilder(image).build())
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to add image to session: ${e.message}")
+                    }
+                }
+            } else if (images.isNotEmpty() && !model.supportsVision) {
+                Log.w(TAG, "Model ${model.name} does not support vision, ignoring ${images.size} images")
+            }
+            
             currentSession.generateResponseAsync { partialResult, done ->
                 if (!isClosedForSend) {
                     trySend(partialResult)
@@ -455,7 +481,23 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                     
                     Log.d(TAG, "Created new session for recovery, attempting generation retry")
                     
-                    session.addQueryChunk(prompt)
+                    // Re-add text query first
+                    if (prompt.trim().isNotEmpty()) {
+                        session.addQueryChunk(prompt)
+                    }
+                    
+                    // Re-add images if provided and model supports vision
+                    if (images.isNotEmpty() && model.supportsVision) {
+                        Log.d(TAG, "Re-adding ${images.size} images to recovery session for chat $chatId")
+                        for (image in images) {
+                            try {
+                                session.addImage(BitmapImageBuilder(image).build())
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Failed to add image to recovery session: ${e.message}")
+                            }
+                        }
+                    }
+                    
                     session.generateResponseAsync { partialResult, done ->
                         if (!isClosedForSend) {
                             trySend(partialResult)
@@ -479,7 +521,23 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                             
                             Log.d(TAG, "Force recreated session, attempting generation retry")
                             
-                            session.addQueryChunk(prompt)
+                            // Re-add text query first
+                            if (prompt.trim().isNotEmpty()) {
+                                session.addQueryChunk(prompt)
+                            }
+                            
+                            // Re-add images if provided and model supports vision
+                            if (images.isNotEmpty() && model.supportsVision) {
+                                Log.d(TAG, "Re-adding ${images.size} images to force recreated session for chat $chatId")
+                                for (image in images) {
+                                    try {
+                                        session.addImage(BitmapImageBuilder(image).build())
+                                    } catch (e: Exception) {
+                                        Log.e(TAG, "Failed to add image to force recreated session: ${e.message}")
+                                    }
+                                }
+                            }
+                            
                             session.generateResponseAsync { partialResult, done ->
                                 if (!isClosedForSend) {
                                     trySend(partialResult)
