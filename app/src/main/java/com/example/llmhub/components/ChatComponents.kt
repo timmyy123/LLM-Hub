@@ -41,6 +41,7 @@ fun MessageBubble(
     message: MessageEntity,
     streamingContent: String = ""
 ) {
+    val context = LocalContext.current
     val isUser = message.isFromUser
     val bubbleColor = if (isUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
     val textColor = if (isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
@@ -65,15 +66,48 @@ fun MessageBubble(
                         }
                     }
             ) {
-                // Show streaming content for assistant messages during generation, otherwise show message content
-                val displayContent = if (!isUser && streamingContent.isNotEmpty()) streamingContent else message.content
-                
-                MarkdownText(
-                    markdown = displayContent,
-                    color = textColor,
-                    fontSize = MaterialTheme.typography.bodyMedium.fontSize,
-                    modifier = if (isUser) Modifier.wrapContentWidth() else Modifier.fillMaxWidth()
-                )
+                Column {
+                    // Display image if attachment exists
+                    if (message.attachmentPath != null && message.attachmentType == "image") {
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(Uri.parse(message.attachmentPath))
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = "Attached image",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 200.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                            contentScale = ContentScale.Crop,
+                            onSuccess = { 
+                                // Image loaded successfully
+                            },
+                            onError = { 
+                                // Handle error - show placeholder or log
+                                android.util.Log.w("MessageBubble", "Failed to load image: ${message.attachmentPath}")
+                            }
+                        )
+                        
+                        // Add spacing between image and text if both exist
+                        if (message.content.isNotEmpty() && message.content != "Shared a file") {
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
+                    
+                    // Display text content (only if not empty and not just "Shared a file")
+                    if (message.content.isNotEmpty() && message.content != "Shared a file") {
+                        // Show streaming content for assistant messages during generation, otherwise show message content
+                        val displayContent = if (!isUser && streamingContent.isNotEmpty()) streamingContent else message.content
+                        
+                        MarkdownText(
+                            markdown = displayContent,
+                            color = textColor,
+                            fontSize = MaterialTheme.typography.bodyMedium.fontSize,
+                            modifier = if (isUser) Modifier.wrapContentWidth() else Modifier.fillMaxWidth()
+                        )
+                    }
+                }
             }
             
             // Show token statistics for assistant messages after completion

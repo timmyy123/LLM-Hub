@@ -336,12 +336,26 @@ class ChatViewModel(
                 return@launch
             }
 
+            // Process attachment if present
+            var processedAttachmentUri: Uri? = null
+            if (attachmentUri != null) {
+                try {
+                    // Copy the image to internal storage to ensure it persists
+                    processedAttachmentUri = copyImageToInternalStorage(context, attachmentUri)
+                    Log.d("ChatViewModel", "Copied image to internal storage: $processedAttachmentUri")
+                } catch (e: Exception) {
+                    Log.e("ChatViewModel", "Failed to copy image to internal storage", e)
+                    // Fall back to original URI
+                    processedAttachmentUri = attachmentUri
+                }
+            }
+
             repository.addMessage(
                 chatId = chatId,
                 content = if (messageText.isNotEmpty()) messageText else "Shared a file",
                 isFromUser = true,
-                attachmentPath = attachmentUri?.toString(),
-                attachmentType = determineAttachmentType(attachmentUri)
+                attachmentPath = processedAttachmentUri?.toString(),
+                attachmentType = determineAttachmentType(processedAttachmentUri)
             )
 
             // The first message sets the title
@@ -962,11 +976,14 @@ class ChatViewModel(
         for (message in messages) {
             if (message.attachmentPath != null && message.attachmentType == "image") {
                 try {
+                    Log.d("ChatViewModel", "Attempting to load image from: ${message.attachmentPath}")
                     val uri = Uri.parse(message.attachmentPath)
                     val bitmap = loadImageFromUri(context, uri)
                     if (bitmap != null) {
                         images.add(bitmap)
-                        Log.d("ChatViewModel", "Loaded image from attachment: ${message.attachmentPath}")
+                        Log.d("ChatViewModel", "Successfully loaded image from attachment: ${message.attachmentPath} (${bitmap.width}x${bitmap.height})")
+                    } else {
+                        Log.w("ChatViewModel", "Failed to load bitmap from URI: ${message.attachmentPath}")
                     }
                 } catch (e: Exception) {
                     Log.w("ChatViewModel", "Failed to load image from attachment: ${message.attachmentPath}", e)
@@ -974,23 +991,82 @@ class ChatViewModel(
             }
         }
         
+        Log.d("ChatViewModel", "Total images extracted: ${images.size}")
         return images
     }
 
     /**
-     * Load a bitmap from a URI
+     * Copy an image from external URI to internal storage to ensure persistence
+     */
+    private suspend fun copyImageToInternalStorage(context: Context, sourceUri: Uri): Uri {
+        return withContext(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val contentResolver = context.contentResolver
+                val inputStream = contentResolver.openInputStream(sourceUri)
+                
+                if (inputStream != null) {
+                    // Create a unique filename
+                    val timestamp = System.currentTimeMillis()
+                    val fileName = "image_${timestamp}.jpg"
+                    
+                    // Create internal storage directory for images
+                    val imagesDir = File(context.filesDir, "images")
+                    if (!imagesDir.exists()) {
+                        imagesDir.mkdirs()
+                    }
+                    
+                    val outputFile = File(imagesDir, fileName)
+                    
+                    inputStream.use { input ->
+                        outputFile.outputStream().use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    
+                    Log.d("ChatViewModel", "Copied image to: ${outputFile.absolutePath}")
+                    Uri.fromFile(outputFile)
+                } else {
+                    Log.w("ChatViewModel", "Failed to open input stream for URI: $sourceUri")
+                    sourceUri // Return original URI as fallback
+                }
+            } catch (e: Exception) {
+                Log.e("ChatViewModel", "Failed to copy image to internal storage", e)
+                sourceUri // Return original URI as fallback
+            }
+        }
+    }
+
+    /**
+     * Load a bitmap from a URI with better error handling
      */
     private suspend fun loadImageFromUri(context: Context, uri: Uri): Bitmap? {
         return withContext(kotlinx.coroutines.Dispatchers.IO) {
             try {
-                val inputStream = context.contentResolver.openInputStream(uri)
+                Log.d("ChatViewModel", "Opening input stream for URI: $uri")
+                
+                // Get content resolver and open input stream
+                val contentResolver = context.contentResolver
+                val inputStream = contentResolver.openInputStream(uri)
+                
                 if (inputStream != null) {
-                    val bitmap = BitmapFactory.decodeStream(inputStream)
-                    inputStream.close()
-                    bitmap
+                    Log.d("ChatViewModel", "Input stream opened successfully")
+                    inputStream.use { stream ->
+                        val bitmap = BitmapFactory.decodeStream(stream)
+                        if (bitmap != null) {
+                            Log.d("ChatViewModel", "Bitmap decoded successfully: ${bitmap.width}x${bitmap.height}")
+                            bitmap
+                        } else {
+                            Log.w("ChatViewModel", "BitmapFactory.decodeStream returned null")
+                            null
+                        }
+                    }
                 } else {
+                    Log.w("ChatViewModel", "Failed to open input stream for URI: $uri")
                     null
                 }
+            } catch (e: SecurityException) {
+                Log.e("ChatViewModel", "Security exception accessing URI: $uri", e)
+                null
             } catch (e: Exception) {
                 Log.e("ChatViewModel", "Failed to load image from URI: $uri", e)
                 null
