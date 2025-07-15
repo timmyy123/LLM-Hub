@@ -48,14 +48,22 @@ class ChatViewModel(
     // Streaming response state (per message)
     private val _streamingContents = MutableStateFlow<Map<String, String>>(emptyMap())
     val streamingContents: StateFlow<Map<String, String>> = _streamingContents.asStateFlow()
-    
-    // Model loading state
+
     private val _isLoadingModel = MutableStateFlow(false)
     val isLoadingModel: StateFlow<Boolean> = _isLoadingModel.asStateFlow()
-    
-    // Currently loaded model (global state) - now reflects the inference service state
+
     private val _currentlyLoadedModel = MutableStateFlow<LLMModel?>(null)
     val currentlyLoadedModel: StateFlow<LLMModel?> = _currentlyLoadedModel.asStateFlow()
+
+    var currentModel: LLMModel? = null
+        private set
+
+    private var isGenerating = false
+        get() = savedStateHandle.get<Boolean>(KEY_IS_GENERATING) ?: false
+        set(value) {
+            field = value
+            savedStateHandle.set(KEY_IS_GENERATING, value)
+        }
 
     private var currentChatId: String?
         get() = savedStateHandle.get<String>(KEY_CURRENT_CHAT_ID)
@@ -65,21 +73,6 @@ class ChatViewModel(
         get() = savedStateHandle.get<String>(KEY_CURRENT_MODEL_NAME)
         set(value) = savedStateHandle.set(KEY_CURRENT_MODEL_NAME, value)
     
-    private var isGenerating: Boolean
-        get() = savedStateHandle.get<Boolean>(KEY_IS_GENERATING) ?: false
-        set(value) = savedStateHandle.set(KEY_IS_GENERATING, value)
-    
-    private var currentModel: LLMModel? = null
-        get() = field ?: currentModelName?.let { modelName ->
-            _availableModels.value.find { it.name == modelName }
-        }
-        set(value) {
-            field = value
-            currentModelName = value?.name
-            // Sync with the inference service's currently loaded model
-            syncCurrentlyLoadedModel()
-        }
-
     // Keep reference to the running generation so the UI can interrupt it
     private var generationJob: Job? = null
 
@@ -318,7 +311,7 @@ class ChatViewModel(
         }
     }
 
-    fun sendMessage(text: String, attachmentUri: Uri?) {
+    fun sendMessage(context: Context, text: String, attachmentUri: Uri?) {
         val chatId = currentChatId
         if (chatId == null) {
             Log.e("ChatViewModel", "No current chat ID available")
@@ -438,7 +431,7 @@ class ChatViewModel(
                                     
                                     // Extract images from recent messages for multimodal models
                     val images = if (currentModel!!.supportsVision) {
-                        extractImagesFromAttachments(_messages.value.takeLast(10))
+                        extractImagesFromAttachments(context, _messages.value.takeLast(10))
                     } else {
                         emptyList()
                     }
@@ -717,7 +710,7 @@ class ChatViewModel(
     }
     
     fun currentModelSupportsVision(): Boolean {
-        return currentModel?.supportsVision ?: false
+        return currentModel?.supportsVision == true
     }
 
     private fun determineAttachmentType(uri: Uri?): String? {
@@ -1002,6 +995,29 @@ class ChatViewModel(
                 Log.e("ChatViewModel", "Failed to load image from URI: $uri", e)
                 null
             }
+        }
+    }
+
+    fun setCurrentModel(model: LLMModel) {
+        currentModel = model
+        savedStateHandle[KEY_CURRENT_MODEL_NAME] = model.name
+    }
+
+    fun clearMessagesForChat(chatId: String) {
+        viewModelScope.launch {
+            repository.clearMessagesForChat(chatId)
+            if (chatId == currentChatId) {
+                _messages.value = emptyList()
+            }
+        }
+    }
+
+    fun clearAllChats() {
+        viewModelScope.launch {
+            repository.deleteAllChats()
+            _messages.value = emptyList()
+            _currentChat.value = null
+            currentChatId = null
         }
     }
 }

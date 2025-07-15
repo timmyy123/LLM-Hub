@@ -99,6 +99,7 @@ dependencies {
 
     // MediaPipe LLM Inference for on-device AI with GPU acceleration
     implementation("com.google.mediapipe:tasks-genai:0.10.24")
+    implementation("com.google.mediapipe:tasks-vision:0.10.14")
     
     // Compose Markdown - Simple and reliable markdown for AI chat apps
     implementation("com.github.jeziellago:compose-markdown:0.5.0")

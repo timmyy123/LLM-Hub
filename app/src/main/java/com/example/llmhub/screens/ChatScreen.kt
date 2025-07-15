@@ -276,7 +276,7 @@ fun ChatScreen(
                 Box(modifier = Modifier.imePadding()) {
                 MessageInput(
                     onSendMessage = { text, attachmentUri ->
-                        viewModel.sendMessage(text, attachmentUri)
+                        viewModel.sendMessage(context, text, attachmentUri)
                     },
                     enabled = !isLoading && !isLoadingModel && currentChat != null,
                     supportsAttachments = viewModel.currentModelSupportsVision()

@@ -64,6 +64,10 @@ class ChatRepository(
         messageDao.deleteMessagesForChat(chatId)
     }
     
+    suspend fun clearMessagesForChat(chatId: String) {
+        messageDao.deleteMessagesForChat(chatId)
+    }
+    
     suspend fun deleteAllChats() {
         chatDao.deleteAllChats()
     }
