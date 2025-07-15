@@ -445,7 +445,31 @@ class ChatViewModel(
                                     
                                     // Extract images from recent messages for multimodal models
                     val images = if (currentModel!!.supportsVision) {
-                        extractImagesFromAttachments(context, _messages.value.takeLast(10))
+                        val recentMessages = _messages.value.takeLast(10)
+                        Log.d("ChatViewModel", "Checking ${recentMessages.size} recent messages for images")
+                        
+                        // Get images from the current user message first, then from recent messages
+                        val currentImages = mutableListOf<Bitmap>()
+                        
+                        // Check if the current message has an image attachment
+                        if (processedAttachmentUri != null) {
+                            try {
+                                val bitmap = loadImageFromUri(context, processedAttachmentUri)
+                                if (bitmap != null) {
+                                    currentImages.add(bitmap)
+                                    Log.d("ChatViewModel", "Added current message image: ${bitmap.width}x${bitmap.height}")
+                                }
+                            } catch (e: Exception) {
+                                Log.e("ChatViewModel", "Failed to load current message image", e)
+                            }
+                        }
+                        
+                        // Add images from recent messages (for context)
+                        val contextImages = extractImagesFromAttachments(context, recentMessages)
+                        currentImages.addAll(contextImages)
+                        
+                        Log.d("ChatViewModel", "Total images for generation: ${currentImages.size} (current: ${if (processedAttachmentUri != null) 1 else 0}, context: ${contextImages.size})")
+                        currentImages
                     } else {
                         emptyList()
                     }
@@ -784,7 +808,14 @@ class ChatViewModel(
         
         // Convert pairs to formatted strings
         val pairStrings = conversationPairs.map { (userMsg, assistantMsg) ->
-            val userPart = if (userMsg != null) "user: ${userMsg.content}" else ""
+            val userPart = if (userMsg != null) {
+                var userContent = userMsg.content
+                // For vision models, indicate when images are present
+                if (userMsg.attachmentPath != null && userMsg.attachmentType == "image") {
+                    userContent = if (userContent.isNotEmpty()) "$userContent [Image attached]" else "[Image attached]"
+                }
+                "user: $userContent"
+            } else ""
             val assistantPart = if (assistantMsg.content.isNotEmpty()) "assistant: ${assistantMsg.content}" else ""
             
             listOf(userPart, assistantPart).filter { it.isNotEmpty() }.joinToString("\n")
@@ -973,7 +1004,11 @@ class ChatViewModel(
     private suspend fun extractImagesFromAttachments(context: Context, messages: List<MessageEntity>): List<Bitmap> {
         val images = mutableListOf<Bitmap>()
         
-        for (message in messages) {
+        Log.d("ChatViewModel", "Extracting images from ${messages.size} messages")
+        
+        for (message in messages.reversed()) { // Process from newest to oldest
+            Log.d("ChatViewModel", "Message ${message.id}: attachmentPath=${message.attachmentPath}, attachmentType=${message.attachmentType}")
+            
             if (message.attachmentPath != null && message.attachmentType == "image") {
                 try {
                     Log.d("ChatViewModel", "Attempting to load image from: ${message.attachmentPath}")

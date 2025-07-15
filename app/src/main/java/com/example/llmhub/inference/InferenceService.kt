@@ -267,6 +267,10 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
 
     private fun createSession(engine: LlmInference): LlmInferenceSession {
         val model = currentModel
+        
+        Log.d(TAG, "Creating session for model: ${model?.name}")
+        Log.d(TAG, "Model supports vision: ${model?.supportsVision}")
+        
         val sessionOptionsBuilder = LlmInferenceSession.LlmInferenceSessionOptions.builder()
             .setTopK(DEFAULT_TOP_K)
             .setTemperature(DEFAULT_TEMPERATURE)
@@ -275,12 +279,13 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             
         // Enable vision modality for multimodal models
         if (model?.supportsVision == true) {
-            sessionOptionsBuilder.setGraphOptions(
-                com.google.mediapipe.tasks.genai.llminference.GraphOptions.builder()
-                    .setEnableVisionModality(true)
-                    .build()
-            )
-            Log.d(TAG, "Session created with vision modality enabled")
+            val graphOptions = com.google.mediapipe.tasks.genai.llminference.GraphOptions.builder()
+                .setEnableVisionModality(true)
+                .build()
+            sessionOptionsBuilder.setGraphOptions(graphOptions)
+            Log.d(TAG, "Session created with vision modality ENABLED for model ${model.name}")
+        } else {
+            Log.d(TAG, "Vision modality NOT enabled for model ${model?.name} (supportsVision: ${model?.supportsVision})")
         }
         
         val sessionOptions = sessionOptionsBuilder.build()
@@ -443,15 +448,19 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             // Add images if provided and model supports vision
             if (images.isNotEmpty() && model.supportsVision) {
                 Log.d(TAG, "Adding ${images.size} images to session for chat $chatId")
-                for (image in images) {
+                for ((index, image) in images.withIndex()) {
                     try {
+                        Log.d(TAG, "Adding image $index (${image.width}x${image.height}) to session")
                         currentSession.addImage(BitmapImageBuilder(image).build())
+                        Log.d(TAG, "Successfully added image $index to session")
                     } catch (e: Exception) {
-                        Log.e(TAG, "Failed to add image to session: ${e.message}")
+                        Log.e(TAG, "Failed to add image $index to session: ${e.message}")
                     }
                 }
             } else if (images.isNotEmpty() && !model.supportsVision) {
                 Log.w(TAG, "Model ${model.name} does not support vision, ignoring ${images.size} images")
+            } else if (images.isEmpty() && model.supportsVision) {
+                Log.d(TAG, "No images provided for vision-capable model ${model.name}")
             }
             
             currentSession.generateResponseAsync { partialResult, done ->
