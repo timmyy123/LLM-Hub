@@ -19,6 +19,7 @@ import java.io.File
 import kotlinx.coroutines.Dispatchers
 import com.llmhub.llmhub.data.localFileName
 import android.content.Context
+import com.llmhub.llmhub.BuildConfig
 
 class ModelDownloadViewModel(application: Application) : AndroidViewModel(application) {
     private val _models = MutableStateFlow<List<LLMModel>>(emptyList())
@@ -38,7 +39,8 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
     init {
         // Load HF token from preferences, with your provided token as default
         val prefs = context.getSharedPreferences("model_prefs", Context.MODE_PRIVATE)
-        val savedToken = prefs.getString("hf_token", "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")
+        val savedToken = prefs.getString("hf_token", BuildConfig.HF_TOKEN)
+        android.util.Log.d("ModelDownloadViewModel", "[init] Loaded HF token: ${savedToken?.take(8)}... from prefs, BuildConfig.HF_TOKEN: ${BuildConfig.HF_TOKEN?.take(8)}...")
         _hfToken.value = savedToken
         
         // Initialize ModelDownloader with token
@@ -51,7 +53,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         // Save token to preferences
         val prefs = context.getSharedPreferences("model_prefs", Context.MODE_PRIVATE)
         prefs.edit().putString("hf_token", token).apply()
-        
+        android.util.Log.d("ModelDownloadViewModel", "[setHuggingFaceToken] Token set: ${token?.take(8)}...")
         _hfToken.value = token
         
         // Recreate ModelDownloader with new token
@@ -126,6 +128,8 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                 downloadSpeedBytesPerSec = 0L
             ) 
         }
+
+        android.util.Log.d("ModelDownloadViewModel", "[downloadModel] Using HF token: ${_hfToken.value?.take(8)}... for model: ${model.name}")
 
         val job = viewModelScope.launch {
             var latestStatus: com.llmhub.llmhub.data.DownloadStatus? = null

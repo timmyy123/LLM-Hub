@@ -157,3 +157,29 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Made with ❤️ by the LLM Hub Team**
 
 *Bringing AI to your pocket, privately and securely.*
+
+## Setting up Hugging Face Token for Development
+
+To use private or gated models, you need to provide your Hugging Face (HF) access token. This project is set up to securely load your token from your local machine using `local.properties` (never commit your token to source control).
+
+### Steps:
+
+1. **Open or create `local.properties` in your project root.**
+   - This file is usually already present and is ignored by git by default.
+
+2. **Add your Hugging Face token:**
+   ```properties
+   HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   ```
+   Replace `hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` with your actual token from https://huggingface.co/settings/tokens
+
+3. **Sync Gradle:**
+   - In Android Studio, click "Sync Project with Gradle Files" after saving `local.properties`.
+
+4. **How it works:**
+   - The build system injects your token into the app at build time as `BuildConfig.HF_TOKEN`.
+   - The app uses this token for authenticated model downloads.
+
+**Note:**
+- Never commit your `local.properties` file or your token to version control.
+- If you change your token, update `local.properties` and re-sync Gradle.

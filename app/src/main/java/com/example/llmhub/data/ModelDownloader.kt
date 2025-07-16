@@ -55,7 +55,10 @@ class ModelDownloader(
             instanceFollowRedirects = true // Explicitly follow redirects.
             setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
             if (!hfToken.isNullOrBlank()) {
+                Log.d(TAG, "[downloadModel] Setting Authorization header: Bearer "+hfToken.take(8)+"...")
                 setRequestProperty("Authorization", "Bearer $hfToken")
+            } else {
+                Log.d(TAG, "[downloadModel] No HF token provided, not setting Authorization header.")
             }
         }
 
