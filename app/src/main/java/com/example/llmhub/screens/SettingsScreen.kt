@@ -16,9 +16,12 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SettingsScreen(
     onNavigateBack: () -> Unit,
-    onNavigateToModels: () -> Unit
+    onNavigateToModels: () -> Unit,
+    onNavigateToAbout: () -> Unit,
+    onNavigateToTerms: () -> Unit
 ) {
-    val uriHandler = LocalUriHandler.current
+    var showClearHistoryDialog by remember { mutableStateOf(false) }
+    var showThemeDialog by remember { mutableStateOf(false) }
     
     Scaffold(
         topBar = {
@@ -47,7 +50,6 @@ fun SettingsScreen(
                         subtitle = "Browse and download LLM models",
                         onClick = onNavigateToModels
                     )
-                    
                 }
             }
             
@@ -58,65 +60,112 @@ fun SettingsScreen(
                         title = "Clear Chat History",
                         subtitle = "Delete all conversations",
                         onClick = {
-                            // TODO: Implement clear history
-                        }
-                    )
-                    
-                    SettingsItem(
-                        icon = Icons.Default.CloudUpload,
-                        title = "Export Chats",
-                        subtitle = "Export your conversations",
-                        onClick = {
-                            // TODO: Implement export
+                            showClearHistoryDialog = true
                         }
                     )
                 }
             }
             
             item {
-                SettingsSection(title = "App") {
+                SettingsSection(title = "Appearance") {
                     SettingsItem(
                         icon = Icons.Outlined.Palette,
                         title = "Theme",
-                        subtitle = "Appearance settings",
+                        subtitle = "Light, Dark, or System Default",
                         onClick = {
-                            // TODO: Implement theme settings
-                        }
-                    )
-                    
-                    SettingsItem(
-                        icon = Icons.Default.Info,
-                        title = "About",
-                        subtitle = "App information and licenses",
-                        onClick = {
-                            // TODO: Implement about screen
+                            showThemeDialog = true
                         }
                     )
                 }
             }
             
             item {
-                SettingsSection(title = "Resources") {
+                SettingsSection(title = "Information") {
                     SettingsItem(
-                        icon = Icons.Default.Language,
-                        title = "Hugging Face Hub",
-                        subtitle = "Browse models on Hugging Face",
-                        onClick = {
-                            uriHandler.openUri("https://huggingface.co/models")
-                        }
+                        icon = Icons.Default.Info,
+                        title = "About",
+                        subtitle = "App information and contact",
+                        onClick = onNavigateToAbout
                     )
                     
                     SettingsItem(
-                        icon = Icons.Outlined.Code,
-                        title = "GitHub Repository",
-                        subtitle = "View source code and contribute",
-                        onClick = {
-                            uriHandler.openUri("https://github.com/")
-                        }
+                        icon = Icons.Default.Description,
+                        title = "Terms of Service",
+                        subtitle = "Legal terms and conditions",
+                        onClick = onNavigateToTerms
                     )
                 }
             }
         }
+    }
+    
+    // Clear Chat History Dialog
+    if (showClearHistoryDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearHistoryDialog = false },
+            title = { Text("Clear Chat History") },
+            text = { Text("Are you sure you want to delete all conversations? This action cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        // TODO: Implement clear history logic
+                        showClearHistoryDialog = false
+                    }
+                ) {
+                    Text("Clear", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showClearHistoryDialog = false }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+    
+    // Theme Selection Dialog
+    if (showThemeDialog) {
+        AlertDialog(
+            onDismissRequest = { showThemeDialog = false },
+            title = { Text("Choose Theme") },
+            text = {
+                Column {
+                    val themeOptions = listOf("Light", "Dark", "System Default")
+                    themeOptions.forEach { option ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                        ) {
+                            RadioButton(
+                                selected = false, // TODO: Implement theme preference storage
+                                onClick = {
+                                    // TODO: Implement theme switching logic
+                                    showThemeDialog = false
+                                }
+                            )
+                            
+                            Spacer(modifier = Modifier.width(8.dp))
+                            
+                            Text(
+                                text = option,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { showThemeDialog = false }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
