@@ -20,7 +20,6 @@ fun SettingsScreen(
     onNavigateToAbout: () -> Unit,
     onNavigateToTerms: () -> Unit
 ) {
-    var showClearHistoryDialog by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
     
     Scaffold(
@@ -49,19 +48,6 @@ fun SettingsScreen(
                         title = "Download Models",
                         subtitle = "Browse and download LLM models",
                         onClick = onNavigateToModels
-                    )
-                }
-            }
-            
-            item {
-                SettingsSection(title = "Chat") {
-                    SettingsItem(
-                        icon = Icons.Outlined.History,
-                        title = "Clear Chat History",
-                        subtitle = "Delete all conversations",
-                        onClick = {
-                            showClearHistoryDialog = true
-                        }
                     )
                 }
             }
@@ -97,32 +83,6 @@ fun SettingsScreen(
                 }
             }
         }
-    }
-    
-    // Clear Chat History Dialog
-    if (showClearHistoryDialog) {
-        AlertDialog(
-            onDismissRequest = { showClearHistoryDialog = false },
-            title = { Text("Clear Chat History") },
-            text = { Text("Are you sure you want to delete all conversations? This action cannot be undone.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        // TODO: Implement clear history logic
-                        showClearHistoryDialog = false
-                    }
-                ) {
-                    Text("Clear", color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { showClearHistoryDialog = false }
-                ) {
-                    Text("Cancel")
-                }
-            }
-        )
     }
     
     // Theme Selection Dialog
