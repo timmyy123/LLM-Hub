@@ -1,4 +1,4 @@
-package com.example.llmhub
+package com.llmhub.llmhub
 
 import org.junit.Test
 

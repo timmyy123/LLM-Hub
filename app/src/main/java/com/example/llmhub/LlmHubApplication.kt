@@ -1,10 +1,10 @@
-package com.example.llmhub
+package com.llmhub.llmhub
 
 import android.app.Application
-import com.example.llmhub.data.LlmHubDatabase
-import com.example.llmhub.inference.InferenceService
-import com.example.llmhub.inference.MediaPipeInferenceService
-import com.example.llmhub.repository.ChatRepository
+import com.llmhub.llmhub.data.LlmHubDatabase
+import com.llmhub.llmhub.inference.InferenceService
+import com.llmhub.llmhub.inference.MediaPipeInferenceService
+import com.llmhub.llmhub.repository.ChatRepository
 
 class LlmHubApplication : Application() {
     val inferenceService: InferenceService by lazy {

@@ -1,4 +1,4 @@
-package com.example.llmhub.data
+package com.llmhub.llmhub.data
 
 import androidx.room.Database
 import androidx.room.Room

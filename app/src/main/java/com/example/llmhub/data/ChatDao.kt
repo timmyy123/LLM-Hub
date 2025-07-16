@@ -1,4 +1,4 @@
-package com.example.llmhub.data
+package com.llmhub.llmhub.data
 
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow

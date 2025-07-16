@@ -1,4 +1,4 @@
-package com.example.llmhub.components
+package com.llmhub.llmhub.components
 
 import android.net.Uri
 import androidx.compose.foundation.background
@@ -28,8 +28,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.example.llmhub.data.MessageEntity
-import com.example.llmhub.viewmodels.ChatViewModel
+import com.llmhub.llmhub.data.MessageEntity
+import com.llmhub.llmhub.viewmodels.ChatViewModel
 import dev.jeziellago.compose.markdowntext.MarkdownText
 
 /**

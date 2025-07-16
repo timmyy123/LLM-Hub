@@ -1,4 +1,4 @@
-package com.example.llmhub.screens
+package com.llmhub.llmhub.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn

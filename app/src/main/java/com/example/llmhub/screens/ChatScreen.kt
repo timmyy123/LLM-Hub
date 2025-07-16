@@ -1,4 +1,4 @@
-package com.example.llmhub.screens
+package com.llmhub.llmhub.screens
 
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -18,11 +18,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.llmhub.components.ChatDrawer
-import com.example.llmhub.components.MessageBubble
-import com.example.llmhub.components.MessageInput
-import com.example.llmhub.viewmodels.ChatViewModel
-import com.example.llmhub.viewmodels.ChatViewModelFactory
+import com.llmhub.llmhub.components.ChatDrawer
+import com.llmhub.llmhub.components.MessageBubble
+import com.llmhub.llmhub.components.MessageInput
+import com.llmhub.llmhub.viewmodels.ChatViewModel
+import com.llmhub.llmhub.viewmodels.ChatViewModelFactory
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)

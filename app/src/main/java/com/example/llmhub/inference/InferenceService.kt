@@ -1,8 +1,8 @@
-package com.example.llmhub.inference
+package com.llmhub.llmhub.inference
 
 import android.content.Context
 import android.graphics.Bitmap
-import com.example.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.LLMModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import androidx.annotation.Keep
 import java.io.File
-import com.example.llmhub.data.localFileName
+import com.llmhub.llmhub.data.localFileName
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.google.mediapipe.tasks.genai.llminference.LlmInferenceSession
 import com.google.mediapipe.framework.image.BitmapImageBuilder

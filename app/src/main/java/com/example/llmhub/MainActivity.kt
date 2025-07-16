@@ -1,4 +1,4 @@
-package com.example.llmhub
+package com.llmhub.llmhub
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -10,9 +10,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.compose.rememberNavController
-import com.example.llmhub.navigation.LlmHubNavigation
-import com.example.llmhub.ui.theme.LlmHubTheme
-import com.example.llmhub.viewmodels.ChatViewModelFactory
+import com.llmhub.llmhub.navigation.LlmHubNavigation
+import com.llmhub.llmhub.ui.theme.LlmHubTheme
+import com.llmhub.llmhub.viewmodels.ChatViewModelFactory
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -1,14 +1,14 @@
-package com.example.llmhub.viewmodels
+package com.llmhub.llmhub.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.llmhub.data.LLMModel
-import com.example.llmhub.data.ModelData
+import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.ModelData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import com.example.llmhub.data.ModelDownloader
+import com.llmhub.llmhub.data.ModelDownloader
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.android.Android
 import kotlinx.coroutines.flow.catch
@@ -17,7 +17,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import java.io.File
 import kotlinx.coroutines.Dispatchers
-import com.example.llmhub.data.localFileName
+import com.llmhub.llmhub.data.localFileName
 import android.content.Context
 
 class ModelDownloadViewModel(application: Application) : AndroidViewModel(application) {
@@ -128,7 +128,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         }
 
         val job = viewModelScope.launch {
-            var latestStatus: com.example.llmhub.data.DownloadStatus? = null
+            var latestStatus: com.llmhub.llmhub.data.DownloadStatus? = null
             modelDownloader.downloadModel(model)
                 .catch { exception ->
                     // Handle exceptions with better error reporting

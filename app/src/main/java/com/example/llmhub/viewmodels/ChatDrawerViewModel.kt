@@ -1,11 +1,11 @@
-package com.example.llmhub.viewmodels
+package com.llmhub.llmhub.viewmodels
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.llmhub.data.ChatEntity
-import com.example.llmhub.data.LlmHubDatabase
-import com.example.llmhub.repository.ChatRepository
+import com.llmhub.llmhub.data.ChatEntity
+import com.llmhub.llmhub.data.LlmHubDatabase
+import com.llmhub.llmhub.repository.ChatRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn

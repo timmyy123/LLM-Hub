@@ -1,4 +1,4 @@
-package com.example.llmhub.data
+package com.llmhub.llmhub.data
 
 object ModelData {
     val models = listOf(

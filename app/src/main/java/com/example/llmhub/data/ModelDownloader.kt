@@ -1,4 +1,4 @@
-package com.example.llmhub.data
+package com.llmhub.llmhub.data
 
 import io.ktor.client.* // kept for potential future use but NOT used for large downloads
 import kotlinx.coroutines.Dispatchers
@@ -11,7 +11,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import kotlin.math.roundToLong
 import android.util.Log
-import com.example.llmhub.data.localFileName
+import com.llmhub.llmhub.data.localFileName
 
 private const val TAG = "ModelDownloader"
 

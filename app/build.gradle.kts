@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.llmhub"
+    namespace = "com.llmhub.llmhub"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.llmhub"
+        applicationId = "com.llmhub.llmhub"
         minSdk = 24
         targetSdk = 35
         versionCode = 1
@@ -26,6 +26,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     compileOptions {

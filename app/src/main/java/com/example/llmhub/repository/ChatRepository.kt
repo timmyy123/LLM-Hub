@@ -1,6 +1,6 @@
-package com.example.llmhub.repository
+package com.llmhub.llmhub.repository
 
-import com.example.llmhub.data.*
+import com.llmhub.llmhub.data.*
 import kotlinx.coroutines.flow.Flow
 
 data class ChatWithLastMessage(

@@ -1,4 +1,4 @@
-package com.example.llmhub.ui.theme
+package com.llmhub.llmhub.ui.theme
 
 import android.app.Activity
 import android.os.Build

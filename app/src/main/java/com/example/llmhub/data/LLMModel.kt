@@ -1,4 +1,4 @@
-package com.example.llmhub.data
+package com.llmhub.llmhub.data
 
 data class ModelRequirements(
     val minRamGB: Int,

@@ -1,4 +1,4 @@
-package com.example.llmhub.data
+package com.llmhub.llmhub.data
 
 /**
  * Returns a stable filename to store the downloaded model for this LLMModel.

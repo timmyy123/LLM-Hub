@@ -1,4 +1,4 @@
-package com.example.llmhub.viewmodels
+package com.llmhub.llmhub.viewmodels
 
 import android.content.Context
 import android.net.Uri
@@ -7,16 +7,16 @@ import android.graphics.BitmapFactory
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.SavedStateHandle
-import com.example.llmhub.data.*
-import com.example.llmhub.inference.InferenceService
-import com.example.llmhub.repository.ChatRepository
+import com.llmhub.llmhub.data.*
+import com.llmhub.llmhub.inference.InferenceService
+import com.llmhub.llmhub.repository.ChatRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import java.io.File
 import kotlinx.coroutines.Job
-import com.example.llmhub.data.localFileName
+import com.llmhub.llmhub.data.localFileName
 import android.util.Log
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext

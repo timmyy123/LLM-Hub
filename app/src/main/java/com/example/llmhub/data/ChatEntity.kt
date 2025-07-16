@@ -1,4 +1,4 @@
-package com.example.llmhub.data
+package com.llmhub.llmhub.data
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

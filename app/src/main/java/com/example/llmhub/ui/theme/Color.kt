@@ -1,4 +1,4 @@
-package com.example.llmhub.ui.theme
+package com.llmhub.llmhub.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

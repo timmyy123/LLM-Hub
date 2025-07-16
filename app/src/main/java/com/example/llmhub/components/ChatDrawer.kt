@@ -1,4 +1,4 @@
-package com.example.llmhub.components
+package com.llmhub.llmhub.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,8 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.llmhub.data.ChatEntity
-import com.example.llmhub.viewmodels.ChatDrawerViewModel
+import com.llmhub.llmhub.data.ChatEntity
+import com.llmhub.llmhub.viewmodels.ChatDrawerViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.ui.graphics.Color

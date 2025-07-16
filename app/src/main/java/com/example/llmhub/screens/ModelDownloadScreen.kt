@@ -1,4 +1,4 @@
-package com.example.llmhub.screens
+package com.llmhub.llmhub.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,9 +13,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.llmhub.data.LLMModel
-import com.example.llmhub.data.ModelData
-import com.example.llmhub.viewmodels.ModelDownloadViewModel
+import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.ModelData
+import com.llmhub.llmhub.viewmodels.ModelDownloadViewModel
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext

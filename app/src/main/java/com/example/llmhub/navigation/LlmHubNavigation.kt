@@ -1,15 +1,15 @@
-package com.example.llmhub.navigation
+package com.llmhub.llmhub.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.llmhub.screens.ChatScreen
-import com.example.llmhub.screens.SettingsScreen
-import com.example.llmhub.screens.ModelDownloadScreen
-import com.example.llmhub.screens.AboutScreen
-import com.example.llmhub.screens.TermsOfServiceScreen
-import com.example.llmhub.viewmodels.ChatViewModelFactory
+import com.llmhub.llmhub.screens.ChatScreen
+import com.llmhub.llmhub.screens.SettingsScreen
+import com.llmhub.llmhub.screens.ModelDownloadScreen
+import com.llmhub.llmhub.screens.AboutScreen
+import com.llmhub.llmhub.screens.TermsOfServiceScreen
+import com.llmhub.llmhub.viewmodels.ChatViewModelFactory
 
 sealed class Screen(val route: String) {
     object Chat : Screen("chat/{chatId}") {

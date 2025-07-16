@@ -1,9 +1,9 @@
-package com.example.llmhub.viewmodels
+package com.llmhub.llmhub.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.example.llmhub.inference.InferenceService
-import com.example.llmhub.repository.ChatRepository
+import com.llmhub.llmhub.inference.InferenceService
+import com.llmhub.llmhub.repository.ChatRepository
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.CreationExtras
