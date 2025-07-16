@@ -444,6 +444,8 @@ class ChatViewModel(
                                     }
                                     
                                     // Extract images from recent messages for multimodal models
+                    // Note: We only include the current message's image to avoid confusion
+                    // where the model would reference previous images in new responses
                     val images = if (currentModel!!.supportsVision) {
                         Log.d("ChatViewModel", "Current model supports vision: ${currentModel!!.name}")
                         val recentMessages = _messages.value.takeLast(10)
@@ -471,10 +473,16 @@ class ChatViewModel(
                         }
                         
                         // Add images from recent messages (for context)
-                        val contextImages = extractImagesFromAttachments(context, recentMessages)
-                        currentImages.addAll(contextImages)
+                        // For now, we'll only include the current message's image to avoid confusion
+                        // In the future, you might want to include context images for multi-turn vision conversations
+                        // val contextImages = extractImagesFromAttachments(context, recentMessages)
+                        // currentImages.addAll(contextImages)
                         
-                        Log.d("ChatViewModel", "Total images for generation: ${currentImages.size} (current: ${if (processedAttachmentUri != null) 1 else 0}, context: ${contextImages.size})")
+                        // Note: Context images are disabled to prevent accumulation across messages
+                        // Each message should focus on its own image content
+                        val contextImages = emptyList<Bitmap>() // Disabled for now
+                        
+                        Log.d("ChatViewModel", "Total images for generation: ${currentImages.size} (current: ${if (processedAttachmentUri != null) 1 else 0}, context: ${contextImages.size} - disabled)")
                         
                         // Log details of each image
                         currentImages.forEachIndexed { index, bitmap ->
