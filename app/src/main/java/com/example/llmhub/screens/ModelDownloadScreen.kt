@@ -18,6 +18,34 @@ import com.example.llmhub.data.ModelData
 import com.example.llmhub.viewmodels.ModelDownloadViewModel
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import android.content.Context
+import android.app.ActivityManager
+
+/**
+ * Get device total memory in GB
+ */
+private fun getDeviceMemoryGB(context: Context): Double {
+    val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+    val memoryInfo = ActivityManager.MemoryInfo()
+    activityManager.getMemoryInfo(memoryInfo)
+    return memoryInfo.totalMem / (1024.0 * 1024.0 * 1024.0) // Convert bytes to GB
+}
+
+/**
+ * Check if GPU is actually supported for this model on this device
+ */
+private fun isGpuSupportedForModel(model: LLMModel, context: Context): Boolean {
+    if (!model.supportsGpu) return false
+    
+    // For Gemma-3n models, require >8GB RAM
+    if (model.supportsVision && model.name.contains("Gemma-3n", ignoreCase = true)) {
+        return getDeviceMemoryGB(context) > 8.0
+    }
+    
+    // For other models that support GPU, return true
+    return true
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,6 +53,7 @@ fun ModelDownloadScreen(
     onNavigateBack: () -> Unit = {},
     viewModel: ModelDownloadViewModel = viewModel()
 ) {
+    val context = LocalContext.current
     val models by viewModel.models.collectAsState()
     val textModels = models.filter { it.category == "text" }
     val multimodalModels = models.filter { it.category == "multimodal" }
@@ -94,6 +123,18 @@ fun ModelDownloadScreen(
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.weight(1f)
                                 )
+                                
+                                // Show GPU support if any variant supports GPU on this device
+                                if (variants.any { isGpuSupportedForModel(it, context) }) {
+                                    Icon(
+                                        Icons.Default.Speed,
+                                        contentDescription = "GPU acceleration support",
+                                        modifier = Modifier.size(20.dp),
+                                        tint = MaterialTheme.colorScheme.secondary
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                }
+                                
                                 Icon(
                                     imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                                     contentDescription = if (expanded) "Collapse" else "Expand"
@@ -105,6 +146,7 @@ fun ModelDownloadScreen(
                                     variants.forEach { model ->
                                         ModelItem(
                                             model = model,
+                                            context = context,
                                             onDownload = { viewModel.downloadModel(it) },
                                             onDelete = { viewModel.deleteModel(it) },
                                             onCancel = { viewModel.cancelDownload(it) }
@@ -152,6 +194,17 @@ fun ModelDownloadScreen(
                                     modifier = Modifier.weight(1f)
                                 )
                                 
+                                // Show GPU support if any variant supports GPU on this device
+                                if (variants.any { isGpuSupportedForModel(it, context) }) {
+                                    Icon(
+                                        Icons.Default.Speed,
+                                        contentDescription = "GPU acceleration support",
+                                        modifier = Modifier.size(20.dp),
+                                        tint = MaterialTheme.colorScheme.secondary
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                }
+                                
                                 // Vision indicator
                                 Icon(
                                     Icons.Default.RemoveRedEye,
@@ -173,6 +226,7 @@ fun ModelDownloadScreen(
                                     variants.forEach { model ->
                                         ModelItem(
                                             model = model,
+                                            context = context,
                                             onDownload = { viewModel.downloadModel(it) },
                                             onDelete = { viewModel.deleteModel(it) },
                                             onCancel = { viewModel.cancelDownload(it) }
@@ -191,6 +245,7 @@ fun ModelDownloadScreen(
 @Composable
 fun ModelItem(
     model: LLMModel,
+    context: Context,
     onDownload: (LLMModel) -> Unit,
     onDelete: (LLMModel) -> Unit,
     onCancel: (LLMModel) -> Unit = {}
@@ -211,6 +266,17 @@ fun ModelItem(
                     modifier = Modifier.weight(1f)
                 )
                 
+                // GPU support indicator
+                if (isGpuSupportedForModel(model, context)) {
+                    Icon(
+                        Icons.Default.Speed,
+                        contentDescription = "GPU acceleration support",
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.secondary
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                }
+                
                 // Vision indicator
                 if (model.supportsVision) {
                     Icon(
@@ -223,6 +289,46 @@ fun ModelItem(
             }
             
             Text(text = "Source: ${model.source}", style = MaterialTheme.typography.bodySmall)
+            
+            // GPU support indicator
+            if (isGpuSupportedForModel(model, context)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 4.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Speed,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.secondary
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = if (model.supportsVision) "GPU acceleration supported" else "GPU acceleration supported",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+            } else if (model.supportsGpu && model.supportsVision) {
+                // Show why GPU is not supported for vision models
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 4.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Speed,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "GPU acceleration (requires >8GB RAM)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
             
             if (model.supportsVision) {
                 Row(

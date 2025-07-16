@@ -11,6 +11,7 @@ object ModelData {
             sizeBytes = 555000000L, // 555 MB
             source = "Google via LiteRT Community",
             supportsVision = false,
+            supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
             contextWindowSize = 2048,
             modelFormat = "task"
@@ -23,6 +24,7 @@ object ModelData {
             sizeBytes = 1050000000L, // 1.05 GB
             source = "Google via LiteRT Community",
             supportsVision = false,
+            supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
             contextWindowSize = 1280,
             modelFormat = "task"
@@ -35,6 +37,7 @@ object ModelData {
             sizeBytes = 1070000000L, // 1.07 GB
             source = "Google via LiteRT Community",
             supportsVision = false,
+            supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
             contextWindowSize = 2048,
             modelFormat = "task"
@@ -47,6 +50,7 @@ object ModelData {
             sizeBytes = 1050000000L, // 1.05 GB
             source = "Google via LiteRT Community",
             supportsVision = false,
+            supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 5),
             contextWindowSize = 4096,
             modelFormat = "task"
@@ -61,6 +65,7 @@ object ModelData {
             sizeBytes = 1290000000L, // 1.29 GB
             source = "Meta via LiteRT Community",
             supportsVision = false,
+            supportsGpu = false, // Llama models have GPU compatibility issues
             requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
             contextWindowSize = 1280,
             modelFormat = "task"
@@ -74,6 +79,7 @@ object ModelData {
             sizeBytes = 3300000000L, // 3.3 GB
             source = "Meta via LiteRT Community",
             supportsVision = false,
+            supportsGpu = false, // Llama models have GPU compatibility issues
             requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
             contextWindowSize = 1280,
             modelFormat = "task"
@@ -87,6 +93,7 @@ object ModelData {
             sizeBytes = 3940000000L, // 3.94 GB
             source = "Microsoft via LiteRT Community",
             supportsVision = false,
+            supportsGpu = false, // Phi models have GPU compatibility issues
             requirements = ModelRequirements(minRamGB = 5, recommendedRamGB = 7),
             contextWindowSize = 1280,
             modelFormat = "task"
@@ -101,6 +108,7 @@ object ModelData {
             sizeBytes = 2800000000L, // 2.8 GB (estimated)
             source = "Google (LiteRT Preview)",
             supportsVision = true,
+            supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
             contextWindowSize = 4096,
             modelFormat = "task"
@@ -113,6 +121,7 @@ object ModelData {
             sizeBytes = 4200000000L, // 4.2 GB (estimated)
             source = "Google (LiteRT Preview)",
             supportsVision = true,
+            supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 8),
             contextWindowSize = 4096,
             modelFormat = "task"

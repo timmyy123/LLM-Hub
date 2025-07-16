@@ -13,6 +13,7 @@ data class LLMModel(
     val sizeBytes: Long,
     val source: String,
     val supportsVision: Boolean,
+    val supportsGpu: Boolean = false,
     val requirements: ModelRequirements,
     val contextWindowSize: Int = 2048, // Default context window size in tokens
     val modelFormat: String = "gguf", // "gguf" or "task" (MediaPipe format)
