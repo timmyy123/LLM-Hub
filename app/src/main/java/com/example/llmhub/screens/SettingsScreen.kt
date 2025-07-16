@@ -20,6 +20,7 @@ fun SettingsScreen(
     onNavigateToAbout: () -> Unit,
     onNavigateToTerms: () -> Unit
 ) {
+    val uriHandler = LocalUriHandler.current
     var showThemeDialog by remember { mutableStateOf(false) }
     
     Scaffold(
@@ -79,6 +80,19 @@ fun SettingsScreen(
                         title = "Terms of Service",
                         subtitle = "Legal terms and conditions",
                         onClick = onNavigateToTerms
+                    )
+                }
+            }
+            
+            item {
+                SettingsSection(title = "Source Code") {
+                    SettingsItem(
+                        icon = Icons.Outlined.Code,
+                        title = "GitHub Repository",
+                        subtitle = "View source code and contribute",
+                        onClick = {
+                            uriHandler.openUri("https://github.com/timmyy123/LLM-Hub")
+                        }
                     )
                 }
             }
