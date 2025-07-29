@@ -34,25 +34,32 @@ class ModelDownloader(
             modelsDir.mkdirs()
         }
         val modelFile = File(modelsDir, model.localFileName())
-        // Remove any existing file so we don't mistakenly think a previous partial file is complete
-        if (modelFile.exists()) {
-            Log.w(TAG, "Existing file found for ${model.name}. Deleting before re-download.")
-            modelFile.delete()
-        } else {
-            // If an old file name (based on model name) exists, rename it to the new scheme so we
-            // keep the user’s previous download.
-            val legacyFile = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
-            if (legacyFile.exists()) {
-                legacyFile.renameTo(modelFile)
-            }
+        val legacyFile = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
+        if (!modelFile.exists() && legacyFile.exists()) {
+            legacyFile.renameTo(modelFile)
         }
+
+        // Check for partial file
+        var downloadedBytes = if (modelFile.exists()) modelFile.length() else 0L
+        val totalBytes = model.sizeBytes
+        val safeTotal = if (totalBytes <= 0) Long.MAX_VALUE else totalBytes
+
+        // If file exists and is complete, emit complete status
+        if (modelFile.exists() && modelFile.length() == safeTotal) {
+            emit(DownloadStatus(safeTotal, safeTotal, 0))
+            Log.i(TAG, "Model already fully downloaded: ${model.name}")
+            return@flow
+        }
+
+        emit(DownloadStatus(downloadedBytes, safeTotal, 0))
+        Log.d(TAG, "Start downloading ${model.name} from byte $downloadedBytes")
 
         val url = URL(model.url)
         val connection = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
             connectTimeout = 15_000
             readTimeout = 60_000
-            instanceFollowRedirects = true // Explicitly follow redirects.
+            instanceFollowRedirects = true
             setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
             if (!hfToken.isNullOrBlank()) {
                 Log.d(TAG, "[downloadModel] Setting Authorization header: Bearer "+hfToken.take(8)+"...")
@@ -60,50 +67,46 @@ class ModelDownloader(
             } else {
                 Log.d(TAG, "[downloadModel] No HF token provided, not setting Authorization header.")
             }
+            // If resuming, set Range header
+            if (downloadedBytes > 0) {
+                setRequestProperty("Range", "bytes=$downloadedBytes-")
+            }
         }
 
         val responseCode = connection.responseCode
-        if (responseCode !in 200..299) {
+        if (responseCode !in 200..299 && responseCode != 206) {
             connection.disconnect()
             throw RuntimeException("Download failed with HTTP $responseCode at final URL ${connection.url}")
         }
 
         Log.i(TAG, "Connected. HTTP $responseCode, final URL: ${connection.url}")
 
-        val totalBytes = if (connection.contentLengthLong > 0) connection.contentLengthLong else model.sizeBytes
-        Log.i(TAG, "Total bytes (Content-Length or fallback): $totalBytes")
-
-        val safeTotal = if (totalBytes <= 0) Long.MAX_VALUE else totalBytes
-        var downloadedBytes = 0L
         var lastEmitTime = System.currentTimeMillis()
         var bytesSinceLastEmit = 0L
         var lastSpeed = 0L
 
-        emit(DownloadStatus(downloadedBytes, safeTotal, 0))
-        Log.d(TAG, "Start downloading ${model.name}")
-
         try {
             connection.inputStream.use { input ->
+                // If resuming, open output in append mode
                 modelFile.outputStream().use { output ->
+                    if (downloadedBytes > 0) {
+                        output.channel.position(downloadedBytes)
+                    }
                     val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
                     while (true) {
                         val read = input.read(buffer)
                         if (read == -1) break
                         output.write(buffer, 0, read)
-
                         downloadedBytes += read
                         bytesSinceLastEmit += read
 
                         val currentTime = System.currentTimeMillis()
                         val elapsedTime = currentTime - lastEmitTime
-                        
-                        // Emit progress more frequently initially, then every second
-                        val shouldEmit = if (downloadedBytes < 10_000_000) { // First 10MB
-                            elapsedTime > 250 // Every 250ms
+                        val shouldEmit = if (downloadedBytes < 10_000_000) {
+                            elapsedTime > 250
                         } else {
-                            elapsedTime > 1000 // Every 1 second
+                            elapsedTime > 1000
                         }
-                        
                         if (shouldEmit) {
                             val computed = if (elapsedTime > 0) (bytesSinceLastEmit * 1000 / elapsedTime) else 0L
                             if (computed > 0) lastSpeed = computed
@@ -113,7 +116,6 @@ class ModelDownloader(
                             lastEmitTime = currentTime
                             bytesSinceLastEmit = 0L
                         }
-
                         if (safeTotal != Long.MAX_VALUE && downloadedBytes >= safeTotal) {
                             emit(DownloadStatus(downloadedBytes, safeTotal, lastSpeed))
                             Log.d(TAG, "Final progress ${downloadedBytes}/${safeTotal} bytes. Speed ${lastSpeed} B/s")
