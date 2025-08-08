@@ -206,6 +206,34 @@ class ChatViewModel(
                     return@launch
                 }
                 
+                // Check if chat contains images and current model supports vision
+                val chatMessages = repository.getMessagesForChatSync(chatId)
+                val chatHasImages = chatMessages.any { it.attachmentType == "image" }
+                val currentlyLoadedModel = inferenceService.getCurrentlyLoadedModel()
+                
+                if (chatHasImages && currentlyLoadedModel != null && !currentlyLoadedModel.supportsVision) {
+                    Log.w("ChatViewModel", "Cannot open chat with images when text-only model is loaded")
+                    
+                    // Show an error message to the user explaining why the chat can't be opened
+                    _messages.value = listOf(
+                        MessageEntity(
+                            id = "error-${System.currentTimeMillis()}",
+                            chatId = chatId,
+                            content = "🚫 **Cannot Open This Chat**\n\nThis conversation contains images, but you currently have a **text-only model** loaded:\n\n📱 **Current Model:** ${currentlyLoadedModel.name}\n🖼️ **This Chat:** Contains images\n\n---\n\n## 🎯 How to Fix This:\n\n1. **📥 Download a Vision Model**\n   - Go to \"Download Models\"\n   - Look for models marked with 🖼️ or \"Vision+Text\"\n   - Try: **Gemma-3n E2B (Vision+Text)**\n\n2. **🔄 Switch to Vision Model**\n   - Load the vision model you downloaded\n   - Vision models can handle both text AND images\n\n3. **✅ Return to This Chat**\n   - Once a vision model is loaded, this chat will work perfectly!\n\n---\n\n💡 **Pro Tip:** Vision models can do everything text models can do, plus handle images!",
+                            isFromUser = false,
+                            timestamp = System.currentTimeMillis()
+                        )
+                    )
+                    
+                    // Set basic chat info without loading images
+                    currentChatId = chatId
+                    _currentChat.value = chat
+                    currentModel = currentlyLoadedModel
+                    
+                    // Don't reset session or load messages - just show the error
+                    return@launch
+                }
+                
                 currentChatId = chatId
                 _currentChat.value = chat
                 val foundModel = _availableModels.value.find { it.name == chat.modelName }
@@ -380,6 +408,16 @@ class ChatViewModel(
             // Process attachment if present
             var processedAttachmentUri: Uri? = null
             if (attachmentUri != null) {
+                // Check if current model supports vision before processing image
+                if (currentModel != null && !currentModel!!.supportsVision) {
+                    Log.w("ChatViewModel", "Cannot send image with text-only model: ${currentModel!!.name}")
+                    val errorMessage = "🖼️ **Cannot Send Images**\n\nYou're trying to send an image, but the current model is **text-only**:\n\n📱 **Current Model:** ${currentModel!!.name}\n\n---\n\n## 🎯 To Send Images:\n\n1. **📥 Download a Vision Model**\n   - Tap the menu → \"Download Models\"\n   - Look for 🖼️ **Vision+Text** models\n   - Recommended: **Gemma-3n E2B (Vision+Text)**\n\n2. **🔄 Switch Models**\n   - Load the vision model you downloaded\n   - Vision models handle both text AND images\n\n3. **✅ Try Again**\n   - Once loaded, you can send images freely!\n\n---\n\n💡 **Pro Tip:** Vision models can do everything text models can do, plus understand images!"
+                    repository.addMessage(chatId, errorMessage, isFromUser = false)
+                    _isLoading.value = false
+                    isGenerating = false
+                    return@launch
+                }
+                
                 try {
                     // Copy the image to internal storage to ensure it persists
                     processedAttachmentUri = copyImageToInternalStorage(context, attachmentUri)
@@ -942,6 +980,19 @@ class ChatViewModel(
     fun currentModelSupportsVision(): Boolean {
         return currentModel?.supportsVision == true
     }
+    
+    /**
+     * Check if a chat contains images by examining its messages
+     */
+    suspend fun chatContainsImages(chatId: String): Boolean {
+        return try {
+            val messages = repository.getMessagesForChatSync(chatId)
+            messages.any { it.attachmentType == "image" }
+        } catch (e: Exception) {
+            Log.w("ChatViewModel", "Error checking if chat contains images: ${e.message}")
+            false
+        }
+    }
 
     private fun determineAttachmentType(uri: Uri?): String? {
         if (uri == null) return null
@@ -1250,6 +1301,16 @@ class ChatViewModel(
                 // Cancel any ongoing generation first
                 generationJob?.cancel()
                 
+                // Check if the current model supports vision and the chat has images
+                // If there's a model mismatch, skip session reset to prevent JNI errors
+                val currentlyLoadedModel = inferenceService.getCurrentlyLoadedModel()
+                val chatHasImages = chatContainsImages(chatId)
+                
+                if (chatHasImages && currentlyLoadedModel?.supportsVision != true) {
+                    Log.w("ChatViewModel", "Skipping session reset for chat with images when text-only model is loaded to prevent crashes")
+                    return@launch
+                }
+                
                 // Use the reset method which handles MediaPipe session errors
                 inferenceService.resetChatSession(chatId)
                 
@@ -1259,6 +1320,7 @@ class ChatViewModel(
                 Log.d("ChatViewModel", "Successfully reset chat session for chat $chatId")
             } catch (e: Exception) {
                 Log.w("ChatViewModel", "Error during session reset for chat $chatId: ${e.message}")
+                // Don't rethrow - session errors shouldn't crash the app
             }
         }
     }
