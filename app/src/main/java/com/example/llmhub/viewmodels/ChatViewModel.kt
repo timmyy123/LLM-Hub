@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.SavedStateHandle
@@ -14,12 +15,12 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CancellationException
 import java.io.File
 import kotlinx.coroutines.Job
 import com.llmhub.llmhub.data.localFileName
-import android.util.Log
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.withContext
+import com.llmhub.llmhub.data.isModelFileValid
 
 class ChatViewModel(
     private val inferenceService: InferenceService,
@@ -75,6 +76,9 @@ class ChatViewModel(
     
     // Keep reference to the running generation so the UI can interrupt it
     private var generationJob: Job? = null
+
+    // Avoid aggressive continuation for the very first generation after model load
+    private var firstGenerationSinceLoad: Boolean = false
 
     fun hasDownloadedModels(): Boolean {
         return _availableModels.value.isNotEmpty()
@@ -286,11 +290,16 @@ class ChatViewModel(
                 }
 
                 if (primaryFile.exists()) {
-                    val minSize = 10 * 1024 * 1024
-                    if (primaryFile.length() >= minSize) {
+                    // Only treat as available if passes integrity checks and size is close to expected when known
+                    val sizeKnown = model.sizeBytes > 0
+                    val sizeOk = if (sizeKnown) primaryFile.length() >= (model.sizeBytes * 0.98).toLong() else primaryFile.length() >= 10L * 1024 * 1024
+                    val valid = isModelFileValid(primaryFile, model.modelFormat)
+                    if (sizeOk && valid) {
                         isAvailable = true
                         actualSize = primaryFile.length()
-                        Log.d("ChatViewModel", "Found model in files: ${primaryFile.absolutePath} (${actualSize / (1024*1024)} MB)")
+                        Log.d("ChatViewModel", "Found VALID model in files: ${primaryFile.absolutePath} (${actualSize / (1024*1024)} MB)")
+                    } else {
+                        Log.d("ChatViewModel", "Ignoring incomplete/invalid model file: ${primaryFile.absolutePath} sizeOk=$sizeOk valid=$valid")
                     }
                 }
             }
@@ -525,10 +534,16 @@ class ChatViewModel(
                                     
                                     // Check if this segment looks like it was truncated
                                     val segmentTime = System.currentTimeMillis() - segmentStartTime
-                                    val isLikelyTruncated = isResponseTruncated(currentSegment, segmentTime)
+                                    var isLikelyTruncated = isResponseTruncated(currentSegment, segmentTime)
+
+                                    // Guard: avoid continuing on the first segment after a fresh model load
+                                    if (firstGenerationSinceLoad && continuationCount == 0) {
+                                        Log.d("ChatViewModel", "First generation after model load - disabling continuation to avoid flicker/loops")
+                                        isLikelyTruncated = false
+                                        firstGenerationSinceLoad = false
+                                    }
                                     
                                     Log.d("ChatViewModel", "Segment ${continuationCount + 1}: length=${currentSegment.length}, time=${segmentTime}ms, hasContent=$segmentHasContent, truncated=$isLikelyTruncated")
-                                    Log.d("ChatViewModel", "Segment ends with: '${currentSegment.takeLast(20)}'")
                                     
                                     // If the segment has no meaningful content, stop continuing
                                     if (!segmentHasContent && continuationCount > 0) {
@@ -606,6 +621,9 @@ class ChatViewModel(
      * This is called on successful completion or on cancellation.
      */
     private suspend fun finalizeMessage(placeholderId: String, finalContent: String, generationTimeMs: Long) {
+        // Ensure we reset the first-generation guard after any completion
+        firstGenerationSinceLoad = false
+
         // Only compute token statistics if we have any content to analyse.
         if (finalContent.isNotBlank()) {
             // Approximate tokenisation: empirical average ~4 characters per token across English text.
@@ -730,10 +748,13 @@ class ChatViewModel(
                 inferenceService.loadModel(newModel)
                 // Sync the currently loaded model state
                 syncCurrentlyLoadedModel()
+                // Set the first-generation guard
+                firstGenerationSinceLoad = true
                 Log.d("ChatViewModel", "Successfully loaded new model: ${newModel.name}")
             } catch (e: Exception) {
                 Log.w("ChatViewModel", "Failed to load new model: ${e.message}")
-                // Model loading will happen on first actual use
+                // Even if loading defers to first use, still guard the first generation
+                firstGenerationSinceLoad = true
             }
             
             _isLoadingModel.value = false

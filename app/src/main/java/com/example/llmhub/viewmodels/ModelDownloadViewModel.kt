@@ -104,6 +104,30 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
 
         _models.value = baseModels
 
+        // Re-validate partials that may actually be complete (e.g., size unknown in HEAD)
+        baseModels.filter { !it.isDownloaded && it.downloadedBytes > 0 && (it.totalBytes == null || it.totalBytes == 0L) }
+            .forEach { partial ->
+                viewModelScope.launch(Dispatchers.IO) {
+                    val modelsDir = File(context.filesDir, "models")
+                    val file = File(modelsDir, partial.localFileName())
+                    if (file.exists()) {
+                        val valid = isModelFileValid(file, partial.modelFormat)
+                        if (valid) {
+                            updateModel(partial.name) {
+                                it.copy(
+                                    isDownloaded = true,
+                                    isDownloading = false,
+                                    downloadProgress = 1f,
+                                    downloadedBytes = file.length(),
+                                    totalBytes = file.length(),
+                                    sizeBytes = file.length()
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
         // For models with unknown sizeBytes, fetch HEAD in background to populate size
         baseModels.filter { it.sizeBytes == 0L }.forEach { unknownModel ->
             viewModelScope.launch(Dispatchers.IO) {
