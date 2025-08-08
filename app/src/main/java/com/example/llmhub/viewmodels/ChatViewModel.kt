@@ -519,6 +519,35 @@ class ChatViewModel(
                                             segmentHasContent = true
                                         }
                                         
+                                        // Real-time repetition check to stop runaway generation immediately
+                                        if (totalContent.length > 200 && totalContent.length % 100 == 0) {
+                                            val isRepetitive = checkForRepetition(totalContent)
+                                            if (isRepetitive) {
+                                                Log.w("ChatViewModel", "Stopping generation due to repetitive content detected")
+                                                // Reset the session to prevent future issues
+                                                try {
+                                                    inferenceService.resetChatSession(chatId)
+                                                    Log.d("ChatViewModel", "Reset MediaPipe session due to repetitive content")
+                                                } catch (e: Exception) {
+                                                    Log.w("ChatViewModel", "Failed to reset session: ${e.message}")
+                                                }
+                                                return@collect // Stop the stream
+                                            }
+                                        }
+                                        
+                                        // Maximum response length check to prevent runaway generation
+                                        if (totalContent.length > 5000) {
+                                            Log.w("ChatViewModel", "Stopping generation due to maximum length exceeded (${totalContent.length} chars)")
+                                            // Reset the session to prevent future issues
+                                            try {
+                                                inferenceService.resetChatSession(chatId)
+                                                Log.d("ChatViewModel", "Reset MediaPipe session due to length limit")
+                                            } catch (e: Exception) {
+                                                Log.w("ChatViewModel", "Failed to reset session: ${e.message}")
+                                            }
+                                            return@collect // Stop the stream
+                                        }
+                                        
                                         // Update UI with the complete content so far
                                         val updated = _streamingContents.value.toMutableMap()
                                         updated[placeholderId] = totalContent
@@ -676,11 +705,49 @@ class ChatViewModel(
         
         // Sixth check: If content is getting repetitive (same phrases repeating), don't continue
         val words = trimmed.split(Regex("\\s+"))
-        val isRepetitive = if (words.size > 20) {
+        var isRepetitive = false
+        
+        if (words.size > 20) {
+            // Check for repeating 10-word patterns
             val lastTenWords = words.takeLast(10).joinToString(" ")
             val beforeTenWords = words.dropLast(10).takeLast(10).joinToString(" ")
-            lastTenWords == beforeTenWords
-        } else false
+            if (lastTenWords == beforeTenWords) {
+                isRepetitive = true
+            }
+        }
+        
+        // Additional check for character-level repetition (like long URLs with repeated characters)
+        if (!isRepetitive && trimmed.length > 100) {
+            val last50Chars = trimmed.takeLast(50)
+            val before50Chars = trimmed.dropLast(50).takeLast(50)
+            if (last50Chars == before50Chars) {
+                isRepetitive = true
+                Log.d("ChatViewModel", "Detected character-level repetition")
+            }
+        }
+        
+        // Check for excessive repetition of the same character (like 7777777...)
+        if (!isRepetitive && trimmed.length > 50) {
+            val last30Chars = trimmed.takeLast(30)
+            val mostCommonChar = last30Chars.groupingBy { it }.eachCount().maxByOrNull { it.value }
+            if (mostCommonChar != null && mostCommonChar.value > 20) {
+                isRepetitive = true
+                Log.d("ChatViewModel", "Detected excessive character repetition: '${mostCommonChar.key}' repeated ${mostCommonChar.value} times")
+            }
+        }
+        
+        // Check for URL-like patterns that are getting too long
+        if (!isRepetitive && trimmed.contains("http") && trimmed.length > 200) {
+            val urlPattern = Regex("https?://[^\\s]+")
+            val urls = urlPattern.findAll(trimmed).toList()
+            for (url in urls) {
+                if (url.value.length > 150) {
+                    isRepetitive = true
+                    Log.d("ChatViewModel", "Detected excessively long URL pattern: ${url.value.take(50)}...")
+                    break
+                }
+            }
+        }
         
         if (isRepetitive) {
             Log.d("ChatViewModel", "Content is repetitive - stopping continuation")
@@ -693,6 +760,46 @@ class ChatViewModel(
         Log.d("ChatViewModel", "Truncation check: endsWithProperPunctuation=$endsWithProperPunctuation, endsWithIncompletePattern=$endsWithIncompletePattern, isVeryShort=$isVeryShort, unclosedCodeBlocks=$unclosedCodeBlocks, isOnlyWhitespace=$isOnlyWhitespace, isRepetitive=$isRepetitive, shouldContinue=$shouldContinue")
         
         return shouldContinue
+    }
+
+    /** Quick check for repetitive patterns during streaming */
+    private fun checkForRepetition(content: String): Boolean {
+        if (content.length < 100) return false
+        
+        val trimmed = content.trim()
+        
+        // Check for excessive repetition of the same character (like 7777777...)
+        val last50Chars = trimmed.takeLast(50)
+        val charCounts = last50Chars.groupingBy { it }.eachCount()
+        val mostCommonChar = charCounts.maxByOrNull { it.value }
+        if (mostCommonChar != null && mostCommonChar.value > 30) {
+            Log.d("ChatViewModel", "Real-time: Detected excessive character repetition: '${mostCommonChar.key}' repeated ${mostCommonChar.value} times")
+            return true
+        }
+        
+        // Check for character-level repetition patterns
+        if (trimmed.length > 100) {
+            val last30Chars = trimmed.takeLast(30)
+            val before30Chars = trimmed.dropLast(30).takeLast(30)
+            if (last30Chars == before30Chars) {
+                Log.d("ChatViewModel", "Real-time: Detected character-level repetition")
+                return true
+            }
+        }
+        
+        // Check for URLs getting too long
+        if (trimmed.contains("http") || trimmed.contains("www")) {
+            val urlPattern = Regex("https?://[^\\s]+|www\\.[^\\s]+")
+            val urls = urlPattern.findAll(trimmed).toList()
+            for (url in urls) {
+                if (url.value.length > 200) {
+                    Log.d("ChatViewModel", "Real-time: Detected excessively long URL pattern")
+                    return true
+                }
+            }
+        }
+        
+        return false
     }
 
     /** Interrupt the current response generation if one is running */
