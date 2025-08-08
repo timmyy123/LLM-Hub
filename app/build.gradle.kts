@@ -97,6 +97,9 @@ dependencies {
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
     
+    // DataStore for settings
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+    
     // Permissions
     implementation(libs.accompanist.permissions)
     
