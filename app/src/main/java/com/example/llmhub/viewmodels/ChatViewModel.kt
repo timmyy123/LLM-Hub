@@ -16,7 +16,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import java.io.File
 import kotlinx.coroutines.Job
 import com.llmhub.llmhub.data.localFileName
@@ -119,8 +121,14 @@ class ChatViewModel(
 
     private fun syncCurrentlyLoadedModel() {
         viewModelScope.launch {
-            val loadedModel = inferenceService.getCurrentlyLoadedModel()
-            _currentlyLoadedModel.value = loadedModel
+            try {
+                val loadedModel = inferenceService.getCurrentlyLoadedModel()
+                _currentlyLoadedModel.value = loadedModel
+                Log.d("ChatViewModel", "Synced currently loaded model: ${loadedModel?.name ?: "None"}")
+            } catch (e: Exception) {
+                Log.w("ChatViewModel", "Error syncing currently loaded model: ${e.message}")
+                // Don't update the state if there's an error
+            }
         }
     }
 
@@ -1108,17 +1116,10 @@ class ChatViewModel(
             messageCollectionJob?.cancel()
             messageCollectionJob = null
             
-            // Reset current chat session
-            currentChatId?.let { chatId ->
-                try {
-                    inferenceService.resetChatSession(chatId)
-                    Log.d("ChatViewModel", "Reset session for chat $chatId during clear all")
-                } catch (e: Exception) {
-                    Log.w("ChatViewModel", "Error resetting chat session during clear all: ${e.message}")
-                }
-            }
+            // Store the current chat ID before clearing state
+            val oldChatId = currentChatId
             
-            // Clear current state FIRST
+            // Clear current state IMMEDIATELY to prevent UI freezing
             currentChatId = null
             _currentChat.value = null
             _messages.value = emptyList()
@@ -1126,26 +1127,72 @@ class ChatViewModel(
             _isLoading.value = false
             isGenerating = false
             
+            // For any existing chat session, attempt a background cleanup
+            // This is fire-and-forget - don't let it block the UI
+            if (oldChatId != null) {
+                // Launch session cleanup in background with no UI dependency
+                launch(Dispatchers.IO) {
+                    try {
+                        // Brief wait to let any ongoing operations wind down
+                        kotlinx.coroutines.delay(500)
+                        
+                        // Attempt session reset with a reasonable timeout
+                        // If it fails, that's okay - session will be recreated as needed
+                        withTimeoutOrNull(2000) { // Shorter timeout to avoid hanging
+                            inferenceService.resetChatSession(oldChatId)
+                            Log.d("ChatViewModel", "Successfully reset session for chat $oldChatId during clear all")
+                        } ?: run {
+                            Log.d("ChatViewModel", "Session reset timed out for chat $oldChatId - will recreate as needed")
+                        }
+                    } catch (e: Exception) {
+                        Log.d("ChatViewModel", "Session reset failed for chat $oldChatId: ${e.message} - will recreate as needed")
+                        // This is expected for some models/states - just log and continue
+                    }
+                }
+            }
+            
             // Clear all chats from database
             repository.deleteAllChats()
             
             // Wait a moment to ensure database operations complete
             kotlinx.coroutines.delay(100)
             
-            // Create a new empty chat
+            // Create a new empty chat immediately (don't wait for session reset)
             initializeNewChat(context)
         }
     }
     
     private suspend fun initializeNewChat(context: Context) {
+        // Store the current model before clearing state
+        val previousModel = currentModel
+        
         // Load available models first
         loadAvailableModelsSync(context)
         
-        // Get the currently loaded model from inference service
-        val currentModel = inferenceService.getCurrentlyLoadedModel()
-        
-        // If no model is loaded in inference service, try to use the first available model
-        val modelToUse = currentModel ?: _availableModels.value.firstOrNull()
+        // Determine which model to use - prefer the previously loaded model
+        val modelToUse = when {
+            // First priority: use the previously loaded model if it's still available
+            previousModel != null && _availableModels.value.any { it.name == previousModel.name } -> {
+                Log.d("ChatViewModel", "Reusing previously loaded model: ${previousModel.name}")
+                previousModel
+            }
+            // Second priority: try to get currently loaded model from inference service
+            else -> {
+                try {
+                    val currentModel = inferenceService.getCurrentlyLoadedModel()
+                    if (currentModel != null && _availableModels.value.any { it.name == currentModel.name }) {
+                        Log.d("ChatViewModel", "Using currently loaded model from service: ${currentModel.name}")
+                        currentModel
+                    } else {
+                        Log.d("ChatViewModel", "No valid loaded model, using first available")
+                        _availableModels.value.firstOrNull()
+                    }
+                } catch (e: Exception) {
+                    Log.d("ChatViewModel", "Error getting loaded model, using first available: ${e.message}")
+                    _availableModels.value.firstOrNull()
+                }
+            }
+        }
         
         // Create new chat with appropriate model
         val newChatId = repository.createNewChat(
@@ -1166,8 +1213,22 @@ class ChatViewModel(
             repository.updateChatModel(newChatId, modelToUse.name)
             _currentChat.value = repository.getChatById(newChatId)
             
-            // Sync the currently loaded model state
+            // Sync the currently loaded model state - this should be quick
             syncCurrentlyLoadedModel()
+            
+            // Ensure the model is loaded in inference service in background
+            // Don't wait for this to complete - it can happen asynchronously
+            viewModelScope.launch {
+                try {
+                    inferenceService.loadModel(modelToUse)
+                    Log.d("ChatViewModel", "Successfully loaded model ${modelToUse.name} for new chat")
+                    // Update the state after successful load
+                    syncCurrentlyLoadedModel()
+                } catch (e: Exception) {
+                    Log.w("ChatViewModel", "Failed to load model ${modelToUse.name} for new chat: ${e.message}")
+                    // Model loading failed, but don't block the UI
+                }
+            }
         }
         
         // Start collecting messages for the new chat
