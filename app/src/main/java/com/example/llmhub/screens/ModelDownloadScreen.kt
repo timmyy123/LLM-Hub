@@ -361,36 +361,35 @@ fun ModelItem(
                 Button(onClick = { onDelete(model) }) {
                     Text("Delete")
                 }
-            } else if (model.downloadProgress != 1f && (model.downloadedBytes > 0 || model.downloadProgress < 0)) {
-                // Downloading (either determinate or indeterminate)
+            } else if (model.isDownloading) {
+                // Actively downloading
                 Column {
                     if (model.downloadProgress < 0f) {
                         // Indeterminate progress when total size is unknown
                         LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                     } else {
-                    LinearProgressIndicator(
-                        progress = { model.downloadProgress },
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                        LinearProgressIndicator(
+                            progress = { model.downloadProgress },
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    // Show downloaded bytes and speed when we have at least some information
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         val totalDisplayBytes = model.totalBytes ?: model.sizeBytes
                         if (totalDisplayBytes > 0) {
-                        Text(
-                            text = String.format(
-                                "%.1fMB / %.1fMB",
-                                model.downloadedBytes / 1_000_000f,
-                                totalDisplayBytes / 1_000_000f
-                            ),
-                            style = MaterialTheme.typography.bodySmall
-                        )
+                            Text(
+                                text = String.format(
+                                    "%.1fMB / %.1fMB",
+                                    model.downloadedBytes / 1_000_000f,
+                                    totalDisplayBytes / 1_000_000f
+                                ),
+                                style = MaterialTheme.typography.bodySmall
+                            )
                         } else {
                             Text(
                                 text = String.format("%.1fMB", model.downloadedBytes / 1_000_000f),
@@ -405,18 +404,51 @@ fun ModelItem(
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
+                    Button(onClick = { onCancel(model) }) { Text("Cancel") }
+                }
+            } else if (!model.isDownloaded && model.downloadedBytes > 0) {
+                // Partial file present after restart (not actively downloading)
+                Column {
+                    if (model.downloadProgress >= 0f) {
+                        LinearProgressIndicator(
+                            progress = { model.downloadProgress.coerceIn(0f, 0.99f) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        val totalDisplayBytes = model.totalBytes ?: model.sizeBytes
+                        if (totalDisplayBytes > 0) {
+                            Text(
+                                text = String.format(
+                                    "Paused: %.1fMB / %.1fMB",
+                                    model.downloadedBytes / 1_000_000f,
+                                    totalDisplayBytes / 1_000_000f
+                                ),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        } else {
+                            Text(
+                                text = String.format("Paused: %.1fMB downloaded", model.downloadedBytes / 1_000_000f),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = String.format("Paused: %.1fMB downloaded", model.downloadedBytes / 1_000_000f),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
 
-                    // Cancel button
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Button(onClick = { onCancel(model) }) {
-                        Text("Cancel")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = { onDownload(model) }) { Text("Continue download") }
+                        OutlinedButton(onClick = { onCancel(model) }) { Text("Clear") }
                     }
                 }
             } else {
                 // Not downloaded
                 Button(onClick = { onDownload(model) }) {
                     if (model.sizeBytes > 0) {
-                    Text("Download (${formatBytes(model.sizeBytes)})")
+                        Text("Download (${formatBytes(model.sizeBytes)})")
                     } else {
                         Text("Download")
                     }
@@ -448,4 +480,4 @@ private fun formatSpeed(bytesPerSec: Long): String {
         val kb = bytesPerSec / 1024.0
         String.format("%.0f KB/s", kb)
     }
-} 
+}

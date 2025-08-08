@@ -18,8 +18,9 @@ data class LLMModel(
     val contextWindowSize: Int = 2048, // Default context window size in tokens
     val modelFormat: String = "gguf", // "gguf" or "task" (MediaPipe format)
     var isDownloaded: Boolean = false,
+    var isDownloading: Boolean = false, // New: whether a download is currently in progress for this model
     var downloadProgress: Float = 0f,
     var downloadedBytes: Long = 0L,
     var totalBytes: Long? = null,
     var downloadSpeedBytesPerSec: Long? = null
-) 
+)
