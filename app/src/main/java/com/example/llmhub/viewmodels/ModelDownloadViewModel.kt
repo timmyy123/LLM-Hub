@@ -20,6 +20,7 @@ import kotlinx.coroutines.Dispatchers
 import com.llmhub.llmhub.data.localFileName
 import android.content.Context
 import com.llmhub.llmhub.BuildConfig
+import com.llmhub.llmhub.data.isModelFileValid
 
 class ModelDownloadViewModel(application: Application) : AndroidViewModel(application) {
     private val _models = MutableStateFlow<List<LLMModel>>(emptyList())
@@ -75,39 +76,27 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
 
             val file = primaryFile
             if (file.exists()) {
-                val minSize = 10 * 1024 * 1024 // 10 MiB safeguard against HTML error pages
                 val sizeKnown = model.sizeBytes > 0
-                val completeThreshold = if (sizeKnown) {
-                    // Consider complete if within ~98% of expected size
-                    kotlin.math.max(minSize.toLong(), (model.sizeBytes * 0.98).toLong())
-                } else {
-                    Long.MAX_VALUE // without known size, never auto-mark as complete
-                }
+                val completeEnough = sizeKnown && file.length() >= (model.sizeBytes * 0.98).toLong()
+                val valid = isModelFileValid(file, model.modelFormat)
 
-                if (sizeKnown && file.length() >= completeThreshold) {
+                if (completeEnough && valid) {
                     model.copy(
                         isDownloaded = true,
                         isDownloading = false,
                         sizeBytes = file.length(),
                         downloadProgress = 1f,
                         downloadedBytes = file.length(),
-                        totalBytes = file.length(),
-                        downloadSpeedBytesPerSec = null
+                        totalBytes = file.length()
                     )
                 } else {
-                    // Partial file present; expose as resumable
-                    val progress = if (sizeKnown) {
-                        (file.length().toFloat() / model.sizeBytes).coerceIn(0f, 0.99f)
-                    } else {
-                        -1f // indeterminate when size unknown
-                    }
+                    val progress = if (sizeKnown) (file.length().toFloat() / model.sizeBytes).coerceIn(0f, 0.99f) else -1f
                     model.copy(
                         isDownloaded = false,
                         isDownloading = false,
                         downloadProgress = progress,
                         downloadedBytes = file.length(),
-                        totalBytes = if (sizeKnown) model.sizeBytes else null,
-                        downloadSpeedBytesPerSec = null
+                        totalBytes = if (sizeKnown) model.sizeBytes else null
                     )
                 }
             } else model
@@ -213,24 +202,25 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                         (expectedBytes <= 0 && modelFile.length() >= minReasonableSize)
                     )
 
-                    if (completed && cause == null) {
+                    val valid = if (completed) isModelFileValid(modelFile, model.modelFormat) else false
+
+                    if (completed && valid && cause == null) {
                         updateModel(model.name) { it.copy(isDownloaded = true, isDownloading = false, downloadProgress = 1f, sizeBytes = modelFile.length(), downloadedBytes = modelFile.length(), totalBytes = modelFile.length()) }
                     } else {
-                        // Keep partial file so user can resume, unless explicitly cancelled via cancelDownload()
+                        // Keep partial file so user can resume, unless explicitly cancelled
                         updateModel(model.name) {
                             val sizeKnown = expectedBytes > 0
-                            val progress = if (sizeKnown) {
+                            val progress = if (sizeKnown && modelFile.exists()) {
                                 (modelFile.length().toFloat() / expectedBytes).coerceIn(0f, 0.99f)
-                            } else {
+                            } else if (modelFile.exists()) {
                                 -1f
-                            }
+                            } else 0f
                             it.copy(
                                 isDownloaded = false,
                                 isDownloading = false,
-                                downloadProgress = if (modelFile.exists()) progress else 0f,
+                                downloadProgress = progress,
                                 downloadedBytes = if (modelFile.exists()) modelFile.length() else 0L,
-                                totalBytes = if (sizeKnown) expectedBytes else null,
-                                downloadSpeedBytesPerSec = null
+                                totalBytes = if (sizeKnown) expectedBytes else null
                             )
                         }
                     }

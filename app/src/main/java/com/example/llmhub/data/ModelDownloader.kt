@@ -2,14 +2,13 @@ package com.llmhub.llmhub.data
 
 import io.ktor.client.* // kept for potential future use but NOT used for large downloads
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import java.io.File
+import java.io.RandomAccessFile
 import java.net.HttpURLConnection
 import java.net.URL
-import kotlin.math.roundToLong
 import android.util.Log
 import com.llmhub.llmhub.data.localFileName
 
@@ -41,17 +40,17 @@ class ModelDownloader(
 
         // Check for partial file
         var downloadedBytes = if (modelFile.exists()) modelFile.length() else 0L
-        val totalBytes = model.sizeBytes
-        val safeTotal = if (totalBytes <= 0) Long.MAX_VALUE else totalBytes
+        var inferredTotalBytes = if (model.sizeBytes > 0) model.sizeBytes else -1L
 
-        // If file exists and is complete, emit complete status
-        if (modelFile.exists() && modelFile.length() == safeTotal) {
-            emit(DownloadStatus(safeTotal, safeTotal, 0))
+        // If file exists and we know the exact size and it's complete, short-circuit
+        if (modelFile.exists() && inferredTotalBytes > 0 && modelFile.length() >= inferredTotalBytes) {
+            emit(DownloadStatus(inferredTotalBytes, inferredTotalBytes, 0))
             Log.i(TAG, "Model already fully downloaded: ${model.name}")
             return@flow
         }
 
-        emit(DownloadStatus(downloadedBytes, safeTotal, 0))
+        // For unknown totals, emit 0 so UI shows indeterminate
+        emit(DownloadStatus(downloadedBytes, if (inferredTotalBytes > 0) inferredTotalBytes else 0L, 0))
         Log.d(TAG, "Start downloading ${model.name} from byte $downloadedBytes")
 
         val url = URL(model.url)
@@ -64,8 +63,6 @@ class ModelDownloader(
             if (!hfToken.isNullOrBlank()) {
                 Log.d(TAG, "[downloadModel] Setting Authorization header: Bearer "+hfToken.take(8)+"...")
                 setRequestProperty("Authorization", "Bearer $hfToken")
-            } else {
-                Log.d(TAG, "[downloadModel] No HF token provided, not setting Authorization header.")
             }
             // If resuming, set Range header
             if (downloadedBytes > 0) {
@@ -79,7 +76,41 @@ class ModelDownloader(
             throw RuntimeException("Download failed with HTTP $responseCode at final URL ${connection.url}")
         }
 
-        Log.i(TAG, "Connected. HTTP $responseCode, final URL: ${connection.url}")
+        // Try to infer total size from headers
+        try {
+            val contentRange = connection.getHeaderField("Content-Range") // bytes start-end/total
+            val contentLength = connection.getHeaderField("Content-Length")?.toLongOrNull()
+            if (contentRange != null) {
+                val rangePart = contentRange.substringAfter(' ').substringBefore('/') // e.g. bytes 100-999
+                val start = rangePart.substringBefore('-').toLongOrNull()
+                val total = contentRange.substringAfter('/').toLongOrNull()
+                if (total != null && total > 0) inferredTotalBytes = total
+                if (start != null && start >= 0 && start != downloadedBytes) {
+                    Log.w(TAG, "Server resumed at $start but local file is $downloadedBytes. Truncating to $start.")
+                    // Truncate local file to server start
+                    if (modelFile.exists()) {
+                        RandomAccessFile(modelFile, "rw").use { raf ->
+                            raf.setLength(start)
+                        }
+                    }
+                    downloadedBytes = start
+                }
+            } else if (contentLength != null && contentLength > 0) {
+                inferredTotalBytes = if (downloadedBytes > 0 && responseCode == 206) downloadedBytes + contentLength else contentLength
+            }
+        } catch (_: Exception) { /* ignore */ }
+
+        // If we attempted resume but got 200 (no Range support), restart from 0
+        if (downloadedBytes > 0 && responseCode == 200) {
+            Log.w(TAG, "Server ignored Range header. Restarting full download and overwriting partial file.")
+            if (modelFile.exists()) modelFile.delete()
+            modelFile.parentFile?.mkdirs()
+            modelFile.createNewFile()
+            downloadedBytes = 0L
+            emit(DownloadStatus(0, if (inferredTotalBytes > 0) inferredTotalBytes else 0L, 0))
+        }
+
+        Log.i(TAG, "Connected. HTTP $responseCode, final URL: ${connection.url}, total=${inferredTotalBytes}")
 
         var lastEmitTime = System.currentTimeMillis()
         var bytesSinceLastEmit = 0L
@@ -87,16 +118,14 @@ class ModelDownloader(
 
         try {
             connection.inputStream.use { input ->
-                // If resuming, open output in append mode
-                modelFile.outputStream().use { output ->
-                    if (downloadedBytes > 0) {
-                        output.channel.position(downloadedBytes)
-                    }
+                // Open output and position at downloadedBytes
+                RandomAccessFile(modelFile, "rw").use { raf ->
+                    raf.seek(downloadedBytes)
                     val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
                     while (true) {
                         val read = input.read(buffer)
                         if (read == -1) break
-                        output.write(buffer, 0, read)
+                        raf.write(buffer, 0, read)
                         downloadedBytes += read
                         bytesSinceLastEmit += read
 
@@ -108,17 +137,15 @@ class ModelDownloader(
                             elapsedTime > 1000
                         }
                         if (shouldEmit) {
-                            val computed = if (elapsedTime > 0) (bytesSinceLastEmit * 1000 / elapsedTime) else 0L
-                            if (computed > 0) lastSpeed = computed
-                            val speed = if (lastSpeed > 0) lastSpeed else computed
-                            emit(DownloadStatus(downloadedBytes, safeTotal, speed))
-                            Log.d(TAG, "Progress ${downloadedBytes}/${safeTotal} bytes. Speed ${speed} B/s")
+                            val speed = if (elapsedTime > 0) (bytesSinceLastEmit * 1000 / elapsedTime) else 0L
+                            emit(DownloadStatus(downloadedBytes, if (inferredTotalBytes > 0) inferredTotalBytes else 0L, speed))
+                            Log.d(TAG, "Progress ${downloadedBytes}/${inferredTotalBytes} bytes. Speed ${speed} B/s")
                             lastEmitTime = currentTime
                             bytesSinceLastEmit = 0L
                         }
-                        if (safeTotal != Long.MAX_VALUE && downloadedBytes >= safeTotal) {
-                            emit(DownloadStatus(downloadedBytes, safeTotal, lastSpeed))
-                            Log.d(TAG, "Final progress ${downloadedBytes}/${safeTotal} bytes. Speed ${lastSpeed} B/s")
+                        if (inferredTotalBytes > 0 && downloadedBytes >= inferredTotalBytes) {
+                            emit(DownloadStatus(downloadedBytes, inferredTotalBytes, (bytesSinceLastEmit)))
+                            Log.d(TAG, "Final progress ${downloadedBytes}/${inferredTotalBytes} bytes.")
                             break
                         }
                     }
@@ -133,4 +160,4 @@ class ModelDownloader(
 
         Log.i(TAG, "Finished downloading ${model.name}. Total bytes written: $downloadedBytes")
     }.flowOn(Dispatchers.IO)
-} 
+}
