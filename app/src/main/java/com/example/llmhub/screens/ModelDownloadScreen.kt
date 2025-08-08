@@ -1,8 +1,17 @@
 package com.llmhub.llmhub.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -14,13 +23,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.llmhub.llmhub.data.LLMModel
-import com.llmhub.llmhub.data.ModelData
 import com.llmhub.llmhub.viewmodels.ModelDownloadViewModel
-import androidx.compose.foundation.clickable
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import android.content.Context
 import android.app.ActivityManager
+import com.llmhub.llmhub.ui.components.*
 
 /**
  * Get device total memory in GB
@@ -62,99 +69,103 @@ fun ModelDownloadScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Download Models") },
+            LargeTopAppBar(
+                title = { 
+                    Text(
+                        "AI Models",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold
+                    ) 
+                },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(
+                        onClick = onNavigateBack,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(
+                                MaterialTheme.colorScheme.surfaceVariant,
+                                CircleShape
+                            )
+                    ) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.largeTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                )
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.surface
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp)
+                .padding(paddingValues),
+            contentPadding = PaddingValues(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                Text(
-                    text = "Available Models",
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    ),
+                    shape = MaterialTheme.shapes.large
+                ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.CloudDownload,
+                                contentDescription = null,
+                                modifier = Modifier.size(32.dp),
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Column {
+                                Text(
+                                    text = "Download AI Models",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "Choose from text-only or multimodal models",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                                )
+                            }
+                        }
+                    }
+                }
             }
             
             // Text Models Section
             if (textGrouped.isNotEmpty()) {
                 item {
-                    Text(
-                        text = "Text Models",
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        color = MaterialTheme.colorScheme.primary
+                    SectionHeader(
+                        title = "Text Models",
+                        subtitle = "Models optimized for text generation and conversation"
                     )
                 }
                 
                 textGrouped.forEach { (family, variants) ->
-                    // Each family gets one expandable card
                     item {
-                        var expanded by remember { mutableStateOf(false) }
-
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp)
-                                .clickable { expanded = !expanded },
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp)
-                            ) {
-                                Text(
-                                    family,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                
-                                // Show GPU support if any variant supports GPU on this device
-                                if (variants.any { isGpuSupportedForModel(it, context) }) {
-                                    Icon(
-                                        Icons.Default.Speed,
-                                        contentDescription = "GPU acceleration support",
-                                        modifier = Modifier.size(20.dp),
-                                        tint = MaterialTheme.colorScheme.secondary
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                }
-                                
-                                Icon(
-                                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                    contentDescription = if (expanded) "Collapse" else "Expand"
-                                )
-                            }
-
-                            if (expanded) {
-                                Column(modifier = Modifier.padding(bottom = 8.dp)) {
-                                    variants.forEach { model ->
-                                        ModelItem(
-                                            model = model,
-                                            context = context,
-                                            onDownload = { viewModel.downloadModel(it) },
-                                            onDelete = { viewModel.deleteModel(it) },
-                                            onCancel = { viewModel.cancelDownload(it) }
-                                        )
-                                    }
-                                }
-                            }
-                        }
+                        ModelFamilyCard(
+                            family = family,
+                            variants = variants,
+                            context = context,
+                            viewModel = viewModel,
+                            isMultimodal = false
+                        )
                     }
                 }
             }
@@ -162,80 +173,113 @@ fun ModelDownloadScreen(
             // Multimodal Models Section
             if (multimodalGrouped.isNotEmpty()) {
                 item {
-                    Text(
-                        text = "Multimodal Models (Vision + Text)",
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        color = MaterialTheme.colorScheme.primary
+                    SectionHeader(
+                        title = "Vision Models",
+                        subtitle = "Models that can understand both text and images"
                     )
                 }
                 
                 multimodalGrouped.forEach { (family, variants) ->
-                    // Each family gets one expandable card
                     item {
-                        var expanded by remember { mutableStateOf(false) }
-
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp)
-                                .clickable { expanded = !expanded },
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp)
-                            ) {
-                                Text(
-                                    family,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                
-                                // Show GPU support if any variant supports GPU on this device
-                                if (variants.any { isGpuSupportedForModel(it, context) }) {
-                                    Icon(
-                                        Icons.Default.Speed,
-                                        contentDescription = "GPU acceleration support",
-                                        modifier = Modifier.size(20.dp),
-                                        tint = MaterialTheme.colorScheme.secondary
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                }
-                                
-                                // Vision indicator
-                                Icon(
-                                    Icons.Default.RemoveRedEye,
-                                    contentDescription = "Vision support",
-                                    modifier = Modifier.size(20.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                
-                                Spacer(modifier = Modifier.width(8.dp))
-                                
-                                Icon(
-                                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                    contentDescription = if (expanded) "Collapse" else "Expand"
-                                )
-                            }
-
-                            if (expanded) {
-                                Column(modifier = Modifier.padding(bottom = 8.dp)) {
-                                    variants.forEach { model ->
-                                        ModelItem(
-                                            model = model,
-                                            context = context,
-                                            onDownload = { viewModel.downloadModel(it) },
-                                            onDelete = { viewModel.deleteModel(it) },
-                                            onCancel = { viewModel.cancelDownload(it) }
-                                        )
-                                    }
-                                }
-                            }
-                        }
+                        ModelFamilyCard(
+                            family = family,
+                            variants = variants,
+                            context = context,
+                            viewModel = viewModel,
+                            isMultimodal = true
+                        )
                     }
+                }
+            }
+            
+            item {
+                Spacer(modifier = Modifier.height(80.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ModelFamilyCard(
+    family: String,
+    variants: List<LLMModel>,
+    context: Context,
+    viewModel: ModelDownloadViewModel,
+    isMultimodal: Boolean
+) {
+    var expanded by remember { mutableStateOf(false) }
+    
+    ModernCard(
+        onClick = { expanded = !expanded }
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = family,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    if (isMultimodal) {
+                        IconWithLabel(
+                            icon = Icons.Default.RemoveRedEye,
+                            label = "Vision",
+                            tint = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
+                    
+                    if (variants.any { isGpuSupportedForModel(it, context) }) {
+                        IconWithLabel(
+                            icon = Icons.Default.Speed,
+                            label = "GPU",
+                            tint = MaterialTheme.colorScheme.secondary
+                        )
+                    }
+                    
+                    IconWithLabel(
+                        icon = Icons.Default.Storage,
+                        label = "${variants.size} variant${if (variants.size > 1) "s" else ""}",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+            
+            Icon(
+                imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                contentDescription = if (expanded) "Collapse" else "Expand",
+                modifier = Modifier.size(24.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        
+        AnimatedVisibility(
+            visible = expanded,
+            enter = expandVertically(animationSpec = tween(300)) + fadeIn(),
+            exit = shrinkVertically(animationSpec = tween(300)) + fadeOut()
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(top = 16.dp)
+                    .animateContentSize(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                variants.forEach { model ->
+                    ModelVariantItem(
+                        model = model,
+                        context = context,
+                        onDownload = { viewModel.downloadModel(it) },
+                        onCancel = { viewModel.cancelDownload(it) },
+                        onDelete = { viewModel.deleteModel(it) }
+                    )
                 }
             }
         }
@@ -243,214 +287,226 @@ fun ModelDownloadScreen(
 }
 
 @Composable
-fun ModelItem(
+private fun ModelVariantItem(
     model: LLMModel,
     context: Context,
     onDownload: (LLMModel) -> Unit,
-    onDelete: (LLMModel) -> Unit,
-    onCancel: (LLMModel) -> Unit = {}
+    onCancel: (LLMModel) -> Unit,
+    onDelete: (LLMModel) -> Unit
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        ),
+        shape = MaterialTheme.shapes.medium
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Model name and status
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = model.name,
-                    style = MaterialTheme.typography.titleLarge,
+                    text = model.name.substringAfter("(").substringBefore(")"),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
                 
-                // GPU support indicator
-                if (isGpuSupportedForModel(model, context)) {
-                    Icon(
-                        Icons.Default.Speed,
-                        contentDescription = "GPU acceleration support",
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.secondary
+                when {
+                    model.isDownloaded -> StatusChip(
+                        text = "Downloaded",
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    model.isDownloading -> StatusChip(
+                        text = "Downloading...",
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    model.downloadProgress > 0f -> StatusChip(
+                        text = "Partial",
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                    else -> StatusChip(
+                        text = "Not downloaded",
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
+            }
+            
+            // Model info
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                IconWithLabel(
+                    icon = Icons.Default.Storage,
+                    label = formatFileSize(model.sizeBytes),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 
-                // Vision indicator
-                if (model.supportsVision) {
-                    Icon(
-                        Icons.Default.RemoveRedEye,
-                        contentDescription = "Vision support",
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-            
-            Text(text = "Source: ${model.source}", style = MaterialTheme.typography.bodySmall)
-            
-            // GPU support indicator
-            if (isGpuSupportedForModel(model, context)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(top = 4.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Speed,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
+                IconWithLabel(
+                    icon = Icons.Default.Memory,
+                    label = "${model.requirements.minRamGB}GB RAM",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                
+                if (isGpuSupportedForModel(model, context)) {
+                    IconWithLabel(
+                        icon = Icons.Default.Speed,
+                        label = "GPU",
                         tint = MaterialTheme.colorScheme.secondary
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = if (model.supportsVision) "GPU acceleration supported" else "GPU acceleration supported",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.secondary
-                    )
-                }
-            } else if (model.supportsGpu && model.supportsVision) {
-                // Show why GPU is not supported for vision models
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(top = 4.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Speed,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "GPU acceleration (requires >8GB RAM)",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
             }
             
-            if (model.supportsVision) {
+            // Progress indicator for downloading models
+            if (model.isDownloading && model.downloadProgress > 0f) {
+                ModernProgressIndicator(
+                    progress = model.downloadProgress,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+                
+                // Download speed and size info
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Icon(
-                        Icons.Default.Image,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    val totalDisplayBytes = model.totalBytes ?: model.sizeBytes
+                    if (totalDisplayBytes > 0) {
+                        Text(
+                            text = "${formatFileSize(model.downloadedBytes)} / ${formatFileSize(totalDisplayBytes)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        Text(
+                            text = formatFileSize(model.downloadedBytes),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
                     Text(
-                        text = "Supports image input",
+                        text = formatSpeed(model.downloadSpeedBytesPerSec ?: 0),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
+            } else if (model.downloadProgress > 0f && !model.isDownloading) {
+                // Paused download
+                ModernProgressIndicator(
+                    progress = model.downloadProgress.coerceIn(0f, 0.99f),
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+                
+                Text(
+                    text = "Paused: ${formatFileSize(model.downloadedBytes)} downloaded",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
             
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = model.description, style = MaterialTheme.typography.bodyMedium)
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Download Button and Progress
-            if (model.isDownloaded) {
-                Button(onClick = { onDelete(model) }) {
-                    Text("Delete")
-                }
-            } else if (model.isDownloading) {
-                // Actively downloading
-                Column {
-                    if (model.downloadProgress < 0f) {
-                        // Indeterminate progress when total size is unknown
-                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                    } else {
-                        LinearProgressIndicator(
-                            progress = { model.downloadProgress },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        val totalDisplayBytes = model.totalBytes ?: model.sizeBytes
-                        if (totalDisplayBytes > 0) {
-                            Text(
-                                text = String.format(
-                                    "%.1fMB / %.1fMB",
-                                    model.downloadedBytes / 1_000_000f,
-                                    totalDisplayBytes / 1_000_000f
-                                ),
-                                style = MaterialTheme.typography.bodySmall
+            // Action button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                when {
+                    model.isDownloaded -> {
+                        OutlinedButton(
+                            onClick = { onDelete(model) },
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
+                            ),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+                        ) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
                             )
-                        } else {
-                            Text(
-                                text = String.format("%.1fMB", model.downloadedBytes / 1_000_000f),
-                                style = MaterialTheme.typography.bodySmall
-                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Delete")
                         }
-
-                        Text(
-                            text = formatSpeed(model.downloadSpeedBytesPerSec ?: 0),
-                            style = MaterialTheme.typography.bodySmall
-                        )
                     }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(onClick = { onCancel(model) }) { Text("Cancel") }
-                }
-            } else if (!model.isDownloaded && model.downloadedBytes > 0) {
-                // Partial file present after restart (not actively downloading)
-                Column {
-                    if (model.downloadProgress >= 0f) {
-                        LinearProgressIndicator(
-                            progress = { model.downloadProgress.coerceIn(0f, 0.99f) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        val totalDisplayBytes = model.totalBytes ?: model.sizeBytes
-                        if (totalDisplayBytes > 0) {
-                            Text(
-                                text = String.format(
-                                    "Paused: %.1fMB / %.1fMB",
-                                    model.downloadedBytes / 1_000_000f,
-                                    totalDisplayBytes / 1_000_000f
-                                ),
-                                style = MaterialTheme.typography.bodySmall
+                    
+                    model.isDownloading -> {
+                        OutlinedButton(
+                            onClick = { onCancel(model) },
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
+                            ),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+                        ) {
+                            Icon(
+                                Icons.Default.Cancel,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
                             )
-                        } else {
-                            Text(
-                                text = String.format("Paused: %.1fMB downloaded", model.downloadedBytes / 1_000_000f),
-                                style = MaterialTheme.typography.bodySmall
-                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Cancel")
                         }
-                    } else {
-                        Text(
-                            text = String.format("Paused: %.1fMB downloaded", model.downloadedBytes / 1_000_000f),
-                            style = MaterialTheme.typography.bodySmall
-                        )
                     }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = { onDownload(model) }) { Text("Continue download") }
-                        OutlinedButton(onClick = { onCancel(model) }) { Text("Clear") }
+                    
+                    model.downloadProgress > 0f -> {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(
+                                onClick = { onCancel(model) },
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error
+                                ),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+                            ) {
+                                Icon(
+                                    Icons.Default.Clear,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Clear")
+                            }
+                            
+                            Button(
+                                onClick = { onDownload(model) },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                Icon(
+                                    Icons.Default.PlayArrow,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Continue")
+                            }
+                        }
                     }
-                }
-            } else {
-                // Not downloaded
-                Button(onClick = { onDownload(model) }) {
-                    if (model.sizeBytes > 0) {
-                        Text("Download (${formatBytes(model.sizeBytes)})")
-                    } else {
-                        Text("Download")
+                    
+                    else -> {
+                        Button(
+                            onClick = { onDownload(model) },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Icon(
+                                Icons.Default.CloudDownload,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Download")
+                        }
                     }
                 }
             }
@@ -458,24 +514,19 @@ fun ModelItem(
     }
 }
 
-private fun formatBytes(bytes: Long): String {
-    val gb = bytes / (1024.0 * 1024.0 * 1024.0)
-    if (gb >= 1) return String.format("%.2f GB", gb)
-
-    val mb = bytes / (1024.0 * 1024.0)
-    if (mb >= 1) return String.format("%.2f MB", mb)
-
-    val kb = bytes / 1024.0
-    if (kb >= 1) return String.format("%.0f KB", kb)
-
-    return String.format("%d Bytes", bytes)
+private fun formatFileSize(bytes: Long): String {
+    return when {
+        bytes >= 1024 * 1024 * 1024 -> String.format("%.1f GB", bytes / (1024.0 * 1024.0 * 1024.0))
+        bytes >= 1024 * 1024 -> String.format("%.0f MB", bytes / (1024.0 * 1024.0))
+        else -> String.format("%.0f KB", bytes / 1024.0)
+    }
 }
 
 private fun formatSpeed(bytesPerSec: Long): String {
     if (bytesPerSec <= 0) return "0 KB/s"
     val mb = bytesPerSec / (1024.0 * 1024.0)
     return if (mb >= 1) {
-        String.format("%.2f MB/s", mb)
+        String.format("%.1f MB/s", mb)
     } else {
         val kb = bytesPerSec / 1024.0
         String.format("%.0f KB/s", kb)
