@@ -10,6 +10,7 @@ import com.llmhub.llmhub.screens.ModelDownloadScreen
 import com.llmhub.llmhub.screens.AboutScreen
 import com.llmhub.llmhub.screens.TermsOfServiceScreen
 import com.llmhub.llmhub.viewmodels.ChatViewModelFactory
+import com.llmhub.llmhub.viewmodels.ThemeViewModel
 
 sealed class Screen(val route: String) {
     object Chat : Screen("chat/{chatId}") {
@@ -25,6 +26,7 @@ sealed class Screen(val route: String) {
 fun LlmHubNavigation(
     navController: NavHostController,
     chatViewModelFactory: ChatViewModelFactory,
+    themeViewModel: ThemeViewModel,
     startDestination: String = Screen.Chat.createRoute()
 ) {
     NavHost(
@@ -65,7 +67,8 @@ fun LlmHubNavigation(
                 },
                 onNavigateToTerms = {
                     navController.navigate(Screen.Terms.route)
-                }
+                },
+                themeViewModel = themeViewModel
             )
         }
         

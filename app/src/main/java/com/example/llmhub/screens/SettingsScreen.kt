@@ -2,6 +2,7 @@ package com.llmhub.llmhub.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -11,6 +12,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.llmhub.llmhub.data.ThemeMode
+import com.llmhub.llmhub.viewmodels.ThemeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -18,18 +22,27 @@ fun SettingsScreen(
     onNavigateBack: () -> Unit,
     onNavigateToModels: () -> Unit,
     onNavigateToAbout: () -> Unit,
-    onNavigateToTerms: () -> Unit
+    onNavigateToTerms: () -> Unit,
+    themeViewModel: ThemeViewModel = viewModel()
 ) {
     val uriHandler = LocalUriHandler.current
     var showThemeDialog by remember { mutableStateOf(false) }
+    val currentThemeMode by themeViewModel.themeMode.collectAsState()
     
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Settings") },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    IconButton(
+                        onClick = onNavigateBack,
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.ArrowBack, 
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 }
             )
@@ -58,7 +71,11 @@ fun SettingsScreen(
                     SettingsItem(
                         icon = Icons.Outlined.Palette,
                         title = "Theme",
-                        subtitle = "Light, Dark, or System Default",
+                        subtitle = when (currentThemeMode) {
+                            ThemeMode.LIGHT -> "Light"
+                            ThemeMode.DARK -> "Dark"
+                            ThemeMode.SYSTEM -> "System Default"
+                        },
                         onClick = {
                             showThemeDialog = true
                         }
@@ -106,8 +123,12 @@ fun SettingsScreen(
             title = { Text("Choose Theme") },
             text = {
                 Column {
-                    val themeOptions = listOf("Light", "Dark", "System Default")
-                    themeOptions.forEach { option ->
+                    val themeOptions = listOf(
+                        ThemeMode.LIGHT to "Light",
+                        ThemeMode.DARK to "Dark",
+                        ThemeMode.SYSTEM to "System Default"
+                    )
+                    themeOptions.forEach { (mode, label) ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
@@ -115,9 +136,9 @@ fun SettingsScreen(
                                 .padding(vertical = 4.dp)
                         ) {
                             RadioButton(
-                                selected = false, // TODO: Implement theme preference storage
+                                selected = currentThemeMode == mode,
                                 onClick = {
-                                    // TODO: Implement theme switching logic
+                                    themeViewModel.setThemeMode(mode)
                                     showThemeDialog = false
                                 }
                             )
@@ -125,7 +146,7 @@ fun SettingsScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             
                             Text(
-                                text = option,
+                                text = label,
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }

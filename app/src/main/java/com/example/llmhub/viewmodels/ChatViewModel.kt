@@ -76,6 +76,9 @@ class ChatViewModel(
     
     // Keep reference to the running generation so the UI can interrupt it
     private var generationJob: Job? = null
+    
+    // Keep reference to message collection to prevent multiple collectors
+    private var messageCollectionJob: Job? = null
 
     // Avoid aggressive continuation for the very first generation after model load
     private var firstGenerationSinceLoad: Boolean = false
@@ -127,6 +130,7 @@ class ChatViewModel(
         
         // Stop collecting from any previous chat's message flow
         generationJob?.cancel()
+        messageCollectionJob?.cancel()
 
         // Close previous chat session if switching chats
         if (currentChatId != null && currentChatId != chatId) {
@@ -180,8 +184,10 @@ class ChatViewModel(
                 }
 
                 // Begin collecting messages for the newly created chat
-                repository.getMessagesForChat(newChatId).collectLatest { messageList ->
-                    _messages.value = messageList
+                messageCollectionJob = launch {
+                    repository.getMessagesForChat(newChatId).collectLatest { messageList ->
+                        _messages.value = messageList
+                    }
                 }
             } else {
                 // Check if the chat still exists
@@ -250,8 +256,10 @@ class ChatViewModel(
                     }
                 }
                 
-                repository.getMessagesForChat(chatId).collectLatest { messageList ->
-                    _messages.value = messageList
+                messageCollectionJob = launch {
+                    repository.getMessagesForChat(chatId).collectLatest { messageList ->
+                        _messages.value = messageList
+                    }
                 }
             }
         }
@@ -323,7 +331,14 @@ class ChatViewModel(
     fun sendMessage(context: Context, text: String, attachmentUri: Uri?) {
         val chatId = currentChatId
         if (chatId == null) {
-            Log.e("ChatViewModel", "No current chat ID available")
+            Log.e("ChatViewModel", "No current chat ID available, creating new chat")
+            // If no current chat, create a new one
+            viewModelScope.launch {
+                initializeNewChat(context)
+                // Retry sending the message after creating a new chat
+                kotlinx.coroutines.delay(100) // Small delay to ensure chat is created
+                sendMessage(context, text, attachmentUri)
+            }
             return
         }
         val messageText = text.trim()
@@ -334,14 +349,23 @@ class ChatViewModel(
             // Check if the current chat still exists
             val currentChat = repository.getChatById(chatId)
             if (currentChat == null) {
-                Log.e("ChatViewModel", "Current chat $chatId does not exist, cannot send message")
+                Log.e("ChatViewModel", "Current chat $chatId does not exist, creating new chat and retrying")
+                // If current chat doesn't exist, create a new one and retry
+                initializeNewChat(context)
+                kotlinx.coroutines.delay(100) // Small delay to ensure chat is created
+                sendMessage(context, text, attachmentUri)
                 return@launch
             }
 
             // Verify we have a working model
             if (currentModel == null || !currentModel!!.isDownloaded) {
-                Log.e("ChatViewModel", "No valid model available for chat $chatId")
-                repository.addMessage(chatId, "Please download a model to start chatting.", isFromUser = false)
+                Log.e("ChatViewModel", "No valid model available for chat $chatId. CurrentModel: ${currentModel?.name}, isDownloaded: ${currentModel?.isDownloaded}, availableModels: ${_availableModels.value.size}")
+                val errorMessage = if (_availableModels.value.isEmpty()) {
+                    "Please download a model to start chatting."
+                } else {
+                    "Model not properly loaded. Please try switching to a different model or restart the app."
+                }
+                repository.addMessage(chatId, errorMessage, isFromUser = false)
                 return@launch
             }
 
@@ -407,7 +431,18 @@ class ChatViewModel(
                 }
                 
                 // Pass the conversation history to the model with context window management
-                val history = buildContextAwareHistory(_messages.value)
+                // Build history including the current user message
+                val currentUserMessage = MessageEntity(
+                    id = "current-${System.currentTimeMillis()}",
+                    chatId = chatId,
+                    content = if (messageText.isNotEmpty()) messageText else "Shared a file",
+                    isFromUser = true,
+                    timestamp = System.currentTimeMillis(),
+                    attachmentPath = processedAttachmentUri?.toString(),
+                    attachmentType = determineAttachmentType(processedAttachmentUri)
+                )
+                val allMessages = _messages.value.toMutableList().apply { add(currentUserMessage) }
+                val history = buildContextAwareHistory(allMessages)
 
                 // Insert a visible placeholder so the bubble stays rendered while tokens stream
                 val placeholderId = repository.addMessage(chatId, "…", isFromUser = false)
@@ -1067,6 +1102,12 @@ class ChatViewModel(
 
     fun clearAllChatsAndCreateNew(context: Context) {
         viewModelScope.launch {
+            // Cancel any ongoing operations first
+            generationJob?.cancel()
+            generationJob = null
+            messageCollectionJob?.cancel()
+            messageCollectionJob = null
+            
             // Reset current chat session
             currentChatId?.let { chatId ->
                 try {
@@ -1077,14 +1118,19 @@ class ChatViewModel(
                 }
             }
             
-            // Clear all chats from database
-            repository.deleteAllChats()
-            
-            // Clear current state
+            // Clear current state FIRST
             currentChatId = null
             _currentChat.value = null
             _messages.value = emptyList()
             _streamingContents.value = emptyMap()
+            _isLoading.value = false
+            isGenerating = false
+            
+            // Clear all chats from database
+            repository.deleteAllChats()
+            
+            // Wait a moment to ensure database operations complete
+            kotlinx.coroutines.delay(100)
             
             // Create a new empty chat
             initializeNewChat(context)
@@ -1098,32 +1144,41 @@ class ChatViewModel(
         // Get the currently loaded model from inference service
         val currentModel = inferenceService.getCurrentlyLoadedModel()
         
+        // If no model is loaded in inference service, try to use the first available model
+        val modelToUse = currentModel ?: _availableModels.value.firstOrNull()
+        
         // Create new chat with appropriate model
         val newChatId = repository.createNewChat(
             "New Chat",
             if (_availableModels.value.isEmpty()) "No model downloaded" else 
-            (currentModel?.name ?: "No model selected")
+            (modelToUse?.name ?: "No model selected")
         )
         
         // Set as current chat
         currentChatId = newChatId
         _currentChat.value = repository.getChatById(newChatId)
         
-        // If we have a model, update the chat to use it
-        if (currentModel != null) {
-            repository.updateChatModel(newChatId, currentModel.name)
+        Log.d("ChatViewModel", "Set new chat ID: $newChatId, chat exists: ${_currentChat.value != null}")
+        
+        // Set the current model in the ViewModel
+        if (modelToUse != null) {
+            this.currentModel = modelToUse
+            repository.updateChatModel(newChatId, modelToUse.name)
             _currentChat.value = repository.getChatById(newChatId)
-            this.currentModel = currentModel
+            
+            // Sync the currently loaded model state
+            syncCurrentlyLoadedModel()
         }
         
-        // Start collecting messages for the new chat in a separate coroutine
-        viewModelScope.launch {
+        // Start collecting messages for the new chat
+        messageCollectionJob?.cancel()
+        messageCollectionJob = viewModelScope.launch {
             repository.getMessagesForChat(newChatId).collectLatest { messageList ->
                 _messages.value = messageList
             }
         }
         
-        Log.d("ChatViewModel", "Created new chat $newChatId after clearing all chats")
+        Log.d("ChatViewModel", "Created new chat $newChatId after clearing all chats with model: ${modelToUse?.name}")
     }
 
     private fun resetChatSession(chatId: String) {

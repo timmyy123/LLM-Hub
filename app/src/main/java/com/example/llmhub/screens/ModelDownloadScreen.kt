@@ -80,17 +80,12 @@ fun ModelDownloadScreen(
                 navigationIcon = {
                     IconButton(
                         onClick = onNavigateBack,
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant,
-                                CircleShape
-                            )
+                        modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 },
