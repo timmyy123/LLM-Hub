@@ -182,6 +182,14 @@ class ChatViewModel(
                 currentChatId = newChatId
                 _currentChat.value = repository.getChatById(newChatId)
                 
+                // Ensure a fresh inference session for the brand new chat to avoid stale context
+                try {
+                    inferenceService.resetChatSession(newChatId)
+                    Log.d("ChatViewModel", "Proactively reset session for new chat $newChatId")
+                } catch (e: Exception) {
+                    Log.w("ChatViewModel", "Unable to reset session for new chat: ${e.message}")
+                }
+                
                 // Preserve the current model for new chats
                 currentModel = previousModel
                 
@@ -1257,6 +1265,15 @@ class ChatViewModel(
         _currentChat.value = repository.getChatById(newChatId)
         
         Log.d("ChatViewModel", "Set new chat ID: $newChatId, chat exists: ${_currentChat.value != null}")
+        
+        // Clear any transient streaming state and proactively reset the session so no old context leaks
+        _streamingContents.value = emptyMap()
+        try {
+            inferenceService.resetChatSession(newChatId)
+            Log.d("ChatViewModel", "Proactively reset session for lazily created new chat $newChatId")
+        } catch (e: Exception) {
+            Log.w("ChatViewModel", "Unable to reset session for lazily created new chat: ${e.message}")
+        }
         
         // Set the current model in the ViewModel
         if (modelToUse != null) {
