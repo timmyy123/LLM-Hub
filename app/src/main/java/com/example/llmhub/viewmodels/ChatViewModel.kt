@@ -609,7 +609,7 @@ class ChatViewModel(
                                         }
                                         
                                         // Real-time repetition check to stop runaway generation immediately
-                                        if (totalContent.length > 200 && totalContent.length % 100 == 0) {
+                                        if (totalContent.length > 200) {
                                             val isRepetitive = checkForRepetition(totalContent)
                                             if (isRepetitive) {
                                                 Log.w("ChatViewModel", "Stopping generation due to repetitive content detected")
@@ -620,7 +620,8 @@ class ChatViewModel(
                                                 } catch (e: Exception) {
                                                     Log.w("ChatViewModel", "Failed to reset session: ${e.message}")
                                                 }
-                                                return@collect // Stop the stream
+                                                // Actively cancel the running generation coroutine so the stream stops immediately
+                                                throw kotlinx.coroutines.CancellationException("Repetitive content detected")
                                             }
                                         }
                                         
@@ -634,7 +635,8 @@ class ChatViewModel(
                                             } catch (e: Exception) {
                                                 Log.w("ChatViewModel", "Failed to reset session: ${e.message}")
                                             }
-                                            return@collect // Stop the stream
+                                            // Actively cancel to terminate collection immediately
+                                            throw kotlinx.coroutines.CancellationException("Length limit reached")
                                         }
                                         
                                         // Update UI with the complete content so far
@@ -866,6 +868,25 @@ class ChatViewModel(
             return true
         }
         
+        // Check for sentence/phrase repetition (n-gram at word level)
+        if (trimmed.length > 160) {
+            val words = trimmed.split(Regex("\\s+")).map { it.lowercase() }
+            if (words.size > 30) {
+                // compare last 8-15 word shingles with the previous window
+                val windowSizes = listOf(8, 10, 12, 15)
+                for (n in windowSizes) {
+                    if (words.size > n * 2) {
+                        val tail = words.takeLast(n)
+                        val before = words.dropLast(n).takeLast(n)
+                        if (tail == before) {
+                            Log.d("ChatViewModel", "Real-time: Detected ${n}-word repetition block")
+                            return true
+                        }
+                    }
+                }
+            }
+        }
+
         // Check for character-level repetition patterns
         if (trimmed.length > 100) {
             val last30Chars = trimmed.takeLast(30)
