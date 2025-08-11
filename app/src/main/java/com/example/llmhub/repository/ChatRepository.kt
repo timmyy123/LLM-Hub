@@ -104,5 +104,9 @@ class ChatRepository(
     suspend fun getChatById(chatId: String): ChatEntity? {
         return chatDao.getChatById(chatId)
     }
+    
+    suspend fun deleteMessagesAfter(chatId: String, afterTimestamp: Long) {
+        messageDao.deleteMessagesAfter(chatId, afterTimestamp)
+    }
 }
 

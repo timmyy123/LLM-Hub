@@ -90,7 +90,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                         totalBytes = file.length()
                     )
                 } else {
-                    val progress = if (sizeKnown) (file.length().toFloat() / model.sizeBytes).coerceIn(0f, 0.99f) else -1f
+                    val progress = if (sizeKnown) (file.length().toFloat() / model.sizeBytes).coerceIn(0f, 1f) else -1f
                     model.copy(
                         isDownloaded = false,
                         isDownloading = false,
@@ -154,7 +154,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                             val modelsDirHead = File(context.filesDir, "models")
                             val file = File(modelsDirHead, existing.localFileName())
                             if (file.exists()) {
-                                val progress = (file.length().toFloat() / size).coerceIn(0f, 0.99f)
+                                val progress = (file.length().toFloat() / size).coerceIn(0f, 1f)
                                 existing.copy(sizeBytes = size, totalBytes = size, downloadProgress = progress, downloadedBytes = file.length())
                             } else {
                                 existing.copy(sizeBytes = size)
@@ -235,7 +235,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                         updateModel(model.name) {
                             val sizeKnown = expectedBytes > 0
                             val progress = if (sizeKnown && modelFile.exists()) {
-                                (modelFile.length().toFloat() / expectedBytes).coerceIn(0f, 0.99f)
+                                (modelFile.length().toFloat() / expectedBytes).coerceIn(0f, 1f)
                             } else if (modelFile.exists()) {
                                 -1f
                             } else 0f
