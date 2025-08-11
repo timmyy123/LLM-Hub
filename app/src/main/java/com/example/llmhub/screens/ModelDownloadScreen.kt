@@ -325,7 +325,7 @@ private fun ModelVariantItem(
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                     )
-                    model.downloadProgress > 0f -> StatusChip(
+                    model.downloadProgress > 0f && !model.isDownloaded -> StatusChip(
                         text = "Partial",
                         containerColor = MaterialTheme.colorScheme.errorContainer,
                         contentColor = MaterialTheme.colorScheme.onErrorContainer
@@ -396,8 +396,8 @@ private fun ModelVariantItem(
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
-            } else if (model.downloadProgress > 0f && !model.isDownloading) {
-                // Paused download
+            } else if (model.downloadProgress > 0f && !model.isDownloading && !model.isDownloaded) {
+                // Paused download - only show for incomplete models
                 ModernProgressIndicator(
                     progress = model.downloadProgress.coerceIn(0f, 0.99f),
                     modifier = Modifier.padding(top = 8.dp)
@@ -452,7 +452,7 @@ private fun ModelVariantItem(
                         }
                     }
                     
-                    model.downloadProgress > 0f -> {
+                    model.downloadProgress > 0f && !model.isDownloaded -> {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedButton(
                                 onClick = { onCancel(model) },
