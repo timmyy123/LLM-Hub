@@ -251,123 +251,86 @@ fun parseInlineMarkdown(text: String, baseColor: Color, builder: AnnotatedString
 }
 
 /**
- * Enhanced chat bubble that shows user/assistant messages with modern Material Design 3 styling.
- * Features rounded corners, proper elevation, and adaptive colors.
+ * Enhanced chat bubble that shows user/assistant messages in ChatGPT mobile style.
+ * User messages have bubbles, AI responses are plain text without background.
  */
 @Composable
 fun MessageBubble(
     message: MessageEntity,
-    streamingContent: String = ""
+    streamingContent: String = "",
+    onRegenerateResponse: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val isUser = message.isFromUser
     
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
+            .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        Column(
-            modifier = Modifier.weight(1f, fill = false)
-        ) {
-            Surface(
-                modifier = Modifier.widthIn(max = 350.dp),
-                shape = RoundedCornerShape(
-                    topStart = if (isUser) 20.dp else 20.dp,
-                    topEnd = if (isUser) 4.dp else 20.dp,
-                    bottomStart = 20.dp,
-                    bottomEnd = 20.dp
-                ),
-                color = if (isUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh,
-                shadowElevation = 1.dp
+        if (isUser) {
+            // User messages - keep bubble design but remove avatar
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
+                Surface(
+                    modifier = Modifier.widthIn(max = 350.dp),
+                    shape = RoundedCornerShape(
+                        topStart = 20.dp,
+                        topEnd = 4.dp,
+                        bottomStart = 20.dp,
+                        bottomEnd = 20.dp
+                    ),
+                    color = MaterialTheme.colorScheme.primary,
+                    shadowElevation = 1.dp
                 ) {
-                    // Display image if attachment exists
-                    if (message.attachmentPath != null && message.attachmentType == "image") {
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(Uri.parse(message.attachmentPath))
-                                .crossfade(true)
-                                .build(),
-                            contentDescription = "Attached image",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(max = 200.dp)
-                                .clip(RoundedCornerShape(12.dp)),
-                            contentScale = ContentScale.Crop,
-                            onError = { 
-                                android.util.Log.w("MessageBubble", "Failed to load image: ${message.attachmentPath}")
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        // Display image if attachment exists
+                        if (message.attachmentPath != null && message.attachmentType == "image") {
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(Uri.parse(message.attachmentPath))
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = "Attached image",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(max = 200.dp)
+                                    .clip(RoundedCornerShape(12.dp)),
+                                contentScale = ContentScale.Crop,
+                                onError = { 
+                                    android.util.Log.w("MessageBubble", "Failed to load image: ${message.attachmentPath}")
+                                }
+                            )
+                            
+                            if (message.content.isNotEmpty() && message.content != "Shared a file") {
+                                Spacer(modifier = Modifier.height(8.dp))
                             }
-                        )
+                        }
                         
+                        // Display text content
                         if (message.content.isNotEmpty() && message.content != "Shared a file") {
-                            Spacer(modifier = Modifier.height(8.dp))
+                            SelectableMarkdownText(
+                                markdown = message.content,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                fontSize = MaterialTheme.typography.bodyLarge.fontSize,
+                                modifier = Modifier.fillMaxWidth()
+                            )
                         }
                     }
-                    
-                    // Display text content
-                    if (message.content.isNotEmpty() && message.content != "Shared a file") {
-                        val displayContent = if (!isUser && streamingContent.isNotEmpty()) streamingContent else message.content
-                        
-                        SelectableMarkdownText(
-                            markdown = displayContent,
-                            color = if (isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-                            fontSize = MaterialTheme.typography.bodyLarge.fontSize,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
                 }
             }
             
-            // Show token statistics and copy button for assistant messages
-            val hasStats = message.tokenCount != null && message.tokensPerSecond != null
-            val showStats = !isUser && hasStats && message.content != "…"
-            if (showStats) {
+            // Show copy button for user messages
+            if (message.content.isNotEmpty() && message.content != "Shared a file") {
                 Row(
-                    modifier = Modifier.padding(start = 8.dp, top = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Outlined.Speed,
-                        contentDescription = null,
-                        modifier = Modifier.size(12.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "${message.tokenCount} tokens • ${String.format("%.1f", message.tokensPerSecond!!)} tok/sec",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    IconButton(
-                        onClick = {
-                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            val displayContent = if (!isUser && streamingContent.isNotEmpty()) streamingContent else message.content
-                            val clip = ClipData.newPlainText("Message", displayContent)
-                            clipboard.setPrimaryClip(clip)
-                        },
-                        modifier = Modifier.size(24.dp)
-                    ) {
-                        Icon(
-                            Icons.Outlined.ContentCopy,
-                            contentDescription = "Copy message",
-                            modifier = Modifier.size(12.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-            
-            // Show copy button for user messages (without token stats)
-            if (isUser && message.content.isNotEmpty() && message.content != "Shared a file") {
-                Row(
-                    modifier = Modifier.padding(end = 8.dp, top = 4.dp),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.End
                 ) {
                     IconButton(
                         onClick = {
@@ -386,22 +349,111 @@ fun MessageBubble(
                     }
                 }
             }
-        }
-        
-        if (isUser) {
-            Spacer(modifier = Modifier.width(8.dp))
-            // User avatar
-            Surface(
-                modifier = Modifier.size(32.dp),
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.tertiaryContainer
+        } else {
+            // AI responses - plain text without background bubble, like ChatGPT mobile
+            Column(
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Icon(
-                    Icons.Default.Person,
-                    contentDescription = "You",
-                    modifier = Modifier.padding(6.dp),
-                    tint = MaterialTheme.colorScheme.onTertiaryContainer
-                )
+                // Display image if attachment exists (for AI messages with images)
+                if (message.attachmentPath != null && message.attachmentType == "image") {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(Uri.parse(message.attachmentPath))
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Attached image",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 200.dp)
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Crop,
+                        onError = { 
+                            android.util.Log.w("MessageBubble", "Failed to load image: ${message.attachmentPath}")
+                        }
+                    )
+                    
+                    if (message.content.isNotEmpty() && message.content != "Shared a file" && message.content != "…") {
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
+                
+                // Display text content - plain text without background
+                if (message.content.isNotEmpty() && message.content != "Shared a file") {
+                    val displayContent = if (streamingContent.isNotEmpty()) streamingContent else message.content
+                    
+                    SelectableMarkdownText(
+                        markdown = displayContent,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = MaterialTheme.typography.bodyLarge.fontSize,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                
+                // Action buttons row for AI messages
+                if (message.content != "…" && message.content.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Copy button
+                        IconButton(
+                            onClick = {
+                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                val displayContent = if (streamingContent.isNotEmpty()) streamingContent else message.content
+                                val clip = ClipData.newPlainText("Message", displayContent)
+                                clipboard.setPrimaryClip(clip)
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                Icons.Outlined.ContentCopy,
+                                contentDescription = "Copy message",
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        
+                        // Regenerate button
+                        if (onRegenerateResponse != null) {
+                            IconButton(
+                                onClick = onRegenerateResponse,
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Refresh,
+                                    contentDescription = "Regenerate response",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        
+                        // Token statistics for assistant messages
+                        val hasStats = message.tokenCount != null && message.tokensPerSecond != null
+                        if (hasStats) {
+                            Spacer(modifier = Modifier.weight(1f))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Outlined.Speed,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(12.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "${message.tokenCount} tokens • ${String.format("%.1f", message.tokensPerSecond!!)} tok/sec",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }
