@@ -8,6 +8,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.text.ClickableText
+import android.content.Intent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -36,6 +38,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.llmhub.llmhub.data.MessageEntity
 import dev.jeziellago.compose.markdowntext.MarkdownText
+import androidx.compose.ui.platform.LocalUriHandler
 
 /**
  * Custom selectable markdown text component that supports both markdown rendering and text selection.
@@ -48,19 +51,81 @@ fun SelectableMarkdownText(
     fontSize: androidx.compose.ui.unit.TextUnit,
     modifier: Modifier = Modifier
 ) {
-    // Parse basic markdown to AnnotatedString for better text selection support
-    val annotatedText = remember(markdown) {
+    val context = LocalContext.current
+    // First parse the markdown (bold/italic/lists etc.)
+    val baseAnnotated = remember(markdown) {
         parseMarkdownToAnnotatedString(markdown, color)
     }
-    
+
+    val linkColor = MaterialTheme.colorScheme.primary
+    // Then detect links & phone numbers and add annotations/styles
+    val finalAnnotated = remember(baseAnnotated, linkColor) {
+        annotateLinksAndPhones(baseAnnotated, linkColor)
+    }
+
     SelectionContainer {
-        Text(
-            text = annotatedText,
-            fontSize = fontSize,
+        ClickableText(
+            text = finalAnnotated,
             modifier = modifier,
-            lineHeight = fontSize * 1.4
+            style = LocalTextStyle.current.copy(fontSize = fontSize, lineHeight = fontSize * 1.4),
+            onClick = { offset ->
+                // Handle URL clicks
+                finalAnnotated.getStringAnnotations("URL", offset, offset)
+                    .firstOrNull()?.let { ann ->
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(ann.item))
+                        context.startActivity(intent)
+                        return@ClickableText
+                    }
+
+                // Handle phone number clicks
+                finalAnnotated.getStringAnnotations("PHONE", offset, offset)
+                    .firstOrNull()?.let { ann ->
+                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${ann.item}"))
+                        context.startActivity(intent)
+                    }
+            }
         )
     }
+}
+
+/**
+ * Post-process an AnnotatedString to detect web URLs and phone numbers, add underline/primary-color
+ * styling, and attach StringAnnotations so we can handle clicks in ClickableText.
+ */
+fun annotateLinksAndPhones(source: AnnotatedString, linkColor: Color): AnnotatedString {
+    val text = source.text
+    val builder = AnnotatedString.Builder()
+    builder.append(source)
+
+    val urlRegex = Regex("""((https?://|www\.)[\w\-._~:/?#\[\]@!$&'()*+,;=%]+)""")
+    val phoneRegex = Regex("""\+?[0-9][0-9\-\s]{6,}[0-9]""")
+
+    fun addAnnotation(range: IntRange, annotationTag: String, annotationValue: String) {
+        builder.addStyle(
+            SpanStyle(
+                color = linkColor,
+                textDecoration = TextDecoration.Underline
+            ),
+            range.first,
+            range.last + 1
+        )
+        builder.addStringAnnotation(annotationTag, annotationValue, range.first, range.last + 1)
+    }
+
+    for (match in urlRegex.findAll(text)) {
+        var url = match.value
+        if (!url.startsWith("http")) {
+            url = "http://$url" // ensure valid scheme
+        }
+        addAnnotation(match.range, "URL", url)
+    }
+
+    for (match in phoneRegex.findAll(text)) {
+        val numberDigits = match.value.filter { it.isDigit() || it == '+' }
+        addAnnotation(match.range, "PHONE", numberDigits)
+    }
+
+    return builder.toAnnotatedString()
 }
 
 /**
