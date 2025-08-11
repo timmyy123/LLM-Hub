@@ -58,4 +58,7 @@ interface MessageDao {
     
     @Query("SELECT * FROM messages WHERE chatId = :chatId ORDER BY timestamp DESC LIMIT 1")
     suspend fun getLatestMessageForChat(chatId: String): MessageEntity?
+    
+    @Query("DELETE FROM messages WHERE chatId = :chatId AND timestamp > :afterTimestamp")
+    suspend fun deleteMessagesAfter(chatId: String, afterTimestamp: Long)
 }
