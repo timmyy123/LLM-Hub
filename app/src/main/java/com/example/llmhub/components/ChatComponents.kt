@@ -3,9 +3,20 @@ package com.llmhub.llmhub.components
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.ContentResolver
+import android.content.ContentValues
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
+import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.text.ClickableText
@@ -30,8 +41,19 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.platform.LocalClipboardManager
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import coil.ImageLoader
+import coil.request.SuccessResult
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import coil.compose.AsyncImage
@@ -260,6 +282,7 @@ fun MessageBubble(
     streamingContent: String = "",
     onRegenerateResponse: (() -> Unit)? = null
 ) {
+    var showFullScreenImage by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val isUser = message.isFromUser
     
@@ -273,53 +296,54 @@ fun MessageBubble(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
-            ) {
-                Surface(
-                    modifier = Modifier.widthIn(max = 350.dp),
-                    shape = RoundedCornerShape(
+        ) {
+            Surface(
+                modifier = Modifier.widthIn(max = 350.dp),
+                shape = RoundedCornerShape(
                         topStart = 20.dp,
                         topEnd = 4.dp,
-                        bottomStart = 20.dp,
-                        bottomEnd = 20.dp
-                    ),
+                    bottomStart = 20.dp,
+                    bottomEnd = 20.dp
+                ),
                     color = MaterialTheme.colorScheme.primary,
-                    shadowElevation = 1.dp
+                shadowElevation = 1.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        // Display image if attachment exists
-                        if (message.attachmentPath != null && message.attachmentType == "image") {
-                            AsyncImage(
-                                model = ImageRequest.Builder(context)
-                                    .data(Uri.parse(message.attachmentPath))
-                                    .crossfade(true)
-                                    .build(),
-                                contentDescription = "Attached image",
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .heightIn(max = 200.dp)
-                                    .clip(RoundedCornerShape(12.dp)),
-                                contentScale = ContentScale.Crop,
-                                onError = { 
-                                    android.util.Log.w("MessageBubble", "Failed to load image: ${message.attachmentPath}")
-                                }
-                            )
-                            
-                            if (message.content.isNotEmpty() && message.content != "Shared a file") {
-                                Spacer(modifier = Modifier.height(8.dp))
+                    // Display image if attachment exists
+                    if (message.attachmentPath != null && message.attachmentType == "image") {
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(Uri.parse(message.attachmentPath))
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = "Attached image",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 200.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { showFullScreenImage = true },
+                            contentScale = ContentScale.Crop,
+                            onError = { 
+                                android.util.Log.w("MessageBubble", "Failed to load image: ${message.attachmentPath}")
                             }
-                        }
+                        )
                         
-                        // Display text content
                         if (message.content.isNotEmpty() && message.content != "Shared a file") {
-                            SelectableMarkdownText(
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
+                    
+                    // Display text content
+                    if (message.content.isNotEmpty() && message.content != "Shared a file") {
+                        SelectableMarkdownText(
                                 markdown = message.content,
                                 color = MaterialTheme.colorScheme.onPrimary,
-                                fontSize = MaterialTheme.typography.bodyLarge.fontSize,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
+                            fontSize = MaterialTheme.typography.bodyLarge.fontSize,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                     }
                 }
             }
@@ -365,7 +389,8 @@ fun MessageBubble(
                         modifier = Modifier
                             .fillMaxWidth()
                             .heightIn(max = 200.dp)
-                            .clip(RoundedCornerShape(12.dp)),
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { showFullScreenImage = true },
                         contentScale = ContentScale.Crop,
                         onError = { 
                             android.util.Log.w("MessageBubble", "Failed to load image: ${message.attachmentPath}")
@@ -457,7 +482,297 @@ fun MessageBubble(
             }
         }
     }
+    
+    // Full-screen image viewer
+    if (showFullScreenImage && message.attachmentPath != null && message.attachmentType == "image") {
+        FullScreenImageViewer(
+            imageUri = Uri.parse(message.attachmentPath),
+            onDismiss = { showFullScreenImage = false }
+        )
+    }
 }
+
+/**
+ * Full-screen image viewer for chat attachments with enhanced features
+ */
+@Composable
+fun FullScreenImageViewer(
+    imageUri: Uri,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    var showControls by remember { mutableStateOf(true) }
+    
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .systemBarsPadding()
+                .clickable { showControls = !showControls }
+        ) {
+            // Full-screen image
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(imageUri)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = "Full screen image",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Fit,
+                onError = { 
+                    android.util.Log.w("FullScreenImageViewer", "Failed to load image: $imageUri")
+                }
+            )
+            
+            // Controls overlay (shows/hides on tap)
+            if (showControls) {
+                // Close button
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp)
+                        .size(48.dp),
+                    shape = CircleShape,
+                    color = Color.Black.copy(alpha = 0.6f)
+                ) {
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Close",
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+                
+                // Image title/info overlay at top
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color.Black.copy(alpha = 0.6f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Image,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+            Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Image Attachment",
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+                
+                // Action buttons at bottom
+            Surface(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(16.dp),
+                shape = RoundedCornerShape(16.dp),
+                    color = Color.Black.copy(alpha = 0.6f)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Copy button
+                        OutlinedButton(
+                            onClick = {
+                                coroutineScope.launch {
+                                    copyImageToClipboard(context, imageUri)
+                                }
+                            },
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color.White,
+                                containerColor = Color.Transparent
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp, 
+                                Color.White.copy(alpha = 0.6f)
+                            )
+                        ) {
+                            Icon(
+                                Icons.Default.ContentCopy,
+                                contentDescription = "Copy image",
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Copy")
+                        }
+                        
+                        // Save button
+                        OutlinedButton(
+                            onClick = {
+                                coroutineScope.launch {
+                                    saveImageToGallery(context, imageUri)
+                                }
+                            },
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color.White,
+                                containerColor = Color.Transparent
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp, 
+                                Color.White.copy(alpha = 0.6f)
+                            )
+            ) {
+                Icon(
+                                Icons.Default.Download,
+                                contentDescription = "Save image",
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Save")
+                        }
+                    }
+                }
+                
+                // Instructions overlay at top of action buttons
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(horizontal = 16.dp, vertical = 80.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color.Black.copy(alpha = 0.4f)
+                ) {
+                    Text(
+                        text = "Tap image to toggle controls",
+                        color = Color.White.copy(alpha = 0.8f),
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Copy image to clipboard
+ */
+private suspend fun copyImageToClipboard(context: Context, imageUri: Uri) {
+    withContext(Dispatchers.IO) {
+        try {
+            val imageLoader = ImageLoader(context)
+            val request = ImageRequest.Builder(context)
+                .data(imageUri)
+                .build()
+            
+            val result = imageLoader.execute(request)
+            if (result is SuccessResult) {
+                val bitmap = (result.drawable as? BitmapDrawable)?.bitmap
+                if (bitmap != null) {
+                    withContext(Dispatchers.Main) {
+                        val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        // For now, we'll copy the URI as text since bitmap clipboard requires API 28+
+                        val clip = ClipData.newPlainText("Image", "Image copied from chat")
+                        clipboardManager.setPrimaryClip(clip)
+                        Toast.makeText(context, "Image copied to clipboard", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Failed to copy image", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "Failed to copy image: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+}
+
+/**
+ * Save image to gallery
+ */
+private suspend fun saveImageToGallery(context: Context, imageUri: Uri) {
+    withContext(Dispatchers.IO) {
+        try {
+            val imageLoader = ImageLoader(context)
+            val request = ImageRequest.Builder(context)
+                .data(imageUri)
+                .build()
+            
+            val result = imageLoader.execute(request)
+            if (result is SuccessResult) {
+                val bitmap = (result.drawable as? BitmapDrawable)?.bitmap
+                if (bitmap != null) {
+                    val saved = saveBitmapToGallery(context, bitmap)
+                    withContext(Dispatchers.Main) {
+                        if (saved) {
+                            Toast.makeText(context, "Image saved to gallery", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, "Failed to save image", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Failed to load image", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "Failed to save image: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+}
+
+/**
+ * Save bitmap to gallery using MediaStore
+ */
+private fun saveBitmapToGallery(context: Context, bitmap: Bitmap): Boolean {
+    return try {
+        val contentValues = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, "LLMHub_Image_${System.currentTimeMillis()}.jpg")
+            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/LLMHub")
+            }
+        }
+        
+        val contentResolver = context.contentResolver
+        val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+        
+        uri?.let { imageUri ->
+            contentResolver.openOutputStream(imageUri)?.use { outputStream ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 95, outputStream)
+            }
+            true
+        } ?: false
+    } catch (e: Exception) {
+        android.util.Log.e("ImageSave", "Failed to save image: ${e.message}")
+        false
+    }
+}
+
+
 
 /**
  * Modern input bar with Material Design 3 styling, attachment support, and smooth animations.

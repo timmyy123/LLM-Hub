@@ -1,11 +1,13 @@
 package com.llmhub.llmhub.screens
 
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -171,46 +173,69 @@ fun ChatScreen(
                             DropdownMenu(
                                 expanded = modelMenuExpanded,
                                 onDismissRequest = { modelMenuExpanded = false },
-                                modifier = Modifier.widthIn(min = 200.dp)
+                                modifier = Modifier
+                                    .widthIn(min = 250.dp, max = 320.dp)
+                                    .background(
+                                        color = MaterialTheme.colorScheme.surfaceContainer,
+                                        shape = MaterialTheme.shapes.medium
+                                    )
                             ) {
                                 availableModels.forEach { model ->
                                     DropdownMenuItem(
                                         text = { 
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                modifier = Modifier.padding(vertical = 4.dp)
+                                            Column(
+                                                modifier = Modifier.fillMaxWidth()
                                             ) {
-                                                Text(
-                                                    text = model.name,
-                                                    style = MaterialTheme.typography.bodyMedium
-                                                )
-                                                
-                                                // Show vision indicator
-                                                if (model.supportsVision) {
-                                                    Spacer(modifier = Modifier.width(8.dp))
-                                                    Surface(
-                                                        shape = MaterialTheme.shapes.extraSmall,
-                                                        color = MaterialTheme.colorScheme.primaryContainer,
-                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                                    ) {
-                                                        Row(
-                                                            verticalAlignment = Alignment.CenterVertically,
-                                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    modifier = Modifier.fillMaxWidth()
+                                                ) {
+                                                    Text(
+                                                        text = model.name,
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        fontWeight = FontWeight.Medium,
+                                                        color = MaterialTheme.colorScheme.onSurface,
+                                                        modifier = Modifier.weight(1f)
+                                                    )
+                                                    
+                                                    // Show vision indicator with better styling
+                                                    if (model.supportsVision) {
+                                                        Surface(
+                                                            shape = RoundedCornerShape(12.dp),
+                                                            color = MaterialTheme.colorScheme.tertiary,
+                                                            modifier = Modifier.padding(start = 8.dp)
                                                         ) {
-                                                            Icon(
-                                                                Icons.Default.RemoveRedEye,
-                                                                contentDescription = "Vision model",
-                                                                modifier = Modifier.size(12.dp),
-                                                                tint = MaterialTheme.colorScheme.onPrimaryContainer
-                                                            )
-                                                            Spacer(modifier = Modifier.width(2.dp))
-                                                            Text(
-                                                                text = "Vision",
-                                                                style = MaterialTheme.typography.labelSmall,
-                                                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                                                            )
+                                                            Row(
+                                                                verticalAlignment = Alignment.CenterVertically,
+                                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                                            ) {
+                                                                Icon(
+                                                                    Icons.Default.RemoveRedEye,
+                                                                    contentDescription = "Vision enabled",
+                                                                    modifier = Modifier.size(14.dp),
+                                                                    tint = MaterialTheme.colorScheme.onTertiary
+                                                                )
+                                                                Spacer(modifier = Modifier.width(4.dp))
+                                                                Text(
+                                                                    text = "Vision",
+                                                                    style = MaterialTheme.typography.labelSmall,
+                                                                    fontWeight = FontWeight.SemiBold,
+                                                                    color = MaterialTheme.colorScheme.onTertiary
+                                                                )
+                                                            }
                                                         }
                                                     }
+                                                }
+                                                
+                                                // Add model details subtitle
+                                                if (model.contextWindowSize > 0) {
+                                                    Text(
+                                                        text = "${model.contextWindowSize / 1024}k context • ${if (model.supportsVision) "Multimodal" else "Text only"}",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        modifier = Modifier.padding(top = 2.dp)
+                                                    )
                                                 }
                                             }
                                         },
