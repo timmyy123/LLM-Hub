@@ -1,9 +1,13 @@
 package com.llmhub.llmhub.components
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -13,18 +17,173 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.llmhub.llmhub.data.MessageEntity
 import dev.jeziellago.compose.markdowntext.MarkdownText
+
+/**
+ * Custom selectable markdown text component that supports both markdown rendering and text selection.
+ * This addresses the issue where MarkdownText doesn't properly support text selection.
+ */
+@Composable
+fun SelectableMarkdownText(
+    markdown: String,
+    color: Color,
+    fontSize: androidx.compose.ui.unit.TextUnit,
+    modifier: Modifier = Modifier
+) {
+    // Parse basic markdown to AnnotatedString for better text selection support
+    val annotatedText = remember(markdown) {
+        parseMarkdownToAnnotatedString(markdown, color)
+    }
+    
+    SelectionContainer {
+        Text(
+            text = annotatedText,
+            fontSize = fontSize,
+            modifier = modifier,
+            lineHeight = fontSize * 1.4
+        )
+    }
+}
+
+/**
+ * Enhanced markdown parser that converts markdown syntax to AnnotatedString
+ * Supports: **bold**, *italic*, `code`, ### headers, - lists, and preserves line breaks
+ */
+fun parseMarkdownToAnnotatedString(markdown: String, baseColor: Color): AnnotatedString {
+    return buildAnnotatedString {
+        val lines = markdown.split('\n')
+        
+        for (lineIndex in lines.indices) {
+            val line = lines[lineIndex]
+            
+            when {
+                // Headers (### Header)
+                line.startsWith("### ") -> {
+                    withStyle(SpanStyle(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        color = baseColor
+                    )) {
+                        append(line.substring(4))
+                    }
+                }
+                line.startsWith("## ") -> {
+                    withStyle(SpanStyle(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
+                        color = baseColor
+                    )) {
+                        append(line.substring(3))
+                    }
+                }
+                line.startsWith("# ") -> {
+                    withStyle(SpanStyle(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp,
+                        color = baseColor
+                    )) {
+                        append(line.substring(2))
+                    }
+                }
+                // List items (- item or * item)
+                line.trimStart().startsWith("- ") || line.trimStart().startsWith("* ") -> {
+                    val indent = line.length - line.trimStart().length
+                    append("  ".repeat(indent / 2)) // Convert spaces to proper indent
+                    append("• ") // Bullet point
+                    parseInlineMarkdown(line.trimStart().substring(2), baseColor, this)
+                }
+                // Regular text with inline formatting
+                else -> {
+                    parseInlineMarkdown(line, baseColor, this)
+                }
+            }
+            
+            // Add line break except for the last line
+            if (lineIndex < lines.size - 1) {
+                append('\n')
+            }
+        }
+    }
+}
+
+/**
+ * Parse inline markdown formatting (bold, italic, code) within a line
+ */
+fun parseInlineMarkdown(text: String, baseColor: Color, builder: AnnotatedString.Builder) {
+    var i = 0
+    
+    while (i < text.length) {
+        when {
+            // Bold text **text**
+            i < text.length - 1 && text[i] == '*' && text[i + 1] == '*' -> {
+                val endIndex = text.indexOf("**", i + 2)
+                if (endIndex != -1) {
+                    builder.withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = baseColor)) {
+                        append(text.substring(i + 2, endIndex))
+                    }
+                    i = endIndex + 2
+                } else {
+                    builder.withStyle(SpanStyle(color = baseColor)) { append(text[i]) }
+                    i++
+                }
+            }
+            // Italic text *text*
+            text[i] == '*' -> {
+                val endIndex = text.indexOf('*', i + 1)
+                if (endIndex != -1) {
+                    builder.withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = baseColor)) {
+                        append(text.substring(i + 1, endIndex))
+                    }
+                    i = endIndex + 1
+                } else {
+                    builder.withStyle(SpanStyle(color = baseColor)) { append(text[i]) }
+                    i++
+                }
+            }
+            // Code text `text`
+            text[i] == '`' -> {
+                val endIndex = text.indexOf('`', i + 1)
+                if (endIndex != -1) {
+                    builder.withStyle(SpanStyle(
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        background = baseColor.copy(alpha = 0.15f),
+                        color = baseColor
+                    )) {
+                        append(text.substring(i + 1, endIndex))
+                    }
+                    i = endIndex + 1
+                } else {
+                    builder.withStyle(SpanStyle(color = baseColor)) { append(text[i]) }
+                    i++
+                }
+            }
+            else -> {
+                builder.withStyle(SpanStyle(color = baseColor)) {
+                    append(text[i])
+                }
+                i++
+            }
+        }
+    }
+}
 
 /**
  * Enhanced chat bubble that shows user/assistant messages with modern Material Design 3 styling.
@@ -44,30 +203,13 @@ fun MessageBubble(
             .padding(horizontal = 16.dp, vertical = 4.dp),
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
     ) {
-        if (!isUser) {
-            // Assistant avatar
-            Surface(
-                modifier = Modifier.size(32.dp),
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.primaryContainer
-            ) {
-                Icon(
-                    Icons.Default.SmartToy,
-                    contentDescription = "AI Assistant",
-                    modifier = Modifier.padding(6.dp),
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-        }
-        
         Column(
             modifier = Modifier.weight(1f, fill = false)
         ) {
             Surface(
-                modifier = Modifier.widthIn(max = 280.dp),
+                modifier = Modifier.widthIn(max = 350.dp),
                 shape = RoundedCornerShape(
-                    topStart = if (isUser) 20.dp else 4.dp,
+                    topStart = if (isUser) 20.dp else 20.dp,
                     topEnd = if (isUser) 4.dp else 20.dp,
                     bottomStart = 20.dp,
                     bottomEnd = 20.dp
@@ -105,7 +247,7 @@ fun MessageBubble(
                     if (message.content.isNotEmpty() && message.content != "Shared a file") {
                         val displayContent = if (!isUser && streamingContent.isNotEmpty()) streamingContent else message.content
                         
-                        MarkdownText(
+                        SelectableMarkdownText(
                             markdown = displayContent,
                             color = if (isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
                             fontSize = MaterialTheme.typography.bodyLarge.fontSize,
@@ -115,7 +257,7 @@ fun MessageBubble(
                 }
             }
             
-            // Show token statistics for assistant messages
+            // Show token statistics and copy button for assistant messages
             val hasStats = message.tokenCount != null && message.tokensPerSecond != null
             val showStats = !isUser && hasStats && message.content != "…"
             if (showStats) {
@@ -135,6 +277,48 @@ fun MessageBubble(
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    IconButton(
+                        onClick = {
+                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            val displayContent = if (!isUser && streamingContent.isNotEmpty()) streamingContent else message.content
+                            val clip = ClipData.newPlainText("Message", displayContent)
+                            clipboard.setPrimaryClip(clip)
+                        },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            Icons.Outlined.ContentCopy,
+                            contentDescription = "Copy message",
+                            modifier = Modifier.size(12.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+            
+            // Show copy button for user messages (without token stats)
+            if (isUser && message.content.isNotEmpty() && message.content != "Shared a file") {
+                Row(
+                    modifier = Modifier.padding(end = 8.dp, top = 4.dp),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = {
+                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            val clip = ClipData.newPlainText("Message", message.content)
+                            clipboard.setPrimaryClip(clip)
+                        },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            Icons.Outlined.ContentCopy,
+                            contentDescription = "Copy message",
+                            modifier = Modifier.size(12.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }

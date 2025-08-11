@@ -23,8 +23,8 @@ android {
         applicationId = "com.llmhub.llmhub"
         minSdk = 24
         targetSdk = 35
-        versionCode = 5
-        versionName = "1.0.5"
+        versionCode = 6
+        versionName = "1.0.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         val hfToken: String = localProperties.getProperty("HF_TOKEN", "")
@@ -118,8 +118,8 @@ dependencies {
     implementation("com.google.mediapipe:tasks-genai:0.10.24")
     implementation("com.google.mediapipe:tasks-vision:0.10.14")
     
-    // Compose Markdown - Simple and reliable markdown for AI chat apps
-    implementation("com.github.jeziellago:compose-markdown:0.5.0")
+    // Compose Markdown - temporarily removed due to version conflicts
+    implementation("com.github.jeziellago:compose-markdown:0.3.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
