@@ -457,13 +457,17 @@ class ChatViewModel(
             if (currentModel != null && currentModel!!.isDownloaded) {
                 // Ensure the model is loaded in the inference service before generating
                 try {
+                    _isLoadingModel.value = true
                     inferenceService.loadModel(currentModel!!)
                     // Sync the currently loaded model state
                     syncCurrentlyLoadedModel()
+                    _isLoadingModel.value = false
+                    Log.d("ChatViewModel", "Successfully ensured model ${currentModel!!.name} is loaded for generation")
                 } catch (e: Exception) {
                     Log.w("ChatViewModel", "Failed to ensure model is loaded: ${e.message}")
                     repository.addMessage(chatId, "Failed to load model. Please try again.", isFromUser = false)
                     _isLoading.value = false
+                    _isLoadingModel.value = false
                     isGenerating = false
                     return@launch
                 }
@@ -477,6 +481,7 @@ class ChatViewModel(
                 if (shouldResetSession) {
                     Log.d("ChatViewModel", "Proactively resetting session for chat $chatId before generation")
                     try {
+                        delay(100) // Small delay to ensure model is ready
                         inferenceService.resetChatSession(chatId)
                         Log.d("ChatViewModel", "Successfully reset session for chat $chatId")
                     } catch (e: Exception) {
@@ -946,7 +951,7 @@ class ChatViewModel(
             // Clear all existing sessions before switching models
             try {
                 inferenceService.onCleared()
-                delay(500) // Give extra time for cleanup when switching models
+                delay(1000) // Give more time for complete cleanup when switching models
                 Log.d("ChatViewModel", "Cleared all sessions before model switch")
             } catch (e: Exception) {
                 Log.w("ChatViewModel", "Error clearing sessions before model switch: ${e.message}")
@@ -968,6 +973,36 @@ class ChatViewModel(
                 // Set the first-generation guard
                 firstGenerationSinceLoad = true
                 Log.d("ChatViewModel", "Successfully loaded new model: ${newModel.name}")
+                
+                // Clear the first generation guard after a reasonable timeout
+                viewModelScope.launch {
+                    delay(3000) // Clear guard after 3 seconds
+                    firstGenerationSinceLoad = false
+                    Log.d("ChatViewModel", "Cleared first generation guard for model: ${newModel.name}")
+                }
+                
+                // Reset the current chat session to ensure it works with the new model
+                currentChatId?.let { chatId ->
+                    try {
+                        delay(500) // Give more time for model loading to complete
+                        inferenceService.resetChatSession(chatId)
+                        delay(200) // Additional time for session to stabilize
+                        Log.d("ChatViewModel", "Reset chat session $chatId after model switch")
+                    } catch (e: Exception) {
+                        Log.w("ChatViewModel", "Failed to reset chat session after model switch: ${e.message}")
+                        // If reset fails, try to clear and recreate the entire session
+                        try {
+                            delay(300)
+                            inferenceService.onCleared()
+                            delay(300)
+                            inferenceService.loadModel(newModel)
+                            Log.d("ChatViewModel", "Force recreated session after reset failure")
+                        } catch (recreateException: Exception) {
+                            Log.w("ChatViewModel", "Force recreation also failed: ${recreateException.message}")
+                        }
+                    }
+                }
+                
             } catch (e: Exception) {
                 Log.w("ChatViewModel", "Failed to load new model: ${e.message}")
                 // Even if loading defers to first use, still guard the first generation
@@ -1494,6 +1529,230 @@ class ChatViewModel(
             _messages.value = emptyList()
             _currentChat.value = null
             currentChatId = null
+        }
+    }
+
+    /**
+     * Regenerate a specific AI response by finding the previous user message and re-generating
+     */
+    fun regenerateResponse(context: Context, messageId: String) {
+        val chatId = currentChatId ?: return
+        
+        viewModelScope.launch {
+            try {
+                // Find the message to regenerate
+                val currentMessages = _messages.value
+                val messageToRegenerate = currentMessages.find { it.id == messageId }
+                
+                if (messageToRegenerate == null || messageToRegenerate.isFromUser) {
+                    Log.w("ChatViewModel", "Cannot regenerate user message or message not found: $messageId")
+                    return@launch
+                }
+                
+                // Find the user message that prompted this response
+                val messageIndex = currentMessages.indexOf(messageToRegenerate)
+                val userMessage = if (messageIndex > 0) {
+                    // Look for the previous user message
+                    currentMessages.subList(0, messageIndex).lastOrNull { it.isFromUser }
+                } else null
+                
+                if (userMessage == null) {
+                    Log.w("ChatViewModel", "Cannot find user message that prompted response: $messageId")
+                    return@launch
+                }
+                
+                // Check if we have a valid model
+                if (currentModel == null || !currentModel!!.isDownloaded) {
+                    Log.e("ChatViewModel", "No valid model available for regeneration")
+                    return@launch
+                }
+                
+                // Check if we're still loading or switching models
+                if (_isLoadingModel.value || firstGenerationSinceLoad) {
+                    Log.w("ChatViewModel", "Cannot regenerate while model is loading or switching")
+                    repository.addMessage(chatId, "Please wait for the model to finish loading before regenerating.", isFromUser = false)
+                    return@launch
+                }
+                
+                // Delete the current AI response and any messages after it
+                val messagesToKeep = currentMessages.takeWhile { it.id != messageId }
+                
+                // Clear messages after the user message from database
+                repository.deleteMessagesAfter(chatId, userMessage.timestamp)
+                
+                // Update the messages state immediately
+                _messages.value = messagesToKeep
+                
+                // Mark as loading
+                _isLoading.value = true
+                isGenerating = true
+                
+                // Ensure the model is loaded
+                try {
+                    inferenceService.loadModel(currentModel!!)
+                    // Sync the currently loaded model state
+                    syncCurrentlyLoadedModel()
+                } catch (e: Exception) {
+                    Log.w("ChatViewModel", "Failed to ensure model is loaded for regeneration: ${e.message}")
+                    repository.addMessage(chatId, "Failed to load model. Please try again.", isFromUser = false)
+                    _isLoading.value = false
+                    isGenerating = false
+                    return@launch
+                }
+                
+                // Reset the session to provide clean context for regeneration
+                try {
+                    // Give more time to ensure any previous operations have completed
+                    delay(300)
+                    inferenceService.resetChatSession(chatId)
+                    delay(200) // Additional time for session to stabilize
+                    Log.d("ChatViewModel", "Reset session for regeneration")
+                } catch (e: Exception) {
+                    Log.w("ChatViewModel", "Error resetting session for regeneration: ${e.message}")
+                    // If session reset fails, try to force recreate the session
+                    try {
+                        delay(200)
+                        inferenceService.onCleared()
+                        delay(500)
+                        inferenceService.loadModel(currentModel!!)
+                        delay(200)
+                        Log.d("ChatViewModel", "Force recreated session for regeneration after reset failure")
+                    } catch (recreateException: Exception) {
+                        Log.e("ChatViewModel", "Force recreation for regeneration also failed: ${recreateException.message}")
+                        repository.addMessage(chatId, "Failed to prepare session for regeneration. Please try switching models or restarting the app.", isFromUser = false)
+                        _isLoading.value = false
+                        isGenerating = false
+                        return@launch
+                    }
+                }
+                
+                // Build conversation history up to the user message (excluding the user message itself)
+                val historyMessages = messagesToKeep.filter { it.id != userMessage.id }
+                val history = buildContextAwareHistory(historyMessages)
+                
+                // Extract images if the user message has attachments
+                val images = if (currentModel!!.supportsVision && userMessage.attachmentPath != null && userMessage.attachmentType == "image") {
+                    try {
+                        val bitmap = loadImageFromUri(context, Uri.parse(userMessage.attachmentPath))
+                        if (bitmap != null) listOf(bitmap) else emptyList()
+                    } catch (e: Exception) {
+                        Log.w("ChatViewModel", "Failed to load image for regeneration: ${e.message}")
+                        emptyList()
+                    }
+                } else {
+                    emptyList()
+                }
+                
+                // Create a new response placeholder
+                val placeholderId = repository.addMessage(chatId, "…", isFromUser = false)
+                _streamingContents.value = mapOf(placeholderId to "")
+                
+                // Generate new response
+                generationJob = launch {
+                    val generationStartTime = System.currentTimeMillis()
+                    var totalContent = ""
+                    
+                    try {
+                        // Build the full history including the user message at the end
+                        val fullHistory = if (history.isNotEmpty()) {
+                            "$history\n\nuser: ${userMessage.content}\nassistant:"
+                        } else {
+                            "user: ${userMessage.content}\nassistant:"
+                        }
+                        
+                        Log.d("ChatViewModel", "Regeneration prompt for chat $chatId: '${fullHistory.take(100)}${if (fullHistory.length > 100) "..." else ""}'")
+                        
+                        // Ensure the model is freshly loaded before regeneration
+                        _isLoadingModel.value = true
+                        inferenceService.loadModel(currentModel!!)
+                        _isLoadingModel.value = false
+                        
+                        val responseStream = inferenceService.generateResponseStreamWithSession(
+                            fullHistory, 
+                            currentModel!!, 
+                            chatId, 
+                            images
+                        )
+                        
+                        var lastUpdateTime = 0L
+                        val updateIntervalMs = 50L
+                        
+                        responseStream.collect { piece ->
+                            totalContent += piece
+                            
+                            // Real-time checks for repetition and length
+                            if (totalContent.length > 200) {
+                                val isRepetitive = checkForRepetition(totalContent)
+                                if (isRepetitive) {
+                                    Log.w("ChatViewModel", "Stopping regeneration due to repetitive content")
+                                    try {
+                                        inferenceService.resetChatSession(chatId)
+                                    } catch (e: Exception) {
+                                        Log.w("ChatViewModel", "Failed to reset session: ${e.message}")
+                                    }
+                                    throw kotlinx.coroutines.CancellationException("Repetitive content detected")
+                                }
+                            }
+                            
+                            if (totalContent.length > 5000) {
+                                Log.w("ChatViewModel", "Stopping regeneration due to maximum length exceeded")
+                                try {
+                                    inferenceService.resetChatSession(chatId)
+                                } catch (e: Exception) {
+                                    Log.w("ChatViewModel", "Failed to reset session: ${e.message}")
+                                }
+                                throw kotlinx.coroutines.CancellationException("Length limit reached")
+                            }
+                            
+                            // Update UI
+                            val updated = _streamingContents.value.toMutableMap()
+                            updated[placeholderId] = totalContent
+                            _streamingContents.value = updated
+                            
+                            // Debounced database updates
+                            val currentTime = System.currentTimeMillis()
+                            if (currentTime - lastUpdateTime > updateIntervalMs) {
+                                repository.updateMessageContent(placeholderId, totalContent)
+                                lastUpdateTime = currentTime
+                            }
+                        }
+                        
+                        // Success - finalize the message
+                        val finalContent = totalContent
+                        repository.updateMessageContent(placeholderId, finalContent)
+                        val time = System.currentTimeMillis() - generationStartTime
+                        finalizeMessage(placeholderId, finalContent, time)
+                        
+                        Log.d("ChatViewModel", "Regeneration completed successfully")
+                        
+                    } catch (e: Exception) {
+                        val finalContent = totalContent
+                        val time = System.currentTimeMillis() - generationStartTime
+                        
+                        Log.d("ChatViewModel", "Regeneration exception: ${e.javaClass.simpleName}: ${e.message}")
+                        
+                        // Save partial content and finalize
+                        withContext(kotlinx.coroutines.NonCancellable) {
+                            repository.updateMessageContent(placeholderId, finalContent)
+                            finalizeMessage(placeholderId, finalContent, time)
+                        }
+                        
+                    } finally {
+                        _isLoading.value = false
+                        isGenerating = false
+                        
+                        // Clear streaming state
+                        val updatedStreaming = _streamingContents.value.toMutableMap()
+                        updatedStreaming.remove(placeholderId)
+                        _streamingContents.value = updatedStreaming
+                    }
+                }
+                
+            } catch (e: Exception) {
+                Log.e("ChatViewModel", "Error during regeneration setup: ${e.message}", e)
+                _isLoading.value = false
+                isGenerating = false
+            }
         }
     }
 }

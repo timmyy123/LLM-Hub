@@ -1,10 +1,13 @@
 package com.llmhub.llmhub.screens
 
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -13,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -169,46 +173,69 @@ fun ChatScreen(
                             DropdownMenu(
                                 expanded = modelMenuExpanded,
                                 onDismissRequest = { modelMenuExpanded = false },
-                                modifier = Modifier.widthIn(min = 200.dp)
+                                modifier = Modifier
+                                    .widthIn(min = 250.dp, max = 320.dp)
+                                    .background(
+                                        color = MaterialTheme.colorScheme.surfaceContainer,
+                                        shape = MaterialTheme.shapes.medium
+                                    )
                             ) {
                                 availableModels.forEach { model ->
                                     DropdownMenuItem(
                                         text = { 
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                modifier = Modifier.padding(vertical = 4.dp)
+                                            Column(
+                                                modifier = Modifier.fillMaxWidth()
                                             ) {
-                                                Text(
-                                                    text = model.name,
-                                                    style = MaterialTheme.typography.bodyMedium
-                                                )
-                                                
-                                                // Show vision indicator
-                                                if (model.supportsVision) {
-                                                    Spacer(modifier = Modifier.width(8.dp))
-                                                    Surface(
-                                                        shape = MaterialTheme.shapes.extraSmall,
-                                                        color = MaterialTheme.colorScheme.primaryContainer,
-                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                                    ) {
-                                                        Row(
-                                                            verticalAlignment = Alignment.CenterVertically,
-                                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    modifier = Modifier.fillMaxWidth()
+                                                ) {
+                                                    Text(
+                                                        text = model.name,
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        fontWeight = FontWeight.Medium,
+                                                        color = MaterialTheme.colorScheme.onSurface,
+                                                        modifier = Modifier.weight(1f)
+                                                    )
+                                                    
+                                                    // Show vision indicator with better styling
+                                                    if (model.supportsVision) {
+                                                        Surface(
+                                                            shape = RoundedCornerShape(12.dp),
+                                                            color = MaterialTheme.colorScheme.tertiary,
+                                                            modifier = Modifier.padding(start = 8.dp)
                                                         ) {
-                                                            Icon(
-                                                                Icons.Default.RemoveRedEye,
-                                                                contentDescription = "Vision model",
-                                                                modifier = Modifier.size(12.dp),
-                                                                tint = MaterialTheme.colorScheme.onPrimaryContainer
-                                                            )
-                                                            Spacer(modifier = Modifier.width(2.dp))
-                                                            Text(
-                                                                text = "Vision",
-                                                                style = MaterialTheme.typography.labelSmall,
-                                                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                                                            )
+                                                            Row(
+                                                                verticalAlignment = Alignment.CenterVertically,
+                                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                                            ) {
+                                                                Icon(
+                                                                    Icons.Default.RemoveRedEye,
+                                                                    contentDescription = "Vision enabled",
+                                                                    modifier = Modifier.size(14.dp),
+                                                                    tint = MaterialTheme.colorScheme.onTertiary
+                                                                )
+                                                                Spacer(modifier = Modifier.width(4.dp))
+                                                                Text(
+                                                                    text = "Vision",
+                                                                    style = MaterialTheme.typography.labelSmall,
+                                                                    fontWeight = FontWeight.SemiBold,
+                                                                    color = MaterialTheme.colorScheme.onTertiary
+                                                                )
+                                                            }
                                                         }
                                                     }
+                                                }
+                                                
+                                                // Add model details subtitle
+                                                if (model.contextWindowSize > 0) {
+                                                    Text(
+                                                        text = "${model.contextWindowSize / 1024}k context • ${if (model.supportsVision) "Multimodal" else "Text only"}",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        modifier = Modifier.padding(top = 2.dp)
+                                                    )
                                                 }
                                             }
                                         },
@@ -274,38 +301,35 @@ fun ChatScreen(
                         }
                     }
                     
-                    items(messages.reversed(), key = { it.id }) { message ->
-                        val streamingText = streamingContents[message.id] ?: ""
-                        MessageBubble(
-                            message = message,
-                            streamingContent = streamingText
-                        )
-                    }
-                    
+                    // Show model loading indicator after the latest message
                     if (isLoadingModel) {
                         item {
-                            Row(
-                                modifier = Modifier.padding(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(16.dp),
-                                    strokeWidth = 2.dp
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "Loading model...",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                            ModelLoadingIndicator(
+                                modelName = currentlyLoadedModel?.name ?: currentChat?.modelName ?: "AI Model"
+                            )
                         }
                     }
                     
+                    // Show typing indicator for regular generation
                     if (isLoading && streamingContents.isEmpty() && !isLoadingModel) {
                         item {
                             TypingIndicator()
                         }
+                    }
+                    
+                    items(messages.reversed(), key = { it.id }) { message ->
+                        val streamingText = streamingContents[message.id] ?: ""
+                        val isLatestAiMessage = !message.isFromUser && 
+                                                message.content != "…" && 
+                                                message == messages.lastOrNull { !it.isFromUser }
+                        val canRegenerate = isLatestAiMessage && !isLoading && !isLoadingModel
+                        MessageBubble(
+                            message = message,
+                            streamingContent = streamingText,
+                            onRegenerateResponse = if (canRegenerate) {
+                                { viewModel.regenerateResponse(context, message.id) }
+                            } else null
+                        )
                     }
                 }
 
@@ -432,6 +456,99 @@ private fun TypingIndicator() {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+}
+
+@Composable
+private fun ModelLoadingIndicator(modelName: String) {
+    // Pulsing animation for the loading indicator
+    val infiniteTransition = rememberInfiniteTransition(label = "ModelLoadingPulse")
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.95f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "ModelLoadingScale"
+    )
+    
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                },
+            shape = MaterialTheme.shapes.large,
+            color = MaterialTheme.colorScheme.primaryContainer,
+            tonalElevation = 4.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Model icon with background
+                Surface(
+                    modifier = Modifier.size(48.dp),
+                    shape = MaterialTheme.shapes.medium,
+                    color = MaterialTheme.colorScheme.primary,
+                    tonalElevation = 8.dp
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Default.SmartToy,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                // Loading text with model name
+                Text(
+                    text = "Loading ${modelName.take(30)}${if (modelName.length > 30) "..." else ""}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                Text(
+                    text = "Please wait while the model initializes...",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Animated progress indicator
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.5.dp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Initializing neural network...",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    )
+                }
+            }
         }
     }
 }

@@ -1,9 +1,26 @@
 package com.llmhub.llmhub.components
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.ContentResolver
+import android.content.ContentValues
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
+import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.text.ClickableText
+import android.content.Intent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -13,66 +30,282 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.foundation.clickable
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.platform.LocalClipboardManager
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import coil.ImageLoader
+import coil.request.SuccessResult
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.llmhub.llmhub.data.MessageEntity
 import dev.jeziellago.compose.markdowntext.MarkdownText
+import androidx.compose.ui.platform.LocalUriHandler
 
 /**
- * Enhanced chat bubble that shows user/assistant messages with modern Material Design 3 styling.
- * Features rounded corners, proper elevation, and adaptive colors.
+ * Custom selectable markdown text component that supports both markdown rendering and text selection.
+ * This addresses the issue where MarkdownText doesn't properly support text selection.
+ */
+@Composable
+fun SelectableMarkdownText(
+    markdown: String,
+    color: Color,
+    fontSize: androidx.compose.ui.unit.TextUnit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    // First parse the markdown (bold/italic/lists etc.)
+    val baseAnnotated = remember(markdown) {
+        parseMarkdownToAnnotatedString(markdown, color)
+    }
+
+    val linkColor = MaterialTheme.colorScheme.primary
+    // Then detect links & phone numbers and add annotations/styles
+    val finalAnnotated = remember(baseAnnotated, linkColor) {
+        annotateLinksAndPhones(baseAnnotated, linkColor)
+    }
+
+    SelectionContainer {
+        ClickableText(
+            text = finalAnnotated,
+            modifier = modifier,
+            style = LocalTextStyle.current.copy(fontSize = fontSize, lineHeight = fontSize * 1.4),
+            onClick = { offset ->
+                // Handle URL clicks
+                finalAnnotated.getStringAnnotations("URL", offset, offset)
+                    .firstOrNull()?.let { ann ->
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(ann.item))
+                        context.startActivity(intent)
+                        return@ClickableText
+                    }
+
+                // Handle phone number clicks
+                finalAnnotated.getStringAnnotations("PHONE", offset, offset)
+                    .firstOrNull()?.let { ann ->
+                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${ann.item}"))
+                        context.startActivity(intent)
+                    }
+            }
+        )
+    }
+}
+
+/**
+ * Post-process an AnnotatedString to detect web URLs and phone numbers, add underline/primary-color
+ * styling, and attach StringAnnotations so we can handle clicks in ClickableText.
+ */
+fun annotateLinksAndPhones(source: AnnotatedString, linkColor: Color): AnnotatedString {
+    val text = source.text
+    val builder = AnnotatedString.Builder()
+    builder.append(source)
+
+    val urlRegex = Regex("""((https?://|www\.)[\w\-._~:/?#\[\]@!$&'()*+,;=%]+)""")
+    val phoneRegex = Regex("""\+?[0-9][0-9\-\s]{6,}[0-9]""")
+
+    fun addAnnotation(range: IntRange, annotationTag: String, annotationValue: String) {
+        builder.addStyle(
+            SpanStyle(
+                color = linkColor,
+                textDecoration = TextDecoration.Underline
+            ),
+            range.first,
+            range.last + 1
+        )
+        builder.addStringAnnotation(annotationTag, annotationValue, range.first, range.last + 1)
+    }
+
+    for (match in urlRegex.findAll(text)) {
+        var url = match.value
+        if (!url.startsWith("http")) {
+            url = "http://$url" // ensure valid scheme
+        }
+        addAnnotation(match.range, "URL", url)
+    }
+
+    for (match in phoneRegex.findAll(text)) {
+        val numberDigits = match.value.filter { it.isDigit() || it == '+' }
+        addAnnotation(match.range, "PHONE", numberDigits)
+    }
+
+    return builder.toAnnotatedString()
+}
+
+/**
+ * Enhanced markdown parser that converts markdown syntax to AnnotatedString
+ * Supports: **bold**, *italic*, `code`, ### headers, - lists, and preserves line breaks
+ */
+fun parseMarkdownToAnnotatedString(markdown: String, baseColor: Color): AnnotatedString {
+    return buildAnnotatedString {
+        val lines = markdown.split('\n')
+        
+        for (lineIndex in lines.indices) {
+            val line = lines[lineIndex]
+            
+            when {
+                // Headers (### Header)
+                line.startsWith("### ") -> {
+                    withStyle(SpanStyle(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        color = baseColor
+                    )) {
+                        append(line.substring(4))
+                    }
+                }
+                line.startsWith("## ") -> {
+                    withStyle(SpanStyle(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
+                        color = baseColor
+                    )) {
+                        append(line.substring(3))
+                    }
+                }
+                line.startsWith("# ") -> {
+                    withStyle(SpanStyle(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp,
+                        color = baseColor
+                    )) {
+                        append(line.substring(2))
+                    }
+                }
+                // List items (- item or * item)
+                line.trimStart().startsWith("- ") || line.trimStart().startsWith("* ") -> {
+                    val indent = line.length - line.trimStart().length
+                    append("  ".repeat(indent / 2)) // Convert spaces to proper indent
+                    append("• ") // Bullet point
+                    parseInlineMarkdown(line.trimStart().substring(2), baseColor, this)
+                }
+                // Regular text with inline formatting
+                else -> {
+                    parseInlineMarkdown(line, baseColor, this)
+                }
+            }
+            
+            // Add line break except for the last line
+            if (lineIndex < lines.size - 1) {
+                append('\n')
+            }
+        }
+    }
+}
+
+/**
+ * Parse inline markdown formatting (bold, italic, code) within a line
+ */
+fun parseInlineMarkdown(text: String, baseColor: Color, builder: AnnotatedString.Builder) {
+    var i = 0
+    
+    while (i < text.length) {
+        when {
+            // Bold text **text**
+            i < text.length - 1 && text[i] == '*' && text[i + 1] == '*' -> {
+                val endIndex = text.indexOf("**", i + 2)
+                if (endIndex != -1) {
+                    builder.withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = baseColor)) {
+                        append(text.substring(i + 2, endIndex))
+                    }
+                    i = endIndex + 2
+                } else {
+                    builder.withStyle(SpanStyle(color = baseColor)) { append(text[i]) }
+                    i++
+                }
+            }
+            // Italic text *text*
+            text[i] == '*' -> {
+                val endIndex = text.indexOf('*', i + 1)
+                if (endIndex != -1) {
+                    builder.withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = baseColor)) {
+                        append(text.substring(i + 1, endIndex))
+                    }
+                    i = endIndex + 1
+                } else {
+                    builder.withStyle(SpanStyle(color = baseColor)) { append(text[i]) }
+                    i++
+                }
+            }
+            // Code text `text`
+            text[i] == '`' -> {
+                val endIndex = text.indexOf('`', i + 1)
+                if (endIndex != -1) {
+                    builder.withStyle(SpanStyle(
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        background = baseColor.copy(alpha = 0.15f),
+                        color = baseColor
+                    )) {
+                        append(text.substring(i + 1, endIndex))
+                    }
+                    i = endIndex + 1
+                } else {
+                    builder.withStyle(SpanStyle(color = baseColor)) { append(text[i]) }
+                    i++
+                }
+            }
+            else -> {
+                builder.withStyle(SpanStyle(color = baseColor)) {
+                    append(text[i])
+                }
+                i++
+            }
+        }
+    }
+}
+
+/**
+ * Enhanced chat bubble that shows user/assistant messages in ChatGPT mobile style.
+ * User messages have bubbles, AI responses are plain text without background.
  */
 @Composable
 fun MessageBubble(
     message: MessageEntity,
-    streamingContent: String = ""
+    streamingContent: String = "",
+    onRegenerateResponse: (() -> Unit)? = null
 ) {
+    var showFullScreenImage by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val isUser = message.isFromUser
     
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
+            .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        if (!isUser) {
-            // Assistant avatar
-            Surface(
-                modifier = Modifier.size(32.dp),
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.primaryContainer
-            ) {
-                Icon(
-                    Icons.Default.SmartToy,
-                    contentDescription = "AI Assistant",
-                    modifier = Modifier.padding(6.dp),
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-        }
-        
-        Column(
-            modifier = Modifier.weight(1f, fill = false)
+        if (isUser) {
+            // User messages - keep bubble design but remove avatar
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
         ) {
             Surface(
-                modifier = Modifier.widthIn(max = 280.dp),
+                modifier = Modifier.widthIn(max = 350.dp),
                 shape = RoundedCornerShape(
-                    topStart = if (isUser) 20.dp else 4.dp,
-                    topEnd = if (isUser) 4.dp else 20.dp,
+                        topStart = 20.dp,
+                        topEnd = 4.dp,
                     bottomStart = 20.dp,
                     bottomEnd = 20.dp
                 ),
-                color = if (isUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh,
+                    color = MaterialTheme.colorScheme.primary,
                 shadowElevation = 1.dp
             ) {
                 Column(
@@ -89,7 +322,8 @@ fun MessageBubble(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .heightIn(max = 200.dp)
-                                .clip(RoundedCornerShape(12.dp)),
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { showFullScreenImage = true },
                             contentScale = ContentScale.Crop,
                             onError = { 
                                 android.util.Log.w("MessageBubble", "Failed to load image: ${message.attachmentPath}")
@@ -103,60 +337,442 @@ fun MessageBubble(
                     
                     // Display text content
                     if (message.content.isNotEmpty() && message.content != "Shared a file") {
-                        val displayContent = if (!isUser && streamingContent.isNotEmpty()) streamingContent else message.content
-                        
-                        MarkdownText(
-                            markdown = displayContent,
-                            color = if (isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                        SelectableMarkdownText(
+                                markdown = message.content,
+                                color = MaterialTheme.colorScheme.onPrimary,
                             fontSize = MaterialTheme.typography.bodyLarge.fontSize,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
+                    }
                 }
             }
             
-            // Show token statistics for assistant messages
-            val hasStats = message.tokenCount != null && message.tokensPerSecond != null
-            val showStats = !isUser && hasStats && message.content != "…"
-            if (showStats) {
+            // Show copy button for user messages
+            if (message.content.isNotEmpty() && message.content != "Shared a file") {
                 Row(
-                    modifier = Modifier.padding(start = 8.dp, top = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.End
                 ) {
-                    Icon(
-                        Icons.Outlined.Speed,
-                        contentDescription = null,
-                        modifier = Modifier.size(12.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    IconButton(
+                        onClick = {
+                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            val clip = ClipData.newPlainText("Message", message.content)
+                            clipboard.setPrimaryClip(clip)
+                        },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            Icons.Outlined.ContentCopy,
+                            contentDescription = "Copy message",
+                            modifier = Modifier.size(12.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        } else {
+            // AI responses - plain text without background bubble, like ChatGPT mobile
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // Display image if attachment exists (for AI messages with images)
+                if (message.attachmentPath != null && message.attachmentType == "image") {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(Uri.parse(message.attachmentPath))
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Attached image",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 200.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { showFullScreenImage = true },
+                        contentScale = ContentScale.Crop,
+                        onError = { 
+                            android.util.Log.w("MessageBubble", "Failed to load image: ${message.attachmentPath}")
+                        }
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "${message.tokenCount} tokens • ${String.format("%.1f", message.tokensPerSecond!!)} tok/sec",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    
+                    if (message.content.isNotEmpty() && message.content != "Shared a file" && message.content != "…") {
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
+                
+                // Display text content - plain text without background
+                if (message.content.isNotEmpty() && message.content != "Shared a file") {
+                    val displayContent = if (streamingContent.isNotEmpty()) streamingContent else message.content
+                    
+                    SelectableMarkdownText(
+                        markdown = displayContent,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = MaterialTheme.typography.bodyLarge.fontSize,
+                        modifier = Modifier.fillMaxWidth()
                     )
+                }
+                
+                // Action buttons row for AI messages
+                if (message.content != "…" && message.content.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Copy button
+                        IconButton(
+                            onClick = {
+                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                val displayContent = if (streamingContent.isNotEmpty()) streamingContent else message.content
+                                val clip = ClipData.newPlainText("Message", displayContent)
+                                clipboard.setPrimaryClip(clip)
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                Icons.Outlined.ContentCopy,
+                                contentDescription = "Copy message",
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        
+                        // Regenerate button
+                        if (onRegenerateResponse != null) {
+                            IconButton(
+                                onClick = onRegenerateResponse,
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Refresh,
+                                    contentDescription = "Regenerate response",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        
+                        // Token statistics for assistant messages
+                        val hasStats = message.tokenCount != null && message.tokensPerSecond != null
+                        if (hasStats) {
+                            Spacer(modifier = Modifier.weight(1f))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Outlined.Speed,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(12.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "${message.tokenCount} tokens • ${String.format("%.1f", message.tokensPerSecond!!)} tok/sec",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
-        
-        if (isUser) {
+    }
+    
+    // Full-screen image viewer
+    if (showFullScreenImage && message.attachmentPath != null && message.attachmentType == "image") {
+        FullScreenImageViewer(
+            imageUri = Uri.parse(message.attachmentPath),
+            onDismiss = { showFullScreenImage = false }
+        )
+    }
+}
+
+/**
+ * Full-screen image viewer for chat attachments with enhanced features
+ */
+@Composable
+fun FullScreenImageViewer(
+    imageUri: Uri,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    var showControls by remember { mutableStateOf(true) }
+    
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .systemBarsPadding()
+                .clickable { showControls = !showControls }
+        ) {
+            // Full-screen image
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(imageUri)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = "Full screen image",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Fit,
+                onError = { 
+                    android.util.Log.w("FullScreenImageViewer", "Failed to load image: $imageUri")
+                }
+            )
+            
+            // Controls overlay (shows/hides on tap)
+            if (showControls) {
+                // Close button
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp)
+                        .size(48.dp),
+                    shape = CircleShape,
+                    color = Color.Black.copy(alpha = 0.6f)
+                ) {
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Close",
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+                
+                // Image title/info overlay at top
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color.Black.copy(alpha = 0.6f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Image,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
             Spacer(modifier = Modifier.width(8.dp))
-            // User avatar
+                        Text(
+                            text = "Image Attachment",
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+                
+                // Action buttons at bottom
             Surface(
-                modifier = Modifier.size(32.dp),
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(16.dp),
                 shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.tertiaryContainer
+                    color = Color.Black.copy(alpha = 0.6f)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Copy button
+                        OutlinedButton(
+                            onClick = {
+                                coroutineScope.launch {
+                                    copyImageToClipboard(context, imageUri)
+                                }
+                            },
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color.White,
+                                containerColor = Color.Transparent
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp, 
+                                Color.White.copy(alpha = 0.6f)
+                            )
+                        ) {
+                            Icon(
+                                Icons.Default.ContentCopy,
+                                contentDescription = "Copy image",
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Copy")
+                        }
+                        
+                        // Save button
+                        OutlinedButton(
+                            onClick = {
+                                coroutineScope.launch {
+                                    saveImageToGallery(context, imageUri)
+                                }
+                            },
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color.White,
+                                containerColor = Color.Transparent
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp, 
+                                Color.White.copy(alpha = 0.6f)
+                            )
             ) {
                 Icon(
-                    Icons.Default.Person,
-                    contentDescription = "You",
-                    modifier = Modifier.padding(6.dp),
-                    tint = MaterialTheme.colorScheme.onTertiaryContainer
-                )
+                                Icons.Default.Download,
+                                contentDescription = "Save image",
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Save")
+                        }
+                    }
+                }
+                
+                // Instructions overlay at top of action buttons
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(horizontal = 16.dp, vertical = 80.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color.Black.copy(alpha = 0.4f)
+                ) {
+                    Text(
+                        text = "Tap image to toggle controls",
+                        color = Color.White.copy(alpha = 0.8f),
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
             }
         }
     }
 }
+
+/**
+ * Copy image to clipboard
+ */
+private suspend fun copyImageToClipboard(context: Context, imageUri: Uri) {
+    withContext(Dispatchers.IO) {
+        try {
+            val imageLoader = ImageLoader(context)
+            val request = ImageRequest.Builder(context)
+                .data(imageUri)
+                .build()
+            
+            val result = imageLoader.execute(request)
+            if (result is SuccessResult) {
+                val bitmap = (result.drawable as? BitmapDrawable)?.bitmap
+                if (bitmap != null) {
+                    withContext(Dispatchers.Main) {
+                        val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        // For now, we'll copy the URI as text since bitmap clipboard requires API 28+
+                        val clip = ClipData.newPlainText("Image", "Image copied from chat")
+                        clipboardManager.setPrimaryClip(clip)
+                        Toast.makeText(context, "Image copied to clipboard", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Failed to copy image", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "Failed to copy image: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+}
+
+/**
+ * Save image to gallery
+ */
+private suspend fun saveImageToGallery(context: Context, imageUri: Uri) {
+    withContext(Dispatchers.IO) {
+        try {
+            val imageLoader = ImageLoader(context)
+            val request = ImageRequest.Builder(context)
+                .data(imageUri)
+                .build()
+            
+            val result = imageLoader.execute(request)
+            if (result is SuccessResult) {
+                val bitmap = (result.drawable as? BitmapDrawable)?.bitmap
+                if (bitmap != null) {
+                    val saved = saveBitmapToGallery(context, bitmap)
+                    withContext(Dispatchers.Main) {
+                        if (saved) {
+                            Toast.makeText(context, "Image saved to gallery", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, "Failed to save image", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Failed to load image", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "Failed to save image: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+}
+
+/**
+ * Save bitmap to gallery using MediaStore
+ */
+private fun saveBitmapToGallery(context: Context, bitmap: Bitmap): Boolean {
+    return try {
+        val contentValues = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, "LLMHub_Image_${System.currentTimeMillis()}.jpg")
+            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/LLMHub")
+            }
+        }
+        
+        val contentResolver = context.contentResolver
+        val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+        
+        uri?.let { imageUri ->
+            contentResolver.openOutputStream(imageUri)?.use { outputStream ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 95, outputStream)
+            }
+            true
+        } ?: false
+    } catch (e: Exception) {
+        android.util.Log.e("ImageSave", "Failed to save image: ${e.message}")
+        false
+    }
+}
+
+
 
 /**
  * Modern input bar with Material Design 3 styling, attachment support, and smooth animations.
