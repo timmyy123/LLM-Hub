@@ -21,6 +21,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.llmhub.llmhub.components.ChatDrawer
@@ -57,6 +58,7 @@ fun ChatScreen(
     val streamingContents by viewModel.streamingContents.collectAsState()
     val isLoadingModel by viewModel.isLoadingModel.collectAsState()
     val currentlyLoadedModel by viewModel.currentlyLoadedModel.collectAsState()
+    val selectedModel by viewModel.selectedModel.collectAsState()
     var modelMenuExpanded by remember { mutableStateOf(false) }
     
     val listState = rememberLazyListState()
@@ -116,20 +118,27 @@ fun ChatScreen(
             topBar = {
                 TopAppBar(
                     title = { 
-                        Column {
+                        Column(
+                            modifier = Modifier.height(72.dp),
+                            verticalArrangement = Arrangement.Center
+                        ) {
                             Text(
                                 text = currentChat?.title ?: "New Chat",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
                             )
-                            currentlyLoadedModel?.let { model ->
+                            (selectedModel ?: currentlyLoadedModel)?.let { model ->
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = model.name.take(20),
+                                        text = model.name,
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                     if (model.supportsVision) {
                                         Spacer(modifier = Modifier.width(4.dp))
@@ -328,9 +337,9 @@ fun ChatScreen(
                     // Show model loading indicator after the latest message
                     if (isLoadingModel) {
                         item {
-                            ModelLoadingIndicator(
-                                modelName = currentlyLoadedModel?.name ?: currentChat?.modelName ?: "AI Model"
-                            )
+                            val name = (selectedModel ?: currentlyLoadedModel)?.name
+                                ?: currentChat?.modelName ?: "AI Model"
+                            ModelLoadingIndicator(modelName = name)
                         }
                     }
                     
