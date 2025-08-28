@@ -180,6 +180,40 @@ fun ChatScreen(
                                         shape = MaterialTheme.shapes.medium
                                     )
                             ) {
+                                // Add unload model option if a model is currently loaded
+                                if (currentlyLoadedModel != null) {
+                                    DropdownMenuItem(
+                                        text = { 
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.PowerOff,
+                                                    contentDescription = "Unload model",
+                                                    tint = MaterialTheme.colorScheme.error,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(12.dp))
+                                                Text(
+                                                    text = "Unload Model",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.Medium,
+                                                    color = MaterialTheme.colorScheme.error
+                                                )
+                                            }
+                                        },
+                                        onClick = {
+                                            viewModel.unloadModel()
+                                            modelMenuExpanded = false
+                                        }
+                                    )
+                                    
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(vertical = 4.dp),
+                                        color = MaterialTheme.colorScheme.outlineVariant
+                                    )
+                                }
+                                
                                 availableModels.forEach { model ->
                                     DropdownMenuItem(
                                         text = { 
@@ -257,16 +291,6 @@ fun ChatScreen(
                                 }
                             }
                         }
-                        
-                        // Stop generation button (only show when loading)
-                        if (isLoading) {
-                            IconButton(onClick = { viewModel.stopGeneration() }) {
-                                Icon(
-                                    imageVector = Icons.Default.Stop,
-                                    contentDescription = "Stop generation"
-                                )
-                            }
-                        }
                     }
                 )
             }
@@ -340,7 +364,11 @@ fun ChatScreen(
                         viewModel.sendMessage(context, text, attachmentUri)
                     },
                     enabled = !isLoading && !isLoadingModel && currentChat != null,
-                    supportsAttachments = viewModel.currentModelSupportsVision()
+                    supportsAttachments = viewModel.currentModelSupportsVision(),
+                    isLoading = isLoading,
+                    onCancelGeneration = if (isLoading) {
+                        { viewModel.stopGeneration() }
+                    } else null
                 )
                 }
             }

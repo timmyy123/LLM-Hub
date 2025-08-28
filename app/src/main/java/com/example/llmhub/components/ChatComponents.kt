@@ -782,7 +782,9 @@ private fun saveBitmapToGallery(context: Context, bitmap: Bitmap): Boolean {
 fun MessageInput(
     onSendMessage: (String, Uri?) -> Unit,
     enabled: Boolean,
-    supportsAttachments: Boolean
+    supportsAttachments: Boolean,
+    isLoading: Boolean = false,
+    onCancelGeneration: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     var text by remember { mutableStateOf("") }
@@ -892,31 +894,53 @@ fun MessageInput(
                     }
                 } else null,
                 trailingIcon = {
-                    IconButton(
-                        onClick = {
-                            if (text.isNotBlank() || attachmentUri != null) {
-                                onSendMessage(text, attachmentUri)
-                                text = ""
-                                attachmentUri = null
-                            }
-                        },
-                        enabled = enabled && (text.isNotBlank() || attachmentUri != null)
-                    ) {
-                        Surface(
-                            modifier = Modifier.size(32.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            color = if (enabled && (text.isNotBlank() || attachmentUri != null)) 
-                                MaterialTheme.colorScheme.primary 
-                            else MaterialTheme.colorScheme.surfaceVariant
+                    if (isLoading && onCancelGeneration != null) {
+                        // Show cancel button when loading
+                        IconButton(
+                            onClick = onCancelGeneration,
+                            enabled = true
                         ) {
-                            Icon(
-                                Icons.Default.Send,
-                                contentDescription = "Send",
-                                modifier = Modifier.padding(6.dp),
-                                tint = if (enabled && (text.isNotBlank() || attachmentUri != null)) 
-                                    MaterialTheme.colorScheme.onPrimary 
-                                else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Surface(
+                                modifier = Modifier.size(32.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.error
+                            ) {
+                                Icon(
+                                    Icons.Default.Stop,
+                                    contentDescription = "Cancel generation",
+                                    modifier = Modifier.padding(6.dp),
+                                    tint = MaterialTheme.colorScheme.onError
+                                )
+                            }
+                        }
+                    } else {
+                        // Show send button when not loading
+                        IconButton(
+                            onClick = {
+                                if (text.isNotBlank() || attachmentUri != null) {
+                                    onSendMessage(text, attachmentUri)
+                                    text = ""
+                                    attachmentUri = null
+                                }
+                            },
+                            enabled = enabled && (text.isNotBlank() || attachmentUri != null)
+                        ) {
+                            Surface(
+                                modifier = Modifier.size(32.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                color = if (enabled && (text.isNotBlank() || attachmentUri != null)) 
+                                    MaterialTheme.colorScheme.primary 
+                                else MaterialTheme.colorScheme.surfaceVariant
+                            ) {
+                                Icon(
+                                    Icons.Default.Send,
+                                    contentDescription = "Send",
+                                    modifier = Modifier.padding(6.dp),
+                                    tint = if (enabled && (text.isNotBlank() || attachmentUri != null)) 
+                                        MaterialTheme.colorScheme.onPrimary 
+                                    else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                 },

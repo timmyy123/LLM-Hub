@@ -28,6 +28,7 @@ import android.app.ActivityManager
  */
 interface InferenceService {
     suspend fun loadModel(model: LLMModel): Boolean
+    suspend fun unloadModel()
     suspend fun generateResponse(prompt: String, model: LLMModel): String
     suspend fun generateResponseStream(prompt: String, model: LLMModel): Flow<String>
     suspend fun generateResponseStreamWithSession(prompt: String, model: LLMModel, chatId: String, images: List<Bitmap> = emptyList()): Flow<String>
@@ -181,6 +182,43 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load model: ${e.message}", e)
             false
+        }
+    }
+
+    override suspend fun unloadModel() {
+        sessionMutex.withLock {
+            Log.d(TAG, "Unloading current model: ${currentModel?.name}")
+            
+            // Release model instance
+            modelInstance?.let { instance ->
+                try {
+                    // Cancel any ongoing generation
+                    try {
+                        instance.session.cancelGenerateResponseAsync()
+                        Log.d(TAG, "Cancelled ongoing generation during unload")
+                    } catch (e: Exception) {
+                        Log.d(TAG, "No ongoing generation to cancel during unload: ${e.message}")
+                    }
+                    
+                    // Close session
+                    instance.session.close()
+                    Log.d(TAG, "Closed session during unload")
+                    
+                    // Close engine
+                    instance.engine.close()
+                    Log.d(TAG, "Closed engine during unload")
+                    
+                } catch (e: Exception) {
+                    Log.w(TAG, "Error during model unload: ${e.message}")
+                }
+            }
+            
+            // Clear references
+            modelInstance = null
+            currentModel = null
+            currentBackend = null
+            
+            Log.d(TAG, "Model unloaded successfully")
         }
     }
 
