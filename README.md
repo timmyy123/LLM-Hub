@@ -17,7 +17,13 @@
 - **🎨 Modern UI**: Clean, intuitive Material Design interface
 - **📥 Direct Downloads**: Download models directly from HuggingFace
 
-## 📱 Supported Models
+## � Download
+
+[![Get it on Google Play](https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png)](https://play.google.com/store/apps/details?id=com.llmhub.llmhub)
+
+*Available on Google Play Store for easy installation and automatic updates*
+
+## �📱 Supported Models
 
 ### Text Models
 - **Gemma-3 1B Series** (Google)
