@@ -190,13 +190,14 @@ class ChatViewModel(
                     Log.w("ChatViewModel", "Unable to reset session for new chat: ${e.message}")
                 }
                 
-                // Preserve the current model for new chats
+                // Preserve the current model for new chats but don't auto-load it
                 currentModel = previousModel
                 
-                // If we have a model, update the chat to use it
+                // If we have a model, update the chat to use it but don't load it
                 if (previousModel != null) {
                     repository.updateChatModel(newChatId, previousModel.name)
                     _currentChat.value = repository.getChatById(newChatId)
+                    Log.d("ChatViewModel", "Set model ${previousModel.name} for new chat but didn't auto-load it")
                 }
 
                 // Begin collecting messages for the newly created chat
@@ -249,34 +250,19 @@ class ChatViewModel(
                 
                 if (foundModel != null && foundModel.isDownloaded) {
                     // Use the model associated with this chat
-                    Log.d("ChatViewModel", "Using chat-specific model: ${foundModel.name}")
+                    Log.d("ChatViewModel", "Chat requires model: ${foundModel.name}")
                     currentModel = foundModel
-                    // Ensure the model is loaded in the inference service
-                    viewModelScope.launch {
-                        try {
-                            inferenceService.loadModel(foundModel)
-                            // Sync the currently loaded model state
-                            syncCurrentlyLoadedModel()
-                        } catch (e: Exception) {
-                            Log.w("ChatViewModel", "Failed to load model for chat: ${e.message}")
-                        }
-                    }
+                    // Don't auto-load the model - let user manually load it if needed
+                    // Users can select the model from the dropdown if they want to load it
+                    Log.d("ChatViewModel", "Model not auto-loaded, user can select it manually")
                 } else if (previousModel != null && previousModel.isDownloaded) {
                     // Fallback to the previously loaded model and assign it to this chat
                     Log.d("ChatViewModel", "Using previous model for chat: ${previousModel.name}")
                     currentModel = previousModel
                     repository.updateChatModel(chatId, previousModel.name)
                     _currentChat.value = repository.getChatById(chatId)
-                    // Ensure the model is loaded in the inference service
-                    viewModelScope.launch {
-                        try {
-                            inferenceService.loadModel(previousModel)
-                            // Sync the currently loaded model state
-                            syncCurrentlyLoadedModel()
-                        } catch (e: Exception) {
-                            Log.w("ChatViewModel", "Failed to load previous model for chat: ${e.message}")
-                        }
-                    }
+                    // Don't auto-load previous model either - keep current state
+                    Log.d("ChatViewModel", "Previous model reference set but not loaded")
                 } else {
                     // No valid model available
                     Log.d("ChatViewModel", "No valid model available for chat")
@@ -1015,6 +1001,50 @@ class ChatViewModel(
         }
     }
 
+    fun unloadModel() {
+        viewModelScope.launch {
+            try {
+                _isLoadingModel.value = true
+                Log.d("ChatViewModel", "Unloading current model")
+                
+                // Cancel any ongoing generation
+                generationJob?.let { job ->
+                    job.cancel()
+                    try {
+                        job.join()
+                    } catch (ignored: CancellationException) {
+                        // Expected when job is already cancelled
+                    }
+                    generationJob = null
+                }
+                
+                // Unload the model from inference service
+                inferenceService.unloadModel()
+                
+                // Clear current model reference
+                currentModel = null
+                
+                // Update the currently loaded model state
+                syncCurrentlyLoadedModel()
+                
+                // Update current chat to show no model selected
+                _currentChat.value?.let { chat ->
+                    currentChatId?.let { chatId ->
+                        repository.updateChatModel(chatId, "No model selected")
+                        _currentChat.value = repository.getChatById(chatId)
+                    }
+                }
+                
+                Log.d("ChatViewModel", "Model unloaded successfully")
+                
+            } catch (e: Exception) {
+                Log.w("ChatViewModel", "Failed to unload model: ${e.message}")
+            } finally {
+                _isLoadingModel.value = false
+            }
+        }
+    }
+
     override fun onCleared() {
         viewModelScope.launch {
             // Clean up resources
@@ -1340,19 +1370,8 @@ class ChatViewModel(
             // Sync the currently loaded model state - this should be quick
             syncCurrentlyLoadedModel()
             
-            // Ensure the model is loaded in inference service in background
-            // Don't wait for this to complete - it can happen asynchronously
-            viewModelScope.launch {
-                try {
-                    inferenceService.loadModel(modelToUse)
-                    Log.d("ChatViewModel", "Successfully loaded model ${modelToUse.name} for new chat")
-                    // Update the state after successful load
-                    syncCurrentlyLoadedModel()
-                } catch (e: Exception) {
-                    Log.w("ChatViewModel", "Failed to load model ${modelToUse.name} for new chat: ${e.message}")
-                    // Model loading failed, but don't block the UI
-                }
-            }
+            // Don't auto-load the model for new chats - let user decide when to load it
+            Log.d("ChatViewModel", "Set model ${modelToUse.name} for new chat but didn't auto-load it")
         }
         
         // Start collecting messages for the new chat
