@@ -155,8 +155,22 @@ fun annotateLinksAndPhones(source: AnnotatedString, linkColor: Color): Annotated
  * Supports: **bold**, *italic*, `code`, ### headers, - lists, and preserves line breaks
  */
 fun parseMarkdownToAnnotatedString(markdown: String, baseColor: Color): AnnotatedString {
+    // Normalize common escaped newline/tab sequences if the text came in JSON-escaped form
+    var normalized = markdown
+    if ('\r' in normalized) {
+        normalized = normalized.replace("\r\n", "\n").replace('\r', '\n')
+    }
+    if ("\\n" in normalized) {
+        val hasActualNewlines = normalized.count { it == '\n' } > 0
+        if (!hasActualNewlines || normalized.contains("\\n\\n")) {
+            normalized = normalized.replace("\\n", "\n")
+        }
+    }
+    if ("\\t" in normalized) {
+        normalized = normalized.replace("\\t", "    ")
+    }
     return buildAnnotatedString {
-        val lines = markdown.split('\n')
+        val lines = normalized.split('\n')
         
         for (lineIndex in lines.indices) {
             val line = lines[lineIndex]

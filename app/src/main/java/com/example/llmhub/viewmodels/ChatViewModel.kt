@@ -85,6 +85,9 @@ class ChatViewModel(
     // Avoid aggressive continuation for the very first generation after model load
     private var firstGenerationSinceLoad: Boolean = false
 
+    // timestamp of last underlying session reset to guide history pruning
+    private var lastSessionResetAt: Long = 0L
+
     fun hasDownloadedModels(): Boolean {
         return _availableModels.value.isNotEmpty()
     }
@@ -375,7 +378,7 @@ class ChatViewModel(
 
         if (messageText.isEmpty() && attachmentUri == null) return
 
-        viewModelScope.launch {
+    viewModelScope.launch {
             // Check if the current chat still exists
             val currentChat = repository.getChatById(chatId)
             if (currentChat == null) {
@@ -421,6 +424,16 @@ class ChatViewModel(
                     // Fall back to original URI
                     processedAttachmentUri = attachmentUri
                 }
+            }
+
+            // Quick safety screening before enqueueing user message (basic client-side filter)
+            if (isDisallowedPrompt(messageText)) {
+                repository.addMessage(
+                    chatId = chatId,
+                    content = "I can’t assist with that request. Please rephrase with a different, safe topic.",
+                    isFromUser = false
+                )
+                return@launch
             }
 
             repository.addMessage(
@@ -515,8 +528,37 @@ class ChatViewModel(
                                     
                                     // Build the prompt for this segment with context window management
                                     val currentPrompt = if (continuationCount == 0) {
-                                        // First generation: use context-aware history
-                                        history
+                                        // First generation of this reply
+                                        val lastUserContent = currentUserMessage.content.trim()
+                                        val tinyArithmetic = lastUserContent.matches(Regex("^[0-9+*/().=\\s-]{1,12}$")) && lastUserContent.any { it.isDigit() }
+                                        val veryShort = lastUserContent.length <= 8
+                                        val historyIsLarge = history.length > 3500 // heuristic char threshold
+                                        // Detect explicit user intent to shift topics
+                                        val explicitShift = lastUserContent.lowercase().startsWith("new topic") ||
+                                                lastUserContent.lowercase().startsWith("fresh start") ||
+                                                lastUserContent.lowercase().startsWith("unrelated:")
+                                        // Heuristic semantic/topic shift detection (low lexical overlap with recent user turns)
+                                        val topicShift = historyIsLarge && isTopicShift(lastUserContent, _messages.value)
+                                        val forceMinimal = (tinyArithmetic || veryShort || explicitShift || topicShift) && historyIsLarge
+                                        if (topicShift) {
+                                            Log.d("ChatViewModel", "Topic shift detected for prompt '${lastUserContent.take(60)}' (history=${history.length} chars) -> minimal context path")
+                                        }
+                                        if (forceMinimal) {
+                                            // Proactively reset session to ensure totally clean small-context answer
+                                            try {
+                                                Log.d("ChatViewModel", "Force minimal prompt path for tiny query '${lastUserContent}' (history ${history.length} chars) - resetting session & dropping history")
+                                                inferenceService.resetChatSession(chatId)
+                                                lastSessionResetAt = System.currentTimeMillis()
+                                            } catch (e: Exception) {
+                                                Log.w("ChatViewModel", "Failed to reset session for minimal prompt: ${e.message}")
+                                            }
+                                            "user: ${lastUserContent}\nassistant:"
+                                        } else {
+                                            // Normal path: include trimmed history and explicit assistant cue
+                                            if (!history.endsWith("assistant:")) {
+                                                history + "\nassistant:"
+                                            } else history
+                                        }
                                     } else {
                                         // Continuation: build a new context-aware history including the current response
                                         val allMessages = _messages.value.toMutableList()
@@ -529,7 +571,7 @@ class ChatViewModel(
                                             timestamp = System.currentTimeMillis()
                                         ))
                                         val continuationHistory = buildContextAwareHistory(allMessages)
-                                        continuationHistory
+                                        if (!continuationHistory.endsWith("assistant:")) continuationHistory + "\nassistant:" else continuationHistory
                                     }
                                     
                                     // Extract images from recent messages for multimodal models
@@ -677,11 +719,13 @@ class ChatViewModel(
                                 val finalContent = totalContent
                                 Log.d("ChatViewModel", "Generation completed successfully with ${continuationCount} continuations")
                                 Log.d("ChatViewModel", "Final content length: ${finalContent.length}")
-                                // Ensure the final content is saved to database before computing stats
-                                repository.updateMessageContent(placeholderId, finalContent)
+                                val safeFinal = if (finalContent.isBlank()) {
+                                    "No response produced. (Possible: safety refusal or token limit reached and session reset). Try a shorter or different prompt."
+                                } else finalContent
+                                repository.updateMessageContent(placeholderId, safeFinal)
                                 val time = System.currentTimeMillis() - generationStartTime
                                 Log.d("ChatViewModel", "About to call finalizeMessage for success")
-                                finalizeMessage(placeholderId, finalContent, time)
+                                finalizeMessage(placeholderId, safeFinal, time)
 
                     } catch (e: Exception) {
                         val finalContent = totalContent
@@ -704,9 +748,12 @@ class ChatViewModel(
                         
                         // ALWAYS save final content and call finalizeMessage (for both cancel and error) even if the parent Job is cancelled
                         withContext(kotlinx.coroutines.NonCancellable) {
-                            repository.updateMessageContent(placeholderId, finalContent)
+                            val safeFinal = if (finalContent.isBlank()) {
+                                "No response produced. (Session likely full or content blocked). Try simplifying or changing the topic."
+                            } else finalContent
+                            repository.updateMessageContent(placeholderId, safeFinal)
                             Log.d("ChatViewModel", "About to call finalizeMessage (NonCancellable)")
-                            finalizeMessage(placeholderId, finalContent, time)
+                            finalizeMessage(placeholderId, safeFinal, time)
                         }
                     } finally {
                         _isLoading.value = false
@@ -751,6 +798,13 @@ class ChatViewModel(
         } else {
             Log.d("ChatViewModel", "No stats to save for message $placeholderId - content is blank")
         }
+    }
+
+    // Basic disallowed content filter (client-side heuristic; not exhaustive)
+    private fun isDisallowedPrompt(prompt: String): Boolean {
+        // User requested to always allow responses, so client-side disallow list is disabled.
+        // Retain method for potential future policy reinstatement; always return false now.
+        return false
     }
     
     /**
@@ -1107,11 +1161,23 @@ class ChatViewModel(
         val model = currentModel ?: return ""
         val currentChatId = currentChatId ?: return ""
         
+    // If we very recently reset the underlying model session, avoid immediately stuffing
+    // the entire prior history back in. That would just refill the fresh session and can
+    // cause the next tiny user prompt (e.g. "1+1") to appear unanswerable if the model
+    // internally rejects overlong initial contexts. We keep only a small tail plus a
+    // synthetic summary note in that case.
+    val recentResetWindowMs = 5_000L
+    val now = System.currentTimeMillis()
+    val recentlyReset = (now - lastSessionResetAt) < recentResetWindowMs
+        
         // Filter messages to only include current chat messages
         val chatMessages = messages.filter { it.chatId == currentChatId }
         
-        // Use the model's actual context window size with some safety margin
-        val maxContextTokens = (model.contextWindowSize * 0.75).toInt() // Use 75% of max to leave room for response
+    // Use at most a safety fraction of model window for HISTORY ONLY. Leave generous room
+    // for: the upcoming user prompt + model system overhead + generated answer.
+    // If we just reset, be stricter to guarantee fast recovery.
+    val historyFraction = if (recentlyReset) 0.30 else 0.60
+    val maxContextTokens = (model.contextWindowSize * historyFraction).toInt().coerceAtLeast(256)
         val maxContextChars = maxContextTokens * 4 // Rough character limit (1 token ≈ 4 characters)
         
         Log.d("ChatViewModel", "Context window: Model ${model.name} has ${model.contextWindowSize} tokens, using ${maxContextTokens} tokens (${maxContextChars} chars) for chat $currentChatId with ${chatMessages.size} messages")
@@ -1161,9 +1227,20 @@ class ChatViewModel(
         // Calculate total length
         val fullHistory = pairStrings.joinToString(separator = "\n\n")
         
-        // If full history fits, return it
+        // QUICK EXIT: If recent reset, aggressively trim to just last few exchanges regardless of size
+        val aggressiveTailPairs = if (recentlyReset) 2 else 0
+        if (recentlyReset) {
+            val trimmed = pairStrings.takeLast(aggressiveTailPairs).joinToString(separator = "\n\n")
+            val withNote = if (pairStrings.size > aggressiveTailPairs) {
+                "[Earlier conversation summarized internally after session reset to free context]\n\n$trimmed"
+            } else trimmed
+            Log.d("ChatViewModel", "Recent reset detected; returning aggressively trimmed history (${withNote.length} chars, ${aggressiveTailPairs} tail pairs)")
+            return withNote.take(maxContextChars)
+        }
+        
+        // If full history fits under relaxed (non-reset) fraction, return it.
         if (fullHistory.length <= maxContextChars) {
-            Log.d("ChatViewModel", "Full conversation history fits in context window (${fullHistory.length} chars)")
+            Log.d("ChatViewModel", "Full conversation history fits in allotted history window (${fullHistory.length} chars)")
             return fullHistory
         }
         
@@ -1171,12 +1248,16 @@ class ChatViewModel(
         val recentPairs = mutableListOf<String>()
         var currentLength = 0
         
-        // Always keep the last few conversation pairs (minimum viable context)
-        val minimumPairs = 3
+    // Always keep the last few conversation pairs (minimum viable context)
+    val minimumPairs = 3
+        
+    // Hard upper bound safeguard: never include more than maxPairsHistory pairs to avoid pathological large messages.
+    val maxPairsHistory = 18
+    val cappedPairStrings = if (pairStrings.size > maxPairsHistory) pairStrings.takeLast(maxPairsHistory) else pairStrings
         
         // Add pairs from most recent backwards until we hit the limit
-        for (i in pairStrings.indices.reversed()) {
-            val pairString = pairStrings[i]
+        for (i in cappedPairStrings.indices.reversed()) {
+            val pairString = cappedPairStrings[i]
             val pairLength = pairString.length + 2 // +2 for double newline separator
             
             if (currentLength + pairLength <= maxContextChars) {
@@ -1193,7 +1274,7 @@ class ChatViewModel(
         }
         
         // If we had to truncate, add context summary
-        val truncatedCount = pairStrings.size - recentPairs.size
+        val truncatedCount = cappedPairStrings.size - recentPairs.size
         val result = if (truncatedCount > 0) {
             val contextSummary = "[Previous conversation context: ${truncatedCount} earlier exchanges were truncated to fit context window]"
             listOf(contextSummary, recentPairs.joinToString("\n\n")).joinToString("\n\n")
@@ -1208,6 +1289,56 @@ class ChatViewModel(
         Log.d("ChatViewModel", "Context preview for chat $currentChatId: $preview")
         
         return result
+    }
+
+    /**
+     * Lightweight topic-shift heuristic. We avoid any heavy NLP to keep on-device cost near-zero.
+     * Strategy:
+     *  - Look at the last few user messages (excluding the current one) and build a bag-of-words.
+     *  - If lexical overlap (unique stem-ish tokens) between current prompt and that bag is very low (<15%) AND
+     *    the current prompt introduces new high-signal nouns/adjectives, treat as topic shift.
+     *  - Ignore extremely short prompts (handled elsewhere) and prompts that are obviously follow-ups (start with pronouns like "it", "that", etc.).
+     */
+    private fun isTopicShift(currentPrompt: String, messages: List<MessageEntity>): Boolean {
+        val cleaned = currentPrompt.lowercase().trim()
+        if (cleaned.length < 5) return false // tiny handled separately
+        // If starts with anaphoric reference, likely continuation
+        if (cleaned.startsWith("it ") || cleaned.startsWith("that ") || cleaned.startsWith("they ") || cleaned.startsWith("those ")) return false
+
+        // Collect last 5 prior user messages (excluding current construction temp message)
+        val priorUserTexts = messages.asReversed()
+            .filter { it.isFromUser }
+            .map { it.content }
+            .filter { it.isNotBlank() }
+            .drop(1) // drop the just-added current user message if present
+            .take(5)
+
+        if (priorUserTexts.isEmpty()) return false
+
+        val tokenize: (String) -> Set<String> = { text ->
+            text.lowercase()
+                .replace(Regex("[^a-z0-9\\s]"), " ")
+                .split(Regex("\\s+"))
+                .map { it.trim() }
+                .filter { it.length >= 3 }
+                .map { it.trimEnd('s') } // crude plural singularization
+                .filter { it.isNotBlank() }
+                .toSet()
+        }
+
+        val priorTokens = tokenize(priorUserTexts.joinToString(" "))
+        if (priorTokens.isEmpty()) return false
+        val currentTokens = tokenize(cleaned)
+        if (currentTokens.isEmpty()) return false
+
+        val overlap = currentTokens.intersect(priorTokens).size
+        val overlapRatio = overlap.toDouble() / currentTokens.size.toDouble().coerceAtLeast(1.0)
+
+        // New high-signal tokens = tokens not in prior AND length>=5
+        val newSignal = currentTokens.count { it !in priorTokens && it.length >= 5 }
+
+        // Trigger if overlap very low AND there is at least one new high-signal token
+        return overlapRatio < 0.15 && newSignal > 0
     }
 
     /**
@@ -1405,6 +1536,7 @@ class ChatViewModel(
                 
                 // Use the reset method which handles MediaPipe session errors
                 inferenceService.resetChatSession(chatId)
+                lastSessionResetAt = System.currentTimeMillis()
                 
                 // Give MediaPipe significantly more time to clean up properly
                 delay(600)

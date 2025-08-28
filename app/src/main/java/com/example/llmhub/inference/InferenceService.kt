@@ -62,6 +62,8 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
     private var modelInstance: LlmModelInstance? = null
     private var currentModel: LLMModel? = null
     private var currentBackend: LlmInference.Backend? = null
+    // Estimated tokens accumulated in current session (prompt + responses); heuristic
+    private var estimatedSessionTokens: Int = 0
     
     // Mutex to prevent race conditions during session operations
     private val sessionMutex = Mutex()
@@ -248,6 +250,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 val newSession = createSession(instance.engine)
                 instance.session = newSession
                 Log.d(TAG, "Created new session for chat $chatId")
+                estimatedSessionTokens = 0
                 
                 // Give MediaPipe time to clean up (Gallery uses 500ms)
                 delay(500)
@@ -379,6 +382,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             // Store model instance and backend
             modelInstance = LlmModelInstance(engine = llmInference, session = session)
             currentBackend = backend
+            estimatedSessionTokens = 0
             
             Log.d(TAG, "Successfully loaded model: ${model.name} with backend: $backend")
             
@@ -432,6 +436,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         try {
             val session = LlmInferenceSession.createFromOptions(engine, sessionOptions)
             Log.d(TAG, "Successfully created session for model ${model?.name}")
+            estimatedSessionTokens = 0
             return session
         } catch (e: Exception) {
             Log.e(TAG, "Failed to create session for model ${model?.name}: ${e.message}", e)
@@ -558,8 +563,11 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             
             // Check token count and reset session if approaching limit (Gallery approach)
             val maxTokens = getMaxTokensForModel(model)
-            val currentTokens = session.sizeInTokens(prompt)
-            val promptTokens = session.sizeInTokens(prompt) - session.sizeInTokens("")
+            // Proactive token accounting using internal estimate
+            val promptTokens = session.sizeInTokens(prompt)
+            val outputReserve = (maxTokens * 0.15).toInt().coerceAtLeast(128) // reserve space for response
+            var currentTokens = estimatedSessionTokens
+            // If our estimate undercounts (e.g., after recovery) fall back to session.sizeInTokens(prompt) heuristic not available; keep estimate
             
             Log.d(TAG, "Token usage for chat $chatId:")
             Log.d(TAG, "  - Current session tokens: $currentTokens")
@@ -567,7 +575,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             Log.d(TAG, "  - Max tokens: $maxTokens")
             
             // If adding the prompt would exceed ~80% of max tokens, reset the session
-            val tokenThreshold = (maxTokens * 0.8).toInt()
+            val tokenThreshold = maxTokens - outputReserve
             if (currentTokens + promptTokens > tokenThreshold) {
                 Log.w(TAG, "Token count ($currentTokens + $promptTokens = ${currentTokens + promptTokens}) approaching limit ($maxTokens)")
                 Log.w(TAG, "Resetting session for chat $chatId to prevent OUT_OF_RANGE error")
@@ -582,6 +590,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                         val newSession = createSession(instance.engine)
                         instance.session = newSession
                         Log.d(TAG, "Created fresh session for chat $chatId")
+                        estimatedSessionTokens = 0
                         
                         // Give MediaPipe time to clean up
                         delay(500)
@@ -595,16 +604,20 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             
             // Now use the session (either existing or freshly reset)
             val currentSession = instance.session
+            // Update estimation after any reset
+            currentTokens = estimatedSessionTokens
             
             // CRITICAL: For vision models, text query MUST be added before images
             // This is required by MediaPipe's vision implementation
             if (prompt.trim().isNotEmpty()) {
                 Log.d(TAG, "Adding text query to session for chat $chatId: '${prompt.take(100)}...'")
                 currentSession.addQueryChunk(prompt)
+                estimatedSessionTokens += promptTokens
             } else if (images.isNotEmpty() && model.supportsVision) {
                 // If we have images but no text, add a default query for vision models
                 Log.d(TAG, "Adding default vision query for images in chat $chatId")
                 currentSession.addQueryChunk("What do you see in this image?")
+                estimatedSessionTokens += session.sizeInTokens("What do you see in this image?")
             }
             
             // Add images AFTER text query (MediaPipe requirement for vision models)
