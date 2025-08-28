@@ -114,9 +114,10 @@ dependencies {
     implementation("io.ktor:ktor-client-content-negotiation:2.3.6")
     implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.6")
 
-    // MediaPipe LLM Inference for on-device AI with GPU acceleration
-    implementation("com.google.mediapipe:tasks-genai:0.10.24")
-    implementation("com.google.mediapipe:tasks-vision:0.10.14")
+    // MediaPipe Tasks (updated to latest as of Aug 28 2025)
+    // tasks-genai latest: 0.10.27; tasks-vision latest: 0.10.26.1
+    implementation("com.google.mediapipe:tasks-genai:0.10.27")
+    implementation("com.google.mediapipe:tasks-vision:0.10.26.1")
     
     // Compose Markdown - temporarily removed due to version conflicts
     implementation("com.github.jeziellago:compose-markdown:0.3.0")
