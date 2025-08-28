@@ -71,7 +71,8 @@ fun SelectableMarkdownText(
     markdown: String,
     color: Color,
     fontSize: androidx.compose.ui.unit.TextUnit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    textAlign: TextAlign = TextAlign.Start
 ) {
     val context = LocalContext.current
     // First parse the markdown (bold/italic/lists etc.)
@@ -89,7 +90,11 @@ fun SelectableMarkdownText(
         ClickableText(
             text = finalAnnotated,
             modifier = modifier,
-            style = LocalTextStyle.current.copy(fontSize = fontSize, lineHeight = fontSize * 1.4),
+            style = LocalTextStyle.current.copy(
+                fontSize = fontSize, 
+                lineHeight = fontSize * 1.4,
+                textAlign = textAlign
+            ),
             onClick = { offset ->
                 // Handle URL clicks
                 finalAnnotated.getStringAnnotations("URL", offset, offset)
@@ -303,16 +308,15 @@ fun MessageBubble(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
     ) {
         if (isUser) {
-            // User messages - keep bubble design but remove avatar
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-        ) {
+            // User messages - bubble design
             Surface(
-                modifier = Modifier.widthIn(max = 350.dp),
+                modifier = Modifier
+                    .widthIn(min = 60.dp, max = 280.dp)
+                    .wrapContentWidth(),
                 shape = RoundedCornerShape(
                         topStart = 20.dp,
                         topEnd = 4.dp,
@@ -355,9 +359,9 @@ fun MessageBubble(
                                 markdown = message.content,
                                 color = MaterialTheme.colorScheme.onPrimary,
                             fontSize = MaterialTheme.typography.bodyLarge.fontSize,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.wrapContentWidth(),
+                            textAlign = TextAlign.End
                         )
-                    }
                     }
                 }
             }

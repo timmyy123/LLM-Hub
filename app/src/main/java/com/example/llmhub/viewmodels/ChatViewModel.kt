@@ -57,6 +57,9 @@ class ChatViewModel(
 
     private val _currentlyLoadedModel = MutableStateFlow<LLMModel?>(null)
     val currentlyLoadedModel: StateFlow<LLMModel?> = _currentlyLoadedModel.asStateFlow()
+    // Model the user has selected (may be in the process of loading). Use this for immediate UI feedback.
+    private val _selectedModel = MutableStateFlow<LLMModel?>(null)
+    val selectedModel: StateFlow<LLMModel?> = _selectedModel.asStateFlow()
 
     var currentModel: LLMModel? = null
         private set
@@ -970,6 +973,8 @@ class ChatViewModel(
 
     fun switchModel(newModel: LLMModel) {
         viewModelScope.launch {
+            // Immediately reflect the user's choice in UI
+            _selectedModel.value = newModel
             // Ensure ongoing generation is fully cancelled before switching models to avoid
             // MediaPipe graph errors (e.g., DetokenizerCalculator id >= 0) that can happen
             // when a new session starts while the previous one is still cleaning up.
@@ -1077,6 +1082,7 @@ class ChatViewModel(
                 
                 // Clear current model reference
                 currentModel = null
+                _selectedModel.value = null
                 
                 // Update the currently loaded model state
                 syncCurrentlyLoadedModel()
