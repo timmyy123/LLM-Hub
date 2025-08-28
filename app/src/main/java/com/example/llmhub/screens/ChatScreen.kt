@@ -173,7 +173,7 @@ fun ChatScreen(
                                 enabled = availableModels.isNotEmpty()
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.SmartToy,
+                                    imageVector = Icons.Default.Tune,
                                     contentDescription = "Select model",
                                     tint = MaterialTheme.colorScheme.primary
                                 )
