@@ -23,12 +23,16 @@ import java.io.File
 import kotlinx.coroutines.Job
 import com.llmhub.llmhub.data.localFileName
 import com.llmhub.llmhub.data.isModelFileValid
+import com.llmhub.llmhub.data.ThemePreferences
 
 class ChatViewModel(
     private val inferenceService: InferenceService,
     private val repository: ChatRepository,
+    private val context: Context,
     private val savedStateHandle: SavedStateHandle = SavedStateHandle()
 ) : ViewModel() {
+
+    private val themePreferences = ThemePreferences(context)
 
     companion object {
         private const val KEY_CURRENT_CHAT_ID = "current_chat_id"
@@ -629,7 +633,16 @@ class ChatViewModel(
                         emptyList()
                     }
                     
-                    val responseStream = inferenceService.generateResponseStreamWithSession(currentPrompt, currentModel!!, chatId, images)
+                    // Get web search preference
+                    val webSearchEnabled = runBlocking { themePreferences.webSearchEnabled.first() }
+                    
+                    val responseStream = inferenceService.generateResponseStreamWithSession(
+                        currentPrompt, 
+                        currentModel!!, 
+                        chatId, 
+                        images, 
+                        webSearchEnabled
+                    )
                                     var lastUpdateTime = 0L
                                     val updateIntervalMs = 50L // Update UI every 50ms instead of every token
                                     var segmentEnded = false
@@ -1824,11 +1837,15 @@ class ChatViewModel(
                         inferenceService.loadModel(currentModel!!)
                         _isLoadingModel.value = false
                         
+                        // Get web search preference
+                        val webSearchEnabled = runBlocking { themePreferences.webSearchEnabled.first() }
+                        
                         val responseStream = inferenceService.generateResponseStreamWithSession(
                             fullHistory, 
                             currentModel!!, 
                             chatId, 
-                            images
+                            images,
+                            webSearchEnabled
                         )
                         
                         var lastUpdateTime = 0L
