@@ -28,6 +28,7 @@ fun SettingsScreen(
     val uriHandler = LocalUriHandler.current
     var showThemeDialog by remember { mutableStateOf(false) }
     val currentThemeMode by themeViewModel.themeMode.collectAsState()
+    val webSearchEnabled by themeViewModel.webSearchEnabled.collectAsState()
     
     Scaffold(
         topBar = {
@@ -63,6 +64,48 @@ fun SettingsScreen(
                         subtitle = "Browse and download LLM models",
                         onClick = onNavigateToModels
                     )
+                }
+            }
+            
+            item {
+                SettingsSection(title = "Features") {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        
+                        Spacer(modifier = Modifier.width(16.dp))
+                        
+                        Column(
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = "Web Search",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = if (webSearchEnabled) "Get current information from the web" else "Use offline knowledge only",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        
+                        Switch(
+                            checked = webSearchEnabled,
+                            onCheckedChange = { enabled ->
+                                themeViewModel.setWebSearchEnabled(enabled)
+                            }
+                        )
+                    }
                 }
             }
             

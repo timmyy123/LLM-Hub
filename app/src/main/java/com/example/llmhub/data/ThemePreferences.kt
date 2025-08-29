@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -20,6 +21,7 @@ enum class ThemeMode {
 class ThemePreferences(private val context: Context) {
     companion object {
         private val THEME_KEY = stringPreferencesKey("theme_mode")
+        private val WEB_SEARCH_KEY = booleanPreferencesKey("web_search_enabled")
     }
 
     val themeMode: Flow<ThemeMode> = context.dataStore.data
@@ -32,9 +34,20 @@ class ThemePreferences(private val context: Context) {
             }
         }
 
+    val webSearchEnabled: Flow<Boolean> = context.dataStore.data
+        .map { preferences ->
+            preferences[WEB_SEARCH_KEY] ?: true // Default to enabled
+        }
+
     suspend fun setThemeMode(themeMode: ThemeMode) {
         context.dataStore.edit { preferences ->
             preferences[THEME_KEY] = themeMode.name
+        }
+    }
+    
+    suspend fun setWebSearchEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[WEB_SEARCH_KEY] = enabled
         }
     }
 }
