@@ -8,6 +8,7 @@ import android.content.ContentValues
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
+import com.llmhub.llmhub.R
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
@@ -31,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -846,7 +848,7 @@ fun MessageInput(
                                 .data(attachmentUri)
                                 .crossfade(true)
                                 .build(),
-                            contentDescription = "Selected image",
+                            contentDescription = stringResource(R.string.attached_image),
                             modifier = Modifier
                                 .size(48.dp)
                                 .clip(MaterialTheme.shapes.small)
@@ -888,8 +890,7 @@ fun MessageInput(
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { 
                     Text(
-                        if (supportsAttachments) "Ask me anything or add an image..." 
-                        else "Ask me anything...",
+                        stringResource(R.string.type_a_message),
                         style = MaterialTheme.typography.bodyLarge
                     )
                 },
@@ -925,7 +926,7 @@ fun MessageInput(
                             ) {
                                 Icon(
                                     Icons.Default.Stop,
-                                    contentDescription = "Cancel generation",
+                                contentDescription = stringResource(R.string.cancel_generation),
                                     modifier = Modifier.padding(6.dp),
                                     tint = MaterialTheme.colorScheme.onError
                                 )
@@ -952,7 +953,7 @@ fun MessageInput(
                             ) {
                                 Icon(
                                     Icons.Default.Send,
-                                    contentDescription = "Send",
+                                    contentDescription = stringResource(R.string.send),
                                     modifier = Modifier.padding(6.dp),
                                     tint = if (enabled && (text.isNotBlank() || attachmentUri != null)) 
                                         MaterialTheme.colorScheme.onPrimary 

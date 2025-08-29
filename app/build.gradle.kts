@@ -29,6 +29,9 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         val hfToken: String = localProperties.getProperty("HF_TOKEN", "")
         buildConfigField("String", "HF_TOKEN", "\"$hfToken\"")
+        
+        // Specify supported locales to ensure proper resource loading
+        resourceConfigurations += listOf("en", "es", "pt", "de", "fr", "ru")
     }
 
     buildTypes {

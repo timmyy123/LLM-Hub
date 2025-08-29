@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">LLM Hub</string>
+    
+    <!-- Common -->
+    <string name="ok">OK</string>
+    <string name="cancel">Abbrechen</string>
+    <string name="close">Schließen</string>
+    <string name="save">Speichern</string>
+    <string name="delete">Löschen</string>
+    <string name="send">Senden</string>
+    <string name="copy">Kopieren</string>
+    <string name="loading">Lädt</string>
+    <string name="error">Fehler</string>
+    <string name="retry">Wiederholen</string>
+    <string name="download">Herunterladen</string>
+    <string name="vision">Vision</string>
+    
+    <!-- Chat -->
+    <string name="welcome_to_llm_hub">Willkommen bei LLM Hub!</string>
+    <string name="no_models_downloaded">Noch keine Modelle heruntergeladen</string>
+    <string name="download_a_model">Ein Modell herunterladen</string>
+    <string name="ready_to_chat">Bereit zum Chatten! Bitte wählen Sie oben ein Modell aus.</string>
+    <string name="start_chatting">Beginnen Sie zu chatten, indem Sie unten eine Nachricht eingeben!</string>
+    <string name="type_a_message">Nachricht eingeben...</string>
+    <string name="loading_model_format">Lade %1$s</string>
+    <string name="please_wait_model_initialize">Bitte warten Sie, während das Modell initialisiert wird...</string>
+    <string name="attached_image">Angehängtes Bild</string>
+    <string name="shared_a_file">Hat eine Datei geteilt</string>
+    <string name="copy_message">Nachricht kopieren</string>
+    <string name="regenerate_response">Antwort regenerieren</string>
+    <string name="cancel_generation">Generierung abbrechen</string>
+    <string name="image_attachment">Bildanhang</string>
+    <string name="save_image">Bild speichern</string>
+    <string name="tap_image_toggle_controls">Tippen Sie auf das Bild, um die Steuerelemente umzuschalten</string>
+    <string name="vision_enabled">Vision aktiviert</string>
+    <string name="message_copied">Nachricht kopiert</string>
+    <string name="tokens_per_second_format">%1$d Tokens • %2$.1f tok/sek</string>
+    <string name="context_multimodal_format">%1$dk Kontext • %2$s</string>
+    <string name="multimodal">Multimodal</string>
+    <string name="text_only">Nur Text</string>
+    <string name="currently_loaded">Aktuell geladen</string>
+    
+    <!-- About Screen -->
+    <string name="about_llm_hub">Über LLM Hub</string>
+    <string name="about_description">LLM Hub ist eine Open-Source-Android-Anwendung, die die Kraft von Large Language Models direkt auf Ihr mobiles Gerät bringt. Erleben Sie KI-Gespräche mit hochmodernen Modellen wie Gemma, Llama und Phi - alle laufen lokal auf Ihrem Telefon für maximale Privatsphäre und Offline-Zugänglichkeit.</string>
+    <string name="key_features">Hauptmerkmale</string>
+    <string name="feature_multiple_models">🤖 Mehrere LLM-Modelle: Gemma-3, Llama-3.2, Phi-4 und Gemma-3n</string>
+    <string name="feature_on_device">📱 Lokale Verarbeitung: Vollständige Privatsphäre, kein Internet erforderlich</string>
+    <string name="feature_vision_support">🖼️ Vision-Unterstützung: Multimodale Modelle, die Bilder verstehen</string>
+    <string name="feature_gpu_acceleration">⚡ GPU-Beschleunigung: Optimierte Leistung auf unterstützten Geräten</string>
+    <string name="feature_offline_usage">💾 Offline-Nutzung: Chatten ohne Internetverbindung</string>
+    <string name="feature_privacy_first">🔒 Privatsphäre zuerst: Ihre Gespräche verlassen niemals Ihr Gerät</string>
+    <string name="feature_modern_ui">🎨 Moderne UI: Saubere, intuitive Material Design-Oberfläche</string>
+    <string name="technology_stack">Technologie-Stack</string>
+    <string name="tech_kotlin_compose">🏗️ Erstellt mit Kotlin und Jetpack Compose</string>
+    <string name="tech_mediapipe">🧠 Angetrieben von MediaPipe und LiteRT</string>
+    <string name="tech_quantization">🚀 Optimiert mit INT4/INT8-Quantisierung</string>
+    <string name="tech_gpu_acceleration">⚡ GPU-Beschleunigung über LiteRT XNNPACK</string>
+    <string name="tech_models_source">🔗 Modelle von HuggingFace und Google</string>
+    <string name="contact_support">Kontakt und Support</string>
+    <string name="contact_email">Kontakt-E-Mail:</string>
+    <string name="source_code">Quellcode:</string>
+    <string name="github_repository">GitHub-Repository</string>
+    <string name="acknowledgments">Danksagungen</string>
+    <string name="acknowledgments_text">Besonderen Dank an die Open-Source-Community, Googles MediaPipe-Team, HuggingFace für das Model-Hosting und alle Mitwirkenden, die Projekte wie dieses möglich machen. Diese Anwendung steht auf den Schultern von Giganten in den ML- und Android-Entwicklungsgemeinschaften.</string>
+    
+    <!-- Terms of Service -->
+    <string name="terms_of_service">Nutzungsbedingungen</string>
+    <string name="tos_welcome">Willkommen bei LLM Hub. Durch die Nutzung unserer Anwendung stimmen Sie zu, an diese Nutzungsbedingungen gebunden zu sein. Bitte lesen Sie sie sorgfältig durch.</string>
+    <string name="tos_acceptance_title">1. Annahme der Bedingungen</string>
+    <string name="tos_acceptance_text">Durch das Herunterladen, Installieren oder Verwenden von LLM Hub bestätigen Sie, dass Sie diese Nutzungsbedingungen gelesen, verstanden haben und zustimmen, an sie gebunden zu sein. Wenn Sie diesen Bedingungen nicht zustimmen, verwenden Sie die Anwendung bitte nicht.</string>
+    <string name="tos_app_description_title">2. Anwendungsbeschreibung</string>
+    <string name="tos_app_description_text">LLM Hub ist eine Open-Source-Android-Anwendung, die Zugang zu Large Language Models (LLMs) für KI-Gespräche auf dem Gerät bietet. Die App verarbeitet alle Daten lokal auf Ihrem Gerät und überträgt keine persönlichen Informationen an externe Server.</string>
+    <string name="tos_user_responsibilities_title">3. Benutzerverantwortlichkeiten</string>
+    <string name="tos_user_responsibilities_text">Sie stimmen zu, LLM Hub verantwortungsbewusst und in Übereinstimmung mit den geltenden Gesetzen zu verwenden. Sie sind verantwortlich für:\n\n• Die Verwendung der Anwendung nur für rechtmäßige Zwecke\n• Keine Versuche, die Anwendung zu reverse-engineeren oder zu modifizieren\n• Keine Verwendung der Anwendung zur Generierung schädlicher, illegaler oder anstößiger Inhalte\n• Respektierung der Rechte des geistigen Eigentums Dritter\n• Sicherstellung, dass Ihr Gerät die Mindestanforderungen für den ordnungsgemäßen Betrieb erfüllt</string>
+    <string name="tos_privacy_data_title">4. Datenschutz und Daten</string>
+    <string name="tos_privacy_data_text">LLM Hub wurde mit Blick auf den Datenschutz entwickelt:\n\n• Alle Gespräche und Datenverarbeitung erfolgen lokal auf Ihrem Gerät\n• Keine persönlichen Daten werden an externe Server übertragen\n• Der Chat-Verlauf wird lokal gespeichert und kann jederzeit gelöscht werden\n• Model-Downloads werden direkt von offiziellen Repositories durchgeführt (HuggingFace, Google)\n• Die Anwendung sammelt keine Analyse- oder Nutzungsdaten</string>
+    <string name="tos_disclaimer_title">5. Gewährleistungsausschluss</string>
+    <string name="tos_disclaimer_text">LLM Hub wird \"wie besehen\" ohne Gewährleistungen jeglicher Art bereitgestellt. Wir garantieren nicht die Genauigkeit, Zuverlässigkeit oder Verfügbarkeit der Anwendung oder ihres generierten Inhalts. Die Verwendung von KI-Modellen kann unvorhersagbare Ergebnisse produzieren.</string>
+    <string name="tos_limitation_liability_title">6. Haftungsbeschränkung</string>
+    <string name="tos_limitation_liability_text">In keinem Fall sind die Entwickler für indirekte, zufällige, besondere oder Folgeschäden haftbar, die aus der Verwendung von LLM Hub entstehen. Ihre Nutzung der Anwendung erfolgt auf eigenes Risiko.</string>
+    <string name="tos_model_usage_title">7. Modellnutzung und Lizenzierung</string>
+    <string name="tos_model_usage_text">Die über LLM Hub verfügbaren KI-Modelle unterliegen ihren jeweiligen Lizenzen und Nutzungsbedingungen. Benutzer sind dafür verantwortlich, die modellspezifischen Lizenzierungsanforderungen bei der Verwendung heruntergeladener Modelle einzuhalten.</string>
+    <string name="tos_open_source_title">8. Open-Source-Lizenz</string>
+    <string name="tos_open_source_text">LLM Hub ist Open-Source-Software. Der Quellcode ist unter der MIT-Lizenz verfügbar, die Nutzung, Modifikation und Verteilung unter den Lizenzbedingungen erlaubt. Drittanbieter-Bibliotheken und Modelle können unterschiedliche Lizenzbedingungen haben.</string>
+    <string name="tos_changes_title">9. Änderungen der Bedingungen</string>
+    <string name="tos_changes_text">Wir können diese Nutzungsbedingungen von Zeit zu Zeit aktualisieren. Benutzer werden über wesentliche Änderungen durch App-Updates benachrichtigt. Die fortgesetzte Nutzung der Anwendung nach Änderungen stellt die Annahme der neuen Bedingungen dar.</string>
+    <string name="tos_contact_title">10. Kontaktinformationen</string>
+    <string name="tos_contact_text">Für Fragen zu diesen Nutzungsbedingungen kontaktieren Sie uns bitte unter timmyboy0623@gmail.com</string>
+    
+    <!-- Navigation -->
+    <string name="chat">Chat</string>
+    <string name="models">Modelle</string>
+    <string name="settings">Einstellungen</string>
+    <string name="about">Über</string>
+    
+    <!-- Errors and Messages -->
+    <string name="failed_to_load_image">Fehler beim Laden des Bildes</string>
+    <string name="model_loading_error">Fehler beim Laden des Modells</string>
+    <string name="message_send_error">Fehler beim Senden der Nachricht</string>
+    <string name="file_save_error">Fehler beim Speichern der Datei</string>
+    <string name="file_save_success">Datei erfolgreich gespeichert</string>
+    
+    <!-- Accessibility -->
+    <string name="content_description_ai_bot">KI-Bot</string>
+    <string name="content_description_smart_toy">Intelligentes Spielzeug</string>
+    <string name="content_description_email">E-Mail</string>
+    <string name="content_description_code">Quellcode</string>
+    <string name="content_description_image">Bild</string>
+    <string name="content_description_download">Herunterladen</string>
+    <string name="content_description_stop">Stoppen</string>
+    <string name="content_description_refresh">Aktualisieren</string>
+    <string name="content_description_copy">Kopieren</string>
+    <string name="content_description_speed">Geschwindigkeit</string>
+    <string name="content_description_check">Überprüfen</string>
+    <string name="content_description_eye">Vision aktiviert</string>
+    <string name="content_description_attach_image">Bild anhängen</string>
+    
+    <!-- Model Information -->
+    <string name="no_model_selected">Kein Modell ausgewählt</string>
+    <string name="no_model_downloaded">Kein Modell heruntergeladen</string>
+    <string name="model_supports_vision">Unterstützt Vision</string>
+    <string name="model_text_only">Nur Text</string>
+</resources>
