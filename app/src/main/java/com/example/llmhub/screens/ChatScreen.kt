@@ -20,10 +20,12 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.llmhub.llmhub.R
 import com.llmhub.llmhub.components.ChatDrawer
 import com.llmhub.llmhub.components.MessageBubble
 import com.llmhub.llmhub.components.MessageInput
@@ -123,7 +125,7 @@ fun ChatScreen(
                             verticalArrangement = Arrangement.Center
                         ) {
                             Text(
-                                text = currentChat?.title ?: "New Chat",
+                                text = currentChat?.title ?: stringResource(R.string.chat),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 maxLines = 2,
@@ -144,7 +146,7 @@ fun ChatScreen(
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Icon(
                                             Icons.Default.RemoveRedEye,
-                                            contentDescription = "Vision model",
+                                            contentDescription = stringResource(R.string.vision_enabled),
                                             modifier = Modifier.size(12.dp),
                                             tint = MaterialTheme.colorScheme.primary
                                         )
@@ -326,8 +328,8 @@ fun ChatScreen(
                 ) {
                     if (messages.isEmpty() && !isLoading) {
                         item {
-                            WelcomeMessage(
-                                currentModel = currentChat?.modelName ?: "No model selected",
+                                            WelcomeMessage(
+                                currentModel = currentChat?.modelName ?: stringResource(R.string.no_model_selected),
                                 onNavigateToModels = onNavigateToModels,
                                 hasDownloadedModels = viewModel.hasDownloadedModels()
                             )
@@ -417,7 +419,7 @@ private fun WelcomeMessage(
             Spacer(modifier = Modifier.height(16.dp))
             
             Text(
-                text = "Welcome to LLM Hub!",
+                text = stringResource(R.string.welcome_to_llm_hub),
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -426,7 +428,7 @@ private fun WelcomeMessage(
             
             if (!hasDownloadedModels) {
                 Text(
-                    text = "No models downloaded yet",
+                    text = stringResource(R.string.no_models_downloaded),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -442,13 +444,13 @@ private fun WelcomeMessage(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        "Download a Model",
+                        stringResource(R.string.download_a_model),
                         style = MaterialTheme.typography.labelLarge
                     )
                 }
-            } else if (currentModel == "No model selected" || currentModel == "No model downloaded") {
+            } else if (currentModel == stringResource(R.string.no_model_selected) || currentModel == stringResource(R.string.no_model_downloaded)) {
                 Text(
-                    text = "Ready to chat! Please select a model above.",
+                    text = stringResource(R.string.ready_to_chat),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -461,7 +463,7 @@ private fun WelcomeMessage(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Start chatting by typing a message below!",
+                    text = stringResource(R.string.start_chatting),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

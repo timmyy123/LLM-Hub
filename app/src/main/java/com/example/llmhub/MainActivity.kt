@@ -1,5 +1,6 @@
 package com.llmhub.llmhub
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -16,6 +17,7 @@ import com.llmhub.llmhub.navigation.LlmHubNavigation
 import com.llmhub.llmhub.ui.theme.LlmHubTheme
 import com.llmhub.llmhub.viewmodels.ChatViewModelFactory
 import com.llmhub.llmhub.viewmodels.ThemeViewModel
+import com.llmhub.llmhub.utils.LocaleHelper
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,5 +47,10 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+    
+    override fun attachBaseContext(newBase: Context) {
+        // Apply locale configuration before attaching base context
+        super.attachBaseContext(LocaleHelper.setLocale(newBase))
     }
 }

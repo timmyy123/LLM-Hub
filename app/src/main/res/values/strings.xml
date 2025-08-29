@@ -1,3 +1,124 @@
 <resources>
-    <string name="app_name">Llm Hub</string>
+    <string name="app_name">LLM Hub</string>
+    
+    <!-- Common -->
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="close">Close</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="send">Send</string>
+    <string name="copy">Copy</string>
+    <string name="loading">Loading</string>
+    <string name="error">Error</string>
+    <string name="retry">Retry</string>
+    <string name="download">Download</string>
+    <string name="vision">Vision</string>
+    
+    <!-- Chat -->
+    <string name="welcome_to_llm_hub">Welcome to LLM Hub!</string>
+    <string name="no_models_downloaded">No models downloaded yet</string>
+    <string name="download_a_model">Download a Model</string>
+    <string name="ready_to_chat">Ready to chat! Please select a model above.</string>
+    <string name="start_chatting">Start chatting by typing a message below!</string>
+    <string name="type_a_message">Type a message...</string>
+    <string name="loading_model_format">Loading %1$s</string>
+    <string name="please_wait_model_initialize">Please wait while the model initializes...</string>
+    <string name="attached_image">Attached image</string>
+    <string name="shared_a_file">Shared a file</string>
+    <string name="copy_message">Copy message</string>
+    <string name="regenerate_response">Regenerate response</string>
+    <string name="cancel_generation">Cancel generation</string>
+    <string name="image_attachment">Image Attachment</string>
+    <string name="save_image">Save image</string>
+    <string name="tap_image_toggle_controls">Tap image to toggle controls</string>
+    <string name="vision_enabled">Vision enabled</string>
+    <string name="message_copied">Message copied</string>
+    <string name="tokens_per_second_format">%1$d tokens • %2$.1f tok/sec</string>
+    <string name="context_multimodal_format">%1$dk context • %2$s</string>
+    <string name="multimodal">Multimodal</string>
+    <string name="text_only">Text only</string>
+    <string name="currently_loaded">Currently loaded</string>
+    
+    <!-- About Screen -->
+    <string name="about_llm_hub">About LLM Hub</string>
+    <string name="about_description">LLM Hub is an open-source Android application that brings the power of Large Language Models directly to your mobile device. Experience AI conversations with state-of-the-art models like Gemma, Llama, and Phi - all running locally on your phone for maximum privacy and offline accessibility.</string>
+    <string name="key_features">Key Features</string>
+    <string name="feature_multiple_models">🤖 Multiple LLM Models: Gemma-3, Llama-3.2, Phi-4, and Gemma-3n</string>
+    <string name="feature_on_device">📱 On-Device Processing: Complete privacy, no internet required</string>
+    <string name="feature_vision_support">🖼️ Vision Support: Multimodal models that understand images</string>
+    <string name="feature_gpu_acceleration">⚡ GPU Acceleration: Optimized performance on supported devices</string>
+    <string name="feature_offline_usage">💾 Offline Usage: Chat without internet connection</string>
+    <string name="feature_privacy_first">🔒 Privacy First: Your conversations never leave your device</string>
+    <string name="feature_modern_ui">🎨 Modern UI: Clean, intuitive Material Design interface</string>
+    <string name="technology_stack">Technology Stack</string>
+    <string name="tech_kotlin_compose">🏗️ Built with Kotlin &amp; Jetpack Compose</string>
+    <string name="tech_mediapipe">🧠 Powered by MediaPipe &amp; LiteRT</string>
+    <string name="tech_quantization">🚀 Optimized with INT4/INT8 quantization</string>
+    <string name="tech_gpu_acceleration">⚡ GPU acceleration via LiteRT XNNPACK</string>
+    <string name="tech_models_source">🔗 Models from HuggingFace &amp; Google</string>
+    <string name="contact_support">Contact &amp; Support</string>
+    <string name="contact_email">Contact Email:</string>
+    <string name="source_code">Source Code:</string>
+    <string name="github_repository">GitHub Repository</string>
+    <string name="acknowledgments">Acknowledgments</string>
+    <string name="acknowledgments_text">Special thanks to the open-source community, Google\'s MediaPipe team, HuggingFace for model hosting, and all contributors who make projects like this possible. This application stands on the shoulders of giants in the ML and Android development communities.</string>
+    
+    <!-- Terms of Service -->
+    <string name="terms_of_service">Terms of Service</string>
+    <string name="tos_welcome">Welcome to LLM Hub. By using our application, you agree to be bound by these Terms of Service. Please read them carefully.</string>
+    <string name="tos_acceptance_title">1. Acceptance of Terms</string>
+    <string name="tos_acceptance_text">By downloading, installing, or using LLM Hub, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the application.</string>
+    <string name="tos_app_description_title">2. Application Description</string>
+    <string name="tos_app_description_text">LLM Hub is an open-source Android application that provides access to Large Language Models (LLMs) for on-device AI conversations. The app processes all data locally on your device and does not transmit personal information to external servers.</string>
+    <string name="tos_user_responsibilities_title">3. User Responsibilities</string>
+    <string name="tos_user_responsibilities_text">You agree to use LLM Hub responsibly and in accordance with applicable laws. You are responsible for:\n\n• Using the application for lawful purposes only\n• Not attempting to reverse engineer or modify the application\n• Not using the application to generate harmful, illegal, or offensive content\n• Respecting the intellectual property rights of third parties\n• Ensuring your device meets the minimum requirements for proper operation</string>
+    <string name="tos_privacy_data_title">4. Privacy and Data</string>
+    <string name="tos_privacy_data_text">LLM Hub is designed with privacy in mind:\n\n• All conversations and data processing occur locally on your device\n• No personal data is transmitted to external servers\n• Chat history is stored locally and can be deleted at any time\n• Model downloads are performed directly from official repositories (HuggingFace, Google)\n• The application does not collect analytics or usage data</string>
+    <string name="tos_disclaimer_title">5. Disclaimer of Warranties</string>
+    <string name="tos_disclaimer_text">LLM Hub is provided \"as is\" without warranties of any kind. We do not guarantee the accuracy, reliability, or availability of the application or its generated content. Use of AI models may produce unpredictable results.</string>
+    <string name="tos_limitation_liability_title">6. Limitation of Liability</string>
+    <string name="tos_limitation_liability_text">In no event shall the developers be liable for any indirect, incidental, special, or consequential damages arising from the use of LLM Hub. Your use of the application is at your own risk.</string>
+    <string name="tos_model_usage_title">7. Model Usage and Licensing</string>
+    <string name="tos_model_usage_text">The AI models available through LLM Hub are subject to their respective licenses and terms of use. Users are responsible for complying with model-specific licensing requirements when using downloaded models.</string>
+    <string name="tos_open_source_title">8. Open Source License</string>
+    <string name="tos_open_source_text">LLM Hub is open-source software. The source code is available under the MIT License, which permits use, modification, and distribution subject to the license terms. Third-party libraries and models may have different license terms.</string>
+    <string name="tos_changes_title">9. Changes to Terms</string>
+    <string name="tos_changes_text">We may update these Terms of Service from time to time. Users will be notified of significant changes through app updates. Continued use of the application after changes constitutes acceptance of the new terms.</string>
+    <string name="tos_contact_title">10. Contact Information</string>
+    <string name="tos_contact_text">For questions about these Terms of Service, please contact us at timmyboy0623@gmail.com</string>
+    
+    <!-- Navigation -->
+    <string name="chat">Chat</string>
+    <string name="models">Models</string>
+    <string name="settings">Settings</string>
+    <string name="about">About</string>
+    
+    <!-- Errors and Messages -->
+    <string name="failed_to_load_image">Failed to load image</string>
+    <string name="model_loading_error">Error loading model</string>
+    <string name="message_send_error">Error sending message</string>
+    <string name="file_save_error">Error saving file</string>
+    <string name="file_save_success">File saved successfully</string>
+    
+    <!-- Accessibility -->
+    <string name="content_description_ai_bot">AI Bot</string>
+    <string name="content_description_smart_toy">Smart Toy</string>
+    <string name="content_description_email">Email</string>
+    <string name="content_description_code">Source Code</string>
+    <string name="content_description_image">Image</string>
+    <string name="content_description_download">Download</string>
+    <string name="content_description_stop">Stop</string>
+    <string name="content_description_refresh">Refresh</string>
+    <string name="content_description_copy">Copy</string>
+    <string name="content_description_speed">Speed</string>
+    <string name="content_description_check">Check</string>
+    <string name="content_description_eye">Vision enabled</string>
+    <string name="content_description_attach_image">Attach image</string>
+    
+    <!-- Model Information -->
+    <string name="no_model_selected">No model selected</string>
+    <string name="no_model_downloaded">No model downloaded</string>
+    <string name="model_supports_vision">Supports vision</string>
+    <string name="model_text_only">Text only</string>
 </resources>
