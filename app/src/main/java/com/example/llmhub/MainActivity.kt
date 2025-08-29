@@ -26,7 +26,7 @@ class MainActivity : ComponentActivity() {
         val app = application as LlmHubApplication
         val inferenceService = app.inferenceService
         val chatRepository = app.chatRepository
-        val chatViewModelFactory = ChatViewModelFactory(inferenceService, chatRepository)
+        val chatViewModelFactory = ChatViewModelFactory(inferenceService, chatRepository, this)
 
         enableEdgeToEdge()
         setContent {
