@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -63,6 +64,7 @@ fun ChatScreen(
     
     val listState = rememberLazyListState()
     val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     
     // Auto-scroll to bottom when a new message finishes
     LaunchedEffect(messages.size) {
@@ -320,7 +322,7 @@ fun ChatScreen(
                         .fillMaxWidth()
                         .weight(1f),
                     state = listState,
-                    contentPadding = PaddingValues(16.dp),
+                    contentPadding = PaddingValues(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     reverseLayout = true
                 ) {
@@ -370,6 +372,9 @@ fun ChatScreen(
                 Box(modifier = Modifier.imePadding()) {
                 MessageInput(
                     onSendMessage = { text, attachmentUri ->
+                        // Triple-layer keyboard dismissal for maximum reliability
+                        keyboardController?.hide()
+                        focusManager.clearFocus()
                         viewModel.sendMessage(context, text, attachmentUri)
                     },
                     enabled = !isLoading && !isLoadingModel && currentChat != null,
@@ -473,13 +478,13 @@ private fun WelcomeMessage(
 @Composable
 private fun TypingIndicator() {
     Surface(
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceVariant,
         tonalElevation = 2.dp
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             CircularProgressIndicator(
@@ -514,7 +519,7 @@ private fun ModelLoadingIndicator(modelName: String) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 8.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Surface(

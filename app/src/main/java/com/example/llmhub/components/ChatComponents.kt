@@ -31,6 +31,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -319,7 +321,7 @@ fun MessageBubble(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 8.dp, vertical = 8.dp),
         horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
     ) {
         if (isUser) {
@@ -816,6 +818,8 @@ fun MessageInput(
     onCancelGeneration: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     var text by remember { mutableStateOf("") }
     var attachmentUri by remember { mutableStateOf<Uri?>(null) }
     var showImagePreview by remember { mutableStateOf(false) }
@@ -835,7 +839,7 @@ fun MessageInput(
         shadowElevation = 8.dp
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(12.dp)
         ) {
             // Image attachment preview
             if (attachmentUri != null) {
@@ -947,6 +951,9 @@ fun MessageInput(
                         IconButton(
                             onClick = {
                                 if (text.isNotBlank() || attachmentUri != null) {
+                                    // Aggressively hide keyboard using multiple methods
+                                    keyboardController?.hide()
+                                    focusManager.clearFocus()
                                     onSendMessage(text, attachmentUri)
                                     text = ""
                                     attachmentUri = null
