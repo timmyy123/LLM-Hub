@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.flow.first
 import com.llmhub.llmhub.navigation.LlmHubNavigation
 import com.llmhub.llmhub.ui.theme.LlmHubTheme
 import com.llmhub.llmhub.viewmodels.ChatViewModelFactory
@@ -20,6 +21,8 @@ import com.llmhub.llmhub.viewmodels.ThemeViewModel
 import com.llmhub.llmhub.utils.LocaleHelper
 
 class MainActivity : ComponentActivity() {
+    private lateinit var themeViewModel: ThemeViewModel
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -28,10 +31,16 @@ class MainActivity : ComponentActivity() {
         val chatRepository = app.chatRepository
         val chatViewModelFactory = ChatViewModelFactory(inferenceService, chatRepository, this)
 
+        // Initialize ThemeViewModel
+        themeViewModel = ThemeViewModel(this)
+
         enableEdgeToEdge()
         setContent {
-            val themeViewModel = ThemeViewModel(this)
             val currentThemeMode by themeViewModel.themeMode.collectAsState()
+            val currentLanguage by themeViewModel.appLanguage.collectAsState()
+            
+            // Apply locale based on current language setting
+            LocaleHelper.setLocale(this@MainActivity, currentLanguage)
             
             LlmHubTheme(themeMode = currentThemeMode) {
                 Surface(
@@ -50,7 +59,17 @@ class MainActivity : ComponentActivity() {
     }
     
     override fun attachBaseContext(newBase: Context) {
-        // Apply locale configuration before attaching base context
-        super.attachBaseContext(LocaleHelper.setLocale(newBase))
+        // Get the saved language preference and apply locale configuration
+        val themePrefs = com.llmhub.llmhub.data.ThemePreferences(newBase)
+        val savedLanguage = try {
+            // Try to get the saved language synchronously
+            kotlinx.coroutines.runBlocking {
+                themePrefs.appLanguage.first()
+            }
+        } catch (e: Exception) {
+            null // Fall back to system default if we can't read preferences
+        }
+        
+        super.attachBaseContext(LocaleHelper.setLocale(newBase, savedLanguage))
     }
 }

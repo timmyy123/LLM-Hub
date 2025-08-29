@@ -11,8 +11,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.ThemeMode
 import com.llmhub.llmhub.viewmodels.ThemeViewModel
 
@@ -27,13 +29,15 @@ fun SettingsScreen(
 ) {
     val uriHandler = LocalUriHandler.current
     var showThemeDialog by remember { mutableStateOf(false) }
+    var showLanguageDialog by remember { mutableStateOf(false) }
     val currentThemeMode by themeViewModel.themeMode.collectAsState()
     val webSearchEnabled by themeViewModel.webSearchEnabled.collectAsState()
+    val currentLanguage by themeViewModel.appLanguage.collectAsState()
     
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                title = { Text(stringResource(R.string.settings)) },
                 navigationIcon = {
                     IconButton(
                         onClick = onNavigateBack,
@@ -41,7 +45,7 @@ fun SettingsScreen(
                     ) {
                         Icon(
                             Icons.Default.ArrowBack, 
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.content_description_back),
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -57,18 +61,18 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item {
-                SettingsSection(title = "Models") {
+                SettingsSection(title = stringResource(R.string.models)) {
                     SettingsItem(
                         icon = Icons.Default.GetApp,
-                        title = "Download Models",
-                        subtitle = "Browse and download LLM models",
+                        title = stringResource(R.string.download_models),
+                        subtitle = stringResource(R.string.browse_download_models),
                         onClick = onNavigateToModels
                     )
                 }
             }
             
             item {
-                SettingsSection(title = "Features") {
+                SettingsSection(title = stringResource(R.string.features)) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -88,12 +92,12 @@ fun SettingsScreen(
                             modifier = Modifier.weight(1f)
                         ) {
                             Text(
-                                text = "Web Search",
+                                text = stringResource(R.string.web_search),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = if (webSearchEnabled) "Get current information from the web" else "Use offline knowledge only",
+                                text = if (webSearchEnabled) stringResource(R.string.web_search_description_enabled) else stringResource(R.string.web_search_description_disabled),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -110,46 +114,55 @@ fun SettingsScreen(
             }
             
             item {
-                SettingsSection(title = "Appearance") {
+                SettingsSection(title = stringResource(R.string.appearance)) {
                     SettingsItem(
                         icon = Icons.Outlined.Palette,
-                        title = "Theme",
+                        title = stringResource(R.string.theme),
                         subtitle = when (currentThemeMode) {
-                            ThemeMode.LIGHT -> "Light"
-                            ThemeMode.DARK -> "Dark"
-                            ThemeMode.SYSTEM -> "System Default"
+                            ThemeMode.LIGHT -> stringResource(R.string.theme_light)
+                            ThemeMode.DARK -> stringResource(R.string.theme_dark)
+                            ThemeMode.SYSTEM -> stringResource(R.string.theme_system)
                         },
                         onClick = {
                             showThemeDialog = true
+                        }
+                    )
+                    
+                    SettingsItem(
+                        icon = Icons.Default.Language,
+                        title = stringResource(R.string.language),
+                        subtitle = themeViewModel.getCurrentLanguageDisplayName(),
+                        onClick = {
+                            showLanguageDialog = true
                         }
                     )
                 }
             }
             
             item {
-                SettingsSection(title = "Information") {
+                SettingsSection(title = stringResource(R.string.information)) {
                     SettingsItem(
                         icon = Icons.Default.Info,
-                        title = "About",
-                        subtitle = "App information and contact",
+                        title = stringResource(R.string.about),
+                        subtitle = stringResource(R.string.app_info_contact),
                         onClick = onNavigateToAbout
                     )
                     
                     SettingsItem(
                         icon = Icons.Default.Description,
-                        title = "Terms of Service",
-                        subtitle = "Legal terms and conditions",
+                        title = stringResource(R.string.terms_of_service),
+                        subtitle = stringResource(R.string.legal_terms_conditions),
                         onClick = onNavigateToTerms
                     )
                 }
             }
             
             item {
-                SettingsSection(title = "Source Code") {
+                SettingsSection(title = stringResource(R.string.source_code_section)) {
                     SettingsItem(
                         icon = Icons.Outlined.Code,
-                        title = "GitHub Repository",
-                        subtitle = "View source code and contribute",
+                        title = stringResource(R.string.github_repository),
+                        subtitle = stringResource(R.string.view_source_contribute),
                         onClick = {
                             uriHandler.openUri("https://github.com/timmyy123/LLM-Hub")
                         }
@@ -163,13 +176,13 @@ fun SettingsScreen(
     if (showThemeDialog) {
         AlertDialog(
             onDismissRequest = { showThemeDialog = false },
-            title = { Text("Choose Theme") },
+            title = { Text(stringResource(R.string.choose_theme)) },
             text = {
                 Column {
                     val themeOptions = listOf(
-                        ThemeMode.LIGHT to "Light",
-                        ThemeMode.DARK to "Dark",
-                        ThemeMode.SYSTEM to "System Default"
+                        ThemeMode.LIGHT to stringResource(R.string.theme_light),
+                        ThemeMode.DARK to stringResource(R.string.theme_dark),
+                        ThemeMode.SYSTEM to stringResource(R.string.theme_system)
                     )
                     themeOptions.forEach { (mode, label) ->
                         Row(
@@ -200,7 +213,73 @@ fun SettingsScreen(
                 TextButton(
                     onClick = { showThemeDialog = false }
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+    
+    // Language Selection Dialog
+    if (showLanguageDialog) {
+        AlertDialog(
+            onDismissRequest = { showLanguageDialog = false },
+            title = { Text(stringResource(R.string.select_language)) },
+            text = {
+                Column {
+                    // System Default option
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                    ) {
+                        RadioButton(
+                            selected = currentLanguage == null,
+                            onClick = {
+                                themeViewModel.setAppLanguage(null)
+                                showLanguageDialog = false
+                            }
+                        )
+                        
+                        Spacer(modifier = Modifier.width(8.dp))
+                        
+                        Text(
+                            text = stringResource(R.string.system_default),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                    
+                    // Language options
+                    themeViewModel.getSupportedLanguages().forEach { (code, displayName) ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                        ) {
+                            RadioButton(
+                                selected = currentLanguage == code,
+                                onClick = {
+                                    themeViewModel.setAppLanguage(code)
+                                    showLanguageDialog = false
+                                }
+                            )
+                            
+                            Spacer(modifier = Modifier.width(8.dp))
+                            
+                            Text(
+                                text = displayName,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { showLanguageDialog = false }
+                ) {
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )

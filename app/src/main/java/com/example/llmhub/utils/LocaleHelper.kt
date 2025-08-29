@@ -26,7 +26,18 @@ object LocaleHelper {
      */
     fun setLocale(context: Context, languageCode: String? = null): Context {
         val locale = getAppropriateLocale(languageCode)
+        Locale.setDefault(locale)
         return updateResources(context, locale)
+    }
+    
+    /**
+     * Apply locale changes to current context
+     * This method can be called to update the locale for an existing context
+     */
+    fun applyLocale(context: Context, languageCode: String?) {
+        val locale = getAppropriateLocale(languageCode)
+        Locale.setDefault(locale)
+        updateResourcesInPlace(context, locale)
     }
     
     /**
@@ -70,8 +81,6 @@ object LocaleHelper {
      * Update context resources with the specified locale
      */
     private fun updateResources(context: Context, locale: Locale): Context {
-        Locale.setDefault(locale)
-        
         val config = Configuration(context.resources.configuration)
         config.setLocale(locale)
         
@@ -83,6 +92,24 @@ object LocaleHelper {
             config.locale = locale
             context.createConfigurationContext(config)
         }
+    }
+    
+    /**
+     * Update resources in place for existing context
+     */
+    private fun updateResourcesInPlace(context: Context, locale: Locale) {
+        val config = Configuration(context.resources.configuration)
+        config.setLocale(locale)
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            config.setLocales(LocaleList(locale))
+        } else {
+            @Suppress("DEPRECATION")
+            config.locale = locale
+        }
+        
+        @Suppress("DEPRECATION")
+        context.resources.updateConfiguration(config, context.resources.displayMetrics)
     }
     
     /**

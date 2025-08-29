@@ -24,6 +24,7 @@
     <string name="type_a_message">Type a message...</string>
     <string name="loading_model_format">Loading %1$s</string>
     <string name="please_wait_model_initialize">Please wait while the model initializes...</string>
+    <string name="initializing_neural_network">Initializing neural network...</string>
     <string name="attached_image">Attached image</string>
     <string name="shared_a_file">Shared a file</string>
     <string name="copy_message">Copy message</string>
@@ -39,6 +40,8 @@
     <string name="multimodal">Multimodal</string>
     <string name="text_only">Text only</string>
     <string name="currently_loaded">Currently loaded</string>
+    <string name="select_model">Select model</string>
+    <string name="unload_model">Unload Model</string>
     
     <!-- About Screen -->
     <string name="about_llm_hub">About LLM Hub</string>
@@ -51,9 +54,12 @@
     <string name="feature_offline_usage">💾 Offline Usage: Chat without internet connection</string>
     <string name="feature_privacy_first">🔒 Privacy First: Your conversations never leave your device</string>
     <string name="feature_modern_ui">🎨 Modern UI: Clean, intuitive Material Design interface</string>
-    <string name="technology_stack">Technology Stack</string>
+    <string name="developer_info">Developer Info</string>
+    <string name="about_developer_info">This project is developed by an enthusiast passionate about making AI technology more accessible to everyone. Your feedback and contributions are always welcome!</string>
+    <string name="tech_stack">Tech Stack</string>
+    <string name="about_tech_stack">LLM Hub is built using modern Android development technologies: Kotlin, Jetpack Compose, Material Design 3, and the llama.cpp library for efficient on-device inference.</string>
     <string name="tech_kotlin_compose">🏗️ Built with Kotlin &amp; Jetpack Compose</string>
-    <string name="tech_mediapipe">🧠 Powered by MediaPipe &amp; LiteRT</string>
+    <string name="tech_mediapipe_litert">🧠 Powered by MediaPipe &amp; LiteRT</string>
     <string name="tech_quantization">🚀 Optimized with INT4/INT8 quantization</string>
     <string name="tech_gpu_acceleration">⚡ GPU acceleration via LiteRT XNNPACK</string>
     <string name="tech_models_source">🔗 Models from HuggingFace &amp; Google</string>
@@ -62,10 +68,15 @@
     <string name="source_code">Source Code:</string>
     <string name="github_repository">GitHub Repository</string>
     <string name="acknowledgments">Acknowledgments</string>
-    <string name="acknowledgments_text">Special thanks to the open-source community, Google\'s MediaPipe team, HuggingFace for model hosting, and all contributors who make projects like this possible. This application stands on the shoulders of giants in the ML and Android development communities.</string>
+    <string name="acknowledgments_text">Special thanks to Google, Meta, Microsoft, and the HuggingFace community for providing the incredible LLM models that power this application. This project also relies on the amazing work of the Android development community and the open-source ecosystem.</string>
+    <string name="ai_thinking">AI is thinking...</string>
+    <string name="version_number">Version 1.0.8</string>
+    <string name="app_version">App Version</string>
     
     <!-- Terms of Service -->
     <string name="terms_of_service">Terms of Service</string>
+    <string name="tos_last_updated">Last updated: July 16, 2025</string>
+    <string name="tos_welcome_text">Welcome to LLM Hub. By using our application, you agree to be bound by these Terms of Service. Please read them carefully.</string>
     <string name="tos_welcome">Welcome to LLM Hub. By using our application, you agree to be bound by these Terms of Service. Please read them carefully.</string>
     <string name="tos_acceptance_title">1. Acceptance of Terms</string>
     <string name="tos_acceptance_text">By downloading, installing, or using LLM Hub, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the application.</string>
@@ -94,6 +105,46 @@
     <string name="settings">Settings</string>
     <string name="about">About</string>
     
+    <!-- Settings -->
+    <string name="appearance">Appearance</string>
+    <string name="features">Features</string>
+    <string name="information">Information</string>
+    <string name="source_code_section">Source Code</string>
+    <string name="download_models">Download Models</string>
+    <string name="browse_download_models">Browse and download LLM models</string>
+    <string name="web_search">Web Search</string>
+    <string name="web_search_enabled">Get current information from the web</string>
+    <string name="web_search_disabled">Use offline knowledge only</string>
+    <string name="web_search_description_enabled">Get current information from the web</string>
+    <string name="web_search_description_disabled">Use offline knowledge only</string>
+    <string name="theme">Theme</string>
+    <string name="language">Language</string>
+    <string name="light_theme">Light</string>
+    <string name="dark_theme">Dark</string>
+    <string name="system_default_theme">System Default</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_system">System Default</string>
+    <string name="system_default_language">System Default</string>
+    <string name="system_default">System Default</string>
+    <string name="choose_theme">Choose Theme</string>
+    <string name="choose_language">Choose Language</string>
+    <string name="select_language">Select Language</string>
+    <string name="app_information_contact">App information and contact</string>
+    <string name="app_info_contact">App information and contact</string>
+    <string name="legal_terms_conditions">Legal terms and conditions</string>
+    <string name="github_repository_desc">View source code and contribute</string>
+    <string name="view_source_contribute">View source code and contribute</string>
+    <string name="back">Back</string>
+    
+    <!-- Language Names -->
+    <string name="language_english">English</string>
+    <string name="language_spanish">Español</string>
+    <string name="language_portuguese">Português</string>
+    <string name="language_german">Deutsch</string>
+    <string name="language_french">Français</string>
+    <string name="language_russian">Русский</string>
+    
     <!-- Errors and Messages -->
     <string name="failed_to_load_image">Failed to load image</string>
     <string name="model_loading_error">Error loading model</string>
@@ -115,10 +166,36 @@
     <string name="content_description_check">Check</string>
     <string name="content_description_eye">Vision enabled</string>
     <string name="content_description_attach_image">Attach image</string>
+    <string name="content_description_back">Back</string>
     
     <!-- Model Information -->
     <string name="no_model_selected">No model selected</string>
     <string name="no_model_downloaded">No model downloaded</string>
     <string name="model_supports_vision">Supports vision</string>
     <string name="model_text_only">Text only</string>
+    
+    <!-- Chat Drawer -->
+    <string name="drawer_title">LLM Hub</string>
+    <string name="drawer_new_chat">New Chat</string>
+    <string name="drawer_recent_chats">Recent Chats</string>
+    <string name="drawer_no_chats">No chats yet</string>
+    <string name="drawer_download_models">Download Models</string>
+    <string name="drawer_clear_all_chats">Clear All Chats</string>
+    <string name="drawer_settings">Settings</string>
+    
+    <!-- Chat Management -->
+    <string name="dialog_delete_all_chats_title">Delete All Chats?</string>
+    <string name="dialog_delete_all_chats_message">This will permanently delete all conversation history. This action cannot be undone.</string>
+    <string name="dialog_delete_chat_title">Delete Chat?</string>
+    <string name="dialog_delete_chat_message">Delete conversation \"%1$s\"?</string>
+    <string name="action_delete_all">Delete All</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="content_description_delete_chat">Delete Chat</string>
+    
+    <!-- Time Formatting -->
+    <string name="time_yesterday">Yesterday</string>
+    <string name="time_hours_ago">%1$d hr ago</string>
+    <string name="time_minutes_ago">%1$d min ago</string>
+    <string name="time_just_now">Just now</string>
 </resources>

@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="multimodal">Multimodal</string>
+    <string name="text_only">Nur Text</string>
+    <string name="currently_loaded">Derzeit geladen</string>
+    <string name="select_model">Modell auswählen</string>
+    <string name="unload_model">Modell entladen</string>
     <string name="app_name">LLM Hub</string>
     
     <!-- Common -->
@@ -25,6 +30,7 @@
     <string name="type_a_message">Nachricht eingeben...</string>
     <string name="loading_model_format">Lade %1$s</string>
     <string name="please_wait_model_initialize">Bitte warten Sie, während das Modell initialisiert wird...</string>
+    <string name="initializing_neural_network">Neuronales Netzwerk wird initialisiert...</string>
     <string name="attached_image">Angehängtes Bild</string>
     <string name="shared_a_file">Hat eine Datei geteilt</string>
     <string name="copy_message">Nachricht kopieren</string>
@@ -37,24 +43,24 @@
     <string name="message_copied">Nachricht kopiert</string>
     <string name="tokens_per_second_format">%1$d Tokens • %2$.1f tok/sek</string>
     <string name="context_multimodal_format">%1$dk Kontext • %2$s</string>
-    <string name="multimodal">Multimodal</string>
-    <string name="text_only">Nur Text</string>
-    <string name="currently_loaded">Aktuell geladen</string>
     
     <!-- About Screen -->
     <string name="about_llm_hub">Über LLM Hub</string>
-    <string name="about_description">LLM Hub ist eine Open-Source-Android-Anwendung, die die Kraft von Large Language Models direkt auf Ihr mobiles Gerät bringt. Erleben Sie KI-Gespräche mit hochmodernen Modellen wie Gemma, Llama und Phi - alle laufen lokal auf Ihrem Telefon für maximale Privatsphäre und Offline-Zugänglichkeit.</string>
-    <string name="key_features">Hauptmerkmale</string>
-    <string name="feature_multiple_models">🤖 Mehrere LLM-Modelle: Gemma-3, Llama-3.2, Phi-4 und Gemma-3n</string>
-    <string name="feature_on_device">📱 Lokale Verarbeitung: Vollständige Privatsphäre, kein Internet erforderlich</string>
+    <string name="about_description">LLM Hub ist eine Open-Source-Android-Anwendung, die die Macht der Large Language Models direkt auf Ihr mobiles Gerät bringt. Erleben Sie KI-Gespräche mit hochmodernen Modellen wie Gemma, Llama und Phi - alle laufen lokal auf Ihrem Telefon für maximale Privatsphäre und Offline-Zugänglichkeit.</string>
+    <string name="key_features">Hauptfunktionen</string>
+    <string name="feature_multiple_models">🤖 Mehrere LLM-Modelle: Gemma-3, Llama-3.2, Phi-4, und Gemma-3n</string>
+    <string name="feature_on_device">📱 Geräteverarbeitung: Vollständige Privatsphäre, kein Internet erforderlich</string>
     <string name="feature_vision_support">🖼️ Vision-Unterstützung: Multimodale Modelle, die Bilder verstehen</string>
     <string name="feature_gpu_acceleration">⚡ GPU-Beschleunigung: Optimierte Leistung auf unterstützten Geräten</string>
     <string name="feature_offline_usage">💾 Offline-Nutzung: Chatten ohne Internetverbindung</string>
-    <string name="feature_privacy_first">🔒 Privatsphäre zuerst: Ihre Gespräche verlassen niemals Ihr Gerät</string>
-    <string name="feature_modern_ui">🎨 Moderne UI: Saubere, intuitive Material Design-Oberfläche</string>
-    <string name="technology_stack">Technologie-Stack</string>
+    <string name="feature_privacy_first">🔒 Privatsphäre zuerst: Ihre Gespräche verlassen nie Ihr Gerät</string>
+    <string name="feature_modern_ui">🎨 Moderne Benutzeroberfläche: Saubere, intuitive Material Design-Oberfläche</string>
+    <string name="developer_info">Entwicklerinformationen</string>
+    <string name="about_developer_info">Dieses Projekt wird von einem Enthusiasten entwickelt, der leidenschaftlich daran arbeitet, KI-Technologie für alle zugänglicher zu machen. Ihr Feedback und Ihre Beiträge sind immer willkommen!</string>
+    <string name="tech_stack">Technologie-Stack</string>
+    <string name="about_tech_stack">LLM Hub ist mit modernen Android-Entwicklungstechnologien erstellt: Kotlin, Jetpack Compose, Material Design 3 und der llama.cpp-Bibliothek für effiziente Geräteinferenz.</string>
     <string name="tech_kotlin_compose">🏗️ Erstellt mit Kotlin und Jetpack Compose</string>
-    <string name="tech_mediapipe">🧠 Angetrieben von MediaPipe und LiteRT</string>
+    <string name="tech_mediapipe_litert">🧠 Angetrieben von MediaPipe und LiteRT</string>
     <string name="tech_quantization">🚀 Optimiert mit INT4/INT8-Quantisierung</string>
     <string name="tech_gpu_acceleration">⚡ GPU-Beschleunigung über LiteRT XNNPACK</string>
     <string name="tech_models_source">🔗 Modelle von HuggingFace und Google</string>
@@ -63,10 +69,15 @@
     <string name="source_code">Quellcode:</string>
     <string name="github_repository">GitHub-Repository</string>
     <string name="acknowledgments">Danksagungen</string>
-    <string name="acknowledgments_text">Besonderen Dank an die Open-Source-Community, Googles MediaPipe-Team, HuggingFace für das Model-Hosting und alle Mitwirkenden, die Projekte wie dieses möglich machen. Diese Anwendung steht auf den Schultern von Giganten in den ML- und Android-Entwicklungsgemeinschaften.</string>
+    <string name="acknowledgments_text">Besonderen Dank an Google, Meta, Microsoft und die HuggingFace-Community für die Bereitstellung der unglaublichen LLM-Modelle, die diese Anwendung antreiben. Dieses Projekt stützt sich auch auf die erstaunliche Arbeit der Android-Entwicklergemeinschaft und des Open-Source-Ökosystems.</string>
+    <string name="ai_thinking">KI denkt nach...</string>
+    <string name="version_number">Version 1.0.8</string>
+    <string name="app_version">App-Version</string>
     
     <!-- Terms of Service -->
     <string name="terms_of_service">Nutzungsbedingungen</string>
+    <string name="tos_last_updated">Zuletzt aktualisiert: 16. Juli 2025</string>
+    <string name="tos_welcome_text">Willkommen bei LLM Hub. Durch die Nutzung unserer Anwendung stimmen Sie zu, an diese Nutzungsbedingungen gebunden zu sein. Bitte lesen Sie sie sorgfältig durch.</string>
     <string name="tos_welcome">Willkommen bei LLM Hub. Durch die Nutzung unserer Anwendung stimmen Sie zu, an diese Nutzungsbedingungen gebunden zu sein. Bitte lesen Sie sie sorgfältig durch.</string>
     <string name="tos_acceptance_title">1. Annahme der Bedingungen</string>
     <string name="tos_acceptance_text">Durch das Herunterladen, Installieren oder Verwenden von LLM Hub bestätigen Sie, dass Sie diese Nutzungsbedingungen gelesen, verstanden haben und zustimmen, an sie gebunden zu sein. Wenn Sie diesen Bedingungen nicht zustimmen, verwenden Sie die Anwendung bitte nicht.</string>
@@ -95,15 +106,55 @@
     <string name="settings">Einstellungen</string>
     <string name="about">Über</string>
     
+    <!-- Settings -->
+    <string name="appearance">Erscheinungsbild</string>
+    <string name="features">Funktionen</string>
+    <string name="information">Informationen</string>
+    <string name="source_code_section">Quellcode</string>
+    <string name="download_models">Modelle Herunterladen</string>
+    <string name="browse_download_models">LLM-Modelle durchsuchen und herunterladen</string>
+    <string name="web_search">Web-Suche</string>
+    <string name="web_search_enabled">Aktuelle Informationen aus dem Web abrufen</string>
+    <string name="web_search_disabled">Nur Offline-Wissen verwenden</string>
+    <string name="web_search_description_enabled">Aktuelle Informationen aus dem Web abrufen</string>
+    <string name="web_search_description_disabled">Nur Offline-Wissen verwenden</string>
+    <string name="theme">Design</string>
+    <string name="language">Sprache</string>
+    <string name="light_theme">Hell</string>
+    <string name="dark_theme">Dunkel</string>
+    <string name="system_default_theme">Systemstandard</string>
+    <string name="theme_light">Hell</string>
+    <string name="theme_dark">Dunkel</string>
+    <string name="theme_system">Systemstandard</string>
+    <string name="system_default_language">Systemstandard</string>
+    <string name="system_default">Systemstandard</string>
+    <string name="choose_theme">Design Wählen</string>
+    <string name="choose_language">Sprache Wählen</string>
+    <string name="select_language">Sprache Auswählen</string>
+    <string name="app_information_contact">App-Informationen und Kontakt</string>
+    <string name="app_info_contact">App-Informationen und Kontakt</string>
+    <string name="legal_terms_conditions">Rechtliche Bedingungen</string>
+    <string name="github_repository_desc">Quellcode anzeigen und beitragen</string>
+    <string name="view_source_contribute">Quellcode anzeigen und beitragen</string>
+    <string name="back">Zurück</string>
+    
+    <!-- Language Names -->
+    <string name="language_english">English</string>
+    <string name="language_spanish">Español</string>
+    <string name="language_portuguese">Português</string>
+    <string name="language_german">Deutsch</string>
+    <string name="language_french">Français</string>
+    <string name="language_russian">Русский</string>
+    
     <!-- Errors and Messages -->
-    <string name="failed_to_load_image">Fehler beim Laden des Bildes</string>
+    <string name="failed_to_load_image">Bild konnte nicht geladen werden</string>
     <string name="model_loading_error">Fehler beim Laden des Modells</string>
     <string name="message_send_error">Fehler beim Senden der Nachricht</string>
     <string name="file_save_error">Fehler beim Speichern der Datei</string>
     <string name="file_save_success">Datei erfolgreich gespeichert</string>
     
     <!-- Accessibility -->
-    <string name="content_description_ai_bot">KI-Bot</string>
+    <string name="content_description_ai_bot">KI Bot</string>
     <string name="content_description_smart_toy">Intelligentes Spielzeug</string>
     <string name="content_description_email">E-Mail</string>
     <string name="content_description_code">Quellcode</string>
@@ -116,10 +167,36 @@
     <string name="content_description_check">Überprüfen</string>
     <string name="content_description_eye">Vision aktiviert</string>
     <string name="content_description_attach_image">Bild anhängen</string>
+    <string name="content_description_back">Zurück</string>
     
     <!-- Model Information -->
     <string name="no_model_selected">Kein Modell ausgewählt</string>
     <string name="no_model_downloaded">Kein Modell heruntergeladen</string>
     <string name="model_supports_vision">Unterstützt Vision</string>
     <string name="model_text_only">Nur Text</string>
+    
+    <!-- Chat Drawer -->
+    <string name="drawer_title">LLM Hub</string>
+    <string name="drawer_new_chat">Neuer Chat</string>
+    <string name="drawer_recent_chats">Aktuelle Chats</string>
+    <string name="drawer_no_chats">Noch keine Chats</string>
+    <string name="drawer_download_models">Modelle herunterladen</string>
+    <string name="drawer_clear_all_chats">Alle Chats löschen</string>
+    <string name="drawer_settings">Einstellungen</string>
+    
+    <!-- Chat Management -->
+    <string name="dialog_delete_all_chats_title">Alle Chats löschen?</string>
+    <string name="dialog_delete_all_chats_message">Dies wird dauerhaft den gesamten Unterhaltungsverlauf löschen. Diese Aktion kann nicht rückgängig gemacht werden.</string>
+    <string name="dialog_delete_chat_title">Chat löschen?</string>
+    <string name="dialog_delete_chat_message">Unterhaltung \"%1$s\" löschen?</string>
+    <string name="action_delete_all">Alle löschen</string>
+    <string name="action_delete">Löschen</string>
+    <string name="action_cancel">Abbrechen</string>
+    <string name="content_description_delete_chat">Chat löschen</string>
+    
+    <!-- Time Formatting -->
+    <string name="time_yesterday">Gestern</string>
+    <string name="time_hours_ago">vor %1$d Std</string>
+    <string name="time_minutes_ago">vor %1$d Min</string>
+    <string name="time_just_now">Gerade eben</string>
 </resources>

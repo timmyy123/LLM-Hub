@@ -19,6 +19,8 @@ import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
+import com.llmhub.llmhub.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,8 +39,8 @@ fun ChatDrawer(
     if (showDeleteAllDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteAllDialog = false },
-            title = { Text("Delete All Chats?") },
-            text = { Text("This will permanently delete all conversation history. This action cannot be undone.") },
+            title = { Text(stringResource(R.string.dialog_delete_all_chats_title)) },
+            text = { Text(stringResource(R.string.dialog_delete_all_chats_message)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -50,12 +52,12 @@ fun ChatDrawer(
                         showDeleteAllDialog = false
                     }
                 ) {
-                    Text("Delete All")
+                    Text(stringResource(R.string.action_delete_all))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteAllDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )
@@ -82,7 +84,7 @@ fun ChatDrawer(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "LLM Hub",
+                    text = stringResource(R.string.drawer_title),
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -95,14 +97,14 @@ fun ChatDrawer(
             ) {
                 Icon(Icons.Default.Add, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("New Chat")
+                Text(stringResource(R.string.drawer_new_chat))
             }
             
             Spacer(modifier = Modifier.height(16.dp))
             
             // Chat History
             Text(
-                text = "Recent Chats",
+                text = stringResource(R.string.drawer_recent_chats),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -123,7 +125,7 @@ fun ChatDrawer(
                 if (chats.isEmpty()) {
                     item {
                         Text(
-                            text = "No chats yet",
+                            text = stringResource(R.string.drawer_no_chats),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(16.dp)
@@ -139,19 +141,19 @@ fun ChatDrawer(
             // Navigation Options
             DrawerNavigationItem(
                 icon = Icons.Default.GetApp,
-                text = "Download Models",
+                text = stringResource(R.string.drawer_download_models),
                 onClick = onNavigateToModels
             )
             
             DrawerNavigationItem(
                 icon = Icons.Outlined.DeleteSweep,
-                text = "Clear All Chats",
+                text = stringResource(R.string.drawer_clear_all_chats),
                 onClick = { showDeleteAllDialog = true }
             )
 
             DrawerNavigationItem(
                 icon = Icons.Default.Settings,
-                text = "Settings",
+                text = stringResource(R.string.drawer_settings),
                 onClick = onNavigateToSettings
             )
         }
@@ -169,8 +171,8 @@ private fun ChatHistoryItem(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete Chat?") },
-            text = { Text("Delete conversation \"${chat.title}\"?") },
+            title = { Text(stringResource(R.string.dialog_delete_chat_title)) },
+            text = { Text(stringResource(R.string.dialog_delete_chat_message, chat.title)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -178,12 +180,12 @@ private fun ChatHistoryItem(
                         showDeleteDialog = false
                     }
                 ) {
-                    Text("Delete")
+                    Text(stringResource(R.string.action_delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )
@@ -219,7 +221,7 @@ private fun ChatHistoryItem(
             IconButton(onClick = { showDeleteDialog = true }) {
                 Icon(
                     Icons.Outlined.Delete,
-                    contentDescription = "Delete Chat",
+                    contentDescription = stringResource(R.string.content_description_delete_chat),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -250,6 +252,7 @@ private fun DrawerNavigationItem(
     }
 }
 
+@Composable
 private fun formatTimestamp(timestamp: Long): String {
     val now = System.currentTimeMillis()
     val diff = now - timestamp
@@ -261,9 +264,9 @@ private fun formatTimestamp(timestamp: Long): String {
 
     return when {
         days > 1 -> SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(Date(timestamp))
-        days == 1L -> "Yesterday"
-        hours > 0 -> "$hours hr ago"
-        minutes > 0 -> "$minutes min ago"
-        else -> "Just now"
+        days == 1L -> stringResource(R.string.time_yesterday)
+        hours > 0 -> stringResource(R.string.time_hours_ago, hours.toInt())
+        minutes > 0 -> stringResource(R.string.time_minutes_ago, minutes.toInt())
+        else -> stringResource(R.string.time_just_now)
     }
 } 

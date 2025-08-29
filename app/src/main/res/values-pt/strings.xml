@@ -25,6 +25,7 @@
     <string name="type_a_message">Digite uma mensagem...</string>
     <string name="loading_model_format">Carregando %1$s</string>
     <string name="please_wait_model_initialize">Aguarde enquanto o modelo inicializa...</string>
+    <string name="initializing_neural_network">Inicializando rede neural...</string>
     <string name="attached_image">Imagem anexada</string>
     <string name="shared_a_file">Compartilhou um arquivo</string>
     <string name="copy_message">Copiar mensagem</string>
@@ -40,21 +41,26 @@
     <string name="multimodal">Multimodal</string>
     <string name="text_only">Apenas texto</string>
     <string name="currently_loaded">Atualmente carregado</string>
+    <string name="select_model">Selecionar modelo</string>
+    <string name="unload_model">Descarregar Modelo</string>
     
     <!-- About Screen -->
     <string name="about_llm_hub">Sobre o LLM Hub</string>
-    <string name="about_description">LLM Hub é um aplicativo Android de código aberto que traz o poder dos Modelos de Linguagem Grande diretamente para seu dispositivo móvel. Experimente conversas de IA com modelos de ponta como Gemma, Llama e Phi - todos rodando localmente no seu telefone para máxima privacidade e acessibilidade offline.</string>
-    <string name="key_features">Características Principais</string>
+    <string name="about_description">LLM Hub é uma aplicação Android de código aberto que traz o poder dos Modelos de Linguagem Grande diretamente para o seu dispositivo móvel. Experimente conversas de IA com modelos de última geração como Gemma, Llama e Phi - todos executando localmente no seu telefone para máxima privacidade e acessibilidade offline.</string>
+    <string name="key_features">Recursos Principais</string>
     <string name="feature_multiple_models">🤖 Múltiplos Modelos LLM: Gemma-3, Llama-3.2, Phi-4, e Gemma-3n</string>
-    <string name="feature_on_device">📱 Processamento Local: Privacidade completa, sem internet necessária</string>
+    <string name="feature_on_device">📱 Processamento no Dispositivo: Privacidade completa, não requer internet</string>
     <string name="feature_vision_support">🖼️ Suporte a Visão: Modelos multimodais que entendem imagens</string>
-    <string name="feature_gpu_acceleration">⚡ Aceleração GPU: Performance otimizada em dispositivos compatíveis</string>
-    <string name="feature_offline_usage">💾 Uso Offline: Converse sem conexão com a internet</string>
-    <string name="feature_privacy_first">🔒 Privacidade em Primeiro Lugar: Suas conversas nunca saem do seu dispositivo</string>
-    <string name="feature_modern_ui">🎨 UI Moderna: Interface limpa e intuitiva de Material Design</string>
-    <string name="technology_stack">Stack Tecnológico</string>
+    <string name="feature_gpu_acceleration">⚡ Aceleração GPU: Performance otimizada em dispositivos suportados</string>
+    <string name="feature_offline_usage">💾 Uso Offline: Converse sem conexão à internet</string>
+    <string name="feature_privacy_first">🔒 Privacidade em Primeiro Lugar: Suas conversas nunca deixam o seu dispositivo</string>
+    <string name="feature_modern_ui">🎨 Interface Moderna: Interface limpa e intuitiva do Material Design</string>
+    <string name="developer_info">Informações do Desenvolvedor</string>
+    <string name="about_developer_info">Este projeto é desenvolvido por um entusiasta apaixonado por tornar a tecnologia de IA mais acessível para todos. Seus comentários e contribuições são sempre bem-vindos!</string>
+    <string name="tech_stack">Stack Tecnológico</string>
+    <string name="about_tech_stack">LLM Hub é construído usando tecnologias modernas de desenvolvimento Android: Kotlin, Jetpack Compose, Material Design 3, e a biblioteca llama.cpp para inferência eficiente no dispositivo.</string>
     <string name="tech_kotlin_compose">🏗️ Construído com Kotlin e Jetpack Compose</string>
-    <string name="tech_mediapipe">🧠 Powered by MediaPipe e LiteRT</string>
+    <string name="tech_mediapipe_litert">🧠 Impulsionado por MediaPipe e LiteRT</string>
     <string name="tech_quantization">🚀 Otimizado com quantização INT4/INT8</string>
     <string name="tech_gpu_acceleration">⚡ Aceleração GPU via LiteRT XNNPACK</string>
     <string name="tech_models_source">🔗 Modelos do HuggingFace e Google</string>
@@ -63,31 +69,10 @@
     <string name="source_code">Código Fonte:</string>
     <string name="github_repository">Repositório GitHub</string>
     <string name="acknowledgments">Agradecimentos</string>
-    <string name="acknowledgments_text">Agradecimentos especiais à comunidade de código aberto, equipe do MediaPipe do Google, HuggingFace pela hospedagem de modelos, e todos os contribuidores que tornam projetos como este possíveis. Esta aplicação se apoia nos ombros de gigantes nas comunidades de ML e desenvolvimento Android.</string>
-    
-    <!-- Terms of Service -->
-    <string name="terms_of_service">Termos de Serviço</string>
-    <string name="tos_welcome">Bem-vindo ao LLM Hub. Ao usar nosso aplicativo, você concorda em estar sujeito a estes Termos de Serviço. Por favor, leia-os cuidadosamente.</string>
-    <string name="tos_acceptance_title">1. Aceitação dos Termos</string>
-    <string name="tos_acceptance_text">Ao baixar, instalar ou usar o LLM Hub, você reconhece que leu, entendeu e concorda em estar sujeito a estes Termos de Serviço. Se você não concorda com estes termos, por favor não use o aplicativo.</string>
-    <string name="tos_app_description_title">2. Descrição do Aplicativo</string>
-    <string name="tos_app_description_text">LLM Hub é um aplicativo Android de código aberto que fornece acesso a Modelos de Linguagem Grande (LLMs) para conversas de IA no dispositivo. O aplicativo processa todos os dados localmente no seu dispositivo e não transmite informações pessoais para servidores externos.</string>
-    <string name="tos_user_responsibilities_title">3. Responsabilidades do Usuário</string>
-    <string name="tos_user_responsibilities_text">Você concorda em usar o LLM Hub responsavelmente e de acordo com as leis aplicáveis. Você é responsável por:\n\n• Usar o aplicativo apenas para propósitos legais\n• Não tentar fazer engenharia reversa ou modificar o aplicativo\n• Não usar o aplicativo para gerar conteúdo prejudicial, ilegal ou ofensivo\n• Respeitar os direitos de propriedade intelectual de terceiros\n• Garantir que seu dispositivo atende aos requisitos mínimos para operação adequada</string>
-    <string name="tos_privacy_data_title">4. Privacidade e Dados</string>
-    <string name="tos_privacy_data_text">LLM Hub foi projetado com privacidade em mente:\n\n• Todas as conversas e processamento de dados ocorrem localmente no seu dispositivo\n• Nenhum dado pessoal é transmitido para servidores externos\n• O histórico de chat é armazenado localmente e pode ser deletado a qualquer momento\n• Downloads de modelos são realizados diretamente de repositórios oficiais (HuggingFace, Google)\n• O aplicativo não coleta dados de análise ou uso</string>
-    <string name="tos_disclaimer_title">5. Isenção de Garantias</string>
-    <string name="tos_disclaimer_text">LLM Hub é fornecido \"como está\" sem garantias de qualquer tipo. Não garantimos a precisão, confiabilidade ou disponibilidade do aplicativo ou seu conteúdo gerado. O uso de modelos de IA pode produzir resultados imprevisíveis.</string>
-    <string name="tos_limitation_liability_title">6. Limitação de Responsabilidade</string>
-    <string name="tos_limitation_liability_text">Em nenhum caso os desenvolvedores serão responsáveis por danos indiretos, incidentais, especiais ou consequenciais decorrentes do uso do LLM Hub. Seu uso do aplicativo é por sua própria conta e risco.</string>
-    <string name="tos_model_usage_title">7. Uso de Modelos e Licenciamento</string>
-    <string name="tos_model_usage_text">Os modelos de IA disponíveis através do LLM Hub estão sujeitos às suas respectivas licenças e termos de uso. Os usuários são responsáveis por cumprir os requisitos de licenciamento específicos do modelo ao usar modelos baixados.</string>
-    <string name="tos_open_source_title">8. Licença de Código Aberto</string>
-    <string name="tos_open_source_text">LLM Hub é software de código aberto. O código fonte está disponível sob a Licença MIT, que permite uso, modificação e distribuição sujeito aos termos da licença. Bibliotecas de terceiros e modelos podem ter termos de licença diferentes.</string>
-    <string name="tos_changes_title">9. Mudanças nos Termos</string>
-    <string name="tos_changes_text">Podemos atualizar estes Termos de Serviço de tempos em tempos. Os usuários serão notificados de mudanças significativas através de atualizações do aplicativo. O uso continuado do aplicativo após mudanças constitui aceitação dos novos termos.</string>
-    <string name="tos_contact_title">10. Informações de Contato</string>
-    <string name="tos_contact_text">Para perguntas sobre estes Termos de Serviço, entre em contato conosco em timmyboy0623@gmail.com</string>
+    <string name="acknowledgments_text">Agradecimentos especiais ao Google, Meta, Microsoft, e à comunidade HuggingFace por fornecerem os incríveis modelos LLM que alimentam esta aplicação. Este projeto também depende do trabalho incrível da comunidade de desenvolvimento Android e do ecossistema de código aberto.</string>
+    <string name="ai_thinking">A IA está pensando...</string>
+    <string name="version_number">Versão 1.0.8</string>
+    <string name="app_version">Versão do App</string>
     
     <!-- Navigation -->
     <string name="chat">Chat</string>
@@ -95,11 +80,51 @@
     <string name="settings">Configurações</string>
     <string name="about">Sobre</string>
     
+    <!-- Settings -->
+    <string name="appearance">Aparência</string>
+    <string name="features">Recursos</string>
+    <string name="information">Informações</string>
+    <string name="source_code_section">Código Fonte</string>
+    <string name="download_models">Baixar Modelos</string>
+    <string name="browse_download_models">Navegar e baixar modelos LLM</string>
+    <string name="web_search">Busca Web</string>
+    <string name="web_search_enabled">Obter informações atuais da web</string>
+    <string name="web_search_disabled">Usar apenas conhecimento offline</string>
+    <string name="web_search_description_enabled">Obter informações atuais da web</string>
+    <string name="web_search_description_disabled">Usar apenas conhecimento offline</string>
+    <string name="theme">Tema</string>
+    <string name="language">Idioma</string>
+    <string name="light_theme">Claro</string>
+    <string name="dark_theme">Escuro</string>
+    <string name="system_default_theme">Padrão do Sistema</string>
+    <string name="theme_light">Claro</string>
+    <string name="theme_dark">Escuro</string>
+    <string name="theme_system">Padrão do Sistema</string>
+    <string name="system_default_language">Padrão do Sistema</string>
+    <string name="system_default">Padrão do Sistema</string>
+    <string name="choose_theme">Escolher Tema</string>
+    <string name="choose_language">Escolher Idioma</string>
+    <string name="select_language">Selecionar Idioma</string>
+    <string name="app_information_contact">Informações do app e contato</string>
+    <string name="app_info_contact">Informações do app e contato</string>
+    <string name="legal_terms_conditions">Termos e condições legais</string>
+    <string name="github_repository_desc">Ver código fonte e contribuir</string>
+    <string name="view_source_contribute">Ver código fonte e contribuir</string>
+    <string name="back">Voltar</string>
+    
+    <!-- Language Names -->
+    <string name="language_english">English</string>
+    <string name="language_spanish">Español</string>
+    <string name="language_portuguese">Português</string>
+    <string name="language_german">Deutsch</string>
+    <string name="language_french">Français</string>
+    <string name="language_russian">Русский</string>
+    
     <!-- Errors and Messages -->
     <string name="failed_to_load_image">Falha ao carregar imagem</string>
-    <string name="model_loading_error">Erro carregando modelo</string>
-    <string name="message_send_error">Erro enviando mensagem</string>
-    <string name="file_save_error">Erro salvando arquivo</string>
+    <string name="model_loading_error">Erro ao carregar modelo</string>
+    <string name="message_send_error">Erro ao enviar mensagem</string>
+    <string name="file_save_error">Erro ao salvar arquivo</string>
     <string name="file_save_success">Arquivo salvo com sucesso</string>
     
     <!-- Accessibility -->
@@ -116,10 +141,46 @@
     <string name="content_description_check">Verificar</string>
     <string name="content_description_eye">Visão habilitada</string>
     <string name="content_description_attach_image">Anexar imagem</string>
+    <string name="content_description_back">Voltar</string>
     
     <!-- Model Information -->
     <string name="no_model_selected">Nenhum modelo selecionado</string>
     <string name="no_model_downloaded">Nenhum modelo baixado</string>
     <string name="model_supports_vision">Suporta visão</string>
     <string name="model_text_only">Apenas texto</string>
+    
+    <!-- Chat Drawer -->
+    <string name="drawer_title">LLM Hub</string>
+    <string name="drawer_new_chat">Novo Chat</string>
+    <string name="drawer_recent_chats">Chats Recentes</string>
+    <string name="drawer_no_chats">Ainda não há chats</string>
+    <string name="drawer_download_models">Baixar Modelos</string>
+    <string name="drawer_clear_all_chats">Limpar Todos os Chats</string>
+    <string name="drawer_settings">Configurações</string>
+    
+    <!-- Chat Management -->
+    <string name="dialog_delete_all_chats_title">Excluir Todos os Chats?</string>
+    <string name="dialog_delete_all_chats_message">Isso excluirá permanentemente todo o histórico de conversas. Esta ação não pode ser desfeita.</string>
+    <string name="dialog_delete_chat_title">Excluir Chat?</string>
+    <string name="dialog_delete_chat_message">Excluir conversa \"%1$s\"?</string>
+    <string name="action_delete_all">Excluir Tudo</string>
+    <string name="action_delete">Excluir</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="content_description_delete_chat">Excluir Chat</string>
+    
+    <!-- Time Formatting -->
+    <string name="time_yesterday">Ontem</string>
+    <string name="time_hours_ago">%1$d h atrás</string>
+    <string name="time_minutes_ago">%1$d min atrás</string>
+    <string name="time_just_now">Agora mesmo</string>
+    
+    <!-- Terms of Service -->
+    <string name="terms_of_service">Termos de Serviço</string>
+    <string name="tos_last_updated">Última atualização: 16 de julho de 2025</string>
+    <string name="tos_welcome_text">Bem-vindo ao LLM Hub. Ao usar nossa aplicação, você concorda em estar sujeito a estes Termos de Serviço. Por favor, leia-os cuidadosamente.</string>
+    <string name="tos_acceptance_title">1. Aceitação dos Termos</string>
+    <string name="tos_acceptance_text">Ao baixar, instalar ou usar o LLM Hub, você reconhece que leu, entendeu e concorda em estar sujeito a estes Termos de Serviço. Se você não concorda com estes termos, por favor não use a aplicação.</string>
+    <string name="tos_app_description_title">2. Descrição da Aplicação</string>
+    <string name="tos_app_description_text">LLM Hub é uma aplicação Android de código aberto que fornece acesso a Modelos de Linguagem Grandes (LLMs) para conversas de IA no dispositivo. A aplicação processa todos os dados localmente em seu dispositivo e não transmite informações pessoais para servidores externos.</string>
 </resources>
+

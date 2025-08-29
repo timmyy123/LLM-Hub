@@ -22,6 +22,7 @@ class ThemePreferences(private val context: Context) {
     companion object {
         private val THEME_KEY = stringPreferencesKey("theme_mode")
         private val WEB_SEARCH_KEY = booleanPreferencesKey("web_search_enabled")
+        private val LANGUAGE_KEY = stringPreferencesKey("app_language")
     }
 
     val themeMode: Flow<ThemeMode> = context.dataStore.data
@@ -39,6 +40,11 @@ class ThemePreferences(private val context: Context) {
             preferences[WEB_SEARCH_KEY] ?: true // Default to enabled
         }
 
+    val appLanguage: Flow<String?> = context.dataStore.data
+        .map { preferences ->
+            preferences[LANGUAGE_KEY] // null means system default
+        }
+
     suspend fun setThemeMode(themeMode: ThemeMode) {
         context.dataStore.edit { preferences ->
             preferences[THEME_KEY] = themeMode.name
@@ -48,6 +54,16 @@ class ThemePreferences(private val context: Context) {
     suspend fun setWebSearchEnabled(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[WEB_SEARCH_KEY] = enabled
+        }
+    }
+    
+    suspend fun setAppLanguage(languageCode: String?) {
+        context.dataStore.edit { preferences ->
+            if (languageCode != null) {
+                preferences[LANGUAGE_KEY] = languageCode
+            } else {
+                preferences.remove(LANGUAGE_KEY)
+            }
         }
     }
 }

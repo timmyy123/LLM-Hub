@@ -24,6 +24,7 @@ import kotlinx.coroutines.Job
 import com.llmhub.llmhub.data.localFileName
 import com.llmhub.llmhub.data.isModelFileValid
 import com.llmhub.llmhub.data.ThemePreferences
+import com.llmhub.llmhub.R
 
 class ChatViewModel(
     private val inferenceService: InferenceService,
@@ -186,8 +187,8 @@ class ChatViewModel(
                 // For new chats, preserve the current model if one is loaded
                 val newChatId = repository.createNewChat(
                     "New Chat",
-                    if (_availableModels.value.isEmpty()) "No model downloaded" else 
-                    (previousModel?.name ?: "No model selected")
+                    if (_availableModels.value.isEmpty()) context.getString(R.string.no_model_downloaded) else 
+                    (previousModel?.name ?: context.getString(R.string.no_model_selected))
                 )
                 currentChatId = newChatId
                 _currentChat.value = repository.getChatById(newChatId)
@@ -1137,7 +1138,7 @@ class ChatViewModel(
                 // Update current chat to show no model selected
                 _currentChat.value?.let { chat ->
                     currentChatId?.let { chatId ->
-                        repository.updateChatModel(chatId, "No model selected")
+                        repository.updateChatModel(chatId, context.getString(R.string.no_model_selected))
                         _currentChat.value = repository.getChatById(chatId)
                     }
                 }
@@ -1526,8 +1527,8 @@ class ChatViewModel(
         // Create new chat with appropriate model
         val newChatId = repository.createNewChat(
             "New Chat",
-            if (_availableModels.value.isEmpty()) "No model downloaded" else 
-            (modelToUse?.name ?: "No model selected")
+            if (_availableModels.value.isEmpty()) context.getString(R.string.no_model_downloaded) else 
+            (modelToUse?.name ?: context.getString(R.string.no_model_selected))
         )
         
         // Set as current chat
