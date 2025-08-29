@@ -23,12 +23,16 @@ import java.io.File
 import kotlinx.coroutines.Job
 import com.llmhub.llmhub.data.localFileName
 import com.llmhub.llmhub.data.isModelFileValid
+import com.llmhub.llmhub.data.ThemePreferences
 
 class ChatViewModel(
     private val inferenceService: InferenceService,
     private val repository: ChatRepository,
+    private val context: Context,
     private val savedStateHandle: SavedStateHandle = SavedStateHandle()
 ) : ViewModel() {
+
+    private val themePreferences = ThemePreferences(context)
 
     companion object {
         private const val KEY_CURRENT_CHAT_ID = "current_chat_id"
@@ -71,6 +75,9 @@ class ChatViewModel(
             savedStateHandle.set(KEY_IS_GENERATING, value)
         }
 
+    // Track when session was reset due to repetitive content to ensure clean next generation
+    private var lastSessionResetAt = 0L
+    
     private var currentChatId: String?
         get() = savedStateHandle.get<String>(KEY_CURRENT_CHAT_ID)
         set(value) = savedStateHandle.set(KEY_CURRENT_CHAT_ID, value)
@@ -87,9 +94,6 @@ class ChatViewModel(
 
     // Avoid aggressive continuation for the very first generation after model load
     private var firstGenerationSinceLoad: Boolean = false
-
-    // timestamp of last underlying session reset to guide history pruning
-    private var lastSessionResetAt: Long = 0L
 
     fun hasDownloadedModels(): Boolean {
         return _availableModels.value.isNotEmpty()
@@ -381,7 +385,15 @@ class ChatViewModel(
 
         if (messageText.isEmpty() && attachmentUri == null) return
 
+        // Set loading state immediately to provide responsive UI feedback
+        _isLoading.value = true
+        isGenerating = true
+
     viewModelScope.launch {
+            // Small delay to allow keyboard dismissal animation to complete
+            // This prevents heavy processing from interfering with the keyboard animation
+            kotlinx.coroutines.delay(150)
+            
             // Check if the current chat still exists
             val currentChat = repository.getChatById(chatId)
             if (currentChat == null) {
@@ -402,6 +414,8 @@ class ChatViewModel(
                     "Model not properly loaded. Please try switching to a different model or restart the app."
                 }
                 repository.addMessage(chatId, errorMessage, isFromUser = false)
+                _isLoading.value = false
+                isGenerating = false
                 return@launch
             }
 
@@ -436,6 +450,8 @@ class ChatViewModel(
                     content = "I can’t assist with that request. Please rephrase with a different, safe topic.",
                     isFromUser = false
                 )
+                _isLoading.value = false
+                isGenerating = false
                 return@launch
             }
 
@@ -452,9 +468,6 @@ class ChatViewModel(
                 repository.updateChatTitle(chatId, messageText.take(50))
                 _currentChat.value = repository.getChatById(chatId)
             }
-
-            _isLoading.value = true
-            isGenerating = true
 
             if (currentModel != null && currentModel!!.isDownloaded) {
                 // Ensure the model is loaded in the inference service before generating
@@ -542,9 +555,16 @@ class ChatViewModel(
                                                 lastUserContent.lowercase().startsWith("unrelated:")
                                         // Heuristic semantic/topic shift detection (low lexical overlap with recent user turns)
                                         val topicShift = historyIsLarge && isTopicShift(lastUserContent, _messages.value)
-                                        val forceMinimal = (tinyArithmetic || veryShort || explicitShift || topicShift) && historyIsLarge
+                                        // Check if session was recently reset (either manually or automatically)
+                                        val recentManualReset = System.currentTimeMillis() - lastSessionResetAt < 10000 // 10 seconds
+                                        val recentAutoReset = inferenceService.wasSessionRecentlyReset(chatId)
+                                        val recentSessionReset = recentManualReset || recentAutoReset
+                                        val forceMinimal = (tinyArithmetic || veryShort || explicitShift || topicShift || recentSessionReset) && historyIsLarge
                                         if (topicShift) {
                                             Log.d("ChatViewModel", "Topic shift detected for prompt '${lastUserContent.take(60)}' (history=${history.length} chars) -> minimal context path")
+                                        }
+                                        if (recentSessionReset) {
+                                            Log.d("ChatViewModel", "Recent session reset detected (manual=$recentManualReset, auto=$recentAutoReset) -> forcing minimal context path")
                                         }
                                         if (forceMinimal) {
                                             // Proactively reset session to ensure totally clean small-context answer
@@ -629,7 +649,16 @@ class ChatViewModel(
                         emptyList()
                     }
                     
-                    val responseStream = inferenceService.generateResponseStreamWithSession(currentPrompt, currentModel!!, chatId, images)
+                    // Get web search preference
+                    val webSearchEnabled = runBlocking { themePreferences.webSearchEnabled.first() }
+                    
+                    val responseStream = inferenceService.generateResponseStreamWithSession(
+                        currentPrompt, 
+                        currentModel!!, 
+                        chatId, 
+                        images, 
+                        webSearchEnabled
+                    )
                                     var lastUpdateTime = 0L
                                     val updateIntervalMs = 50L // Update UI every 50ms instead of every token
                                     var segmentEnded = false
@@ -649,12 +678,16 @@ class ChatViewModel(
                                             val isRepetitive = checkForRepetition(totalContent)
                                             if (isRepetitive) {
                                                 Log.w("ChatViewModel", "Stopping generation due to repetitive content detected")
-                                                // Reset the session to prevent future issues
+                                                // Force a complete session reset to prevent future issues
                                                 try {
+                                                    Log.d("ChatViewModel", "Performing thorough session reset due to repetitive content")
                                                     inferenceService.resetChatSession(chatId)
-                                                    Log.d("ChatViewModel", "Reset MediaPipe session due to repetitive content")
+                                                    // Give extra time for MediaPipe to fully clean up after repetitive content
+                                                    kotlinx.coroutines.delay(750)
+                                                    lastSessionResetAt = System.currentTimeMillis()
+                                                    Log.d("ChatViewModel", "Completed thorough reset after repetitive content")
                                                 } catch (e: Exception) {
-                                                    Log.w("ChatViewModel", "Failed to reset session: ${e.message}")
+                                                    Log.w("ChatViewModel", "Failed to reset session after repetitive content: ${e.message}")
                                                 }
                                                 // Actively cancel the running generation coroutine so the stream stops immediately
                                                 throw kotlinx.coroutines.CancellationException("Repetitive content detected")
@@ -740,6 +773,20 @@ class ChatViewModel(
                         
                         // Handle both CancellationException and JobCancellationException (which extends CancellationException)
                         if (e is kotlinx.coroutines.CancellationException || e.javaClass.simpleName.contains("Cancellation")) {
+                            // Check if this was due to repetitive content
+                            if (e.message?.contains("Repetitive content detected") == true) {
+                                Log.w("ChatViewModel", "Generation cancelled due to repetitive content. Ensuring session is clean.")
+                                // Additional session reset to ensure clean state for next interaction
+                                viewModelScope.launch {
+                                    try {
+                                        delay(1000) // Wait for current cleanup to complete
+                                        inferenceService.resetChatSession(chatId)
+                                        Log.d("ChatViewModel", "Performed additional session reset after repetitive content")
+                                    } catch (resetException: Exception) {
+                                        Log.w("ChatViewModel", "Failed additional session reset: ${resetException.message}")
+                                    }
+                                }
+                            }
                             // CANCEL: Save partial progress
                             Log.d("ChatViewModel", "Generation was cancelled by user.")
                             Log.d("ChatViewModel", "About to call finalizeMessage for cancellation")
@@ -1824,11 +1871,15 @@ class ChatViewModel(
                         inferenceService.loadModel(currentModel!!)
                         _isLoadingModel.value = false
                         
+                        // Get web search preference
+                        val webSearchEnabled = runBlocking { themePreferences.webSearchEnabled.first() }
+                        
                         val responseStream = inferenceService.generateResponseStreamWithSession(
                             fullHistory, 
                             currentModel!!, 
                             chatId, 
-                            images
+                            images,
+                            webSearchEnabled
                         )
                         
                         var lastUpdateTime = 0L
@@ -1843,9 +1894,14 @@ class ChatViewModel(
                                 if (isRepetitive) {
                                     Log.w("ChatViewModel", "Stopping regeneration due to repetitive content")
                                     try {
+                                        Log.d("ChatViewModel", "Performing thorough session reset during regeneration")
                                         inferenceService.resetChatSession(chatId)
+                                        // Give extra time for MediaPipe to fully clean up after repetitive content
+                                        kotlinx.coroutines.delay(750)
+                                        lastSessionResetAt = System.currentTimeMillis()
+                                        Log.d("ChatViewModel", "Completed thorough reset during regeneration")
                                     } catch (e: Exception) {
-                                        Log.w("ChatViewModel", "Failed to reset session: ${e.message}")
+                                        Log.w("ChatViewModel", "Failed to reset session during regeneration: ${e.message}")
                                     }
                                     throw kotlinx.coroutines.CancellationException("Repetitive content detected")
                                 }
