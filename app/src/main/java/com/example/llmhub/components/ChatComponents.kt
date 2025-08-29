@@ -124,7 +124,7 @@ fun annotateLinksAndPhones(source: AnnotatedString, linkColor: Color): Annotated
     val builder = AnnotatedString.Builder()
     builder.append(source)
 
-    val urlRegex = Regex("""((https?://|www\.)[\w\-._~:/?#\[\]@!$&'()*+,;=%]+)""")
+    val urlRegex = Regex("""(https?://[^\s]+|www\.[^\s]+|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}[^\s]*)""")
     val phoneRegex = Regex("""\+?[0-9][0-9\-\s]{6,}[0-9]""")
 
     fun addAnnotation(range: IntRange, annotationTag: String, annotationValue: String) {
@@ -140,11 +140,22 @@ fun annotateLinksAndPhones(source: AnnotatedString, linkColor: Color): Annotated
     }
 
     for (match in urlRegex.findAll(text)) {
-        var url = match.value
-        if (!url.startsWith("http")) {
-            url = "http://$url" // ensure valid scheme
+        val originalUrl = match.value
+        var url = originalUrl.trim()
+        
+        // Clean up common trailing characters that shouldn't be part of URL
+        val trimmedChars = url.length
+        url = url.trimEnd('.', ',', ')', ']', '}', '!', '?', ';', ':')
+        val charsRemoved = trimmedChars - url.length
+        
+        // Add protocol if missing
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            url = "https://$url" // use HTTPS by default for security
         }
-        addAnnotation(match.range, "URL", url)
+        
+        // Adjust range for trimmed characters
+        val adjustedRange = match.range.first until (match.range.last + 1 - charsRemoved)
+        addAnnotation(adjustedRange, "URL", url)
     }
 
     for (match in phoneRegex.findAll(text)) {

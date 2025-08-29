@@ -3,6 +3,9 @@ package com.llmhub.llmhub.inference
 import android.content.Context
 import android.graphics.Bitmap
 import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.websearch.WebSearchService
+import com.llmhub.llmhub.websearch.DuckDuckGoSearchService
+import com.llmhub.llmhub.websearch.SearchIntentDetector
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
@@ -31,7 +34,7 @@ interface InferenceService {
     suspend fun unloadModel()
     suspend fun generateResponse(prompt: String, model: LLMModel): String
     suspend fun generateResponseStream(prompt: String, model: LLMModel): Flow<String>
-    suspend fun generateResponseStreamWithSession(prompt: String, model: LLMModel, chatId: String, images: List<Bitmap> = emptyList()): Flow<String>
+    suspend fun generateResponseStreamWithSession(prompt: String, model: LLMModel, chatId: String, images: List<Bitmap> = emptyList(), webSearchEnabled: Boolean = true): Flow<String>
     suspend fun resetChatSession(chatId: String)
     suspend fun onCleared()
     fun getCurrentlyLoadedModel(): LLMModel?
@@ -64,6 +67,9 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
     private var currentBackend: LlmInference.Backend? = null
     // Estimated tokens accumulated in current session (prompt + responses); heuristic
     private var estimatedSessionTokens: Int = 0
+    
+    // Web search service for enhanced responses
+    private val webSearchService: WebSearchService = DuckDuckGoSearchService()
     
     // Mutex to prevent race conditions during session operations
     private val sessionMutex = Mutex()
@@ -532,7 +538,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         }
     }.flowOn(Dispatchers.IO)
 
-    override suspend fun generateResponseStreamWithSession(prompt: String, model: LLMModel, chatId: String, images: List<Bitmap>): Flow<String> = callbackFlow {
+    override suspend fun generateResponseStreamWithSession(prompt: String, model: LLMModel, chatId: String, images: List<Bitmap>, webSearchEnabled: Boolean): Flow<String> = callbackFlow {
         ensureModelLoaded(model)
         
         // Check memory constraints for vision usage
@@ -547,7 +553,74 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         
         var isGenerationComplete = false
         
+        // Extract the current user message from the prompt for web search detection
+        val currentUserMessage = extractCurrentUserMessage(prompt)
+        val needsWebSearch = webSearchEnabled && SearchIntentDetector.needsWebSearch(currentUserMessage)
+        var enhancedPrompt = prompt
+        
         try {
+            if (needsWebSearch) {
+                Log.d(TAG, "Web search detected for chat $chatId. Current message: '$currentUserMessage'")
+                trySend("🔍 Searching the web...")
+                
+                try {
+                    val searchQuery = SearchIntentDetector.extractSearchQuery(currentUserMessage)
+                    Log.d(TAG, "Extracted search query: '$searchQuery'")
+                    
+                    val searchResults = webSearchService.search(searchQuery, maxResults = 5)
+                    
+                    if (searchResults.isNotEmpty()) {
+                        Log.d(TAG, "Found ${searchResults.size} search results")
+                        trySend("✅ Found ${searchResults.size} results. Analyzing...")
+                        
+                        // Create enhanced prompt with search results
+                        val resultsText = searchResults.joinToString("\n\n") { result ->
+                            "SOURCE: ${result.source}\nTITLE: ${result.title}\nCONTENT: ${result.snippet}\n---"
+                        }
+                        
+                        // Extract just the current user question for better clarity
+                        enhancedPrompt = """
+                            CURRENT WEB SEARCH RESULTS:
+                            $resultsText
+                            
+                            Based on the above current web search results, please answer the user's question: "$currentUserMessage"
+                            
+                            IMPORTANT INSTRUCTIONS:
+                            - Use ONLY the information from the web search results above
+                            - If the search results contain the answer, provide a clear and specific response
+                            - If the search results don't contain enough information, say so clearly
+                            - For dates and events, be specific based on what you find in the results
+                            - Do not make up information not found in the search results
+                            
+                            Answer the question directly and clearly:
+                        """.trimIndent()
+                        
+                        Log.d(TAG, "Enhanced prompt created with ${searchResults.size} search results")
+                        Log.d(TAG, "User question: '$currentUserMessage'")
+                        Log.d(TAG, "Search results preview: ${resultsText.take(200)}...")
+                    } else {
+                        Log.w(TAG, "No search results found for query: '$searchQuery'")
+                        trySend("❌ No current search results found. Providing response based on training data...\n\n")
+                        // Continue with original prompt
+                    }
+                } catch (searchException: Exception) {
+                    Log.e(TAG, "Web search failed for chat $chatId", searchException)
+                    trySend("❌ Web search failed: ${searchException.message}. Providing response based on training data...\n\n")
+                    // Continue with original prompt
+                }
+            }
+            
+            // For web search queries, reset session to ensure clean context
+            if (needsWebSearch) {
+                try {
+                    Log.d(TAG, "Resetting session for web search to ensure clean context")
+                    resetChatSession(chatId)
+                    delay(50) // Brief delay after reset
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to reset session for web search: ${e.message}")
+                }
+            }
+            
             // Use the single session from the model instance (Gallery approach)
             val instance = modelInstance ?: throw IllegalStateException("No model loaded")
             val session = instance.session
@@ -564,7 +637,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             // Check token count and reset session if approaching limit (Gallery approach)
             val maxTokens = getMaxTokensForModel(model)
             // Proactive token accounting using internal estimate
-            val promptTokens = session.sizeInTokens(prompt)
+            val promptTokens = session.sizeInTokens(enhancedPrompt)
             val outputReserve = (maxTokens * 0.15).toInt().coerceAtLeast(128) // reserve space for response
             var currentTokens = estimatedSessionTokens
             // If our estimate undercounts (e.g., after recovery) fall back to session.sizeInTokens(prompt) heuristic not available; keep estimate
@@ -609,9 +682,9 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             
             // CRITICAL: For vision models, text query MUST be added before images
             // This is required by MediaPipe's vision implementation
-            if (prompt.trim().isNotEmpty()) {
-                Log.d(TAG, "Adding text query to session for chat $chatId: '${prompt.take(100)}...'")
-                currentSession.addQueryChunk(prompt)
+            if (enhancedPrompt.trim().isNotEmpty()) {
+                Log.d(TAG, "Adding text query to session for chat $chatId: '${enhancedPrompt.take(100)}...'")
+                currentSession.addQueryChunk(enhancedPrompt)
                 estimatedSessionTokens += promptTokens
             } else if (images.isNotEmpty() && model.supportsVision) {
                 // If we have images but no text, add a default query for vision models
@@ -675,9 +748,9 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                     Log.d(TAG, "Created new session for recovery, attempting generation retry")
                     
                     // Re-add text query first (CRITICAL for vision models)
-                    if (prompt.trim().isNotEmpty()) {
+                    if (enhancedPrompt.trim().isNotEmpty()) {
                         Log.d(TAG, "Re-adding text query to recovery session for chat $chatId")
-                        session.addQueryChunk(prompt)
+                        session.addQueryChunk(enhancedPrompt)
                     } else if (images.isNotEmpty() && model.supportsVision) {
                         Log.d(TAG, "Adding default vision query for recovery session")
                         session.addQueryChunk("What do you see in this image?")
@@ -721,9 +794,9 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                             Log.d(TAG, "Force recreated session, attempting generation retry")
                             
                             // Re-add text query first (CRITICAL for vision models)
-                            if (prompt.trim().isNotEmpty()) {
+                            if (enhancedPrompt.trim().isNotEmpty()) {
                                 Log.d(TAG, "Re-adding text query to force recreated session for chat $chatId")
-                                session.addQueryChunk(prompt)
+                                session.addQueryChunk(enhancedPrompt)
                             } else if (images.isNotEmpty() && model.supportsVision) {
                                 Log.d(TAG, "Adding default vision query for force recreated session")
                                 session.addQueryChunk("What do you see in this image?")
@@ -922,5 +995,37 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
 
     override fun getMemoryWarningForImages(images: List<Bitmap>): String? {
         return checkMemoryConstraintsForVision(images)
+    }
+    
+    /**
+     * Extract the current user message from a conversation prompt
+     * This handles various prompt formats and extracts just the latest user input
+     */
+    private fun extractCurrentUserMessage(prompt: String): String {
+        val lines = prompt.trim().split('\n')
+        
+        // Look for the last user message in the conversation
+        for (i in lines.lastIndex downTo 0) {
+            val line = lines[i].trim()
+            if (line.startsWith("user:")) {
+                return line.removePrefix("user:").trim()
+            }
+        }
+        
+        // If no "user:" prefix found, check if the entire prompt is just a user message
+        // This handles cases where the prompt is minimal (like "1+1")
+        if (!prompt.contains("assistant:") && !prompt.contains("user:")) {
+            return prompt.trim()
+        }
+        
+        // Fallback: return the last non-empty line that doesn't start with "assistant:"
+        for (i in lines.lastIndex downTo 0) {
+            val line = lines[i].trim()
+            if (line.isNotEmpty() && !line.startsWith("assistant:")) {
+                return line
+            }
+        }
+        
+        return prompt.trim()
     }
 }

@@ -16,11 +16,21 @@ class ThemeViewModel(private val context: Context) : ViewModel() {
     private val _themeMode = MutableStateFlow(ThemeMode.SYSTEM)
     val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
     
+    private val _webSearchEnabled = MutableStateFlow(true)
+    val webSearchEnabled: StateFlow<Boolean> = _webSearchEnabled.asStateFlow()
+    
     init {
         // Load the saved theme preference
         viewModelScope.launch {
             themePreferences.themeMode.collect { mode ->
                 _themeMode.value = mode
+            }
+        }
+        
+        // Load the saved web search preference
+        viewModelScope.launch {
+            themePreferences.webSearchEnabled.collect { enabled ->
+                _webSearchEnabled.value = enabled
             }
         }
     }
@@ -29,6 +39,13 @@ class ThemeViewModel(private val context: Context) : ViewModel() {
         viewModelScope.launch {
             themePreferences.setThemeMode(mode)
             _themeMode.value = mode
+        }
+    }
+    
+    fun setWebSearchEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            themePreferences.setWebSearchEnabled(enabled)
+            _webSearchEnabled.value = enabled
         }
     }
 }
