@@ -39,6 +39,7 @@ interface InferenceService {
     suspend fun onCleared()
     fun getCurrentlyLoadedModel(): LLMModel?
     fun getMemoryWarningForImages(images: List<Bitmap>): String?
+    fun wasSessionRecentlyReset(chatId: String): Boolean
 }
 
 /**
@@ -67,6 +68,9 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
     private var currentBackend: LlmInference.Backend? = null
     // Estimated tokens accumulated in current session (prompt + responses); heuristic
     private var estimatedSessionTokens: Int = 0
+    
+    // Track when sessions are reset to help ChatViewModel use minimal context
+    private val sessionResetTimes = mutableMapOf<String, Long>()
     
     // Web search service for enhanced responses
     private val webSearchService: WebSearchService = DuckDuckGoSearchService()
@@ -233,6 +237,9 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
     override suspend fun resetChatSession(chatId: String) {
         sessionMutex.withLock {
             Log.d(TAG, "Resetting session for chat $chatId")
+            
+            // Record the session reset
+            recordSessionReset(chatId)
             
             val instance = modelInstance ?: return@withLock
             
@@ -653,6 +660,9 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 Log.w(TAG, "Token count ($currentTokens + $promptTokens = ${currentTokens + promptTokens}) approaching limit ($maxTokens)")
                 Log.w(TAG, "Resetting session for chat $chatId to prevent OUT_OF_RANGE error")
                 
+                // Record the session reset
+                recordSessionReset(chatId)
+                
                 // Reset session before it gets full
                 sessionMutex.withLock {
                     try {
@@ -1027,5 +1037,23 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         }
         
         return prompt.trim()
+    }
+    
+    /**
+     * Check if a session was recently reset (within the last 2 seconds)
+     * This helps ChatViewModel determine if it should use minimal context
+     */
+    override fun wasSessionRecentlyReset(chatId: String): Boolean {
+        val resetTime = sessionResetTimes[chatId] ?: return false
+        val timeSinceReset = System.currentTimeMillis() - resetTime
+        return timeSinceReset < 2000 // 2 seconds
+    }
+    
+    /**
+     * Record that a session was reset for a specific chat
+     */
+    private fun recordSessionReset(chatId: String) {
+        sessionResetTimes[chatId] = System.currentTimeMillis()
+        Log.d(TAG, "Recorded session reset for chat $chatId")
     }
 }
