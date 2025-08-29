@@ -385,7 +385,15 @@ class ChatViewModel(
 
         if (messageText.isEmpty() && attachmentUri == null) return
 
+        // Set loading state immediately to provide responsive UI feedback
+        _isLoading.value = true
+        isGenerating = true
+
     viewModelScope.launch {
+            // Small delay to allow keyboard dismissal animation to complete
+            // This prevents heavy processing from interfering with the keyboard animation
+            kotlinx.coroutines.delay(150)
+            
             // Check if the current chat still exists
             val currentChat = repository.getChatById(chatId)
             if (currentChat == null) {
@@ -406,6 +414,8 @@ class ChatViewModel(
                     "Model not properly loaded. Please try switching to a different model or restart the app."
                 }
                 repository.addMessage(chatId, errorMessage, isFromUser = false)
+                _isLoading.value = false
+                isGenerating = false
                 return@launch
             }
 
@@ -440,6 +450,8 @@ class ChatViewModel(
                     content = "I can’t assist with that request. Please rephrase with a different, safe topic.",
                     isFromUser = false
                 )
+                _isLoading.value = false
+                isGenerating = false
                 return@launch
             }
 
@@ -456,9 +468,6 @@ class ChatViewModel(
                 repository.updateChatTitle(chatId, messageText.take(50))
                 _currentChat.value = repository.getChatById(chatId)
             }
-
-            _isLoading.value = true
-            isGenerating = true
 
             if (currentModel != null && currentModel!!.isDownloaded) {
                 // Ensure the model is loaded in the inference service before generating
