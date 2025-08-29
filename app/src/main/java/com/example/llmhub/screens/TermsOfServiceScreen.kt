@@ -13,6 +13,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.llmhub.llmhub.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -22,7 +24,7 @@ fun TermsOfServiceScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Terms of Service") },
+                title = { Text(stringResource(R.string.terms_of_service)) },
                 navigationIcon = {
                     IconButton(
                         onClick = onNavigateBack,
@@ -32,7 +34,7 @@ fun TermsOfServiceScreen(
                     ) {
                         Icon(
                             Icons.Default.ArrowBack, 
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.content_description_back),
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -56,20 +58,20 @@ fun TermsOfServiceScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = "Terms of Service",
+                            text = stringResource(R.string.terms_of_service),
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                         
                         Text(
-                            text = "Last updated: July 16, 2025",
+                            text = stringResource(R.string.tos_last_updated),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         
                         Text(
-                            text = "Welcome to LLM Hub. By using our application, you agree to be bound by these Terms of Service. Please read them carefully.",
+                            text = stringResource(R.string.tos_welcome_text),
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Justify,
                             color = MaterialTheme.colorScheme.onSurface
@@ -87,14 +89,14 @@ fun TermsOfServiceScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = "1. Acceptance of Terms",
+                            text = stringResource(R.string.tos_acceptance_title),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                         
                         Text(
-                            text = "By downloading, installing, or using LLM Hub, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the application.",
+                            text = stringResource(R.string.tos_acceptance_text),
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Justify,
                             color = MaterialTheme.colorScheme.onSurface
@@ -112,14 +114,14 @@ fun TermsOfServiceScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = "2. Application Description",
+                            text = stringResource(R.string.tos_app_description_title),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                         
                         Text(
-                            text = "LLM Hub is an open-source Android application that provides access to Large Language Models (LLMs) for on-device AI conversations. The app processes all data locally on your device and does not transmit personal information to external servers.",
+                            text = stringResource(R.string.tos_app_description_text),
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Justify,
                             color = MaterialTheme.colorScheme.onSurface
@@ -137,14 +139,14 @@ fun TermsOfServiceScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = "3. User Responsibilities",
+                            text = stringResource(R.string.tos_user_responsibilities_title),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                         
                         Text(
-                            text = "You agree to use LLM Hub responsibly and in accordance with applicable laws. You are responsible for:\n\n• Using the application for lawful purposes only\n• Not attempting to reverse engineer or modify the application\n• Not using the application to generate harmful, illegal, or offensive content\n• Respecting the intellectual property rights of third parties\n• Ensuring your device meets the minimum requirements for proper operation",
+                            text = stringResource(R.string.tos_user_responsibilities_text),
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Justify,
                             color = MaterialTheme.colorScheme.onSurface
@@ -162,14 +164,14 @@ fun TermsOfServiceScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = "4. Privacy and Data",
+                            text = stringResource(R.string.tos_privacy_data_title),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                         
                         Text(
-                            text = "LLM Hub is designed with privacy in mind:\n\n• All conversations and data processing occur locally on your device\n• No personal data is transmitted to external servers\n• Chat history is stored locally and can be deleted at any time\n• Model downloads are performed directly from official repositories (HuggingFace, Google)\n• The application does not collect analytics or usage data",
+                            text = stringResource(R.string.tos_privacy_data_text),
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Justify,
                             color = MaterialTheme.colorScheme.onSurface
@@ -187,14 +189,14 @@ fun TermsOfServiceScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = "5. Third-Party Models",
+                            text = stringResource(R.string.tos_model_usage_title),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                         
                         Text(
-                            text = "LLM Hub utilizes AI models from third-party providers including Google, Meta, Microsoft, and HuggingFace. These models are subject to their respective licenses and terms of use. By using these models through our application, you also agree to comply with their terms.",
+                            text = stringResource(R.string.tos_model_usage_text),
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Justify,
                             color = MaterialTheme.colorScheme.onSurface
@@ -212,14 +214,14 @@ fun TermsOfServiceScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = "6. Disclaimer of Warranties",
+                            text = stringResource(R.string.tos_disclaimer_title),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                         
                         Text(
-                            text = "LLM Hub is provided \"as is\" without warranty of any kind. We do not guarantee that the application will be error-free, secure, or continuously available. AI-generated content may contain inaccuracies, and users should verify important information independently.",
+                            text = stringResource(R.string.tos_disclaimer_text),
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Justify,
                             color = MaterialTheme.colorScheme.onSurface
@@ -237,14 +239,14 @@ fun TermsOfServiceScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = "7. Limitation of Liability",
+                            text = stringResource(R.string.tos_limitation_liability_title),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                         
                         Text(
-                            text = "In no event shall the developers of LLM Hub be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the application. Our liability is limited to the maximum extent permitted by law.",
+                            text = stringResource(R.string.tos_limitation_liability_text),
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Justify,
                             color = MaterialTheme.colorScheme.onSurface
@@ -262,14 +264,14 @@ fun TermsOfServiceScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = "8. Open Source License",
+                            text = stringResource(R.string.tos_open_source_title),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                         
                         Text(
-                            text = "LLM Hub is open-source software. The source code is available under the MIT License, which permits use, modification, and distribution subject to the license terms. Third-party libraries and models may have different license terms.",
+                            text = stringResource(R.string.tos_open_source_text),
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Justify,
                             color = MaterialTheme.colorScheme.onSurface
@@ -287,14 +289,14 @@ fun TermsOfServiceScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = "9. Changes to Terms",
+                            text = stringResource(R.string.tos_changes_title),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                         
                         Text(
-                            text = "We may update these Terms of Service from time to time. Users will be notified of significant changes through app updates. Continued use of the application after changes constitutes acceptance of the new terms.",
+                            text = stringResource(R.string.tos_changes_text),
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Justify,
                             color = MaterialTheme.colorScheme.onSurface
@@ -312,14 +314,14 @@ fun TermsOfServiceScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = "10. Contact Information",
+                            text = stringResource(R.string.tos_contact_title),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                         
                         Text(
-                            text = "For questions about these Terms of Service, please contact us at timmyboy0623@gmail.com",
+                            text = stringResource(R.string.tos_contact_text),
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Justify,
                             color = MaterialTheme.colorScheme.onSurface

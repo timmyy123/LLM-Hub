@@ -10,9 +10,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.llmhub.llmhub.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,7 +26,7 @@ fun AboutScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("About") },
+                title = { Text(stringResource(R.string.about)) },
                 navigationIcon = {
                     IconButton(
                         onClick = onNavigateBack,
@@ -32,7 +34,7 @@ fun AboutScreen(
                     ) {
                         Icon(
                             Icons.Default.ArrowBack, 
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.content_description_back),
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -70,7 +72,7 @@ fun AboutScreen(
                     )
                     
                     Text(
-                        text = "Version 1.0.8",
+                        text = stringResource(R.string.version_number),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -86,14 +88,14 @@ fun AboutScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = "About LLM Hub",
+                            text = stringResource(R.string.about_llm_hub),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                         
                         Text(
-                            text = "LLM Hub is an open-source Android application that brings the power of Large Language Models directly to your mobile device. Experience AI conversations with state-of-the-art models like Gemma, Llama, and Phi - all running locally on your phone for maximum privacy and offline accessibility.",
+                            text = stringResource(R.string.about_description),
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Justify,
                             color = MaterialTheme.colorScheme.onSurface
@@ -111,20 +113,20 @@ fun AboutScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = "Key Features",
+                            text = stringResource(R.string.key_features),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                         
                         val features = listOf(
-                            "🤖 Multiple LLM Models: Gemma-3, Llama-3.2, Phi-4, and Gemma-3n",
-                            "📱 On-Device Processing: Complete privacy, no internet required",
-                            "🖼️ Vision Support: Multimodal models that understand images",
-                            "⚡ GPU Acceleration: Optimized performance on supported devices",
-                            "💾 Offline Usage: Chat without internet connection",
-                            "🔒 Privacy First: Your conversations never leave your device",
-                            "🎨 Modern UI: Clean, intuitive Material Design interface"
+                            stringResource(R.string.feature_multiple_models),
+                            stringResource(R.string.feature_on_device),
+                            stringResource(R.string.feature_vision_support),
+                            stringResource(R.string.feature_gpu_acceleration),
+                            stringResource(R.string.feature_offline_usage),
+                            stringResource(R.string.feature_privacy_first),
+                            stringResource(R.string.feature_modern_ui)
                         )
                         
                         features.forEach { feature ->
@@ -148,18 +150,18 @@ fun AboutScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = "Technology Stack",
+                            text = stringResource(R.string.tech_stack),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                         
                         val technologies = listOf(
-                            "🏗️ Built with Kotlin & Jetpack Compose",
-                            "🧠 Powered by MediaPipe & LiteRT",
-                            "🚀 Optimized with INT4/INT8 quantization",
-                            "⚡ GPU acceleration via LiteRT XNNPACK",
-                            "🔗 Models from HuggingFace & Google"
+                            stringResource(R.string.tech_kotlin_compose),
+                            stringResource(R.string.tech_mediapipe_litert),
+                            stringResource(R.string.tech_quantization),
+                            stringResource(R.string.tech_gpu_acceleration),
+                            stringResource(R.string.tech_models_source)
                         )
                         
                         technologies.forEach { tech ->
@@ -183,7 +185,7 @@ fun AboutScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = "Contact & Support",
+                            text = stringResource(R.string.contact_support),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -206,7 +208,7 @@ fun AboutScreen(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 
                                 Text(
-                                    text = "Contact Email:",
+                                    text = stringResource(R.string.contact_email),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -242,7 +244,7 @@ fun AboutScreen(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 
                                 Text(
-                                    text = "Source Code:",
+                                    text = stringResource(R.string.source_code),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -256,7 +258,7 @@ fun AboutScreen(
                                 modifier = Modifier.padding(start = 28.dp)
                             ) {
                                 Text(
-                                    text = "GitHub Repository",
+                                    text = stringResource(R.string.github_repository),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.primary
                                 )
@@ -275,14 +277,14 @@ fun AboutScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = "Acknowledgments",
+                            text = stringResource(R.string.acknowledgments),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                         
                         Text(
-                            text = "Special thanks to Google, Meta, Microsoft, and the HuggingFace community for providing the incredible LLM models that power this application. This project also relies on the amazing work of the Android development community and the open-source ecosystem.",
+                            text = stringResource(R.string.acknowledgments_text),
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Justify,
                             color = MaterialTheme.colorScheme.onSurface

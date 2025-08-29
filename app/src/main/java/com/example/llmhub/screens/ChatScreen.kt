@@ -178,7 +178,7 @@ fun ChatScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Tune,
-                                    contentDescription = "Select model",
+                                    contentDescription = stringResource(R.string.select_model),
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }
@@ -202,13 +202,13 @@ fun ChatScreen(
                                             ) {
                                                 Icon(
                                                     imageVector = Icons.Default.PowerOff,
-                                                    contentDescription = "Unload model",
+                                                    contentDescription = stringResource(R.string.unload_model),
                                                     tint = MaterialTheme.colorScheme.error,
                                                     modifier = Modifier.size(18.dp)
                                                 )
                                                 Spacer(modifier = Modifier.width(12.dp))
                                                 Text(
-                                                    text = "Unload Model",
+                                                    text = stringResource(R.string.unload_model),
                                                     style = MaterialTheme.typography.bodyMedium,
                                                     fontWeight = FontWeight.Medium,
                                                     color = MaterialTheme.colorScheme.error
@@ -259,13 +259,13 @@ fun ChatScreen(
                                                             ) {
                                                                 Icon(
                                                                     Icons.Default.RemoveRedEye,
-                                                                    contentDescription = "Vision enabled",
+                                                                    contentDescription = stringResource(R.string.vision_enabled),
                                                                     modifier = Modifier.size(14.dp),
                                                                     tint = MaterialTheme.colorScheme.onTertiary
                                                                 )
                                                                 Spacer(modifier = Modifier.width(4.dp))
                                                                 Text(
-                                                                    text = "Vision",
+                                                                    text = stringResource(R.string.vision),
                                                                     style = MaterialTheme.typography.labelSmall,
                                                                     fontWeight = FontWeight.SemiBold,
                                                                     color = MaterialTheme.colorScheme.onTertiary
@@ -278,7 +278,11 @@ fun ChatScreen(
                                                 // Add model details subtitle
                                                 if (model.contextWindowSize > 0) {
                                                     Text(
-                                                        text = "${model.contextWindowSize / 1024}k context • ${if (model.supportsVision) "Multimodal" else "Text only"}",
+                                                        text = stringResource(
+                                                            R.string.context_multimodal_format,
+                                                            model.contextWindowSize / 1024,
+                                                            if (model.supportsVision) stringResource(R.string.multimodal) else stringResource(R.string.text_only)
+                                                        ),
                                                         style = MaterialTheme.typography.bodySmall,
                                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                         modifier = Modifier.padding(top = 2.dp)
@@ -290,7 +294,7 @@ fun ChatScreen(
                                             {
                                                 Icon(
                                                     imageVector = Icons.Default.Check,
-                                                    contentDescription = "Currently loaded",
+                                                    contentDescription = stringResource(R.string.currently_loaded),
                                                     tint = MaterialTheme.colorScheme.primary,
                                                     modifier = Modifier.size(18.dp)
                                                 )
@@ -496,7 +500,7 @@ private fun TypingIndicator() {
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
-                text = "AI is thinking...",
+                text = stringResource(R.string.ai_thinking),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -560,7 +564,7 @@ private fun ModelLoadingIndicator(modelName: String) {
                 
                 // Loading text with model name
                 Text(
-                    text = "Loading ${modelName.take(30)}${if (modelName.length > 30) "..." else ""}",
+                    text = stringResource(R.string.loading_model_format, modelName.take(30) + if (modelName.length > 30) "..." else ""),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -569,7 +573,7 @@ private fun ModelLoadingIndicator(modelName: String) {
                 Spacer(modifier = Modifier.height(4.dp))
                 
                 Text(
-                    text = "Please wait while the model initializes...",
+                    text = stringResource(R.string.please_wait_model_initialize),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                 )
@@ -587,7 +591,7 @@ private fun ModelLoadingIndicator(modelName: String) {
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Initializing neural network...",
+                        text = stringResource(R.string.initializing_neural_network),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                     )

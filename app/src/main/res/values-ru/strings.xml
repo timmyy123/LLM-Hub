@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="multimodal">Мультимодальный</string>
+    <string name="text_only">Только текст</string>
+    <string name="currently_loaded">Текущая загрузка</string>
+    <string name="select_model">Выбрать модель</string>
+    <string name="unload_model">Выгрузить модель</string>
     <string name="app_name">LLM Hub</string>
     
     <!-- Common -->
@@ -25,6 +30,7 @@
     <string name="type_a_message">Введите сообщение...</string>
     <string name="loading_model_format">Загрузка %1$s</string>
     <string name="please_wait_model_initialize">Пожалуйста, подождите пока модель инициализируется...</string>
+    <string name="initializing_neural_network">Инициализация нейронной сети...</string>
     <string name="attached_image">Прикреплённое изображение</string>
     <string name="shared_a_file">Поделился файлом</string>
     <string name="copy_message">Копировать сообщение</string>
@@ -37,9 +43,6 @@
     <string name="message_copied">Сообщение скопировано</string>
     <string name="tokens_per_second_format">%1$d токенов • %2$.1f ток/сек</string>
     <string name="context_multimodal_format">%1$dk контекста • %2$s</string>
-    <string name="multimodal">Мультимодальный</string>
-    <string name="text_only">Только текст</string>
-    <string name="currently_loaded">Сейчас загружен</string>
     
     <!-- About Screen -->
     <string name="about_llm_hub">О LLM Hub</string>
@@ -48,25 +51,33 @@
     <string name="feature_multiple_models">🤖 Множественные LLM Модели: Gemma-3, Llama-3.2, Phi-4, и Gemma-3n</string>
     <string name="feature_on_device">📱 Локальная Обработка: Полная конфиденциальность, интернет не требуется</string>
     <string name="feature_vision_support">🖼️ Поддержка Зрения: Мультимодальные модели, понимающие изображения</string>
-    <string name="feature_gpu_acceleration">⚡ GPU Ускорение: Оптимизированная производительность на поддерживаемых устройствах</string>
-    <string name="feature_offline_usage">💾 Офлайн Использование: Общайтесь без интернет-соединения</string>
-    <string name="feature_privacy_first">🔒 Конфиденциальность Прежде Всего: Ваши разговоры никогда не покидают ваше устройство</string>
-    <string name="feature_modern_ui">🎨 Современный UI: Чистый, интуитивный интерфейс Material Design</string>
-    <string name="technology_stack">Технологический Стек</string>
-    <string name="tech_kotlin_compose">🏗️ Построен с Kotlin и Jetpack Compose</string>
-    <string name="tech_mediapipe">🧠 Работает на MediaPipe и LiteRT</string>
-    <string name="tech_quantization">🚀 Оптимизирован с квантованием INT4/INT8</string>
-    <string name="tech_gpu_acceleration">⚡ GPU ускорение через LiteRT XNNPACK</string>
+        <string name="feature_gpu_acceleration">⚡ Ускорение GPU: Оптимизированная производительность на поддерживаемых устройствах</string>
+    <string name="feature_offline_usage">💾 Автономное Использование: Общайтесь без подключения к интернету</string>
+    <string name="feature_privacy_first">🔒 Конфиденциальность Прежде Всего: Ваши разговоры никогда не покидают устройство</string>
+    <string name="feature_modern_ui">🎨 Современный Интерфейс: Чистый, интуитивный интерфейс Material Design</string>
+    <string name="developer_info">Информация о Разработчике</string>
+    <string name="about_developer_info">Этот проект разрабатывается энтузиастом, увлеченным тем, чтобы сделать ИИ-технологии более доступными для всех. Ваши отзывы и вклад всегда приветствуются!</string>
+    <string name="tech_stack">Технологический Стек</string>
+    <string name="about_tech_stack">LLM Hub построен с использованием современных технологий разработки Android: Kotlin, Jetpack Compose, Material Design 3, и библиотеки llama.cpp для эффективного вывода на устройстве.</string>
+    <string name="tech_kotlin_compose">🏗️ Построено с Kotlin и Jetpack Compose</string>
+    <string name="tech_mediapipe_litert">🧠 Работает на MediaPipe и LiteRT</string>
+    <string name="tech_quantization">🚀 Оптимизировано с квантованием INT4/INT8</string>
+    <string name="tech_gpu_acceleration">⚡ Ускорение GPU через LiteRT XNNPACK</string>
     <string name="tech_models_source">🔗 Модели от HuggingFace и Google</string>
-    <string name="contact_support">Контакты и Поддержка</string>
+    <string name="contact_support">Контакт и Поддержка</string>
     <string name="contact_email">Контактный Email:</string>
     <string name="source_code">Исходный Код:</string>
     <string name="github_repository">GitHub Репозиторий</string>
     <string name="acknowledgments">Благодарности</string>
-    <string name="acknowledgments_text">Особые благодарности сообществу открытого исходного кода, команде MediaPipe Google, HuggingFace за хостинг моделей, и всем участникам, которые делают возможными такие проекты. Это приложение стоит на плечах гигантов в сообществах ML и Android разработки.</string>
+    <string name="acknowledgments_text">Особая благодарность Google, Meta, Microsoft, и сообществу HuggingFace за предоставление невероятных LLM-моделей, которые питают это приложение. Этот проект также опирается на удивительную работу сообщества разработчиков Android и экосистемы открытого исходного кода.</string>
+    <string name="version_number">Версия 1.0.8</string>
+    <string name="ai_thinking">ИИ думает...</string>
+    <string name="app_version">Версия Приложения</string>
     
     <!-- Terms of Service -->
     <string name="terms_of_service">Условия Обслуживания</string>
+    <string name="tos_last_updated">Последнее обновление: 16 июля 2025</string>
+    <string name="tos_welcome_text">Добро пожаловать в LLM Hub. Используя наше приложение, вы соглашаетесь быть связанными этими Условиями Обслуживания. Пожалуйста, внимательно прочитайте их.</string>
     <string name="tos_welcome">Добро пожаловать в LLM Hub. Используя наше приложение, вы соглашаетесь быть связанными этими Условиями Обслуживания. Пожалуйста, внимательно прочитайте их.</string>
     <string name="tos_acceptance_title">1. Принятие Условий</string>
     <string name="tos_acceptance_text">Скачивая, устанавливая или используя LLM Hub, вы подтверждаете, что прочитали, поняли и соглашаетесь быть связанными этими Условиями Обслуживания. Если вы не согласны с этими условиями, пожалуйста, не используйте приложение.</string>
@@ -95,6 +106,46 @@
     <string name="settings">Настройки</string>
     <string name="about">О программе</string>
     
+    <!-- Settings -->
+    <string name="appearance">Внешний вид</string>
+    <string name="features">Функции</string>
+    <string name="information">Информация</string>
+    <string name="source_code_section">Исходный Код</string>
+    <string name="download_models">Скачать Модели</string>
+    <string name="browse_download_models">Просмотреть и скачать LLM модели</string>
+    <string name="web_search">Веб-поиск</string>
+    <string name="web_search_enabled">Получать актуальную информацию из интернета</string>
+    <string name="web_search_disabled">Использовать только офлайн знания</string>
+    <string name="web_search_description_enabled">Получать актуальную информацию из интернета</string>
+    <string name="web_search_description_disabled">Использовать только офлайн знания</string>
+    <string name="theme">Тема</string>
+    <string name="language">Язык</string>
+    <string name="light_theme">Светлая</string>
+    <string name="dark_theme">Тёмная</string>
+    <string name="system_default_theme">По умолчанию</string>
+    <string name="theme_light">Светлая</string>
+    <string name="theme_dark">Тёмная</string>
+    <string name="theme_system">По умолчанию</string>
+    <string name="system_default_language">По умолчанию</string>
+    <string name="system_default">По умолчанию</string>
+    <string name="choose_theme">Выбрать Тему</string>
+    <string name="choose_language">Выбрать Язык</string>
+    <string name="select_language">Выбрать Язык</string>
+    <string name="app_information_contact">Информация о приложении и контакты</string>
+    <string name="app_info_contact">Информация о приложении и контакты</string>
+    <string name="legal_terms_conditions">Правовые условия</string>
+    <string name="github_repository_desc">Посмотреть исходный код и внести вклад</string>
+    <string name="view_source_contribute">Посмотреть исходный код и внести вклад</string>
+    <string name="back">Назад</string>
+    
+    <!-- Language Names -->
+    <string name="language_english">English</string>
+    <string name="language_spanish">Español</string>
+    <string name="language_portuguese">Português</string>
+    <string name="language_german">Deutsch</string>
+    <string name="language_french">Français</string>
+    <string name="language_russian">Русский</string>
+    
     <!-- Errors and Messages -->
     <string name="failed_to_load_image">Не удалось загрузить изображение</string>
     <string name="model_loading_error">Ошибка загрузки модели</string>
@@ -116,10 +167,36 @@
     <string name="content_description_check">Проверить</string>
     <string name="content_description_eye">Зрение включено</string>
     <string name="content_description_attach_image">Прикрепить изображение</string>
+    <string name="content_description_back">Назад</string>
     
     <!-- Model Information -->
     <string name="no_model_selected">Модель не выбрана</string>
     <string name="no_model_downloaded">Модель не загружена</string>
     <string name="model_supports_vision">Поддерживает зрение</string>
     <string name="model_text_only">Только текст</string>
+    
+    <!-- Chat Drawer -->
+    <string name="drawer_title">LLM Hub</string>
+    <string name="drawer_new_chat">Новый Чат</string>
+    <string name="drawer_recent_chats">Недавние Чаты</string>
+    <string name="drawer_no_chats">Пока нет чатов</string>
+    <string name="drawer_download_models">Скачать Модели</string>
+    <string name="drawer_clear_all_chats">Очистить Все Чаты</string>
+    <string name="drawer_settings">Настройки</string>
+    
+    <!-- Chat Management -->
+    <string name="dialog_delete_all_chats_title">Удалить Все Чаты?</string>
+    <string name="dialog_delete_all_chats_message">Это навсегда удалит всю историю разговоров. Это действие нельзя отменить.</string>
+    <string name="dialog_delete_chat_title">Удалить Чат?</string>
+    <string name="dialog_delete_chat_message">Удалить разговор \"%1$s\"?</string>
+    <string name="action_delete_all">Удалить Все</string>
+    <string name="action_delete">Удалить</string>
+    <string name="action_cancel">Отмена</string>
+    <string name="content_description_delete_chat">Удалить Чат</string>
+    
+    <!-- Time Formatting -->
+    <string name="time_yesterday">Вчера</string>
+    <string name="time_hours_ago">%1$d ч назад</string>
+    <string name="time_minutes_ago">%1$d мин назад</string>
+    <string name="time_just_now">Только что</string>
 </resources>
