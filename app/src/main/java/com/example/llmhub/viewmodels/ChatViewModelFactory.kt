@@ -1,5 +1,6 @@
 package com.llmhub.llmhub.viewmodels
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.llmhub.llmhub.inference.InferenceService
@@ -10,13 +11,14 @@ import androidx.lifecycle.viewmodel.CreationExtras
 
 class ChatViewModelFactory(
     private val inferenceService: InferenceService,
-    private val repository: ChatRepository
+    private val repository: ChatRepository,
+    private val context: Context
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
         if (modelClass.isAssignableFrom(ChatViewModel::class.java)) {
             val savedStateHandle = extras.createSavedStateHandle()
             @Suppress("UNCHECKED_CAST")
-            return ChatViewModel(inferenceService, repository, savedStateHandle) as T
+            return ChatViewModel(inferenceService, repository, context, savedStateHandle) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

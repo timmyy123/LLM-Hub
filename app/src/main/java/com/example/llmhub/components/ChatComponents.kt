@@ -31,6 +31,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -124,7 +126,7 @@ fun annotateLinksAndPhones(source: AnnotatedString, linkColor: Color): Annotated
     val builder = AnnotatedString.Builder()
     builder.append(source)
 
-    val urlRegex = Regex("""((https?://|www\.)[\w\-._~:/?#\[\]@!$&'()*+,;=%]+)""")
+    val urlRegex = Regex("""(https?://[^\s]+|www\.[^\s]+|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}[^\s]*)""")
     val phoneRegex = Regex("""\+?[0-9][0-9\-\s]{6,}[0-9]""")
 
     fun addAnnotation(range: IntRange, annotationTag: String, annotationValue: String) {
@@ -140,11 +142,22 @@ fun annotateLinksAndPhones(source: AnnotatedString, linkColor: Color): Annotated
     }
 
     for (match in urlRegex.findAll(text)) {
-        var url = match.value
-        if (!url.startsWith("http")) {
-            url = "http://$url" // ensure valid scheme
+        val originalUrl = match.value
+        var url = originalUrl.trim()
+        
+        // Clean up common trailing characters that shouldn't be part of URL
+        val trimmedChars = url.length
+        url = url.trimEnd('.', ',', ')', ']', '}', '!', '?', ';', ':')
+        val charsRemoved = trimmedChars - url.length
+        
+        // Add protocol if missing
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            url = "https://$url" // use HTTPS by default for security
         }
-        addAnnotation(match.range, "URL", url)
+        
+        // Adjust range for trimmed characters
+        val adjustedRange = match.range.first until (match.range.last + 1 - charsRemoved)
+        addAnnotation(adjustedRange, "URL", url)
     }
 
     for (match in phoneRegex.findAll(text)) {
@@ -308,7 +321,7 @@ fun MessageBubble(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 8.dp, vertical = 8.dp),
         horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
     ) {
         if (isUser) {
@@ -805,6 +818,8 @@ fun MessageInput(
     onCancelGeneration: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     var text by remember { mutableStateOf("") }
     var attachmentUri by remember { mutableStateOf<Uri?>(null) }
     var showImagePreview by remember { mutableStateOf(false) }
@@ -824,7 +839,7 @@ fun MessageInput(
         shadowElevation = 8.dp
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(12.dp)
         ) {
             // Image attachment preview
             if (attachmentUri != null) {
@@ -936,6 +951,9 @@ fun MessageInput(
                         IconButton(
                             onClick = {
                                 if (text.isNotBlank() || attachmentUri != null) {
+                                    // Aggressively hide keyboard using multiple methods
+                                    keyboardController?.hide()
+                                    focusManager.clearFocus()
                                     onSendMessage(text, attachmentUri)
                                     text = ""
                                     attachmentUri = null
