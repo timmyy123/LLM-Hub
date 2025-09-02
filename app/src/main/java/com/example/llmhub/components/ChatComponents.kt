@@ -25,6 +25,7 @@ import android.content.Intent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,6 +37,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
@@ -51,7 +53,7 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalClipboardManager
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
@@ -65,6 +67,7 @@ import coil.request.ImageRequest
 import com.llmhub.llmhub.data.MessageEntity
 import dev.jeziellago.compose.markdowntext.MarkdownText
 import androidx.compose.ui.platform.LocalUriHandler
+import com.llmhub.llmhub.utils.FileUtils
 
 /**
  * Custom selectable markdown text component that supports both markdown rendering and text selection.
@@ -384,26 +387,43 @@ fun MessageBubble(
                 Column(
                     modifier = Modifier.padding(16.dp)
                 ) {
-                    // Display image if attachment exists
-                    if (message.attachmentPath != null && message.attachmentType == "image") {
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(Uri.parse(message.attachmentPath))
-                                .crossfade(true)
-                                .build(),
-                            contentDescription = "Attached image",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(max = 200.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable { showFullScreenImage = true },
-                            contentScale = ContentScale.Crop,
-                            onError = { 
-                                android.util.Log.w("MessageBubble", "Failed to load image: ${message.attachmentPath}")
+                    // Display attachment if exists
+                    if (message.attachmentPath != null && message.attachmentType != null) {
+                        when (message.attachmentType.lowercase()) {
+                            "image" -> {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(context)
+                                        .data(Uri.parse(message.attachmentPath))
+                                        .crossfade(true)
+                                        .build(),
+                                    contentDescription = "Attached image",
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(max = 200.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .clickable { showFullScreenImage = true },
+                                    contentScale = ContentScale.Crop,
+                                    onError = { 
+                                        android.util.Log.w("MessageBubble", "Failed to load image: ${message.attachmentPath}")
+                                    }
+                                )
                             }
-                        )
+                            else -> {
+                                // Display file attachment card for non-images
+                                FileAttachmentCard(
+                                    attachmentPath = message.attachmentPath,
+                                    attachmentType = message.attachmentType,
+                                    attachmentFileName = message.attachmentFileName,
+                                    attachmentFileSize = message.attachmentFileSize,
+                                    isFromUser = message.isFromUser
+                                )
+                            }
+                        }
                         
-                        if (message.content.isNotEmpty() && message.content != "Shared a file") {
+                        if (message.content.isNotEmpty() && 
+                            message.content != "Shared a file" && 
+                            !message.content.startsWith("📄 **File Content**") &&
+                            !message.content.contains("---\n\n📄 **File Content**")) {
                             Spacer(modifier = Modifier.height(8.dp))
                         }
                     }
@@ -452,26 +472,44 @@ fun MessageBubble(
             Column(
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Display image if attachment exists (for AI messages with images)
-                if (message.attachmentPath != null && message.attachmentType == "image") {
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(Uri.parse(message.attachmentPath))
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = "Attached image",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 200.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { showFullScreenImage = true },
-                        contentScale = ContentScale.Crop,
-                        onError = { 
-                            android.util.Log.w("MessageBubble", "Failed to load image: ${message.attachmentPath}")
+                // Display attachment if exists (for AI messages with attachments)
+                if (message.attachmentPath != null && message.attachmentType != null) {
+                    when (message.attachmentType.lowercase()) {
+                        "image" -> {
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(Uri.parse(message.attachmentPath))
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = "Attached image",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(max = 200.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { showFullScreenImage = true },
+                                contentScale = ContentScale.Crop,
+                                onError = { 
+                                    android.util.Log.w("MessageBubble", "Failed to load image: ${message.attachmentPath}")
+                                }
+                            )
                         }
-                    )
+                        else -> {
+                            // Display file attachment card for non-images
+                            FileAttachmentCard(
+                                attachmentPath = message.attachmentPath,
+                                attachmentType = message.attachmentType,
+                                attachmentFileName = message.attachmentFileName,
+                                attachmentFileSize = message.attachmentFileSize,
+                                isFromUser = message.isFromUser
+                            )
+                        }
+                    }
                     
-                    if (message.content.isNotEmpty() && message.content != "Shared a file" && message.content != "…") {
+                    if (message.content.isNotEmpty() && 
+                        message.content != "Shared a file" && 
+                        message.content != "…" &&
+                        !message.content.startsWith("📄 **File Content**") &&
+                        !message.content.contains("---\n\n📄 **File Content**")) {
                         Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
@@ -559,7 +597,7 @@ fun MessageBubble(
     }
     
     // Full-screen image viewer
-    if (showFullScreenImage && message.attachmentPath != null && message.attachmentType == "image") {
+    if (showFullScreenImage && message.attachmentPath != null && message.attachmentType?.lowercase() == "image") {
         FullScreenImageViewer(
             imageUri = Uri.parse(message.attachmentPath),
             onDismiss = { showFullScreenImage = false }
@@ -858,6 +896,7 @@ fun MessageInput(
     onSendMessage: (String, Uri?) -> Unit,
     enabled: Boolean,
     supportsAttachments: Boolean,
+    supportsVision: Boolean = false,
     isLoading: Boolean = false,
     onCancelGeneration: (() -> Unit)? = null
 ) {
@@ -866,14 +905,35 @@ fun MessageInput(
     val keyboardController = LocalSoftwareKeyboardController.current
     var text by remember { mutableStateOf("") }
     var attachmentUri by remember { mutableStateOf<Uri?>(null) }
-    var showImagePreview by remember { mutableStateOf(false) }
+    var attachmentInfo by remember { mutableStateOf<FileUtils.FileInfo?>(null) }
+    var showFilePreview by remember { mutableStateOf(false) }
+    var showAttachmentOptions by remember { mutableStateOf(false) }
     
+    // Image picker for vision models
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
             attachmentUri = it
-            showImagePreview = true
+            // Get file info
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                attachmentInfo = FileUtils.getFileInfo(context, it)
+                showFilePreview = true
+            }
+        }
+    }
+    
+    // General file picker for documents
+    val documentPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            attachmentUri = it
+            // Get file info
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                attachmentInfo = FileUtils.getFileInfo(context, it)
+                showFilePreview = true
+            }
         }
     }
 
@@ -885,8 +945,8 @@ fun MessageInput(
         Column(
             modifier = Modifier.padding(12.dp)
         ) {
-            // Image attachment preview
-            if (attachmentUri != null) {
+            // File attachment preview
+            if (attachmentUri != null && attachmentInfo != null) {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -900,36 +960,62 @@ fun MessageInput(
                         modifier = Modifier.padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(attachmentUri)
-                                .crossfade(true)
-                                .build(),
-                            contentDescription = stringResource(R.string.attached_image),
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(MaterialTheme.shapes.small)
-                                .clickable { showImagePreview = true },
-                            contentScale = ContentScale.Crop
-                        )
+                        // File type icon or image preview
+                        if (attachmentInfo!!.type == FileUtils.SupportedFileType.IMAGE) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(attachmentUri)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = stringResource(R.string.attached_image),
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(MaterialTheme.shapes.small)
+                                    .clickable { showFilePreview = true },
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            // Show file type icon for non-images
+                            Surface(
+                                modifier = Modifier.size(48.dp),
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                shape = MaterialTheme.shapes.small
+                            ) {
+                                Column(
+                                    modifier = Modifier.fillMaxSize(),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    Text(
+                                        text = attachmentInfo!!.type.icon,
+                                        style = MaterialTheme.typography.headlineSmall
+                                    )
+                                }
+                            }
+                        }
                         
                         Spacer(modifier = Modifier.width(12.dp))
                         
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Image attached",
+                                text = attachmentInfo!!.name,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                text = "Tap to preview",
+                                text = "${attachmentInfo!!.type.displayName} • ${FileUtils.formatFileSize(attachmentInfo!!.size)}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                             )
                         }
                         
-                        IconButton(onClick = { attachmentUri = null }) {
+                        IconButton(onClick = { 
+                            attachmentUri = null
+                            attachmentInfo = null
+                        }) {
                             Icon(
                                 Icons.Default.Close,
                                 contentDescription = "Remove attachment",
@@ -957,15 +1043,88 @@ fun MessageInput(
                 shape = RoundedCornerShape(24.dp),
                 leadingIcon = if (supportsAttachments) {
                     {
-                        IconButton(
-                            onClick = { imagePickerLauncher.launch("image/*") },
-                            enabled = enabled
-                        ) {
-                            Icon(
-                                Icons.Outlined.Image,
-                                contentDescription = "Add image",
-                                tint = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                            )
+                        Box {
+                            IconButton(
+                                onClick = { showAttachmentOptions = !showAttachmentOptions },
+                                enabled = enabled
+                            ) {
+                                Icon(
+                                    Icons.Outlined.AttachFile,
+                                    contentDescription = "Attach file",
+                                    tint = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                )
+                            }
+                            
+                            // Attachment options dropdown
+                            DropdownMenu(
+                                expanded = showAttachmentOptions,
+                                onDismissRequest = { showAttachmentOptions = false }
+                            ) {
+                                // Only show images option for vision models
+                                if (supportsVision) {
+                                    DropdownMenuItem(
+                                        text = { 
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text("🖼️", style = MaterialTheme.typography.headlineSmall)
+                                                Spacer(modifier = Modifier.width(12.dp))
+                                                Column {
+                                                    Text("Images")
+                                                    Text(
+                                                        "JPG, PNG, GIF, WebP",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                                    )
+                                                }
+                                            }
+                                        },
+                                        onClick = {
+                                            showAttachmentOptions = false
+                                            imagePickerLauncher.launch("image/*")
+                                        }
+                                    )
+                                }
+                                
+                                DropdownMenuItem(
+                                    text = { 
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text("📄", style = MaterialTheme.typography.headlineSmall)
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Column {
+                                                Text("Documents")
+                                                Text(
+                                                    "PDF, Word, Excel, PowerPoint",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                                )
+                                            }
+                                        }
+                                    },
+                                    onClick = {
+                                        showAttachmentOptions = false
+                                        documentPickerLauncher.launch("*/*")
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { 
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text("📝", style = MaterialTheme.typography.headlineSmall)
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Column {
+                                                Text("Text Files")
+                                                Text(
+                                                    "TXT, MD, JSON, XML, CSV",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                                )
+                                            }
+                                        }
+                                    },
+                                    onClick = {
+                                        showAttachmentOptions = false
+                                        documentPickerLauncher.launch("text/*")
+                                    }
+                                )
+                            }
                         }
                     }
                 } else null,
@@ -1000,6 +1159,7 @@ fun MessageInput(
                                     onSendMessage(text, attachmentUri)
                                     text = ""
                                     attachmentUri = null
+                                    attachmentInfo = null
                                 }
                             },
                             enabled = enabled && (text.isNotBlank() || attachmentUri != null)
@@ -1032,70 +1192,235 @@ fun MessageInput(
         }
     }
     
-    // Full-screen image preview dialog
-    if (showImagePreview && attachmentUri != null) {
-        Dialog(onDismissRequest = { showImagePreview = false }) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(0.9f),
-                shape = MaterialTheme.shapes.extraLarge,
-                color = MaterialTheme.colorScheme.surface
-            ) {
-                Column {
-                    // Header
-                    Surface(
-                        color = MaterialTheme.colorScheme.surfaceContainer
+    // File preview dialog
+    if (showFilePreview && attachmentUri != null && attachmentInfo != null) {
+        FilePreviewDialog(
+            fileInfo = attachmentInfo!!,
+            onDismiss = { showFilePreview = false },
+            onRemove = {
+                attachmentUri = null
+                attachmentInfo = null
+                showFilePreview = false
+            }
+        )
+    }
+}
+
+/**
+ * File preview dialog that handles different file types
+ */
+@Composable
+fun FilePreviewDialog(
+    fileInfo: FileUtils.FileInfo,
+    onDismiss: () -> Unit,
+    onRemove: (() -> Unit)? = null // Make remove optional
+) {
+    FilePreviewDialog(
+        uri = fileInfo.uri,
+        fileName = fileInfo.name,
+        fileType = fileInfo.type,
+        fileSize = fileInfo.size,
+        onDismiss = onDismiss,
+        onRemove = onRemove
+    )
+}
+
+@Composable
+fun FilePreviewDialog(
+    uri: Uri,
+    fileName: String,
+    fileType: FileUtils.SupportedFileType,
+    fileSize: Long,
+    onDismiss: () -> Unit,
+    onRemove: (() -> Unit)? = null // Make remove optional
+) {
+    val context = LocalContext.current
+    var fileContent by remember { mutableStateOf<String?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
+    
+    // Load file content for all supported document types
+    LaunchedEffect(uri) {
+        if (fileType in listOf(
+            FileUtils.SupportedFileType.TEXT,
+            FileUtils.SupportedFileType.JSON,
+            FileUtils.SupportedFileType.XML,
+            FileUtils.SupportedFileType.PDF,
+            FileUtils.SupportedFileType.WORD,
+            FileUtils.SupportedFileType.EXCEL,
+            FileUtils.SupportedFileType.POWERPOINT
+        )) {
+            isLoading = true
+            fileContent = FileUtils.extractTextContent(context, uri, fileType)
+            isLoading = false
+        }
+    }
+    
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.9f),
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surface
+        ) {
+            Column {
+                // Header
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceContainer
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                        Column {
                             Text(
-                                text = "Image Preview",
+                                text = fileName,
                                 style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
-                            IconButton(onClick = { showImagePreview = false }) {
-                                Icon(Icons.Default.Close, contentDescription = "Close")
+                            Text(
+                                text = "${fileType.displayName} • ${FileUtils.formatFileSize(fileSize)}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        IconButton(onClick = onDismiss) {
+                            Icon(Icons.Default.Close, contentDescription = "Close")
+                        }
+                    }
+                }
+                
+                // Content preview
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(16.dp)
+                ) {
+                    when (fileType) {
+                        FileUtils.SupportedFileType.IMAGE -> {
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(uri)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = "Image preview",
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(MaterialTheme.shapes.large),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
+                        FileUtils.SupportedFileType.TEXT,
+                        FileUtils.SupportedFileType.JSON,
+                        FileUtils.SupportedFileType.XML,
+                        FileUtils.SupportedFileType.PDF,
+                        FileUtils.SupportedFileType.WORD,
+                        FileUtils.SupportedFileType.EXCEL,
+                        FileUtils.SupportedFileType.POWERPOINT -> {
+                            if (isLoading) {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator()
+                                    Text(
+                                        text = "Extracting content...",
+                                        modifier = Modifier.padding(top = 64.dp),
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                            } else {
+                                Card(
+                                    modifier = Modifier.fillMaxSize(),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                    )
+                                ) {
+                                    LazyColumn(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(16.dp)
+                                    ) {
+                                        item {
+                                            SelectionContainer {
+                                                Text(
+                                                    text = fileContent ?: "Could not load file content",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    fontFamily = if (fileType in listOf(
+                                                        FileUtils.SupportedFileType.TEXT,
+                                                        FileUtils.SupportedFileType.JSON,
+                                                        FileUtils.SupportedFileType.XML
+                                                    )) {
+                                                        androidx.compose.ui.text.font.FontFamily.Monospace
+                                                    } else {
+                                                        androidx.compose.ui.text.font.FontFamily.Default
+                                                    },
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        else -> {
+                            // For other file types (PDF, Word, etc.)
+                            Card(
+                                modifier = Modifier.fillMaxSize(),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                )
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(32.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    Text(
+                                        text = fileType.icon,
+                                        style = MaterialTheme.typography.displayMedium
+                                    )
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Text(
+                                        text = fileName,
+                                        style = MaterialTheme.typography.headlineSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = TextAlign.Center
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "${fileType.displayName} • ${FileUtils.formatFileSize(fileSize)}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
                             }
                         }
                     }
-                    
-                    // Image
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(attachmentUri)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = "Image preview",
+                }
+                
+                // Actions
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceContainer
+                ) {
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1f)
-                            .padding(16.dp)
-                            .clip(MaterialTheme.shapes.large),
-                        contentScale = ContentScale.Fit
-                    )
-                    
-                    // Actions
-                    Surface(
-                        color = MaterialTheme.colorScheme.surfaceContainer
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End)
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End)
-                        ) {
-                            OutlinedButton(
-                                onClick = { 
-                                    attachmentUri = null
-                                    showImagePreview = false
-                                }
-                            ) {
+                        // Only show remove button if onRemove is provided
+                        if (onRemove != null) {
+                            OutlinedButton(onClick = onRemove) {
                                 Icon(
                                     Icons.Default.Delete,
                                     contentDescription = null,
@@ -1104,10 +1429,10 @@ fun MessageInput(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text("Remove")
                             }
-                            
-                            Button(
-                                onClick = { showImagePreview = false }
-                            ) {
+                        }
+                        
+                        Button(onClick = onDismiss) {
+                            if (onRemove != null) {
                                 Icon(
                                     Icons.Default.Check,
                                     contentDescription = null,
@@ -1115,11 +1440,141 @@ fun MessageInput(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text("Keep")
+                            } else {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Close")
                             }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+/**
+ * File attachment card for displaying non-image attachments in messages
+ */
+@Composable
+fun FileAttachmentCard(
+    attachmentPath: String,
+    attachmentType: String,
+    attachmentFileName: String? = null,
+    attachmentFileSize: Long? = null,
+    isFromUser: Boolean
+) {
+    val context = LocalContext.current
+    var showPreview by remember { mutableStateOf(false) }
+    var fileInfo by remember { mutableStateOf<FileUtils.FileInfo?>(null) }
+    
+    val fileTypeInfo = FileUtils.SupportedFileType.values().find { 
+        it.name.equals(attachmentType, ignoreCase = true) 
+    } ?: FileUtils.SupportedFileType.TEXT
+    
+    // Load file info if not provided (for backward compatibility with existing messages)
+    LaunchedEffect(attachmentPath) {
+        if (attachmentFileName == null || attachmentFileSize == null) {
+            try {
+                val uri = Uri.parse(attachmentPath)
+                fileInfo = FileUtils.getFileInfo(context, uri)
+            } catch (e: Exception) {
+                android.util.Log.w("FileAttachmentCard", "Failed to get file info: ${e.message}")
+            }
+        }
+    }
+    
+    // Use stored file info if available, otherwise fallback to loaded file info
+    val displayName = attachmentFileName ?: fileInfo?.name ?: "File attachment"
+    val formattedSize = if (attachmentFileSize != null) {
+        FileUtils.formatFileSize(attachmentFileSize)
+    } else {
+        fileInfo?.size?.let { FileUtils.formatFileSize(it) } ?: ""
+    }
+    
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .clickable { 
+                showPreview = true 
+            },
+        colors = CardDefaults.cardColors(
+            containerColor = if (isFromUser) {
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            }
+        ),
+        shape = MaterialTheme.shapes.medium
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // File type icon
+            Surface(
+                modifier = Modifier.size(40.dp),
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                shape = MaterialTheme.shapes.small
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = fileTypeInfo.icon,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.width(12.dp))
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = displayName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = if (isFromUser) {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "${fileTypeInfo.displayName}${if (formattedSize.isNotEmpty()) " • $formattedSize" else ""} • Tap to preview",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (isFromUser) {
+                        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    }
+                )
+            }
+        }
+    }
+    
+    // Show preview dialog when requested
+    if (showPreview) {
+        val uri = Uri.parse(attachmentPath)
+        val finalFileName = attachmentFileName ?: fileInfo?.name ?: "File attachment"
+        val finalFileSize = attachmentFileSize ?: fileInfo?.size ?: 0L
+        
+        FilePreviewDialog(
+            uri = uri,
+            fileName = finalFileName,
+            fileType = fileTypeInfo,
+            fileSize = finalFileSize,
+            onDismiss = { showPreview = false },
+            onRemove = null // No remove/keep buttons for message attachments
+        )
     }
 } 

@@ -72,13 +72,23 @@ class ChatRepository(
         chatDao.deleteAllChats()
     }
     
-    suspend fun addMessage(chatId: String, content: String, isFromUser: Boolean, attachmentPath: String? = null, attachmentType: String? = null): String {
+    suspend fun addMessage(
+        chatId: String, 
+        content: String, 
+        isFromUser: Boolean, 
+        attachmentPath: String? = null, 
+        attachmentType: String? = null,
+        attachmentFileName: String? = null,
+        attachmentFileSize: Long? = null
+    ): String {
         val message = MessageEntity(
             chatId = chatId,
             content = content,
             isFromUser = isFromUser,
             attachmentPath = attachmentPath,
-            attachmentType = attachmentType
+            attachmentType = attachmentType,
+            attachmentFileName = attachmentFileName,
+            attachmentFileSize = attachmentFileSize
         )
         messageDao.insertMessage(message)
         

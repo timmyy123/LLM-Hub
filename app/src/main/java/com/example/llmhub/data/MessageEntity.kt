@@ -27,6 +27,8 @@ data class MessageEntity(
     val timestamp: Long = System.currentTimeMillis(),
     val attachmentPath: String? = null, // For images/files
     val attachmentType: String? = null, // image, document, etc.
+    val attachmentFileName: String? = null, // Original file name
+    val attachmentFileSize: Long? = null, // Original file size
     val tokenCount: Int? = null,
     val tokensPerSecond: Double? = null
 ) 

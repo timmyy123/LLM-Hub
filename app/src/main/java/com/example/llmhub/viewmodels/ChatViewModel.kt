@@ -11,6 +11,7 @@ import androidx.lifecycle.SavedStateHandle
 import com.llmhub.llmhub.data.*
 import com.llmhub.llmhub.inference.InferenceService
 import com.llmhub.llmhub.repository.ChatRepository
+import com.llmhub.llmhub.utils.FileUtils
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
@@ -422,25 +423,115 @@ class ChatViewModel(
 
             // Process attachment if present
             var processedAttachmentUri: Uri? = null
+            var attachmentFileInfo: FileUtils.FileInfo? = null
+            var fileTextContent: String? = null
+            
             if (attachmentUri != null) {
-                // Check if current model supports vision before processing image
-                if (currentModel != null && !currentModel!!.supportsVision) {
-                    Log.w("ChatViewModel", "Cannot send image with text-only model: ${currentModel!!.name}")
-                    val errorMessage = "🖼️ **Cannot Send Images**\n\nYou're trying to send an image, but the current model is **text-only**:\n\n📱 **Current Model:** ${currentModel!!.name}\n\n---\n\n## 🎯 To Send Images:\n\n1. **📥 Download a Vision Model**\n   - Tap the menu → \"Download Models\"\n   - Look for 🖼️ **Vision+Text** models\n   - Recommended: **Gemma-3n E2B (Vision+Text)**\n\n2. **🔄 Switch Models**\n   - Load the vision model you downloaded\n   - Vision models handle both text AND images\n\n3. **✅ Try Again**\n   - Once loaded, you can send images freely!\n\n---\n\n💡 **Pro Tip:** Vision models can do everything text models can do, plus understand images!"
+                try {
+                    // Get file information
+                    attachmentFileInfo = FileUtils.getFileInfo(context, attachmentUri)
+                    
+                    if (attachmentFileInfo == null) {
+                        Log.e("ChatViewModel", "Failed to get file info for URI: $attachmentUri")
+                        val errorMessage = "📄 **File Processing Error**\n\nCould not process the selected file. This might be due to:\n\n❌ **File access issues**\n❌ **Corrupted file**\n❌ **System permissions**\n\n---\n\n💡 **Try:** Selecting a different file or restarting the app."
+                        repository.addMessage(chatId, errorMessage, isFromUser = false)
+                        _isLoading.value = false
+                        isGenerating = false
+                        return@launch
+                    }
+                    
+                    // Check if file type is unknown/unsupported
+                    if (attachmentFileInfo.type == FileUtils.SupportedFileType.UNKNOWN) {
+                        Log.w("ChatViewModel", "Unsupported file type for: ${attachmentFileInfo.name}")
+                        val errorMessage = "📄 **Unsupported File Type**\n\nThe file **${attachmentFileInfo.name}** is not supported. Please try one of these formats:\n\n🖼️ **Images:** JPG, PNG, GIF, WebP\n📝 **Text:** TXT, MD, CSV, JSON, XML\n📄 **Documents:** PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX\n\n---\n\n💡 **Tip:** Make sure the file isn't corrupted and try again!"
+                        repository.addMessage(chatId, errorMessage, isFromUser = false)
+                        _isLoading.value = false
+                        isGenerating = false
+                        return@launch
+                    }
+                    
+                    // Check file size limits
+                    if (FileUtils.isFileTooLarge(attachmentFileInfo.size)) {
+                        Log.w("ChatViewModel", "File too large: ${FileUtils.formatFileSize(attachmentFileInfo.size)}")
+                        val errorMessage = "📄 **File Too Large**\n\nThe file you selected is **${FileUtils.formatFileSize(attachmentFileInfo.size)}**, which exceeds the **10MB limit**.\n\n---\n\n## 🎯 To Fix This:\n\n1. **Compress the file** using a file compression tool\n2. **Split large documents** into smaller sections\n3. **Use a different format** (e.g., export PDF as text)\n\n---\n\n💡 **Tip:** For large documents, consider copying and pasting the most relevant sections as text!"
+                        repository.addMessage(chatId, errorMessage, isFromUser = false)
+                        _isLoading.value = false
+                        isGenerating = false
+                        return@launch
+                    }
+                    
+                    when (attachmentFileInfo.type) {
+                        FileUtils.SupportedFileType.IMAGE -> {
+                            // Check if current model supports vision before processing image
+                            if (currentModel != null && !currentModel!!.supportsVision) {
+                                Log.w("ChatViewModel", "Cannot send image with text-only model: ${currentModel!!.name}")
+                                val errorMessage = "🖼️ **Cannot Send Images**\n\nYou're trying to send an image, but the current model is **text-only**:\n\n📱 **Current Model:** ${currentModel!!.name}\n\n---\n\n## 🎯 To Send Images:\n\n1. **📥 Download a Vision Model**\n   - Tap the menu → \"Download Models\"\n   - Look for 🖼️ **Vision+Text** models\n   - Recommended: **Gemma-3n E2B (Vision+Text)**\n\n2. **🔄 Switch Models**\n   - Load the vision model you downloaded\n   - Vision models handle both text AND images\n\n3. **✅ Try Again**\n   - Once loaded, you can send images freely!\n\n---\n\n💡 **Pro Tip:** Vision models can do everything text models can do, plus understand images!"
+                                repository.addMessage(chatId, errorMessage, isFromUser = false)
+                                _isLoading.value = false
+                                isGenerating = false
+                                return@launch
+                            }
+                            
+                            // Copy the image to internal storage to ensure it persists
+                            processedAttachmentUri = copyImageToInternalStorage(context, attachmentUri)
+                            Log.d("ChatViewModel", "Copied image to internal storage: $processedAttachmentUri")
+                        }
+                        
+                        FileUtils.SupportedFileType.TEXT,
+                        FileUtils.SupportedFileType.JSON,
+                        FileUtils.SupportedFileType.XML -> {
+                            // Extract text content for text-based files
+                            fileTextContent = FileUtils.extractTextContent(context, attachmentUri, attachmentFileInfo.type)
+                            if (fileTextContent != null) {
+                                Log.d("ChatViewModel", "Extracted ${fileTextContent.length} characters from ${attachmentFileInfo.type.displayName}")
+                                // Copy file to internal storage for persistence
+                                processedAttachmentUri = FileUtils.copyFileToInternalStorage(
+                                    context, 
+                                    attachmentUri, 
+                                    attachmentFileInfo.name
+                                )
+                            } else {
+                                Log.w("ChatViewModel", "Failed to extract text content from file")
+                                val errorMessage = "📄 **Could Not Read File**\n\nI wasn't able to read the content of **${attachmentFileInfo.name}**.\n\n---\n\n## 🎯 Possible Solutions:\n\n1. **Check file format** - Make sure it's a supported text file\n2. **Try a different file** - The file might be corrupted\n3. **Copy and paste** - You can copy the text content directly into the chat\n\n---\n\n💡 **Supported text formats:** TXT, MD, CSV, JSON, XML"
+                                repository.addMessage(chatId, errorMessage, isFromUser = false)
+                                _isLoading.value = false
+                                isGenerating = false
+                                return@launch
+                            }
+                        }
+                        
+                        else -> {
+                            // For other file types (PDF, Word, etc.)
+                            Log.d("ChatViewModel", "Processing ${attachmentFileInfo.type.displayName}: ${attachmentFileInfo.name}")
+                            processedAttachmentUri = FileUtils.copyFileToInternalStorage(
+                                context, 
+                                attachmentUri, 
+                                attachmentFileInfo.name
+                            )
+                            
+                            // Extract content from all supported document types
+                            fileTextContent = when (attachmentFileInfo.type) {
+                                FileUtils.SupportedFileType.TEXT,
+                                FileUtils.SupportedFileType.JSON,
+                                FileUtils.SupportedFileType.XML,
+                                FileUtils.SupportedFileType.PDF,
+                                FileUtils.SupportedFileType.WORD,
+                                FileUtils.SupportedFileType.EXCEL,
+                                FileUtils.SupportedFileType.POWERPOINT -> {
+                                    FileUtils.extractTextContent(context, attachmentUri, attachmentFileInfo.type)
+                                }
+                                else -> null // For unsupported types (like images), don't extract text
+                            }
+                        }
+                    }
+                    
+                } catch (e: Exception) {
+                    Log.e("ChatViewModel", "Failed to process attachment", e)
+                    val errorMessage = "📄 **File Processing Error**\n\nThere was an error processing your file:\n\n**Error:** ${e.message ?: "Unknown error"}\n\n---\n\n## 🎯 Try This:\n\n1. **Check the file** - Make sure it's not corrupted\n2. **Try a different format** - Convert to a supported format\n3. **Restart the app** - Sometimes this resolves temporary issues\n\n---\n\n💡 **Need help?** Try copying and pasting the content as text instead!"
                     repository.addMessage(chatId, errorMessage, isFromUser = false)
                     _isLoading.value = false
                     isGenerating = false
                     return@launch
-                }
-                
-                try {
-                    // Copy the image to internal storage to ensure it persists
-                    processedAttachmentUri = copyImageToInternalStorage(context, attachmentUri)
-                    Log.d("ChatViewModel", "Copied image to internal storage: $processedAttachmentUri")
-                } catch (e: Exception) {
-                    Log.e("ChatViewModel", "Failed to copy image to internal storage", e)
-                    // Fall back to original URI
-                    processedAttachmentUri = attachmentUri
                 }
             }
 
@@ -456,13 +547,64 @@ class ChatViewModel(
                 return@launch
             }
 
+            // Prepare the final message content (what the user sees)
+            var finalMessageContent = messageText
+            var modelPromptContent = messageText // What gets sent to the model
+            
+            // For documents with extracted content, add content to model prompt but keep user message clean
+            if (fileTextContent != null && attachmentFileInfo?.type in listOf(
+                FileUtils.SupportedFileType.TEXT,
+                FileUtils.SupportedFileType.JSON,
+                FileUtils.SupportedFileType.XML,
+                FileUtils.SupportedFileType.PDF,
+                FileUtils.SupportedFileType.WORD,
+                FileUtils.SupportedFileType.EXCEL,
+                FileUtils.SupportedFileType.POWERPOINT
+            )) {
+                // Add extracted content to model prompt
+                modelPromptContent = if (messageText.isNotEmpty()) {
+                    "$messageText\n\n---\n\n📄 **File Content** (${attachmentFileInfo?.name}):\n\n$fileTextContent"
+                } else {
+                    "📄 **File Content** (${attachmentFileInfo?.name}):\n\n$fileTextContent"
+                }
+                
+                // Keep user message clean - just show that a file was attached
+                if (messageText.isEmpty()) {
+                    finalMessageContent = "📄 ${attachmentFileInfo?.name}"
+                }
+            } else if (fileTextContent != null) {
+                // For other file types, add a note about the attachment
+                modelPromptContent = if (messageText.isNotEmpty()) {
+                    "$messageText\n\n---\n\n$fileTextContent"
+                } else {
+                    fileTextContent
+                }
+                
+                if (messageText.isEmpty()) {
+                    finalMessageContent = "📄 ${attachmentFileInfo?.name}"
+                }
+            } else if (messageText.isEmpty() && processedAttachmentUri != null) {
+                finalMessageContent = "📄 ${attachmentFileInfo?.name}"
+                modelPromptContent = "Shared a file"
+            }
+
             repository.addMessage(
                 chatId = chatId,
-                content = if (messageText.isNotEmpty()) messageText else "Shared a file",
+                content = finalMessageContent,
                 isFromUser = true,
                 attachmentPath = processedAttachmentUri?.toString(),
-                attachmentType = determineAttachmentType(processedAttachmentUri)
+                attachmentType = attachmentFileInfo?.type?.name,
+                attachmentFileName = attachmentFileInfo?.name,
+                attachmentFileSize = attachmentFileInfo?.size
             )
+            
+            // Debug logging for file size
+            if (attachmentFileInfo != null) {
+                Log.d("ChatViewModel", "Adding message with attachment:")
+                Log.d("ChatViewModel", "  File name: ${attachmentFileInfo.name}")
+                Log.d("ChatViewModel", "  File size: ${attachmentFileInfo.size} bytes")
+                Log.d("ChatViewModel", "  File size formatted: ${FileUtils.formatFileSize(attachmentFileInfo.size)}")
+            }
 
             // The first message sets the title
             if (_messages.value.size == 1) {
@@ -510,7 +652,7 @@ class ChatViewModel(
                 val currentUserMessage = MessageEntity(
                     id = "current-${System.currentTimeMillis()}",
                     chatId = chatId,
-                    content = if (messageText.isNotEmpty()) messageText else "Shared a file",
+                    content = modelPromptContent, // Use the full content including document text for the model
                     isFromUser = true,
                     timestamp = System.currentTimeMillis(),
                     attachmentPath = processedAttachmentUri?.toString(),
@@ -598,9 +740,8 @@ class ChatViewModel(
                                         if (!continuationHistory.endsWith("assistant:")) continuationHistory + "\nassistant:" else continuationHistory
                                     }
                                     
-                                    // Extract images from recent messages for multimodal models
-                    // Note: We only include the current message's image to avoid confusion
-                    // where the model would reference previous images in new responses
+                                    // Extract images and documents for multimodal models
+                    // Note: We include both images and document attachments for vision models
                     val images = if (currentModel!!.supportsVision) {
                         Log.d("ChatViewModel", "Current model supports vision: ${currentModel!!.name}")
                         val recentMessages = _messages.value.takeLast(10)
@@ -610,7 +751,7 @@ class ChatViewModel(
                         val currentImages = mutableListOf<Bitmap>()
                         
                         // Check if the current message has an image attachment
-                        if (processedAttachmentUri != null) {
+                        if (processedAttachmentUri != null && attachmentFileInfo?.type == FileUtils.SupportedFileType.IMAGE) {
                             try {
                                 Log.d("ChatViewModel", "Loading current message image from URI: $processedAttachmentUri")
                                 val bitmap = loadImageFromUri(context, processedAttachmentUri)
@@ -623,6 +764,9 @@ class ChatViewModel(
                             } catch (e: Exception) {
                                 Log.e("ChatViewModel", "Failed to load current message image", e)
                             }
+                        } else if (processedAttachmentUri != null && attachmentFileInfo?.type != FileUtils.SupportedFileType.IMAGE) {
+                            Log.d("ChatViewModel", "Current message has non-image attachment (${attachmentFileInfo?.type?.displayName}): ${attachmentFileInfo?.name}")
+                            // For vision models with document attachments, we note this in the context
                         } else {
                             Log.d("ChatViewModel", "No current message image attachment")
                         }
@@ -637,7 +781,10 @@ class ChatViewModel(
                         // Each message should focus on its own image content
                         val contextImages = emptyList<Bitmap>() // Disabled for now
                         
-                        Log.d("ChatViewModel", "Total images for generation: ${currentImages.size} (current: ${if (processedAttachmentUri != null) 1 else 0}, context: ${contextImages.size} - disabled)")
+                        Log.d("ChatViewModel", "Total images for generation: ${currentImages.size} (current: ${if (processedAttachmentUri != null && attachmentFileInfo?.type == FileUtils.SupportedFileType.IMAGE) 1 else 0}, context: ${contextImages.size} - disabled)")
+                        if (processedAttachmentUri != null && attachmentFileInfo?.type != FileUtils.SupportedFileType.IMAGE) {
+                            Log.d("ChatViewModel", "Vision model also processing document: ${attachmentFileInfo?.type?.displayName} - ${attachmentFileInfo?.name}")
+                        }
                         
                         // Log details of each image
                         currentImages.forEachIndexed { index, bitmap ->
@@ -1202,8 +1349,15 @@ class ChatViewModel(
         return when {
             uriString.contains("image") || uriString.endsWith(".jpg") ||
             uriString.endsWith(".jpeg") || uriString.endsWith(".png") ||
-            uriString.endsWith(".gif") || uriString.endsWith(".webp") -> "image"
-            else -> "file"
+            uriString.endsWith(".gif") || uriString.endsWith(".webp") -> "IMAGE"
+            uriString.endsWith(".pdf") -> "PDF"
+            uriString.endsWith(".doc") || uriString.endsWith(".docx") -> "WORD"
+            uriString.endsWith(".xls") || uriString.endsWith(".xlsx") -> "EXCEL"
+            uriString.endsWith(".ppt") || uriString.endsWith(".pptx") -> "POWERPOINT"
+            uriString.endsWith(".txt") || uriString.endsWith(".md") || uriString.endsWith(".csv") -> "TEXT"
+            uriString.endsWith(".json") -> "JSON"
+            uriString.endsWith(".xml") -> "XML"
+            else -> "UNKNOWN"
         }
     }
 
@@ -1835,14 +1989,28 @@ class ChatViewModel(
                 val historyMessages = messagesToKeep.filter { it.id != userMessage.id }
                 val history = buildContextAwareHistory(historyMessages)
                 
-                // Extract images if the user message has attachments
-                val images = if (currentModel!!.supportsVision && userMessage.attachmentPath != null && userMessage.attachmentType == "image") {
-                    try {
-                        val bitmap = loadImageFromUri(context, Uri.parse(userMessage.attachmentPath))
-                        if (bitmap != null) listOf(bitmap) else emptyList()
-                    } catch (e: Exception) {
-                        Log.w("ChatViewModel", "Failed to load image for regeneration: ${e.message}")
-                        emptyList()
+                // Extract images and handle documents if the user message has attachments
+                val images = if (currentModel!!.supportsVision && userMessage.attachmentPath != null) {
+                    when (userMessage.attachmentType) {
+                        "image" -> {
+                            try {
+                                val bitmap = loadImageFromUri(context, Uri.parse(userMessage.attachmentPath))
+                                if (bitmap != null) {
+                                    Log.d("ChatViewModel", "Loaded image for regeneration: ${bitmap.width}x${bitmap.height}")
+                                    listOf(bitmap)
+                                } else {
+                                    emptyList()
+                                }
+                            } catch (e: Exception) {
+                                Log.w("ChatViewModel", "Failed to load image for regeneration: ${e.message}")
+                                emptyList()
+                            }
+                        }
+                        else -> {
+                            // For documents and other attachments with vision models
+                            Log.d("ChatViewModel", "Vision model regenerating with document attachment: ${userMessage.attachmentType}")
+                            emptyList()  // No bitmap needed, but vision model can still process document context
+                        }
                     }
                 } else {
                     emptyList()
