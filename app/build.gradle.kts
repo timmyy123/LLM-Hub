@@ -112,6 +112,12 @@ dependencies {
     // JSON
     implementation(libs.gson)
     
+    // Document and text file parsing
+    implementation("org.apache.commons:commons-csv:1.10.0")
+    
+    // PDF text extraction - using iText7 Community for Android compatibility
+    implementation("com.itextpdf:itext7-core:7.2.5")
+    
     // Ktor for networking
     implementation("io.ktor:ktor-client-android:2.3.6")
     implementation("io.ktor:ktor-client-content-negotiation:2.3.6")

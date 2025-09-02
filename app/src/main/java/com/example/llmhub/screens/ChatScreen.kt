@@ -384,7 +384,8 @@ fun ChatScreen(
                         viewModel.sendMessage(context, text, attachmentUri)
                     },
                     enabled = !isLoading && !isLoadingModel && currentChat != null,
-                    supportsAttachments = viewModel.currentModelSupportsVision(),
+                    supportsAttachments = true, // Enable attachments for all models
+                    supportsVision = viewModel.currentModelSupportsVision(), // Only show images for vision models
                     isLoading = isLoading,
                     onCancelGeneration = if (isLoading) {
                         { viewModel.stopGeneration() }

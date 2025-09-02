@@ -220,4 +220,19 @@
     <string name="continue_download">Continue</string>
     <string name="clear">Clear</string>
     <string name="ram_requirement_format">%1$dGB RAM</string>
+    
+    <!-- File Attachments -->
+    <string name="attach_file">Attach file</string>
+    <string name="attach_image">Attach image</string>
+    <string name="attach_document">Attach document</string>
+    <string name="attach_text_file">Attach text file</string>
+    <string name="file_attachment">File attachment</string>
+    <string name="file_too_large">File too large</string>
+    <string name="unsupported_file_type">Unsupported file type</string>
+    <string name="file_processing_error">File processing error</string>
+    <string name="could_not_read_file">Could not read file</string>
+    <string name="file_preview">File Preview</string>
+    <string name="remove_attachment">Remove attachment</string>
+    <string name="keep_attachment">Keep attachment</string>
+    <string name="preview_not_available">Preview not available</string>
 </resources>
