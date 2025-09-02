@@ -71,7 +71,7 @@
     <string name="acknowledgments">Reconocimientos</string>
     <string name="acknowledgments_text">Agradecimientos especiales a Google, Meta, Microsoft, y la comunidad HuggingFace por proporcionar los increíbles modelos LLM que alimentan esta aplicación. Este proyecto también depende del trabajo increíble de la comunidad de desarrollo Android y el ecosistema de código abierto.</string>
     <string name="ai_thinking">La IA está pensando...</string>
-    <string name="version_number">Versión 1.0.9</string>
+    <string name="version_number">Versión 1.1.0</string>
     <string name="app_version">Versión de la App</string>
     
     <!-- Terms of Service -->
@@ -199,4 +199,26 @@
     <string name="time_hours_ago">hace %1$d h</string>
     <string name="time_minutes_ago">hace %1$d min</string>
     <string name="time_just_now">Ahora mismo</string>
+    
+    <!-- Model Download Screen -->
+    <string name="ai_models">Modelos de IA</string>
+    <string name="download_ai_models">Descargar Modelos de IA</string>
+    <string name="choose_text_multimodal_models">Elige entre modelos de solo texto o multimodales</string>
+    <string name="text_models">Modelos de Texto</string>
+    <string name="text_models_description">Modelos optimizados para generación de texto y conversación</string>
+    <string name="vision_models">Modelos de Visión</string>
+    <string name="vision_models_description">Modelos que pueden entender tanto texto como imágenes</string>
+    <string name="gpu">GPU</string>
+    <string name="variant">variante</string>
+    <string name="variants">variantes</string>
+    <string name="expand">Expandir</string>
+    <string name="collapse">Contraer</string>
+    <string name="downloaded">Descargado</string>
+    <string name="downloading">Descargando...</string>
+    <string name="not_downloaded">No descargado</string>
+    <string name="partial">Parcial</string>
+    <string name="paused_downloaded_format">Pausado: %1$s descargado</string>
+    <string name="continue_download">Continuar</string>
+    <string name="clear">Limpiar</string>
+    <string name="ram_requirement_format">%1$dGB RAM</string>
 </resources>

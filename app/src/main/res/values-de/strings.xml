@@ -71,7 +71,7 @@
     <string name="acknowledgments">Danksagungen</string>
     <string name="acknowledgments_text">Besonderen Dank an Google, Meta, Microsoft und die HuggingFace-Community für die Bereitstellung der unglaublichen LLM-Modelle, die diese Anwendung antreiben. Dieses Projekt stützt sich auch auf die erstaunliche Arbeit der Android-Entwicklergemeinschaft und des Open-Source-Ökosystems.</string>
     <string name="ai_thinking">KI denkt nach...</string>
-    <string name="version_number">Version 1.0.9</string>
+    <string name="version_number">Version 1.1.0</string>
     <string name="app_version">App-Version</string>
     
     <!-- Terms of Service -->
@@ -199,4 +199,26 @@
     <string name="time_hours_ago">vor %1$d Std</string>
     <string name="time_minutes_ago">vor %1$d Min</string>
     <string name="time_just_now">Gerade eben</string>
+    
+    <!-- Model Download Screen -->
+    <string name="ai_models">KI-Modelle</string>
+    <string name="download_ai_models">KI-Modelle herunterladen</string>
+    <string name="choose_text_multimodal_models">Wählen Sie zwischen reinen Text- oder multimodalen Modellen</string>
+    <string name="text_models">Text-Modelle</string>
+    <string name="text_models_description">Modelle optimiert für Textgenerierung und Konversation</string>
+    <string name="vision_models">Vision-Modelle</string>
+    <string name="vision_models_description">Modelle die Text und Bilder verstehen können</string>
+    <string name="gpu">GPU</string>
+    <string name="variant">Variante</string>
+    <string name="variants">Varianten</string>
+    <string name="expand">Erweitern</string>
+    <string name="collapse">Einklappen</string>
+    <string name="downloaded">Heruntergeladen</string>
+    <string name="downloading">Lädt herunter...</string>
+    <string name="not_downloaded">Nicht heruntergeladen</string>
+    <string name="partial">Teilweise</string>
+    <string name="paused_downloaded_format">Pausiert: %1$s heruntergeladen</string>
+    <string name="continue_download">Fortsetzen</string>
+    <string name="clear">Löschen</string>
+    <string name="ram_requirement_format">%1$dGB RAM</string>
 </resources>
