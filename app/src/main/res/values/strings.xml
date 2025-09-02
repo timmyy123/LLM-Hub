@@ -70,7 +70,7 @@
     <string name="acknowledgments">Acknowledgments</string>
     <string name="acknowledgments_text">Special thanks to Google, Meta, Microsoft, and the HuggingFace community for providing the incredible LLM models that power this application. This project also relies on the amazing work of the Android development community and the open-source ecosystem.</string>
     <string name="ai_thinking">AI is thinking...</string>
-    <string name="version_number">Version 1.0.9</string>
+    <string name="version_number">Version 1.1.0</string>
     <string name="app_version">App Version</string>
     
     <!-- Terms of Service -->
@@ -198,4 +198,26 @@
     <string name="time_hours_ago">%1$d hr ago</string>
     <string name="time_minutes_ago">%1$d min ago</string>
     <string name="time_just_now">Just now</string>
+    
+    <!-- Model Download Screen -->
+    <string name="ai_models">AI Models</string>
+    <string name="download_ai_models">Download AI Models</string>
+    <string name="choose_text_multimodal_models">Choose from text-only or multimodal models</string>
+    <string name="text_models">Text Models</string>
+    <string name="text_models_description">Models optimized for text generation and conversation</string>
+    <string name="vision_models">Vision Models</string>
+    <string name="vision_models_description">Models that can understand both text and images</string>
+    <string name="gpu">GPU</string>
+    <string name="variant">variant</string>
+    <string name="variants">variants</string>
+    <string name="expand">Expand</string>
+    <string name="collapse">Collapse</string>
+    <string name="downloaded">Downloaded</string>
+    <string name="downloading">Downloading...</string>
+    <string name="not_downloaded">Not downloaded</string>
+    <string name="partial">Partial</string>
+    <string name="paused_downloaded_format">Paused: %1$s downloaded</string>
+    <string name="continue_download">Continue</string>
+    <string name="clear">Clear</string>
+    <string name="ram_requirement_format">%1$dGB RAM</string>
 </resources>

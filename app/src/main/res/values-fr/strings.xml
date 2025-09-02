@@ -71,7 +71,7 @@
     <string name="acknowledgments">Remerciements</string>
     <string name="acknowledgments_text">Remerciements spéciaux à Google, Meta, Microsoft, et à la communauté HuggingFace pour avoir fourni les incroyables modèles LLM qui alimentent cette application. Ce projet s\'appuie également sur le travail fantastique de la communauté de développement Android et de l\'écosystème open-source.</string>
     <string name="ai_thinking">L\'IA réfléchit...</string>
-    <string name="version_number">Version 1.0.9</string>
+    <string name="version_number">Version 1.1.0</string>
     <string name="app_version">Version de l\'App</string>
     
     <!-- Terms of Service -->
@@ -199,4 +199,26 @@
     <string name="time_hours_ago">il y a %1$d h</string>
     <string name="time_minutes_ago">il y a %1$d min</string>
     <string name="time_just_now">À l\'instant</string>
+    
+    <!-- Model Download Screen -->
+    <string name="ai_models">Modèles d\'IA</string>
+    <string name="download_ai_models">Télécharger les Modèles d\'IA</string>
+    <string name="choose_text_multimodal_models">Choisissez entre des modèles texte seul ou multimodaux</string>
+    <string name="text_models">Modèles de Texte</string>
+    <string name="text_models_description">Modèles optimisés pour la génération de texte et la conversation</string>
+    <string name="vision_models">Modèles de Vision</string>
+    <string name="vision_models_description">Modèles qui peuvent comprendre le texte et les images</string>
+    <string name="gpu">GPU</string>
+    <string name="variant">variante</string>
+    <string name="variants">variantes</string>
+    <string name="expand">Développer</string>
+    <string name="collapse">Réduire</string>
+    <string name="downloaded">Téléchargé</string>
+    <string name="downloading">Téléchargement...</string>
+    <string name="not_downloaded">Non téléchargé</string>
+    <string name="partial">Partiel</string>
+    <string name="paused_downloaded_format">Pausé: %1$s téléchargé</string>
+    <string name="continue_download">Continuer</string>
+    <string name="clear">Effacer</string>
+    <string name="ram_requirement_format">%1$dGB RAM</string>
 </resources>

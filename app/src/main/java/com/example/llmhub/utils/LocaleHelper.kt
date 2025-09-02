@@ -66,14 +66,23 @@ object LocaleHelper {
     }
     
     /**
-     * Get the current system locale
+     * Get the current system locale from device configuration
+     * This gets the device's actual system locale, not the app's current locale
      */
     private fun getSystemLocale(): Locale {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            LocaleList.getDefault()[0]
-        } else {
-            @Suppress("DEPRECATION")
-            Locale.getDefault()
+        return try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                // Get the system's default locale list, not the app's current one
+                val systemConfig = android.content.res.Resources.getSystem().configuration
+                systemConfig.locales[0]
+            } else {
+                @Suppress("DEPRECATION")
+                // For older versions, get from system resources
+                android.content.res.Resources.getSystem().configuration.locale
+            }
+        } catch (e: Exception) {
+            // Fallback to English if system locale detection fails
+            Locale("en")
         }
     }
     

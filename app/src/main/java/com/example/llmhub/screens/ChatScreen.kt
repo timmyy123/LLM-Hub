@@ -510,16 +510,40 @@ private fun TypingIndicator() {
 
 @Composable
 private fun ModelLoadingIndicator(modelName: String) {
-    // Pulsing animation for the loading indicator
-    val infiniteTransition = rememberInfiniteTransition(label = "ModelLoadingPulse")
+    // Multiple smooth animations for the loading indicator
+    val infiniteTransition = rememberInfiniteTransition(label = "ModelLoadingAnimations")
+    
+    // Gentle pulsing scale animation
     val scale by infiniteTransition.animateFloat(
-        initialValue = 0.95f,
-        targetValue = 1.05f,
+        initialValue = 0.98f,
+        targetValue = 1.02f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = FastOutSlowInEasing),
+            animation = tween(2000, easing = EaseInOutCubic),
             repeatMode = RepeatMode.Reverse
         ),
         label = "ModelLoadingScale"
+    )
+    
+    // Subtle glow effect through alpha animation
+    val glowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1800, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "ModelLoadingGlow"
+    )
+    
+    // Gentle rotation for the icon
+    val iconRotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(4000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "ModelLoadingIconRotation"
     )
     
     Column(
@@ -534,6 +558,7 @@ private fun ModelLoadingIndicator(modelName: String) {
                 .graphicsLayer {
                     scaleX = scale
                     scaleY = scale
+                    alpha = glowAlpha
                 },
             shape = MaterialTheme.shapes.large,
             color = MaterialTheme.colorScheme.primaryContainer,
@@ -543,7 +568,7 @@ private fun ModelLoadingIndicator(modelName: String) {
                 modifier = Modifier.padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Model icon with background
+                // Model icon with background and rotation animation
                 Surface(
                     modifier = Modifier.size(48.dp),
                     shape = MaterialTheme.shapes.medium,
@@ -554,7 +579,11 @@ private fun ModelLoadingIndicator(modelName: String) {
                         Icon(
                             Icons.Default.SmartToy,
                             contentDescription = null,
-                            modifier = Modifier.size(24.dp),
+                            modifier = Modifier
+                                .size(24.dp)
+                                .graphicsLayer {
+                                    rotationZ = iconRotation
+                                },
                             tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }

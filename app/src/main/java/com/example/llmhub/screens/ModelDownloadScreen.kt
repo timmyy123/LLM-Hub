@@ -28,6 +28,8 @@ import androidx.compose.ui.platform.LocalContext
 import android.content.Context
 import android.app.ActivityManager
 import com.llmhub.llmhub.ui.components.*
+import androidx.compose.ui.res.stringResource
+import com.llmhub.llmhub.R
 
 /**
  * Get device total memory in GB
@@ -69,11 +71,11 @@ fun ModelDownloadScreen(
 
     Scaffold(
         topBar = {
-            LargeTopAppBar(
+            TopAppBar(
                 title = { 
                     Text(
-                        "AI Models",
-                        style = MaterialTheme.typography.headlineMedium,
+                        stringResource(R.string.ai_models),
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     ) 
                 },
@@ -84,15 +86,11 @@ fun ModelDownloadScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.back),
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
-                },
-                colors = TopAppBarDefaults.largeTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
+                }
             )
         },
         containerColor = MaterialTheme.colorScheme.surface
@@ -127,13 +125,13 @@ fun ModelDownloadScreen(
                             )
                             Column {
                                 Text(
-                                    text = "Download AI Models",
+                                    text = stringResource(R.string.download_ai_models),
                                     style = MaterialTheme.typography.titleLarge,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = "Choose from text-only or multimodal models",
+                                    text = stringResource(R.string.choose_text_multimodal_models),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                                 )
@@ -147,8 +145,8 @@ fun ModelDownloadScreen(
             if (textGrouped.isNotEmpty()) {
                 item {
                     SectionHeader(
-                        title = "Text Models",
-                        subtitle = "Models optimized for text generation and conversation"
+                        title = stringResource(R.string.text_models),
+                        subtitle = stringResource(R.string.text_models_description)
                     )
                 }
                 
@@ -169,8 +167,8 @@ fun ModelDownloadScreen(
             if (multimodalGrouped.isNotEmpty()) {
                 item {
                     SectionHeader(
-                        title = "Vision Models",
-                        subtitle = "Models that can understand both text and images"
+                        title = stringResource(R.string.vision_models),
+                        subtitle = stringResource(R.string.vision_models_description)
                     )
                 }
                 
@@ -227,7 +225,7 @@ private fun ModelFamilyCard(
                     if (isMultimodal) {
                         IconWithLabel(
                             icon = Icons.Default.RemoveRedEye,
-                            label = "Vision",
+                            label = stringResource(R.string.vision),
                             tint = MaterialTheme.colorScheme.tertiary
                         )
                     }
@@ -235,14 +233,14 @@ private fun ModelFamilyCard(
                     if (variants.any { isGpuSupportedForModel(it, context) }) {
                         IconWithLabel(
                             icon = Icons.Default.Speed,
-                            label = "GPU",
+                            label = stringResource(R.string.gpu),
                             tint = MaterialTheme.colorScheme.secondary
                         )
                     }
                     
                     IconWithLabel(
                         icon = Icons.Default.Storage,
-                        label = "${variants.size} variant${if (variants.size > 1) "s" else ""}",
+                        label = "${variants.size} ${if (variants.size > 1) stringResource(R.string.variants) else stringResource(R.string.variant)}",
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
@@ -250,7 +248,7 @@ private fun ModelFamilyCard(
             
             Icon(
                 imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                contentDescription = if (expanded) "Collapse" else "Expand",
+                contentDescription = if (expanded) stringResource(R.string.collapse) else stringResource(R.string.expand),
                 modifier = Modifier.size(24.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -316,22 +314,22 @@ private fun ModelVariantItem(
                 
                 when {
                     model.isDownloaded -> StatusChip(
-                        text = "Downloaded",
+                        text = stringResource(R.string.downloaded),
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                         contentColor = MaterialTheme.colorScheme.onTertiaryContainer
                     )
                     model.isDownloading -> StatusChip(
-                        text = "Downloading...",
+                        text = stringResource(R.string.downloading),
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                     model.downloadProgress > 0f && !model.isDownloaded -> StatusChip(
-                        text = "Partial",
+                        text = stringResource(R.string.partial),
                         containerColor = MaterialTheme.colorScheme.errorContainer,
                         contentColor = MaterialTheme.colorScheme.onErrorContainer
                     )
                     else -> StatusChip(
-                        text = "Not downloaded",
+                        text = stringResource(R.string.not_downloaded),
                         containerColor = MaterialTheme.colorScheme.surfaceVariant,
                         contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -350,16 +348,16 @@ private fun ModelVariantItem(
                 
                 IconWithLabel(
                     icon = Icons.Default.Memory,
-                    label = "${model.requirements.minRamGB}GB RAM",
+                    label = stringResource(R.string.ram_requirement_format, model.requirements.minRamGB),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 
                 if (isGpuSupportedForModel(model, context)) {
-                    IconWithLabel(
-                        icon = Icons.Default.Speed,
-                        label = "GPU",
-                        tint = MaterialTheme.colorScheme.secondary
-                    )
+                                            IconWithLabel(
+                            icon = Icons.Default.Speed,
+                            label = stringResource(R.string.gpu),
+                            tint = MaterialTheme.colorScheme.secondary
+                        )
                 }
             }
             
@@ -404,7 +402,7 @@ private fun ModelVariantItem(
                 )
                 
                 Text(
-                    text = "Paused: ${formatFileSize(model.downloadedBytes)} downloaded",
+                    text = stringResource(R.string.paused_downloaded_format, formatFileSize(model.downloadedBytes)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -430,7 +428,7 @@ private fun ModelVariantItem(
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Delete")
+                            Text(stringResource(R.string.delete))
                         }
                     }
                     
@@ -448,7 +446,7 @@ private fun ModelVariantItem(
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Cancel")
+                            Text(stringResource(R.string.cancel))
                         }
                     }
                     
@@ -467,7 +465,7 @@ private fun ModelVariantItem(
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Clear")
+                                Text(stringResource(R.string.clear))
                             }
                             
                             Button(
@@ -482,7 +480,7 @@ private fun ModelVariantItem(
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Continue")
+                                Text(stringResource(R.string.continue_download))
                             }
                         }
                     }
@@ -500,7 +498,7 @@ private fun ModelVariantItem(
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Download")
+                            Text(stringResource(R.string.download))
                         }
                     }
                 }

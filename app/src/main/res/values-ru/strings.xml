@@ -70,7 +70,7 @@
     <string name="github_repository">GitHub Репозиторий</string>
     <string name="acknowledgments">Благодарности</string>
     <string name="acknowledgments_text">Особая благодарность Google, Meta, Microsoft, и сообществу HuggingFace за предоставление невероятных LLM-моделей, которые питают это приложение. Этот проект также опирается на удивительную работу сообщества разработчиков Android и экосистемы открытого исходного кода.</string>
-    <string name="version_number">Версия 1.0.9</string>
+    <string name="version_number">Версия 1.1.0</string>
     <string name="ai_thinking">ИИ думает...</string>
     <string name="app_version">Версия Приложения</string>
     
@@ -199,4 +199,26 @@
     <string name="time_hours_ago">%1$d ч назад</string>
     <string name="time_minutes_ago">%1$d мин назад</string>
     <string name="time_just_now">Только что</string>
+    
+    <!-- Model Download Screen -->
+    <string name="ai_models">Модели ИИ</string>
+    <string name="download_ai_models">Скачать Модели ИИ</string>
+    <string name="choose_text_multimodal_models">Выберите между текстовыми или мультимодальными моделями</string>
+    <string name="text_models">Текстовые Модели</string>
+    <string name="text_models_description">Модели оптимизированные для генерации текста и разговора</string>
+    <string name="vision_models">Модели Зрения</string>
+    <string name="vision_models_description">Модели которые могут понимать текст и изображения</string>
+    <string name="gpu">ГПУ</string>
+    <string name="variant">вариант</string>
+    <string name="variants">варианты</string>
+    <string name="expand">Развернуть</string>
+    <string name="collapse">Свернуть</string>
+    <string name="downloaded">Скачано</string>
+    <string name="downloading">Скачивание...</string>
+    <string name="not_downloaded">Не скачано</string>
+    <string name="partial">Частично</string>
+    <string name="paused_downloaded_format">Приостановлено: %1$s скачано</string>
+    <string name="continue_download">Продолжить</string>
+    <string name="clear">Очистить</string>
+    <string name="ram_requirement_format">%1$dГБ ОЗУ</string>
 </resources>
