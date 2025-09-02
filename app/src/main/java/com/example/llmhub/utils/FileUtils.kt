@@ -139,21 +139,74 @@ object FileUtils {
                         android.util.Log.d("FileUtils", "File name from cursor: $fileName")
                     }
                     if (sizeIndex != -1) {
-                        size = cursor.getLong(sizeIndex)
-                        android.util.Log.d("FileUtils", "File size from cursor: $size")
-                        android.util.Log.d("FileUtils", "File size formatted: ${formatFileSize(size)}")
+                        val cursorSize = cursor.getLong(sizeIndex)
+                        android.util.Log.d("FileUtils", "File size from cursor: $cursorSize")
                         
                         // Check for potential overflow or negative values
-                        if (size < 0) {
-                            android.util.Log.w("FileUtils", "Negative file size detected: $size, setting to 0")
+                        if (cursorSize < 0) {
+                            android.util.Log.w("FileUtils", "Negative file size detected: $cursorSize, will get actual size")
                             size = 0L
-                        }
-                        if (size > 1024L * 1024L * 1024L * 10L) { // More than 10GB
-                            android.util.Log.w("FileUtils", "Suspiciously large file size: $size, this might be an error")
+                        } else if (cursorSize > 1024L * 1024L * 1024L * 10L) { // More than 10GB
+                            android.util.Log.w("FileUtils", "Suspiciously large file size: $cursorSize, will verify actual size")
+                            size = cursorSize
+                        } else {
+                            size = cursorSize
                         }
                     }
                 }
             }
+            
+            // If cursor size seems unreliable or missing, get actual size by reading the stream
+            // This is more reliable than OpenableColumns.SIZE which can be incorrect on some devices
+            var needsActualSizeCheck = false
+            
+            if (size <= 0) {
+                android.util.Log.d("FileUtils", "Cursor size is 0 or negative, will get actual size")
+                needsActualSizeCheck = true
+            } else if (size > 1024L * 1024L * 1024L * 10L) { // More than 10GB
+                android.util.Log.d("FileUtils", "Cursor size is suspiciously large (${formatFileSize(size)}), will verify")
+                needsActualSizeCheck = true
+            }
+            
+            if (needsActualSizeCheck) {
+                try {
+                    android.util.Log.d("FileUtils", "Getting actual file size by reading input stream...")
+                    val actualSize = getActualFileSize(context, uri)
+                    if (actualSize > 0) {
+                        android.util.Log.d("FileUtils", "Actual file size from stream: $actualSize, cursor size was: $size")
+                        
+                        // Check if cursor size might be in KB instead of bytes (common issue)
+                        val sizeInKB = size * 1024
+                        val sizeDiffFromBytes = if (size > 0) Math.abs(actualSize - size).toDouble() / Math.max(actualSize, size) else 1.0
+                        val sizeDiffFromKB = if (size > 0) Math.abs(actualSize - sizeInKB).toDouble() / Math.max(actualSize, sizeInKB) else 1.0
+                        
+                        if (sizeDiffFromKB < 0.1 && sizeDiffFromBytes > 0.5) {
+                            // Cursor was likely returning KB instead of bytes
+                            android.util.Log.w("FileUtils", "Cursor size ($size) appears to be in KB, actual size is $actualSize bytes")
+                            size = actualSize
+                        } else if (size <= 0 || sizeDiffFromBytes > 0.3) {
+                            // Cursor size was way off, use actual size
+                            android.util.Log.w("FileUtils", "Cursor size ($size) was incorrect, using actual size ($actualSize)")
+                            size = actualSize
+                        } else {
+                            // Cursor size seems reasonable, keep it
+                            android.util.Log.d("FileUtils", "Cursor size seems accurate, keeping it")
+                        }
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.w("FileUtils", "Failed to get actual file size: ${e.message}")
+                    // If we can't get actual size and cursor size seems wrong, try to make best guess
+                    if (size > 1024L * 1024L * 1024L * 10L) {
+                        android.util.Log.w("FileUtils", "Using potentially incorrect cursor size: $size")
+                    }
+                    if (size <= 0) {
+                        size = 0L // Reset to 0 if negative
+                    }
+                }
+            }
+            
+            android.util.Log.d("FileUtils", "Final file size: $size")
+            android.util.Log.d("FileUtils", "File size formatted: ${formatFileSize(size)}")
             
             // Get MIME type
             mimeType = contentResolver.getType(uri)
@@ -177,6 +230,35 @@ object FileUtils {
             android.util.Log.e("FileUtils", "Error getting file info: ${e.message}", e)
             null
         }
+    }
+    
+    /**
+     * Get actual file size by reading the input stream
+     * This is more reliable than OpenableColumns.SIZE which can be incorrect
+     */
+    private suspend fun getActualFileSize(context: Context, uri: Uri): Long = withContext(Dispatchers.IO) {
+        var totalBytes = 0L
+        try {
+            context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                val buffer = ByteArray(8192)
+                var bytesRead: Int
+                var maxBytesToRead = 1024L * 1024L * 1024L * 11L // Don't read more than 11GB to avoid memory issues
+                
+                while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                    totalBytes += bytesRead
+                    
+                    // Safety check to avoid memory issues with extremely large files
+                    if (totalBytes > maxBytesToRead) {
+                        android.util.Log.w("FileUtils", "File is larger than 11GB, stopping size calculation at $totalBytes bytes")
+                        break
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("FileUtils", "Error reading file size from stream: ${e.message}")
+            throw e
+        }
+        totalBytes
     }
     
     /**
