@@ -76,15 +76,17 @@ fun SelectableMarkdownText(
     color: Color,
     fontSize: androidx.compose.ui.unit.TextUnit,
     modifier: Modifier = Modifier,
-    textAlign: TextAlign = TextAlign.Start
+    textAlign: TextAlign = TextAlign.Start,
+    linkColorOverride: Color? = null
 ) {
     val context = LocalContext.current
+    val linkColor = linkColorOverride ?: MaterialTheme.colorScheme.primary
+    
     // First parse the markdown (bold/italic/lists etc.)
-    val baseAnnotated = remember(markdown) {
-        parseMarkdownToAnnotatedString(markdown, color)
+    val baseAnnotated = remember(markdown, color, linkColor) {
+        parseMarkdownToAnnotatedString(markdown, color, linkColor)
     }
 
-    val linkColor = MaterialTheme.colorScheme.primary
     // Then detect links & phone numbers and add annotations/styles
     val finalAnnotated = remember(baseAnnotated, linkColor) {
         annotateLinksAndPhones(baseAnnotated, linkColor)
@@ -122,13 +124,17 @@ fun SelectableMarkdownText(
 /**
  * Post-process an AnnotatedString to detect web URLs and phone numbers, add underline/primary-color
  * styling, and attach StringAnnotations so we can handle clicks in ClickableText.
+ * Excludes URLs that are already part of markdown link syntax to avoid duplicates.
  */
 fun annotateLinksAndPhones(source: AnnotatedString, linkColor: Color): AnnotatedString {
     val text = source.text
     val builder = AnnotatedString.Builder()
     builder.append(source)
 
-    val urlRegex = Regex("""(https?://[^\s]+|www\.[^\s]+|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}[^\s]*)""")
+    // Regex that excludes URLs inside markdown link syntax [text](url)
+    // More precise regex to avoid matching text like "analyzing...okay"
+    // Only matches proper domain patterns and full URLs
+    val urlRegex = Regex("""(?<!\]\()(https?://[^\s\)]+|(?<!\]\()www\.(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}[^\s\)]*|(?<!\]\()(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.){2,}[a-zA-Z]{2,}(?:/[^\s\)]*)?)(?!\))""")
     val phoneRegex = Regex("""\+?[0-9][0-9\-\s]{6,}[0-9]""")
 
     fun addAnnotation(range: IntRange, annotationTag: String, annotationValue: String) {
@@ -172,9 +178,9 @@ fun annotateLinksAndPhones(source: AnnotatedString, linkColor: Color): Annotated
 
 /**
  * Enhanced markdown parser that converts markdown syntax to AnnotatedString
- * Supports: **bold**, *italic*, `code`, ### headers, - lists, and preserves line breaks
+ * Supports: **bold**, *italic*, `code`, ### headers, - lists, [links](url), and preserves line breaks
  */
-fun parseMarkdownToAnnotatedString(markdown: String, baseColor: Color): AnnotatedString {
+fun parseMarkdownToAnnotatedString(markdown: String, baseColor: Color, linkColor: Color): AnnotatedString {
     // Normalize common escaped newline/tab sequences if the text came in JSON-escaped form
     var normalized = markdown
     if ('\r' in normalized) {
@@ -229,11 +235,11 @@ fun parseMarkdownToAnnotatedString(markdown: String, baseColor: Color): Annotate
                     val indent = line.length - line.trimStart().length
                     append("  ".repeat(indent / 2)) // Convert spaces to proper indent
                     append("• ") // Bullet point
-                    parseInlineMarkdown(line.trimStart().substring(2), baseColor, this)
+                    parseInlineMarkdown(line.trimStart().substring(2), baseColor, this, linkColor)
                 }
                 // Regular text with inline formatting
                 else -> {
-                    parseInlineMarkdown(line, baseColor, this)
+                    parseInlineMarkdown(line, baseColor, this, linkColor)
                 }
             }
             
@@ -246,13 +252,47 @@ fun parseMarkdownToAnnotatedString(markdown: String, baseColor: Color): Annotate
 }
 
 /**
- * Parse inline markdown formatting (bold, italic, code) within a line
+ * Parse inline markdown formatting (bold, italic, code, links) within a line
  */
-fun parseInlineMarkdown(text: String, baseColor: Color, builder: AnnotatedString.Builder) {
+fun parseInlineMarkdown(text: String, baseColor: Color, builder: AnnotatedString.Builder, linkColor: Color = baseColor) {
     var i = 0
     
     while (i < text.length) {
         when {
+            // Markdown links [text](url)
+            text[i] == '[' -> {
+                val textEndIndex = text.indexOf(']', i + 1)
+                if (textEndIndex != -1 && textEndIndex + 1 < text.length && text[textEndIndex + 1] == '(') {
+                    val urlEndIndex = text.indexOf(')', textEndIndex + 2)
+                    if (urlEndIndex != -1) {
+                        val linkText = text.substring(i + 1, textEndIndex)
+                        val linkUrl = text.substring(textEndIndex + 2, urlEndIndex)
+                        
+                        // Add the link with URL annotation and styling
+                        val startIndex = builder.length
+                        builder.withStyle(SpanStyle(
+                            color = linkColor,
+                            textDecoration = TextDecoration.Underline
+                        )) {
+                            append(linkText)
+                        }
+                        val endIndex = builder.length
+                        
+                        // Add URL annotation for click handling
+                        var processedUrl = linkUrl.trim()
+                        if (!processedUrl.startsWith("http://") && !processedUrl.startsWith("https://")) {
+                            processedUrl = "https://$processedUrl"
+                        }
+                        builder.addStringAnnotation("URL", processedUrl, startIndex, endIndex)
+                        
+                        i = urlEndIndex + 1
+                        continue
+                    }
+                }
+                // If not a valid markdown link, treat as regular character
+                builder.withStyle(SpanStyle(color = baseColor)) { append(text[i]) }
+                i++
+            }
             // Bold text **text**
             i < text.length - 1 && text[i] == '*' && text[i + 1] == '*' -> {
                 val endIndex = text.indexOf("**", i + 2)
@@ -375,7 +415,8 @@ fun MessageBubble(
                                 color = MaterialTheme.colorScheme.onPrimary,
                             fontSize = MaterialTheme.typography.bodyLarge.fontSize,
                             modifier = Modifier.wrapContentWidth(),
-                            textAlign = TextAlign.End
+                            textAlign = TextAlign.End,
+                            linkColorOverride = MaterialTheme.colorScheme.onPrimary
                         )
                     }
                 }
@@ -443,7 +484,8 @@ fun MessageBubble(
                         markdown = displayContent,
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = MaterialTheme.typography.bodyLarge.fontSize,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        linkColorOverride = MaterialTheme.colorScheme.primary
                     )
                 }
                 
