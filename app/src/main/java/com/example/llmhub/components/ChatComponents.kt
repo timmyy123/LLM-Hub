@@ -1006,7 +1006,7 @@ fun MessageInput(
                                 overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                text = "${attachmentInfo!!.type.displayName} • ${FileUtils.formatFileSize(attachmentInfo!!.size)}",
+                                text = attachmentInfo!!.type.displayName,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                             )
@@ -1284,7 +1284,7 @@ fun FilePreviewDialog(
                                 overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                text = "${fileType.displayName} • ${FileUtils.formatFileSize(fileSize)}",
+                                text = fileType.displayName,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -1397,7 +1397,7 @@ fun FilePreviewDialog(
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
-                                        text = "${fileType.displayName} • ${FileUtils.formatFileSize(fileSize)}",
+                                        text = fileType.displayName,
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         textAlign = TextAlign.Center
@@ -1490,11 +1490,6 @@ fun FileAttachmentCard(
     
     // Use stored file info if available, otherwise fallback to loaded file info
     val displayName = attachmentFileName ?: fileInfo?.name ?: "File attachment"
-    val formattedSize = if (attachmentFileSize != null) {
-        FileUtils.formatFileSize(attachmentFileSize)
-    } else {
-        fileInfo?.size?.let { FileUtils.formatFileSize(it) } ?: ""
-    }
     
     Card(
         modifier = Modifier
@@ -1550,7 +1545,7 @@ fun FileAttachmentCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = "${fileTypeInfo.displayName}${if (formattedSize.isNotEmpty()) " • $formattedSize" else ""} • Tap to preview",
+                    text = "${fileTypeInfo.displayName} • Tap to preview",
                     style = MaterialTheme.typography.bodySmall,
                     color = if (isFromUser) {
                         MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)

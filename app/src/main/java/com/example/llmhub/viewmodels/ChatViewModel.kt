@@ -864,7 +864,8 @@ class ChatViewModel(
                                         // Debounced database updates to reduce blinking
                                         val currentTime = System.currentTimeMillis()
                                         if (currentTime - lastUpdateTime > updateIntervalMs) {
-                                            repository.updateMessageContent(placeholderId, totalContent)
+                                            // Trim trailing whitespace/newlines before persisting to avoid large empty gaps
+                                            repository.updateMessageContent(placeholderId, totalContent.trimEnd())
                                             lastUpdateTime = currentTime
                                         }
                                     }
@@ -906,7 +907,7 @@ class ChatViewModel(
                                 val safeFinal = if (finalContent.isBlank()) {
                                     "No response produced. (Possible: safety refusal or token limit reached and session reset). Try a shorter or different prompt."
                                 } else finalContent
-                                repository.updateMessageContent(placeholderId, safeFinal)
+                                repository.updateMessageContent(placeholderId, safeFinal.trimEnd())
                                 val time = System.currentTimeMillis() - generationStartTime
                                 Log.d("ChatViewModel", "About to call finalizeMessage for success")
                                 finalizeMessage(placeholderId, safeFinal, time)
@@ -949,7 +950,7 @@ class ChatViewModel(
                             val safeFinal = if (finalContent.isBlank()) {
                                 "No response produced. (Session likely full or content blocked). Try simplifying or changing the topic."
                             } else finalContent
-                            repository.updateMessageContent(placeholderId, safeFinal)
+                            repository.updateMessageContent(placeholderId, safeFinal.trimEnd())
                             Log.d("ChatViewModel", "About to call finalizeMessage (NonCancellable)")
                             finalizeMessage(placeholderId, safeFinal, time)
                         }
@@ -2094,14 +2095,14 @@ class ChatViewModel(
                             // Debounced database updates
                             val currentTime = System.currentTimeMillis()
                             if (currentTime - lastUpdateTime > updateIntervalMs) {
-                                repository.updateMessageContent(placeholderId, totalContent)
+                                repository.updateMessageContent(placeholderId, totalContent.trimEnd())
                                 lastUpdateTime = currentTime
                             }
                         }
                         
                         // Success - finalize the message
                         val finalContent = totalContent
-                        repository.updateMessageContent(placeholderId, finalContent)
+                        repository.updateMessageContent(placeholderId, finalContent.trimEnd())
                         val time = System.currentTimeMillis() - generationStartTime
                         finalizeMessage(placeholderId, finalContent, time)
                         
@@ -2115,7 +2116,7 @@ class ChatViewModel(
                         
                         // Save partial content and finalize
                         withContext(kotlinx.coroutines.NonCancellable) {
-                            repository.updateMessageContent(placeholderId, finalContent)
+                            repository.updateMessageContent(placeholderId, finalContent.trimEnd())
                             finalizeMessage(placeholderId, finalContent, time)
                         }
                         

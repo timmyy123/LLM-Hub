@@ -81,9 +81,12 @@ class ChatRepository(
         attachmentFileName: String? = null,
         attachmentFileSize: Long? = null
     ): String {
+        // Normalize content by trimming trailing whitespace/newlines to avoid large empty selection areas
+        val safeContent = content.trimEnd()
+
         val message = MessageEntity(
             chatId = chatId,
-            content = content,
+            content = safeContent,
             isFromUser = isFromUser,
             attachmentPath = attachmentPath,
             attachmentType = attachmentType,
@@ -101,9 +104,10 @@ class ChatRepository(
     }
 
     suspend fun updateMessageContent(messageId: String, newContent: String) {
-        val msg = messageDao.getMessageById(messageId) ?: return
-        if (msg.content == newContent) return
-        messageDao.updateMessage(msg.copy(content = newContent))
+    val msg = messageDao.getMessageById(messageId) ?: return
+    val safeContent = newContent.trimEnd()
+    if (msg.content == safeContent) return
+    messageDao.updateMessage(msg.copy(content = safeContent))
     }
     
     suspend fun updateMessageStats(messageId: String, tokenCount: Int, tokensPerSecond: Double) {
