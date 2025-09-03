@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.webkit.MimeTypeMap
+import com.llmhub.llmhub.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.BufferedReader
@@ -113,6 +114,16 @@ object FileUtils {
      */
     fun getAllSupportedMimeTypes(): Array<String> {
         return SupportedFileType.values().flatMap { it.mimeTypes }.toTypedArray()
+    }
+    
+    /**
+     * Get localized display name for file type
+     */
+    fun getLocalizedDisplayName(context: Context, fileType: SupportedFileType): String {
+        return when (fileType) {
+            SupportedFileType.TEXT -> context.getString(R.string.text_file)
+            else -> fileType.displayName
+        }
     }
     
     /**

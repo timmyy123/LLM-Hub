@@ -11,6 +11,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import android.util.Log
 import com.llmhub.llmhub.data.localFileName
+import com.llmhub.llmhub.data.isModelFileValid
 
 private const val TAG = "ModelDownloader"
 
@@ -42,11 +43,28 @@ class ModelDownloader(
         var downloadedBytes = if (modelFile.exists()) modelFile.length() else 0L
         var inferredTotalBytes = if (model.sizeBytes > 0) model.sizeBytes else -1L
 
+        Log.d(TAG, "File check for ${model.name}: exists=${modelFile.exists()}, size=${if (modelFile.exists()) modelFile.length() else 0}, expectedSize=$inferredTotalBytes, path=${modelFile.absolutePath}")
+
         // If file exists and we know the exact size and it's complete, short-circuit
         if (modelFile.exists() && inferredTotalBytes > 0 && modelFile.length() >= inferredTotalBytes) {
-            emit(DownloadStatus(inferredTotalBytes, inferredTotalBytes, 0))
-            Log.i(TAG, "Model already fully downloaded: ${model.name}")
-            return@flow
+            // Double-check that the file is actually valid by checking if it's not corrupted
+            val fileIsValid = try {
+                isModelFileValid(modelFile, model.modelFormat)
+            } catch (e: Exception) {
+                Log.w(TAG, "Error validating model file ${modelFile.absolutePath}: ${e.message}")
+                false
+            }
+            
+            if (fileIsValid) {
+                emit(DownloadStatus(inferredTotalBytes, inferredTotalBytes, 0))
+                Log.i(TAG, "Model already fully downloaded and validated: ${model.name}")
+                return@flow
+            } else {
+                Log.w(TAG, "Model file exists but is invalid, redownloading: ${model.name}")
+                // Delete the invalid file and continue with download
+                modelFile.delete()
+                downloadedBytes = 0L
+            }
         }
 
         // For unknown totals, emit 0 so UI shows indeterminate

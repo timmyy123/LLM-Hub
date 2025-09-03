@@ -1006,7 +1006,7 @@ fun MessageInput(
                                 overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                text = attachmentInfo!!.type.displayName,
+                                text = FileUtils.getLocalizedDisplayName(LocalContext.current, attachmentInfo!!.type),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                             )
@@ -1068,9 +1068,9 @@ fun MessageInput(
                                                 Text("🖼️", style = MaterialTheme.typography.headlineSmall)
                                                 Spacer(modifier = Modifier.width(12.dp))
                                                 Column {
-                                                    Text("Images")
+                                                    Text(stringResource(R.string.images))
                                                     Text(
-                                                        "JPG, PNG, GIF, WebP",
+                                                        stringResource(R.string.images_description),
                                                         style = MaterialTheme.typography.bodySmall,
                                                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                                     )
@@ -1090,9 +1090,9 @@ fun MessageInput(
                                             Text("📄", style = MaterialTheme.typography.headlineSmall)
                                             Spacer(modifier = Modifier.width(12.dp))
                                             Column {
-                                                Text("Documents")
+                                                Text(stringResource(R.string.documents))
                                                 Text(
-                                                    "PDF, Word, Excel, PowerPoint",
+                                                    stringResource(R.string.documents_description),
                                                     style = MaterialTheme.typography.bodySmall,
                                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                                 )
@@ -1110,9 +1110,9 @@ fun MessageInput(
                                             Text("📝", style = MaterialTheme.typography.headlineSmall)
                                             Spacer(modifier = Modifier.width(12.dp))
                                             Column {
-                                                Text("Text Files")
+                                                Text(stringResource(R.string.text_files))
                                                 Text(
-                                                    "TXT, MD, JSON, XML, CSV",
+                                                    stringResource(R.string.text_files_description),
                                                     style = MaterialTheme.typography.bodySmall,
                                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                                 )
@@ -1284,7 +1284,7 @@ fun FilePreviewDialog(
                                 overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                text = fileType.displayName,
+                                text = FileUtils.getLocalizedDisplayName(context, fileType),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -1397,7 +1397,7 @@ fun FilePreviewDialog(
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
-                                        text = fileType.displayName,
+                                        text = FileUtils.getLocalizedDisplayName(context, fileType),
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         textAlign = TextAlign.Center
@@ -1416,22 +1416,28 @@ fun FilePreviewDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         // Only show remove button if onRemove is provided
                         if (onRemove != null) {
-                            OutlinedButton(onClick = onRemove) {
+                            OutlinedButton(
+                                onClick = onRemove,
+                                modifier = Modifier.weight(1f)
+                            ) {
                                 Icon(
                                     Icons.Default.Delete,
                                     contentDescription = null,
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Remove")
+                                Text(stringResource(R.string.remove_attachment))
                             }
                         }
                         
-                        Button(onClick = onDismiss) {
+                        Button(
+                            onClick = onDismiss,
+                            modifier = Modifier.weight(1f)
+                        ) {
                             if (onRemove != null) {
                                 Icon(
                                     Icons.Default.Check,
@@ -1439,7 +1445,7 @@ fun FilePreviewDialog(
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Keep")
+                                Text(stringResource(R.string.keep_attachment))
                             } else {
                                 Icon(
                                     Icons.Default.Close,
@@ -1545,7 +1551,7 @@ fun FileAttachmentCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = "${fileTypeInfo.displayName} • Tap to preview",
+                    text = "${FileUtils.getLocalizedDisplayName(context, fileTypeInfo)} • ${stringResource(R.string.tap_to_preview)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = if (isFromUser) {
                         MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)

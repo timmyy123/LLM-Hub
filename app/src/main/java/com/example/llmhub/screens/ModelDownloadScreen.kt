@@ -271,6 +271,8 @@ private fun ModelFamilyCard(
                         context = context,
                         onDownload = { viewModel.downloadModel(it) },
                         onCancel = { viewModel.cancelDownload(it) },
+                        onPause = { viewModel.pauseDownload(it) },
+                        onResume = { viewModel.resumeDownload(it) },
                         onDelete = { viewModel.deleteModel(it) }
                     )
                 }
@@ -285,6 +287,8 @@ private fun ModelVariantItem(
     context: Context,
     onDownload: (LLMModel) -> Unit,
     onCancel: (LLMModel) -> Unit,
+    onPause: (LLMModel) -> Unit,
+    onResume: (LLMModel) -> Unit,
     onDelete: (LLMModel) -> Unit
 ) {
     Card(
@@ -322,6 +326,11 @@ private fun ModelVariantItem(
                         text = stringResource(R.string.downloading),
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    model.isPaused -> StatusChip(
+                        text = stringResource(R.string.paused),
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
                     )
                     model.downloadProgress > 0f && !model.isDownloaded -> StatusChip(
                         text = stringResource(R.string.partial),
@@ -433,24 +442,41 @@ private fun ModelVariantItem(
                     }
                     
                     model.isDownloading -> {
-                        OutlinedButton(
-                            onClick = { onCancel(model) },
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = MaterialTheme.colorScheme.error
-                            ),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
-                        ) {
-                            Icon(
-                                Icons.Default.Cancel,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.cancel))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(
+                                onClick = { onCancel(model) },
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error
+                                ),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+                            ) {
+                                Icon(
+                                    Icons.Default.Cancel,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.cancel))
+                            }
+                            
+                            Button(
+                                onClick = { onPause(model) },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.secondary
+                                )
+                            ) {
+                                Icon(
+                                    Icons.Default.Pause,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.pause_download))
+                            }
                         }
                     }
                     
-                    model.downloadProgress > 0f && !model.isDownloaded -> {
+                    model.isPaused || (model.downloadProgress > 0f && !model.isDownloading && !model.isDownloaded) -> {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedButton(
                                 onClick = { onCancel(model) },
@@ -469,7 +495,7 @@ private fun ModelVariantItem(
                             }
                             
                             Button(
-                                onClick = { onDownload(model) },
+                                onClick = { onResume(model) },
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.primary
                                 )
@@ -480,7 +506,13 @@ private fun ModelVariantItem(
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.continue_download))
+                                Text(
+                                    if (model.isPaused) {
+                                        stringResource(R.string.continue_download)
+                                    } else {
+                                        stringResource(R.string.resume_download)
+                                    }
+                                )
                             }
                         }
                     }

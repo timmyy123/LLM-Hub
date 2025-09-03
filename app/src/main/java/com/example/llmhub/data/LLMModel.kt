@@ -19,6 +19,7 @@ data class LLMModel(
     val modelFormat: String = "gguf", // "gguf" or "task" (MediaPipe format)
     var isDownloaded: Boolean = false,
     var isDownloading: Boolean = false, // New: whether a download is currently in progress for this model
+    var isPaused: Boolean = false, // Whether download is paused
     var downloadProgress: Float = 0f,
     var downloadedBytes: Long = 0L,
     var totalBytes: Long? = null,
