@@ -260,4 +260,6 @@
     <string name="gpu_backend_description">Более быстрая обработка с использованием GPU устройства</string>
     <string name="cpu_backend_description">Более медленная, но более стабильная обработка</string>
     <string name="backend_selection_hint">Если приложение падает или работает неправильно с GPU, попробуйте CPU backend</string>
+    <string name="not_available">Недоступно</string>
+    <string name="gpu_disabled_low_memory">GPU недоступно для этой модели на устройствах с %1$dГБ RAM или меньше</string>
 </resources>

@@ -260,4 +260,6 @@
     <string name="gpu_backend_description">Procesamiento más rápido usando GPU del dispositivo</string>
     <string name="cpu_backend_description">Procesamiento más lento pero más estable</string>
     <string name="backend_selection_hint">Si la app se bloquea o no funciona correctamente con GPU, prueba el backend CPU</string>
+    <string name="not_available">No disponible</string>
+    <string name="gpu_disabled_low_memory">GPU no disponible para este modelo en dispositivos con %1$dGB RAM o menos</string>
 </resources>

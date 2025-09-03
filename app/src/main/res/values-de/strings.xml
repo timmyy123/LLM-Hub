@@ -260,4 +260,6 @@
     <string name="gpu_backend_description">Schnellere Verarbeitung mit Geräte-GPU</string>
     <string name="cpu_backend_description">Langsamere aber stabilere Verarbeitung</string>
     <string name="backend_selection_hint">Falls die App mit GPU abstürzt oder nicht richtig funktioniert, versuche CPU-Backend</string>
+    <string name="not_available">Nicht verfügbar</string>
+    <string name="gpu_disabled_low_memory">GPU nicht verfügbar für dieses Modell auf Geräten mit %1$dGB RAM oder weniger</string>
 </resources>
