@@ -27,14 +27,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.llmhub.llmhub.R
+import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.components.ChatDrawer
 import com.llmhub.llmhub.components.MessageBubble
 import com.llmhub.llmhub.components.MessageInput
+import com.llmhub.llmhub.components.BackendSelectionDialog
 import com.llmhub.llmhub.ui.components.ModernCard
 import com.llmhub.llmhub.ui.components.StatusChip
 import com.llmhub.llmhub.ui.components.SectionHeader
 import com.llmhub.llmhub.viewmodels.ChatViewModel
 import com.llmhub.llmhub.viewmodels.ChatViewModelFactory
+import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,6 +66,10 @@ fun ChatScreen(
     val currentlyLoadedModel by viewModel.currentlyLoadedModel.collectAsState()
     val selectedModel by viewModel.selectedModel.collectAsState()
     var modelMenuExpanded by remember { mutableStateOf(false) }
+    
+    // Backend selection state
+    var showBackendDialog by remember { mutableStateOf(false) }
+    var pendingModelForBackendSelection by remember { mutableStateOf<LLMModel?>(null) }
     
     val listState = rememberLazyListState()
     val focusManager = LocalFocusManager.current
@@ -301,8 +308,14 @@ fun ChatScreen(
                                             }
                                         } else null,
                                         onClick = {
-                                            viewModel.switchModel(model)
-                                            modelMenuExpanded = false
+                                            if (viewModel.isGemmaModel(model)) {
+                                                pendingModelForBackendSelection = model
+                                                showBackendDialog = true
+                                                modelMenuExpanded = false
+                                            } else {
+                                                viewModel.switchModel(model)
+                                                modelMenuExpanded = false
+                                            }
                                         }
                                     )
                                 }
@@ -395,8 +408,24 @@ fun ChatScreen(
             }
         }
     }
+    
+    // Backend Selection Dialog
+    if (showBackendDialog) {
+        pendingModelForBackendSelection?.let { model ->
+            BackendSelectionDialog(
+                modelName = model.name,
+                onBackendSelected = { backend ->
+                    viewModel.switchModelWithBackend(model, backend)
+                },
+                onDismiss = {
+                    showBackendDialog = false
+                    pendingModelForBackendSelection = null
+                }
+            )
+        }
+    }
 }
-
+    
 @Composable
 private fun WelcomeMessage(
     currentModel: String,

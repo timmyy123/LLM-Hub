@@ -26,6 +26,7 @@ import com.llmhub.llmhub.data.localFileName
 import com.llmhub.llmhub.data.isModelFileValid
 import com.llmhub.llmhub.data.ThemePreferences
 import com.llmhub.llmhub.R
+import com.google.mediapipe.tasks.genai.llminference.LlmInference
 
 class ChatViewModel(
     private val inferenceService: InferenceService,
@@ -1254,6 +1255,99 @@ class ChatViewModel(
             _isLoading.value = false
             isGenerating = false
         }
+    }
+    
+    fun switchModelWithBackend(newModel: LLMModel, backend: LlmInference.Backend) {
+        viewModelScope.launch {
+            // Immediately reflect the user's choice in UI
+            _selectedModel.value = newModel
+            // Ensure ongoing generation is fully cancelled before switching models to avoid
+            // MediaPipe graph errors (e.g., DetokenizerCalculator id >= 0) that can happen
+            // when a new session starts while the previous one is still cleaning up.
+            generationJob?.let { job ->
+                job.cancel()
+                // Wait for the coroutine (and its awaitClose cleanup) to finish
+                try {
+                    job.join()
+                } catch (ignored: CancellationException) {
+                    // Expected when job is already cancelled
+                }
+                generationJob = null
+            }
+
+            _isLoading.value = true
+            _isLoadingModel.value = true
+            isGenerating = true
+            
+            // Clear all existing sessions before switching models
+            try {
+                inferenceService.onCleared()
+                delay(1000) // Give more time for complete cleanup when switching models
+                Log.d("ChatViewModel", "Cleared all sessions before model switch")
+            } catch (e: Exception) {
+                Log.w("ChatViewModel", "Error clearing sessions before model switch: ${e.message}")
+            }
+            
+            currentModel = newModel
+            val updatedChat = _currentChat.value?.copy(modelName = newModel.name)
+            if (updatedChat != null) {
+                currentChatId?.let { repository.updateChatModel(it, newModel.name) }
+                _currentChat.value = updatedChat
+            }
+            
+            // Pre-load the model when switching with specified backend
+            try {
+                // Trigger model loading without generating content
+                inferenceService.loadModel(newModel, backend)
+                // Sync the currently loaded model state
+                syncCurrentlyLoadedModel()
+                // Set the first-generation guard
+                firstGenerationSinceLoad = true
+                Log.d("ChatViewModel", "Successfully loaded new model: ${newModel.name} with backend: $backend")
+                
+                // Clear the first generation guard after a reasonable timeout
+                viewModelScope.launch {
+                    delay(3000) // Clear guard after 3 seconds
+                    firstGenerationSinceLoad = false
+                    Log.d("ChatViewModel", "Cleared first generation guard for model: ${newModel.name}")
+                }
+                
+                // Reset the current chat session to ensure it works with the new model
+                currentChatId?.let { chatId ->
+                    try {
+                        delay(500) // Give more time for model loading to complete
+                        inferenceService.resetChatSession(chatId)
+                        delay(200) // Additional time for session to stabilize
+                        Log.d("ChatViewModel", "Reset chat session $chatId after model switch")
+                    } catch (e: Exception) {
+                        Log.w("ChatViewModel", "Failed to reset chat session after model switch: ${e.message}")
+                        // If reset fails, try to clear and recreate the entire session
+                        try {
+                            delay(300)
+                            inferenceService.onCleared()
+                            delay(300)
+                            inferenceService.loadModel(newModel, backend)
+                            Log.d("ChatViewModel", "Force recreated session after reset failure")
+                        } catch (recreateException: Exception) {
+                            Log.w("ChatViewModel", "Force recreation also failed: ${recreateException.message}")
+                        }
+                    }
+                }
+                
+            } catch (e: Exception) {
+                Log.w("ChatViewModel", "Failed to load new model: ${e.message}")
+                // Even if loading defers to first use, still guard the first generation
+                firstGenerationSinceLoad = true
+            }
+            
+            _isLoadingModel.value = false
+            _isLoading.value = false
+            isGenerating = false
+        }
+    }
+    
+    fun isGemmaModel(model: LLMModel): Boolean {
+        return model.name.contains("Gemma", ignoreCase = true)
     }
 
     fun unloadModel() {
