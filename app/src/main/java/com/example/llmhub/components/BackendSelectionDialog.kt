@@ -1,10 +1,13 @@
 package com.llmhub.llmhub.components
 
+import android.app.ActivityManager
+import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -18,6 +21,15 @@ fun BackendSelectionDialog(
     onBackendSelected: (LlmInference.Backend) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
+    
+    // Check if this is a Gemma-3n model and get device memory
+    val isGemma3n = modelName.contains("Gemma-3n", ignoreCase = true)
+    val deviceMemoryGB = getDeviceMemoryGB(context)
+    val isLowMemoryDevice = deviceMemoryGB <= 8.0
+    
+    // GPU is disabled for Gemma-3n models on devices with <= 8GB RAM
+    val gpuDisabled = isGemma3n && isLowMemoryDevice
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
@@ -51,11 +63,18 @@ fun BackendSelectionDialog(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                        containerColor = if (gpuDisabled) 
+                            MaterialTheme.colorScheme.surfaceVariant 
+                        else 
+                            MaterialTheme.colorScheme.primaryContainer
                     ),
-                    onClick = {
-                        onBackendSelected(LlmInference.Backend.GPU)
-                        onDismiss()
+                    onClick = if (gpuDisabled) {
+                        { /* No action when disabled */ }
+                    } else {
+                        {
+                            onBackendSelected(LlmInference.Backend.GPU)
+                            onDismiss()
+                        }
                     }
                 ) {
                     Column(
@@ -64,14 +83,27 @@ fun BackendSelectionDialog(
                             .padding(16.dp)
                     ) {
                         Text(
-                            text = stringResource(R.string.gpu_backend),
+                            text = if (gpuDisabled) 
+                                "${stringResource(R.string.gpu_backend)} (${stringResource(R.string.not_available)})"
+                            else 
+                                stringResource(R.string.gpu_backend),
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (gpuDisabled)
+                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            else
+                                MaterialTheme.colorScheme.onPrimaryContainer
                         )
                         Text(
-                            text = stringResource(R.string.gpu_backend_description),
+                            text = if (gpuDisabled)
+                                stringResource(R.string.gpu_disabled_low_memory, 8)
+                            else
+                                stringResource(R.string.gpu_backend_description),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                            color = if (gpuDisabled)
+                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                            else
+                                MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                         )
                     }
                 }
@@ -132,4 +164,11 @@ fun BackendSelectionDialog(
             }
         }
     }
+}
+
+private fun getDeviceMemoryGB(context: Context): Float {
+    val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+    val memInfo = ActivityManager.MemoryInfo()
+    activityManager.getMemoryInfo(memInfo)
+    return memInfo.totalMem / (1024f * 1024f * 1024f)
 }
