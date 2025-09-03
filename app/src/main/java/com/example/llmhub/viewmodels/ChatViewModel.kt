@@ -187,7 +187,7 @@ class ChatViewModel(
             if (chatId == "new") {
                 // For new chats, preserve the current model if one is loaded
                 val newChatId = repository.createNewChat(
-                    "New Chat",
+                    context.getString(R.string.drawer_new_chat),
                     if (_availableModels.value.isEmpty()) context.getString(R.string.no_model_downloaded) else 
                     (previousModel?.name ?: context.getString(R.string.no_model_selected))
                 )
@@ -1681,7 +1681,7 @@ class ChatViewModel(
         
         // Create new chat with appropriate model
         val newChatId = repository.createNewChat(
-            "New Chat",
+            context.getString(R.string.drawer_new_chat),
             if (_availableModels.value.isEmpty()) context.getString(R.string.no_model_downloaded) else 
             (modelToUse?.name ?: context.getString(R.string.no_model_selected))
         )

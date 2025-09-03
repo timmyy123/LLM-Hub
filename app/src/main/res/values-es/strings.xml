@@ -217,8 +217,38 @@
     <string name="downloading">Descargando...</string>
     <string name="not_downloaded">No descargado</string>
     <string name="partial">Parcial</string>
+    <string name="paused">Pausado</string>
     <string name="paused_downloaded_format">Pausado: %1$s descargado</string>
     <string name="continue_download">Continuar</string>
+    <string name="pause_download">Pausa</string>
+    <string name="resume_download">Reanudar</string>
     <string name="clear">Limpiar</string>
     <string name="ram_requirement_format">%1$dGB RAM</string>
+    
+    <!-- File Attachments -->
+    <string name="attach_file">Adjuntar archivo</string>
+    <string name="attach_image">Adjuntar imagen</string>
+    <string name="attach_document">Adjuntar documento</string>
+    <string name="attach_text_file">Adjuntar archivo de texto</string>
+    <string name="file_attachment">Adjunto de archivo</string>
+    <string name="file_too_large">Archivo demasiado grande</string>
+    <string name="unsupported_file_type">Tipo de archivo no compatible</string>
+    <string name="file_processing_error">Error procesando archivo</string>
+    <string name="could_not_read_file">No se pudo leer el archivo</string>
+    <string name="file_preview">Vista previa del archivo</string>
+    <string name="remove_attachment">Quitar</string>
+    <string name="keep_attachment">Mantener</string>
+    <string name="preview_not_available">Vista previa no disponible</string>
+    
+    <!-- File Type Categories -->
+    <string name="images">Imágenes</string>
+    <string name="documents">Documentos</string>
+    <string name="text_files">Archivos de Texto</string>
+    <string name="images_description">JPG, PNG, GIF, WebP</string>
+    <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
+    <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
+    <string name="text_file">Archivo de Texto</string>
+    <string name="tap_to_preview">Toca para previsualizar</string>
+    <string name="text_file_tap_to_preview">Archivo de Texto • Toca para previsualizar</string>
+    <string name="read_this">lee esto</string>
 </resources>

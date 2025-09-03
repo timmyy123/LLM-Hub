@@ -200,9 +200,39 @@
     <string name="downloading">Baixando...</string>
     <string name="not_downloaded">Não baixado</string>
     <string name="partial">Parcial</string>
+    <string name="paused">Pausado</string>
     <string name="paused_downloaded_format">Pausado: %1$s baixado</string>
     <string name="continue_download">Continuar</string>
+    <string name="pause_download">Pausar</string>
+    <string name="resume_download">Retomar</string>
     <string name="clear">Limpar</string>
     <string name="ram_requirement_format">%1$dGB RAM</string>
+    
+    <!-- File Attachments -->
+    <string name="attach_file">Anexar arquivo</string>
+    <string name="attach_image">Anexar imagem</string>
+    <string name="attach_document">Anexar documento</string>
+    <string name="attach_text_file">Anexar arquivo de texto</string>
+    <string name="file_attachment">Anexo de arquivo</string>
+    <string name="file_too_large">Arquivo muito grande</string>
+    <string name="unsupported_file_type">Tipo de arquivo não suportado</string>
+    <string name="file_processing_error">Erro processando arquivo</string>
+    <string name="could_not_read_file">Não foi possível ler o arquivo</string>
+    <string name="file_preview">Visualização do arquivo</string>
+    <string name="remove_attachment">Remover anexo</string>
+    <string name="keep_attachment">Manter anexo</string>
+    <string name="preview_not_available">Visualização não disponível</string>
+    
+    <!-- File Type Categories -->
+    <string name="images">Imagens</string>
+    <string name="documents">Documentos</string>
+    <string name="text_files">Arquivos de Texto</string>
+    <string name="images_description">JPG, PNG, GIF, WebP</string>
+    <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
+    <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
+    <string name="text_file">Arquivo de Texto</string>
+    <string name="tap_to_preview">Toque para visualizar</string>
+    <string name="text_file_tap_to_preview">Arquivo de Texto • Toque para visualizar</string>
+    <string name="read_this">leia isto</string>
 </resources>
 

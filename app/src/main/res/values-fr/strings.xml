@@ -217,8 +217,38 @@
     <string name="downloading">Téléchargement...</string>
     <string name="not_downloaded">Non téléchargé</string>
     <string name="partial">Partiel</string>
+    <string name="paused">Pausé</string>
     <string name="paused_downloaded_format">Pausé: %1$s téléchargé</string>
     <string name="continue_download">Continuer</string>
+    <string name="pause_download">Pause</string>
+    <string name="resume_download">Reprendre</string>
     <string name="clear">Effacer</string>
     <string name="ram_requirement_format">%1$dGB RAM</string>
+    
+    <!-- File Attachments -->
+    <string name="attach_file">Joindre un fichier</string>
+    <string name="attach_image">Joindre une image</string>
+    <string name="attach_document">Joindre un document</string>
+    <string name="attach_text_file">Joindre un fichier texte</string>
+    <string name="file_attachment">Pièce jointe</string>
+    <string name="file_too_large">Fichier trop volumineux</string>
+    <string name="unsupported_file_type">Type de fichier non supporté</string>
+    <string name="file_processing_error">Erreur de traitement du fichier</string>
+    <string name="could_not_read_file">Impossible de lire le fichier</string>
+    <string name="file_preview">Aperçu du fichier</string>
+    <string name="remove_attachment">Retirer</string>
+    <string name="keep_attachment">Garder</string>
+    <string name="preview_not_available">Aperçu non disponible</string>
+    
+    <!-- File Type Categories -->
+    <string name="images">Images</string>
+    <string name="documents">Documents</string>
+    <string name="text_files">Fichiers Texte</string>
+    <string name="images_description">JPG, PNG, GIF, WebP</string>
+    <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
+    <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
+    <string name="text_file">Fichier Texte</string>
+    <string name="tap_to_preview">Toucher pour aperçu</string>
+    <string name="text_file_tap_to_preview">Fichier Texte • Toucher pour aperçu</string>
+    <string name="read_this">lis ça</string>
 </resources>

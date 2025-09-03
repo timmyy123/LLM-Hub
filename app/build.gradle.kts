@@ -23,7 +23,7 @@ android {
         applicationId = "com.llmhub.llmhub"
         minSdk = 24
         targetSdk = 35
-        versionCode = 9
+        versionCode = 10
         versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -99,6 +99,9 @@ dependencies {
     
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
+    
+    // LocalBroadcastManager for service communication
+    implementation("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
     
     // DataStore for settings
     implementation("androidx.datastore:datastore-preferences:1.0.0")
