@@ -22,6 +22,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.activity.ComponentActivity
+import androidx.lifecycle.ViewModelProvider
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.viewmodels.ModelDownloadViewModel
 import androidx.compose.ui.platform.LocalContext
@@ -60,10 +62,18 @@ private fun isGpuSupportedForModel(model: LLMModel, context: Context): Boolean {
 @Composable
 fun ModelDownloadScreen(
     onNavigateBack: () -> Unit = {},
-    viewModel: ModelDownloadViewModel = viewModel()
+    viewModel: ModelDownloadViewModel? = null
 ) {
     val context = LocalContext.current
-    val models by viewModel.models.collectAsState()
+    val activity = context as ComponentActivity
+    
+    // Use activity-scoped ViewModel to ensure downloads persist across navigation
+    val downloadViewModel = viewModel ?: ViewModelProvider(
+        activity,
+        ViewModelProvider.AndroidViewModelFactory.getInstance(activity.application)
+    )[ModelDownloadViewModel::class.java]
+    
+    val models by downloadViewModel.models.collectAsState()
     val textModels = models.filter { it.category == "text" }
     val multimodalModels = models.filter { it.category == "multimodal" }
     val textGrouped = textModels.groupBy { it.name.substringBefore("(").trim() }
@@ -156,7 +166,7 @@ fun ModelDownloadScreen(
                             family = family,
                             variants = variants,
                             context = context,
-                            viewModel = viewModel,
+                            viewModel = downloadViewModel,
                             isMultimodal = false
                         )
                     }
@@ -178,7 +188,7 @@ fun ModelDownloadScreen(
                             family = family,
                             variants = variants,
                             context = context,
-                            viewModel = viewModel,
+                            viewModel = downloadViewModel,
                             isMultimodal = true
                         )
                     }
@@ -477,41 +487,56 @@ private fun ModelVariantItem(
                     }
                     
                     model.isPaused || (model.downloadProgress > 0f && !model.isDownloading && !model.isDownloaded) -> {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                             OutlinedButton(
                                 onClick = { onCancel(model) },
                                 colors = ButtonDefaults.outlinedButtonColors(
                                     contentColor = MaterialTheme.colorScheme.error
                                 ),
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(40.dp),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                             ) {
                                 Icon(
                                     Icons.Default.Clear,
                                     contentDescription = null,
                                     modifier = Modifier.size(18.dp)
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.clear))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = stringResource(R.string.clear),
+                                    style = MaterialTheme.typography.labelLarge
+                                )
                             }
                             
                             Button(
                                 onClick = { onResume(model) },
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.primary
-                                )
+                                ),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(40.dp),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                             ) {
                                 Icon(
                                     Icons.Default.PlayArrow,
                                     contentDescription = null,
                                     modifier = Modifier.size(18.dp)
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    if (model.isPaused) {
+                                    text = if (model.isPaused) {
                                         stringResource(R.string.continue_download)
                                     } else {
                                         stringResource(R.string.resume_download)
-                                    }
+                                    },
+                                    style = MaterialTheme.typography.labelLarge
                                 )
                             }
                         }
