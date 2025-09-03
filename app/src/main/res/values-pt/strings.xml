@@ -234,5 +234,14 @@
     <string name="tap_to_preview">Toque para visualizar</string>
     <string name="text_file_tap_to_preview">Arquivo de Texto • Toque para visualizar</string>
     <string name="read_this">leia isto</string>
+    
+    <!-- Gemma Backend Selection -->
+    <string name="select_backend">Selecionar Backend</string>
+    <string name="choose_backend_for_gemma">Escolha o backend de processamento para o modelo Gemma</string>
+    <string name="gpu_backend">GPU (Recomendado)</string>
+    <string name="cpu_backend">CPU (Alternativo)</string>
+    <string name="gpu_backend_description">Processamento mais rápido usando GPU do dispositivo</string>
+    <string name="cpu_backend_description">Processamento mais lento mas mais estável</string>
+    <string name="backend_selection_hint">Se o app travar ou não funcionar corretamente com GPU, tente o backend CPU</string>
 </resources>
 

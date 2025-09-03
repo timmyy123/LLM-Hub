@@ -30,7 +30,7 @@ import android.app.ActivityManager
  * Interface for a service that can run model inference.
  */
 interface InferenceService {
-    suspend fun loadModel(model: LLMModel): Boolean
+    suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend? = null): Boolean
     suspend fun unloadModel()
     suspend fun generateResponse(prompt: String, model: LLMModel): String
     suspend fun generateResponseStream(prompt: String, model: LLMModel): Flow<String>
@@ -187,9 +187,9 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         }
     }
 
-    override suspend fun loadModel(model: LLMModel): Boolean {
+    override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?): Boolean {
         return try {
-            ensureModelLoaded(model)
+            ensureModelLoaded(model, preferredBackend)
             true
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load model: ${e.message}", e)
@@ -284,7 +284,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         }
     }
 
-    private suspend fun ensureModelLoaded(model: LLMModel) {
+    private suspend fun ensureModelLoaded(model: LLMModel, preferredBackend: LlmInference.Backend? = null) {
         if (currentModel?.name != model.name) {
             Log.d(TAG, "Model changed from ${currentModel?.name} to ${model.name}, reloading")
             
@@ -303,12 +303,12 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             }
             
             withContext(Dispatchers.IO) {
-                loadModelFromPath(model)
+                loadModelFromPath(model, preferredBackend)
             }
         }
     }
 
-    private suspend fun loadModelFromPath(model: LLMModel) {
+    private suspend fun loadModelFromPath(model: LLMModel, preferredBackend: LlmInference.Backend? = null) {
         try {
             // Determine model path
             val modelAssetPath = if (model.url.startsWith("file://models/")) {
@@ -347,12 +347,11 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 }
             }
             
-            // Determine backend using memory-aware selection
-            // For loading, assume images might be used for vision models
+            // Determine backend - use preferred backend if provided, otherwise use memory-aware selection
             val willUseImages = model.supportsVision
-            val backend = determineOptimalBackend(context, model, willUseImages)
+            val backend = preferredBackend ?: determineOptimalBackend(context, model, willUseImages)
             
-            Log.d(TAG, "Selected backend: $backend for model: ${modelFile.name}")
+            Log.d(TAG, "Selected backend: $backend for model: ${modelFile.name} ${if (preferredBackend != null) "(user preference)" else "(auto-selected)"}")
             
             // Determine max tokens based on model configuration
             val maxTokens = getMaxTokensForModel(model)
