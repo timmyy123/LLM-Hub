@@ -26,6 +26,8 @@ import com.llmhub.llmhub.data.localFileName
 import com.llmhub.llmhub.data.isModelFileValid
 import com.llmhub.llmhub.data.ThemePreferences
 import com.llmhub.llmhub.R
+import com.llmhub.llmhub.embedding.RagServiceManager
+import com.llmhub.llmhub.embedding.ContextChunk
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 
 class ChatViewModel(
@@ -36,6 +38,7 @@ class ChatViewModel(
 ) : ViewModel() {
 
     private val themePreferences = ThemePreferences(context)
+    private val ragServiceManager = RagServiceManager(context)
 
     companion object {
         private const val KEY_CURRENT_CHAT_ID = "current_chat_id"
@@ -67,6 +70,36 @@ class ChatViewModel(
     // Model the user has selected (may be in the process of loading). Use this for immediate UI feedback.
     private val _selectedModel = MutableStateFlow<LLMModel?>(null)
     val selectedModel: StateFlow<LLMModel?> = _selectedModel.asStateFlow()
+
+    // RAG status state
+    private val _isRagReady = MutableStateFlow(false)
+    val isRagReady: StateFlow<Boolean> = _isRagReady.asStateFlow()
+
+    private val _ragStatus = MutableStateFlow("Initializing document chat...")
+    val ragStatus: StateFlow<String> = _ragStatus.asStateFlow()
+
+    private val _documentCount = MutableStateFlow(0)
+    val documentCount: StateFlow<Int> = _documentCount.asStateFlow()
+
+    init {
+        // Initialize RAG service in the background and track status
+        viewModelScope.launch {
+            _ragStatus.value = "Initializing document chat..."
+            try {
+                ragServiceManager.initializeAsync().join()
+                _isRagReady.value = ragServiceManager.isReady()
+                _ragStatus.value = if (_isRagReady.value) {
+                    "Document chat ready"
+                } else {
+                    "Document chat unavailable"
+                }
+            } catch (e: Exception) {
+                Log.e("ChatViewModel", "Failed to initialize RAG service", e)
+                _ragStatus.value = "Document chat failed to initialize"
+                _isRagReady.value = false
+            }
+        }
+    }
 
     var currentModel: LLMModel? = null
         private set
@@ -562,6 +595,24 @@ class ChatViewModel(
                 FileUtils.SupportedFileType.EXCEL,
                 FileUtils.SupportedFileType.POWERPOINT
             )) {
+                // Add document to RAG system for future semantic search
+                try {
+                    val fileName = attachmentFileInfo?.name ?: "document"
+                    val metadata = "Uploaded by user in chat $chatId"
+                    val success = ragServiceManager.addDocument(chatId, fileTextContent, fileName, metadata)
+                    if (success) {
+                        // Update document count
+                        val count = ragServiceManager.getDocumentCount(chatId)
+                        _documentCount.value = count
+                        _ragStatus.value = "Document chat ready ($count documents)"
+                        Log.d("ChatViewModel", "Added document '$fileName' to RAG system for chat $chatId")
+                    } else {
+                        Log.w("ChatViewModel", "Failed to add document '$fileName' to RAG system")
+                    }
+                } catch (e: Exception) {
+                    Log.w("ChatViewModel", "Failed to add document to RAG: ${e.message}")
+                }
+                
                 // Add extracted content to model prompt
                 modelPromptContent = if (messageText.isNotEmpty()) {
                     "$messageText\n\n---\n\n📄 **File Content** (${attachmentFileInfo?.name}):\n\n$fileTextContent"
@@ -690,6 +741,35 @@ class ChatViewModel(
                                     val currentPrompt = if (continuationCount == 0) {
                                         // First generation of this reply
                                         val lastUserContent = currentUserMessage.content.trim()
+                                        
+                                        // Search for relevant document context using RAG
+                                        var ragContext = ""
+                                        try {
+                                            if (ragServiceManager.hasDocuments(chatId)) {
+                                                val relevantChunks = ragServiceManager.searchRelevantContext(
+                                                    chatId = chatId,
+                                                    query = lastUserContent,
+                                                    maxResults = 3
+                                                )
+                                                
+                                                if (relevantChunks.isNotEmpty()) {
+                                                    Log.d("ChatViewModel", "Found ${relevantChunks.size} relevant document chunks for query")
+                                                    
+                                                    val contextParts = relevantChunks.map { chunk ->
+                                                        "📄 **${chunk.fileName}** (similarity: ${String.format("%.2f", chunk.similarity)}):\n${chunk.content}"
+                                                    }
+                                                    
+                                                    ragContext = "\n\n---\n\n🔍 **Relevant Document Context:**\n\n" + 
+                                                        contextParts.joinToString("\n\n---\n\n") + 
+                                                        "\n\n---\n\n"
+                                                } else {
+                                                    Log.d("ChatViewModel", "No relevant document chunks found for query")
+                                                }
+                                            }
+                                        } catch (e: Exception) {
+                                            Log.w("ChatViewModel", "RAG context search failed: ${e.message}")
+                                        }
+                                        
                                         val tinyArithmetic = lastUserContent.matches(Regex("^[0-9+*/().=\\s-]{1,12}$")) && lastUserContent.any { it.isDigit() }
                                         val veryShort = lastUserContent.length <= 8
                                         val historyIsLarge = history.length > 3500 // heuristic char threshold
@@ -719,12 +799,19 @@ class ChatViewModel(
                                             } catch (e: Exception) {
                                                 Log.w("ChatViewModel", "Failed to reset session for minimal prompt: ${e.message}")
                                             }
-                                            "user: ${lastUserContent}\nassistant:"
+                                            "user: ${lastUserContent}${ragContext}\nassistant:"
                                         } else {
                                             // Normal path: include trimmed history and explicit assistant cue
-                                            if (!history.endsWith("assistant:")) {
+                                            val basePrompt = if (!history.endsWith("assistant:")) {
                                                 history + "\nassistant:"
                                             } else history
+                                            
+                                            // Insert RAG context before the assistant response
+                                            if (ragContext.isNotEmpty()) {
+                                                basePrompt.replace("\nassistant:", "${ragContext}\nassistant:")
+                                            } else {
+                                                basePrompt
+                                            }
                                         }
                                     } else {
                                         // Continuation: build a new context-aware history including the current response
@@ -1403,6 +1490,7 @@ class ChatViewModel(
                 Log.d("ChatViewModel", "Chat session cleanup delegated to inference service")
             }
             inferenceService.onCleared()
+            ragServiceManager.cleanup() // Clean up RAG service
         }
         super.onCleared()
     }
@@ -1971,6 +2059,7 @@ class ChatViewModel(
     fun clearMessagesForChat(chatId: String) {
         viewModelScope.launch {
             repository.clearMessagesForChat(chatId)
+            ragServiceManager.clearChatDocuments(chatId) // Clear RAG documents too
             if (chatId == currentChatId) {
                 _messages.value = emptyList()
             }
@@ -1980,6 +2069,15 @@ class ChatViewModel(
     fun clearAllChats() {
         viewModelScope.launch {
             repository.deleteAllChats()
+            // Clear all RAG documents across all chats
+            try {
+                // Since we don't have a clearAll method, we'd need to track chatIds
+                // For now, just cleanup and reinitialize RAG service
+                ragServiceManager.cleanup()
+                ragServiceManager.initializeAsync()
+            } catch (e: Exception) {
+                Log.w("ChatViewModel", "Failed to clear RAG documents: ${e.message}")
+            }
             _messages.value = emptyList()
             _currentChat.value = null
             currentChatId = null
