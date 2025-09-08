@@ -32,6 +32,11 @@ android {
         
         // Specify supported locales to ensure proper resource loading
         resourceConfigurations += listOf("en", "es", "pt", "de", "fr", "ru")
+        
+        // NDK ABI filters and native library configuration for 16KB alignment
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+        }
     }
 
     buildTypes {
@@ -62,7 +67,27 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+        // Configure JNI libraries packaging for 16 KB page size compatibility
+        jniLibs {
+            useLegacyPackaging = false
+            // Pick only the architecture we need to reduce size and alignment issues
+            pickFirsts += setOf("**/libmediapipe_tasks_text_jni.so")
+        }
     }
+    
+    // NDK configuration for 16 KB page size compatibility
+    ndkVersion = "26.1.10909125"
+    
+    // Add build features for better native library handling
+    buildFeatures {
+        compose = true
+        buildConfig = true
+        // Disable unused features to reduce build complexity
+        aidl = false
+        renderScript = false
+        shaders = false
+    }
+    
     // Removed externalNativeBuild - now using MediaPipe instead of native llama.cpp
 }
 
@@ -130,7 +155,7 @@ dependencies {
     // tasks-genai latest: 0.10.27; tasks-vision latest: 0.10.26.1; tasks-text latest: 0.10.15
     implementation("com.google.mediapipe:tasks-genai:0.10.27")
     implementation("com.google.mediapipe:tasks-vision:0.10.26.1")
-    implementation("com.google.mediapipe:tasks-text:0.10.15")
+    implementation("com.google.mediapipe:tasks-text:0.10.26.1")
     
     // Compose Markdown - temporarily removed due to version conflicts
     implementation("com.github.jeziellago:compose-markdown:0.3.0")
