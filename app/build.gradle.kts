@@ -127,9 +127,10 @@ dependencies {
     implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.6")
 
     // MediaPipe Tasks (updated to latest as of Aug 28 2025)
-    // tasks-genai latest: 0.10.27; tasks-vision latest: 0.10.26.1
+    // tasks-genai latest: 0.10.27; tasks-vision latest: 0.10.26.1; tasks-text latest: 0.10.15
     implementation("com.google.mediapipe:tasks-genai:0.10.27")
     implementation("com.google.mediapipe:tasks-vision:0.10.26.1")
+    implementation("com.google.mediapipe:tasks-text:0.10.15")
     
     // Compose Markdown - temporarily removed due to version conflicts
     implementation("com.github.jeziellago:compose-markdown:0.3.0")

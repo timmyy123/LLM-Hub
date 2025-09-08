@@ -32,6 +32,7 @@ import com.llmhub.llmhub.components.ChatDrawer
 import com.llmhub.llmhub.components.MessageBubble
 import com.llmhub.llmhub.components.MessageInput
 import com.llmhub.llmhub.components.BackendSelectionDialog
+import com.llmhub.llmhub.components.CompactRagIndicator
 import com.llmhub.llmhub.ui.components.ModernCard
 import com.llmhub.llmhub.ui.components.StatusChip
 import com.llmhub.llmhub.ui.components.SectionHeader
@@ -65,6 +66,12 @@ fun ChatScreen(
     val isLoadingModel by viewModel.isLoadingModel.collectAsState()
     val currentlyLoadedModel by viewModel.currentlyLoadedModel.collectAsState()
     val selectedModel by viewModel.selectedModel.collectAsState()
+    
+    // RAG state
+    val isRagReady by viewModel.isRagReady.collectAsState()
+    val ragStatus by viewModel.ragStatus.collectAsState()
+    val documentCount by viewModel.documentCount.collectAsState()
+    
     var modelMenuExpanded by remember { mutableStateOf(false) }
     
     // Backend selection state
@@ -160,6 +167,12 @@ fun ChatScreen(
                                             tint = MaterialTheme.colorScheme.primary
                                         )
                                     }
+                                    // Show compact RAG indicator
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    CompactRagIndicator(
+                                        hasDocuments = documentCount > 0,
+                                        documentCount = documentCount
+                                    )
                                 }
                             }
                         }
