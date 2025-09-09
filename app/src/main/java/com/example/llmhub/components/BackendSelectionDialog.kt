@@ -23,13 +23,19 @@ fun BackendSelectionDialog(
 ) {
     val context = LocalContext.current
     
-    // Check if this is a Gemma-3n model and get device memory
-    val isGemma3n = modelName.contains("Gemma-3n", ignoreCase = true)
+    // Check specific Gemma-3n model requirements and get device memory
     val deviceMemoryGB = getDeviceMemoryGB(context)
-    val isLowMemoryDevice = deviceMemoryGB <= 8.0
+    val isGemma3nE2B = modelName.contains("Gemma-3n E2B", ignoreCase = true)
+    val isGemma3nE4B = modelName.contains("Gemma-3n E4B", ignoreCase = true)
     
-    // GPU is disabled for Gemma-3n models on devices with <= 8GB RAM
-    val gpuDisabled = isGemma3n && isLowMemoryDevice
+    // GPU requirements for Gemma-3n models:
+    // E2B: requires > 5GB RAM (disable if <= 5GB)
+    // E4B: requires > 8GB RAM (disable if <= 8GB)
+    val gpuDisabled = when {
+        isGemma3nE2B -> deviceMemoryGB <= 5.0
+        isGemma3nE4B -> deviceMemoryGB <= 8.0
+        else -> false
+    }
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
@@ -95,10 +101,12 @@ fun BackendSelectionDialog(
                                 MaterialTheme.colorScheme.onPrimaryContainer
                         )
                         Text(
-                            text = if (gpuDisabled)
-                                stringResource(R.string.gpu_disabled_low_memory, 8)
-                            else
-                                stringResource(R.string.gpu_backend_description),
+                            text = when {
+                                gpuDisabled && isGemma3nE2B -> stringResource(R.string.gemma3n_e2b_gpu_requires_6gb)
+                                gpuDisabled && isGemma3nE4B -> stringResource(R.string.gemma3n_e4b_gpu_requires_8gb)
+                                gpuDisabled -> stringResource(R.string.gpu_disabled_low_memory, 8)
+                                else -> stringResource(R.string.gpu_backend_description)
+                            },
                             style = MaterialTheme.typography.bodySmall,
                             color = if (gpuDisabled)
                                 MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)

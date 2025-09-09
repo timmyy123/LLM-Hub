@@ -90,6 +90,12 @@ object FileUtils {
             displayName = "XML File",
             icon = "🔧"
         ),
+        AUDIO(
+            mimeTypes = listOf("audio/*", "audio/wav", "audio/mpeg", "audio/mp3", "audio/ogg"),
+            extensions = listOf("wav", "mp3", "ogg", "m4a", "aac", "flac"),
+            displayName = "Audio File",
+            icon = "🎵"
+        ),
         UNKNOWN(
             mimeTypes = listOf(),
             extensions = listOf(),
@@ -348,6 +354,9 @@ object FileUtils {
                     }
                     SupportedFileType.IMAGE -> {
                         null // Images are handled separately by vision models
+                    }
+                    SupportedFileType.AUDIO -> {
+                        null // Audio is handled separately by audio models
                     }
                     SupportedFileType.UNKNOWN -> {
                         "[Unknown file type - Content extraction not available]"

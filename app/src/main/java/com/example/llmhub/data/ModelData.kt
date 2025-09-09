@@ -99,32 +99,34 @@ object ModelData {
             modelFormat = "task"
         ),
 
-        // Gemma-3n Models (Multimodal - Text + Vision)
+        // Gemma-3n Models (Multimodal - Text + Vision + Audio)
         LLMModel(
-            name = "Gemma-3n E2B (Vision+Text)",
-            description = "Google Gemma-3n E2B with multimodal capabilities (text and vision). Effective 2B parameters with selective parameter activation. Supports 4k context window and multimodal input including text and images. Ready to download from HuggingFace (2.92GB)",
-            url = "https://huggingface.co/google/gemma-3n-E2B-it-litert-preview/resolve/main/gemma-3n-E2B-it-int4.task?download=true",
+            name = "Gemma-3n E2B (Vision+Audio+Text)",
+            description = "Google Gemma-3n E2B with multimodal capabilities (text, vision, and audio). Effective 2B parameters with selective parameter activation. Supports 4k context window and multimodal input including text, images, and audio. Ready to download from HuggingFace (3.15GB)",
+            url = "https://huggingface.co/google/gemma-3n-E2B-it-litert-lm/resolve/main/gemma-3n-E2B-it-int4.litertlm?download=true",
             category = "multimodal",
-            sizeBytes = 3136226711L, // 2.92GB (actual size from HuggingFace)
-            source = "Google (LiteRT Preview)",
+            sizeBytes = 3388604416L, // 3.15GB (actual downloaded size)
+            source = "Google (LiteRT LM)",
             supportsVision = true,
+            supportsAudio = true,
             supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
             contextWindowSize = 4096,
-            modelFormat = "task"
+            modelFormat = "litertlm"
         ),
         LLMModel(
-            name = "Gemma-3n E4B (Vision+Text)",
-            description = "Google Gemma-3n E4B with multimodal capabilities (text and vision). Effective 4B parameters with selective parameter activation. Supports 4k context window and multimodal input including text and images. Ready to download from HuggingFace (4.10GB)",
-            url = "https://huggingface.co/google/gemma-3n-E4B-it-litert-preview/resolve/main/gemma-3n-E4B-it-int4.task?download=true",
+            name = "Gemma-3n E4B (Vision+Audio+Text)",
+            description = "Google Gemma-3n E4B with multimodal capabilities (text, vision, and audio). Effective 4B parameters with selective parameter activation. Supports 4k context window and multimodal input including text, images, and audio. Ready to download from HuggingFace (4.33GB)",
+            url = "https://huggingface.co/google/gemma-3n-E4B-it-litert-lm/resolve/main/gemma-3n-E4B-it-int4.litertlm?download=true",
             category = "multimodal",
-            sizeBytes = 4405655031L, // 4.10GB (actual size from HuggingFace)
-            source = "Google (LiteRT Preview)",
+            sizeBytes = 4652318720L, // 4.33GB (actual downloaded size)
+            source = "Google (LiteRT LM)",
             supportsVision = true,
+            supportsAudio = true,
             supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 8),
             contextWindowSize = 4096,
-            modelFormat = "task"
+            modelFormat = "litertlm"
         )
     )
 
@@ -135,7 +137,7 @@ object ModelData {
         return """
         🎯 ON-DEVICE AI MODELS FOR ANDROID
         
-        📱 READY FOR DIRECT DOWNLOAD (MediaPipe .task format):
+        📱 READY FOR DIRECT DOWNLOAD (MediaPipe .task/.litertlm format):
         
         ✅ TEXT MODELS:
         
@@ -146,8 +148,8 @@ object ModelData {
         • Gemma-3 1B (INT8, 4k context) - 1005MB
         
         🔹 GEMMA-3N SERIES (Google - Multimodal):
-        • Gemma-3n E2B (Vision+Text, 4k context) - 2.92GB
-        • Gemma-3n E4B (Vision+Text, 4k context) - 4.10GB
+        • Gemma-3n E2B (Vision+Audio+Text, 4k context) - 3.15GB
+        • Gemma-3n E4B (Vision+Audio+Text, 4k context) - 4.33GB
         
         🔹 LLAMA-3.2 SERIES (Meta):
         • Llama-3.2 1B (INT8, 1.2k context) - 1.20GB

@@ -68,6 +68,24 @@ import com.llmhub.llmhub.data.MessageEntity
 import dev.jeziellago.compose.markdowntext.MarkdownText
 import androidx.compose.ui.platform.LocalUriHandler
 import com.llmhub.llmhub.utils.FileUtils
+import com.llmhub.llmhub.ui.components.AudioInputService
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MicOff
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Delete
+import kotlinx.coroutines.flow.collectLatest
+import androidx.compose.runtime.rememberCoroutineScope
+import android.Manifest
+import android.content.pm.PackageManager
+import kotlinx.coroutines.launch
+import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.runtime.DisposableEffect
 
 /**
  * Custom selectable markdown text component that supports both markdown rendering and text selection.
@@ -408,6 +426,15 @@ fun MessageBubble(
                                     }
                                 )
                             }
+                            "audio" -> {
+                                // Display audio playback controls
+                                AudioMessageCard(
+                                    audioPath = message.attachmentPath,
+                                    fileName = message.attachmentFileName ?: "Audio",
+                                    fileSize = message.attachmentFileSize,
+                                    isFromUser = message.isFromUser
+                                )
+                            }
                             else -> {
                                 // Display file attachment card for non-images
                                 FileAttachmentCard(
@@ -491,6 +518,15 @@ fun MessageBubble(
                                 onError = { 
                                     android.util.Log.w("MessageBubble", "Failed to load image: ${message.attachmentPath}")
                                 }
+                            )
+                        }
+                        "audio" -> {
+                            // Display audio playback controls
+                            AudioMessageCard(
+                                audioPath = message.attachmentPath,
+                                fileName = message.attachmentFileName ?: "Audio",
+                                fileSize = message.attachmentFileSize,
+                                isFromUser = message.isFromUser
                             )
                         }
                         else -> {
@@ -888,15 +924,16 @@ private fun saveBitmapToGallery(context: Context, bitmap: Bitmap): Boolean {
 
 
 /**
- * Modern input bar with Material Design 3 styling, attachment support, and smooth animations.
+ * Modern input bar with Material Design 3 styling, attachment support, audio recording, and smooth animations.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MessageInput(
-    onSendMessage: (String, Uri?) -> Unit,
+    onSendMessage: (String, Uri?, ByteArray?) -> Unit, // Updated to include audio data
     enabled: Boolean,
     supportsAttachments: Boolean,
     supportsVision: Boolean = false,
+    supportsAudio: Boolean = false, // New parameter for audio support
     isLoading: Boolean = false,
     onCancelGeneration: (() -> Unit)? = null
 ) {
@@ -908,6 +945,47 @@ fun MessageInput(
     var attachmentInfo by remember { mutableStateOf<FileUtils.FileInfo?>(null) }
     var showFilePreview by remember { mutableStateOf(false) }
     var showAttachmentOptions by remember { mutableStateOf(false) }
+    
+    // Audio recording states
+    var isRecording by remember { mutableStateOf(false) }
+    var audioLevel by remember { mutableStateOf(0f) }
+    var recordedAudioData by remember { mutableStateOf<ByteArray?>(null) }
+    var hasAudioPermission by remember { mutableStateOf(false) }
+    
+    // Audio service
+    val audioService = remember { AudioInputService(context) }
+    val coroutineScope = rememberCoroutineScope()
+    
+    // Audio permission launcher
+    val audioPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasAudioPermission = isGranted
+        if (isGranted) {
+            isRecording = true
+        }
+    }
+    
+    // Check audio permission on first composition
+    LaunchedEffect(Unit) {
+        hasAudioPermission = audioService.hasAudioPermission()
+    }
+    
+    // Audio recording effect
+    LaunchedEffect(isRecording) {
+        if (isRecording && hasAudioPermission) {
+            val success = audioService.startRecording()
+            if (!success) {
+                isRecording = false
+            }
+        } else if (!isRecording && audioService.isRecording()) {
+            // Stop recording when isRecording becomes false
+            val audioData = audioService.stopRecording()
+            if (audioData != null) {
+                recordedAudioData = audioData
+            }
+        }
+    }
     
     // Image picker for vision models
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -1025,6 +1103,144 @@ fun MessageInput(
                     }
                 }
             }
+            
+            // Audio recording indicator
+            if (isRecording || recordedAudioData != null) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isRecording) 
+                            MaterialTheme.colorScheme.errorContainer 
+                        else MaterialTheme.colorScheme.tertiaryContainer
+                    ),
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Recording icon with animation
+                        Surface(
+                            modifier = Modifier.size(48.dp),
+                            color = if (isRecording) 
+                                MaterialTheme.colorScheme.error.copy(alpha = 0.2f)
+                            else MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f),
+                            shape = CircleShape
+                        ) {
+                            Icon(
+                                if (isRecording) Icons.Default.Mic else Icons.Default.MicOff,
+                                contentDescription = if (isRecording) "Recording" else "Audio recorded",
+                                modifier = Modifier.padding(12.dp),
+                                tint = if (isRecording) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.width(12.dp))
+                        
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = if (isRecording) stringResource(R.string.recording) else stringResource(R.string.audio_recorded),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = if (isRecording) 
+                                    MaterialTheme.colorScheme.onErrorContainer
+                                else MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                            if (isRecording) {
+                                Text(
+                                    text = stringResource(R.string.tap_to_stop),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f)
+                                )
+                            } else {
+                                Text(
+                                    text = "${recordedAudioData?.size?.let { "${it / 1000}KB" } ?: "0KB"} • ${stringResource(R.string.ready_to_send)}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
+                                )
+                            }
+                        }
+                        
+                        // Audio controls
+                        // Capture context in composition scope (used by both branches)
+                        val previewContext = LocalContext.current
+                        if (isRecording) {
+                            // Stop recording button
+                            IconButton(onClick = {
+                                coroutineScope.launch {
+                                    recordedAudioData = audioService.stopRecording()
+                                    isRecording = false
+                                }
+                            }) {
+                                Icon(
+                                    Icons.Default.Stop,
+                                    contentDescription = stringResource(R.string.tap_to_stop),
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        } else if (recordedAudioData != null) {
+                            // Play button for previewing recorded audio before send
+                            var previewPlayer by remember { mutableStateOf<android.media.MediaPlayer?>(null) }
+                            var isPreviewPlaying by remember { mutableStateOf(false) }
+                            DisposableEffect(Unit) {
+                                onDispose {
+                                    previewPlayer?.release()
+                                    previewPlayer = null
+                                }
+                            }
+                            IconButton(onClick = {
+                                try {
+                                    if (isPreviewPlaying) {
+                                        previewPlayer?.pause()
+                                        isPreviewPlaying = false
+                                    } else {
+                                        if (previewPlayer == null) {
+                                            // Write bytes to a temp file so MediaPlayer can read
+                                            val tmp = java.io.File(previewContext.cacheDir, "preview_${System.currentTimeMillis()}.wav")
+                                            tmp.writeBytes(recordedAudioData!!)
+                                            previewPlayer = android.media.MediaPlayer().apply {
+                                                setDataSource(tmp.absolutePath)
+                                                setOnCompletionListener {
+                                                    isPreviewPlaying = false
+                                                    // best-effort delete
+                                                    runCatching { tmp.delete() }
+                                                }
+                                                prepare()
+                                                start()
+                                            }
+                                        } else {
+                                            previewPlayer?.start()
+                                        }
+                                        isPreviewPlaying = true
+                                    }
+                                } catch (e: Exception) {
+                                    android.util.Log.e("ChatInput", "Preview playback failed: ${e.message}", e)
+                                    isPreviewPlaying = false
+                                }
+                            }) {
+                                Icon(
+                                    if (isPreviewPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                    contentDescription = if (isPreviewPlaying) "Pause" else "Play",
+                                    tint = MaterialTheme.colorScheme.tertiary
+                                )
+                            }
+                            
+                            // Delete audio button
+                            IconButton(onClick = { 
+                                recordedAudioData = null
+                            }) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = stringResource(R.string.remove_audio),
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
+                    }
+                }
+            }
 
             // Input field with modern styling
             OutlinedTextField(
@@ -1124,6 +1340,34 @@ fun MessageInput(
                                         documentPickerLauncher.launch("text/*")
                                     }
                                 )
+                                
+                                // Audio recording option for audio-capable models
+                                if (supportsAudio) {
+                                    DropdownMenuItem(
+                                        text = { 
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text("🎙️", style = MaterialTheme.typography.headlineSmall)
+                                                Spacer(modifier = Modifier.width(12.dp))
+                                                Column {
+                                                    Text(stringResource(R.string.audio_recording))
+                                                    Text(
+                                                        stringResource(R.string.audio_description),
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                                    )
+                                                }
+                                            }
+                                        },
+                                        onClick = {
+                                            showAttachmentOptions = false
+                                            if (hasAudioPermission) {
+                                                isRecording = true
+                                            } else {
+                                                audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                            }
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
@@ -1152,22 +1396,23 @@ fun MessageInput(
                         // Show send button when not loading
                         IconButton(
                             onClick = {
-                                if (text.isNotBlank() || attachmentUri != null) {
+                                if (text.isNotBlank() || attachmentUri != null || recordedAudioData != null) {
                                     // Aggressively hide keyboard using multiple methods
                                     keyboardController?.hide()
                                     focusManager.clearFocus()
-                                    onSendMessage(text, attachmentUri)
+                                    onSendMessage(text, attachmentUri, recordedAudioData)
                                     text = ""
                                     attachmentUri = null
                                     attachmentInfo = null
+                                    recordedAudioData = null
                                 }
                             },
-                            enabled = enabled && (text.isNotBlank() || attachmentUri != null)
+                            enabled = enabled && (text.isNotBlank() || attachmentUri != null || recordedAudioData != null)
                         ) {
                             Surface(
                                 modifier = Modifier.size(32.dp),
                                 shape = RoundedCornerShape(16.dp),
-                                color = if (enabled && (text.isNotBlank() || attachmentUri != null)) 
+                                color = if (enabled && (text.isNotBlank() || attachmentUri != null || recordedAudioData != null)) 
                                     MaterialTheme.colorScheme.primary 
                                 else MaterialTheme.colorScheme.surfaceVariant
                             ) {
@@ -1175,7 +1420,7 @@ fun MessageInput(
                                     Icons.Default.Send,
                                     contentDescription = stringResource(R.string.send),
                                     modifier = Modifier.padding(6.dp),
-                                    tint = if (enabled && (text.isNotBlank() || attachmentUri != null)) 
+                                    tint = if (enabled && (text.isNotBlank() || attachmentUri != null || recordedAudioData != null)) 
                                         MaterialTheme.colorScheme.onPrimary 
                                     else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -1578,4 +1823,215 @@ fun FileAttachmentCard(
             onRemove = null // No remove/keep buttons for message attachments
         )
     }
+}
+
+/**
+ * Audio message card with playback controls
+ */
+@Composable
+fun AudioMessageCard(
+    audioPath: String,
+    fileName: String,
+    fileSize: Long?,
+    isFromUser: Boolean
+) {
+    val context = LocalContext.current
+    var isPlaying by remember { mutableStateOf(false) }
+    var mediaPlayer by remember { mutableStateOf<android.media.MediaPlayer?>(null) }
+    var currentPosition by remember { mutableStateOf(0) }
+    var duration by remember { mutableStateOf(0) }
+    
+    // Clean up media player when composable is disposed
+    DisposableEffect(audioPath) {
+        onDispose {
+            mediaPlayer?.release()
+            mediaPlayer = null
+        }
+    }
+    
+    // Update playback position
+    LaunchedEffect(isPlaying) {
+        while (isPlaying && mediaPlayer != null) {
+            currentPosition = mediaPlayer?.currentPosition ?: 0
+            kotlinx.coroutines.delay(100)
+        }
+    }
+    
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = if (isFromUser) {
+            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        },
+        border = BorderStroke(
+            1.dp,
+            if (isFromUser) {
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+            } else {
+                MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+            }
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp)
+        ) {
+            // Audio info header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.VolumeUp,
+                    contentDescription = "Audio file",
+                    tint = if (isFromUser) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                )
+                
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = fileName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (isFromUser) {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "${stringResource(R.string.audio_file)} • ${fileSize?.let { "${it / 1000}KB" } ?: "Unknown size"}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (isFromUser) {
+                            MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        }
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Playback controls
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Play/Pause button
+                IconButton(
+                    onClick = {
+                        try {
+                            if (isPlaying) {
+                                // Pause
+                                mediaPlayer?.pause()
+                                isPlaying = false
+                            } else {
+                                // Play
+                                if (mediaPlayer == null) {
+                                    // Initialize media player
+                                    mediaPlayer = android.media.MediaPlayer().apply {
+                                        setDataSource(context, Uri.parse(audioPath))
+                                        prepareAsync()
+                                        setOnPreparedListener { player ->
+                                            duration = player.duration
+                                            player.start()
+                                            isPlaying = true
+                                        }
+                                        setOnCompletionListener {
+                                            isPlaying = false
+                                            currentPosition = 0
+                                        }
+                                        setOnErrorListener { _, what, extra ->
+                                            android.util.Log.e("AudioMessageCard", "MediaPlayer error: what=$what, extra=$extra")
+                                            isPlaying = false
+                                            false
+                                        }
+                                    }
+                                } else {
+                                    // Resume playback
+                                    mediaPlayer?.start()
+                                    isPlaying = true
+                                }
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.e("AudioMessageCard", "Audio playback error: ${e.message}", e)
+                            isPlaying = false
+                        }
+                    },
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = if (isPlaying) "Pause" else "Play",
+                        tint = if (isFromUser) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    )
+                }
+                
+                // Progress bar
+                if (duration > 0) {
+                    LinearProgressIndicator(
+                        progress = currentPosition.toFloat() / duration.toFloat(),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(4.dp),
+                        color = if (isFromUser) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        trackColor = if (isFromUser) {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                        }
+                    )
+                    
+                    Text(
+                        text = "${formatTime(currentPosition)} / ${formatTime(duration)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (isFromUser) {
+                            MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        }
+                    )
+                } else {
+                    Spacer(modifier = Modifier.weight(1f))
+                    Text(
+                        text = stringResource(R.string.tap_to_play),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (isFromUser) {
+                            MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Format time in milliseconds to MM:SS format
+ */
+private fun formatTime(timeMs: Int): String {
+    val seconds = timeMs / 1000
+    val minutes = seconds / 60
+    val remainingSeconds = seconds % 60
+    return "%d:%02d".format(minutes, remainingSeconds)
 } 

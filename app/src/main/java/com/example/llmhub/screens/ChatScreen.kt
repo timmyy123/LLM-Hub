@@ -267,6 +267,7 @@ fun ChatScreen(
                                                     )
                                                     
                                                     // Show vision indicator with better styling
+                                                    // Vision support badge
                                                     if (model.supportsVision) {
                                                         Surface(
                                                             shape = RoundedCornerShape(12.dp),
@@ -293,6 +294,34 @@ fun ChatScreen(
                                                             }
                                                         }
                                                     }
+                                                    
+                                                    // Audio support badge
+                                                    if (model.supportsAudio) {
+                                                        Surface(
+                                                            shape = RoundedCornerShape(12.dp),
+                                                            color = MaterialTheme.colorScheme.secondary,
+                                                            modifier = Modifier.padding(start = 4.dp)
+                                                        ) {
+                                                            Row(
+                                                                verticalAlignment = Alignment.CenterVertically,
+                                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                                            ) {
+                                                                Icon(
+                                                                    Icons.Default.Mic,
+                                                                    contentDescription = stringResource(R.string.audio_enabled),
+                                                                    modifier = Modifier.size(14.dp),
+                                                                    tint = MaterialTheme.colorScheme.onSecondary
+                                                                )
+                                                                Spacer(modifier = Modifier.width(4.dp))
+                                                                Text(
+                                                                    text = stringResource(R.string.audio),
+                                                                    style = MaterialTheme.typography.labelSmall,
+                                                                    fontWeight = FontWeight.SemiBold,
+                                                                    color = MaterialTheme.colorScheme.onSecondary
+                                                                )
+                                                            }
+                                                        }
+                                                    }
                                                 }
                                                 
                                                 // Add model details subtitle
@@ -301,7 +330,12 @@ fun ChatScreen(
                                                         text = stringResource(
                                                             R.string.context_multimodal_format,
                                                             model.contextWindowSize / 1024,
-                                                            if (model.supportsVision) stringResource(R.string.multimodal) else stringResource(R.string.text_only)
+                                                            when {
+                                                                model.supportsVision && model.supportsAudio -> stringResource(R.string.vision_audio_text)
+                                                                model.supportsVision -> stringResource(R.string.multimodal)
+                                                                model.supportsAudio -> stringResource(R.string.audio_text)
+                                                                else -> stringResource(R.string.text_only)
+                                                            }
                                                         ),
                                                         style = MaterialTheme.typography.bodySmall,
                                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -403,15 +437,16 @@ fun ChatScreen(
                 // Message input
                 Box(modifier = Modifier.imePadding()) {
                 MessageInput(
-                    onSendMessage = { text, attachmentUri ->
+                    onSendMessage = { text, attachmentUri, audioData ->
                         // Triple-layer keyboard dismissal for maximum reliability
                         keyboardController?.hide()
                         focusManager.clearFocus()
-                        viewModel.sendMessage(context, text, attachmentUri)
+                        viewModel.sendMessage(context, text, attachmentUri, audioData)
                     },
                     enabled = !isLoading && !isLoadingModel && currentChat != null,
                     supportsAttachments = true, // Enable attachments for all models
                     supportsVision = viewModel.currentModelSupportsVision(), // Only show images for vision models
+                    supportsAudio = viewModel.currentModelSupportsAudio(), // Only show audio for audio models
                     isLoading = isLoading,
                     onCancelGeneration = if (isLoading) {
                         { viewModel.stopGeneration() }

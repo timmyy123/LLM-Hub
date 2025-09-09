@@ -228,18 +228,37 @@ private fun ModelFamilyCard(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 
+                // First row: Multimodal capabilities
+                if (isMultimodal) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.padding(top = 8.dp)
+                    ) {
+                        // Check for specific vision support
+                        if (variants.any { it.supportsVision }) {
+                            IconWithLabel(
+                                icon = Icons.Default.RemoveRedEye,
+                                label = stringResource(R.string.vision),
+                                tint = MaterialTheme.colorScheme.tertiary
+                            )
+                        }
+                        
+                        // Check for specific audio support  
+                        if (variants.any { it.supportsAudio }) {
+                            IconWithLabel(
+                                icon = Icons.Default.Mic,
+                                label = stringResource(R.string.audio_support),
+                                tint = MaterialTheme.colorScheme.tertiary
+                            )
+                        }
+                    }
+                }
+                
+                // Second row: GPU support and variant count
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.padding(top = 8.dp)
+                    modifier = Modifier.padding(top = if (isMultimodal) 4.dp else 8.dp)
                 ) {
-                    if (isMultimodal) {
-                        IconWithLabel(
-                            icon = Icons.Default.RemoveRedEye,
-                            label = stringResource(R.string.vision),
-                            tint = MaterialTheme.colorScheme.tertiary
-                        )
-                    }
-                    
                     if (variants.any { isGpuSupportedForModel(it, context) }) {
                         IconWithLabel(
                             icon = Icons.Default.Speed,
@@ -319,7 +338,7 @@ private fun ModelVariantItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = model.name.substringAfter("(").substringBefore(")"),
+                    text = getModelDisplayName(model, context),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -580,5 +599,27 @@ private fun formatSpeed(bytesPerSec: Long): String {
     } else {
         val kb = bytesPerSec / 1024.0
         String.format("%.0f KB/s", kb)
+    }
+}
+
+private fun getModelDisplayName(model: LLMModel, context: Context): String {
+    // Extract the part in parentheses from the model name
+    val nameInParentheses = model.name.substringAfter("(").substringBefore(")")
+    
+    // Check if it's a capabilities description we need to translate
+    when {
+        nameInParentheses.equals("Vision+Audio+Text", ignoreCase = true) -> {
+            return context.getString(R.string.vision_audio_text)
+        }
+        nameInParentheses.equals("Vision+Text", ignoreCase = true) -> {
+            return context.getString(R.string.vision_text)
+        }
+        nameInParentheses.equals("Audio+Text", ignoreCase = true) -> {
+            return context.getString(R.string.audio_text)
+        }
+        else -> {
+            // For other formats like "INT4, 2k", return as-is
+            return nameInParentheses
+        }
     }
 }

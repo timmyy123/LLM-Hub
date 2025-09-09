@@ -10,7 +10,8 @@
 
 - **🤖 Multiple LLM Models**: Support for Gemma-3, Llama-3.2, Phi-4, and Gemma-3n
 - **📱 On-Device Processing**: Complete privacy - no internet required for inference
-- **🖼️ Vision Support**: Multimodal models that understand both text and images
+- **🖼️ Vision Support**: Multimodal models that understand text, images, and audio input
+- **🎙️ Audio Input**: Voice recording support for Gemma-3n models with speech recognition
 - **⚡ GPU Acceleration**: Optimized performance on supported devices (8GB+ RAM)
 - **💾 Offline Usage**: Chat without internet connection after model download
 - **🔒 Privacy First**: Your conversations never leave your device
@@ -39,9 +40,9 @@
 - **Phi-4 Mini** (Microsoft)
   - INT8 quantization (3.67GB) - 1.2k context
 
-### Multimodal Models (Vision + Text)
-- **Gemma-3n E2B** (2.92GB) - 4k context
-- **Gemma-3n E4B** (4.10GB) - 4k context
+### Multimodal Models (Vision + Audio + Text)
+- **Gemma-3n E2B** (2.92GB) - 4k context - Supports text, images, and audio input
+- **Gemma-3n E4B** (4.10GB) - 4k context - Supports text, images, and audio input
 
 ## 🛠️ Technology Stack
 
