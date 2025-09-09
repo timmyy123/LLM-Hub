@@ -262,4 +262,26 @@
     <string name="backend_selection_hint">Falls die App mit GPU abstürzt oder nicht richtig funktioniert, versuche CPU-Backend</string>
     <string name="not_available">Nicht verfügbar</string>
     <string name="gpu_disabled_low_memory">GPU nicht verfügbar für dieses Modell auf Geräten mit %1$dGB RAM oder weniger</string>
+    
+    <!-- Audio Recording -->
+    <string name="audio_recording">Sprachaufnahme</string>
+    <string name="audio_description">Sprachnachricht aufnehmen</string>
+    <string name="record_voice_message">Sprachnachricht aufnehmen</string>
+    <string name="recording_audio">Aufnahme läuft...</string>
+    <string name="tap_to_stop_recording">Tippen zum Stoppen</string>
+    <string name="audio_recorded">Audio aufgenommen</string>
+    <string name="audio_file">Audiodatei</string>
+    <string name="tap_to_play">Tippen zum Abspielen</string>
+    
+    <!-- Multimodal Support -->
+    <string name="model_supports_multimodal">Vision+Audio+Text</string>
+    <string name="multimodal_format">%1$s+%2$s+Text</string>
+    
+    <!-- Gemma-3n specific GPU requirements -->
+    <string name="gemma3n_e2b_gpu_requires_6gb">Benötigt mindestens 6GB RAM für GPU</string>
+    <string name="gemma3n_e4b_gpu_requires_8gb">Geräte mit 8GB oder weniger RAM können dieses Modell nicht mit GPU laden</string>
+    <string name="audio_support">Audio-Unterstützung</string>
+    <string name="vision_audio_text">Vision+Audio+Text</string>
+    <string name="vision_text">Vision+Text</string>
+    <string name="audio_text">Audio+Text</string>
 </resources>

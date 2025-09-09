@@ -251,6 +251,20 @@
     <string name="text_file_tap_to_preview">Text File • Tap to preview</string>
     <string name="read_this">read this</string>
     
+    <!-- Audio Input -->
+    <string name="audio_recording">Audio Recording</string>
+    <string name="audio_description">Record voice message</string>
+    <string name="recording">Recording…</string>
+    <string name="audio_recorded">Audio Recorded</string>
+    <string name="ready_to_send">Ready to send</string>
+    <string name="tap_to_stop">Tap to stop</string>
+    <string name="stop_recording">Stop recording</string>
+    <string name="remove_audio">Remove audio</string>
+    <string name="audio_enabled">Audio enabled</string>
+    <string name="audio">Audio</string>
+    <string name="audio_file">Audio File</string>
+    <string name="tap_to_play">Tap to play</string>
+    
     <!-- RAG (Document Chat) -->
     <string name="searching_documents">Searching documents…</string>
     <string name="using_document_context_format">Using context from %1$d document sections</string>
@@ -269,4 +283,12 @@
     <string name="backend_selection_hint">If the app crashes or doesn\'t work properly with GPU, try CPU backend</string>
     <string name="not_available">Not Available</string>
     <string name="gpu_disabled_low_memory">GPU not available for this model on devices with %1$dGB RAM or less</string>
+    
+    <!-- Gemma-3n specific GPU requirements -->
+    <string name="gemma3n_e2b_gpu_requires_6gb">Requires at least 6GB RAM for GPU</string>
+    <string name="gemma3n_e4b_gpu_requires_8gb">Devices with 8GB or less RAM can\'t load this model with GPU</string>
+    <string name="audio_support">Audio Support</string>
+    <string name="vision_audio_text">Vision+Audio+Text</string>
+    <string name="vision_text">Vision+Text</string>
+    <string name="audio_text">Audio+Text</string>
 </resources>

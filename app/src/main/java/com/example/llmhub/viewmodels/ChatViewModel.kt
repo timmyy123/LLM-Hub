@@ -22,6 +22,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import java.io.File
 import kotlinx.coroutines.Job
+import android.os.Environment
+import androidx.core.content.FileProvider
 import com.llmhub.llmhub.data.localFileName
 import com.llmhub.llmhub.data.isModelFileValid
 import com.llmhub.llmhub.data.ThemePreferences
@@ -404,7 +406,7 @@ class ChatViewModel(
         }
     }
 
-    fun sendMessage(context: Context, text: String, attachmentUri: Uri?) {
+    fun sendMessage(context: Context, text: String, attachmentUri: Uri?, audioData: ByteArray? = null) {
         val chatId = currentChatId
         if (chatId == null) {
             Log.e("ChatViewModel", "No current chat ID available, creating new chat")
@@ -413,13 +415,13 @@ class ChatViewModel(
                 initializeNewChat(context)
                 // Retry sending the message after creating a new chat
                 kotlinx.coroutines.delay(100) // Small delay to ensure chat is created
-                sendMessage(context, text, attachmentUri)
+                sendMessage(context, text, attachmentUri, audioData)
             }
             return
         }
         val messageText = text.trim()
 
-        if (messageText.isEmpty() && attachmentUri == null) return
+        if (messageText.isEmpty() && attachmentUri == null && audioData == null) return
 
         // Set loading state immediately to provide responsive UI feedback
         _isLoading.value = true
@@ -460,7 +462,36 @@ class ChatViewModel(
             var attachmentFileInfo: FileUtils.FileInfo? = null
             var fileTextContent: String? = null
             
-            if (attachmentUri != null) {
+            // Process audio data if present
+            if (audioData != null && audioData.isNotEmpty()) {
+                try {
+                    // Save audio data to a file
+                    val audioFileName = "audio_${System.currentTimeMillis()}.wav"
+                    val audioFile = File(context.getExternalFilesDir(Environment.DIRECTORY_MUSIC), audioFileName)
+                    audioFile.parentFile?.mkdirs()
+                    
+                    audioFile.writeBytes(audioData)
+                    
+                    processedAttachmentUri = FileProvider.getUriForFile(
+                        context,
+                        "${context.packageName}.fileprovider",
+                        audioFile
+                    )
+                    
+                    attachmentFileInfo = FileUtils.FileInfo(
+                        name = audioFileName,
+                        size = audioData.size.toLong(),
+                        mimeType = "audio/wav",
+                        type = FileUtils.SupportedFileType.AUDIO,
+                        uri = processedAttachmentUri
+                    )
+                    
+                    Log.d("ChatViewModel", "Saved audio data to file: ${audioFile.absolutePath} (${audioData.size} bytes)")
+                    
+                } catch (e: Exception) {
+                    Log.e("ChatViewModel", "Failed to save audio data: ${e.message}", e)
+                }
+            } else if (attachmentUri != null) {
                 try {
                     // Get file information
                     attachmentFileInfo = FileUtils.getFileInfo(context, attachmentUri)
@@ -660,7 +691,14 @@ class ChatViewModel(
 
             // The first message sets the title
             if (_messages.value.size == 1) {
-                repository.updateChatTitle(chatId, messageText.take(50))
+                val chatTitle = when {
+                    messageText.isNotEmpty() -> messageText.take(50)
+                    attachmentFileInfo?.type == FileUtils.SupportedFileType.AUDIO -> "🎵 Audio Message"
+                    attachmentFileInfo?.type == FileUtils.SupportedFileType.IMAGE -> "🖼️ Image Message" 
+                    attachmentFileInfo != null -> "📄 ${attachmentFileInfo.name.take(30)}"
+                    else -> "New Chat"
+                }
+                repository.updateChatTitle(chatId, chatTitle)
                 _currentChat.value = repository.getChatById(chatId)
             }
 
@@ -893,6 +931,7 @@ class ChatViewModel(
                         currentModel!!, 
                         chatId, 
                         images, 
+                        audioData, // Pass audio data for Gemma-3n models
                         webSearchEnabled
                     )
                                     var lastUpdateTime = 0L
@@ -1511,6 +1550,10 @@ class ChatViewModel(
     
     fun currentModelSupportsVision(): Boolean {
         return currentModel?.supportsVision == true
+    }
+    
+    fun currentModelSupportsAudio(): Boolean {
+        return currentModel?.supportsAudio == true
     }
     
     /**
@@ -2241,6 +2284,7 @@ class ChatViewModel(
                             currentModel!!, 
                             chatId, 
                             images,
+                            null, // No audio for regeneration - only used for new messages
                             webSearchEnabled
                         )
                         

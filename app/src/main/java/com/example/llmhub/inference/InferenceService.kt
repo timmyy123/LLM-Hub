@@ -19,6 +19,7 @@ import java.io.File
 import com.llmhub.llmhub.data.localFileName
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.google.mediapipe.tasks.genai.llminference.LlmInferenceSession
+import com.google.mediapipe.tasks.genai.llminference.AudioModelOptions
 import com.google.mediapipe.framework.image.BitmapImageBuilder
 import android.util.Log
 import kotlinx.coroutines.channels.awaitClose
@@ -34,7 +35,14 @@ interface InferenceService {
     suspend fun unloadModel()
     suspend fun generateResponse(prompt: String, model: LLMModel): String
     suspend fun generateResponseStream(prompt: String, model: LLMModel): Flow<String>
-    suspend fun generateResponseStreamWithSession(prompt: String, model: LLMModel, chatId: String, images: List<Bitmap> = emptyList(), webSearchEnabled: Boolean = true): Flow<String>
+    suspend fun generateResponseStreamWithSession(
+        prompt: String, 
+        model: LLMModel, 
+        chatId: String, 
+        images: List<Bitmap> = emptyList(), 
+        audioData: ByteArray? = null,
+        webSearchEnabled: Boolean = true
+    ): Flow<String>
     suspend fun resetChatSession(chatId: String)
     suspend fun onCleared()
     fun getCurrentlyLoadedModel(): LLMModel?
@@ -364,6 +372,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             Log.d(TAG, "  - Max tokens: $maxTokens")
             Log.d(TAG, "  - Backend: $backend")
             Log.d(TAG, "  - Supports vision: ${model.supportsVision}")
+            Log.d(TAG, "  - Supports audio: ${model.supportsAudio}")
             
             // Create LLM inference options
             val optionsBuilder = LlmInference.LlmInferenceOptions.builder()
@@ -380,13 +389,85 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 Log.d(TAG, "  - Vision modality disabled (maxNumImages=0)")
             }
             
-            val options = optionsBuilder.build()
+            // Try to create inference engine with audio support if claimed by model
+            var llmInference: LlmInference? = null
+            var actualAudioSupport = false
             
-            // Create LLM inference engine
-            val llmInference = LlmInference.createFromOptions(context, options)
+            if (model.supportsAudio) {
+                try {
+                    // For Gemma-3n models, respect user's backend choice; for other models, force CPU for audio compatibility
+                    val audioBackend = if (model.name.contains("Gemma-3n", ignoreCase = true)) {
+                        // Use user-selected backend for Gemma-3n models
+                        Log.d(TAG, "  - Using ${backend} backend for Gemma-3n audio support (user preference)")
+                        backend
+                    } else if (backend != LlmInference.Backend.CPU) {
+                        // Force CPU for non-Gemma-3n models to avoid GPU audio encoder issues
+                        Log.d(TAG, "  - Forcing CPU backend for audio support (was: $backend)")
+                        LlmInference.Backend.CPU
+                    } else {
+                        backend
+                    }
+                    
+                    // Create audio options and rebuild with CPU backend
+                    val audioOptions = AudioModelOptions.builder().build()
+                    val audioEnabledOptions = LlmInference.LlmInferenceOptions.builder()
+                        .setModelPath(modelFile.absolutePath)
+                        .setMaxTokens(maxTokens)
+                        .setPreferredBackend(audioBackend)
+                        .setAudioModelOptions(audioOptions)
+                        .apply {
+                            // Re-apply vision settings
+                            if (model.supportsVision) {
+                                setMaxNumImages(10)
+                            } else {
+                                setMaxNumImages(0)
+                            }
+                        }
+                        .build()
+                    
+                    llmInference = LlmInference.createFromOptions(context, audioEnabledOptions)
+                    
+                    // Test audio support by creating a test session with audio modality
+                    val testSessionOptions = LlmInferenceSession.LlmInferenceSessionOptions.builder()
+                        .setGraphOptions(
+                            com.google.mediapipe.tasks.genai.llminference.GraphOptions.builder()
+                                .setEnableAudioModality(true)
+                                .build()
+                        )
+                        .build()
+                    
+                    // Try to create a test session to verify audio support works
+                    try {
+                        val testSession = LlmInferenceSession.createFromOptions(llmInference, testSessionOptions)
+                        testSession.close() // Clean up test session
+                        actualAudioSupport = true
+                        Log.d(TAG, "  - Successfully verified audio modality support for model ${model.name} with CPU backend")
+                    } catch (sessionE: Exception) {
+                        Log.w(TAG, "  - Audio session test failed: ${sessionE.message}")
+                        // Still try to proceed with audio - the engine was created successfully
+                        actualAudioSupport = true
+                        Log.d(TAG, "  - Assuming audio support based on successful engine creation")
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "  - Audio engine creation failed, falling back to vision-only: ${e.message}")
+                    llmInference?.close() // Clean up failed attempt
+                    llmInference = null // Reset to try without audio
+                }
+            }
+            
+            // If audio failed or not supported, create without audio
+            if (llmInference == null) {
+                val options = optionsBuilder.build() // Build without audio options
+                llmInference = LlmInference.createFromOptions(context, options)
+                actualAudioSupport = false
+                Log.d(TAG, "  - Created inference engine without audio support")
+            }
+            
+            // Update model with actual capabilities detected during loading
+            val actualModel = model.copy(supportsAudio = actualAudioSupport)
             
             // Set current model BEFORE creating session (critical for vision modality)
-            currentModel = model
+            currentModel = actualModel
             
             // Create initial session
             val session = createSession(llmInference)
@@ -409,6 +490,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         
         Log.d(TAG, "Creating session for model: ${model?.name}")
         Log.d(TAG, "Model supports vision: ${model?.supportsVision}")
+        Log.d(TAG, "Model supports audio: ${model?.supportsAudio}")
         
         val sessionOptionsBuilder = LlmInferenceSession.LlmInferenceSessionOptions.builder()
             .setTopK(DEFAULT_TOP_K)
@@ -416,30 +498,53 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             .setTopP(DEFAULT_TOP_P)
             .setRandomSeed(System.currentTimeMillis().toInt())
             
-        // Enable vision modality for multimodal models (following Google AI Edge Gallery pattern)
-        if (model?.supportsVision == true) {
+        // Configure modality support based on model capabilities
+        val needsVisionModality = model?.supportsVision == true
+        val needsAudioModality = model?.supportsAudio == true
+        
+        Log.d(TAG, "Session creation - needsVisionModality: $needsVisionModality, needsAudioModality: $needsAudioModality")
+        
+        // Configure graph options for multimodal support
+        if (needsVisionModality || needsAudioModality) {
             try {
-                val graphOptions = com.google.mediapipe.tasks.genai.llminference.GraphOptions.builder()
-                    .setEnableVisionModality(true)
-                    .build()
+                val graphOptionsBuilder = com.google.mediapipe.tasks.genai.llminference.GraphOptions.builder()
+                
+                if (needsVisionModality) {
+                    graphOptionsBuilder.setEnableVisionModality(true)
+                    Log.d(TAG, "Enabled vision modality for model ${model.name}")
+                }
+                
+                if (needsAudioModality) {
+                    graphOptionsBuilder.setEnableAudioModality(true)
+                    Log.d(TAG, "Enabled audio modality for model ${model.name}")
+                }
+                
+                val graphOptions = graphOptionsBuilder.build()
                 sessionOptionsBuilder.setGraphOptions(graphOptions)
-                Log.d(TAG, "Session created with vision modality ENABLED for model ${model.name}")
+                
+                val modalityTypes = buildList {
+                    if (needsVisionModality) add("vision")
+                    if (needsAudioModality) add("audio")
+                }.joinToString(" + ")
+                
+                Log.d(TAG, "Session created with $modalityTypes modality ENABLED for model ${model.name}")
+                
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to enable vision modality for model ${model.name}: ${e.message}", e)
-                // Continue without vision modality - this might be the issue
-                throw e  // Don't continue if vision fails - this is critical for vision models
+                Log.e(TAG, "Failed to enable multimodal support for model ${model?.name}: ${e.message}", e)
+                throw e  // Don't continue if multimodal setup fails
             }
         } else {
-            // Explicitly disable vision modality for non-vision models
+            // Text-only models - explicitly disable multimodal features
             try {
                 val graphOptions = com.google.mediapipe.tasks.genai.llminference.GraphOptions.builder()
                     .setEnableVisionModality(false)
+                    .setEnableAudioModality(false)
                     .build()
                 sessionOptionsBuilder.setGraphOptions(graphOptions)
-                Log.d(TAG, "Session created with vision modality DISABLED for model ${model?.name}")
+                Log.d(TAG, "Session created with multimodal features DISABLED for text-only model ${model?.name}")
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to disable vision modality for model ${model?.name}: ${e.message}", e)
-                // Continue without setting graph options for non-vision models
+                Log.w(TAG, "Failed to disable multimodal features for model ${model?.name}: ${e.message}", e)
+                // Continue without setting graph options for text-only models
             }
         }
         
@@ -544,7 +649,14 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         }
     }.flowOn(Dispatchers.IO)
 
-    override suspend fun generateResponseStreamWithSession(prompt: String, model: LLMModel, chatId: String, images: List<Bitmap>, webSearchEnabled: Boolean): Flow<String> = callbackFlow {
+    override suspend fun generateResponseStreamWithSession(
+        prompt: String, 
+        model: LLMModel, 
+        chatId: String, 
+        images: List<Bitmap>, 
+        audioData: ByteArray?,
+        webSearchEnabled: Boolean
+    ): Flow<String> = callbackFlow {
         ensureModelLoaded(model)
         
         // Check memory constraints for vision usage
@@ -727,6 +839,38 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 Log.w(TAG, "Model ${model.name} does not support vision, ignoring ${images.size} images")
             } else if (images.isEmpty() && model.supportsVision) {
                 Log.d(TAG, "No images provided for vision-capable model ${model.name}")
+            }
+            
+            // Add audio AFTER text query and images (MediaPipe requirement for multimodal models)
+            if (audioData != null && model.supportsAudio) {
+                Log.d(TAG, "Adding audio data to session for chat $chatId (${audioData.size} bytes)")
+                try {
+                    // Validate audio data
+                    if (audioData.isEmpty()) {
+                        Log.e(TAG, "Audio data is empty")
+                    } else {
+                        // Check if session was properly created with audio modality
+                        Log.d(TAG, "Attempting to add audio to session...")
+                        
+                        // Add audio data to session (MediaPipe expects mono WAV format)
+                        currentSession.addAudio(audioData)
+                        Log.d(TAG, "Successfully added audio data to session")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to add audio data to session: ${e.message}", e)
+
+                    // If audio modality isn't enabled in the current engine, don't retry; disable audio for this run
+                    if (e.message?.contains("Audio modality is not enabled") == true) {
+                        Log.w(TAG, "Engine/session has audio disabled. Skipping audio for this request and marking model as no-audio for this session")
+                        // Update current model flag so subsequent turns don't try audio
+                        currentModel = currentModel?.copy(supportsAudio = false)
+                    }
+                    // Continue with text/image processing even if audio fails
+                }
+            } else if (audioData != null && !model.supportsAudio) {
+                Log.w(TAG, "Model ${model.name} does not support audio, ignoring audio input")
+            } else if (audioData == null && model.supportsAudio) {
+                Log.d(TAG, "No audio provided for audio-capable model ${model.name}")
             }
             
             currentSession.generateResponseAsync { partialResult, done ->

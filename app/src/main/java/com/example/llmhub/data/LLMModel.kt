@@ -13,10 +13,11 @@ data class LLMModel(
     val sizeBytes: Long,
     val source: String,
     val supportsVision: Boolean,
+    val supportsAudio: Boolean = false, // New: whether model supports audio input
     val supportsGpu: Boolean = false,
     val requirements: ModelRequirements,
     val contextWindowSize: Int = 2048, // Default context window size in tokens
-    val modelFormat: String = "gguf", // "gguf" or "task" (MediaPipe format)
+    val modelFormat: String = "gguf", // "gguf", "task", or "litertlm" (MediaPipe formats)
     var isDownloaded: Boolean = false,
     var isDownloading: Boolean = false, // New: whether a download is currently in progress for this model
     var isPaused: Boolean = false, // Whether download is paused
