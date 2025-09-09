@@ -41,6 +41,31 @@ import com.llmhub.llmhub.viewmodels.ChatViewModelFactory
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import kotlinx.coroutines.launch
 
+@Composable
+fun getLocalizedModelName(model: LLMModel): String {
+    val baseName = model.name.substringBefore(" (")
+    val capabilities = model.name.substringAfter("(").substringBefore(")")
+    
+    if (!model.name.contains("(")) {
+        return model.name
+    }
+    
+    val localizedCapabilities = when {
+        capabilities.equals("Vision+Audio+Text", ignoreCase = true) -> {
+            stringResource(R.string.vision_audio_text)
+        }
+        capabilities.equals("Vision+Text", ignoreCase = true) -> {
+            stringResource(R.string.vision_text)
+        }
+        capabilities.equals("Audio+Text", ignoreCase = true) -> {
+            stringResource(R.string.audio_text)
+        }
+        else -> capabilities
+    }
+    
+    return "$baseName ($localizedCapabilities)"
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
@@ -152,7 +177,7 @@ fun ChatScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = model.name,
+                                        text = getLocalizedModelName(model),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         maxLines = 1,
@@ -259,7 +284,7 @@ fun ChatScreen(
                                                     modifier = Modifier.fillMaxWidth()
                                                 ) {
                                                     Text(
-                                                        text = model.name,
+                                                        text = getLocalizedModelName(model),
                                                         style = MaterialTheme.typography.bodyMedium,
                                                         fontWeight = FontWeight.Medium,
                                                         color = MaterialTheme.colorScheme.onSurface,
@@ -461,7 +486,7 @@ fun ChatScreen(
     if (showBackendDialog) {
         pendingModelForBackendSelection?.let { model ->
             BackendSelectionDialog(
-                modelName = model.name,
+                modelName = getLocalizedModelName(model),
                 onBackendSelected = { backend ->
                     viewModel.switchModelWithBackend(model, backend)
                 },

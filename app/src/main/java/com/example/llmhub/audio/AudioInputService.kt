@@ -21,13 +21,13 @@ import java.nio.ByteOrder
 /**
  * Service for recording and processing audio input for Gemma-3n models.
  * 
- * Audio Requirements for MediaPipe Gemma-3n models:
+ * Audio Requirements for MediaPipe Gemma-3n models (from official docs):
  * - Format: WAV (mono channel)
- * - Sample Rate: 16kHz (standard for speech)
- * - Bit depth: 16-bit PCM
- * - Channels: Mono (1 channel)
+ * - Must be mono channel formatted as .wav
+ * - Compatible with Gemma-3n E2B and Gemma-3n E4B models
  * 
- * Following Google AI Edge documentation for audio input with LLM inference.
+ * Following official Google AI Edge MediaPipe LLM Inference documentation:
+ * https://ai.google.dev/edge/mediapipe/solutions/genai/llm_inference/android#audio_input
  */
 interface AudioInputService {
     suspend fun hasAudioPermission(): Boolean
@@ -154,7 +154,9 @@ class MediaPipeAudioInputService(private val context: Context) : AudioInputServi
                 Log.d(TAG, "Stopped recording, captured ${audioData.size} bytes")
                 
                 return@withContext if (audioData.isNotEmpty()) {
-                    convertToWav(audioData)
+                    // Convert PCM16 to float32 and normalize to [-1, 1] range as required by MediaPipe
+                    val processedAudio = convertPcm16ToFloat32AndNormalize(audioData)
+                    convertToWav(processedAudio)
                 } else {
                     null
                 }
@@ -166,17 +168,49 @@ class MediaPipeAudioInputService(private val context: Context) : AudioInputServi
         }
     }
     
+    /**
+     * Convert PCM16 audio data to float32 format and normalize to [-1, 1] range
+     * as required by MediaPipe Gemma-3n models
+     */
+    private fun convertPcm16ToFloat32AndNormalize(pcm16Data: ByteArray): ByteArray {
+        val samples = pcm16Data.size / 2 // Each sample is 2 bytes (16-bit)
+        val float32Data = ByteArray(samples * 4) // Each float32 is 4 bytes
+        val buffer = ByteBuffer.wrap(float32Data).order(ByteOrder.LITTLE_ENDIAN)
+        
+        for (i in 0 until samples) {
+            // Read 16-bit sample (little-endian)
+            val sample16 = (pcm16Data[i * 2].toInt() and 0xFF) or 
+                          (pcm16Data[i * 2 + 1].toInt() shl 8)
+            
+            // Convert from signed 16-bit to signed short
+            val signedSample = sample16.toShort()
+            
+            // Normalize to [-1, 1] range by dividing by 32768 (2^15)
+            val normalizedSample = signedSample.toFloat() / 32768.0f
+            
+            // Clamp to [-1, 1] range to handle edge cases
+            val clampedSample = normalizedSample.coerceIn(-1.0f, 1.0f)
+            
+            // Write float32 value
+            buffer.putFloat(clampedSample)
+        }
+        
+        Log.d(TAG, "Converted ${pcm16Data.size} bytes PCM16 to ${float32Data.size} bytes float32, ${samples} samples")
+        return float32Data
+    }
+
     override suspend fun convertToWav(audioData: ByteArray): ByteArray = withContext(Dispatchers.IO) {
         try {
-            // Create WAV header for MediaPipe (mono, 16kHz, 16-bit PCM)
-            val wavHeader = createWavHeader(audioData.size)
+            // For MediaPipe, we need WAV format with float32 data
+            // audioData is now already float32 normalized data
+            val wavHeader = createFloat32WavHeader(audioData.size)
             
             // Combine header and audio data
             val wavData = ByteArray(wavHeader.size + audioData.size)
             System.arraycopy(wavHeader, 0, wavData, 0, wavHeader.size)
             System.arraycopy(audioData, 0, wavData, wavHeader.size, audioData.size)
             
-            Log.d(TAG, "Converted ${audioData.size} bytes to WAV format (${wavData.size} bytes total)")
+            Log.d(TAG, "Converted ${audioData.size} bytes to float32 WAV format (${wavData.size} bytes total)")
             wavData
         } catch (e: Exception) {
             Log.e(TAG, "Error converting to WAV", e)
@@ -202,6 +236,32 @@ class MediaPipeAudioInputService(private val context: Context) : AudioInputServi
         buffer.putInt(SAMPLE_RATE * 1 * 16 / 8) // ByteRate
         buffer.putShort((1 * 16 / 8).toShort()) // BlockAlign
         buffer.putShort(16) // BitsPerSample
+        
+        // data subchunk
+        buffer.put("data".toByteArray()) // Subchunk2ID
+        buffer.putInt(audioDataSize) // Subchunk2Size
+        
+        return header
+    }
+    
+    private fun createFloat32WavHeader(audioDataSize: Int): ByteArray {
+        val header = ByteArray(44)
+        val buffer = ByteBuffer.wrap(header).order(ByteOrder.LITTLE_ENDIAN)
+        
+        // RIFF header
+        buffer.put("RIFF".toByteArray()) // ChunkID
+        buffer.putInt(36 + audioDataSize) // ChunkSize
+        buffer.put("WAVE".toByteArray()) // Format
+        
+        // fmt subchunk
+        buffer.put("fmt ".toByteArray()) // Subchunk1ID
+        buffer.putInt(16) // Subchunk1Size (PCM)
+        buffer.putShort(3) // AudioFormat (3 = IEEE float)
+        buffer.putShort(1) // NumChannels (mono)
+        buffer.putInt(SAMPLE_RATE) // SampleRate
+        buffer.putInt(SAMPLE_RATE * 1 * 32 / 8) // ByteRate (32-bit float)
+        buffer.putShort((1 * 32 / 8).toShort()) // BlockAlign
+        buffer.putShort(32) // BitsPerSample (32-bit float)
         
         // data subchunk
         buffer.put("data".toByteArray()) // Subchunk2ID

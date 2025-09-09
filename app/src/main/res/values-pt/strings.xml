@@ -267,5 +267,8 @@
     <string name="vision_audio_text">Visão+Áudio+Texto</string>
     <string name="vision_text">Visão+Texto</string>
     <string name="audio_text">Áudio+Texto</string>
+    <string name="shared_file">Compartilhou um arquivo</string>
+    <string name="audio_message">Mensagem de Áudio</string>
+    <string name="image_message">Mensagem de Imagem</string>
 </resources>
 
