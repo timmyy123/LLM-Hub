@@ -264,6 +264,15 @@
     <string name="audio">Audio</string>
     <string name="audio_file">Audio File</string>
     <string name="tap_to_play">Tap to play</string>
+
+    <!-- Image actions -->
+    <string name="image_copied_clipboard">Image copied from chat</string>
+    <string name="image_copied_to_clipboard">Image copied to clipboard</string>
+    <string name="failed_to_copy_image">Failed to copy image</string>
+    <string name="failed_to_copy_image_with_error">Failed to copy image: %1$s</string>
+    <string name="image_saved_to_gallery">Image saved to gallery</string>
+    <string name="failed_to_save_image">Failed to save image</string>
+    <string name="failed_to_save_image_with_error">Failed to save image: %1$s</string>
     
     <!-- RAG (Document Chat) -->
     <string name="searching_documents">Searching documents…</string>

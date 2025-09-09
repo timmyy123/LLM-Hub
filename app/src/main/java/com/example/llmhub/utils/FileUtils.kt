@@ -128,6 +128,14 @@ object FileUtils {
     fun getLocalizedDisplayName(context: Context, fileType: SupportedFileType): String {
         return when (fileType) {
             SupportedFileType.TEXT -> context.getString(R.string.text_file)
+            SupportedFileType.IMAGE -> context.getString(R.string.images)
+            SupportedFileType.PDF -> context.getString(R.string.documents)
+            SupportedFileType.WORD -> context.getString(R.string.documents)
+            SupportedFileType.EXCEL -> context.getString(R.string.documents)
+            SupportedFileType.POWERPOINT -> context.getString(R.string.documents)
+            SupportedFileType.JSON -> context.getString(R.string.read_this)
+            SupportedFileType.XML -> context.getString(R.string.read_this)
+            SupportedFileType.AUDIO -> context.getString(R.string.audio_file)
             else -> fileType.displayName
         }
     }

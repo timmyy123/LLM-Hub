@@ -698,7 +698,7 @@ fun FullScreenImageViewer(
                     ) {
                         Icon(
                             Icons.Default.Close,
-                            contentDescription = "Close",
+                            contentDescription = stringResource(R.string.close),
                             tint = Color.White,
                             modifier = Modifier.size(24.dp)
                         )
@@ -725,7 +725,7 @@ fun FullScreenImageViewer(
                         )
             Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Image Attachment",
+                            text = stringResource(R.string.image_attachment),
                             color = Color.White,
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium
@@ -766,11 +766,11 @@ fun FullScreenImageViewer(
                         ) {
                             Icon(
                                 Icons.Default.ContentCopy,
-                                contentDescription = "Copy image",
+                                contentDescription = stringResource(R.string.copy),
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Copy")
+                            Text(stringResource(R.string.copy))
                         }
                         
                         // Save button
@@ -791,11 +791,11 @@ fun FullScreenImageViewer(
             ) {
                 Icon(
                                 Icons.Default.Download,
-                                contentDescription = "Save image",
+                                contentDescription = stringResource(R.string.save_image),
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Save")
+                            Text(stringResource(R.string.save_image))
                         }
                     }
                 }
@@ -809,7 +809,7 @@ fun FullScreenImageViewer(
                     color = Color.Black.copy(alpha = 0.4f)
                 ) {
                     Text(
-                        text = "Tap image to toggle controls",
+                        text = stringResource(R.string.tap_image_toggle_controls),
                         color = Color.White.copy(alpha = 0.8f),
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
@@ -838,19 +838,19 @@ private suspend fun copyImageToClipboard(context: Context, imageUri: Uri) {
                     withContext(Dispatchers.Main) {
                         val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                         // For now, we'll copy the URI as text since bitmap clipboard requires API 28+
-                        val clip = ClipData.newPlainText("Image", "Image copied from chat")
-                        clipboardManager.setPrimaryClip(clip)
-                        Toast.makeText(context, "Image copied to clipboard", Toast.LENGTH_SHORT).show()
+            val clip = ClipData.newPlainText("Image", context.getString(R.string.image_copied_clipboard))
+            clipboardManager.setPrimaryClip(clip)
+            Toast.makeText(context, context.getString(R.string.image_copied_to_clipboard), Toast.LENGTH_SHORT).show()
                     }
                 } else {
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "Failed to copy image", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.failed_to_copy_image), Toast.LENGTH_SHORT).show()
                     }
                 }
             }
         } catch (e: Exception) {
             withContext(Dispatchers.Main) {
-                Toast.makeText(context, "Failed to copy image: ${e.message}", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.failed_to_copy_image_with_error, e.message ?: ""), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -874,20 +874,20 @@ private suspend fun saveImageToGallery(context: Context, imageUri: Uri) {
                     val saved = saveBitmapToGallery(context, bitmap)
                     withContext(Dispatchers.Main) {
                         if (saved) {
-                            Toast.makeText(context, "Image saved to gallery", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.image_saved_to_gallery), Toast.LENGTH_SHORT).show()
                         } else {
-                            Toast.makeText(context, "Failed to save image", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.failed_to_save_image), Toast.LENGTH_SHORT).show()
                         }
                     }
                 } else {
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "Failed to load image", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.failed_to_load_image), Toast.LENGTH_SHORT).show()
                     }
                 }
             }
         } catch (e: Exception) {
             withContext(Dispatchers.Main) {
-                Toast.makeText(context, "Failed to save image: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.failed_to_save_image_with_error, e.message ?: ""), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -1131,7 +1131,7 @@ fun MessageInput(
                         ) {
                             Icon(
                                 if (isRecording) Icons.Default.Mic else Icons.Default.MicOff,
-                                contentDescription = if (isRecording) "Recording" else "Audio recorded",
+                                contentDescription = if (isRecording) stringResource(R.string.recording) else stringResource(R.string.audio_recorded),
                                 modifier = Modifier.padding(12.dp),
                                 tint = if (isRecording) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
                             )
@@ -1535,7 +1535,7 @@ fun FilePreviewDialog(
                             )
                         }
                         IconButton(onClick = onDismiss) {
-                            Icon(Icons.Default.Close, contentDescription = "Close")
+                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close))
                         }
                     }
                 }
@@ -1698,7 +1698,7 @@ fun FilePreviewDialog(
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Close")
+                                Text(stringResource(R.string.close))
                             }
                         }
                     }
@@ -1887,7 +1887,7 @@ fun AudioMessageCard(
             ) {
                 Icon(
                     Icons.Default.VolumeUp,
-                    contentDescription = "Audio file",
+                    contentDescription = stringResource(R.string.audio_file),
                     tint = if (isFromUser) {
                         MaterialTheme.colorScheme.primary
                     } else {
