@@ -667,8 +667,14 @@ class ChatViewModel(
                     finalMessageContent = "📄 ${attachmentFileInfo?.name}"
                 }
             } else if (messageText.isEmpty() && processedAttachmentUri != null) {
-                finalMessageContent = "📄 ${attachmentFileInfo?.name}"
-                modelPromptContent = "Shared a file"
+                // For audio files, don't show filename or any text - just let the audio player handle it
+                if (attachmentFileInfo?.type == FileUtils.SupportedFileType.AUDIO) {
+                    finalMessageContent = "" // Empty content, audio player will be shown via attachment
+                    modelPromptContent = "" // No text prompt for audio-only messages
+                } else {
+                    finalMessageContent = "📄 ${attachmentFileInfo?.name}"
+                    modelPromptContent = context.getString(R.string.shared_file)
+                }
             }
 
             repository.addMessage(
@@ -693,10 +699,10 @@ class ChatViewModel(
             if (_messages.value.size == 1) {
                 val chatTitle = when {
                     messageText.isNotEmpty() -> messageText.take(50)
-                    attachmentFileInfo?.type == FileUtils.SupportedFileType.AUDIO -> "🎵 Audio Message"
-                    attachmentFileInfo?.type == FileUtils.SupportedFileType.IMAGE -> "🖼️ Image Message" 
+                    attachmentFileInfo?.type == FileUtils.SupportedFileType.AUDIO -> context.getString(R.string.audio_message)
+                    attachmentFileInfo?.type == FileUtils.SupportedFileType.IMAGE -> context.getString(R.string.image_message)
                     attachmentFileInfo != null -> "📄 ${attachmentFileInfo.name.take(30)}"
-                    else -> "New Chat"
+                    else -> context.getString(R.string.drawer_new_chat)
                 }
                 repository.updateChatTitle(chatId, chatTitle)
                 _currentChat.value = repository.getChatById(chatId)
@@ -778,7 +784,17 @@ class ChatViewModel(
                                     // Build the prompt for this segment with context window management
                                     val currentPrompt = if (continuationCount == 0) {
                                         // First generation of this reply
-                                        val lastUserContent = currentUserMessage.content.trim()
+                                        val baseUserContent = currentUserMessage.content.trim()
+                                        // Add audio token if audio data is present (MediaPipe requirement)
+                                        val lastUserContent = if (audioData != null && currentModel!!.supportsAudio) {
+                                            if (baseUserContent.isEmpty()) {
+                                                "<audio_soft_token>" // Audio-only message
+                                            } else {
+                                                "<audio_soft_token>$baseUserContent" // Text + Audio message
+                                            }
+                                        } else {
+                                            baseUserContent
+                                        }
                                         
                                         // Search for relevant document context using RAG
                                         var ragContext = ""

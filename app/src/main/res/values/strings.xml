@@ -291,4 +291,7 @@
     <string name="vision_audio_text">Vision+Audio+Text</string>
     <string name="vision_text">Vision+Text</string>
     <string name="audio_text">Audio+Text</string>
+    <string name="shared_file">Shared a file</string>
+    <string name="audio_message">Audio Message</string>
+    <string name="image_message">Image Message</string>
 </resources>
