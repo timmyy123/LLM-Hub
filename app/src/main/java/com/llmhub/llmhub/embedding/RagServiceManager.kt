@@ -5,12 +5,16 @@ import android.util.Log
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.flow.first
+import com.llmhub.llmhub.data.ThemePreferences
 
 /**
  * Manages the RAG service lifecycle and provides easy access to document embeddings.
  * Handles initialization of the MediaPipe embedding service and RAG functionality.
  */
-class RagServiceManager(private val context: Context) {
+class RagServiceManager(
+    private val context: Context
+) {
     
     private var embeddingService: EmbeddingService? = null
     private var ragService: RagService? = null
@@ -32,10 +36,14 @@ class RagServiceManager(private val context: Context) {
                 initMutex.withLock {
                     if (isInitialized) return@withLock
                     
-                    Log.d(TAG, "Initializing RAG service...")
+                    // Get selected embedding model from user preferences
+                    val themePreferences = ThemePreferences(context)
+                    val selectedEmbeddingModel = themePreferences.selectedEmbeddingModel.first()
                     
-                    // Initialize embedding service
-                    val embeddingService = MediaPipeEmbeddingService(context)
+                    Log.d(TAG, "Initializing RAG service with embedding model: ${selectedEmbeddingModel ?: "auto"}")
+                    
+                    // Initialize embedding service with selected model
+                    val embeddingService = MediaPipeEmbeddingService(context, selectedEmbeddingModel)
                     if (embeddingService.initialize()) {
                         this@RagServiceManager.embeddingService = embeddingService
                         this@RagServiceManager.ragService = InMemoryRagService(embeddingService)

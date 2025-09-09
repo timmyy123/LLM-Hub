@@ -127,6 +127,125 @@ object ModelData {
             requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 8),
             contextWindowSize = 4096,
             modelFormat = "litertlm"
+        ),
+        
+        // Gecko Embedding Models - Various dimension sizes for different use cases
+        LLMModel(
+            name = "Gecko-110M (64D Quantized)",
+            description = "Compact Gecko embedding model with 64 dimensions, quantized for minimal storage and fast inference.",
+            url = "https://huggingface.co/litert-community/Gecko-110m-en/resolve/main/Gecko_64_quant.tflite?download=true",
+            category = "embedding",
+            sizeBytes = 112175104L, // 106.98 MB
+            source = "Google via LiteRT Community",
+            supportsVision = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 1),
+            contextWindowSize = 64,
+            modelFormat = "tflite"
+        ),
+        LLMModel(
+            name = "Gecko-110M (64D Float32)",
+            description = "Gecko embedding model with 64 dimensions in full precision for highest quality with small vectors.",
+            url = "https://huggingface.co/litert-community/Gecko-110m-en/resolve/main/Gecko_64_f32.tflite?download=true",
+            category = "embedding",
+            sizeBytes = 441231836L, // 420.79 MB
+            source = "Google via LiteRT Community",
+            supportsVision = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            contextWindowSize = 64,
+            modelFormat = "tflite"
+        ),
+        LLMModel(
+            name = "Gecko-110M (256D Quantized)",
+            description = "Balanced Gecko embedding model with 256 dimensions, quantized for good quality and reasonable size.",
+            url = "https://huggingface.co/litert-community/Gecko-110m-en/resolve/main/Gecko_256_quant.tflite?download=true",
+            category = "embedding",
+            sizeBytes = 114141184L, // 108.85 MB
+            source = "Google via LiteRT Community",
+            supportsVision = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 2),
+            contextWindowSize = 256,
+            modelFormat = "tflite"
+        ),
+        LLMModel(
+            name = "Gecko-110M (256D Float32)",
+            description = "High-quality Gecko embedding model with 256 dimensions in full precision.",
+            url = "https://huggingface.co/litert-community/Gecko-110m-en/resolve/main/Gecko_256_f32.tflite?download=true",
+            category = "embedding",
+            sizeBytes = 443197916L, // 422.67 MB
+            source = "Google via LiteRT Community",
+            supportsVision = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            contextWindowSize = 256,
+            modelFormat = "tflite"
+        ),
+        LLMModel(
+            name = "Gecko-110M (512D Quantized)",
+            description = "High-dimensional Gecko embedding model with 512 dimensions, quantized for balanced performance.",
+            url = "https://huggingface.co/litert-community/Gecko-110m-en/resolve/main/Gecko_512_quant.tflite?download=true",
+            category = "embedding",
+            sizeBytes = 120432640L, // 114.85 MB
+            source = "Google via LiteRT Community",
+            supportsVision = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 2),
+            contextWindowSize = 512,
+            modelFormat = "tflite"
+        ),
+        LLMModel(
+            name = "Gecko-110M (512D Float32)",
+            description = "Premium Gecko embedding model with 512 dimensions in full precision for best semantic understanding.",
+            url = "https://huggingface.co/litert-community/Gecko-110m-en/resolve/main/Gecko_512_f32.tflite?download=true",
+            category = "embedding",
+            sizeBytes = 449489372L, // 428.67 MB
+            source = "Google via LiteRT Community",
+            supportsVision = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            contextWindowSize = 512,
+            modelFormat = "tflite"
+        ),
+        LLMModel(
+            name = "Gecko-110M (1024D Quantized)",
+            description = "Maximum dimension Gecko embedding model with 1024 dimensions, quantized for comprehensive semantic representation.",
+            url = "https://huggingface.co/litert-community/Gecko-110m-en/resolve/main/Gecko_1024_quant.tflite?download=true",
+            category = "embedding",
+            sizeBytes = 145598464L, // 138.85 MB
+            source = "Google via LiteRT Community",
+            supportsVision = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            contextWindowSize = 1024,
+            modelFormat = "tflite"
+        ),
+        LLMModel(
+            name = "Gecko-110M (1024D Float32)",
+            description = "Top-tier Gecko embedding model with 1024 dimensions in full precision for maximum semantic accuracy.",
+            url = "https://huggingface.co/litert-community/Gecko-110m-en/resolve/main/Gecko_1024_f32.tflite?download=true",
+            category = "embedding",
+            sizeBytes = 474655196L, // 452.67 MB
+            source = "Google via LiteRT Community",
+            supportsVision = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 1024,
+            modelFormat = "tflite"
+        ),
+        LLMModel(
+            name = "Gecko Tokenizer (SentencePiece)",
+            description = "SentencePiece tokenizer required for Gecko embedding models. Download this along with any Gecko model.",
+            url = "https://huggingface.co/litert-community/Gecko-110m-en/resolve/main/sentencepiece.model?download=true",
+            category = "embedding",
+            sizeBytes = 794346L, // 0.76 MB
+            source = "Google via LiteRT Community",
+            supportsVision = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 1),
+            contextWindowSize = 0,
+            modelFormat = "model"
         )
     )
 

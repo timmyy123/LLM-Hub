@@ -112,6 +112,10 @@
     <string name="source_code_section">Source Code</string>
     <string name="download_models">Download Models</string>
     <string name="browse_download_models">Browse and download LLM models</string>
+    <string name="embedding_model">Embedding Model</string>
+    <string name="select_embedding_model">Select Embedding Model</string>
+    <string name="no_embedding_model_selected">No embedding model selected</string>
+    <string name="disable_embeddings">Disable embeddings</string>
     <string name="web_search">Web Search</string>
     <string name="web_search_enabled">Get current information from the web</string>
     <string name="web_search_disabled">Use offline knowledge only</string>
@@ -207,6 +211,8 @@
     <string name="text_models_description">Models optimized for text generation and conversation</string>
     <string name="vision_models">Vision Models</string>
     <string name="vision_models_description">Models that can understand both text and images</string>
+    <string name="embedding_models">Embedding Models</string>
+    <string name="embedding_models_description">Models for text embeddings and semantic search</string>
     <string name="gpu">GPU</string>
     <string name="variant">variant</string>
     <string name="variants">variants</string>

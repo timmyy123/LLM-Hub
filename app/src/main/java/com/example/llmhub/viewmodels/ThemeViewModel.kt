@@ -24,6 +24,9 @@ class ThemeViewModel(private val context: Context) : ViewModel() {
     private val _appLanguage = MutableStateFlow<String?>(null)
     val appLanguage: StateFlow<String?> = _appLanguage.asStateFlow()
     
+    private val _selectedEmbeddingModel = MutableStateFlow<String?>(null)
+    val selectedEmbeddingModel: StateFlow<String?> = _selectedEmbeddingModel.asStateFlow()
+    
     init {
         // Load the saved theme preference
         viewModelScope.launch {
@@ -45,6 +48,13 @@ class ThemeViewModel(private val context: Context) : ViewModel() {
                 _appLanguage.value = language
             }
         }
+        
+        // Load the saved embedding model preference
+        viewModelScope.launch {
+            themePreferences.selectedEmbeddingModel.collect { model ->
+                _selectedEmbeddingModel.value = model
+            }
+        }
     }
     
     fun setThemeMode(mode: ThemeMode) {
@@ -58,6 +68,13 @@ class ThemeViewModel(private val context: Context) : ViewModel() {
         viewModelScope.launch {
             themePreferences.setWebSearchEnabled(enabled)
             _webSearchEnabled.value = enabled
+        }
+    }
+    
+    fun setSelectedEmbeddingModel(modelName: String?) {
+        viewModelScope.launch {
+            themePreferences.setSelectedEmbeddingModel(modelName)
+            _selectedEmbeddingModel.value = modelName
         }
     }
     
