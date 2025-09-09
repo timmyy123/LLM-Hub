@@ -347,7 +347,7 @@ class ChatViewModel(
      * Load downloaded models synchronously so callers can rely on the result immediately.
      */
     private suspend fun loadAvailableModelsSync(context: Context) {
-        val downloadedModels = ModelData.models.mapNotNull { model ->
+        val downloadedModels = ModelData.models.filter { it.category != "embedding" }.mapNotNull { model ->
             var isAvailable = false
             var actualSize = model.sizeBytes
 

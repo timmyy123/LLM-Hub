@@ -16,6 +16,9 @@ fun LLMModel.localFileName(): String {
     val extension = when (modelFormat.lowercase()) {
         "task" -> ".task"
         "litertlm" -> ".litertlm"
+        "tflite" -> ".tflite"
+        "model" -> ".model"
+        "bin" -> ".bin"
         "gguf" -> ".gguf" 
         else -> ".gguf" // Default fallback
     }

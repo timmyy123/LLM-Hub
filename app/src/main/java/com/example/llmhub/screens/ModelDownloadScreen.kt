@@ -76,8 +76,10 @@ fun ModelDownloadScreen(
     val models by downloadViewModel.models.collectAsState()
     val textModels = models.filter { it.category == "text" }
     val multimodalModels = models.filter { it.category == "multimodal" }
+    val embeddingModels = models.filter { it.category == "embedding" }
     val textGrouped = textModels.groupBy { it.name.substringBefore("(").trim() }
     val multimodalGrouped = multimodalModels.groupBy { it.name.substringBefore("(").trim() }
+    val embeddingGrouped = embeddingModels.groupBy { it.name.substringBefore("(").trim() }
 
     Scaffold(
         topBar = {
@@ -190,6 +192,28 @@ fun ModelDownloadScreen(
                             context = context,
                             viewModel = downloadViewModel,
                             isMultimodal = true
+                        )
+                    }
+                }
+            }
+            
+            // Embedding Models Section
+            if (embeddingGrouped.isNotEmpty()) {
+                item {
+                    SectionHeader(
+                        title = stringResource(R.string.embedding_models),
+                        subtitle = stringResource(R.string.embedding_models_description)
+                    )
+                }
+                
+                embeddingGrouped.forEach { (family, variants) ->
+                    item {
+                        ModelFamilyCard(
+                            family = family,
+                            variants = variants,
+                            context = context,
+                            viewModel = downloadViewModel,
+                            isMultimodal = false
                         )
                     }
                 }

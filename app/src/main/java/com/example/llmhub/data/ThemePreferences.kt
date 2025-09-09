@@ -23,6 +23,8 @@ class ThemePreferences(private val context: Context) {
         private val THEME_KEY = stringPreferencesKey("theme_mode")
         private val WEB_SEARCH_KEY = booleanPreferencesKey("web_search_enabled")
         private val LANGUAGE_KEY = stringPreferencesKey("app_language")
+        private val EMBEDDING_ENABLED_KEY = booleanPreferencesKey("embedding_enabled")
+        private val SELECTED_EMBEDDING_MODEL_KEY = stringPreferencesKey("selected_embedding_model")
     }
 
     val themeMode: Flow<ThemeMode> = context.dataStore.data
@@ -45,6 +47,16 @@ class ThemePreferences(private val context: Context) {
             preferences[LANGUAGE_KEY] // null means system default
         }
 
+    val embeddingEnabled: Flow<Boolean> = context.dataStore.data
+        .map { preferences ->
+            preferences[EMBEDDING_ENABLED_KEY] ?: false
+        }
+
+    val selectedEmbeddingModel: Flow<String?> = context.dataStore.data
+        .map { preferences ->
+            preferences[SELECTED_EMBEDDING_MODEL_KEY]
+        }
+
     suspend fun setThemeMode(themeMode: ThemeMode) {
         context.dataStore.edit { preferences ->
             preferences[THEME_KEY] = themeMode.name
@@ -63,6 +75,22 @@ class ThemePreferences(private val context: Context) {
                 preferences[LANGUAGE_KEY] = languageCode
             } else {
                 preferences.remove(LANGUAGE_KEY)
+            }
+        }
+    }
+
+    suspend fun setEmbeddingEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[EMBEDDING_ENABLED_KEY] = enabled
+        }
+    }
+
+    suspend fun setSelectedEmbeddingModel(modelName: String?) {
+        context.dataStore.edit { preferences ->
+            if (modelName != null) {
+                preferences[SELECTED_EMBEDDING_MODEL_KEY] = modelName
+            } else {
+                preferences.remove(SELECTED_EMBEDDING_MODEL_KEY)
             }
         }
     }

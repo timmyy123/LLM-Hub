@@ -1,10 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="multimodal">Multimodal</string>
-    <string name="text_only">Texte seulement</string>
-    <string name="currently_loaded">Actuellement chargé</string>
-    <string name="select_model">Sélectionner le modèle</string>
-    <string name="unload_model">Décharger le modèle</string>
     <string name="app_name">LLM Hub</string>
     
     <!-- Common -->
@@ -41,35 +36,40 @@
     <string name="tap_image_toggle_controls">Touchez l\'image pour basculer les contrôles</string>
     <string name="vision_enabled">Vision activée</string>
     <string name="message_copied">Message copié</string>
-    <string name="tokens_per_second_format">%1$d jetons • %2$.1f tok/sec</string>
-    <string name="context_multimodal_format">%1$dk contexte • %2$s</string>
+    <string name="tokens_per_second_format">%1$d jetons  %2$.1f tok/sec</string>
+    <string name="context_multimodal_format">%1$dk contexte  %2$s</string>
+    <string name="multimodal">Multimodal</string>
+    <string name="text_only">Texte seulement</string>
+    <string name="currently_loaded">Actuellement chargé</string>
+    <string name="select_model">Sélectionner le modèle</string>
+    <string name="unload_model">Décharger le modèle</string>
     
     <!-- About Screen -->
     <string name="about_llm_hub">À propos de LLM Hub</string>
-    <string name="about_description">LLM Hub est une application Android open-source qui apporte la puissance des Large Language Models directement sur votre appareil mobile. Expérimentez des conversations IA avec des modèles de pointe comme Gemma, Llama et Phi - tous fonctionnant localement sur votre téléphone pour une confidentialité maximale et une accessibilité hors ligne.</string>
+    <string name="about_description">LLM Hub est une application Android open-source qui apporte la puissance des Large Language Models directement sur votre appareil mobile.</string>
     <string name="key_features">Fonctionnalités Clés</string>
-    <string name="feature_multiple_models">🤖 Modèles LLM Multiples : Gemma-3, Llama-3.2, Phi-4, et Gemma-3n</string>
-    <string name="feature_on_device">📱 Traitement sur Appareil : Confidentialité complète, aucun internet requis</string>
-    <string name="feature_vision_support">🖼️ Support Vision : Modèles multimodaux qui comprennent les images</string>
-    <string name="feature_gpu_acceleration">⚡ Accélération GPU : Performance optimisée sur les appareils compatibles</string>
-    <string name="feature_offline_usage">💾 Utilisation Hors ligne : Chattez sans connexion internet</string>
-    <string name="feature_privacy_first">🔒 Confidentialité d\'abord : Vos conversations ne quittent jamais votre appareil</string>
-    <string name="feature_modern_ui">🎨 Interface Moderne : Interface Material Design propre et intuitive</string>
+    <string name="feature_multiple_models"> Modèles LLM Multiples : Gemma-3, Llama-3.2, Phi-4, et Gemma-3n</string>
+    <string name="feature_on_device"> Traitement sur Appareil : Confidentialité complète, aucun internet requis</string>
+    <string name="feature_vision_support"> Support Vision : Modèles multimodaux qui comprennent les images</string>
+    <string name="feature_gpu_acceleration"> Accélération GPU : Performance optimisée sur les appareils compatibles</string>
+    <string name="feature_offline_usage"> Utilisation Hors ligne : Chattez sans connexion internet</string>
+    <string name="feature_privacy_first"> Confidentialité d\'abord : Vos conversations ne quittent jamais votre appareil</string>
+    <string name="feature_modern_ui"> Interface Moderne : Interface Material Design propre et intuitive</string>
     <string name="developer_info">Informations Développeur</string>
-    <string name="about_developer_info">Ce projet est développé par un passionné désireux de rendre la technologie IA plus accessible à tous. Vos commentaires et contributions sont toujours les bienvenus !</string>
+    <string name="about_developer_info">Ce projet est développé par un passionné désireux de rendre la technologie IA plus accessible à tous.</string>
     <string name="tech_stack">Pile Technologique</string>
-    <string name="about_tech_stack">LLM Hub est construit en utilisant des technologies modernes de développement Android : Kotlin, Jetpack Compose, Material Design 3, et la bibliothèque llama.cpp pour une inférence efficace sur l\'appareil.</string>
-    <string name="tech_kotlin_compose">🏗️ Construit avec Kotlin et Jetpack Compose</string>
-    <string name="tech_mediapipe_litert">🧠 Alimenté par MediaPipe et LiteRT</string>
-    <string name="tech_quantization">🚀 Optimisé avec la quantification INT4/INT8</string>
-    <string name="tech_gpu_acceleration">⚡ Accélération GPU via LiteRT XNNPACK</string>
-    <string name="tech_models_source">🔗 Modèles de HuggingFace et Google</string>
-    <string name="contact_support">Contact et Support</string>
+    <string name="about_tech_stack">LLM Hub est construit en utilisant des technologies modernes de développement Android.</string>
+    <string name="tech_kotlin_compose"> Construit avec Kotlin &amp; Jetpack Compose</string>
+    <string name="tech_mediapipe_litert"> Alimenté par MediaPipe &amp; LiteRT</string>
+    <string name="tech_quantization"> Optimisé avec la quantification INT4/INT8</string>
+    <string name="tech_gpu_acceleration"> Accélération GPU via LiteRT XNNPACK</string>
+    <string name="tech_models_source"> Modèles de HuggingFace &amp; Google</string>
+    <string name="contact_support">Contact &amp; Support</string>
     <string name="contact_email">Email de Contact :</string>
     <string name="source_code">Code Source :</string>
     <string name="github_repository">Dépôt GitHub</string>
     <string name="acknowledgments">Remerciements</string>
-    <string name="acknowledgments_text">Remerciements spéciaux à Google, Meta, Microsoft, et à la communauté HuggingFace pour avoir fourni les incroyables modèles LLM qui alimentent cette application. Ce projet s\'appuie également sur le travail fantastique de la communauté de développement Android et de l\'écosystème open-source.</string>
+    <string name="acknowledgments_text">Remerciements spéciaux à Google, Meta, Microsoft, et à la communauté HuggingFace.</string>
     <string name="ai_thinking">L\'IA réfléchit...</string>
     <string name="version_number">Version 1.1.0</string>
     <string name="app_version">Version de l\'App</string>
@@ -77,26 +77,26 @@
     <!-- Terms of Service -->
     <string name="terms_of_service">Conditions d\'Utilisation</string>
     <string name="tos_last_updated">Dernière mise à jour : 16 juillet 2025</string>
-    <string name="tos_welcome_text">Bienvenue dans LLM Hub. En utilisant notre application, vous acceptez d\'être lié par ces Conditions d\'Utilisation. Veuillez les lire attentivement.</string>
-    <string name="tos_welcome">Bienvenue dans LLM Hub. En utilisant notre application, vous acceptez d\'être lié par ces Conditions d\'Utilisation. Veuillez les lire attentivement.</string>
+    <string name="tos_welcome_text">Bienvenue dans LLM Hub. En utilisant notre application, vous acceptez d\'être lié par ces Conditions d\'Utilisation.</string>
+    <string name="tos_welcome">Bienvenue dans LLM Hub. En utilisant notre application, vous acceptez d\'être lié par ces Conditions d\'Utilisation.</string>
     <string name="tos_acceptance_title">1. Acceptation des Conditions</string>
-    <string name="tos_acceptance_text">En téléchargeant, installant ou utilisant LLM Hub, vous reconnaissez avoir lu, compris et accepté d\'être lié par ces Conditions d\'Utilisation. Si vous n\'acceptez pas ces conditions, veuillez ne pas utiliser l\'application.</string>
+    <string name="tos_acceptance_text">En téléchargeant, installant ou utilisant LLM Hub, vous reconnaissez avoir lu, compris et accepté d\'être lié par ces Conditions d\'Utilisation.</string>
     <string name="tos_app_description_title">2. Description de l\'Application</string>
-    <string name="tos_app_description_text">LLM Hub est une application Android open-source qui fournit l\'accès aux Grands Modèles de Langage (LLMs) pour des conversations IA sur l\'appareil. L\'application traite toutes les données localement sur votre appareil et ne transmet pas d\'informations personnelles vers des serveurs externes.</string>
+    <string name="tos_app_description_text">LLM Hub est une application Android open-source qui fournit l\'accès aux Grands Modèles de Langage (LLMs) pour des conversations IA sur l\'appareil.</string>
     <string name="tos_user_responsibilities_title">3. Responsabilités de l\'Utilisateur</string>
-    <string name="tos_user_responsibilities_text">Vous acceptez d\'utiliser LLM Hub de manière responsable et en conformité avec les lois applicables. Vous êtes responsable de :\n\n• Utiliser l\'application uniquement à des fins légales\n• Ne pas tenter de rétro-ingénierie ou de modifier l\'application\n• Ne pas utiliser l\'application pour générer du contenu nuisible, illégal ou offensant\n• Respecter les droits de propriété intellectuelle de tiers\n• S\'assurer que votre appareil répond aux exigences minimales pour un fonctionnement correct</string>
+    <string name="tos_user_responsibilities_text">Vous acceptez d\'utiliser LLM Hub de manière responsable et en conformité avec les lois applicables.</string>
     <string name="tos_privacy_data_title">4. Confidentialité et Données</string>
-    <string name="tos_privacy_data_text">LLM Hub est conçu avec la confidentialité à l\'esprit :\n\n• Toutes les conversations et le traitement des données se produisent localement sur votre appareil\n• Aucune donnée personnelle n\'est transmise vers des serveurs externes\n• L\'historique de chat est stocké localement et peut être supprimé à tout moment\n• Les téléchargements de modèles sont effectués directement depuis des dépôts officiels (HuggingFace, Google)\n• L\'application ne collecte pas de données d\'analyse ou d\'utilisation</string>
+    <string name="tos_privacy_data_text">LLM Hub est conçu avec la confidentialité à l\'esprit.</string>
     <string name="tos_disclaimer_title">5. Déni de Garanties</string>
-    <string name="tos_disclaimer_text">LLM Hub est fourni \"tel quel\" sans garanties d\'aucune sorte. Nous ne garantissons pas l\'exactitude, la fiabilité ou la disponibilité de l\'application ou de son contenu généré. L\'utilisation de modèles IA peut produire des résultats imprévisibles.</string>
+    <string name="tos_disclaimer_text">LLM Hub est fourni &quot;tel quel&quot; sans garanties d\'aucune sorte.</string>
     <string name="tos_limitation_liability_title">6. Limitation de Responsabilité</string>
-    <string name="tos_limitation_liability_text">En aucun cas les développeurs ne seront responsables de dommages indirects, incidents, spéciaux ou consécutifs découlant de l\'utilisation de LLM Hub. Votre utilisation de l\'application est à vos propres risques.</string>
+    <string name="tos_limitation_liability_text">En aucun cas les développeurs ne seront responsables de dommages indirects, incidents, spéciaux ou consécutifs.</string>
     <string name="tos_model_usage_title">7. Utilisation des Modèles et Licences</string>
-    <string name="tos_model_usage_text">Les modèles IA disponibles via LLM Hub sont soumis à leurs licences et conditions d\'utilisation respectives. Les utilisateurs sont responsables de se conformer aux exigences de licence spécifiques au modèle lors de l\'utilisation de modèles téléchargés.</string>
+    <string name="tos_model_usage_text">Les modèles IA disponibles via LLM Hub sont soumis à leurs licences et conditions d\'utilisation respectives.</string>
     <string name="tos_open_source_title">8. Licence Open Source</string>
-    <string name="tos_open_source_text">LLM Hub est un logiciel open-source. Le code source est disponible sous la Licence MIT, qui permet l\'utilisation, la modification et la distribution sous réserve des termes de la licence. Les bibliothèques tierces et les modèles peuvent avoir des termes de licence différents.</string>
+    <string name="tos_open_source_text">LLM Hub est un logiciel open-source.</string>
     <string name="tos_changes_title">9. Modifications des Conditions</string>
-    <string name="tos_changes_text">Nous pouvons mettre à jour ces Conditions d\'Utilisation de temps en temps. Les utilisateurs seront notifiés des modifications importantes via des mises à jour de l\'application. L\'utilisation continue de l\'application après les modifications constitue l\'acceptation des nouvelles conditions.</string>
+    <string name="tos_changes_text">Nous pouvons mettre à jour ces Conditions d\'Utilisation de temps en temps.</string>
     <string name="tos_contact_title">10. Informations de Contact</string>
     <string name="tos_contact_text">Pour des questions concernant ces Conditions d\'Utilisation, veuillez nous contacter à timmyboy0623@gmail.com</string>
     
@@ -113,6 +113,10 @@
     <string name="source_code_section">Code Source</string>
     <string name="download_models">Télécharger Modèles</string>
     <string name="browse_download_models">Parcourir et télécharger modèles LLM</string>
+    <string name="embedding_model">Modèle d\'Embedding</string>
+    <string name="select_embedding_model">Sélectionner Modèle d\'Embedding</string>
+    <string name="no_embedding_model_selected">Aucun modèle d\'embedding sélectionné</string>
+    <string name="disable_embeddings">Désactiver les embeddings</string>
     <string name="web_search">Recherche Web</string>
     <string name="web_search_enabled">Obtenir des informations actuelles du web</string>
     <string name="web_search_disabled">Utiliser uniquement les connaissances hors ligne</string>
@@ -186,7 +190,7 @@
     
     <!-- Chat Management -->
     <string name="dialog_delete_all_chats_title">Supprimer Tous les Chats?</string>
-    <string name="dialog_delete_all_chats_message">Ceci supprimera définitivement tout l\'historique des conversations. Cette action ne peut pas être annulée.</string>
+    <string name="dialog_delete_all_chats_message">Ceci supprimera définitivement tout l\'historique des conversations.</string>
     <string name="dialog_delete_chat_title">Supprimer le Chat?</string>
     <string name="dialog_delete_chat_message">Supprimer la conversation \"%1$s\"?</string>
     <string name="action_delete_all">Tout Supprimer</string>
@@ -208,6 +212,8 @@
     <string name="text_models_description">Modèles optimisés pour la génération de texte et la conversation</string>
     <string name="vision_models">Modèles de Vision</string>
     <string name="vision_models_description">Modèles qui peuvent comprendre le texte et les images</string>
+    <string name="embedding_models">Modèles d\'Embedding</string>
+    <string name="embedding_models_description">Modèles pour les embeddings de texte et la recherche sémantique</string>
     <string name="gpu">GPU</string>
     <string name="variant">variante</string>
     <string name="variants">variantes</string>
@@ -249,8 +255,39 @@
     <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
     <string name="text_file">Fichier Texte</string>
     <string name="tap_to_preview">Toucher pour aperçu</string>
-    <string name="text_file_tap_to_preview">Fichier Texte • Toucher pour aperçu</string>
+    <string name="text_file_tap_to_preview">Fichier Texte  Toucher pour aperçu</string>
     <string name="read_this">lis ça</string>
+    
+    <!-- Audio Input -->
+    <string name="audio_recording">Enregistrement Audio</string>
+    <string name="audio_description">Enregistrer un message vocal</string>
+    <string name="recording">Enregistrement</string>
+    <string name="audio_recorded">Audio Enregistré</string>
+    <string name="ready_to_send">Prêt à envoyer</string>
+    <string name="tap_to_stop">Appuyer pour arrêter</string>
+    <string name="stop_recording">Arrêter l\'enregistrement</string>
+    <string name="remove_audio">Supprimer l\'audio</string>
+    <string name="audio_enabled">Audio activé</string>
+    <string name="audio">Audio</string>
+    <string name="audio_file">Fichier Audio</string>
+    <string name="tap_to_play">Toucher pour lire</string>
+    
+    <!-- Image actions -->
+    <string name="image_copied_clipboard">Image copiée du chat</string>
+    <string name="image_copied_to_clipboard">Image copiée dans le presse-papier</string>
+    <string name="failed_to_copy_image">Échec de la copie de l\'image</string>
+    <string name="failed_to_copy_image_with_error">Échec de la copie de l\'image: %1$s</string>
+    <string name="image_saved_to_gallery">Image sauvegardée dans la galerie</string>
+    <string name="failed_to_save_image">Échec de la sauvegarde de l\'image</string>
+    <string name="failed_to_save_image_with_error">Échec de la sauvegarde de l\'image: %1$s</string>
+    
+    <!-- RAG (Document Chat) -->
+    <string name="searching_documents">Recherche de documents</string>
+    <string name="using_document_context_format">Utilisation du contexte de %1$d sections de documents</string>
+    <string name="documents_available_format">%1$d documents disponibles</string>
+    <string name="ai_can_reference_documents">L\'IA peut référencer vos documents dans les réponses</string>
+    <string name="document_chat_enabled">Chat documentaire activé</string>
+    <string name="semantic_search_active">Recherche sémantique active</string>
     
     <!-- Gemma Backend Selection -->
     <string name="select_backend">Sélectionner le Backend</string>
@@ -263,21 +300,6 @@
     <string name="not_available">Non disponible</string>
     <string name="gpu_disabled_low_memory">GPU non disponible pour ce modèle sur les appareils avec %1$dGB RAM ou moins</string>
     
-    <!-- Audio Recording -->
-    <string name="audio_recording">Enregistrement Audio</string>
-    <string name="audio_description">Enregistrer un message vocal</string>
-    <string name="record_voice_message">Enregistrer un message vocal</string>
-    <string name="recording">Enregistrement…</string>
-    <string name="tap_to_stop">Appuyer pour arrêter</string>
-    <string name="ready_to_send">Prêt à envoyer</string>
-    <string name="audio_recorded">Audio enregistré</string>
-    <string name="audio_file">Fichier Audio</string>
-    <string name="tap_to_play">Toucher pour lire</string>
-    
-    <!-- Multimodal Support -->
-    <string name="model_supports_multimodal">Vision+Audio+Texte</string>
-    <string name="multimodal_format">%1$s+%2$s+Texte</string>
-    
     <!-- Gemma-3n specific GPU requirements -->
     <string name="gemma3n_e2b_gpu_requires_6gb">Nécessite au moins 6Go RAM pour GPU</string>
     <string name="gemma3n_e4b_gpu_requires_8gb">Les appareils avec 8Go ou moins RAM ne peuvent pas charger ce modèle avec GPU</string>
@@ -288,4 +310,5 @@
     <string name="shared_file">A partagé un fichier</string>
     <string name="audio_message">Message Audio</string>
     <string name="image_message">Message Image</string>
+    <string name="record_voice_message">Enregistrer un message vocal</string>
 </resources>

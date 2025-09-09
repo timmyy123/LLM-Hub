@@ -1,5 +1,6 @@
 package com.llmhub.llmhub.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -10,12 +11,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.llmhub.llmhub.R
+import java.io.File
 import com.llmhub.llmhub.data.ThemeMode
+import com.llmhub.llmhub.data.localFileName
 import com.llmhub.llmhub.viewmodels.ThemeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -68,6 +72,9 @@ fun SettingsScreen(
                         subtitle = stringResource(R.string.browse_download_models),
                         onClick = onNavigateToModels
                     )
+                    
+                    // Embedding Model Selection
+                    EmbeddingModelSelector(themeViewModel = themeViewModel)
                 }
             }
             
@@ -357,5 +364,100 @@ private fun SettingsItem(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+}
+
+@Composable
+private fun EmbeddingModelSelector(themeViewModel: ThemeViewModel) {
+    val selectedEmbeddingModel by themeViewModel.selectedEmbeddingModel.collectAsState()
+    var showEmbeddingModelDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    
+    // Get downloaded embedding models only
+    val downloadedEmbeddingModels = remember(context) {
+        com.llmhub.llmhub.data.ModelData.models
+            .filter { it.category == "embedding" }
+            .filter { model ->
+                val modelsDir = File(context.filesDir, "models")
+                val modelFile = File(modelsDir, model.localFileName())
+                modelFile.exists() && modelFile.length() > 0
+            }
+            .map { it.name }
+    }
+    
+    SettingsItem(
+        icon = Icons.Default.Memory,
+        title = stringResource(R.string.embedding_model),
+        subtitle = selectedEmbeddingModel ?: stringResource(R.string.no_embedding_model_selected),
+        onClick = { showEmbeddingModelDialog = true }
+    )
+    
+    if (showEmbeddingModelDialog) {
+        AlertDialog(
+            onDismissRequest = { showEmbeddingModelDialog = false },
+            title = { Text(stringResource(R.string.select_embedding_model)) },
+            text = {
+                LazyColumn {
+                    items(downloadedEmbeddingModels.size) { index ->
+                        val model = downloadedEmbeddingModels[index]
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    themeViewModel.setSelectedEmbeddingModel(model)
+                                    showEmbeddingModelDialog = false
+                                }
+                                .padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selectedEmbeddingModel == model,
+                                onClick = {
+                                    themeViewModel.setSelectedEmbeddingModel(model)
+                                    showEmbeddingModelDialog = false
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = model,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                    }
+                    
+                    // Option to disable embedding
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    themeViewModel.setSelectedEmbeddingModel(null)
+                                    showEmbeddingModelDialog = false
+                                }
+                                .padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selectedEmbeddingModel == null,
+                                onClick = {
+                                    themeViewModel.setSelectedEmbeddingModel(null)
+                                    showEmbeddingModelDialog = false
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = stringResource(R.string.disable_embeddings),
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showEmbeddingModelDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
     }
 } 

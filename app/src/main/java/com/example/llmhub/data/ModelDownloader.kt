@@ -167,6 +167,11 @@ class ModelDownloader(
                             break
                         }
                     }
+                    
+                    // Emit final progress after download completes naturally
+                    val finalTotalBytes = if (inferredTotalBytes > 0) maxOf(inferredTotalBytes, downloadedBytes) else downloadedBytes
+                    emit(DownloadStatus(downloadedBytes, finalTotalBytes, 0))
+                    Log.d(TAG, "Download completed naturally. Final progress ${downloadedBytes}/${finalTotalBytes} bytes.")
                 }
             }
         } catch (e: Exception) {

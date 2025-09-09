@@ -2,15 +2,17 @@ package com.llmhub.llmhub.embedding
 
 import android.content.Context
 import android.util.Log
-import com.google.mediapipe.framework.MediaPipeException
-import com.google.mediapipe.tasks.core.BaseOptions
-import com.google.mediapipe.tasks.text.textembedder.TextEmbedder
-import com.google.mediapipe.tasks.text.textembedder.TextEmbedderResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.Optional
+import com.llmhub.llmhub.data.localFileName
+import com.google.ai.edge.localagents.rag.models.GeckoEmbeddingModel
+import com.google.ai.edge.localagents.rag.models.EmbeddingRequest
+import com.google.ai.edge.localagents.rag.models.EmbedData
+import com.google.common.collect.ImmutableList
 
 interface EmbeddingService {
     suspend fun generateEmbedding(text: String): FloatArray?
@@ -20,24 +22,29 @@ interface EmbeddingService {
 }
 
 /**
- * MediaPipe-based text embedding service using the Gemma text embedding model.
+ * AI Edge RAG SDK-based text embedding service using Gecko text embedding models.
  * 
- * This service uses the text embedding model files you have in the text-embed folder:
- * - embeddinggemma-300M_seq2048_mixed-precision.tflite
- * - sentencepiece.model
+ * This service can use various Gecko models downloaded by the user:
+ * - Gecko-110m-en with different dimensions (64, 256, 512, 1024)
+ * - Both quantized and float32 versions
  * 
- * Following Google's AI Edge RAG guide for text embeddings.
+ * Uses the proper GeckoEmbeddingModel from AI Edge RAG SDK which handles
+ * the TFLite models and tokenizer correctly.
  */
-class MediaPipeEmbeddingService(private val context: Context) : EmbeddingService {
+class MediaPipeEmbeddingService(
+    private val context: Context,
+    private val selectedModelName: String? = null
+) : EmbeddingService {
     
-    private var textEmbedder: TextEmbedder? = null
+    private var geckoEmbedder: GeckoEmbeddingModel? = null
     private var isInitialized = false
     private val initMutex = Mutex()
     
     companion object {
-        private const val TAG = "MediaPipeEmbedding"
-        private const val EMBEDDING_MODEL_PATH = "text-embed/embeddinggemma-300M_seq2048_mixed-precision.tflite"
-        private const val VOCAB_MODEL_PATH = "text-embed/sentencepiece.model"
+        private const val TAG = "GeckoEmbedding"
+        private const val USE_GPU_FOR_EMBEDDINGS = true
+        private const val LEGACY_EMBEDDING_MODEL_PATH = "text-embed/embeddinggemma-300M_seq2048_mixed-precision.tflite"
+        private const val LEGACY_VOCAB_MODEL_PATH = "text-embed/sentencepiece.model"
     }
     
     override suspend fun initialize(): Boolean = withContext(Dispatchers.IO) {
@@ -47,73 +54,117 @@ class MediaPipeEmbeddingService(private val context: Context) : EmbeddingService
             }
             
             try {
-                Log.d(TAG, "Initializing MediaPipe Text Embedder...")
+                Log.d(TAG, "Initializing Gecko Embedding Model...")
                 
-                // Check if model files exist
-                val embeddingModelPath = EMBEDDING_MODEL_PATH
-                val vocabModelPath = VOCAB_MODEL_PATH
-                
-                Log.d(TAG, "Looking for embedding model at: $embeddingModelPath")
-                Log.d(TAG, "Looking for vocab model at: $vocabModelPath")
-                
-                // Test if assets exist
-                try {
-                    context.assets.open(embeddingModelPath).use { 
-                        Log.d(TAG, "Found embedding model in assets")
-                    }
-                    context.assets.open(vocabModelPath).use { 
-                        Log.d(TAG, "Found vocab model in assets") 
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Model files not found in assets: ${e.message}")
+                val (modelPath, tokenizerPath) = getGeckoModelPaths()
+                if (modelPath == null) {
+                    Log.e(TAG, "No Gecko embedding model available")
                     return@withLock false
                 }
                 
-                // Create the text embedder directly from asset file
-                textEmbedder = TextEmbedder.createFromFile(context, embeddingModelPath)
+                Log.d(TAG, "Using Gecko model: $modelPath")
+                Log.d(TAG, "Using tokenizer: ${tokenizerPath ?: "none"}")
+                
+                // Create the Gecko embedding model
+                geckoEmbedder = GeckoEmbeddingModel(
+                    modelPath,
+                    if (tokenizerPath != null) Optional.of(tokenizerPath) else Optional.empty(),
+                    USE_GPU_FOR_EMBEDDINGS
+                )
                 
                 // Test with a simple embedding to ensure it works
-                val testResult = textEmbedder?.embed("test")
-                if (testResult?.embeddingResult()?.embeddings()?.isNotEmpty() == true) {
-                    val embeddingSize = testResult.embeddingResult().embeddings()[0].floatEmbedding().size
-                    Log.d(TAG, "TextEmbedder initialized successfully. Embedding dimension: $embeddingSize")
-                    isInitialized = true
-                    return@withLock true
-                } else {
-                    Log.e(TAG, "TextEmbedder test failed - no embeddings returned")
-                    textEmbedder?.close()
-                    textEmbedder = null
+                try {
+                    val request = EmbeddingRequest.create(
+                        listOf(EmbedData.create("test", EmbedData.TaskType.RETRIEVAL_QUERY))
+                    )
+                    val future = geckoEmbedder?.getEmbeddings(request)
+                    val testEmbedding: ImmutableList<Float>? = future?.get()
+                    
+                    if (testEmbedding != null && testEmbedding.isNotEmpty()) {
+                        Log.d(TAG, "Gecko embedder initialized successfully. Embedding dimension: ${testEmbedding.size}")
+                        isInitialized = true
+                        return@withLock true
+                    } else {
+                        Log.e(TAG, "Gecko embedder test failed - no embeddings returned")
+                        geckoEmbedder = null
+                        return@withLock false
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Gecko embedder test failed with error: ${e.message}")
+                    geckoEmbedder = null
                     return@withLock false
                 }
                 
-            } catch (e: MediaPipeException) {
-                Log.e(TAG, "MediaPipe error initializing text embedder", e)
-                textEmbedder?.close()
-                textEmbedder = null
-                return@withLock false
             } catch (e: Exception) {
-                Log.e(TAG, "Error initializing text embedder", e)
-                textEmbedder?.close()
-                textEmbedder = null
+                Log.e(TAG, "Error initializing Gecko embedder: ${e.message}", e)
+                geckoEmbedder = null
                 return@withLock false
             }
         }
     }
+
+    private fun getGeckoModelPaths(): Pair<String?, String?> {
+        // Get embedding models from ModelData
+        val embeddingModels = com.llmhub.llmhub.data.ModelData.models.filter { it.category == "embedding" }
+        val modelsDir = File(context.filesDir, "models")
+        
+        // Check for tokenizer (required for all Gecko models)
+        val tokenizerModel = embeddingModels.find { it.name.contains("Tokenizer") || it.name.contains("SentencePiece") }
+        val tokenizerPath = if (tokenizerModel != null) {
+            val tokenizerFile = File(modelsDir, tokenizerModel.localFileName())
+            if (tokenizerFile.exists()) {
+                tokenizerFile.absolutePath
+            } else {
+                Log.w(TAG, "Tokenizer model not found: ${tokenizerFile.absolutePath}")
+                null
+            }
+        } else {
+            Log.w(TAG, "No tokenizer model found in ModelData")
+            null
+        }
+        
+        // First check for user-selected model
+        if (selectedModelName != null) {
+            val model = embeddingModels.find { it.name == selectedModelName && !it.name.contains("Tokenizer") }
+            if (model != null) {
+                val modelFile = File(modelsDir, model.localFileName())
+                if (modelFile.exists()) {
+                    return Pair(modelFile.absolutePath, tokenizerPath)
+                }
+            }
+        }
+
+        // Fallback to any available downloaded Gecko model (exclude tokenizer)
+        if (modelsDir.exists()) {
+            embeddingModels
+                .filter { !it.name.contains("Tokenizer") && !it.name.contains("SentencePiece") }
+                .forEach { model ->
+                    val modelFile = File(modelsDir, model.localFileName())
+                    if (modelFile.exists()) {
+                        Log.d(TAG, "Using fallback Gecko model: ${model.name}")
+                        return Pair(modelFile.absolutePath, tokenizerPath)
+                    }
+                }
+        }
+
+        Log.e(TAG, "No Gecko embedding models found")
+        return Pair(null, null)
+    }
     
     override suspend fun generateEmbedding(text: String): FloatArray? = withContext(Dispatchers.IO) {
         if (!isInitialized) {
-            Log.w(TAG, "Text embedder not initialized, attempting to initialize...")
+            Log.w(TAG, "Gecko embedder not initialized, attempting to initialize...")
             if (!initialize()) {
-                Log.e(TAG, "Failed to initialize text embedder")
+                Log.e(TAG, "Failed to initialize Gecko embedder")
                 return@withContext null
             }
         }
         
         try {
-            val embedder = textEmbedder ?: return@withContext null
+            val embedder = geckoEmbedder ?: return@withContext null
             
             // Clean and prepare text for embedding
-            val cleanText = text.trim().take(2048) // Limit to model's sequence length
+            val cleanText = text.trim().take(1024) // Gecko models support up to 1024 tokens
             if (cleanText.isEmpty()) {
                 Log.w(TAG, "Empty text provided for embedding")
                 return@withContext null
@@ -121,40 +172,40 @@ class MediaPipeEmbeddingService(private val context: Context) : EmbeddingService
             
             Log.d(TAG, "Generating embedding for text: '${cleanText.take(100)}${if (cleanText.length > 100) "..." else ""}'")
             
-            // Generate embedding
-            val result: TextEmbedderResult = embedder.embed(cleanText)
-            val embeddings = result.embeddingResult().embeddings()
+            // Generate embedding using Gecko model with proper API
+            val request = EmbeddingRequest.create(
+                listOf(EmbedData.create(cleanText, EmbedData.TaskType.RETRIEVAL_QUERY))
+            )
+            val future = embedder.getEmbeddings(request)
+            val embedding: ImmutableList<Float>? = future?.get()
             
-            if (embeddings.isNotEmpty()) {
-                val embedding = embeddings[0].floatEmbedding()
+            if (embedding != null && embedding.isNotEmpty()) {
                 Log.d(TAG, "Generated embedding with ${embedding.size} dimensions")
-                return@withContext embedding
+                return@withContext embedding.toFloatArray()
             } else {
-                Log.w(TAG, "No embeddings returned for text")
+                Log.w(TAG, "No embedding returned for text: '${cleanText.take(50)}...'")
                 return@withContext null
             }
             
-        } catch (e: MediaPipeException) {
-            Log.e(TAG, "MediaPipe error generating embedding", e)
-            return@withContext null
         } catch (e: Exception) {
-            Log.e(TAG, "Error generating embedding", e)
+            Log.e(TAG, "Error generating embedding: ${e.message}", e)
             return@withContext null
         }
     }
     
     override suspend fun isInitialized(): Boolean {
-        return isInitialized && textEmbedder != null
+        return isInitialized && geckoEmbedder != null
     }
     
     override fun cleanup() {
         try {
-            textEmbedder?.close()
-            textEmbedder = null
+            // GeckoEmbeddingModel doesn't have a close() method
+            // Just set to null and let GC handle it
+            geckoEmbedder = null
             isInitialized = false
-            Log.d(TAG, "TextEmbedder cleaned up")
+            Log.d(TAG, "Gecko embedder cleaned up")
         } catch (e: Exception) {
-            Log.e(TAG, "Error cleaning up TextEmbedder", e)
+            Log.e(TAG, "Error cleaning up Gecko embedder", e)
         }
     }
 }

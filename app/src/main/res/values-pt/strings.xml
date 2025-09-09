@@ -191,6 +191,12 @@
     <string name="text_models_description">Modelos otimizados para geração de texto e conversação</string>
     <string name="vision_models">Modelos de Visão</string>
     <string name="vision_models_description">Modelos que podem entender texto e imagens</string>
+    <string name="embedding_models">Modelos de Embedding</string>
+    <string name="embedding_models_description">Modelos para embeddings de texto e busca semântica</string>
+    <string name="embedding_model">Modelo de Embedding</string>
+    <string name="select_embedding_model">Selecionar Modelo de Embedding</string>
+    <string name="no_embedding_model_selected">Nenhum modelo de embedding selecionado</string>
+    <string name="disable_embeddings">Desativar embeddings</string>
     <string name="gpu">GPU</string>
     <string name="variant">variante</string>
     <string name="variants">variantes</string>

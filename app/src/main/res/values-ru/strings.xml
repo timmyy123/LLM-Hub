@@ -2,7 +2,14 @@
 <resources>
     <string name="multimodal">Мультимодальный</string>
     <string name="text_only">Только текст</string>
-    <string name="currently_loaded">Текущая загрузка</string>
+    <string name="currently_loaded">Текущая загр    <string name="vision_models_description">Модели которые могут понимать текст и изображения</string>
+    <string name="embedding_models">Модели Эмбеддингов</string>
+    <string name="embedding_models_description">Модели для текстовых эмбеддингов и семантического поиска</string>
+    <string name="embedding_model">Модель Эмбеддингов</string>
+    <string name="select_embedding_model">Выбрать Модель Эмбеддингов</string>
+    <string name="no_embedding_model_selected">Модель эмбеддингов не выбрана</string>
+    <string name="disable_embeddings">Отключить эмбеддинги</string>
+    <string name="gpu">GPU</string>ка</string>
     <string name="select_model">Выбрать модель</string>
     <string name="unload_model">Выгрузить модель</string>
     <string name="app_name">LLM Hub</string>

@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         applicationId = "com.llmhub.llmhub"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 35
         versionCode = 11
         versionName = "1.1.0"
@@ -156,6 +156,10 @@ dependencies {
     implementation("com.google.mediapipe:tasks-genai:0.10.27")
     implementation("com.google.mediapipe:tasks-vision:0.10.26.1")
     implementation("com.google.mediapipe:tasks-text:0.10.26.1")
+    
+    // AI Edge RAG SDK for proper Gecko embedding support
+    implementation("com.google.ai.edge.localagents:localagents-rag:0.1.0")
+    // Note: MediaPipe tasks-genai 0.10.22 is required for RAG SDK, but using 0.10.27 should be compatible
     
     // Compose Markdown - temporarily removed due to version conflicts
     implementation("com.github.jeziellago:compose-markdown:0.3.0")
