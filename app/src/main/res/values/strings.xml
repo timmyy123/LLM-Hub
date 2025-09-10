@@ -297,6 +297,23 @@
     <string name="ai_can_reference_documents">AI can reference your documents in responses</string>
     <string name="document_chat_enabled">Document chat enabled</string>
     <string name="semantic_search_active">Semantic search active</string>
+    <string name="memory">Memory (Global Context)</string>
+    <string name="memory_description_enabled">Allow AI to reference your uploaded global memory via RAG</string>
+    <string name="memory_requires_rag">Requires RAG/embeddings to be enabled</string>
+    <string name="manage_memory">Manage Memory</string>
+    <string name="manage_memory_subtitle">Upload or paste documents to global memory</string>
+    <string name="paste_or_upload_to_memory">Paste text or upload a document to add it to global memory.</string>
+    <string name="paste_memory_placeholder">Paste your notes, documents, or knowledge here...</string>
+    <string name="upload_file">Upload</string>
+    <string name="save_to_memory">Save</string>
+    <string name="done">Done</string>
+    <string name="global_memory_uploaded_by">Uploaded to global memory</string>
+    <string name="global_memory_pasted_by">Pasted into global memory</string>
+    <string name="memory_upload_success">File saved to global memory</string>
+    <string name="memory_upload_failed">Failed to save file to memory (RAG may be disabled)</string>
+    <string name="memory_save_success">Text saved to global memory</string>
+    <string name="memory_save_failed">Failed to save text to memory (RAG may be disabled)</string>
+    <string name="saved_memories">Saved memories</string>
     
     <!-- Gemma Backend Selection -->
     <string name="select_backend">Select Backend</string>

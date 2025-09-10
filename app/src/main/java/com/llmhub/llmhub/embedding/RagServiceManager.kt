@@ -22,6 +22,7 @@ class RagServiceManager(
     private val initMutex = Mutex()
     private val TAG = "RagServiceManager"
     private var initializationJob: Job? = null
+    private val GLOBAL_MEMORY_CHAT_ID = "__global_memory__"
     
     /**
      * Initialize the RAG service asynchronously in the background
@@ -127,6 +128,69 @@ class RagServiceManager(
         } else {
             Log.w(TAG, "RAG service not ready, cannot add document")
             false
+        }
+    }
+
+    /**
+     * Add a document to the global memory pool.
+     * This stores the document under a reserved global chat id so it can be used across chats when memory is enabled.
+     */
+    suspend fun addGlobalDocument(content: String, fileName: String, metadata: String = ""): Boolean {
+        if (!isReady()) {
+            Log.d(TAG, "RAG service not ready or embeddings disabled - skipping global document '$fileName'")
+            return false
+        }
+
+        val service = getRagService()
+        return if (service != null) {
+            try {
+                service.addDocument(GLOBAL_MEMORY_CHAT_ID, content, metadata, fileName)
+                Log.d(TAG, "Added global document '$fileName' to memory pool")
+                true
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to add global document to RAG", e)
+                false
+            }
+        } else {
+            Log.w(TAG, "RAG service not ready, cannot add global document")
+            false
+        }
+    }
+
+    suspend fun searchGlobalContext(query: String, maxResults: Int = 3): List<ContextChunk> {
+        if (!isReady()) {
+            Log.d(TAG, "RAG service not ready or embeddings disabled - returning empty global context")
+            return emptyList()
+        }
+
+        val service = getRagService()
+        return if (service != null) {
+            try {
+                service.searchRelevantContext(GLOBAL_MEMORY_CHAT_ID, query, maxResults)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to search global context", e)
+                emptyList()
+            }
+        } else {
+            Log.w(TAG, "RAG service not ready, cannot search global context")
+            emptyList()
+        }
+    }
+
+    suspend fun hasGlobalDocuments(): Boolean {
+        val service = getRagService()
+        return service?.hasDocuments(GLOBAL_MEMORY_CHAT_ID) ?: false
+    }
+
+    suspend fun clearGlobalDocuments() {
+        val service = getRagService()
+        if (service != null) {
+            try {
+                service.clearChatDocuments(GLOBAL_MEMORY_CHAT_ID)
+                Log.d(TAG, "Cleared global memory documents")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to clear global documents", e)
+            }
         }
     }
     

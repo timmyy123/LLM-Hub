@@ -26,6 +26,12 @@ class ThemeViewModel(private val context: Context) : ViewModel() {
     
     private val _selectedEmbeddingModel = MutableStateFlow<String?>(null)
     val selectedEmbeddingModel: StateFlow<String?> = _selectedEmbeddingModel.asStateFlow()
+
+    private val _embeddingEnabled = MutableStateFlow(false)
+    val embeddingEnabled: StateFlow<Boolean> = _embeddingEnabled.asStateFlow()
+
+    private val _memoryEnabled = MutableStateFlow(false)
+    val memoryEnabled: StateFlow<Boolean> = _memoryEnabled.asStateFlow()
     
     init {
         // Load the saved theme preference
@@ -53,6 +59,20 @@ class ThemeViewModel(private val context: Context) : ViewModel() {
         viewModelScope.launch {
             themePreferences.selectedEmbeddingModel.collect { model ->
                 _selectedEmbeddingModel.value = model
+            }
+        }
+
+        // Load the saved embedding enabled preference
+        viewModelScope.launch {
+            themePreferences.embeddingEnabled.collect { enabled ->
+                _embeddingEnabled.value = enabled
+            }
+        }
+
+        // Load the saved memory enabled preference
+        viewModelScope.launch {
+            themePreferences.memoryEnabled.collect { enabled ->
+                _memoryEnabled.value = enabled
             }
         }
     }
@@ -83,6 +103,13 @@ class ThemeViewModel(private val context: Context) : ViewModel() {
     fun setEmbeddingEnabled(enabled: Boolean) {
         viewModelScope.launch {
             themePreferences.setEmbeddingEnabled(enabled)
+        }
+    }
+
+    fun setMemoryEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            themePreferences.setMemoryEnabled(enabled)
+            _memoryEnabled.value = enabled
         }
     }
     
