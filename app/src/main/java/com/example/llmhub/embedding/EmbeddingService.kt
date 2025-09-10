@@ -63,7 +63,7 @@ class MediaPipeEmbeddingService(
                 }
                 
                 Log.d(TAG, "Using Gecko model: $modelPath")
-                Log.d(TAG, "Using tokenizer: ${tokenizerPath ?: "none"}")
+                Log.d(TAG, "Using tokenizer: ${tokenizerPath ?: "built-in (none provided)"}")
                 
                 // Create the Gecko embedding model
                 geckoEmbedder = GeckoEmbeddingModel(
@@ -71,6 +71,8 @@ class MediaPipeEmbeddingService(
                     if (tokenizerPath != null) Optional.of(tokenizerPath) else Optional.empty(),
                     USE_GPU_FOR_EMBEDDINGS
                 )
+                
+                Log.d(TAG, "Gecko embedding model created successfully")
                 
                 // Test with a simple embedding to ensure it works
                 try {
@@ -108,18 +110,19 @@ class MediaPipeEmbeddingService(
         val embeddingModels = com.llmhub.llmhub.data.ModelData.models.filter { it.category == "embedding" }
         val modelsDir = File(context.filesDir, "models")
         
-        // Check for tokenizer (required for all Gecko models)
+        // Check for tokenizer (optional for some Gecko models)
         val tokenizerModel = embeddingModels.find { it.name.contains("Tokenizer") || it.name.contains("SentencePiece") }
         val tokenizerPath = if (tokenizerModel != null) {
             val tokenizerFile = File(modelsDir, tokenizerModel.localFileName())
             if (tokenizerFile.exists()) {
+                Log.d(TAG, "Found separate tokenizer: ${tokenizerFile.absolutePath}")
                 tokenizerFile.absolutePath
             } else {
-                Log.w(TAG, "Tokenizer model not found: ${tokenizerFile.absolutePath}")
+                Log.d(TAG, "Separate tokenizer not found, will try built-in tokenizer")
                 null
             }
         } else {
-            Log.w(TAG, "No tokenizer model found in ModelData")
+            Log.d(TAG, "No separate tokenizer model configured, will try built-in tokenizer")
             null
         }
         

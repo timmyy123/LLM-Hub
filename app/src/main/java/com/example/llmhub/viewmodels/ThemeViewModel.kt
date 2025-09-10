@@ -75,6 +75,14 @@ class ThemeViewModel(private val context: Context) : ViewModel() {
         viewModelScope.launch {
             themePreferences.setSelectedEmbeddingModel(modelName)
             _selectedEmbeddingModel.value = modelName
+            // Automatically enable embeddings when a model is selected, disable when null
+            themePreferences.setEmbeddingEnabled(modelName != null)
+        }
+    }
+
+    fun setEmbeddingEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            themePreferences.setEmbeddingEnabled(enabled)
         }
     }
     

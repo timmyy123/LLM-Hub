@@ -9,6 +9,16 @@
     <string name="select_embedding_model">Выбрать Модель Эмбеддингов</string>
     <string name="no_embedding_model_selected">Модель эмбеддингов не выбрана</string>
     <string name="disable_embeddings">Отключить эмбеддинги</string>
+    <string name="reload_models_notice">Необходима перезагрузка моделей</string>
+    <string name="embedding_enabled">Эмбеддинги включены</string>
+    <string name="embedding_disabled">Эмбеддинги отключены</string>
+    <string name="embedding_status_enabled">Статус эмбеддингов: включены</string>
+    <string name="embedding_status_disabled">Статус эмбеддингов: отключены</string>
+    <string name="rag_enabled">RAG включен</string>
+    <string name="embedding_settings_changed_title">Настройки Эмбеддингов Изменены</string>
+    <string name="embedding_settings_changed_message">Пожалуйста, выгрузите и перезагрузите модели, чтобы изменения эмбеддингов вступили в силу.</string>
+    <string name="reload_models">Перезагрузить Модели</string>
+    <string name="dismiss">Отклонить</string>
     <string name="gpu">GPU</string>ка</string>
     <string name="select_model">Выбрать модель</string>
     <string name="unload_model">Выгрузить модель</string>

@@ -233,20 +233,8 @@ object ModelData {
             requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
             contextWindowSize = 1024,
             modelFormat = "tflite"
-        ),
-        LLMModel(
-            name = "Gecko Tokenizer (SentencePiece)",
-            description = "SentencePiece tokenizer required for Gecko embedding models. Download this along with any Gecko model.",
-            url = "https://huggingface.co/litert-community/Gecko-110m-en/resolve/main/sentencepiece.model?download=true",
-            category = "embedding",
-            sizeBytes = 794346L, // 0.76 MB
-            source = "Google via LiteRT Community",
-            supportsVision = false,
-            supportsGpu = false,
-            requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 1),
-            contextWindowSize = 0,
-            modelFormat = "model"
         )
+        // Note: Gecko tokenizer removed - Gecko models have built-in tokenizers
     )
 
     /**
