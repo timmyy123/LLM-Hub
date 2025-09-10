@@ -11,7 +11,7 @@ import com.llmhub.llmhub.embedding.RagServiceManager
 
 class MemoryProcessor(private val context: Context, private val db: LlmHubDatabase) {
     private val TAG = "MemoryProcessor"
-    private val ragManager = RagServiceManager(context)
+    private val ragManager = com.llmhub.llmhub.embedding.RagServiceManager.getInstance(context)
 
     fun processPending() {
         CoroutineScope(Dispatchers.IO).launch {
@@ -25,10 +25,12 @@ class MemoryProcessor(private val context: Context, private val db: LlmHubDataba
                     try {
                         // mark in-progress
                         db.memoryDao().update(doc.copy(status = "EMBEDDING_IN_PROGRESS"))
+                            Log.d(TAG, "Processing memory doc id=${doc.id} file='${doc.fileName}' status=${doc.status}")
                         val success = ragManager.addGlobalDocument(doc.content, doc.fileName, doc.metadata)
                         if (success) {
-                            val count = ragManager.getDocumentCount("__global_memory__")
-                            db.memoryDao().update(doc.copy(status = "EMBEDDED", chunkCount = count))
+                                val count = ragManager.getDocumentCount("__global_memory__")
+                                Log.d(TAG, "MemoryProcessor: successfully embedded doc ${doc.id}; global chunkCount=$count")
+                                db.memoryDao().update(doc.copy(status = "EMBEDDED", chunkCount = count))
                             Log.d(TAG, "Embedded memory doc ${doc.id}")
                         } else {
                             // If RAG service isn't ready (embeddings disabled), leave as PENDING so it can retry later

@@ -188,7 +188,7 @@ fun SettingsScreen(
                         )
                         if (showMemoryDialog) {
                             val context = LocalContext.current
-                            val ragServiceManager = RagServiceManager(context)
+                            val ragServiceManager = com.llmhub.llmhub.embedding.RagServiceManager.getInstance(context)
                             val coroutineScope = rememberCoroutineScope()
                             var pasteText by remember { mutableStateOf(TextFieldValue("")) }
                             // Normalize old localized metadata values to tokens (uploaded/pasted) so rendering is locale-aware.
