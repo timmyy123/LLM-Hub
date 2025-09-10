@@ -373,6 +373,12 @@ private fun EmbeddingModelSelector(themeViewModel: ThemeViewModel) {
     var showEmbeddingModelDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     
+    // Function to handle embedding model change
+    fun handleEmbeddingModelChange(newModel: String?) {
+        themeViewModel.setSelectedEmbeddingModel(newModel)
+        showEmbeddingModelDialog = false
+    }
+    
     // Get downloaded embedding models only
     val downloadedEmbeddingModels = remember(context) {
         com.llmhub.llmhub.data.ModelData.models
@@ -404,8 +410,7 @@ private fun EmbeddingModelSelector(themeViewModel: ThemeViewModel) {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    themeViewModel.setSelectedEmbeddingModel(model)
-                                    showEmbeddingModelDialog = false
+                                    handleEmbeddingModelChange(model)
                                 }
                                 .padding(vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -413,8 +418,7 @@ private fun EmbeddingModelSelector(themeViewModel: ThemeViewModel) {
                             RadioButton(
                                 selected = selectedEmbeddingModel == model,
                                 onClick = {
-                                    themeViewModel.setSelectedEmbeddingModel(model)
-                                    showEmbeddingModelDialog = false
+                                    handleEmbeddingModelChange(model)
                                 }
                             )
                             Spacer(modifier = Modifier.width(12.dp))
@@ -431,8 +435,7 @@ private fun EmbeddingModelSelector(themeViewModel: ThemeViewModel) {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    themeViewModel.setSelectedEmbeddingModel(null)
-                                    showEmbeddingModelDialog = false
+                                    handleEmbeddingModelChange(null)
                                 }
                                 .padding(vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -440,7 +443,7 @@ private fun EmbeddingModelSelector(themeViewModel: ThemeViewModel) {
                             RadioButton(
                                 selected = selectedEmbeddingModel == null,
                                 onClick = {
-                                    themeViewModel.setSelectedEmbeddingModel(null)
+                                    handleEmbeddingModelChange(null)
                                     showEmbeddingModelDialog = false
                                 }
                             )

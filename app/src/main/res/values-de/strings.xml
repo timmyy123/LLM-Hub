@@ -214,6 +214,16 @@
     <string name="select_embedding_model">Embedding-Modell wählen</string>
     <string name="no_embedding_model_selected">Kein Embedding-Modell ausgewählt</string>
     <string name="disable_embeddings">Embeddings deaktivieren</string>
+    <string name="reload_models_notice">Modelle neu laden erforderlich</string>
+    <string name="embedding_enabled">Embeddings aktiviert</string>
+    <string name="embedding_disabled">Embeddings deaktiviert</string>
+    <string name="embedding_status_enabled">Embedding-Status: aktiviert</string>
+    <string name="embedding_status_disabled">Embedding-Status: deaktiviert</string>
+    <string name="rag_enabled">RAG aktiviert</string>
+    <string name="embedding_settings_changed_title">Embedding-Einstellungen Geändert</string>
+    <string name="embedding_settings_changed_message">Bitte entladen und laden Sie Ihre Modelle neu, damit die Embedding-Änderungen wirksam werden.</string>
+    <string name="reload_models">Modelle Neu Laden</string>
+    <string name="dismiss">Verwerfen</string>
     <string name="gpu">GPU</string>
     <string name="variant">Variante</string>
     <string name="variants">Varianten</string>

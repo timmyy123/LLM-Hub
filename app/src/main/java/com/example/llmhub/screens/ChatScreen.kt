@@ -15,6 +15,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -25,6 +27,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.LLMModel
@@ -96,6 +99,9 @@ fun ChatScreen(
     val isRagReady by viewModel.isRagReady.collectAsState()
     val ragStatus by viewModel.ragStatus.collectAsState()
     val documentCount by viewModel.documentCount.collectAsState()
+    
+    // Embedding state
+    val isEmbeddingEnabled by viewModel.isEmbeddingEnabled.collectAsState()
     
     var modelMenuExpanded by remember { mutableStateOf(false) }
     
@@ -198,6 +204,26 @@ fun ChatScreen(
                                         hasDocuments = documentCount > 0,
                                         documentCount = documentCount
                                     )
+                                    // Show RAG enabled indicator when embeddings are enabled
+                                    if (isEmbeddingEnabled) {
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f))
+                                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = stringResource(R.string.rag_enabled),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Medium,
+                                                textAlign = TextAlign.Center
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }

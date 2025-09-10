@@ -40,17 +40,27 @@ class RagServiceManager(
                     val themePreferences = ThemePreferences(context)
                     val selectedEmbeddingModel = themePreferences.selectedEmbeddingModel.first()
                     
-                    Log.d(TAG, "Initializing RAG service with embedding model: ${selectedEmbeddingModel ?: "auto"}")
+                    Log.d(TAG, "Initializing RAG service with embedding model: ${selectedEmbeddingModel ?: "disabled"}")
+                    
+                    // Check if embeddings are disabled (selectedEmbeddingModel is null)
+                    if (selectedEmbeddingModel == null) {
+                        Log.i(TAG, "🚫 Embeddings are DISABLED by user preference - RAG service not initialized")
+                        Log.i(TAG, "📝 Documents can still be uploaded but won't be used for semantic search")
+                        isInitialized = false
+                        return@withLock
+                    }
                     
                     // Initialize embedding service with selected model
+                    Log.i(TAG, "🔧 Initializing RAG service with embedding model: $selectedEmbeddingModel")
                     val embeddingService = MediaPipeEmbeddingService(context, selectedEmbeddingModel)
                     if (embeddingService.initialize()) {
                         this@RagServiceManager.embeddingService = embeddingService
                         this@RagServiceManager.ragService = InMemoryRagService(embeddingService)
                         isInitialized = true
-                        Log.d(TAG, "RAG service initialized successfully")
+                        Log.i(TAG, "✅ RAG service initialized successfully with embedding model: $selectedEmbeddingModel")
+                        Log.i(TAG, "🔍 Document uploads will now use embeddings for semantic search")
                     } else {
-                        Log.e(TAG, "Failed to initialize embedding service")
+                        Log.e(TAG, "❌ Failed to initialize embedding service with model: $selectedEmbeddingModel")
                     }
                 }
             } catch (e: Exception) {
@@ -80,9 +90,30 @@ class RagServiceManager(
     }
     
     /**
+     * Get embedding status for debugging
+     */
+    suspend fun getEmbeddingStatus(): String {
+        val themePreferences = ThemePreferences(context)
+        val selectedEmbeddingModel = themePreferences.selectedEmbeddingModel.first()
+        val ready = isReady()
+        
+        return when {
+            selectedEmbeddingModel == null -> "Embeddings DISABLED by user"
+            !ready -> "Embeddings ENABLED but service not ready (model: $selectedEmbeddingModel)"
+            else -> "Embeddings ACTIVE (model: $selectedEmbeddingModel)"
+        }
+    }
+    
+    /**
      * Add a document to the RAG system for a specific chat
      */
     suspend fun addDocument(chatId: String, content: String, fileName: String, metadata: String = ""): Boolean {
+        // Check if embeddings are disabled
+        if (!isReady()) {
+            Log.d(TAG, "RAG service not ready or embeddings disabled - skipping document '$fileName'")
+            return false
+        }
+        
         val service = getRagService()
         return if (service != null) {
             try {
@@ -103,6 +134,12 @@ class RagServiceManager(
      * Search for relevant context in a chat's documents
      */
     suspend fun searchRelevantContext(chatId: String, query: String, maxResults: Int = 3): List<ContextChunk> {
+        // Check if embeddings are disabled
+        if (!isReady()) {
+            Log.d(TAG, "RAG service not ready or embeddings disabled - returning empty context")
+            return emptyList()
+        }
+        
         val service = getRagService()
         return if (service != null) {
             try {

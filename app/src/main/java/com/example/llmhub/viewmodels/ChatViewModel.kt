@@ -83,6 +83,10 @@ class ChatViewModel(
     private val _documentCount = MutableStateFlow(0)
     val documentCount: StateFlow<Int> = _documentCount.asStateFlow()
 
+    // Embedding enabled state
+    private val _isEmbeddingEnabled = MutableStateFlow(false)
+    val isEmbeddingEnabled: StateFlow<Boolean> = _isEmbeddingEnabled.asStateFlow()
+
     init {
         // Initialize RAG service in the background and track status
         viewModelScope.launch {
@@ -99,6 +103,41 @@ class ChatViewModel(
                 Log.e("ChatViewModel", "Failed to initialize RAG service", e)
                 _ragStatus.value = "Document chat failed to initialize"
                 _isRagReady.value = false
+            }
+        }
+
+        // Observe embedding enabled changes - need both enabled preference AND selected model
+        var isFirstEmbeddingUpdate = true
+        viewModelScope.launch {
+            combine(
+                themePreferences.embeddingEnabled,
+                themePreferences.selectedEmbeddingModel
+            ) { enabled, selectedModel ->
+                enabled && !selectedModel.isNullOrBlank()
+            }.collect { isEnabled ->
+                val previousState = _isEmbeddingEnabled.value
+                _isEmbeddingEnabled.value = isEnabled
+                
+                // Reinitialize RAG service when embedding settings change (but not on first initialization)
+                if (!isFirstEmbeddingUpdate && previousState != isEnabled) {
+                    Log.d("ChatViewModel", "Embedding settings changed from $previousState to $isEnabled, reinitializing RAG service")
+                    try {
+                        ragServiceManager.cleanup()
+                        ragServiceManager.initializeAsync().join()
+                        _isRagReady.value = ragServiceManager.isReady()
+                        _ragStatus.value = if (_isRagReady.value) {
+                            "Document chat ready"
+                        } else {
+                            "Document chat unavailable"
+                        }
+                        Log.d("ChatViewModel", "RAG service reinitialized successfully")
+                    } catch (e: Exception) {
+                        Log.e("ChatViewModel", "Failed to reinitialize RAG service", e)
+                        _ragStatus.value = "Document chat failed to initialize"
+                        _isRagReady.value = false
+                    }
+                }
+                isFirstEmbeddingUpdate = false
             }
         }
     }
@@ -636,9 +675,11 @@ class ChatViewModel(
                         val count = ragServiceManager.getDocumentCount(chatId)
                         _documentCount.value = count
                         _ragStatus.value = "Document chat ready ($count documents)"
-                        Log.d("ChatViewModel", "Added document '$fileName' to RAG system for chat $chatId")
+                        Log.d("ChatViewModel", "✅ Added document '$fileName' to RAG system for chat $chatId")
                     } else {
-                        Log.w("ChatViewModel", "Failed to add document '$fileName' to RAG system")
+                        Log.w("ChatViewModel", "❌ Failed to add document '$fileName' to RAG system (embeddings disabled or service unavailable)")
+                        // Still update RAG status to show document was processed but embeddings are disabled
+                        _ragStatus.value = "Document uploaded (embeddings disabled)"
                     }
                 } catch (e: Exception) {
                     Log.w("ChatViewModel", "Failed to add document to RAG: ${e.message}")
@@ -800,6 +841,7 @@ class ChatViewModel(
                                         var ragContext = ""
                                         try {
                                             if (ragServiceManager.hasDocuments(chatId)) {
+                                                Log.d("ChatViewModel", "🔍 Searching for relevant document context (embeddings enabled)")
                                                 val relevantChunks = ragServiceManager.searchRelevantContext(
                                                     chatId = chatId,
                                                     query = lastUserContent,
@@ -807,7 +849,7 @@ class ChatViewModel(
                                                 )
                                                 
                                                 if (relevantChunks.isNotEmpty()) {
-                                                    Log.d("ChatViewModel", "Found ${relevantChunks.size} relevant document chunks for query")
+                                                    Log.d("ChatViewModel", "✅ Found ${relevantChunks.size} relevant document chunks for query")
                                                     
                                                     val contextParts = relevantChunks.map { chunk ->
                                                         "📄 **${chunk.fileName}** (similarity: ${String.format("%.2f", chunk.similarity)}):\n${chunk.content}"
@@ -817,11 +859,13 @@ class ChatViewModel(
                                                         contextParts.joinToString("\n\n---\n\n") + 
                                                         "\n\n---\n\n"
                                                 } else {
-                                                    Log.d("ChatViewModel", "No relevant document chunks found for query")
+                                                    Log.d("ChatViewModel", "❌ No relevant document chunks found for query (no matches or embeddings disabled)")
                                                 }
+                                            } else {
+                                                Log.d("ChatViewModel", "ℹ️ No documents available in chat $chatId for context search")
                                             }
                                         } catch (e: Exception) {
-                                            Log.w("ChatViewModel", "RAG context search failed: ${e.message}")
+                                            Log.w("ChatViewModel", "❌ RAG context search failed: ${e.message}")
                                         }
                                         
                                         val tinyArithmetic = lastUserContent.matches(Regex("^[0-9+*/().=\\s-]{1,12}$")) && lastUserContent.any { it.isDigit() }

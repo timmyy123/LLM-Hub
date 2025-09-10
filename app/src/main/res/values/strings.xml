@@ -116,6 +116,16 @@
     <string name="select_embedding_model">Select Embedding Model</string>
     <string name="no_embedding_model_selected">No embedding model selected</string>
     <string name="disable_embeddings">Disable embeddings</string>
+    <string name="embedding_settings_changed_title">Embedding Settings Changed</string>
+    <string name="embedding_settings_changed_message">Please unload and reload your models for the embedding changes to take effect.</string>
+    <string name="reload_models">Reload Models</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="reload_models_notice">Need reloading models to take effect</string>
+    <string name="embedding_enabled">Embeddings enabled</string>
+    <string name="embedding_disabled">Embeddings disabled</string>
+    <string name="embedding_status_enabled">Embedding status: enabled</string>
+    <string name="embedding_status_disabled">Embedding status: disabled</string>
+    <string name="rag_enabled">RAG enabled</string>
     <string name="web_search">Web Search</string>
     <string name="web_search_enabled">Get current information from the web</string>
     <string name="web_search_disabled">Use offline knowledge only</string>
