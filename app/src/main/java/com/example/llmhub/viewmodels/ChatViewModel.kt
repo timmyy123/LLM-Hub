@@ -668,18 +668,19 @@ class ChatViewModel(
                 // Add document to RAG system for future semantic search
                 try {
                     val fileName = attachmentFileInfo?.name ?: "document"
-                    val metadata = "Uploaded by user in chat $chatId"
+                    // Store a non-localized metadata token so the database doesn't contain language-specific text
+                    val metadata = "uploaded"
                     val success = ragServiceManager.addDocument(chatId, fileTextContent, fileName, metadata)
                     if (success) {
                         // Update document count
                         val count = ragServiceManager.getDocumentCount(chatId)
                         _documentCount.value = count
-                        _ragStatus.value = "Document chat ready ($count documents)"
+                        _ragStatus.value = context.getString(R.string.documents_available_format, count)
                         Log.d("ChatViewModel", "✅ Added document '$fileName' to RAG system for chat $chatId")
                     } else {
                         Log.w("ChatViewModel", "❌ Failed to add document '$fileName' to RAG system (embeddings disabled or service unavailable)")
-                        // Still update RAG status to show document was processed but embeddings are disabled
-                        _ragStatus.value = "Document uploaded (embeddings disabled)"
+                        // Show localized failure
+                        _ragStatus.value = context.getString(R.string.memory_upload_failed)
                     }
                 } catch (e: Exception) {
                     Log.w("ChatViewModel", "Failed to add document to RAG: ${e.message}")
@@ -837,32 +838,55 @@ class ChatViewModel(
                                             baseUserContent
                                         }
                                         
-                                        // Search for relevant document context using RAG
+                                        // Search for relevant document context using RAG (per-chat and optional global memory)
                                         var ragContext = ""
                                         try {
+                                            val contextParts = mutableListOf<String>()
+
+                                            // If global memory is enabled in preferences, include global memory results
+                                            val memoryEnabledPref = themePreferences.memoryEnabled.first()
+                                            if (memoryEnabledPref) {
+                                                Log.d("ChatViewModel", "🔍 Searching global memory for relevant context")
+                                                // Log embedding/RAG service status to help debug why memory may not be used
+                                                try {
+                                                    val embeddingStatus = ragServiceManager.getEmbeddingStatus()
+                                                    Log.d("ChatViewModel", "RAG embedding status: $embeddingStatus")
+                                                } catch (e: Exception) {
+                                                    Log.w("ChatViewModel", "Could not fetch RAG embedding status: ${e.message}")
+                                                }
+                                                val globalChunks = ragServiceManager.searchGlobalContext(lastUserContent, 2)
+                                                if (globalChunks.isNotEmpty()) {
+                                                    Log.d("ChatViewModel", "✅ Found ${globalChunks.size} global memory chunks")
+                                                    contextParts.addAll(globalChunks.map { chunk ->
+                                                        "📄 **${chunk.fileName}** (global memory, similarity: ${String.format("%.2f", chunk.similarity)}):\n${chunk.content}"
+                                                    })
+                                                }
+                                            }
+
+                                            // Always search per-chat documents too
                                             if (ragServiceManager.hasDocuments(chatId)) {
-                                                Log.d("ChatViewModel", "🔍 Searching for relevant document context (embeddings enabled)")
+                                                Log.d("ChatViewModel", "🔍 Searching chat-specific documents for relevant context")
                                                 val relevantChunks = ragServiceManager.searchRelevantContext(
                                                     chatId = chatId,
                                                     query = lastUserContent,
                                                     maxResults = 3
                                                 )
-                                                
                                                 if (relevantChunks.isNotEmpty()) {
                                                     Log.d("ChatViewModel", "✅ Found ${relevantChunks.size} relevant document chunks for query")
-                                                    
-                                                    val contextParts = relevantChunks.map { chunk ->
+                                                    contextParts.addAll(relevantChunks.map { chunk ->
                                                         "📄 **${chunk.fileName}** (similarity: ${String.format("%.2f", chunk.similarity)}):\n${chunk.content}"
-                                                    }
-                                                    
-                                                    ragContext = "\n\n---\n\n🔍 **Relevant Document Context:**\n\n" + 
-                                                        contextParts.joinToString("\n\n---\n\n") + 
-                                                        "\n\n---\n\n"
-                                                } else {
-                                                    Log.d("ChatViewModel", "❌ No relevant document chunks found for query (no matches or embeddings disabled)")
+                                                    })
                                                 }
                                             } else {
                                                 Log.d("ChatViewModel", "ℹ️ No documents available in chat $chatId for context search")
+                                            }
+
+                                            if (contextParts.isNotEmpty()) {
+                                                ragContext = "\n\n---\n\n🔍 **Relevant Document Context:**\n\n" +
+                                                    contextParts.joinToString("\n\n---\n\n") +
+                                                    "\n\n---\n\n"
+                                            } else {
+                                                Log.d("ChatViewModel", "❌ No relevant document chunks found for query (no matches or embeddings disabled)")
                                             }
                                         } catch (e: Exception) {
                                             Log.w("ChatViewModel", "❌ RAG context search failed: ${e.message}")

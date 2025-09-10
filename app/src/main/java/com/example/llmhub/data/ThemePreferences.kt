@@ -25,6 +25,7 @@ class ThemePreferences(private val context: Context) {
         private val LANGUAGE_KEY = stringPreferencesKey("app_language")
         private val EMBEDDING_ENABLED_KEY = booleanPreferencesKey("embedding_enabled")
         private val SELECTED_EMBEDDING_MODEL_KEY = stringPreferencesKey("selected_embedding_model")
+    private val MEMORY_ENABLED_KEY = booleanPreferencesKey("memory_enabled")
     }
 
     val themeMode: Flow<ThemeMode> = context.dataStore.data
@@ -50,6 +51,11 @@ class ThemePreferences(private val context: Context) {
     val embeddingEnabled: Flow<Boolean> = context.dataStore.data
         .map { preferences ->
             preferences[EMBEDDING_ENABLED_KEY] ?: false
+        }
+
+    val memoryEnabled: Flow<Boolean> = context.dataStore.data
+        .map { preferences ->
+            preferences[MEMORY_ENABLED_KEY] ?: false
         }
 
     val selectedEmbeddingModel: Flow<String?> = context.dataStore.data
@@ -82,6 +88,12 @@ class ThemePreferences(private val context: Context) {
     suspend fun setEmbeddingEnabled(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[EMBEDDING_ENABLED_KEY] = enabled
+        }
+    }
+
+    suspend fun setMemoryEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[MEMORY_ENABLED_KEY] = enabled
         }
     }
 

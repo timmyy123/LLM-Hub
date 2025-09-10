@@ -2,7 +2,10 @@
 <resources>
     <string name="multimodal">Мультимодальный</string>
     <string name="text_only">Только текст</string>
-    <string name="currently_loaded">Текущая загр    <string name="vision_models_description">Модели которые могут понимать текст и изображения</string>
+    <string name="currently_loaded">Текущая загрузка</string>
+    <string name="select_model">Выбрать модель</string>
+    <string name="unload_model">Выгрузить модель</string>
+    <string name="vision_models_description">Модели, которые могут понимать текст и изображения</string>
     <string name="embedding_models">Модели Эмбеддингов</string>
     <string name="embedding_models_description">Модели для текстовых эмбеддингов и семантического поиска</string>
     <string name="embedding_model">Модель Эмбеддингов</string>
@@ -11,6 +14,23 @@
     <string name="disable_embeddings">Отключить эмбеддинги</string>
     <string name="reload_models_notice">Необходима перезагрузка моделей</string>
     <string name="embedding_enabled">Эмбеддинги включены</string>
+    <string name="memory">Память (Глобальный контекст)</string>
+    <string name="memory_description_enabled">Разрешить ИИ обращаться к вашей загруженной глобальной памяти через RAG</string>
+    <string name="memory_requires_rag">Требуется включенный RAG/эмбеддинги</string>
+    <string name="manage_memory">Управление памятью</string>
+    <string name="manage_memory_subtitle">Загрузите или вставьте документы в глобальную память</string>
+    <string name="paste_or_upload_to_memory">Вставьте текст или загрузите документ, чтобы добавить его в глобальную память.</string>
+    <string name="paste_memory_placeholder">Вставьте ваши заметки, документы или знания здесь...</string>
+    <string name="upload_file">Загрузить</string>
+    <string name="save_to_memory">Сохранить</string>
+    <string name="done">Готово</string>
+    <string name="global_memory_uploaded_by">Загружено в глобальную память</string>
+    <string name="global_memory_pasted_by">Вставлено в глобальную память</string>
+    <string name="memory_upload_success">Файл сохранён в глобальной памяти</string>
+    <string name="memory_upload_failed">Не удалось сохранить файл в памяти (RAG может быть отключён)</string>
+    <string name="memory_save_success">Текст сохранён в глобальной памяти</string>
+    <string name="memory_save_failed">Не удалось сохранить текст в памяти (RAG может быть отключён)</string>
+    <string name="saved_memories">Сохранённые записи</string>
     <string name="embedding_disabled">Эмбеддинги отключены</string>
     <string name="embedding_status_enabled">Статус эмбеддингов: включены</string>
     <string name="embedding_status_disabled">Статус эмбеддингов: отключены</string>
@@ -19,9 +39,7 @@
     <string name="embedding_settings_changed_message">Пожалуйста, выгрузите и перезагрузите модели, чтобы изменения эмбеддингов вступили в силу.</string>
     <string name="reload_models">Перезагрузить Модели</string>
     <string name="dismiss">Отклонить</string>
-    <string name="gpu">GPU</string>ка</string>
-    <string name="select_model">Выбрать модель</string>
-    <string name="unload_model">Выгрузить модель</string>
+    <!-- GPU string removed (duplicate); localized version retained later in file -->
     <string name="app_name">LLM Hub</string>
     
     <!-- Common -->
@@ -224,7 +242,6 @@
     <string name="text_models">Текстовые Модели</string>
     <string name="text_models_description">Модели оптимизированные для генерации текста и разговора</string>
     <string name="vision_models">Модели Зрения</string>
-    <string name="vision_models_description">Модели которые могут понимать текст и изображения</string>
     <string name="gpu">ГПУ</string>
     <string name="variant">вариант</string>
     <string name="variants">варианты</string>

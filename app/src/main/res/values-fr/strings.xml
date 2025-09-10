@@ -288,7 +288,24 @@
     <string name="ai_can_reference_documents">L\'IA peut référencer vos documents dans les réponses</string>
     <string name="document_chat_enabled">Chat documentaire activé</string>
     <string name="semantic_search_active">Recherche sémantique active</string>
-    
+    <string name="memory">Mémoire (Contexte global)</string>
+    <string name="memory_description_enabled">Permettre à l\'IA de référencer votre mémoire globale téléchargée via RAG</string>
+    <string name="memory_requires_rag">Requiert RAG/embeddings activés</string>
+    <string name="manage_memory">Gérer la mémoire</string>
+    <string name="manage_memory_subtitle">Téléversez ou collez des documents dans la mémoire globale</string>
+    <string name="paste_or_upload_to_memory">Collez du texte ou téléversez un document pour l\'ajouter à la mémoire globale.</string>
+    <string name="paste_memory_placeholder">Collez vos notes, documents ou connaissances ici...</string>
+    <string name="upload_file">Téléverser</string>
+    <string name="save_to_memory">Enregistrer</string>
+    <string name="done">Terminé</string>
+    <string name="global_memory_uploaded_by">Téléversé dans la mémoire globale</string>
+    <string name="global_memory_pasted_by">Collé dans la mémoire globale</string>
+    <string name="memory_upload_success">Fichier enregistré dans la mémoire globale</string>
+    <string name="memory_upload_failed">Échec de l\'enregistrement du fichier dans la mémoire (RAG peut être désactivé)</string>
+    <string name="memory_save_success">Texte enregistré dans la mémoire globale</string>
+    <string name="memory_save_failed">Échec de l\'enregistrement du texte dans la mémoire (RAG peut être désactivé)</string>
+    <string name="saved_memories">Entrées sauvegardées</string>
+
     <!-- Gemma Backend Selection -->
     <string name="select_backend">Sélectionner le Backend</string>
     <string name="choose_backend_for_gemma">Choisir le backend de traitement pour le modèle Gemma</string>

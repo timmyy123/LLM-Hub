@@ -8,14 +8,15 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import android.content.Context
 
 @Database(
-    entities = [ChatEntity::class, MessageEntity::class],
-    version = 2,
+    entities = [ChatEntity::class, MessageEntity::class, MemoryDocument::class],
+    version = 3,
     exportSchema = false
 )
 abstract class LlmHubDatabase : RoomDatabase() {
     
     abstract fun chatDao(): ChatDao
     abstract fun messageDao(): MessageDao
+    abstract fun memoryDao(): MemoryDao
     
     companion object {
         @Volatile
@@ -28,6 +29,15 @@ abstract class LlmHubDatabase : RoomDatabase() {
                 database.execSQL("ALTER TABLE MessageEntity ADD COLUMN attachmentFileSize INTEGER")
             }
         }
+
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Create the memory_documents table
+                database.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `memory_documents` (`id` TEXT NOT NULL, `fileName` TEXT NOT NULL, `content` TEXT NOT NULL, `metadata` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `status` TEXT NOT NULL, `chunkCount` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+                )
+            }
+        }
         
         fun getDatabase(context: Context): LlmHubDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -35,7 +45,7 @@ abstract class LlmHubDatabase : RoomDatabase() {
                     context.applicationContext,
                     LlmHubDatabase::class.java,
                     "llmhub_database"
-                ).addMigrations(MIGRATION_1_2).build()
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
                 INSTANCE = instance
                 instance
             }
