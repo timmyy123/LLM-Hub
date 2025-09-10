@@ -15,6 +15,16 @@ import com.llmhub.llmhub.data.ThemePreferences
 class RagServiceManager(
     private val context: Context
 ) {
+    companion object {
+        @Volatile
+        private var INSTANCE: RagServiceManager? = null
+
+        fun getInstance(context: Context): RagServiceManager {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: RagServiceManager(context.applicationContext).also { INSTANCE = it }
+            }
+        }
+    }
     
     private var embeddingService: EmbeddingService? = null
     private var ragService: RagService? = null
@@ -144,8 +154,12 @@ class RagServiceManager(
         val service = getRagService()
         return if (service != null) {
             try {
+                Log.d(TAG, "Adding global document '$fileName' to global memory id=$GLOBAL_MEMORY_CHAT_ID (content ${content.length} chars)")
                 service.addDocument(GLOBAL_MEMORY_CHAT_ID, content, metadata, fileName)
-                Log.d(TAG, "Added global document '$fileName' to memory pool")
+                // Log post-add counts for debugging
+                val count = service.getDocumentCount(GLOBAL_MEMORY_CHAT_ID)
+                val hasDocs = service.hasDocuments(GLOBAL_MEMORY_CHAT_ID)
+                Log.d(TAG, "Added global document '$fileName' to memory pool; hasDocs=$hasDocs; chunkCount=$count")
                 true
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to add global document to RAG", e)
@@ -157,7 +171,7 @@ class RagServiceManager(
         }
     }
 
-    suspend fun searchGlobalContext(query: String, maxResults: Int = 3): List<ContextChunk> {
+    suspend fun searchGlobalContext(query: String, maxResults: Int = 3, relaxedLexicalFallback: Boolean = false): List<ContextChunk> {
         if (!isReady()) {
             Log.d(TAG, "RAG service not ready or embeddings disabled - returning empty global context")
             return emptyList()
@@ -166,7 +180,13 @@ class RagServiceManager(
         val service = getRagService()
         return if (service != null) {
             try {
-                service.searchRelevantContext(GLOBAL_MEMORY_CHAT_ID, query, maxResults)
+                // Debug: log whether global memory has documents and the current count
+                val hasDocs = service.hasDocuments(GLOBAL_MEMORY_CHAT_ID)
+                val count = service.getDocumentCount(GLOBAL_MEMORY_CHAT_ID)
+                Log.d(TAG, "searchGlobalContext: hasDocs=$hasDocs, chunkCount=$count, query='${query.take(80)}'")
+                val results = service.searchRelevantContext(GLOBAL_MEMORY_CHAT_ID, query, maxResults, relaxedLexicalFallback)
+                Log.d(TAG, "searchGlobalContext: returned ${results.size} results (maxResults=$maxResults)")
+                return results
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to search global context", e)
                 emptyList()
@@ -197,7 +217,7 @@ class RagServiceManager(
     /**
      * Search for relevant context in a chat's documents
      */
-    suspend fun searchRelevantContext(chatId: String, query: String, maxResults: Int = 3): List<ContextChunk> {
+    suspend fun searchRelevantContext(chatId: String, query: String, maxResults: Int = 3, relaxedLexicalFallback: Boolean = false): List<ContextChunk> {
         // Check if embeddings are disabled
         if (!isReady()) {
             Log.d(TAG, "RAG service not ready or embeddings disabled - returning empty context")
@@ -207,7 +227,7 @@ class RagServiceManager(
         val service = getRagService()
         return if (service != null) {
             try {
-                service.searchRelevantContext(chatId, query, maxResults)
+                service.searchRelevantContext(chatId, query, maxResults, relaxedLexicalFallback)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to search relevant context", e)
                 emptyList()

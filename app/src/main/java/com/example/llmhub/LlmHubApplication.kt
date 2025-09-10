@@ -10,8 +10,12 @@ import com.llmhub.llmhub.inference.InferenceService
 import com.llmhub.llmhub.inference.MediaPipeInferenceService
 import com.llmhub.llmhub.repository.ChatRepository
 import com.llmhub.llmhub.utils.LocaleHelper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import android.util.Log
 
 class LlmHubApplication : Application() {
     val inferenceService: InferenceService by lazy {
@@ -25,6 +29,46 @@ class LlmHubApplication : Application() {
         super.onCreate()
         // Apply saved language preference or system locale
         applySavedLanguage()
+        // Initialize RAG and restore any embedded global memories so they are available
+        // immediately after app restart. Also kick off processing for any pending uploads.
+        try {
+            val ragManager = com.llmhub.llmhub.embedding.RagServiceManager.getInstance(this)
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val job = ragManager.initializeAsync()
+                    job.join()
+
+                    // Re-add any previously embedded global memories (they were stored in DB but
+                    // embeddings live in-memory and must be recreated at startup).
+                    try {
+                        val list = database.memoryDao().getAllMemory().first()
+                        val embedded = list.filter { it.status == "EMBEDDED" }
+                        for (doc in embedded) {
+                            try {
+                                val added = ragManager.addGlobalDocument(doc.content, doc.fileName, doc.metadata)
+                                Log.d("LlmHubApplication", "Restored embedded memory id=${doc.id} added=$added chunkCount=${ragManager.getDocumentCount("__global_memory__")}")
+                            } catch (e: Exception) {
+                                Log.w("LlmHubApplication", "Failed to restore memory ${doc.id}: ${e.message}")
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.w("LlmHubApplication", "Failed to read memory DB for restore: ${e.message}")
+                    }
+
+                    // Also attempt to process any pending/pending-failed documents
+                    try {
+                        val processor = com.llmhub.llmhub.data.MemoryProcessor(this@LlmHubApplication, database)
+                        processor.processPending()
+                    } catch (e: Exception) {
+                        Log.w("LlmHubApplication", "Failed to start MemoryProcessor: ${e.message}")
+                    }
+                } catch (e: Exception) {
+                    Log.w("LlmHubApplication", "RAG initialization/restore failed at startup: ${e.message}")
+                }
+            }
+        } catch (e: Exception) {
+            Log.w("LlmHubApplication", "Failed to schedule RAG startup restore: ${e.message}")
+        }
     }
     
     override fun attachBaseContext(base: Context) {

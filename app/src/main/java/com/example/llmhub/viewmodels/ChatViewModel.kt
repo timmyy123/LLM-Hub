@@ -40,7 +40,7 @@ class ChatViewModel(
 ) : ViewModel() {
 
     private val themePreferences = ThemePreferences(context)
-    private val ragServiceManager = RagServiceManager(context)
+    private val ragServiceManager = com.llmhub.llmhub.embedding.RagServiceManager.getInstance(context)
 
     companion object {
         private const val KEY_CURRENT_CHAT_ID = "current_chat_id"
@@ -86,6 +86,10 @@ class ChatViewModel(
     // Embedding enabled state
     private val _isEmbeddingEnabled = MutableStateFlow(false)
     val isEmbeddingEnabled: StateFlow<Boolean> = _isEmbeddingEnabled.asStateFlow()
+
+    // NOTE: intent heuristics removed — global memory will be queried whenever the
+    // memory preference is enabled. Localization-specific intent checks were removed
+    // to avoid hardcoding English phrases.
 
     init {
         // Initialize RAG service in the background and track status
@@ -804,6 +808,9 @@ class ChatViewModel(
                 _streamingContents.value = mapOf(placeholderId to "") // Initialize with empty string                        // Run generation with streaming tokens
                         generationJob = launch {
                             val generationStartTime = System.currentTimeMillis()
+                            // Track time spent performing RAG/document searches so we can exclude it
+                            // from the model generation timing used for tok/sec reporting.
+                            var ragSearchTimeMs = 0L
                             var totalContent = ""
                             
                             try {
@@ -846,7 +853,7 @@ class ChatViewModel(
                                             // If global memory is enabled in preferences, include global memory results
                                             val memoryEnabledPref = themePreferences.memoryEnabled.first()
                                             if (memoryEnabledPref) {
-                                                Log.d("ChatViewModel", "🔍 Searching global memory for relevant context")
+                                                Log.d("ChatViewModel", "🔍 Querying global memory for this prompt (memory enabled)")
                                                 // Log embedding/RAG service status to help debug why memory may not be used
                                                 try {
                                                     val embeddingStatus = ragServiceManager.getEmbeddingStatus()
@@ -854,23 +861,37 @@ class ChatViewModel(
                                                 } catch (e: Exception) {
                                                     Log.w("ChatViewModel", "Could not fetch RAG embedding status: ${e.message}")
                                                 }
-                                                val globalChunks = ragServiceManager.searchGlobalContext(lastUserContent, 2)
+                                                val ragStart = System.currentTimeMillis()
+                                                // If the user explicitly asks 'what do you remember' or similar,
+                                                // request a relaxed lexical fallback from the RAG service to
+                                                // increase the chance of returning short user memories.
+                                                // We request a relaxed lexical fallback for global queries to be
+                                                // permissive about returning short/personal memories.
+                                                val globalChunks = ragServiceManager.searchGlobalContext(lastUserContent, 2, relaxedLexicalFallback = true)
+                                                ragSearchTimeMs += (System.currentTimeMillis() - ragStart)
                                                 if (globalChunks.isNotEmpty()) {
                                                     Log.d("ChatViewModel", "✅ Found ${globalChunks.size} global memory chunks")
+                                                    // We intentionally do not throttle memory use; it's being used whenever enabled.
                                                     contextParts.addAll(globalChunks.map { chunk ->
                                                         "📄 **${chunk.fileName}** (global memory, similarity: ${String.format("%.2f", chunk.similarity)}):\n${chunk.content}"
                                                     })
+                                                } else {
+                                                    Log.d("ChatViewModel", "ℹ️ Global memory query returned no chunks")
                                                 }
+                                            } else {
+                                                Log.d("ChatViewModel", "ℹ️ Global memory disabled by user preference; not querying global memory")
                                             }
 
                                             // Always search per-chat documents too
                                             if (ragServiceManager.hasDocuments(chatId)) {
                                                 Log.d("ChatViewModel", "🔍 Searching chat-specific documents for relevant context")
+                                                val ragStartChat = System.currentTimeMillis()
                                                 val relevantChunks = ragServiceManager.searchRelevantContext(
                                                     chatId = chatId,
                                                     query = lastUserContent,
                                                     maxResults = 3
                                                 )
+                                                ragSearchTimeMs += (System.currentTimeMillis() - ragStartChat)
                                                 if (relevantChunks.isNotEmpty()) {
                                                     Log.d("ChatViewModel", "✅ Found ${relevantChunks.size} relevant document chunks for query")
                                                     contextParts.addAll(relevantChunks.map { chunk ->
@@ -882,9 +903,14 @@ class ChatViewModel(
                                             }
 
                                             if (contextParts.isNotEmpty()) {
-                                                ragContext = "\n\n---\n\n🔍 **Relevant Document Context:**\n\n" +
-                                                    contextParts.joinToString("\n\n---\n\n") +
-                                                    "\n\n---\n\n"
+                                                // Add a short instruction so the model treats these
+                                                // global memory chunks as factual background when
+                                                // answering explicit user questions.
+                                                val memoryInstruction = "IMPORTANT: The following items are confirmed user memory facts. When asked about the user's identity or personal details, answer directly using these facts. If the user's name is listed, respond with that name when asked 'what is my name' or similar." 
+                                                    ragContext = "\n\n---\n\n🔍 **Relevant Document Context (user memory):**\n\n" +
+                                                        memoryInstruction + "\n\n" +
+                                                        contextParts.joinToString("\n\n---\n\n") +
+                                                        "\n\n---\n\n"
                                             } else {
                                                 Log.d("ChatViewModel", "❌ No relevant document chunks found for query (no matches or embeddings disabled)")
                                             }
@@ -924,16 +950,15 @@ class ChatViewModel(
                                             "user: ${lastUserContent}${ragContext}\nassistant:"
                                         } else {
                                             // Normal path: include trimmed history and explicit assistant cue
-                                            val basePrompt = if (!history.endsWith("assistant:")) {
+                                            var basePrompt = if (!history.endsWith("assistant:")) {
                                                 history + "\nassistant:"
                                             } else history
-                                            
-                                            // Insert RAG context before the assistant response
+
+                                            // Insert RAG context before the assistant response (assign the result)
                                             if (ragContext.isNotEmpty()) {
-                                                basePrompt.replace("\nassistant:", "${ragContext}\nassistant:")
-                                            } else {
-                                                basePrompt
+                                                basePrompt = basePrompt.replace("\nassistant:", "${ragContext}\nassistant:")
                                             }
+                                            basePrompt
                                         }
                                     } else {
                                         // Continuation: build a new context-aware history including the current response
@@ -1010,8 +1035,18 @@ class ChatViewModel(
                     // Get web search preference
                     val webSearchEnabled = runBlocking { themePreferences.webSearchEnabled.first() }
                     
+                    // Log a preview of the final prompt passed to the model (trimmed) to
+                    // help debug why memory facts may not be used. This logs only the
+                    // first 1000 characters to avoid huge logs.
+                    try {
+                        val promptPreview = if (currentPrompt.length > 1000) currentPrompt.substring(0, 1000) + "..." else currentPrompt
+                        Log.d("ChatViewModel", "Final prompt preview:\n$promptPreview")
+                    } catch (e: Exception) {
+                        Log.w("ChatViewModel", "Failed to log prompt preview: ${e.message}")
+                    }
+
                     val responseStream = inferenceService.generateResponseStreamWithSession(
-                        currentPrompt, 
+                        currentPrompt,
                         currentModel!!, 
                         chatId, 
                         images, 
@@ -1120,12 +1155,14 @@ class ChatViewModel(
                                 } else finalContent
                                 repository.updateMessageContent(placeholderId, safeFinal.trimEnd())
                                 val time = System.currentTimeMillis() - generationStartTime
-                                Log.d("ChatViewModel", "About to call finalizeMessage for success")
-                                finalizeMessage(placeholderId, safeFinal, time)
+                                val netTime = (time - ragSearchTimeMs).coerceAtLeast(1L)
+                                Log.d("ChatViewModel", "About to call finalizeMessage for success (raw=${time}ms, rag=${ragSearchTimeMs}ms, net=${netTime}ms)")
+                                finalizeMessage(placeholderId, safeFinal, netTime)
 
                     } catch (e: Exception) {
                         val finalContent = totalContent
                         val time = System.currentTimeMillis() - generationStartTime
+                        val netTime = (time - ragSearchTimeMs).coerceAtLeast(1L)
                         
                         Log.d("ChatViewModel", "Exception caught: ${e.javaClass.simpleName}: ${e.message}")
                         Log.d("ChatViewModel", "Final content length: ${finalContent.length}")
@@ -1149,7 +1186,7 @@ class ChatViewModel(
                             }
                             // CANCEL: Save partial progress
                             Log.d("ChatViewModel", "Generation was cancelled by user.")
-                            Log.d("ChatViewModel", "About to call finalizeMessage for cancellation")
+                            Log.d("ChatViewModel", "About to call finalizeMessage for cancellation (raw=${time}ms, rag=${ragSearchTimeMs}ms, net=${netTime}ms)")
                         } else {
                             // ERROR: MediaPipe or other error
                             Log.e("ChatViewModel", "MediaPipe generation error: ${e.message}", e)
@@ -1163,7 +1200,7 @@ class ChatViewModel(
                             } else finalContent
                             repository.updateMessageContent(placeholderId, safeFinal.trimEnd())
                             Log.d("ChatViewModel", "About to call finalizeMessage (NonCancellable)")
-                            finalizeMessage(placeholderId, safeFinal, time)
+                            finalizeMessage(placeholderId, safeFinal, netTime)
                         }
                     } finally {
                         _isLoading.value = false
@@ -2343,6 +2380,7 @@ class ChatViewModel(
                 // Generate new response
                 generationJob = launch {
                     val generationStartTime = System.currentTimeMillis()
+                    var ragSearchTimeMs = 0L
                     var totalContent = ""
                     
                     try {
@@ -2424,20 +2462,24 @@ class ChatViewModel(
                         val finalContent = totalContent
                         repository.updateMessageContent(placeholderId, finalContent.trimEnd())
                         val time = System.currentTimeMillis() - generationStartTime
-                        finalizeMessage(placeholderId, finalContent, time)
+                        val netTime = (time - ragSearchTimeMs).coerceAtLeast(1L)
+                        Log.d("ChatViewModel", "About to call finalizeMessage for regeneration (raw=${time}ms, rag=${ragSearchTimeMs}ms, net=${netTime}ms)")
+                        finalizeMessage(placeholderId, finalContent, netTime)
                         
                         Log.d("ChatViewModel", "Regeneration completed successfully")
                         
                     } catch (e: Exception) {
                         val finalContent = totalContent
                         val time = System.currentTimeMillis() - generationStartTime
-                        
+                        val netTime = (time - ragSearchTimeMs).coerceAtLeast(1L)
+
                         Log.d("ChatViewModel", "Regeneration exception: ${e.javaClass.simpleName}: ${e.message}")
-                        
+
                         // Save partial content and finalize
                         withContext(kotlinx.coroutines.NonCancellable) {
                             repository.updateMessageContent(placeholderId, finalContent.trimEnd())
-                            finalizeMessage(placeholderId, finalContent, time)
+                            Log.d("ChatViewModel", "About to call finalizeMessage for regeneration (exception) (raw=${time}ms, rag=${ragSearchTimeMs}ms, net=${netTime}ms)")
+                            finalizeMessage(placeholderId, finalContent, netTime)
                         }
                         
                     } finally {
