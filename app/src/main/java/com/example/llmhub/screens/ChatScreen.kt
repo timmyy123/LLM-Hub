@@ -447,11 +447,16 @@ fun ChatScreen(
                 ) {
                     if (messages.isEmpty() && !isLoading) {
                         item {
-                                            WelcomeMessage(
-                                currentModel = currentChat?.modelName ?: stringResource(R.string.no_model_selected),
-                                onNavigateToModels = onNavigateToModels,
-                                hasDownloadedModels = viewModel.hasDownloadedModels()
-                            )
+                            Box(
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                WelcomeMessage(
+                                    currentModel = currentChat?.modelName ?: stringResource(R.string.no_model_selected),
+                                    onNavigateToModels = onNavigateToModels,
+                                    hasDownloadedModels = viewModel.hasDownloadedModels()
+                                )
+                            }
                         }
                     }
                     
@@ -534,7 +539,9 @@ private fun WelcomeMessage(
     hasDownloadedModels: Boolean
 ) {
     ModernCard(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .widthIn(max = 640.dp) // limit width on large screens/tablets
+            .wrapContentWidth(Alignment.CenterHorizontally) // center the card horizontally
     ) {
         Column(
             modifier = Modifier.padding(24.dp),
