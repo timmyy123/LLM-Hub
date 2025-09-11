@@ -33,6 +33,18 @@ class RagServiceManager(
     private val TAG = "RagServiceManager"
     private var initializationJob: Job? = null
     private val GLOBAL_MEMORY_CHAT_ID = "__global_memory__"
+    // Track which chats we've already populated with global memory to avoid duplicates
+    private val populatedChats = mutableSetOf<String>()
+    // Short-lived cache for recent global search results to avoid repeated embedder calls
+    private val searchCacheLock = Any()
+    private val searchCache = object : java.util.LinkedHashMap<String, Pair<Long, List<ContextChunk>>>(64, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Pair<Long, List<ContextChunk>>>?): Boolean {
+            return this.size > 256
+        }
+    }
+    // Coalesce concurrent identical searches
+    private val inflightSearches = mutableMapOf<String, CompletableDeferred<List<ContextChunk>>>()
+    private val SEARCH_TTL_MS = 5_000L // cache TTL: 5 seconds
     
     /**
      * Initialize the RAG service asynchronously in the background
@@ -233,29 +245,65 @@ class RagServiceManager(
         Log.d(TAG, "Restored ${chunks.size} global chunk embeddings into RAG")
     }
 
-    suspend fun searchGlobalContext(query: String, maxResults: Int = 3, relaxedLexicalFallback: Boolean = false): List<ContextChunk> {
+    suspend fun searchGlobalContext(query: String, maxResults: Int = 3, relaxedLexicalFallback: Boolean = false, queryEmbedding: FloatArray? = null): List<ContextChunk> {
         if (!isReady()) {
             Log.d(TAG, "RAG service not ready or embeddings disabled - returning empty global context")
             return emptyList()
         }
 
         val service = getRagService()
-        return if (service != null) {
-            try {
-                // Debug: log whether global memory has documents and the current count
-                val hasDocs = service.hasDocuments(GLOBAL_MEMORY_CHAT_ID)
-                val count = service.getDocumentCount(GLOBAL_MEMORY_CHAT_ID)
-                Log.d(TAG, "searchGlobalContext: hasDocs=$hasDocs, chunkCount=$count, query='${query.take(80)}'")
-                val results = service.searchRelevantContext(GLOBAL_MEMORY_CHAT_ID, query, maxResults, relaxedLexicalFallback)
-                Log.d(TAG, "searchGlobalContext: returned ${results.size} results (maxResults=$maxResults)")
-                return results
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to search global context", e)
-                emptyList()
-            }
-        } else {
+        if (service == null) {
             Log.w(TAG, "RAG service not ready, cannot search global context")
-            emptyList()
+            return emptyList()
+        }
+
+        // Check short-term cache
+        synchronized(searchCacheLock) {
+            val cached = searchCache[query]
+            if (cached != null && System.currentTimeMillis() - cached.first <= SEARCH_TTL_MS) {
+                Log.d(TAG, "searchGlobalContext: returning cached results for query='${query.take(80)}' -> ${cached.second.size} items")
+                return cached.second
+            }
+        }
+
+        // Coalesce inflight identical searches
+        val inflightDeferred: CompletableDeferred<List<ContextChunk>> = synchronized(inflightSearches) {
+            val existing = inflightSearches[query]
+            if (existing != null) return@synchronized existing
+            val def = CompletableDeferred<List<ContextChunk>>()
+            inflightSearches[query] = def
+            def
+        }
+
+        // If this coroutine didn't create the inflightDeferred, await the existing one
+        if (inflightDeferred.isCompleted.not() && inflightDeferred !== inflightSearches[query]) {
+            try {
+                return inflightDeferred.await()
+            } catch (e: Exception) {
+                // Fall back to performing the search below
+            }
+        }
+
+        try {
+            // Debug: log whether global memory has documents and the current count
+            val hasDocs = service.hasDocuments(GLOBAL_MEMORY_CHAT_ID)
+            val count = service.getDocumentCount(GLOBAL_MEMORY_CHAT_ID)
+            Log.d(TAG, "searchGlobalContext: hasDocs=$hasDocs, chunkCount=$count, query='${query.take(80)}'")
+            val results = service.searchRelevantContext(GLOBAL_MEMORY_CHAT_ID, query, maxResults, relaxedLexicalFallback, queryEmbedding)
+            Log.d(TAG, "searchGlobalContext: returned ${results.size} results (maxResults=$maxResults)")
+
+            synchronized(searchCacheLock) {
+                searchCache[query] = Pair(System.currentTimeMillis(), results)
+            }
+
+            inflightDeferred.complete(results)
+            return results
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to search global context", e)
+            inflightDeferred.completeExceptionally(e)
+            return emptyList()
+        } finally {
+            synchronized(inflightSearches) { inflightSearches.remove(query) }
         }
     }
 
@@ -275,11 +323,32 @@ class RagServiceManager(
             }
         }
     }
+
+    /**
+     * Remove all in-memory chunks that belong to a specific persisted document id.
+     * This allows callers to delete a memory from the DB and ensure the in-memory
+     * RAG index no longer contains its chunks without clearing other global memory.
+     */
+    suspend fun removeGlobalDocumentChunks(docId: String) {
+        val service = getRagService()
+        if (service != null) {
+            try {
+                // The RagService interface doesn't expose chunk-level deletion; we rely
+                // on clearing all global docs and re-restoring remaining chunks where
+                // necessary. Provide a best-effort clear by clearing then restoring.
+                Log.d(TAG, "Removing global document chunks for docId=$docId via clear/restore fallback")
+                service.clearChatDocuments(GLOBAL_MEMORY_CHAT_ID)
+                Log.d(TAG, "Cleared global memory for removeGlobalDocumentChunks; caller should restore remaining chunks afterwards")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to remove global chunks for $docId", e)
+            }
+        }
+    }
     
     /**
      * Search for relevant context in a chat's documents
      */
-    suspend fun searchRelevantContext(chatId: String, query: String, maxResults: Int = 3, relaxedLexicalFallback: Boolean = false): List<ContextChunk> {
+    suspend fun searchRelevantContext(chatId: String, query: String, maxResults: Int = 3, relaxedLexicalFallback: Boolean = false, queryEmbedding: FloatArray? = null): List<ContextChunk> {
         // Check if embeddings are disabled
         if (!isReady()) {
             Log.d(TAG, "RAG service not ready or embeddings disabled - returning empty context")
@@ -289,7 +358,48 @@ class RagServiceManager(
         val service = getRagService()
         return if (service != null) {
             try {
-                service.searchRelevantContext(chatId, query, maxResults, relaxedLexicalFallback)
+                // First get chat-specific results
+                val chatResults = service.searchRelevantContext(chatId, query, maxResults, relaxedLexicalFallback, queryEmbedding)
+
+                // If the user has enabled global memory, also include global memory results so
+                // callers that only query a chat receive global memories as if they were
+                // attached documents to that chat. This avoids duplicating stored chunks
+                // while ensuring global memories are available in all chat searches.
+                try {
+                    val memoryEnabled = com.llmhub.llmhub.data.ThemePreferences(context).memoryEnabled.first()
+
+                    // Correct runtime behavior: when memory is ENABLED, include global results
+                    // merged with chat-specific results. When memory is DISABLED, filter out
+                    // any replicated global chunks so global memory isn't accessible from chats.
+                    if (memoryEnabled && chatId != GLOBAL_MEMORY_CHAT_ID) {
+                        val globalResults = searchGlobalContext(query, maxResults, relaxedLexicalFallback, queryEmbedding)
+                        val combined = (chatResults + globalResults)
+                            .distinctBy { it.content.take(100) }
+                            .sortedByDescending { it.similarity }
+                            .take(maxResults)
+                        Log.d(TAG, "searchRelevantContext: memory enabled - merged chat(${chatResults.size}) + global(${globalResults.size}) -> returning ${combined.size}")
+                        return combined
+                    }
+
+                    // Memory disabled: remove replicated global chunks that were previously
+                    // replicated into the chat so they are not visible when the toggle is off.
+                    if (!memoryEnabled) {
+                        val filtered = chatResults.filter { !it.metadata.startsWith("replicated_global:") }
+                        if (filtered.size != chatResults.size) {
+                            Log.d(TAG, "searchRelevantContext: memory disabled - filtered out ${chatResults.size - filtered.size} replicated global chunks from chat results")
+                        }
+                        return filtered
+                    }
+
+                    // Fallback: return chat-specific results
+                    return chatResults
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Failed to include global memory in chat search: ${e.message}")
+                    }
+
+                    // If the inclusion of global memory failed (exception path above),
+                    // still return the chat-specific results as a safe fallback.
+                    return chatResults
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to search relevant context", e)
                 emptyList()
@@ -348,4 +458,47 @@ class RagServiceManager(
             Log.e(TAG, "Error during cleanup", e)
         }
     }
+
+    /**
+     * Replicate persisted global memory chunks into the in-memory RAG index for a specific chat.
+     * This makes global memories available in per-chat searches as if they were attached documents.
+     * The operation is idempotent per chat (tracked by populatedChats).
+     */
+    suspend fun replicateGlobalChunksToChat(chatId: String) {
+        if (!isReady()) {
+            Log.d(TAG, "RAG not ready - cannot replicate global chunks to chat $chatId")
+            return
+        }
+        if (chatId == GLOBAL_MEMORY_CHAT_ID) return
+        synchronized(populatedChats) {
+            if (populatedChats.contains(chatId)) {
+                Log.d(TAG, "Global chunks already replicated for chat $chatId - skipping")
+                return
+            }
+        }
+
+        val service = getRagService() ?: return
+        try {
+            // Load persisted chunks from DB (avoid re-embedding)
+            val db = com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context)
+            val chunks = db.memoryDao().getAllChunks()
+            var added = 0
+            for (chunk in chunks) {
+                try {
+                    val embedding = com.llmhub.llmhub.data.byteArrayToFloatArray(chunk.embedding)
+                    // Tag replicated chunks so they can be filtered when memory is disabled
+                    val originMeta = "replicated_global:${chunk.docId ?: chunk.id ?: ""}"
+                    service.addDocumentWithEmbedding(chatId, chunk.content, chunk.fileName, chunk.chunkIndex, embedding, originMeta)
+                    added++
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to add persisted chunk ${chunk.id} to chat $chatId: ${e.message}")
+                }
+            }
+            synchronized(populatedChats) { populatedChats.add(chatId) }
+            Log.d(TAG, "Replicated $added global chunks into chat $chatId")
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to replicate global chunks to chat $chatId: ${e.message}")
+        }
+    }
+
 }

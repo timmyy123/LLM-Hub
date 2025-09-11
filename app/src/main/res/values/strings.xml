@@ -18,6 +18,8 @@
     <!-- Chat -->
     <string name="welcome_to_llm_hub">Welcome to LLM Hub!</string>
     <string name="no_models_downloaded">No models downloaded yet</string>
+    <!-- Displayed when there are no saved global memories for RAG -->
+    <string name="no_memories">No memories yet</string>
     <string name="download_a_model">Download a Model</string>
     <string name="ready_to_chat">Ready to chat! Please select a model above.</string>
     <string name="start_chatting">Start chatting by typing a message below!</string>
@@ -314,6 +316,10 @@
     <string name="memory_save_success">Text saved to global memory</string>
     <string name="memory_save_failed">Failed to save text to memory (RAG may be disabled)</string>
     <string name="saved_memories">Saved memories</string>
+    <string name="confirm_replace_memory_title">Replace existing memory?</string>
+    <string name="confirm_replace_memory_message">You already have a global memory. Replacing it will delete the existing memory and its embeddings. Continue?</string>
+    <string name="confirm_replace_action">Replace</string>
+    <string name="memory_processing">Processing memory…</string>
     
     <!-- Gemma Backend Selection -->
     <string name="select_backend">Select Backend</string>

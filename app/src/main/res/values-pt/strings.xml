@@ -19,6 +19,8 @@
     <!-- Chat -->
     <string name="welcome_to_llm_hub">Bem-vindo ao LLM Hub!</string>
     <string name="no_models_downloaded">Nenhum modelo baixado ainda</string>
+    <!-- Exibido quando não há memórias globais salvas para RAG -->
+    <string name="no_memories">Ainda sem memórias</string>
     <string name="download_a_model">Baixar um Modelo</string>
     <string name="ready_to_chat">Pronto para conversar! Por favor selecione um modelo acima.</string>
     <string name="start_chatting">Comece a conversar digitando uma mensagem abaixo!</string>
@@ -214,6 +216,10 @@
     <string name="memory_save_success">Texto salvo na memória global</string>
     <string name="memory_save_failed">Falha ao salvar texto na memória (RAG pode estar desativado)</string>
     <string name="saved_memories">Memórias salvas</string>
+    <string name="confirm_replace_memory_title">Substituir memória existente?</string>
+    <string name="confirm_replace_memory_message">Você já tem uma memória global. Substituí-la excluirá a memória existente e seus embeddings. Continuar?</string>
+    <string name="confirm_replace_action">Substituir</string>
+    <string name="memory_processing">Processando memória…</string>
     <string name="reload_models_notice">Necessário recarregar modelos para ter efeito</string>
     <string name="embedding_enabled">Embeddings ativados</string>
     <string name="embedding_disabled">Embeddings desativados</string>

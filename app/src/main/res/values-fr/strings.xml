@@ -19,6 +19,8 @@
     <!-- Chat -->
     <string name="welcome_to_llm_hub">Bienvenue dans LLM Hub !</string>
     <string name="no_models_downloaded">Aucun modèle téléchargé encore</string>
+    <!-- Affiché lorsqu'il n'y a aucune mémoire globale enregistrée pour RAG -->
+    <string name="no_memories">Aucune mémoire pour le moment</string>
     <string name="download_a_model">Télécharger un Modèle</string>
     <string name="ready_to_chat">Prêt à discuter ! Veuillez sélectionner un modèle ci-dessus.</string>
     <string name="start_chatting">Commencez à discuter en tapant un message ci-dessous !</string>
@@ -305,6 +307,10 @@
     <string name="memory_save_success">Texte enregistré dans la mémoire globale</string>
     <string name="memory_save_failed">Échec de l\'enregistrement du texte dans la mémoire (RAG peut être désactivé)</string>
     <string name="saved_memories">Entrées sauvegardées</string>
+    <string name="confirm_replace_memory_title">Remplacer la mémoire existante ?</string>
+    <string name="confirm_replace_memory_message">Vous avez déjà une mémoire globale. La remplacer supprimera la mémoire existante et ses embeddings. Continuer ?</string>
+    <string name="confirm_replace_action">Remplacer</string>
+    <string name="memory_processing">Traitement de la mémoire…</string>
 
     <!-- Gemma Backend Selection -->
     <string name="select_backend">Sélectionner le Backend</string>

@@ -11,7 +11,9 @@ interface RagService {
     suspend fun addDocumentWithEmbedding(chatId: String, content: String, fileName: String, chunkIndex: Int, embedding: FloatArray, metadata: String = "")
     // relaxedLexicalFallback: when true, the implementation should be more permissive
     // with lexical fallbacks (useful for explicit "what do you remember" style queries)
-    suspend fun searchRelevantContext(chatId: String, query: String, maxResults: Int = 3, relaxedLexicalFallback: Boolean = false): List<ContextChunk>
+    // queryEmbedding: optional precomputed embedding for the query. When supplied,
+    // implementations should use it instead of calling the embedder again.
+    suspend fun searchRelevantContext(chatId: String, query: String, maxResults: Int = 3, relaxedLexicalFallback: Boolean = false, queryEmbedding: FloatArray? = null): List<ContextChunk>
     suspend fun clearChatDocuments(chatId: String)
     suspend fun hasDocuments(chatId: String): Boolean
     suspend fun getDocumentCount(chatId: String): Int
@@ -37,6 +39,15 @@ data class ContextChunk(
  * - Context ranking and filtering
  */
 class InMemoryRagService(private val embeddingService: EmbeddingService) : RagService {
+    private companion object {
+        // Cache perturbed retry embeddings across searches to avoid re-embedding
+        // the same perturbed query multiple times. Bounded to avoid unbounded growth.
+        private val retryEmbGlobalCache = object : java.util.LinkedHashMap<String, FloatArray>(64, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, FloatArray>?): Boolean {
+                return this.size > 128
+            }
+        }
+    }
     
     private val documents = mutableMapOf<String, MutableList<DocumentChunk>>()
     private val mutex = Mutex()
@@ -121,7 +132,7 @@ class InMemoryRagService(private val embeddingService: EmbeddingService) : RagSe
         }
     }
     
-    override suspend fun searchRelevantContext(chatId: String, query: String, maxResults: Int, relaxedLexicalFallback: Boolean): List<ContextChunk> = mutex.withLock {
+    override suspend fun searchRelevantContext(chatId: String, query: String, maxResults: Int, relaxedLexicalFallback: Boolean, queryEmbedding: FloatArray?): List<ContextChunk> = mutex.withLock {
         try {
             val chatDocuments = documents[chatId] ?: return emptyList()
             if (chatDocuments.isEmpty()) {
@@ -131,19 +142,22 @@ class InMemoryRagService(private val embeddingService: EmbeddingService) : RagSe
 
             Log.d(TAG, "Searching for relevant context in ${chatDocuments.size} chunks for query: '${query.take(50)}...'")
 
-            val queryEmbedding = embeddingService.generateEmbedding(query)
-            if (queryEmbedding == null) {
-                Log.w(TAG, "Failed to generate embedding for search query: '${query.take(80)}'")
-                return emptyList()
+            // Use the provided embedding if available to avoid re-embedding the same query
+            val queryEmbCopy = queryEmbedding ?: run {
+                val generated = embeddingService.generateEmbedding(query)
+                if (generated == null) {
+                    Log.w(TAG, "Failed to generate embedding for search query: '${query.take(80)}'")
+                    return emptyList()
+                }
+                generated.copyOf()
             }
-
-            // Copy query embedding defensively as well to avoid accidental mutation from
-            // underlying embedding service implementations that might reuse buffers.
-            val queryEmbCopy = queryEmbedding.copyOf()
 
             val similarities = mutableListOf<ContextChunk>()
             // Keep a map from (fileName, chunkIndex) -> embedding so we can log diagnostics
             val embeddingMap = mutableMapOf<Pair<String, Int>, FloatArray>()
+            // Cache for a single perturbed retry embedding per search to avoid
+            // re-embedding the same perturbed query repeatedly across candidates.
+            var retryEmbCache: FloatArray? = null
 
             for (doc in chatDocuments) {
                 if (doc.embedding != null) {
@@ -194,8 +208,17 @@ class InMemoryRagService(private val embeddingService: EmbeddingService) : RagSe
 
             // Small diagnostic preview for debugging: list filenames and short previews
             try {
-                val preview = candidates.map { c -> "${c.fileName}:${c.content.trim().take(80).replace("\n"," ")}" }
-                Log.d(TAG, "RAG diag: candidate previews=${preview}")
+                // Filter out replicated global chunks from preview logging to avoid
+                // exposing global memory filenames in logs when they were replicated
+                // into a chat for local searches.
+                val preview = candidates
+                    .filter { !it.metadata.startsWith("replicated_global:") }
+                    .map { c -> "${c.fileName}:${c.content.trim().take(80).replace("\n"," ")}" }
+                if (preview.isNotEmpty()) {
+                    Log.d(TAG, "RAG diag: candidate previews=${preview}")
+                } else {
+                    Log.d(TAG, "RAG diag: candidate previews omitted (only replicated global chunks present)")
+                }
             } catch (_: Exception) {
                 // ignore preview failures
             }
@@ -220,7 +243,16 @@ class InMemoryRagService(private val embeddingService: EmbeddingService) : RagSe
                     }
                 }
 
-                Log.d(TAG, "RAG candidate filter: sim=${"%.3f".format(sim)}, overlap=${"%.3f".format(overlap)}, short=$isShortMemory, accept=$accept, file=${candidate.fileName}")
+                val displayFile = if (candidate.metadata.startsWith("replicated_global:")) "(global memory)" else candidate.fileName
+                Log.d(TAG, "RAG candidate filter: sim=${"%.3f".format(sim)}, overlap=${"%.3f".format(overlap)}, short=$isShortMemory, accept=$accept, file=$displayFile")
+
+                // If we've already accepted this candidate based on heuristics,
+                // use it immediately and skip the expensive diagnostic re-embed.
+                if (accept) {
+                    filtered.add(candidate)
+                    if (filtered.size >= maxResults) break
+                    continue
+                }
 
                 // Diagnostics: if similarity is very high, log candidate preview and embedding comparisons
                 val DIAG_SIM_THRESHOLD = 0.95f
@@ -228,18 +260,18 @@ class InMemoryRagService(private val embeddingService: EmbeddingService) : RagSe
                 // Declared here so it can be referenced later for fallback logic.
                 var exactEqual = false
                 if (sim >= DIAG_SIM_THRESHOLD) {
-                    try {
+                        try {
                         val key = Pair(candidate.fileName, candidate.chunkIndex)
                         val docEmb = embeddingMap[key]
-                        Log.d(TAG, "RAG diag: high-sim candidate preview='${candidate.content.take(120).replace("\n", " ")}' file=${candidate.fileName} chunkIndex=${candidate.chunkIndex}")
-                        if (docEmb != null) {
+                        Log.d(TAG, "RAG diag: high-sim candidate preview='${candidate.content.take(120).replace("\n", " ")}' file=$displayFile chunkIndex=${candidate.chunkIndex}")
+                            if (docEmb != null) {
                             // Print first few components of each vector for quick eyeballing
-                            val previewN = min(6, min(queryEmbedding.size, docEmb.size))
+                            val previewN = min(6, min(queryEmbCopy.size, docEmb.size))
                             val qPreview = (0 until previewN).joinToString(",") { i -> "${"%.6f".format(queryEmbCopy[i])}" }
                             val dPreview = (0 until previewN).joinToString(",") { i -> "${"%.6f".format(docEmb[i])}" }
                             // Compute L2 distance
                             var sumSq = 0.0f
-                            val minLen = min(queryEmbedding.size, docEmb.size)
+                            val minLen = min(queryEmbCopy.size, docEmb.size)
                             for (i in 0 until minLen) {
                                 val diff = queryEmbCopy[i] - docEmb[i]
                                 sumSq += diff * diff
@@ -253,10 +285,24 @@ class InMemoryRagService(private val embeddingService: EmbeddingService) : RagSe
                                 // embedder buffer-reuse / caching issues. If re-embed yields a
                                 // different vector, use that to recompute similarity.
                                 try {
+                                    val perturbedKey = query // use raw query as cache key (perturbed is deterministic)
                                     val perturbed = query + "\u200B" // zero-width space
-                                    val retryEmb = embeddingService.generateEmbedding(perturbed)
-                                    if (retryEmb != null) {
-                                        val retryEmbCopy = retryEmb.copyOf()
+                                    if (retryEmbCache == null) {
+                                        synchronized(retryEmbGlobalCache) {
+                                            retryEmbCache = retryEmbGlobalCache[perturbedKey]
+                                        }
+                                        if (retryEmbCache == null) {
+                                            val retryEmb = embeddingService.generateEmbedding(perturbed)
+                                            if (retryEmb != null) {
+                                                retryEmbCache = retryEmb.copyOf()
+                                                synchronized(retryEmbGlobalCache) {
+                                                    retryEmbGlobalCache[perturbedKey] = retryEmbCache!!
+                                                }
+                                            }
+                                        }
+                                    }
+                                    val retryEmbCopy = retryEmbCache
+                                    if (retryEmbCopy != null) {
                                         val minLen2 = min(retryEmbCopy.size, docEmb.size)
                                         var sumSq2 = 0.0f
                                         var dot2 = 0f
@@ -282,24 +328,17 @@ class InMemoryRagService(private val embeddingService: EmbeddingService) : RagSe
                                             val previewN2 = min(6, min(retryEmbCopy.size, docEmb.size))
                                             val qPreview2 = (0 until previewN2).joinToString(",") { i -> "${"%.6f".format(retryEmbCopy[i])}" }
                                             Log.d(TAG, "RAG diag: qPreview=[$qPreview2] dPreview=[$dPreview] l2=${"%.6f".format(sqrt(sumSq2.toDouble()))} exactEqual=$newExact")
-                                            // Use newSim as sim for decision; override sim variable by shadowing
-                                            // (we'll use local variable below when evaluating accept)
-                                            // To keep changes small, set a flag on candidate via metadata map
-                                            // We'll recompute overlap and accept below using newSim via an auxiliary map
-                                            // For simplicity, attach newSim to candidate.metadata temporarily by encoding
-                                            // but to avoid mutating candidate, skip and instead set a local variable
-                                            // We'll recompute acceptance here directly and add to filtered if accepted.
                                             val overlapNew = wordJaccard(query, candidate.content)
                                             val isShortMemoryNew = candidate.content.trim().length < 40
-                                                                    val acceptNew = if (isShortMemoryNew) {
-                                                                        (overlapNew >= shortMemoryOverlapReq) || (newSim >= 0.95f)
-                                                                    } else {
-                                                                        when {
-                                                                            newSim >= primarySimilarityThreshold -> true
-                                                                            newSim >= fallbackSimilarityThreshold && overlapNew >= lexicalFallbackMinOverlap -> true
-                                                                            else -> false
-                                                                        }
-                                                                    }
+                                            val acceptNew = if (isShortMemoryNew) {
+                                                (overlapNew >= shortMemoryOverlapReq) || (newSim >= 0.95f)
+                                            } else {
+                                                when {
+                                                    newSim >= primarySimilarityThreshold -> true
+                                                    newSim >= fallbackSimilarityThreshold && overlapNew >= lexicalFallbackMinOverlap -> true
+                                                    else -> false
+                                                }
+                                            }
                                             if (acceptNew) {
                                                 filtered.add(candidate)
                                             }
@@ -330,8 +369,8 @@ class InMemoryRagService(private val embeddingService: EmbeddingService) : RagSe
                                 continue
                             }
                             Log.d(TAG, "RAG diag: qPreview=[$qPreview] dPreview=[$dPreview] l2=${"%.6f".format(l2)} exactEqual=$exactEqual")
-                        } else {
-                            Log.d(TAG, "RAG diag: no embedding available for candidate (file=${candidate.fileName} idx=${candidate.chunkIndex})")
+                            } else {
+                            Log.d(TAG, "RAG diag: no embedding available for candidate (file=$displayFile idx=${candidate.chunkIndex})")
                         }
                     } catch (e: Exception) {
                         Log.e(TAG, "RAG diag: failed to log diagnostics for candidate", e)

@@ -36,8 +36,16 @@ class MemoryProcessor(private val context: Context, private val db: LlmHubDataba
                         val initJob = mgr.initializeAsync()
                         initJob.join()
 
-                        for ((index, chunkText) in chunks.withIndex()) {
+                                for ((index, chunkText) in chunks.withIndex()) {
                             try {
+                                        // Re-check that the document still exists in DB. If the user deleted
+                                        // or replaced the memory while processing was running, abort to avoid
+                                        // re-inserting chunks or re-populating the in-memory RAG index.
+                                        val stillExists = db.memoryDao().getById(doc.id)
+                                        if (stillExists == null) {
+                                            Log.w(TAG, "Skipping processing for deleted doc ${doc.id}")
+                                            break
+                                        }
                                 val emb = mgr.generateEmbedding(chunkText)
                                 if (emb == null) {
                                     Log.w(TAG, "Failed to generate embedding for chunk $index of doc ${doc.id}")
@@ -61,7 +69,21 @@ class MemoryProcessor(private val context: Context, private val db: LlmHubDataba
                                 db.memoryDao().insertChunk(chunkEntity)
 
                                 // Add precomputed chunk to RAG in-memory index
-                                val added = ragManager.addGlobalDocumentChunk(doc.id, chunkText, doc.fileName, index, emb, chunkEntity.embeddingModel, doc.metadata)
+                                // If adding fails due to RAG not ready or doc deleted concurrently,
+                                // count as a failure but continue processing other chunks.
+                                val added = try {
+                                    // Double-check doc presence once more before adding embedding
+                                    val stillThere = db.memoryDao().getById(doc.id)
+                                    if (stillThere == null) {
+                                        Log.w(TAG, "Doc ${doc.id} deleted before adding chunk $index to RAG; skipping remaining chunks")
+                                        false
+                                    } else {
+                                        ragManager.addGlobalDocumentChunk(doc.id, chunkText, doc.fileName, index, emb, chunkEntity.embeddingModel, doc.metadata)
+                                    }
+                                } catch (e: Exception) {
+                                    Log.w(TAG, "Error adding chunk $index for doc ${doc.id} to RAG: ${e.message}")
+                                    false
+                                }
                                 if (added) totalChunksCreated++ else embeddingFailures++
 
                             } catch (e: Exception) {

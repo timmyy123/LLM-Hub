@@ -31,6 +31,10 @@
     <string name="memory_save_success">Текст сохранён в глобальной памяти</string>
     <string name="memory_save_failed">Не удалось сохранить текст в памяти (RAG может быть отключён)</string>
     <string name="saved_memories">Сохранённые записи</string>
+    <string name="confirm_replace_memory_title">Заменить существующую память?</string>
+    <string name="confirm_replace_memory_message">У вас уже есть глобальная память. Замена удалит существующую память и её embeddings. Продолжить?</string>
+    <string name="confirm_replace_action">Заменить</string>
+    <string name="memory_processing">Обработка памяти…</string>
     <string name="embedding_disabled">Эмбеддинги отключены</string>
     <string name="embedding_status_enabled">Статус эмбеддингов: включены</string>
     <string name="embedding_status_disabled">Статус эмбеддингов: отключены</string>
@@ -59,6 +63,8 @@
     <!-- Chat -->
     <string name="welcome_to_llm_hub">Добро пожаловать в LLM Hub!</string>
     <string name="no_models_downloaded">Модели ещё не загружены</string>
+    <!-- Отображается, когда нет сохранённой глобальной памяти для RAG -->
+    <string name="no_memories">Памяти пока нет</string>
     <string name="download_a_model">Скачать Модель</string>
     <string name="ready_to_chat">Готов к общению! Пожалуйста, выберите модель выше.</string>
     <string name="start_chatting">Начните общение, набрав сообщение ниже!</string>
