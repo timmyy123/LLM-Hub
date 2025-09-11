@@ -283,7 +283,9 @@ private fun ModelFamilyCard(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.padding(top = if (isMultimodal) 4.dp else 8.dp)
                 ) {
-                    if (variants.any { isGpuSupportedForModel(it, context) }) {
+                    // Show a GPU badge for the family header when any variant declares GPU support.
+                    // Per-variant GPU availability (device checks) is still handled in the variant row.
+                    if (variants.any { it.supportsGpu }) {
                         IconWithLabel(
                             icon = Icons.Default.Speed,
                             label = stringResource(R.string.gpu),
@@ -414,12 +416,16 @@ private fun ModelVariantItem(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 
-                if (isGpuSupportedForModel(model, context)) {
-                                            IconWithLabel(
-                            icon = Icons.Default.Speed,
-                            label = stringResource(R.string.gpu),
-                            tint = MaterialTheme.colorScheme.secondary
-                        )
+                // Show the GPU icon when the model declares GPU support. If the device
+                // does not actually support GPU for this model (e.g., Gemma-3n on low-RAM
+                // devices), render the icon dimmed to indicate limited availability.
+                if (model.supportsGpu) {
+                    val gpuAvailable = isGpuSupportedForModel(model, context)
+                    IconWithLabel(
+                        icon = Icons.Default.Speed,
+                        label = stringResource(R.string.gpu),
+                        tint = MaterialTheme.colorScheme.secondary
+                    )
                 }
             }
             
