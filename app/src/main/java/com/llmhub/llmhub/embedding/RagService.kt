@@ -316,10 +316,13 @@ class InMemoryRagService(private val embeddingService: EmbeddingService) : RagSe
                                 // Fall back to a lexical-only decision to avoid silently dropping
                                 // potentially relevant memories when the embedder is unreliable.
                                 val fallbackAccept = if (isShortMemory) {
-                                    overlap >= shortMemoryOverlapReq
+                                    // If the embedding similarity is still high enough (>= primarySimilarityThreshold),
+                                    // trust the semantic signal even when lexical overlap is very low.
+                                    overlap >= shortMemoryOverlapReq || sim >= primarySimilarityThreshold
                                 } else {
-                                    overlap >= lexicalFallbackMinOverlap
-                                }
+                                    val isMediumMemory = candidate.content.length < 150 // allow short personal facts
+                                    overlap >= lexicalFallbackMinOverlap || (sim >= primarySimilarityThreshold && isMediumMemory)
+                                    }
                                 Log.w(TAG, "RAG diag: embedder unreliable; falling back to lexical overlap (overlap=${"%.3f".format(overlap)}) -> accept=$fallbackAccept relaxed=$relaxedLexicalFallback")
                                 if (fallbackAccept) filtered.add(candidate)
                                 if (filtered.size >= maxResults) break
