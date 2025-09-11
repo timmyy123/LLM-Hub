@@ -38,21 +38,18 @@ class LlmHubApplication : Application() {
                     val job = ragManager.initializeAsync()
                     job.join()
 
-                    // Re-add any previously embedded global memories (they were stored in DB but
-                    // embeddings live in-memory and must be recreated at startup).
+                    // Restore persisted per-chunk embeddings into the in-memory RAG index
+                    // to avoid re-running the embedder on startup.
                     try {
-                        val list = database.memoryDao().getAllMemory().first()
-                        val embedded = list.filter { it.status == "EMBEDDED" }
-                        for (doc in embedded) {
-                            try {
-                                val added = ragManager.addGlobalDocument(doc.content, doc.fileName, doc.metadata)
-                                Log.d("LlmHubApplication", "Restored embedded memory id=${doc.id} added=$added chunkCount=${ragManager.getDocumentCount("__global_memory__")}")
-                            } catch (e: Exception) {
-                                Log.w("LlmHubApplication", "Failed to restore memory ${doc.id}: ${e.message}")
-                            }
+                        val chunkList = database.memoryDao().getAllChunks()
+                        if (chunkList.isNotEmpty()) {
+                            Log.d("LlmHubApplication", "Restoring ${chunkList.size} persisted memory chunks into RAG")
+                            ragManager.restoreGlobalDocumentsFromChunks(chunkList)
+                        } else {
+                            Log.d("LlmHubApplication", "No persisted memory chunks found for restore")
                         }
                     } catch (e: Exception) {
-                        Log.w("LlmHubApplication", "Failed to read memory DB for restore: ${e.message}")
+                        Log.w("LlmHubApplication", "Failed to read persisted memory chunks for restore: ${e.message}")
                     }
 
                     // Also attempt to process any pending/pending-failed documents

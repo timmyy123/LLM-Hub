@@ -22,4 +22,17 @@ interface MemoryDao {
 
     @Query("DELETE FROM memory_documents")
     suspend fun deleteAll()
+
+    // Chunk-level embedding persistence
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertChunk(chunk: MemoryChunkEmbedding)
+
+    @Query("SELECT * FROM memory_chunk_embeddings WHERE docId = :docId ORDER BY chunkIndex ASC")
+    suspend fun getChunksForDoc(docId: String): List<MemoryChunkEmbedding>
+
+    @Query("SELECT * FROM memory_chunk_embeddings ORDER BY createdAt ASC")
+    suspend fun getAllChunks(): List<MemoryChunkEmbedding>
+
+    @Query("DELETE FROM memory_chunk_embeddings WHERE docId = :docId")
+    suspend fun deleteChunksForDoc(docId: String)
 }

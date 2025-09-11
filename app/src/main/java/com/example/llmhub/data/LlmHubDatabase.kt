@@ -8,8 +8,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import android.content.Context
 
 @Database(
-    entities = [ChatEntity::class, MessageEntity::class, MemoryDocument::class],
-    version = 3,
+    entities = [ChatEntity::class, MessageEntity::class, MemoryDocument::class, com.llmhub.llmhub.data.MemoryChunkEmbedding::class],
+    version = 4,
     exportSchema = false
 )
 abstract class LlmHubDatabase : RoomDatabase() {
@@ -38,6 +38,15 @@ abstract class LlmHubDatabase : RoomDatabase() {
                 )
             }
         }
+
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Create the memory_chunk_embeddings table
+                database.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `memory_chunk_embeddings` (`id` TEXT NOT NULL, `docId` TEXT NOT NULL, `fileName` TEXT NOT NULL, `chunkIndex` INTEGER NOT NULL, `content` TEXT NOT NULL, `embedding` BLOB NOT NULL, `embeddingModel` TEXT, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+                )
+            }
+        }
         
         fun getDatabase(context: Context): LlmHubDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -45,7 +54,7 @@ abstract class LlmHubDatabase : RoomDatabase() {
                     context.applicationContext,
                     LlmHubDatabase::class.java,
                     "llmhub_database"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build()
                 INSTANCE = instance
                 instance
             }

@@ -7,6 +7,8 @@ import kotlin.math.*
 
 interface RagService {
     suspend fun addDocument(chatId: String, content: String, metadata: String = "", fileName: String = "")
+    // Add a precomputed document chunk with supplied embedding (avoid re-embedding)
+    suspend fun addDocumentWithEmbedding(chatId: String, content: String, fileName: String, chunkIndex: Int, embedding: FloatArray, metadata: String = "")
     // relaxedLexicalFallback: when true, the implementation should be more permissive
     // with lexical fallbacks (useful for explicit "what do you remember" style queries)
     suspend fun searchRelevantContext(chatId: String, query: String, maxResults: Int = 3, relaxedLexicalFallback: Boolean = false): List<ContextChunk>
@@ -97,6 +99,25 @@ class InMemoryRagService(private val embeddingService: EmbeddingService) : RagSe
             Log.d(TAG, "Added $addedChunks chunks from '$fileName' to chat $chatId")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to add document to RAG", e)
+        }
+    }
+
+    override suspend fun addDocumentWithEmbedding(chatId: String, content: String, fileName: String, chunkIndex: Int, embedding: FloatArray, metadata: String) {
+        mutex.withLock {
+            try {
+                val documentChunks = documents.getOrPut(chatId) { mutableListOf() }
+                val documentChunk = DocumentChunk(
+                    content = content,
+                    metadata = metadata,
+                    fileName = fileName,
+                    chunkIndex = chunkIndex,
+                    embedding = embedding.copyOf()
+                )
+                documentChunks.add(documentChunk)
+                Log.d(TAG, "Added precomputed embedding chunk $chunkIndex for '$fileName' to chat $chatId -> totalChunksNow=${documentChunks.size}")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to add precomputed document chunk to RAG", e)
+            }
         }
     }
     
