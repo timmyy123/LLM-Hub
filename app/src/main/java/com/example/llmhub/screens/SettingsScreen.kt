@@ -306,7 +306,12 @@ fun SettingsScreen(
                             // the list scroll when vertical space is constrained (landscape/tablet)
                             val configuration = LocalConfiguration.current
                             val screenHeightDp = configuration.screenHeightDp.dp
-                            val dialogMaxHeight = if (screenHeightDp * 0.8f > 640.dp) 640.dp else screenHeightDp * 0.8f
+                            val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
+                            val dialogMaxHeight = if (isLandscape) {
+                                (screenHeightDp * 0.75f).coerceAtMost(500.dp)
+                            } else {
+                                if (screenHeightDp * 0.8f > 640.dp) 640.dp else screenHeightDp * 0.8f
+                            }
 
                             Dialog(onDismissRequest = { showMemoryDialog = false }) {
                                 Surface(
@@ -320,7 +325,7 @@ fun SettingsScreen(
                                     Column(
                                         modifier = Modifier
                                             .padding(16.dp)
-                                            .verticalScroll(rememberScrollState())
+                                            .then(if (isLandscape) Modifier.verticalScroll(rememberScrollState()) else Modifier)
                                     ) {
                                         Text(stringResource(R.string.manage_memory), style = MaterialTheme.typography.headlineSmall)
                                         Spacer(modifier = Modifier.height(8.dp))
