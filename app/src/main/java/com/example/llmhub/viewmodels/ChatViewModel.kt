@@ -280,6 +280,15 @@ class ChatViewModel(
                 } catch (e: Exception) {
                     Log.w("ChatViewModel", "Unable to reset session for new chat: ${e.message}")
                 }
+
+                // Replicate global memory chunks into this chat's in-memory index so
+                // global memories behave like attached documents for the chat.
+                try {
+                    Log.d("ChatViewModel", "Replicating global memory into new chat $newChatId")
+                    ragServiceManager.replicateGlobalChunksToChat(newChatId)
+                } catch (e: Exception) {
+                    Log.w("ChatViewModel", "Failed to replicate global chunks into new chat $newChatId: ${e.message}")
+                }
                 
                 // Preserve the current model for new chats but don't auto-load it
                 currentModel = previousModel
@@ -336,6 +345,13 @@ class ChatViewModel(
                 
                 currentChatId = chatId
                 _currentChat.value = chat
+                // Ensure global memories are replicated into this chat so they act like attached docs
+                try {
+                    Log.d("ChatViewModel", "Replicating global memory into chat $chatId")
+                    ragServiceManager.replicateGlobalChunksToChat(chatId)
+                } catch (e: Exception) {
+                    Log.w("ChatViewModel", "Failed to replicate global chunks into chat $chatId: ${e.message}")
+                }
                 val foundModel = _availableModels.value.find { it.name == chat.modelName }
                     ?: ModelData.models.find { it.name == chat.modelName }
                 
@@ -847,36 +863,65 @@ class ChatViewModel(
                                         
                                         // Search for relevant document context using RAG (per-chat and optional global memory)
                                         var ragContext = ""
+                                        // Precompute the query embedding once per prompt to avoid duplicate embed calls
+                                        var precomputedQueryEmbedding: FloatArray? = null
+                                        try {
+                                            precomputedQueryEmbedding = ragServiceManager.generateEmbedding(lastUserContent)
+                                            if (precomputedQueryEmbedding != null) {
+                                                Log.d("ChatViewModel", "Precomputed query embedding (${precomputedQueryEmbedding.size} dims)")
+                                            }
+                                        } catch (e: Exception) {
+                                            Log.w("ChatViewModel", "Failed to precompute query embedding: ${e.message}")
+                                            precomputedQueryEmbedding = null
+                                        }
                                         try {
                                             val contextParts = mutableListOf<String>()
 
-                                            // If global memory is enabled in preferences, include global memory results
                                             val memoryEnabledPref = themePreferences.memoryEnabled.first()
+                                            val recentManualReset = System.currentTimeMillis() - lastSessionResetAt < 10000 // 10s
+                                            val recentAutoReset = inferenceService.wasSessionRecentlyReset(chatId)
+                                            val recentSessionReset = recentManualReset || recentAutoReset
+
+                                            // If we perform a forced injection of global memories (after a recent reset)
+                                            // we should NOT also include per-chat results later, otherwise the same
+                                            // global chunks can be added twice (direct global fetch + merged chat+global).
+                                            var forcedInjectedGlobal = false
+
                                             if (memoryEnabledPref) {
-                                                Log.d("ChatViewModel", "🔍 Querying global memory for this prompt (memory enabled)")
-                                                // Log embedding/RAG service status to help debug why memory may not be used
-                                                try {
-                                                    val embeddingStatus = ragServiceManager.getEmbeddingStatus()
-                                                    Log.d("ChatViewModel", "RAG embedding status: $embeddingStatus")
-                                                } catch (e: Exception) {
-                                                    Log.w("ChatViewModel", "Could not fetch RAG embedding status: ${e.message}")
-                                                }
-                                                val ragStart = System.currentTimeMillis()
-                                                // If the user explicitly asks 'what do you remember' or similar,
-                                                // request a relaxed lexical fallback from the RAG service to
-                                                // increase the chance of returning short user memories.
-                                                // We request a relaxed lexical fallback for global queries to be
-                                                // permissive about returning short/personal memories.
-                                                val globalChunks = ragServiceManager.searchGlobalContext(lastUserContent, 2, relaxedLexicalFallback = true)
-                                                ragSearchTimeMs += (System.currentTimeMillis() - ragStart)
-                                                if (globalChunks.isNotEmpty()) {
-                                                    Log.d("ChatViewModel", "✅ Found ${globalChunks.size} global memory chunks")
-                                                    // We intentionally do not throttle memory use; it's being used whenever enabled.
-                                                    contextParts.addAll(globalChunks.map { chunk ->
-                                                        "📄 **${chunk.fileName}** (global memory, similarity: ${String.format("%.2f", chunk.similarity)}):\n${chunk.content}"
-                                                    })
+                                                if (recentSessionReset) {
+                                                    Log.d("ChatViewModel", "🔔 Recent session reset detected - forcibly injecting global memories into prompt")
+                                                    // Try semantic search first
+                                                    var globalChunks = ragServiceManager.searchGlobalContext(lastUserContent, 10, relaxedLexicalFallback = true, queryEmbedding = precomputedQueryEmbedding)
+                                                    // Fallback to persisted DB chunks if embedder returned nothing
+                                                    if (globalChunks.isEmpty()) {
+                                                        try {
+                                                            val persisted = withContext(Dispatchers.IO) {
+                                                                com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context).memoryDao().getAllChunks()
+                                                            }
+                                                            if (persisted.isNotEmpty()) {
+                                                                globalChunks = persisted.map { pc ->
+                                                                    ContextChunk(pc.content, pc.docId ?: "", pc.fileName, 1.0f, pc.chunkIndex)
+                                                                }
+                                                            }
+                                                        } catch (e: Exception) {
+                                                            Log.w("ChatViewModel", "Failed to read persisted memory chunks for forced injection: ${e.message}")
+                                                        }
+                                                    }
+
+                                                    if (globalChunks.isNotEmpty()) {
+                                                        // Present memory chunks as direct factual context (no filename prompt)
+                                                        contextParts.addAll(globalChunks.take(3).map { chunk ->
+                                                            chunk.content.trim()
+                                                        })
+                                                        forcedInjectedGlobal = true
+                                                    } else {
+                                                        Log.d("ChatViewModel", "🔍 Forced injection: no global chunks available to inject")
+                                                    }
                                                 } else {
-                                                    Log.d("ChatViewModel", "ℹ️ Global memory query returned no chunks")
+                                                    // Normal memory-enabled path: do not separately call searchGlobalContext here.
+                                                    // We'll rely on the later call to `searchRelevantContext(chatId,...)`
+                                                    // which already merges chat-specific and global results when memory is enabled.
+                                                    Log.d("ChatViewModel", "🔍 Memory enabled - deferring global inclusion to combined chat search to avoid duplication")
                                                 }
                                             } else {
                                                 Log.d("ChatViewModel", "ℹ️ Global memory disabled by user preference; not querying global memory")
@@ -889,7 +934,8 @@ class ChatViewModel(
                                                 val relevantChunks = ragServiceManager.searchRelevantContext(
                                                     chatId = chatId,
                                                     query = lastUserContent,
-                                                    maxResults = 3
+                                                    maxResults = 3,
+                                                    queryEmbedding = precomputedQueryEmbedding
                                                 )
                                                 ragSearchTimeMs += (System.currentTimeMillis() - ragStartChat)
                                                 if (relevantChunks.isNotEmpty()) {
@@ -903,13 +949,12 @@ class ChatViewModel(
                                             }
 
                                             if (contextParts.isNotEmpty()) {
-                                                // Add a short instruction so the model treats these
-                                                // global memory chunks as factual background when
-                                                // answering explicit user questions.
-                                                val memoryInstruction = "IMPORTANT: The following items are confirmed USER MEMORY facts. If any of these facts directly answer the user's current question, incorporate them faithfully into your response. If they are not relevant to answering, ignore them completely. Do not reveal or reference unrelated memory facts." 
-                                                    ragContext = "\n\n---\n\n🔍 **Relevant Document Context (user memory):**\n\n" +
+                                                // Strong instruction: treat the following lines as confirmed user facts.
+                                                // Do NOT ask the user to paste file contents or reference file names.
+                                                val memoryInstruction = "IMPORTANT: The following lines are USER MEMORY facts. Incorporate them directly into your answer if relevant. Do NOT ask for file contents or reference filenames. If a fact is irrelevant, ignore it."
+                                                    ragContext = "\n\n---\n\nUSER MEMORY FACTS:\n\n" +
                                                         memoryInstruction + "\n\n" +
-                                                        contextParts.joinToString("\n\n---\n\n") +
+                                                        contextParts.joinToString("\n\n") +
                                                         "\n\n---\n\n"
                                             } else {
                                                 Log.d("ChatViewModel", "❌ No relevant document chunks found for query (no matches or embeddings disabled)")

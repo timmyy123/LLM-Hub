@@ -24,6 +24,8 @@
     <!-- Chat -->
     <string name="welcome_to_llm_hub">Willkommen bei LLM Hub!</string>
     <string name="no_models_downloaded">Noch keine Modelle heruntergeladen</string>
+    <!-- Angezeigt, wenn keine globalen Erinnerungen für RAG vorhanden sind -->
+    <string name="no_memories">Noch keine Erinnerungen</string>
     <string name="download_a_model">Ein Modell herunterladen</string>
     <string name="ready_to_chat">Bereit zum Chatten! Bitte wählen Sie oben ein Modell aus.</string>
     <string name="start_chatting">Beginnen Sie zu chatten, indem Sie unten eine Nachricht eingeben!</string>
@@ -233,6 +235,10 @@
     <string name="memory_save_success">Text im globalen Speicher gespeichert</string>
     <string name="memory_save_failed">Text konnte nicht im Speicher gespeichert werden (RAG möglicherweise deaktiviert)</string>
     <string name="saved_memories">Gespeicherte Einträge</string>
+    <string name="confirm_replace_memory_title">Existierende Erinnerung ersetzen?</string>
+    <string name="confirm_replace_memory_message">Sie haben bereits eine globale Erinnerung. Wenn Sie diese ersetzen, wird die bestehende Erinnerung und ihre Embeddings gelöscht. Fortfahren?</string>
+    <string name="confirm_replace_action">Ersetzen</string>
+    <string name="memory_processing">Erinnerung wird verarbeitet…</string>
     <string name="embedding_disabled">Embeddings deaktiviert</string>
     <string name="embedding_status_enabled">Embedding-Status: aktiviert</string>
     <string name="embedding_status_disabled">Embedding-Status: deaktiviert</string>
