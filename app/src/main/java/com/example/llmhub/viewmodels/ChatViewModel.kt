@@ -647,7 +647,7 @@ class ChatViewModel(
             if (isDisallowedPrompt(messageText)) {
                 repository.addMessage(
                     chatId = chatId,
-                    content = "I can’t assist with that request. Please rephrase with a different, safe topic.",
+                    content = "I can't assist with that request. Please rephrase with a different, safe topic.",
                     isFromUser = false
                 )
                 _isLoading.value = false
@@ -906,7 +906,7 @@ class ChatViewModel(
                                                 // Add a short instruction so the model treats these
                                                 // global memory chunks as factual background when
                                                 // answering explicit user questions.
-                                                val memoryInstruction = "IMPORTANT: The following items are confirmed user memory facts. When asked about the user's identity or personal details, answer directly using these facts. If the user's name is listed, respond with that name when asked 'what is my name' or similar." 
+                                                val memoryInstruction = "IMPORTANT: The following items are confirmed USER MEMORY facts. If any of these facts directly answer the user's current question, incorporate them faithfully into your response. If they are not relevant to answering, ignore them completely. Do not reveal or reference unrelated memory facts." 
                                                     ragContext = "\n\n---\n\n🔍 **Relevant Document Context (user memory):**\n\n" +
                                                         memoryInstruction + "\n\n" +
                                                         contextParts.joinToString("\n\n---\n\n") +
