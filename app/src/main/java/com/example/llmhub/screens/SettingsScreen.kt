@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -323,10 +324,11 @@ fun SettingsScreen(
                                         .heightIn(max = dialogMaxHeight)
                                 ) {
                                     Column(
-                                        modifier = Modifier
-                                            .padding(16.dp)
-                                            .then(if (isLandscape) Modifier.verticalScroll(rememberScrollState()) else Modifier)
-                                    ) {
+                                                modifier = Modifier
+                                                    .padding(16.dp)
+                                                    // Always allow vertical scrolling when space is constrained.
+                                                    .verticalScroll(rememberScrollState())
+                                            ) {
                                         Text(stringResource(R.string.manage_memory), style = MaterialTheme.typography.headlineSmall)
                                         Spacer(modifier = Modifier.height(8.dp))
                                         Text(stringResource(R.string.paste_or_upload_to_memory))
@@ -439,11 +441,14 @@ fun SettingsScreen(
                                                 }
                                             }
 
-                                            // Memory items list with fixed height for scrolling
+                                            // Memory items list: allow it to size naturally inside the
+                                            // dialog's scrollable column so the entire dialog can scroll
+                                            // on small heights (e.g., landscape). Use a max height
+                                            // to keep the list usable.
                                             LazyColumn(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .height(200.dp), // Fixed height to allow proper scrolling
+                                                    .heightIn(max = 220.dp),
                                                 verticalArrangement = Arrangement.spacedBy(6.dp)
                                             ) {
                                                 items(memoryList) { mem ->
@@ -567,11 +572,18 @@ fun SettingsScreen(
     
     // Theme Selection Dialog
     if (showThemeDialog) {
+        val configuration = LocalConfiguration.current
+        val isLandscapeDialog = configuration.screenWidthDp > configuration.screenHeightDp
         AlertDialog(
             onDismissRequest = { showThemeDialog = false },
             title = { Text(stringResource(R.string.choose_theme)) },
             text = {
-                Column {
+                // Constrain the height and allow scrolling in landscape
+                Column(
+                    modifier = Modifier
+                        .verticalScroll(rememberScrollState())
+                        .heightIn(max = if (isLandscapeDialog) (configuration.screenHeightDp.dp * 0.6f) else Dp.Unspecified)
+                ) {
                     val themeOptions = listOf(
                         ThemeMode.LIGHT to stringResource(R.string.theme_light),
                         ThemeMode.DARK to stringResource(R.string.theme_dark),
@@ -614,11 +626,17 @@ fun SettingsScreen(
     
     // Language Selection Dialog
     if (showLanguageDialog) {
+        val configurationLang = LocalConfiguration.current
+        val isLandscapeLang = configurationLang.screenWidthDp > configurationLang.screenHeightDp
         AlertDialog(
             onDismissRequest = { showLanguageDialog = false },
             title = { Text(stringResource(R.string.select_language)) },
             text = {
-                Column {
+                Column(
+                    modifier = Modifier
+                        .verticalScroll(rememberScrollState())
+                        .heightIn(max = if (isLandscapeLang) (configurationLang.screenHeightDp.dp * 0.6f) else Dp.Unspecified)
+                ) {
                     // System Default option
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
