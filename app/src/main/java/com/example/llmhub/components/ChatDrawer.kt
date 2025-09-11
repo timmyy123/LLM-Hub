@@ -63,99 +63,105 @@ fun ChatDrawer(
         )
     }
     
+    // Make drawer width adaptive and content scrollable for landscape / tablet
     ModalDrawerSheet(
-        modifier = Modifier.width(300.dp)
+        modifier = Modifier.widthIn(min = 260.dp, max = 420.dp)
     ) {
-        Column(
+        // Use a LazyColumn for the entire sheet so content can scroll when items overflow
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Header
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 16.dp)
-            ) {
-                Icon(
-                    Icons.Default.PhoneAndroid,
-                    contentDescription = null,
-                    modifier = Modifier.size(32.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = stringResource(R.string.drawer_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-            
-            // New Chat Button
-            FilledTonalButton(
-                onClick = onCreateNewChat,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.Default.Add, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.drawer_new_chat))
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Chat History
-            Text(
-                text = stringResource(R.string.drawer_recent_chats),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                items(chats) { chat ->
-                    ChatHistoryItem(
-                        chat = chat,
-                        onClick = { onNavigateToChat(chat.id) },
-                        onDelete = { viewModel.deleteChat(chat.id) }
+            item {
+                // Header
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                ) {
+                    Icon(
+                        Icons.Default.PhoneAndroid,
+                        contentDescription = null,
+                        modifier = Modifier.size(32.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.drawer_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
-                
-                if (chats.isEmpty()) {
-                    item {
-                        Text(
-                            text = stringResource(R.string.drawer_no_chats),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(16.dp)
-                        )
-                    }
+            }
+
+            item {
+                // New Chat Button
+                FilledTonalButton(
+                    onClick = onCreateNewChat,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.drawer_new_chat))
                 }
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            Divider()
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Navigation Options
-            DrawerNavigationItem(
-                icon = Icons.Default.GetApp,
-                text = stringResource(R.string.drawer_download_models),
-                onClick = onNavigateToModels
-            )
-            
-            DrawerNavigationItem(
-                icon = Icons.Outlined.DeleteSweep,
-                text = stringResource(R.string.drawer_clear_all_chats),
-                onClick = { showDeleteAllDialog = true }
-            )
 
-            DrawerNavigationItem(
-                icon = Icons.Default.Settings,
-                text = stringResource(R.string.drawer_settings),
-                onClick = onNavigateToSettings
-            )
+            item {
+                // Chat History header
+                Text(
+                    text = stringResource(R.string.drawer_recent_chats),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            // Chat history items (scrollable)
+            items(chats) { chat ->
+                ChatHistoryItem(
+                    chat = chat,
+                    onClick = { onNavigateToChat(chat.id) },
+                    onDelete = { viewModel.deleteChat(chat.id) }
+                )
+            }
+
+            item {
+                if (chats.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.drawer_no_chats),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
+            }
+
+            item {
+                Divider()
+            }
+
+            item {
+                // Navigation Options
+                Column {
+                    DrawerNavigationItem(
+                        icon = Icons.Default.GetApp,
+                        text = stringResource(R.string.drawer_download_models),
+                        onClick = onNavigateToModels
+                    )
+
+                    DrawerNavigationItem(
+                        icon = Icons.Outlined.DeleteSweep,
+                        text = stringResource(R.string.drawer_clear_all_chats),
+                        onClick = { showDeleteAllDialog = true }
+                    )
+
+                    DrawerNavigationItem(
+                        icon = Icons.Default.Settings,
+                        text = stringResource(R.string.drawer_settings),
+                        onClick = onNavigateToSettings
+                    )
+                }
+            }
         }
     }
 }

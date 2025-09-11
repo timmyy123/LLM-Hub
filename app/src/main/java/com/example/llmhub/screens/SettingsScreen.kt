@@ -24,6 +24,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.window.Dialog
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import androidx.compose.ui.text.input.TextFieldValue
@@ -298,188 +300,193 @@ fun SettingsScreen(
                             val memoryFlow = remember { com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context).memoryDao().getAllMemory() }
                             val memoryList by memoryFlow.collectAsState(initial = emptyList())
 
-                            AlertDialog(
-                                onDismissRequest = { showMemoryDialog = false },
-                                title = { Text(stringResource(R.string.manage_memory)) },
-                                text = {
-                                    Column {
-                                                Text(stringResource(R.string.paste_or_upload_to_memory))
-                                                Spacer(modifier = Modifier.height(8.dp))
-                                                OutlinedTextField(
-                                                    value = pasteText,
-                                                    onValueChange = { pasteText = it },
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .height(120.dp),
-                                                    placeholder = { Text(stringResource(R.string.paste_memory_placeholder)) }
-                                                )
-                                                Spacer(modifier = Modifier.height(8.dp))
+                            // Use a Dialog with a Surface so we can fully control sizing and make
+                            // the list scroll when vertical space is constrained (landscape/tablet)
+                            val configuration = LocalConfiguration.current
+                            val screenHeightDp = configuration.screenHeightDp.dp
+                            val dialogMaxHeight = if (screenHeightDp * 0.8f > 640.dp) 640.dp else screenHeightDp * 0.8f
 
-                                                // Buttons: Upload / Save
-                                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                                                    val buttonShape = MaterialTheme.shapes.large
-                                                    val buttonModifier = Modifier
-                                                        .weight(1f)
-                                                        .height(48.dp)
+                            Dialog(onDismissRequest = { showMemoryDialog = false }) {
+                                Surface(
+                                    shape = MaterialTheme.shapes.large,
+                                    tonalElevation = 8.dp,
+                                    color = MaterialTheme.colorScheme.surfaceContainer,
+                                    modifier = Modifier
+                                        .fillMaxWidth(0.92f)
+                                        .heightIn(max = dialogMaxHeight)
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Text(stringResource(R.string.manage_memory), style = MaterialTheme.typography.headlineSmall)
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(stringResource(R.string.paste_or_upload_to_memory))
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        OutlinedTextField(
+                                            value = pasteText,
+                                            onValueChange = { pasteText = it },
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(120.dp),
+                                            placeholder = { Text(stringResource(R.string.paste_memory_placeholder)) }
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
 
-                                                    Button(
-                                                        onClick = {
-                                                            // Always allow picking a document for upload (support multiple entries)
-                                                            coroutineScope.launch {
-                                                                documentPickerLauncher.launch("*/*")
-                                                            }
-                                                        },
-                                                        modifier = buttonModifier,
-                                                        enabled = embeddingEnabled && !selectedEmbeddingModel.isNullOrBlank(),
-                                                        shape = buttonShape
-                                                    ) {
-                                                        Text(stringResource(R.string.upload_file))
+                                        // Buttons: Upload / Save
+                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                                            val buttonShape = MaterialTheme.shapes.large
+                                            val buttonModifier = Modifier
+                                                .weight(1f)
+                                                .height(48.dp)
+
+                                            Button(
+                                                onClick = {
+                                                    coroutineScope.launch {
+                                                        documentPickerLauncher.launch("*/*")
                                                     }
+                                                },
+                                                modifier = buttonModifier,
+                                                enabled = embeddingEnabled && !selectedEmbeddingModel.isNullOrBlank(),
+                                                shape = buttonShape
+                                            ) {
+                                                Text(stringResource(R.string.upload_file))
+                                            }
 
-                                                    Spacer(modifier = Modifier.width(8.dp))
+                                            Spacer(modifier = Modifier.width(8.dp))
 
-                                                    Button(
-                                                        onClick = {
-                                                            if (pasteText.text.isNotBlank()) {
+                                            Button(
+                                                onClick = {
+                                                    if (pasteText.text.isNotBlank()) {
+                                                        coroutineScope.launch {
+                                                            val db = com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context)
+                                                            val id = "mem_${System.currentTimeMillis()}"
+                                                            val doc = com.llmhub.llmhub.data.MemoryDocument(
+                                                                id = id,
+                                                                fileName = "pasted_memory_${System.currentTimeMillis()}.txt",
+                                                                content = pasteText.text,
+                                                                metadata = "pasted",
+                                                                createdAt = System.currentTimeMillis(),
+                                                                status = "PENDING",
+                                                                chunkCount = 0
+                                                            )
+                                                            db.memoryDao().insert(doc)
+                                                            val processor = com.llmhub.llmhub.data.MemoryProcessor(context, db)
+                                                            processor.processPending()
+                                                            pasteText = TextFieldValue("")
+                                                            keyboardController?.hide()
+                                                            android.widget.Toast.makeText(context, context.getString(R.string.memory_save_success), android.widget.Toast.LENGTH_SHORT).show()
+                                                        }
+                                                    } else {
+                                                        android.widget.Toast.makeText(context, context.getString(R.string.paste_memory_placeholder), android.widget.Toast.LENGTH_SHORT).show()
+                                                    }
+                                                },
+                                                modifier = buttonModifier,
+                                                enabled = embeddingEnabled && !selectedEmbeddingModel.isNullOrBlank(),
+                                                shape = buttonShape
+                                            ) {
+                                                Text(stringResource(R.string.save_to_memory))
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(12.dp))
+
+                                        // processing indicator
+                                        val processorRunning = remember { com.llmhub.llmhub.data.MemoryProcessor.processing }
+                                        val processorRunningState by processorRunning.collectAsState(initial = false)
+                                        val hasPendingDocs = memoryList.any { it.status == "PENDING" || it.status == "EMBEDDING_IN_PROGRESS" }
+                                        if (processorRunningState || hasPendingDocs) {
+                                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 8.dp)) {
+                                                CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(stringResource(R.string.memory_processing), style = MaterialTheme.typography.bodySmall)
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                        Text(stringResource(R.string.saved_memories), style = MaterialTheme.typography.titleSmall)
+                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                        if (memoryList.isEmpty()) {
+                                            Text(stringResource(R.string.no_memories), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        } else {
+                                            // Make the list take remaining space and scroll when constrained
+                                            Column(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                                    TextButton(onClick = {
+                                                        coroutineScope.launch {
+                                                            val db = com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context)
+                                                            val ragManager = RagServiceManager.getInstance(context)
+                                                            try {
+                                                                db.memoryDao().deleteAll()
+                                                                db.memoryDao().deleteAllChunks()
+                                                                ragManager.clearGlobalDocuments()
+                                                                android.widget.Toast.makeText(context, context.getString(R.string.memory_cleared), android.widget.Toast.LENGTH_SHORT).show()
+                                                            } catch (e: Exception) {
+                                                                android.util.Log.w("SettingsScreen", "Failed to clear memories: ${e.message}")
+                                                            }
+                                                        }
+                                                    }) {
+                                                        Text(stringResource(R.string.clear_all))
+                                                    }
+                                                }
+
+                                                LazyColumn(
+                                                    modifier = Modifier.fillMaxSize(),
+                                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                                ) {
+                                                    items(memoryList) { mem ->
+                                                        Row(
+                                                            verticalAlignment = Alignment.CenterVertically,
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .padding(vertical = 6.dp)
+                                                        ) {
+                                                            Column(modifier = Modifier.weight(1f)) {
+                                                                val displayTitle = if (mem.metadata == "pasted") {
+                                                                    mem.content.trim().replace("\n", " ").take(120)
+                                                                } else mem.fileName
+                                                                Text(displayTitle, style = MaterialTheme.typography.bodyMedium)
+                                                                val metaLabel = when (mem.metadata) {
+                                                                    "uploaded" -> context.getString(R.string.global_memory_uploaded_by)
+                                                                    "pasted" -> context.getString(R.string.global_memory_pasted_by)
+                                                                    else -> mem.metadata
+                                                                }
+                                                                Text(metaLabel + " • " + android.text.format.DateFormat.getDateFormat(context).format(mem.createdAt), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                            }
+                                                            IconButton(onClick = {
                                                                 coroutineScope.launch {
                                                                     val db = com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context)
-                                                                    // Always insert pasted content as a new memory entry
-                                                                    val id = "mem_${System.currentTimeMillis()}"
-                                                                    val doc = com.llmhub.llmhub.data.MemoryDocument(
-                                                                        id = id,
-                                                                        fileName = "pasted_memory_${System.currentTimeMillis()}.txt",
-                                                                        content = pasteText.text,
-                                                                        // store a non-localized token so UI can render the current locale at display time
-                                                                        metadata = "pasted",
-                                                                        createdAt = System.currentTimeMillis(),
-                                                                        status = "PENDING",
-                                                                        chunkCount = 0
-                                                                    )
-                                                                    db.memoryDao().insert(doc)
-                                                                                    val processor = com.llmhub.llmhub.data.MemoryProcessor(context, db)
-                                                                                    processor.processPending()
-                                                                    pasteText = TextFieldValue("")
-                                                                    // hide keyboard after save
-                                                                    keyboardController?.hide()
-                                                                    android.widget.Toast.makeText(context, context.getString(R.string.memory_save_success), android.widget.Toast.LENGTH_SHORT).show()
-                                                                }
-                                                            } else {
-                                                                android.widget.Toast.makeText(context, context.getString(R.string.paste_memory_placeholder), android.widget.Toast.LENGTH_SHORT).show()
-                                                            }
-                                                        },
-                                                        modifier = buttonModifier,
-                                                        enabled = embeddingEnabled && !selectedEmbeddingModel.isNullOrBlank(),
-                                                        shape = buttonShape
-                                                    ) {
-                                                        Text(stringResource(R.string.save_to_memory))
-                                                    }
-                                                }
-
-                                                Spacer(modifier = Modifier.height(12.dp))
-
-                                                // Show processing indicator while MemoryProcessor is running or there are pending docs
-                                                val processorRunning = remember { com.llmhub.llmhub.data.MemoryProcessor.processing }
-                                                val processorRunningState by processorRunning.collectAsState(initial = false)
-                                                val hasPendingDocs = memoryList.any { it.status == "PENDING" || it.status == "EMBEDDING_IN_PROGRESS" }
-                                                if (processorRunningState || hasPendingDocs) {
-                                                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 8.dp)) {
-                                                        CircularProgressIndicator(modifier = Modifier.size(20.dp))
-                                                        Spacer(modifier = Modifier.width(8.dp))
-                                                        Text(stringResource(R.string.memory_processing), style = MaterialTheme.typography.bodySmall)
-                                                    }
-                                                }
-
-                                                // List saved memories (support multiple entries)
-                                                Text(stringResource(R.string.saved_memories), style = MaterialTheme.typography.titleSmall)
-                                                Spacer(modifier = Modifier.height(8.dp))
-
-                                                                    if (memoryList.isEmpty()) {
-                                                                        Text(stringResource(R.string.no_memories), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                                                    } else {
-                                                                        Column(modifier = Modifier.fillMaxWidth()) {
-                                                                            // Add Clear All button
-                                                                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                                                                                TextButton(onClick = {
-                                                                                    coroutineScope.launch {
-                                                                                        val db = com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context)
-                                                                                        val ragManager = RagServiceManager.getInstance(context)
-                                                                                        try {
-                                                                                            // delete all memory rows and chunks
-                                                                                            db.memoryDao().deleteAll()
-                                                                                            db.memoryDao().deleteAllChunks()
-                                                                                            // clear in-memory rag
-                                                                                            ragManager.clearGlobalDocuments()
-                                                                                            android.widget.Toast.makeText(context, context.getString(R.string.memory_cleared), android.widget.Toast.LENGTH_SHORT).show()
-                                                                                        } catch (e: Exception) {
-                                                                                            android.util.Log.w("SettingsScreen", "Failed to clear memories: ${e.message}")
-                                                                                        }
-                                                                                    }
-                                                                                }) {
-                                                                                    Text(stringResource(R.string.clear_all))
-                                                                                }
-                                                                            }
-
-                                                                            // Use a fixed height-limited, scrollable list so the dialog doesn't grow to the camera cutout
-                                                                            val maxHeight = 150.dp
-                                                                            Box(modifier = Modifier
-                                                                                .fillMaxWidth()
-                                                                                .heightIn(max = maxHeight)
-                                                                            ) {
-                                                                                LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                                                                                    items(memoryList) { mem ->
-                                                                                        Row(
-                                                                                            verticalAlignment = Alignment.CenterVertically,
-                                                                                            modifier = Modifier
-                                                                                                .fillMaxWidth()
-                                                                                                .padding(vertical = 6.dp)
-                                                                                        ) {
-                                                                                            Column(modifier = Modifier.weight(1f)) {
-                                                                                                val displayTitle = if (mem.metadata == "pasted") {
-                                                                                                    mem.content.trim().replace("\n", " ").take(120)
-                                                                                                } else mem.fileName
-                                                                                                Text(displayTitle, style = MaterialTheme.typography.bodyMedium)
-                                                                                                val metaLabel = when (mem.metadata) {
-                                                                                                    "uploaded" -> context.getString(R.string.global_memory_uploaded_by)
-                                                                                                    "pasted" -> context.getString(R.string.global_memory_pasted_by)
-                                                                                                    else -> mem.metadata
-                                                                                                }
-                                                                                                Text(metaLabel + " • " + android.text.format.DateFormat.getDateFormat(context).format(mem.createdAt), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                                                                            }
-                                                                                            IconButton(onClick = {
-                                                                                                // delete: remove memory row, its persisted chunk embeddings, and refresh the in-memory RAG
-                                                                                                coroutineScope.launch {
-                                                                                                    val db = com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context)
-                                                                                                    val ragManager = RagServiceManager.getInstance(context)
-                                                                                                    try {
-                                                                                                        db.memoryDao().delete(mem)
-                                                                                                        db.memoryDao().deleteChunksForDoc(mem.id)
-                                                                                                        // remove from in-memory RAG and then restore remaining chunks
-                                                                                                        ragManager.removeGlobalDocumentChunks(mem.id)
-                                                                                                        val remaining = db.memoryDao().getAllChunks()
-                                                                                                        if (remaining.isNotEmpty()) {
-                                                                                                            ragManager.restoreGlobalDocumentsFromChunks(remaining)
-                                                                                                        }
-                                                                                                    } catch (e: Exception) {
-                                                                                                        android.util.Log.w("SettingsScreen", "Failed to delete memory ${mem.id}: ${e.message}")
-                                                                                                    }
-                                                                                                }
-                                                                                            }) {
-                                                                                                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete))
-                                                                                            }
-                                                                                        }
-                                                                                    }
-                                                                                }
-                                                                            }
+                                                                    val ragManager = RagServiceManager.getInstance(context)
+                                                                    try {
+                                                                        db.memoryDao().delete(mem)
+                                                                        db.memoryDao().deleteChunksForDoc(mem.id)
+                                                                        ragManager.removeGlobalDocumentChunks(mem.id)
+                                                                        val remaining = db.memoryDao().getAllChunks()
+                                                                        if (remaining.isNotEmpty()) {
+                                                                            ragManager.restoreGlobalDocumentsFromChunks(remaining)
                                                                         }
+                                                                    } catch (e: Exception) {
+                                                                        android.util.Log.w("SettingsScreen", "Failed to delete memory ${mem.id}: ${e.message}")
                                                                     }
+                                                                }
+                                                            }) {
+                                                                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete))
+                                                            }
+                                                        }
+                                                    }
+                                                }
                                             }
-                                },
-                                confirmButton = {
-                                    TextButton(onClick = { showMemoryDialog = false }) {
-                                        Text(stringResource(R.string.done))
+                                        }
+
+                                        Spacer(modifier = Modifier.height(12.dp))
+
+                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                            TextButton(onClick = { showMemoryDialog = false }) {
+                                                Text(stringResource(R.string.done))
+                                            }
+                                        }
                                     }
                                 }
-                            )
+                            }
 
                             // (replace-confirmation removed to allow multiple memory entries)
                         }
