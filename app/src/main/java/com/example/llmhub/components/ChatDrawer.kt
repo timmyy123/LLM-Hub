@@ -116,6 +116,7 @@ fun ChatDrawer(
                 text = stringResource(R.string.drawer_recent_chats),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 6.dp)
             )
 
             // Chat history items: dedicated scroll area. Use a fairly small weight so the
@@ -125,7 +126,7 @@ fun ChatDrawer(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 items(chats) { chat ->
                     ChatHistoryItem(
@@ -261,7 +262,7 @@ private fun DrawerNavigationItem(
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
