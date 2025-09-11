@@ -1458,7 +1458,9 @@ fun MessageInput(
 fun FilePreviewDialog(
     fileInfo: FileUtils.FileInfo,
     onDismiss: () -> Unit,
-    onRemove: (() -> Unit)? = null // Make remove optional
+    onRemove: (() -> Unit)? = null, // Make remove optional
+    confirmAction: (() -> Unit)? = null,
+    confirmText: String? = null
 ) {
     FilePreviewDialog(
         uri = fileInfo.uri,
@@ -1466,7 +1468,9 @@ fun FilePreviewDialog(
         fileType = fileInfo.type,
         fileSize = fileInfo.size,
         onDismiss = onDismiss,
-        onRemove = onRemove
+        onRemove = onRemove,
+        confirmAction = confirmAction,
+        confirmText = confirmText
     )
 }
 
@@ -1477,7 +1481,9 @@ fun FilePreviewDialog(
     fileType: FileUtils.SupportedFileType,
     fileSize: Long,
     onDismiss: () -> Unit,
-    onRemove: (() -> Unit)? = null // Make remove optional
+    onRemove: (() -> Unit)? = null, // Make remove optional
+    confirmAction: (() -> Unit)? = null,
+    confirmText: String? = null
 ) {
     val context = LocalContext.current
     var fileContent by remember { mutableStateOf<String?>(null) }
@@ -1678,27 +1684,43 @@ fun FilePreviewDialog(
                                 Text(stringResource(R.string.remove_attachment))
                             }
                         }
-                        
-                        Button(
-                            onClick = onDismiss,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            if (onRemove != null) {
+
+                        // Optional confirm action (e.g. "Add to memory")
+                        if (confirmAction != null) {
+                            Button(
+                                onClick = confirmAction,
+                                modifier = Modifier.weight(1f)
+                            ) {
                                 Icon(
                                     Icons.Default.Check,
                                     contentDescription = null,
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.keep_attachment))
-                            } else {
-                                Icon(
-                                    Icons.Default.Close,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.close))
+                                Text(confirmText ?: stringResource(R.string.keep_attachment))
+                            }
+                        } else {
+                            Button(
+                                onClick = onDismiss,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                if (onRemove != null) {
+                                    Icon(
+                                        Icons.Default.Check,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(stringResource(R.string.keep_attachment))
+                                } else {
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(stringResource(R.string.close))
+                                }
                             }
                         }
                     }

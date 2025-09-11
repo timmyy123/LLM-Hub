@@ -31,6 +31,7 @@
     <string name="memory_save_success">Текст сохранён в глобальной памяти</string>
     <string name="memory_save_failed">Не удалось сохранить текст в памяти (RAG может быть отключён)</string>
     <string name="saved_memories">Сохранённые записи</string>
+    <string name="clear_all">Очистить всё</string>
     <string name="confirm_replace_memory_title">Заменить существующую память?</string>
     <string name="confirm_replace_memory_message">У вас уже есть глобальная память. Замена удалит существующую память и её embeddings. Продолжить?</string>
     <string name="confirm_replace_action">Заменить</string>

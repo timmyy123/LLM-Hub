@@ -35,4 +35,7 @@ interface MemoryDao {
 
     @Query("DELETE FROM memory_chunk_embeddings WHERE docId = :docId")
     suspend fun deleteChunksForDoc(docId: String)
+
+    @Query("DELETE FROM memory_chunk_embeddings")
+    suspend fun deleteAllChunks()
 }

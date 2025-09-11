@@ -216,6 +216,7 @@
     <string name="memory_save_success">Texto salvo na memória global</string>
     <string name="memory_save_failed">Falha ao salvar texto na memória (RAG pode estar desativado)</string>
     <string name="saved_memories">Memórias salvas</string>
+    <string name="clear_all">Limpar Tudo</string>
     <string name="confirm_replace_memory_title">Substituir memória existente?</string>
     <string name="confirm_replace_memory_message">Você já tem uma memória global. Substituí-la excluirá a memória existente e seus embeddings. Continuar?</string>
     <string name="confirm_replace_action">Substituir</string>
