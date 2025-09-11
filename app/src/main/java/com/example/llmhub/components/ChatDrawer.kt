@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import com.llmhub.llmhub.R
+import androidx.compose.ui.platform.LocalConfiguration
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,6 +36,10 @@ fun ChatDrawer(
     // Now gets chats from the view model
     val chats by viewModel.allChats.collectAsState()
     var showDeleteAllDialog by remember { mutableStateOf(false) }
+
+    // Orientation check for responsive layout
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
 
     if (showDeleteAllDialog) {
         AlertDialog(
@@ -63,104 +68,101 @@ fun ChatDrawer(
         )
     }
     
-    // Make drawer width adaptive and content scrollable for landscape / tablet
+    // Drawer width: max 85% of screen, with sensible min/max bounds.
     ModalDrawerSheet(
-        modifier = Modifier.widthIn(min = 260.dp, max = 420.dp)
+        modifier = Modifier
+            .fillMaxWidth(if (isLandscape) 0.55f else 0.85f)
+            .widthIn(min = 280.dp, max = 420.dp)
     ) {
-        // Use a LazyColumn for the entire sheet so content can scroll when items overflow
-        LazyColumn(
+        // Layout so that action items stay visible; chat list scrolls independently.
+        Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .fillMaxHeight()
+                .padding(16.dp)
         ) {
-            item {
-                // Header
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(bottom = 4.dp)
-                ) {
-                    Icon(
-                        Icons.Default.PhoneAndroid,
-                        contentDescription = null,
-                        modifier = Modifier.size(32.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = stringResource(R.string.drawer_title),
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-
-            item {
-                // New Chat Button
-                FilledTonalButton(
-                    onClick = onCreateNewChat,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.drawer_new_chat))
-                }
-            }
-
-            item {
-                // Chat History header
+            // Header
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 4.dp)
+            ) {
+                Icon(
+                    Icons.Default.PhoneAndroid,
+                    contentDescription = null,
+                    modifier = Modifier.size(32.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = stringResource(R.string.drawer_recent_chats),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = stringResource(R.string.drawer_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
 
-            // Chat history items (scrollable)
-            items(chats) { chat ->
-                ChatHistoryItem(
-                    chat = chat,
-                    onClick = { onNavigateToChat(chat.id) },
-                    onDelete = { viewModel.deleteChat(chat.id) }
-                )
+            // New Chat Button
+            FilledTonalButton(
+                onClick = onCreateNewChat,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.drawer_new_chat))
             }
 
-            item {
+            // Chat History header
+            Text(
+                text = stringResource(R.string.drawer_recent_chats),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            // Chat history items: dedicated scroll area
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(if (isLandscape) 3f else 1f),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(chats) { chat ->
+                    ChatHistoryItem(
+                        chat = chat,
+                        onClick = { onNavigateToChat(chat.id) },
+                        onDelete = { viewModel.deleteChat(chat.id) }
+                    )
+                }
                 if (chats.isEmpty()) {
-                    Text(
-                        text = stringResource(R.string.drawer_no_chats),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(8.dp)
-                    )
+                    item {
+                        Text(
+                            text = stringResource(R.string.drawer_no_chats),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(8.dp)
+                        )
+                    }
                 }
             }
 
-            item {
-                Divider()
-            }
+            Divider()
 
-            item {
-                // Navigation Options
-                Column {
-                    DrawerNavigationItem(
-                        icon = Icons.Default.GetApp,
-                        text = stringResource(R.string.drawer_download_models),
-                        onClick = onNavigateToModels
-                    )
+            // Navigation Options pinned at bottom
+            Column {
+                DrawerNavigationItem(
+                    icon = Icons.Default.GetApp,
+                    text = stringResource(R.string.drawer_download_models),
+                    onClick = onNavigateToModels
+                )
 
-                    DrawerNavigationItem(
-                        icon = Icons.Outlined.DeleteSweep,
-                        text = stringResource(R.string.drawer_clear_all_chats),
-                        onClick = { showDeleteAllDialog = true }
-                    )
+                DrawerNavigationItem(
+                    icon = Icons.Outlined.DeleteSweep,
+                    text = stringResource(R.string.drawer_clear_all_chats),
+                    onClick = { showDeleteAllDialog = true }
+                )
 
-                    DrawerNavigationItem(
-                        icon = Icons.Default.Settings,
-                        text = stringResource(R.string.drawer_settings),
-                        onClick = onNavigateToSettings
-                    )
-                }
+                DrawerNavigationItem(
+                    icon = Icons.Default.Settings,
+                    text = stringResource(R.string.drawer_settings),
+                    onClick = onNavigateToSettings
+                )
             }
         }
     }
