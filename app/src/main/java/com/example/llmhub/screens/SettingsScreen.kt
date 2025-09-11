@@ -4,7 +4,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -315,7 +317,11 @@ fun SettingsScreen(
                                         .fillMaxWidth(0.92f)
                                         .heightIn(max = dialogMaxHeight)
                                 ) {
-                                    Column(modifier = Modifier.padding(16.dp)) {
+                                    Column(
+                                        modifier = Modifier
+                                            .padding(16.dp)
+                                            .verticalScroll(rememberScrollState())
+                                    ) {
                                         Text(stringResource(R.string.manage_memory), style = MaterialTheme.typography.headlineSmall)
                                         Spacer(modifier = Modifier.height(8.dp))
                                         Text(stringResource(R.string.paste_or_upload_to_memory))
@@ -408,69 +414,70 @@ fun SettingsScreen(
                                         if (memoryList.isEmpty()) {
                                             Text(stringResource(R.string.no_memories), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         } else {
-                                            // Make the list take remaining space and scroll when constrained
-                                            Column(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                                                    TextButton(onClick = {
-                                                        coroutineScope.launch {
-                                                            val db = com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context)
-                                                            val ragManager = RagServiceManager.getInstance(context)
-                                                            try {
-                                                                db.memoryDao().deleteAll()
-                                                                db.memoryDao().deleteAllChunks()
-                                                                ragManager.clearGlobalDocuments()
-                                                                android.widget.Toast.makeText(context, context.getString(R.string.memory_cleared), android.widget.Toast.LENGTH_SHORT).show()
-                                                            } catch (e: Exception) {
-                                                                android.util.Log.w("SettingsScreen", "Failed to clear memories: ${e.message}")
-                                                            }
+                                            // Clear All button
+                                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                                TextButton(onClick = {
+                                                    coroutineScope.launch {
+                                                        val db = com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context)
+                                                        val ragManager = RagServiceManager.getInstance(context)
+                                                        try {
+                                                            db.memoryDao().deleteAll()
+                                                            db.memoryDao().deleteAllChunks()
+                                                            ragManager.clearGlobalDocuments()
+                                                            android.widget.Toast.makeText(context, context.getString(R.string.memory_cleared), android.widget.Toast.LENGTH_SHORT).show()
+                                                        } catch (e: Exception) {
+                                                            android.util.Log.w("SettingsScreen", "Failed to clear memories: ${e.message}")
                                                         }
-                                                    }) {
-                                                        Text(stringResource(R.string.clear_all))
                                                     }
+                                                }) {
+                                                    Text(stringResource(R.string.clear_all))
                                                 }
+                                            }
 
-                                                LazyColumn(
-                                                    modifier = Modifier.fillMaxSize(),
-                                                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                                                ) {
-                                                    items(memoryList) { mem ->
-                                                        Row(
-                                                            verticalAlignment = Alignment.CenterVertically,
-                                                            modifier = Modifier
-                                                                .fillMaxWidth()
-                                                                .padding(vertical = 6.dp)
-                                                        ) {
-                                                            Column(modifier = Modifier.weight(1f)) {
-                                                                val displayTitle = if (mem.metadata == "pasted") {
-                                                                    mem.content.trim().replace("\n", " ").take(120)
-                                                                } else mem.fileName
-                                                                Text(displayTitle, style = MaterialTheme.typography.bodyMedium)
-                                                                val metaLabel = when (mem.metadata) {
-                                                                    "uploaded" -> context.getString(R.string.global_memory_uploaded_by)
-                                                                    "pasted" -> context.getString(R.string.global_memory_pasted_by)
-                                                                    else -> mem.metadata
-                                                                }
-                                                                Text(metaLabel + " • " + android.text.format.DateFormat.getDateFormat(context).format(mem.createdAt), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            // Memory items list with fixed height for scrolling
+                                            LazyColumn(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(200.dp), // Fixed height to allow proper scrolling
+                                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                                            ) {
+                                                items(memoryList) { mem ->
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .padding(vertical = 6.dp)
+                                                    ) {
+                                                        Column(modifier = Modifier.weight(1f)) {
+                                                            val displayTitle = if (mem.metadata == "pasted") {
+                                                                mem.content.trim().replace("\n", " ").take(120)
+                                                            } else mem.fileName
+                                                            Text(displayTitle, style = MaterialTheme.typography.bodyMedium)
+                                                            val metaLabel = when (mem.metadata) {
+                                                                "uploaded" -> context.getString(R.string.global_memory_uploaded_by)
+                                                                "pasted" -> context.getString(R.string.global_memory_pasted_by)
+                                                                else -> mem.metadata
                                                             }
-                                                            IconButton(onClick = {
-                                                                coroutineScope.launch {
-                                                                    val db = com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context)
-                                                                    val ragManager = RagServiceManager.getInstance(context)
-                                                                    try {
-                                                                        db.memoryDao().delete(mem)
-                                                                        db.memoryDao().deleteChunksForDoc(mem.id)
-                                                                        ragManager.removeGlobalDocumentChunks(mem.id)
-                                                                        val remaining = db.memoryDao().getAllChunks()
-                                                                        if (remaining.isNotEmpty()) {
-                                                                            ragManager.restoreGlobalDocumentsFromChunks(remaining)
-                                                                        }
-                                                                    } catch (e: Exception) {
-                                                                        android.util.Log.w("SettingsScreen", "Failed to delete memory ${mem.id}: ${e.message}")
+                                                            Text(metaLabel + " • " + android.text.format.DateFormat.getDateFormat(context).format(mem.createdAt), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                        }
+                                                        IconButton(onClick = {
+                                                            coroutineScope.launch {
+                                                                val db = com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context)
+                                                                val ragManager = RagServiceManager.getInstance(context)
+                                                                try {
+                                                                    db.memoryDao().delete(mem)
+                                                                    db.memoryDao().deleteChunksForDoc(mem.id)
+                                                                    ragManager.removeGlobalDocumentChunks(mem.id)
+                                                                    val remaining = db.memoryDao().getAllChunks()
+                                                                    if (remaining.isNotEmpty()) {
+                                                                        ragManager.restoreGlobalDocumentsFromChunks(remaining)
                                                                     }
+                                                                } catch (e: Exception) {
+                                                                    android.util.Log.w("SettingsScreen", "Failed to delete memory ${mem.id}: ${e.message}")
                                                                 }
-                                                            }) {
-                                                                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete))
                                                             }
+                                                        }) {
+                                                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete))
                                                         }
                                                     }
                                                 }
