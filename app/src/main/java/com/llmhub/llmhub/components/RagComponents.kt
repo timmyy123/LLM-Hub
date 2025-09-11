@@ -122,13 +122,8 @@ fun CompactRagIndicator(
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(12.dp)
             )
-            Text(
-                text = documentCount.toString(),
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                fontSize = 10.sp
-            )
+            // Numeric document count removed to avoid showing replicated/global memory
+            // chunks as an "attachment" badge. Keep the compact icon only.
         }
     }
 }
