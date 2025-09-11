@@ -90,6 +90,22 @@ class RagServiceManager(
             return ragService
         }
     }
+
+    /**
+     * Generate an embedding for the given text using the initialized embedding service.
+     * Returns null if the embedding service is not available.
+     */
+    suspend fun generateEmbedding(text: String): FloatArray? {
+        initMutex.withLock {
+            val svc = embeddingService ?: return null
+            return try {
+                svc.generateEmbedding(text)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to generate embedding via manager: ${e.message}")
+                null
+            }
+        }
+    }
     
     /**
      * Check if RAG service is ready to use
@@ -169,6 +185,52 @@ class RagServiceManager(
             Log.w(TAG, "RAG service not ready, cannot add global document")
             false
         }
+    }
+
+    /**
+     * Add a single precomputed chunk to a global document (no embedding step).
+     * Useful at startup when loading persisted chunk embeddings.
+     */
+    suspend fun addGlobalDocumentChunk(docId: String, content: String, fileName: String, chunkIndex: Int, embedding: FloatArray, embeddingModel: String? = null, metadata: String = ""): Boolean {
+        if (!isReady()) {
+            Log.d(TAG, "RAG service not ready or embeddings disabled - skipping addGlobalDocumentChunk for '$fileName'")
+            return false
+        }
+        val service = getRagService()
+        return if (service != null) {
+            try {
+                service.addDocumentWithEmbedding(GLOBAL_MEMORY_CHAT_ID, content, fileName, chunkIndex, embedding, metadata)
+                Log.d(TAG, "Added global precomputed chunk $chunkIndex for '$fileName' to memory pool")
+                true
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to add global precomputed chunk to RAG", e)
+                false
+            }
+        } else {
+            Log.w(TAG, "RAG service not ready, cannot add global precomputed chunk")
+            false
+        }
+    }
+
+    /**
+     * Load persisted chunk embeddings and populate the in-memory RAG index.
+     * This avoids re-embedding on startup.
+     */
+    suspend fun restoreGlobalDocumentsFromChunks(chunks: List<com.llmhub.llmhub.data.MemoryChunkEmbedding>) {
+        if (!isReady()) {
+            Log.d(TAG, "RAG service not ready - cannot restore global chunks")
+            return
+        }
+        val service = getRagService() ?: return
+        for (chunk in chunks) {
+            try {
+                val embedding = com.llmhub.llmhub.data.byteArrayToFloatArray(chunk.embedding)
+                service.addDocumentWithEmbedding(GLOBAL_MEMORY_CHAT_ID, chunk.content, chunk.fileName, chunk.chunkIndex, embedding, chunk.embeddingModel ?: "")
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to restore chunk ${chunk.id}: ${e.message}")
+            }
+        }
+        Log.d(TAG, "Restored ${chunks.size} global chunk embeddings into RAG")
     }
 
     suspend fun searchGlobalContext(query: String, maxResults: Int = 3, relaxedLexicalFallback: Boolean = false): List<ContextChunk> {
