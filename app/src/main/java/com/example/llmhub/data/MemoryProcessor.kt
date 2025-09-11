@@ -7,14 +7,22 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.MutableStateFlow
 import com.llmhub.llmhub.embedding.RagServiceManager
 
 class MemoryProcessor(private val context: Context, private val db: LlmHubDatabase) {
     private val TAG = "MemoryProcessor"
     private val ragManager = com.llmhub.llmhub.embedding.RagServiceManager.getInstance(context)
 
+    companion object {
+        // Public state that composables can observe to know when embedding work is active
+        val processing = MutableStateFlow(false)
+    }
+
     fun processPending() {
         CoroutineScope(Dispatchers.IO).launch {
+            // mark processor as running
+            processing.value = true
             try {
                 // Ensure RAG initialization attempts
                 val job = ragManager.initializeAsync()
@@ -109,6 +117,9 @@ class MemoryProcessor(private val context: Context, private val db: LlmHubDataba
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Memory processing failed", e)
+            } finally {
+                // mark processor as stopped
+                processing.value = false
             }
         }
     }

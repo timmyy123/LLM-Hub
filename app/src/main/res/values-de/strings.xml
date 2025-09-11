@@ -235,6 +235,7 @@
     <string name="memory_save_success">Text im globalen Speicher gespeichert</string>
     <string name="memory_save_failed">Text konnte nicht im Speicher gespeichert werden (RAG möglicherweise deaktiviert)</string>
     <string name="saved_memories">Gespeicherte Einträge</string>
+    <string name="clear_all">Alles löschen</string>
     <string name="confirm_replace_memory_title">Existierende Erinnerung ersetzen?</string>
     <string name="confirm_replace_memory_message">Sie haben bereits eine globale Erinnerung. Wenn Sie diese ersetzen, wird die bestehende Erinnerung und ihre Embeddings gelöscht. Fortfahren?</string>
     <string name="confirm_replace_action">Ersetzen</string>
