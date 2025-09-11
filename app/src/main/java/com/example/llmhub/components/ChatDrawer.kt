@@ -8,6 +8,8 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -116,11 +118,13 @@ fun ChatDrawer(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            // Chat history items: dedicated scroll area
+            // Chat history items: dedicated scroll area. Use a fairly small weight so the
+            // action/navigation area can remain visible in landscape; bottom actions are
+            // allowed to scroll if space is constrained.
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(if (isLandscape) 3f else 1f),
+                    .weight(1f),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(chats) { chat ->
@@ -144,8 +148,15 @@ fun ChatDrawer(
 
             Divider()
 
-            // Navigation Options pinned at bottom
-            Column {
+            // Navigation Options pinned at bottom. Make this block scrollable when
+            // vertical space is constrained (especially in landscape) so items don't get
+            // truncated and the chat list can remain visible.
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(top = 4.dp)
+            ) {
                 DrawerNavigationItem(
                     icon = Icons.Default.GetApp,
                     text = stringResource(R.string.drawer_download_models),
