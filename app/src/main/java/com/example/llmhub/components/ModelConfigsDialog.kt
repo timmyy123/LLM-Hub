@@ -1,6 +1,5 @@
 package com.llmhub.llmhub.components
 
-import android.app.ActivityManager
 import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -54,19 +53,11 @@ fun ModelConfigsDialog(
         (screenHeightDp * 0.72f).coerceAtMost(640.dp)
     }
 
-    // Determine GPU availability for Gemma models using same logic as BackendSelectionDialog
-    val deviceMemoryGB = getDeviceMemoryGB(context)
+    // Always allow GPU for Gemma-3n models - let users have full control
     val isGemma3nE2B = model.name.contains("Gemma-3n E2B", ignoreCase = true)
     val isGemma3nE4B = model.name.contains("Gemma-3n E4B", ignoreCase = true)
-    val gpuDisabled = when {
-        isGemma3nE2B -> deviceMemoryGB <= 5.0f
-        isGemma3nE4B -> deviceMemoryGB <= 7.0f
-        else -> false
-    }
-    
-    // For E4B, always allow GPU if device has > 7GB RAM, but suggest disabling features for 7-8GB
-    val canUseGpu = !gpuDisabled
-    val shouldSuggestDisabling = isGemma3nE4B && deviceMemoryGB > 7.0f && deviceMemoryGB <= 8.0f
+    val isGemma3nModel = isGemma3nE2B || isGemma3nE4B
+    val canUseGpu = true // Always allow GPU selection for all models
 
     // Cap for max tokens
     val maxTokensCap = remember(model) { MediaPipeInferenceService.getMaxTokensForModelStatic(model) }
@@ -78,7 +69,7 @@ fun ModelConfigsDialog(
     var topK by remember { mutableStateOf(64) }
     var topP by remember { mutableStateOf(0.95f) }
     var temperature by remember { mutableStateOf(1.0f) }
-    var useGpu by remember { mutableStateOf(false) }
+    var useGpu by remember { mutableStateOf(true) } // Default to GPU
     var disableVision by remember { mutableStateOf(false) }
     var disableAudio by remember { mutableStateOf(false) }
 
@@ -230,138 +221,74 @@ fun ModelConfigsDialog(
                 if (model.name.contains("Gemma", ignoreCase = true)) {
                     Text(text = stringResource(R.string.choose_accelerator), style = MaterialTheme.typography.bodyMedium)
                     
-                    if (false) { // Disabled old special case logic
-                        // Special layout for E4B with 8GB RAM: CPU, GPU (Vision Disabled)
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            FilterChip(
-                                selected = !useGpu,
-                                onClick = { 
-                                    useGpu = false
-                                    disableVision = false
-                                    disableAudio = false
-                                },
-                                label = { Text("CPU") },
-                                leadingIcon = { if (!useGpu) Icon(Icons.Filled.Check, contentDescription = null) },
-                                modifier = Modifier.weight(1f).height(44.dp)
-                            )
-                            FilterChip(
-                                selected = useGpu,
-                                onClick = { 
-                                    useGpu = true
-                                    disableVision = false
-                                    disableAudio = true
-                                },
-                                label = { Text(stringResource(R.string.gpu_with_audio_disabled)) },
-                                leadingIcon = { if (useGpu) Icon(Icons.Filled.Check, contentDescription = null) },
-                                modifier = Modifier.weight(1f).height(44.dp)
-                            )
-                        }
-                        if (useGpu) {
-                            Text(
-                                text = stringResource(R.string.gemma3n_e4b_gpu_audio_warning),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                            )
-                        }
-                    } else {
-                        // New unified layout with separate toggles
-                        // CPU/GPU Selection
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            FilterChip(
-                                selected = !useGpu,
-                                onClick = { 
-                                    useGpu = false
-                                    disableVision = false
-                                    disableAudio = false
-                                },
-                                label = { Text("CPU") },
-                                leadingIcon = { if (!useGpu) Icon(Icons.Filled.Check, contentDescription = null) },
-                                modifier = Modifier.weight(1f).height(44.dp)
-                            )
-                            FilterChip(
-                                selected = useGpu,
-                                onClick = { 
-                                    if (canUseGpu) {
-                                        useGpu = true
-                                        // Smart defaults for suggestions
-                                        if (shouldSuggestDisabling) {
-                                            disableVision = false // Keep vision by default, let user choose
-                                            disableAudio = true   // Suggest disabling audio
-                                        } else {
-                                            disableVision = false
-                                            disableAudio = false
-                                        }
-                                    }
-                                },
-                                label = { Text("GPU") },
-                                leadingIcon = { if (useGpu) Icon(Icons.Filled.Check, contentDescription = null) },
-                                modifier = Modifier.weight(1f).height(44.dp),
-                                enabled = canUseGpu
-                            )
-                        }
+                    // CPU/GPU Selection - always available
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(
+                            selected = !useGpu,
+                            onClick = { useGpu = false },
+                            label = { Text("CPU") },
+                            leadingIcon = { if (!useGpu) Icon(Icons.Filled.Check, contentDescription = null) },
+                            modifier = Modifier.weight(1f).height(44.dp)
+                        )
+                        FilterChip(
+                            selected = useGpu,
+                            onClick = { useGpu = true },
+                            label = { Text("GPU") },
+                            leadingIcon = { if (useGpu) Icon(Icons.Filled.Check, contentDescription = null) },
+                            modifier = Modifier.weight(1f).height(44.dp)
+                        )
+                    }
+                    
+                    // Always show toggles for multimodal models (E2B and E4B)
+                    if (isGemma3nModel && (model.supportsVision || model.supportsAudio)) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = stringResource(R.string.modality_options), 
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                         
-                        // Show GPU disabled warning if applicable
-                        if (gpuDisabled) {
-                            Text(
-                                text = stringResource(R.string.ram_limit_gpu_vision_disabled, deviceMemoryGB),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
-                        
-                        // Separate toggles for Vision and Audio when GPU is selected for multimodal models
-                        if (useGpu && canUseGpu && (model.supportsVision || model.supportsAudio)) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = stringResource(R.string.modality_options), 
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            
-                            // Vision toggle
-                            if (model.supportsVision) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Switch(
-                                        checked = !disableVision,
-                                        onCheckedChange = { disableVision = !it }
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = stringResource(R.string.enable_vision),
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                }
-                            }
-                            
-                            // Audio toggle
-                            if (model.supportsAudio) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Switch(
-                                        checked = !disableAudio,
-                                        onCheckedChange = { disableAudio = !it }
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = stringResource(R.string.enable_audio),
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                }
-                            }
-                            
-                            // Show suggestion for 7-8GB devices
-                            if (shouldSuggestDisabling) {
+                        // Vision toggle
+                        if (model.supportsVision) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Switch(
+                                    checked = !disableVision,
+                                    onCheckedChange = { disableVision = !it }
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = stringResource(R.string.gemma3n_e4b_modality_suggestion),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.primary
+                                    text = stringResource(R.string.enable_vision),
+                                    style = MaterialTheme.typography.bodyMedium
                                 )
                             }
                         }
+                        
+                        // Audio toggle
+                        if (model.supportsAudio) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Switch(
+                                    checked = !disableAudio,
+                                    onCheckedChange = { disableAudio = !it }
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = stringResource(R.string.enable_audio),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
+                        
+                        // General performance tip for all devices
+                        Text(
+                            text = stringResource(R.string.gemma3n_performance_tip),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
 
@@ -372,7 +299,7 @@ fun ModelConfigsDialog(
                     Button(onClick = {
                         val finalMax = maxTokensValue.coerceIn(1, maxTokensCap)
                         val backend = if (model.name.contains("Gemma", ignoreCase = true)) {
-                            if (useGpu && canUseGpu) LlmInference.Backend.GPU else LlmInference.Backend.CPU
+                            if (useGpu) LlmInference.Backend.GPU else LlmInference.Backend.CPU
                         } else {
                             null
                         }
@@ -385,9 +312,3 @@ fun ModelConfigsDialog(
     }
 }
 
-private fun getDeviceMemoryGB(context: Context): Float {
-    val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-    val memInfo = ActivityManager.MemoryInfo()
-    activityManager.getMemoryInfo(memInfo)
-    return memInfo.totalMem / (1024f * 1024f * 1024f)
-}

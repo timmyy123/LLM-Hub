@@ -372,4 +372,7 @@
     <string name="enable_vision">Enable Vision (Image Support)</string>
     <string name="enable_audio">Enable Audio (Voice Input)</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 For stable performance on 7-8GB devices, consider disabling audio to save GPU memory. Vision is generally more stable.</string>
+    
+    <!-- General performance tip for all devices -->
+    <string name="gemma3n_performance_tip">💡 If you experience crashing or low performance due to RAM limitations, try switching to CPU backend or disabling vision/audio features.</string>
 </resources>
