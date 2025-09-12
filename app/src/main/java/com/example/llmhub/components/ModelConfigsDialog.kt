@@ -32,7 +32,7 @@ import com.llmhub.llmhub.data.LLMModel
 fun ModelConfigsDialog(
     model: LLMModel,
     initialMaxTokens: Int,
-    onConfirm: (maxTokens: Int, topK: Int, topP: Float, temperature: Float, backend: LlmInference.Backend?) -> Unit,
+    onConfirm: (maxTokens: Int, topK: Int, topP: Float, temperature: Float, backend: LlmInference.Backend?, disableVision: Boolean, disableAudio: Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -60,9 +60,13 @@ fun ModelConfigsDialog(
     val isGemma3nE4B = model.name.contains("Gemma-3n E4B", ignoreCase = true)
     val gpuDisabled = when {
         isGemma3nE2B -> deviceMemoryGB <= 5.0f
-        isGemma3nE4B -> deviceMemoryGB <= 8.0f
+        isGemma3nE4B -> deviceMemoryGB <= 7.0f
         else -> false
     }
+    
+    // For E4B, always allow GPU if device has > 7GB RAM, but suggest disabling features for 7-8GB
+    val canUseGpu = !gpuDisabled
+    val shouldSuggestDisabling = isGemma3nE4B && deviceMemoryGB > 7.0f && deviceMemoryGB <= 8.0f
 
     // Cap for max tokens
     val maxTokensCap = remember(model) { MediaPipeInferenceService.getMaxTokensForModelStatic(model) }
@@ -75,6 +79,8 @@ fun ModelConfigsDialog(
     var topP by remember { mutableStateOf(0.95f) }
     var temperature by remember { mutableStateOf(1.0f) }
     var useGpu by remember { mutableStateOf(false) }
+    var disableVision by remember { mutableStateOf(false) }
+    var disableAudio by remember { mutableStateOf(false) }
 
     val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
 
@@ -223,25 +229,139 @@ fun ModelConfigsDialog(
                 // Accelerator toggle only for Gemma models
                 if (model.name.contains("Gemma", ignoreCase = true)) {
                     Text(text = stringResource(R.string.choose_accelerator), style = MaterialTheme.typography.bodyMedium)
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        // Use equal weight so chips are the same width even when one has a leading icon
-                        FilterChip(
-                            selected = !useGpu,
-                            onClick = { useGpu = false },
-                            label = { Text("CPU") },
-                            leadingIcon = { if (!useGpu) Icon(Icons.Filled.Check, contentDescription = null) },
-                            modifier = Modifier.weight(1f).height(44.dp)
-                        )
-                        FilterChip(
-                            selected = useGpu,
-                            onClick = { if (!gpuDisabled) useGpu = true },
-                            label = { Text("GPU") },
-                            leadingIcon = { if (useGpu) Icon(Icons.Filled.Check, contentDescription = null) },
-                            modifier = Modifier.weight(1f).height(44.dp)
-                        )
-                    }
-                    if (gpuDisabled) {
-                        Text(text = stringResource(R.string.gpu_disabled_low_memory, 8), style = MaterialTheme.typography.bodySmall)
+                    
+                    if (false) { // Disabled old special case logic
+                        // Special layout for E4B with 8GB RAM: CPU, GPU (Vision Disabled)
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(
+                                selected = !useGpu,
+                                onClick = { 
+                                    useGpu = false
+                                    disableVision = false
+                                    disableAudio = false
+                                },
+                                label = { Text("CPU") },
+                                leadingIcon = { if (!useGpu) Icon(Icons.Filled.Check, contentDescription = null) },
+                                modifier = Modifier.weight(1f).height(44.dp)
+                            )
+                            FilterChip(
+                                selected = useGpu,
+                                onClick = { 
+                                    useGpu = true
+                                    disableVision = false
+                                    disableAudio = true
+                                },
+                                label = { Text(stringResource(R.string.gpu_with_audio_disabled)) },
+                                leadingIcon = { if (useGpu) Icon(Icons.Filled.Check, contentDescription = null) },
+                                modifier = Modifier.weight(1f).height(44.dp)
+                            )
+                        }
+                        if (useGpu) {
+                            Text(
+                                text = stringResource(R.string.gemma3n_e4b_gpu_audio_warning),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            )
+                        }
+                    } else {
+                        // New unified layout with separate toggles
+                        // CPU/GPU Selection
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(
+                                selected = !useGpu,
+                                onClick = { 
+                                    useGpu = false
+                                    disableVision = false
+                                    disableAudio = false
+                                },
+                                label = { Text("CPU") },
+                                leadingIcon = { if (!useGpu) Icon(Icons.Filled.Check, contentDescription = null) },
+                                modifier = Modifier.weight(1f).height(44.dp)
+                            )
+                            FilterChip(
+                                selected = useGpu,
+                                onClick = { 
+                                    if (canUseGpu) {
+                                        useGpu = true
+                                        // Smart defaults for suggestions
+                                        if (shouldSuggestDisabling) {
+                                            disableVision = false // Keep vision by default, let user choose
+                                            disableAudio = true   // Suggest disabling audio
+                                        } else {
+                                            disableVision = false
+                                            disableAudio = false
+                                        }
+                                    }
+                                },
+                                label = { Text("GPU") },
+                                leadingIcon = { if (useGpu) Icon(Icons.Filled.Check, contentDescription = null) },
+                                modifier = Modifier.weight(1f).height(44.dp),
+                                enabled = canUseGpu
+                            )
+                        }
+                        
+                        // Show GPU disabled warning if applicable
+                        if (gpuDisabled) {
+                            Text(
+                                text = stringResource(R.string.ram_limit_gpu_vision_disabled, deviceMemoryGB),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                        
+                        // Separate toggles for Vision and Audio when GPU is selected for multimodal models
+                        if (useGpu && canUseGpu && (model.supportsVision || model.supportsAudio)) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = stringResource(R.string.modality_options), 
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            
+                            // Vision toggle
+                            if (model.supportsVision) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Switch(
+                                        checked = !disableVision,
+                                        onCheckedChange = { disableVision = !it }
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = stringResource(R.string.enable_vision),
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                            }
+                            
+                            // Audio toggle
+                            if (model.supportsAudio) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Switch(
+                                        checked = !disableAudio,
+                                        onCheckedChange = { disableAudio = !it }
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = stringResource(R.string.enable_audio),
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                            }
+                            
+                            // Show suggestion for 7-8GB devices
+                            if (shouldSuggestDisabling) {
+                                Text(
+                                    text = stringResource(R.string.gemma3n_e4b_modality_suggestion),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -252,11 +372,11 @@ fun ModelConfigsDialog(
                     Button(onClick = {
                         val finalMax = maxTokensValue.coerceIn(1, maxTokensCap)
                         val backend = if (model.name.contains("Gemma", ignoreCase = true)) {
-                            if (useGpu && !gpuDisabled) LlmInference.Backend.GPU else LlmInference.Backend.CPU
+                            if (useGpu && canUseGpu) LlmInference.Backend.GPU else LlmInference.Backend.CPU
                         } else {
                             null
                         }
-                        onConfirm(finalMax.coerceIn(1, maxTokensCap), topK, topP, temperature, backend)
+                        onConfirm(finalMax.coerceIn(1, maxTokensCap), topK, topP, temperature, backend, disableVision, disableAudio)
                         onDismiss()
                     }) { Text(stringResource(R.string.ok)) }
                 }

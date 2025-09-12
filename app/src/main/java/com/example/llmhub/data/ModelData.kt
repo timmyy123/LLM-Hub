@@ -124,7 +124,7 @@ object ModelData {
             supportsVision = true,
             supportsAudio = true,
             supportsGpu = true,
-            requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 8),
+            requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 7),
             contextWindowSize = 4096,
             modelFormat = "litertlm"
         ),

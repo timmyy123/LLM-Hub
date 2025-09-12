@@ -342,4 +342,25 @@
     <string name="temperature">Température</string>
     <string name="choose_accelerator">Choisir l\'accélérateur</string>
     <string name="max">max</string>
+    
+    <!-- GPU with Vision Disabled for Gemma-3n E4B -->
+    <string name="gpu_vision_disabled_title">GPU avec Vision+Audio Désactivées</string>
+    <string name="gpu_vision_disabled_description">En raison des limitations de RAM, les fonctionnalités de vision et d\'audio seront désactivées pour permettre l\'accélération GPU</string>
+    <string name="gpu_with_vision_disabled">GPU (Vision+Audio Désactivées)</string>
+    <string name="gemma3n_e4b_gpu_vision_warning">Pour les appareils avec 7-8Go RAM, l\'accélération GPU nécessite de désactiver les fonctionnalités de vision et d\'audio. Les pièces jointes d\'images et l\'entrée audio ne seront pas disponibles.</string>
+    <string name="vision_disabled_for_gpu">Vision et audio désactivées pour l\'accélération GPU</string>
+    <string name="vision_disabled_no_images">Les fonctionnalités de vision et d\'audio sont désactivées pour cette configuration de modèle. Les pièces jointes d\'images et l\'entrée audio ne sont pas disponibles.</string>
+    <string name="ram_limit_gpu_vision_disabled">En raison de la limite de RAM (%1$.1fGo), la vision et l\'audio doivent être désactivées pour utiliser le GPU</string>
+    
+    <!-- GPU with Audio Only Disabled for Gemma-3n E4B on 8GB devices -->
+    <string name="gpu_with_audio_disabled">GPU (Audio Désactivé)</string>
+    <string name="gemma3n_e4b_gpu_audio_warning">Pour les appareils avec 7-8Go RAM, l\'accélération GPU nécessite de désactiver les fonctionnalités audio. L\'entrée audio ne sera pas disponible, mais les pièces jointes d\'images sont prises en charge.</string>
+    <string name="audio_disabled_for_gpu">Audio désactivé pour l\'accélération GPU</string>
+    <string name="audio_disabled_no_audio">Les fonctionnalités audio sont désactivées pour cette configuration de modèle. L\'entrée audio n\'est pas disponible, mais les pièces jointes d\'images sont prises en charge.</string>
+    
+    <!-- Separate modality toggles -->
+    <string name="modality_options">Options de Modalité</string>
+    <string name="enable_vision">Activer la Vision (Support d\'Images)</string>
+    <string name="enable_audio">Activer l\'Audio (Entrée Vocale)</string>
+    <string name="gemma3n_e4b_modality_suggestion">💡 Pour des performances stables sur les appareils 7-8Go, envisagez de désactiver l\'audio pour économiser la mémoire GPU. La vision est généralement plus stable.</string>
 </resources>

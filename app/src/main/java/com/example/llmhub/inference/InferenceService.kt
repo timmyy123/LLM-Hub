@@ -32,6 +32,7 @@ import android.app.ActivityManager
  */
 interface InferenceService {
     suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend? = null): Boolean
+    suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend? = null, disableVision: Boolean = false, disableAudio: Boolean = false): Boolean
     suspend fun unloadModel()
     suspend fun generateResponse(prompt: String, model: LLMModel): String
     suspend fun generateResponseStream(prompt: String, model: LLMModel): Flow<String>
@@ -76,6 +77,9 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
     private var modelInstance: LlmModelInstance? = null
     private var currentModel: LLMModel? = null
     private var currentBackend: LlmInference.Backend? = null
+    // Track if vision/audio is disabled for current model loading
+    private var isVisionDisabled: Boolean = false
+    private var isAudioDisabled: Boolean = false
     // Optional overrides provided by UI (null means use defaults)
     private var overrideMaxTokens: Int? = null
     private var overrideTopK: Int? = null
@@ -208,10 +212,20 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
 
     override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?): Boolean {
         return try {
-            ensureModelLoaded(model, preferredBackend)
+            ensureModelLoaded(model, preferredBackend, disableVision = false, disableAudio = false)
             true
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load model: ${e.message}", e)
+            false
+        }
+    }
+    
+    override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?, disableVision: Boolean, disableAudio: Boolean): Boolean {
+        return try {
+            ensureModelLoaded(model, preferredBackend, disableVision, disableAudio)
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to load model with modality settings: ${e.message}", e)
             false
         }
     }
@@ -334,8 +348,42 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             }
         }
     }
+    
+    private suspend fun ensureModelLoaded(model: LLMModel, preferredBackend: LlmInference.Backend? = null, disableVision: Boolean = false, disableAudio: Boolean = false) {
+        if (currentModel?.name != model.name) {
+            val modalityInfo = buildList {
+                if (disableVision) add("vision disabled")
+                if (disableAudio) add("audio disabled")
+                if (isEmpty()) add("all modalities enabled")
+            }.joinToString(", ")
+            
+            Log.d(TAG, "Model changed from ${currentModel?.name} to ${model.name}, reloading with $modalityInfo")
+            
+            // Store the modality disabled states
+            isVisionDisabled = disableVision
+            isAudioDisabled = disableAudio
+            
+            // Release existing model instance when switching models
+            modelInstance?.let { instance ->
+                try {
+                    instance.session.close()
+                } catch (e: Exception) {
+                    Log.w(TAG, "Error closing session: ${e.message}")
+                }
+                try {
+                    instance.engine.close()
+                } catch (e: Exception) {
+                    Log.w(TAG, "Error closing engine: ${e.message}")
+                }
+            }
+            
+            withContext(Dispatchers.IO) {
+                loadModelFromPath(model, preferredBackend, disableVision, disableAudio)
+            }
+        }
+    }
 
-    private suspend fun loadModelFromPath(model: LLMModel, preferredBackend: LlmInference.Backend? = null) {
+    private suspend fun loadModelFromPath(model: LLMModel, preferredBackend: LlmInference.Backend? = null, disableVision: Boolean = false, disableAudio: Boolean = false) {
         try {
             // Determine model path
             val modelAssetPath = if (model.url.startsWith("file://models/")) {
@@ -401,19 +449,23 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 .setPreferredBackend(backend)
                 
             // Enable vision modality for multimodal models (following Google AI Edge Gallery pattern)
-            if (model.supportsVision) {
+            if (model.supportsVision && !disableVision) {
                 optionsBuilder.setMaxNumImages(10) // Allow up to 10 images per session
                 Log.d(TAG, "  - Enabled vision modality with max 10 images")
             } else {
-                optionsBuilder.setMaxNumImages(0) // Explicitly disable for non-vision models
-                Log.d(TAG, "  - Vision modality disabled (maxNumImages=0)")
+                optionsBuilder.setMaxNumImages(0) // Explicitly disable for non-vision models or when vision is disabled
+                if (disableVision) {
+                    Log.d(TAG, "  - Vision modality disabled by user (maxNumImages=0)")
+                } else {
+                    Log.d(TAG, "  - Vision modality disabled (maxNumImages=0)")
+                }
             }
             
-            // Try to create inference engine with audio support if claimed by model
+            // Try to create inference engine with audio support if claimed by model and not disabled
             var llmInference: LlmInference? = null
             var actualAudioSupport = false
             
-            if (model.supportsAudio) {
+            if (model.supportsAudio && !disableAudio) {
                 try {
                     // For Gemma-3n models, respect user's backend choice; for other models, force CPU for audio compatibility
                     val audioBackend = if (model.name.contains("Gemma-3n", ignoreCase = true)) {
@@ -437,7 +489,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                         .setAudioModelOptions(audioOptions)
                         .apply {
                             // Re-apply vision settings
-                            if (model.supportsVision) {
+                            if (model.supportsVision && !disableVision) {
                                 setMaxNumImages(10)
                             } else {
                                 setMaxNumImages(0)
@@ -475,12 +527,16 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 }
             }
             
-            // If audio failed or not supported, create without audio
+            // If audio failed, not supported, or disabled, create without audio
             if (llmInference == null) {
                 val options = optionsBuilder.build() // Build without audio options
                 llmInference = LlmInference.createFromOptions(context, options)
                 actualAudioSupport = false
-                Log.d(TAG, "  - Created inference engine without audio support")
+                if (disableAudio && model.supportsAudio) {
+                    Log.d(TAG, "  - Audio modality disabled by user")
+                } else {
+                    Log.d(TAG, "  - Created inference engine without audio support")
+                }
             }
             
             // Update model with actual capabilities detected during loading
@@ -518,9 +574,9 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             .setTopP(overrideTopP ?: DEFAULT_TOP_P)
             .setRandomSeed(System.currentTimeMillis().toInt())
             
-        // Configure modality support based on model capabilities
-        val needsVisionModality = model?.supportsVision == true
-        val needsAudioModality = model?.supportsAudio == true
+        // Configure modality support based on model capabilities and user settings
+        val needsVisionModality = model?.supportsVision == true && !isVisionDisabled
+        val needsAudioModality = model?.supportsAudio == true && !isAudioDisabled
         
         Log.d(TAG, "Session creation - needsVisionModality: $needsVisionModality, needsAudioModality: $needsAudioModality")
         

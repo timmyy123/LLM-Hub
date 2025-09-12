@@ -18,10 +18,15 @@ import androidx.compose.ui.window.Dialog
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.R
 
+data class BackendSelection(
+    val backend: LlmInference.Backend,
+    val disableVision: Boolean = false
+)
+
 @Composable
 fun BackendSelectionDialog(
     modelName: String,
-    onBackendSelected: (LlmInference.Backend) -> Unit,
+    onBackendSelected: (BackendSelection) -> Unit,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -33,12 +38,15 @@ fun BackendSelectionDialog(
     
     // GPU requirements for Gemma-3n models:
     // E2B: requires > 5GB RAM (disable if <= 5GB)
-    // E4B: requires > 8GB RAM (disable if <= 8GB)
+    // E4B: requires > 7GB RAM (disable if <= 7GB, but allow GPU without vision for 8GB)
     val gpuDisabled = when {
         isGemma3nE2B -> deviceMemoryGB <= 5.0
         isGemma3nE4B -> deviceMemoryGB <= 7.0
         else -> false
     }
+    
+    // Special case: E4B can use GPU without vision for devices with 8GB RAM
+    val canUseGpuWithoutVision = isGemma3nE4B && deviceMemoryGB > 7.0 && deviceMemoryGB <= 8.0
     // Get screen configuration for responsive sizing
     val configuration = LocalConfiguration.current
     val screenHeightDp = configuration.screenHeightDp.dp
@@ -75,54 +83,101 @@ fun BackendSelectionDialog(
                 
                 Spacer(modifier = Modifier.height(8.dp))
                 
-                // GPU Option
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (gpuDisabled) 
-                            MaterialTheme.colorScheme.surfaceVariant 
-                        else 
-                            MaterialTheme.colorScheme.primaryContainer
-                    ),
-                    onClick = if (gpuDisabled) {
-                        { /* No action when disabled */ }
-                    } else {
-                        {
-                            onBackendSelected(LlmInference.Backend.GPU)
+                // GPU Option (Full Vision)
+                if (!gpuDisabled) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        ),
+                        onClick = {
+                            onBackendSelected(BackendSelection(LlmInference.Backend.GPU, disableVision = false))
                             onDismiss()
                         }
-                    }
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
                     ) {
-                        Text(
-                            text = if (gpuDisabled) 
-                                "${stringResource(R.string.gpu_backend)} (${stringResource(R.string.not_available)})"
-                            else 
-                                stringResource(R.string.gpu_backend),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = if (gpuDisabled)
-                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                            else
-                                MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Text(
-                            text = when {
-                                gpuDisabled && isGemma3nE2B -> stringResource(R.string.gemma3n_e2b_gpu_requires_6gb)
-                                gpuDisabled && isGemma3nE4B -> stringResource(R.string.gemma3n_e4b_gpu_requires_8gb)
-                                gpuDisabled -> stringResource(R.string.gpu_disabled_low_memory, 8)
-                                else -> stringResource(R.string.gpu_backend_description)
-                            },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (gpuDisabled)
-                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                            else
-                                MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                        )
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.gpu_backend),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Text(
+                                text = stringResource(R.string.gpu_backend_description),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                            )
+                        }
+                    }
+                }
+                
+                // GPU Option (Vision Disabled) - Special case for 8GB RAM with E4B
+                if (canUseGpuWithoutVision) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                        ),
+                        onClick = {
+                            // TODO: Show warning dialog and then proceed with GPU + Vision disabled
+                            onBackendSelected(BackendSelection(LlmInference.Backend.GPU, disableVision = true))
+                            onDismiss()
+                        }
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.gpu_with_vision_disabled),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                            Text(
+                                text = stringResource(R.string.ram_limit_gpu_vision_disabled, deviceMemoryGB),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f)
+                            )
+                        }
+                    }
+                }
+                
+                // GPU Disabled Option
+                if (gpuDisabled && !canUseGpuWithoutVision) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        ),
+                        onClick = { /* No action when disabled */ }
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
+                            Text(
+                                text = "${stringResource(R.string.gpu_backend)} (${stringResource(R.string.not_available)})",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            )
+                            Text(
+                                text = when {
+                                    isGemma3nE2B -> stringResource(R.string.gemma3n_e2b_gpu_requires_6gb)
+                                    isGemma3nE4B -> stringResource(R.string.gemma3n_e4b_gpu_requires_8gb)
+                                    else -> stringResource(R.string.gpu_disabled_low_memory, 8)
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                            )
+                        }
                     }
                 }
                 
@@ -133,7 +188,7 @@ fun BackendSelectionDialog(
                         containerColor = MaterialTheme.colorScheme.surface
                     ),
                     onClick = {
-                        onBackendSelected(LlmInference.Backend.CPU)
+                        onBackendSelected(BackendSelection(LlmInference.Backend.CPU, disableVision = false))
                         onDismiss()
                     }
                 ) {

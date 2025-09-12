@@ -133,8 +133,8 @@ object FileUtils {
             SupportedFileType.WORD -> context.getString(R.string.documents)
             SupportedFileType.EXCEL -> context.getString(R.string.documents)
             SupportedFileType.POWERPOINT -> context.getString(R.string.documents)
-            SupportedFileType.JSON -> context.getString(R.string.read_this)
-            SupportedFileType.XML -> context.getString(R.string.read_this)
+            SupportedFileType.JSON -> context.getString(R.string.text_file)
+            SupportedFileType.XML -> context.getString(R.string.text_file)
             SupportedFileType.AUDIO -> context.getString(R.string.audio_file)
             else -> fileType.displayName
         }
