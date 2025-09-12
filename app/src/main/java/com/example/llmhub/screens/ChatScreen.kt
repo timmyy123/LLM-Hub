@@ -520,15 +520,15 @@ fun ChatScreen(
             ModelConfigsDialog(
                 model = model,
                 initialMaxTokens = initialMax,
-                onConfirm = { maxTokens, topK, topP, temperature, backend ->
+                onConfirm = { maxTokens, topK, topP, temperature, backend, disableVision, disableAudio ->
                     // Apply chosen backend only for Gemma models; other models ignore backend here
-                    Log.d("ChatScreen", "Model configs confirmed: maxTokens=$maxTokens topK=$topK topP=$topP temperature=$temperature backend=$backend for model ${model.name}")
+                    Log.d("ChatScreen", "Model configs confirmed: maxTokens=$maxTokens topK=$topK topP=$topP temperature=$temperature backend=$backend disableVision=$disableVision disableAudio=$disableAudio for model ${model.name}")
 
                     // Push generation parameters to inference service via ViewModel
                     viewModel.setGenerationParameters(maxTokens, topK, topP, temperature)
 
                     if (backend != null) {
-                        viewModel.switchModelWithBackend(model, backend)
+                        viewModel.switchModelWithBackend(model, backend, disableVision, disableAudio)
                     } else {
                         viewModel.switchModel(model)
                     }

@@ -267,7 +267,7 @@
     <string name="text_file">Text File</string>
     <string name="tap_to_preview">Tap to preview</string>
     <string name="text_file_tap_to_preview">Text File • Tap to preview</string>
-    <string name="read_this">read this</string>
+    
     
     <!-- Audio Input -->
     <string name="audio_recording">Audio Recording</string>
@@ -351,4 +351,25 @@
     <string name="temperature">Temperature</string>
     <string name="choose_accelerator">Choose accelerator</string>
     <string name="max">max</string>
+    
+    <!-- GPU with Vision+Audio Disabled for Gemma-3n E4B -->
+    <string name="gpu_vision_disabled_title">GPU with Vision+Audio Disabled</string>
+    <string name="gpu_vision_disabled_description">Due to RAM limitations, vision and audio features will be disabled to enable GPU acceleration</string>
+    <string name="gpu_with_vision_disabled">GPU (Vision+Audio Disabled)</string>
+    <string name="gemma3n_e4b_gpu_vision_warning">For devices with 7-8GB RAM, GPU acceleration requires disabling vision and audio features. Image attachments and audio input will not be available.</string>
+    <string name="vision_disabled_for_gpu">Vision and audio disabled for GPU acceleration</string>
+    <string name="vision_disabled_no_images">Vision and audio features are disabled for this model configuration. Image attachments and audio input are not available.</string>
+    <string name="ram_limit_gpu_vision_disabled">Due to RAM limit (%.1fGB), vision and audio must be disabled to use GPU</string>
+    
+    <!-- GPU with Audio Only Disabled for Gemma-3n E4B on 8GB devices -->
+    <string name="gpu_with_audio_disabled">GPU (Audio Disabled)</string>
+    <string name="gemma3n_e4b_gpu_audio_warning">For devices with 7-8GB RAM, GPU acceleration requires disabling audio features. Audio input will not be available, but image attachments are supported.</string>
+    <string name="audio_disabled_for_gpu">Audio disabled for GPU acceleration</string>
+    <string name="audio_disabled_no_audio">Audio features are disabled for this model configuration. Audio input is not available, but image attachments are supported.</string>
+    
+    <!-- Separate modality toggles -->
+    <string name="modality_options">Modality Options</string>
+    <string name="enable_vision">Enable Vision (Image Support)</string>
+    <string name="enable_audio">Enable Audio (Voice Input)</string>
+    <string name="gemma3n_e4b_modality_suggestion">💡 For stable performance on 7-8GB devices, consider disabling audio to save GPU memory. Vision is generally more stable.</string>
 </resources>

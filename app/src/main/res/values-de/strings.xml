@@ -335,4 +335,25 @@
     <string name="temperature">Temperatur</string>
     <string name="choose_accelerator">Beschleuniger wählen</string>
     <string name="max">max</string>
+    
+    <!-- GPU with Vision Disabled for Gemma-3n E4B -->
+    <string name="gpu_vision_disabled_title">GPU mit deaktivierter Vision+Audio</string>
+    <string name="gpu_vision_disabled_description">Aufgrund von RAM-Beschränkungen werden Vision- und Audio-Funktionen deaktiviert, um GPU-Beschleunigung zu ermöglichen</string>
+    <string name="gpu_with_vision_disabled">GPU (Vision+Audio deaktiviert)</string>
+    <string name="gemma3n_e4b_gpu_vision_warning">Für Geräte mit 7-8GB RAM erfordert GPU-Beschleunigung die Deaktivierung von Vision- und Audio-Funktionen. Bildanhänge und Audio-Eingaben sind nicht verfügbar.</string>
+    <string name="vision_disabled_for_gpu">Vision und Audio für GPU-Beschleunigung deaktiviert</string>
+    <string name="vision_disabled_no_images">Vision- und Audio-Funktionen sind für diese Modellkonfiguration deaktiviert. Bildanhänge und Audio-Eingaben sind nicht verfügbar.</string>
+    <string name="ram_limit_gpu_vision_disabled">Aufgrund des RAM-Limits (%1$.1fGB) müssen Vision und Audio für GPU-Verwendung deaktiviert werden</string>
+    
+    <!-- GPU with Audio Only Disabled for Gemma-3n E4B on 8GB devices -->
+    <string name="gpu_with_audio_disabled">GPU (Audio deaktiviert)</string>
+    <string name="gemma3n_e4b_gpu_audio_warning">Für Geräte mit 7-8GB RAM erfordert GPU-Beschleunigung die Deaktivierung von Audio-Funktionen. Audio-Eingaben sind nicht verfügbar, aber Bildanhänge werden unterstützt.</string>
+    <string name="audio_disabled_for_gpu">Audio für GPU-Beschleunigung deaktiviert</string>
+    <string name="audio_disabled_no_audio">Audio-Funktionen sind für diese Modellkonfiguration deaktiviert. Audio-Eingaben sind nicht verfügbar, aber Bildanhänge werden unterstützt.</string>
+    
+    <!-- Separate modality toggles -->
+    <string name="modality_options">Modalitätsoptionen</string>
+    <string name="enable_vision">Vision aktivieren (Bildunterstützung)</string>
+    <string name="enable_audio">Audio aktivieren (Spracheingabe)</string>
+    <string name="gemma3n_e4b_modality_suggestion">💡 Für stabile Leistung auf 7-8GB Geräten erwägen Sie, Audio zu deaktivieren, um GPU-Speicher zu sparen. Vision ist im Allgemeinen stabiler.</string>
 </resources>

@@ -334,4 +334,25 @@
     <string name="top_p">TopP</string>
     <string name="temperature">Temperatura</string>
     <string name="choose_accelerator">Elegir acelerador</string>
+    
+    <!-- GPU with Vision Disabled for Gemma-3n E4B -->
+    <string name="gpu_vision_disabled_title">GPU con Visión+Audio Deshabilitadas</string>
+    <string name="gpu_vision_disabled_description">Debido a limitaciones de RAM, las funciones de visión y audio se deshabilitarán para permitir aceleración GPU</string>
+    <string name="gpu_with_vision_disabled">GPU (Visión+Audio Deshabilitadas)</string>
+    <string name="gemma3n_e4b_gpu_vision_warning">Para dispositivos con 7-8GB RAM, la aceleración GPU requiere deshabilitar funciones de visión y audio. Los adjuntos de imagen y entrada de audio no estarán disponibles.</string>
+    <string name="vision_disabled_for_gpu">Visión y audio deshabilitadas para aceleración GPU</string>
+    <string name="vision_disabled_no_images">Las funciones de visión y audio están deshabilitadas para esta configuración de modelo. Los adjuntos de imagen y entrada de audio no están disponibles.</string>
+    <string name="ram_limit_gpu_vision_disabled">Debido al límite de RAM (%1$.1fGB), la visión y audio deben deshabilitarse para usar GPU</string>
+    
+    <!-- GPU with Audio Only Disabled for Gemma-3n E4B on 8GB devices -->
+    <string name="gpu_with_audio_disabled">GPU (Audio Deshabilitado)</string>
+    <string name="gemma3n_e4b_gpu_audio_warning">Para dispositivos con 7-8GB RAM, la aceleración GPU requiere deshabilitar funciones de audio. La entrada de audio no estará disponible, pero los adjuntos de imagen son compatibles.</string>
+    <string name="audio_disabled_for_gpu">Audio deshabilitado para aceleración GPU</string>
+    <string name="audio_disabled_no_audio">Las funciones de audio están deshabilitadas para esta configuración de modelo. La entrada de audio no está disponible, pero los adjuntos de imagen son compatibles.</string>
+    
+    <!-- Separate modality toggles -->
+    <string name="modality_options">Opciones de Modalidad</string>
+    <string name="enable_vision">Habilitar Visión (Soporte de Imágenes)</string>
+    <string name="enable_audio">Habilitar Audio (Entrada de Voz)</string>
+    <string name="gemma3n_e4b_modality_suggestion">💡 Para un rendimiento estable en dispositivos de 7-8GB, considera deshabilitar el audio para ahorrar memoria GPU. La visión es generalmente más estable.</string>
 </resources>

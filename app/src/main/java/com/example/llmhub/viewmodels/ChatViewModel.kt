@@ -86,6 +86,11 @@ class ChatViewModel(
     // Embedding enabled state
     private val _isEmbeddingEnabled = MutableStateFlow(false)
     val isEmbeddingEnabled: StateFlow<Boolean> = _isEmbeddingEnabled.asStateFlow()
+    
+    // Vision disabled state (for GPU with vision disabled on low RAM)
+    private var isVisionDisabled: Boolean = false
+    // Audio disabled state (for GPU with audio disabled on low RAM)
+    private var isAudioDisabled: Boolean = false
 
     // NOTE: intent heuristics removed — global memory will be queried whenever the
     // memory preference is enabled. Localization-specific intent checks were removed
@@ -215,6 +220,8 @@ class ChatViewModel(
             try {
                 val loadedModel = inferenceService.getCurrentlyLoadedModel()
                 _currentlyLoadedModel.value = loadedModel
+                // Also update the local currentModel to keep them in sync
+                currentModel = loadedModel
                 Log.d("ChatViewModel", "Synced currently loaded model: ${loadedModel?.name ?: "None"}")
             } catch (e: Exception) {
                 Log.w("ChatViewModel", "Error syncing currently loaded model: ${e.message}")
@@ -732,7 +739,7 @@ class ChatViewModel(
                 // For audio files, don't show filename or any text - just let the audio player handle it
                 if (attachmentFileInfo?.type == FileUtils.SupportedFileType.AUDIO) {
                     finalMessageContent = "" // Empty content, audio player will be shown via attachment
-                    modelPromptContent = "" // No text prompt for audio-only messages
+                    modelPromptContent = "" // Audio token will be added later in prompt building
                 } else {
                     finalMessageContent = "📄 ${attachmentFileInfo?.name}"
                     modelPromptContent = context.getString(R.string.shared_file)
@@ -850,16 +857,21 @@ class ChatViewModel(
                                     val currentPrompt = if (continuationCount == 0) {
                                         // First generation of this reply
                                         val baseUserContent = currentUserMessage.content.trim()
-                                        // Add audio token if audio data is present (MediaPipe requirement)
-                                        val lastUserContent = if (audioData != null && currentModel!!.supportsAudio) {
-                                            if (baseUserContent.isEmpty()) {
-                                                "<audio_soft_token>" // Audio-only message
-                                            } else {
-                                                "<audio_soft_token>$baseUserContent" // Text + Audio message
-                                            }
-                                        } else {
-                                            baseUserContent
-                                        }
+                        // Add audio token if audio data is present (MediaPipe requirement)
+                        Log.d("ChatViewModel", "Audio token check: audioData=${audioData?.size ?: 0} bytes, supportsAudio=${currentModel!!.supportsAudio}, isAudioDisabled=$isAudioDisabled, baseUserContent='$baseUserContent'")
+                        val lastUserContent = if (audioData != null && currentModel!!.supportsAudio && !isAudioDisabled) {
+                            if (baseUserContent.isEmpty()) {
+                                Log.d("ChatViewModel", "Adding audio token for audio-only message")
+                                "<audio_soft_token>" // Audio-only message
+                            } else {
+                                Log.d("ChatViewModel", "Adding audio token for text+audio message")
+                                "<audio_soft_token>$baseUserContent" // Text + Audio message
+                            }
+                        } else {
+                            Log.d("ChatViewModel", "Not adding audio token - using base content: '$baseUserContent'")
+                            baseUserContent
+                        }
+                        Log.d("ChatViewModel", "Final lastUserContent: '$lastUserContent'")
                                         
                                         // Search for relevant document context using RAG (per-chat and optional global memory)
                                         var ragContext = ""
@@ -1462,6 +1474,8 @@ class ChatViewModel(
 
     fun switchModel(newModel: LLMModel) {
         viewModelScope.launch {
+            // Reset vision disabled flag for regular model switching
+            isVisionDisabled = false
             // Immediately reflect the user's choice in UI
             _selectedModel.value = newModel
             // Ensure ongoing generation is fully cancelled before switching models to avoid
@@ -1551,6 +1565,8 @@ class ChatViewModel(
     
     fun switchModelWithBackend(newModel: LLMModel, backend: LlmInference.Backend) {
         viewModelScope.launch {
+            // Reset vision disabled flag for regular model switching
+            isVisionDisabled = false
             // Immediately reflect the user's choice in UI
             _selectedModel.value = newModel
             // Ensure ongoing generation is fully cancelled before switching models to avoid
@@ -1619,6 +1635,103 @@ class ChatViewModel(
                             inferenceService.onCleared()
                             delay(300)
                             inferenceService.loadModel(newModel, backend)
+                            Log.d("ChatViewModel", "Force recreated session after reset failure")
+                        } catch (recreateException: Exception) {
+                            Log.w("ChatViewModel", "Force recreation also failed: ${recreateException.message}")
+                        }
+                    }
+                }
+                
+            } catch (e: Exception) {
+                Log.w("ChatViewModel", "Failed to load new model: ${e.message}")
+                // Even if loading defers to first use, still guard the first generation
+                firstGenerationSinceLoad = true
+            }
+            
+            _isLoadingModel.value = false
+            _isLoading.value = false
+            isGenerating = false
+        }
+    }
+    
+    fun switchModelWithBackend(newModel: LLMModel, backend: LlmInference.Backend, disableVision: Boolean) {
+        // Call the new overloaded method with disableAudio = false for backward compatibility
+        switchModelWithBackend(newModel, backend, disableVision, disableAudio = false)
+    }
+    
+    fun switchModelWithBackend(newModel: LLMModel, backend: LlmInference.Backend, disableVision: Boolean, disableAudio: Boolean) {
+        viewModelScope.launch {
+            // Store the modality disabled states
+            isVisionDisabled = disableVision
+            isAudioDisabled = disableAudio
+            // Immediately reflect the user's choice in UI
+            _selectedModel.value = newModel
+            // Ensure ongoing generation is fully cancelled before switching models to avoid
+            // MediaPipe graph errors (e.g., DetokenizerCalculator id >= 0) that can happen
+            // when a new session starts while the previous one is still cleaning up.
+            generationJob?.let { job ->
+                job.cancel()
+                // Wait for the coroutine (and its awaitClose cleanup) to finish
+                try {
+                    job.join()
+                } catch (ignored: CancellationException) {
+                    // Expected when job is already cancelled
+                }
+                generationJob = null
+            }
+
+            _isLoading.value = true
+            _isLoadingModel.value = true
+            isGenerating = true
+            
+            // Clear all existing sessions before switching models
+            try {
+                inferenceService.onCleared()
+                delay(1000) // Give more time for complete cleanup when switching models
+                Log.d("ChatViewModel", "Cleared all sessions before model switch")
+            } catch (e: Exception) {
+                Log.w("ChatViewModel", "Error clearing sessions before model switch: ${e.message}")
+            }
+            
+            val currentModel = inferenceService.getCurrentlyLoadedModel()
+            val updatedChat = _currentChat.value?.copy(modelName = newModel.name)
+            if (updatedChat != null) {
+                currentChatId?.let { repository.updateChatModel(it, newModel.name) }
+                _currentChat.value = updatedChat
+            }
+            
+            // Pre-load the model when switching with specified backend and modality settings
+            try {
+                // Trigger model loading with modality options
+                inferenceService.loadModel(newModel, backend, disableVision, disableAudio)
+                // Sync the currently loaded model state
+                syncCurrentlyLoadedModel()
+                // Set the first-generation guard
+                firstGenerationSinceLoad = true
+                Log.d("ChatViewModel", "Successfully loaded new model: ${newModel.name} with backend: $backend, vision disabled: $disableVision, audio disabled: $disableAudio")
+                
+                // Clear the first generation guard after a reasonable timeout
+                viewModelScope.launch {
+                    delay(3000) // Clear guard after 3 seconds
+                    firstGenerationSinceLoad = false
+                    Log.d("ChatViewModel", "Cleared first generation guard for model: ${newModel.name}")
+                }
+                
+                // Reset the current chat session to ensure it works with the new model
+                currentChatId?.let { chatId ->
+                    try {
+                        delay(500) // Give more time for model loading to complete
+                        inferenceService.resetChatSession(chatId)
+                        delay(200) // Additional time for session to stabilize
+                        Log.d("ChatViewModel", "Reset chat session $chatId after model switch")
+                    } catch (e: Exception) {
+                        Log.w("ChatViewModel", "Failed to reset chat session after model switch: ${e.message}")
+                        // If reset fails, try to clear and recreate the entire session
+                        try {
+                            delay(300)
+                            inferenceService.onCleared()
+                            delay(300)
+                            inferenceService.loadModel(newModel, backend, disableVision)
                             Log.d("ChatViewModel", "Force recreated session after reset failure")
                         } catch (recreateException: Exception) {
                             Log.w("ChatViewModel", "Force recreation also failed: ${recreateException.message}")
@@ -1715,11 +1828,13 @@ class ChatViewModel(
     }
     
     fun currentModelSupportsVision(): Boolean {
-        return currentModel?.supportsVision == true
+        val currentModel = inferenceService.getCurrentlyLoadedModel()
+        return currentModel?.supportsVision == true && !isVisionDisabled
     }
     
     fun currentModelSupportsAudio(): Boolean {
-        return currentModel?.supportsAudio == true
+        val currentModel = inferenceService.getCurrentlyLoadedModel()
+        return currentModel?.supportsAudio == true && !isAudioDisabled
     }
 
     fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?) {
