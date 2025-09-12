@@ -5,6 +5,8 @@ import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -35,9 +37,20 @@ fun ModelConfigsDialog(
     val configuration = LocalConfiguration.current
     val screenWidthDp = configuration.screenWidthDp.dp
     val screenHeightDp = configuration.screenHeightDp.dp
-    // Make dialog wider and less tall than before
-    val dialogWidth = (screenWidthDp * 0.92f).coerceAtMost(720.dp)
-    val dialogMaxHeight = (screenHeightDp * 0.72f).coerceAtMost(640.dp)
+    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
+
+    // Make dialog responsive: slimmer in landscape, allow scroll if height is short
+    val dialogWidth = if (isLandscape) {
+        (screenWidthDp * 0.62f).coerceAtMost(720.dp)
+    } else {
+        (screenWidthDp * 0.92f).coerceAtMost(720.dp)
+    }
+
+    val dialogMaxHeight = if (isLandscape) {
+        (screenHeightDp * 0.86f).coerceAtMost(520.dp)
+    } else {
+        (screenHeightDp * 0.72f).coerceAtMost(640.dp)
+    }
 
     // Determine GPU availability for Gemma models using same logic as BackendSelectionDialog
     val deviceMemoryGB = getDeviceMemoryGB(context)
@@ -69,10 +82,15 @@ fun ModelConfigsDialog(
                 .heightIn(max = dialogMaxHeight),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
+            val contentPadding = if (isLandscape) 12.dp else 16.dp
+            val chipWidth = if (isLandscape) 140.dp else 160.dp
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(contentPadding)
+                    .heightIn(max = dialogMaxHeight)
+                    .verticalScroll(rememberScrollState())
                     .clickable(indication = null, interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }) {
                         // Click outside inputs to clear focus (dismiss keyboard)
                         focusManager.clearFocus()
@@ -133,7 +151,7 @@ fun ModelConfigsDialog(
                     Text(text = stringResource(R.string.choose_accelerator), style = MaterialTheme.typography.bodyMedium)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         // Make accelerator buttons same size
-                        val chipModifier = Modifier.width(160.dp).height(48.dp)
+                        val chipModifier = Modifier.width(chipWidth).height(48.dp)
                         FilterChip(
                             selected = !useGpu,
                             onClick = { useGpu = false },
