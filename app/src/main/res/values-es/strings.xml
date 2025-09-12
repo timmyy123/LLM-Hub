@@ -355,4 +355,7 @@
     <string name="enable_vision">Habilitar Visión (Soporte de Imágenes)</string>
     <string name="enable_audio">Habilitar Audio (Entrada de Voz)</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 Para un rendimiento estable en dispositivos de 7-8GB, considera deshabilitar el audio para ahorrar memoria GPU. La visión es generalmente más estable.</string>
+    
+    <!-- General performance tip for all devices -->
+    <string name="gemma3n_performance_tip">💡 Si experimentas fallos o bajo rendimiento debido a limitaciones de RAM, intenta cambiar al backend de CPU o deshabilitar las funciones de visión/audio.</string>
 </resources>

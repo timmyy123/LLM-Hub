@@ -356,4 +356,7 @@
     <string name="enable_vision">Vision aktivieren (Bildunterstützung)</string>
     <string name="enable_audio">Audio aktivieren (Spracheingabe)</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 Für stabile Leistung auf 7-8GB Geräten erwägen Sie, Audio zu deaktivieren, um GPU-Speicher zu sparen. Vision ist im Allgemeinen stabiler.</string>
+    
+    <!-- General performance tip for all devices -->
+    <string name="gemma3n_performance_tip">💡 Wenn Sie Abstürze oder niedrige Leistung aufgrund von RAM-Beschränkungen erleben, versuchen Sie zum CPU-Backend zu wechseln oder Vision/Audio-Funktionen zu deaktivieren.</string>
 </resources>
