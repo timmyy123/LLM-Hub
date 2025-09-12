@@ -335,4 +335,11 @@
     <string name="audio_message">Message Audio</string>
     <string name="image_message">Message Image</string>
     <string name="record_voice_message">Enregistrer un message vocal</string>
+    <string name="model_configs_title">Configuration du modèle</string>
+    <string name="max_tokens">Jetons max</string>
+    <string name="top_k">TopK</string>
+    <string name="top_p">TopP</string>
+    <string name="temperature">Température</string>
+    <string name="choose_accelerator">Choisir l\'accélérateur</string>
+    <string name="max">max</string>
 </resources>

@@ -36,7 +36,7 @@ fun BackendSelectionDialog(
     // E4B: requires > 8GB RAM (disable if <= 8GB)
     val gpuDisabled = when {
         isGemma3nE2B -> deviceMemoryGB <= 5.0
-        isGemma3nE4B -> deviceMemoryGB <= 8.0
+        isGemma3nE4B -> deviceMemoryGB <= 7.0
         else -> false
     }
     // Get screen configuration for responsive sizing

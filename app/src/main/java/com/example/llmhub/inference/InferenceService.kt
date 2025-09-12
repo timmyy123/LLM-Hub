@@ -112,6 +112,10 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             Log.d(TAG, "Context window: $contextWindowSize, Cache size: $cacheSize, Max tokens: $maxTokens")
             return maxTokens
         }
+
+    // Public accessor for UI code to fetch the cap without instantiating the service
+    @JvmStatic
+    fun getMaxTokensForModelStatic(model: LLMModel): Int = getMaxTokensForModel(model)
         
         /**
          * Extract cache size from model URL (e.g., ekv2048 -> 2048)

@@ -329,4 +329,11 @@
     <string name="shared_file">Поделился файлом</string>
     <string name="audio_message">Аудио Сообщение</string>
     <string name="image_message">Изображение Сообщение</string>
+    <string name="model_configs_title">Конфигурация модели</string>
+    <string name="max_tokens">Максимум токенов</string>
+    <string name="top_k">TopK</string>
+    <string name="top_p">TopP</string>
+    <string name="temperature">Температура</string>
+    <string name="choose_accelerator">Выберите ускоритель</string>
+    <string name="max">макс</string>
 </resources>
