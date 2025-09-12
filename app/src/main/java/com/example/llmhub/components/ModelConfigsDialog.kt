@@ -82,8 +82,8 @@ fun ModelConfigsDialog(
                 .heightIn(max = dialogMaxHeight),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
-            val contentPadding = if (isLandscape) 12.dp else 16.dp
-            val chipWidth = if (isLandscape) 140.dp else 160.dp
+            val contentPadding = if (isLandscape) 8.dp else 12.dp
+            // chip width will be handled by weight so they stay equal
 
             Column(
                 modifier = Modifier
@@ -95,7 +95,7 @@ fun ModelConfigsDialog(
                         // Click outside inputs to clear focus (dismiss keyboard)
                         focusManager.clearFocus()
                     },
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
                     text = stringResource(R.string.model_configs_title),
@@ -106,6 +106,7 @@ fun ModelConfigsDialog(
                 // Max tokens
                 Text(text = stringResource(R.string.max_tokens), style = MaterialTheme.typography.bodyMedium)
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    val numFieldWidth = if (isLandscape) 100.dp else 120.dp
                     OutlinedTextField(
                         value = maxTokensText,
                         onValueChange = { input ->
@@ -116,7 +117,7 @@ fun ModelConfigsDialog(
                             maxTokensText = clamped.toString()
                         },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.width(160.dp)
+                        modifier = Modifier.width(numFieldWidth)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(text = "${maxTokensCap} ${stringResource(R.string.max)}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(start = 4.dp))
@@ -125,47 +126,51 @@ fun ModelConfigsDialog(
                 // TopK
                 Text(text = stringResource(R.string.top_k), style = MaterialTheme.typography.bodyMedium)
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Slider(value = topK.toFloat(), onValueChange = { topK = it.toInt() }, valueRange = 1f..256f, modifier = Modifier.weight(1f))
+                    val sliderModifier = Modifier.weight(1f).height(28.dp)
+                    val smallNumWidth = if (isLandscape) 64.dp else 72.dp
+                    Slider(value = topK.toFloat(), onValueChange = { topK = it.toInt() }, valueRange = 1f..256f, modifier = sliderModifier)
                     Spacer(modifier = Modifier.width(8.dp))
-                    OutlinedTextField(value = topK.toString(), onValueChange = { v -> topK = v.filter { it.isDigit() }.toIntOrNull() ?: topK }, modifier = Modifier.width(100.dp))
+                    OutlinedTextField(value = topK.toString(), onValueChange = { v -> topK = v.filter { it.isDigit() }.toIntOrNull() ?: topK }, modifier = Modifier.width(smallNumWidth))
                 }
 
                 // TopP
                 Text(text = stringResource(R.string.top_p), style = MaterialTheme.typography.bodyMedium)
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Slider(value = topP, onValueChange = { topP = it }, valueRange = 0.0f..1.0f, modifier = Modifier.weight(1f))
+                    val sliderModifier = Modifier.weight(1f).height(28.dp)
+                    val smallNumWidth = if (isLandscape) 64.dp else 72.dp
+                    Slider(value = topP, onValueChange = { topP = it }, valueRange = 0.0f..1.0f, modifier = sliderModifier)
                     Spacer(modifier = Modifier.width(8.dp))
-                    OutlinedTextField(value = String.format("%.2f", topP), onValueChange = { v -> topP = v.toFloatOrNull() ?: topP }, modifier = Modifier.width(100.dp))
+                    OutlinedTextField(value = String.format("%.2f", topP), onValueChange = { v -> topP = v.toFloatOrNull() ?: topP }, modifier = Modifier.width(smallNumWidth))
                 }
 
                 // Temperature
                 Text(text = stringResource(R.string.temperature), style = MaterialTheme.typography.bodyMedium)
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Slider(value = temperature, onValueChange = { temperature = it }, valueRange = 0.0f..2.0f, modifier = Modifier.weight(1f))
+                    val sliderModifier = Modifier.weight(1f).height(28.dp)
+                    val smallNumWidth = if (isLandscape) 64.dp else 72.dp
+                    Slider(value = temperature, onValueChange = { temperature = it }, valueRange = 0.0f..2.0f, modifier = sliderModifier)
                     Spacer(modifier = Modifier.width(8.dp))
-                    OutlinedTextField(value = String.format("%.2f", temperature), onValueChange = { v -> temperature = v.toFloatOrNull() ?: temperature }, modifier = Modifier.width(100.dp))
+                    OutlinedTextField(value = String.format("%.2f", temperature), onValueChange = { v -> temperature = v.toFloatOrNull() ?: temperature }, modifier = Modifier.width(smallNumWidth))
                 }
 
                 // Accelerator toggle only for Gemma models
                 if (model.name.contains("Gemma", ignoreCase = true)) {
                     Text(text = stringResource(R.string.choose_accelerator), style = MaterialTheme.typography.bodyMedium)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Make accelerator buttons same size
-                        val chipModifier = Modifier.width(chipWidth).height(48.dp)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        // Use equal weight so chips are the same width even when one has a leading icon
                         FilterChip(
                             selected = !useGpu,
                             onClick = { useGpu = false },
-                            label = { Text(stringResource(R.string.cpu_backend)) },
+                            label = { Text("CPU") },
                             leadingIcon = { if (!useGpu) Icon(Icons.Filled.Check, contentDescription = null) },
-                            modifier = chipModifier
+                            modifier = Modifier.weight(1f).height(44.dp)
                         )
-                        Spacer(modifier = Modifier.width(12.dp))
                         FilterChip(
                             selected = useGpu,
                             onClick = { if (!gpuDisabled) useGpu = true },
-                            label = { Text(stringResource(R.string.gpu_backend)) },
+                            label = { Text("GPU") },
                             leadingIcon = { if (useGpu) Icon(Icons.Filled.Check, contentDescription = null) },
-                            modifier = chipModifier
+                            modifier = Modifier.weight(1f).height(44.dp)
                         )
                     }
                     if (gpuDisabled) {
