@@ -44,6 +44,7 @@ import com.llmhub.llmhub.viewmodels.ChatViewModelFactory
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.inference.MediaPipeInferenceService
 import kotlinx.coroutines.launch
+import android.util.Log
 
 @Composable
 fun getLocalizedModelName(model: LLMModel): String {
@@ -521,12 +522,16 @@ fun ChatScreen(
                 initialMaxTokens = initialMax,
                 onConfirm = { maxTokens, topK, topP, temperature, backend ->
                     // Apply chosen backend only for Gemma models; other models ignore backend here
+                    Log.d("ChatScreen", "Model configs confirmed: maxTokens=$maxTokens topK=$topK topP=$topP temperature=$temperature backend=$backend for model ${model.name}")
+
+                    // Push generation parameters to inference service via ViewModel
+                    viewModel.setGenerationParameters(maxTokens, topK, topP, temperature)
+
                     if (backend != null) {
                         viewModel.switchModelWithBackend(model, backend)
                     } else {
                         viewModel.switchModel(model)
                     }
-                    // Optionally, apply parameters to ViewModel if you store them per-model
                 },
                 onDismiss = {
                     showBackendDialog = false

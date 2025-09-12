@@ -48,6 +48,8 @@ interface InferenceService {
     fun getCurrentlyLoadedModel(): LLMModel?
     fun getMemoryWarningForImages(images: List<Bitmap>): String?
     fun wasSessionRecentlyReset(chatId: String): Boolean
+    // Allow runtime update of generation parameters (from UI dialog)
+    fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?)
 }
 
 /**
@@ -74,6 +76,11 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
     private var modelInstance: LlmModelInstance? = null
     private var currentModel: LLMModel? = null
     private var currentBackend: LlmInference.Backend? = null
+    // Optional overrides provided by UI (null means use defaults)
+    private var overrideMaxTokens: Int? = null
+    private var overrideTopK: Int? = null
+    private var overrideTopP: Float? = null
+    private var overrideTemperature: Float? = null
     // Estimated tokens accumulated in current session (prompt + responses); heuristic
     private var estimatedSessionTokens: Int = 0
     
@@ -207,6 +214,14 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             Log.e(TAG, "Failed to load model: ${e.message}", e)
             false
         }
+    }
+
+    override fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?) {
+        overrideMaxTokens = maxTokens
+        overrideTopK = topK
+        overrideTopP = topP
+        overrideTemperature = temperature
+        Log.d(TAG, "Set generation parameters: maxTokens=$maxTokens topK=$topK topP=$topP temperature=$temperature")
     }
 
     override suspend fun unloadModel() {
@@ -365,15 +380,16 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             
             Log.d(TAG, "Selected backend: $backend for model: ${modelFile.name} ${if (preferredBackend != null) "(user preference)" else "(auto-selected)"}")
             
-            // Determine max tokens based on model configuration
-            val maxTokens = getMaxTokensForModel(model)
-            
+            // Determine max tokens based on model configuration (allow override)
+            val defaultMaxTokens = getMaxTokensForModel(model)
+            val maxTokens = overrideMaxTokens?.coerceAtMost(defaultMaxTokens) ?: defaultMaxTokens
+
             Log.d(TAG, "Model configuration:")
             Log.d(TAG, "  - Name: ${model.name}")
             Log.d(TAG, "  - File: ${modelFile.name}")
             Log.d(TAG, "  - Path: ${modelFile.absolutePath}")
             Log.d(TAG, "  - Context window: ${model.contextWindowSize}")
-            Log.d(TAG, "  - Max tokens: $maxTokens")
+            Log.d(TAG, "  - Max tokens: $maxTokens (default was $defaultMaxTokens)")
             Log.d(TAG, "  - Backend: $backend")
             Log.d(TAG, "  - Supports vision: ${model.supportsVision}")
             Log.d(TAG, "  - Supports audio: ${model.supportsAudio}")
@@ -497,9 +513,9 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         Log.d(TAG, "Model supports audio: ${model?.supportsAudio}")
         
         val sessionOptionsBuilder = LlmInferenceSession.LlmInferenceSessionOptions.builder()
-            .setTopK(DEFAULT_TOP_K)
-            .setTemperature(DEFAULT_TEMPERATURE)
-            .setTopP(DEFAULT_TOP_P)
+            .setTopK(overrideTopK ?: DEFAULT_TOP_K)
+            .setTemperature(overrideTemperature ?: DEFAULT_TEMPERATURE)
+            .setTopP(overrideTopP ?: DEFAULT_TOP_P)
             .setRandomSeed(System.currentTimeMillis().toInt())
             
         // Configure modality support based on model capabilities
@@ -553,7 +569,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         }
         
         val sessionOptions = sessionOptionsBuilder.build()
-        
+    Log.d(TAG, "Session options: topK=${sessionOptions.topK()} topP=${sessionOptions.topP()} temperature=${sessionOptions.temperature()}")
         try {
             val session = LlmInferenceSession.createFromOptions(engine, sessionOptions)
             Log.d(TAG, "Successfully created session for model ${model?.name}")
@@ -757,7 +773,9 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             }
             
             // Check token count and reset session if approaching limit (Gallery approach)
-            val maxTokens = getMaxTokensForModel(model)
+            val defaultMaxTokens = getMaxTokensForModel(model)
+            val maxTokens = overrideMaxTokens?.coerceAtMost(defaultMaxTokens) ?: defaultMaxTokens
+            Log.d(TAG, "Using token limits - defaultMaxTokens=$defaultMaxTokens overrideMaxTokens=${overrideMaxTokens ?: "null"} effectiveMaxTokens=$maxTokens")
             // Proactive token accounting using internal estimate
             val promptTokens = session.sizeInTokens(enhancedPrompt)
             val outputReserve = (maxTokens * 0.15).toInt().coerceAtLeast(128) // reserve space for response
