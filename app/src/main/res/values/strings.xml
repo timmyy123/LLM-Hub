@@ -344,4 +344,11 @@
     <string name="shared_file">Shared a file</string>
     <string name="audio_message">Audio Message</string>
     <string name="image_message">Image Message</string>
+    <string name="model_configs_title">Model configs</string>
+    <string name="max_tokens">Max tokens</string>
+    <string name="top_k">TopK</string>
+    <string name="top_p">TopP</string>
+    <string name="temperature">Temperature</string>
+    <string name="choose_accelerator">Choose accelerator</string>
+    <string name="max">max</string>
 </resources>

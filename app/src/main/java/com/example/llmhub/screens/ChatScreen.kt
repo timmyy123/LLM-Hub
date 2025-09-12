@@ -34,7 +34,7 @@ import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.components.ChatDrawer
 import com.llmhub.llmhub.components.MessageBubble
 import com.llmhub.llmhub.components.MessageInput
-import com.llmhub.llmhub.components.BackendSelectionDialog
+import com.llmhub.llmhub.components.ModelConfigsDialog
 import com.llmhub.llmhub.components.CompactRagIndicator
 import com.llmhub.llmhub.ui.components.ModernCard
 import com.llmhub.llmhub.ui.components.StatusChip
@@ -42,6 +42,7 @@ import com.llmhub.llmhub.ui.components.SectionHeader
 import com.llmhub.llmhub.viewmodels.ChatViewModel
 import com.llmhub.llmhub.viewmodels.ChatViewModelFactory
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
+import com.llmhub.llmhub.inference.MediaPipeInferenceService
 import kotlinx.coroutines.launch
 
 @Composable
@@ -407,16 +408,12 @@ fun ChatScreen(
                                                 )
                                             }
                                         } else null,
-                                        onClick = {
-                                            if (viewModel.isGemmaModel(model)) {
-                                                pendingModelForBackendSelection = model
-                                                showBackendDialog = true
-                                                modelMenuExpanded = false
-                                            } else {
-                                                viewModel.switchModel(model)
-                                                modelMenuExpanded = false
-                                            }
-                                        }
+                                                onClick = {
+                                                    // Always show model configs dialog before loading any model
+                                                    pendingModelForBackendSelection = model
+                                                    showBackendDialog = true
+                                                    modelMenuExpanded = false
+                                                }
                                     )
                                 }
                             }
@@ -515,13 +512,21 @@ fun ChatScreen(
         }
     }
     
-    // Backend Selection Dialog
+    // Model Configs Dialog (replaces backend dialog for Gemma models)
     if (showBackendDialog) {
         pendingModelForBackendSelection?.let { model ->
-            BackendSelectionDialog(
-                modelName = getLocalizedModelName(model),
-                onBackendSelected = { backend ->
-                    viewModel.switchModelWithBackend(model, backend)
+            val initialMax = MediaPipeInferenceService.getMaxTokensForModelStatic(model)
+            ModelConfigsDialog(
+                model = model,
+                initialMaxTokens = initialMax,
+                onConfirm = { maxTokens, topK, topP, temperature, backend ->
+                    // Apply chosen backend only for Gemma models; other models ignore backend here
+                    if (backend != null) {
+                        viewModel.switchModelWithBackend(model, backend)
+                    } else {
+                        viewModel.switchModel(model)
+                    }
+                    // Optionally, apply parameters to ViewModel if you store them per-model
                 },
                 onDismiss = {
                     showBackendDialog = false

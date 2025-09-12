@@ -328,4 +328,11 @@
     <string name="shared_file">Hat eine Datei geteilt</string>
     <string name="audio_message">Audio-Nachricht</string>
     <string name="image_message">Bild-Nachricht</string>
+    <string name="model_configs_title">Modell-Konfiguration</string>
+    <string name="max_tokens">Maximale Tokens</string>
+    <string name="top_k">TopK</string>
+    <string name="top_p">TopP</string>
+    <string name="temperature">Temperatur</string>
+    <string name="choose_accelerator">Beschleuniger wählen</string>
+    <string name="max">max</string>
 </resources>
