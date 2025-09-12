@@ -1721,6 +1721,15 @@ class ChatViewModel(
     fun currentModelSupportsAudio(): Boolean {
         return currentModel?.supportsAudio == true
     }
+
+    fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?) {
+        try {
+            inferenceService.setGenerationParameters(maxTokens, topK, topP, temperature)
+            Log.d("ChatViewModel", "Forwarded generation parameters to inference service: maxTokens=$maxTokens topK=$topK topP=$topP temperature=$temperature")
+        } catch (e: Exception) {
+            Log.w("ChatViewModel", "Failed to set generation parameters: ${e.message}")
+        }
+    }
     
     /**
      * Check if a chat contains images by examining its messages

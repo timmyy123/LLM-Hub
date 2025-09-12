@@ -11,6 +11,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.window.Dialog
 import com.llmhub.llmhub.inference.MediaPipeInferenceService
@@ -26,6 +27,7 @@ import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.LLMModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ModelConfigsDialog(
     model: LLMModel,
@@ -62,15 +64,17 @@ fun ModelConfigsDialog(
         else -> false
     }
 
+    // Cap for max tokens
+    val maxTokensCap = remember(model) { MediaPipeInferenceService.getMaxTokensForModelStatic(model) }
+
     // State for fields
     var maxTokensText by remember { mutableStateOf(initialMaxTokens.toString()) }
+    // Keep numeric and slider in sync using an Int state for tokens
+    var maxTokensValue by remember { mutableStateOf(initialMaxTokens.coerceIn(1, maxTokensCap)) }
     var topK by remember { mutableStateOf(64) }
     var topP by remember { mutableStateOf(0.95f) }
     var temperature by remember { mutableStateOf(1.0f) }
     var useGpu by remember { mutableStateOf(false) }
-
-    // Cap for max tokens
-    val maxTokensCap = remember(model) { MediaPipeInferenceService.getMaxTokensForModelStatic(model) }
 
     val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
 
@@ -103,10 +107,37 @@ fun ModelConfigsDialog(
                     fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                 )
 
-                // Max tokens
-                Text(text = stringResource(R.string.max_tokens), style = MaterialTheme.typography.bodyMedium)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    val numFieldWidth = if (isLandscape) 100.dp else 120.dp
+                // Max tokens (label row with cap next to label, slider row below takes full width)
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Text(text = stringResource(R.string.max_tokens), style = MaterialTheme.typography.bodyMedium)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "${maxTokensCap} ${stringResource(R.string.max)}", style = MaterialTheme.typography.bodySmall)
+                }
+
+                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                     // Slider takes the available width, matching other sliders' appearance
+                     Slider(
+                         value = maxTokensValue.toFloat(),
+                         onValueChange = {
+                             val intVal = it.toInt().coerceIn(1, maxTokensCap)
+                             maxTokensValue = intVal
+                             maxTokensText = intVal.toString()
+                         },
+                         valueRange = 1f..maxTokensCap.toFloat(),
+                         modifier = Modifier.weight(1f).height(36.dp),
+                         // Add more padding around the thumb for easier interaction
+                         thumb = {
+                             SliderDefaults.Thumb(
+                                 interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                 thumbSize = androidx.compose.ui.unit.DpSize(24.dp, 24.dp)
+                             )
+                         }
+                     )
+
+                    Spacer(modifier = Modifier.width(6.dp))
+
+                    // Numeric field on the right - use same small width as other numeric inputs
+                    val smallNumWidth = if (isLandscape) 64.dp else 72.dp
                     OutlinedTextField(
                         value = maxTokensText,
                         onValueChange = { input ->
@@ -115,12 +146,12 @@ fun ModelConfigsDialog(
                             val intVal = numeric.toIntOrNull() ?: 0
                             val clamped = intVal.coerceIn(1, maxTokensCap)
                             maxTokensText = clamped.toString()
+                            maxTokensValue = clamped
                         },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.width(numFieldWidth)
+                        singleLine = true,
+                        modifier = Modifier.width(smallNumWidth)
                     )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(text = "${maxTokensCap} ${stringResource(R.string.max)}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(start = 4.dp))
                 }
 
                 // TopK
@@ -128,27 +159,63 @@ fun ModelConfigsDialog(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val sliderModifier = Modifier.weight(1f).height(28.dp)
                     val smallNumWidth = if (isLandscape) 64.dp else 72.dp
-                    Slider(value = topK.toFloat(), onValueChange = { topK = it.toInt() }, valueRange = 1f..256f, modifier = sliderModifier)
+                    Slider(
+                        value = topK.toFloat(), 
+                        onValueChange = { topK = it.toInt() }, 
+                        valueRange = 1f..256f, 
+                        modifier = sliderModifier,
+                        // Add larger thumb for easier interaction
+                        thumb = {
+                            SliderDefaults.Thumb(
+                                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                thumbSize = androidx.compose.ui.unit.DpSize(24.dp, 24.dp)
+                            )
+                        }
+                    )
                     Spacer(modifier = Modifier.width(8.dp))
                     OutlinedTextField(value = topK.toString(), onValueChange = { v -> topK = v.filter { it.isDigit() }.toIntOrNull() ?: topK }, modifier = Modifier.width(smallNumWidth))
                 }
 
-                // TopP
-                Text(text = stringResource(R.string.top_p), style = MaterialTheme.typography.bodyMedium)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    val sliderModifier = Modifier.weight(1f).height(28.dp)
-                    val smallNumWidth = if (isLandscape) 64.dp else 72.dp
-                    Slider(value = topP, onValueChange = { topP = it }, valueRange = 0.0f..1.0f, modifier = sliderModifier)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    OutlinedTextField(value = String.format("%.2f", topP), onValueChange = { v -> topP = v.toFloatOrNull() ?: topP }, modifier = Modifier.width(smallNumWidth))
-                }
+                 // TopP
+                 Text(text = stringResource(R.string.top_p), style = MaterialTheme.typography.bodyMedium)
+                 Row(verticalAlignment = Alignment.CenterVertically) {
+                     val sliderModifier = Modifier.weight(1f).height(28.dp)
+                     val smallNumWidth = if (isLandscape) 64.dp else 72.dp
+                     Slider(
+                         value = topP, 
+                         onValueChange = { topP = it }, 
+                         valueRange = 0.0f..1.0f, 
+                         modifier = sliderModifier,
+                         // Add larger thumb for easier interaction at edges
+                         thumb = {
+                             SliderDefaults.Thumb(
+                                 interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                 thumbSize = androidx.compose.ui.unit.DpSize(24.dp, 24.dp)
+                             )
+                         }
+                     )
+                     Spacer(modifier = Modifier.width(8.dp))
+                     OutlinedTextField(value = String.format("%.2f", topP), onValueChange = { v -> topP = v.toFloatOrNull() ?: topP }, modifier = Modifier.width(smallNumWidth))
+                 }
 
                 // Temperature
                 Text(text = stringResource(R.string.temperature), style = MaterialTheme.typography.bodyMedium)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val sliderModifier = Modifier.weight(1f).height(28.dp)
                     val smallNumWidth = if (isLandscape) 64.dp else 72.dp
-                    Slider(value = temperature, onValueChange = { temperature = it }, valueRange = 0.0f..2.0f, modifier = sliderModifier)
+                    Slider(
+                        value = temperature, 
+                        onValueChange = { temperature = it }, 
+                        valueRange = 0.0f..2.0f, 
+                        modifier = sliderModifier,
+                        // Add larger thumb for easier interaction
+                        thumb = {
+                            SliderDefaults.Thumb(
+                                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                thumbSize = androidx.compose.ui.unit.DpSize(24.dp, 24.dp)
+                            )
+                        }
+                    )
                     Spacer(modifier = Modifier.width(8.dp))
                     OutlinedTextField(value = String.format("%.2f", temperature), onValueChange = { v -> temperature = v.toFloatOrNull() ?: temperature }, modifier = Modifier.width(smallNumWidth))
                 }
@@ -183,7 +250,7 @@ fun ModelConfigsDialog(
                     TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(onClick = {
-                        val finalMax = maxTokensText.toIntOrNull() ?: initialMaxTokens
+                        val finalMax = maxTokensValue.coerceIn(1, maxTokensCap)
                         val backend = if (model.name.contains("Gemma", ignoreCase = true)) {
                             if (useGpu && !gpuDisabled) LlmInference.Backend.GPU else LlmInference.Backend.CPU
                         } else {
