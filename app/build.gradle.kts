@@ -66,6 +66,17 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            // Exclude common duplicate license and metadata files from dependencies (e.g., Flexmark)
+            excludes += "META-INF/LICENSE-LGPL-3.txt"
+            excludes += "META-INF/LICENSE-LGPL-3.0.txt"
+            excludes += "META-INF/LICENSE*"
+            excludes += "META-INF/DEPENDENCIES"
+            excludes += "META-INF/DEPENDENCIES.txt"
+            excludes += "META-INF/NOTICE"
+            excludes += "META-INF/NOTICE.txt"
+            excludes += "META-INF/LICENSE.txt"
+            // Avoid duplicate Kotlin module descriptors
+            excludes += "META-INF/*.kotlin_module"
         }
         // Configure JNI libraries packaging for 16 KB page size compatibility
         jniLibs {
@@ -163,6 +174,9 @@ dependencies {
     
     // Compose Markdown - temporarily removed due to version conflicts
     implementation("com.github.jeziellago:compose-markdown:0.3.0")
+
+    // Markdown parser for extracting code blocks
+    implementation("com.vladsch.flexmark:flexmark-all:0.64.8")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

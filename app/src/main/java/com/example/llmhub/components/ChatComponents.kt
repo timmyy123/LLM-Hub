@@ -68,6 +68,10 @@ import com.llmhub.llmhub.data.MessageEntity
 import dev.jeziellago.compose.markdowntext.MarkdownText
 import androidx.compose.ui.platform.LocalUriHandler
 import com.llmhub.llmhub.utils.FileUtils
+import com.example.llmhub.utils.CodeBlockParser
+import com.example.llmhub.utils.CodeBlockParser.ParsedSegment
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.TextUnit
 import com.llmhub.llmhub.ui.components.AudioInputService
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.animation.core.*
@@ -457,15 +461,15 @@ fun MessageBubble(
                     
                     // Display text content
                     if (message.content.isNotEmpty() && message.content != "Shared a file") {
-                        SelectableMarkdownText(
-                                markdown = message.content,
-                                color = MaterialTheme.colorScheme.onPrimary,
-                            fontSize = MaterialTheme.typography.bodyLarge.fontSize,
-                            modifier = Modifier.wrapContentWidth(),
-                            textAlign = TextAlign.End,
-                            linkColorOverride = MaterialTheme.colorScheme.onPrimary
-                        )
-                    }
+                                        RenderMessageSegments(
+                                            displayContent = message.content,
+                                            isUser = true,
+                                            baseColor = MaterialTheme.colorScheme.onPrimary,
+                                            linkColor = MaterialTheme.colorScheme.onPrimary,
+                                            fontSize = MaterialTheme.typography.bodyLarge.fontSize,
+                                            modifier = Modifier.wrapContentWidth()
+                                        )
+                                    }
                 }
             }
             
@@ -553,13 +557,14 @@ fun MessageBubble(
                 // Display text content - plain text without background
                 if (message.content.isNotEmpty() && message.content != "Shared a file") {
                     val displayContent = if (streamingContent.isNotEmpty()) streamingContent else message.content
-                    
-                    SelectableMarkdownText(
-                        markdown = displayContent,
-                        color = MaterialTheme.colorScheme.onSurface,
+
+                    RenderMessageSegments(
+                        displayContent = displayContent,
+                        isUser = false,
+                        baseColor = MaterialTheme.colorScheme.onSurface,
+                        linkColor = MaterialTheme.colorScheme.primary,
                         fontSize = MaterialTheme.typography.bodyLarge.fontSize,
-                        modifier = Modifier.fillMaxWidth(),
-                        linkColorOverride = MaterialTheme.colorScheme.primary
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
                 
@@ -814,6 +819,50 @@ fun FullScreenImageViewer(
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RenderMessageSegments(
+    displayContent: String,
+    isUser: Boolean,
+    baseColor: Color,
+    linkColor: Color,
+    fontSize: TextUnit,
+    modifier: Modifier = Modifier
+) {
+    val segments = remember(displayContent) { CodeBlockParser.parseSegments(displayContent) }
+
+    Column(modifier = modifier) {
+        for (seg in segments) {
+            when (seg) {
+                is ParsedSegment.Text -> {
+                    SelectableMarkdownText(
+                        markdown = seg.text,
+                        color = baseColor,
+                        fontSize = fontSize,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = if (isUser) TextAlign.End else TextAlign.Start,
+                        linkColorOverride = linkColor
+                    )
+                }
+                is ParsedSegment.Code -> {
+                    // Render code block with monospace and a subtle background
+                    SelectionContainer {
+                        Text(
+                            text = seg.content.trimEnd('\n'),
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = (fontSize.value - 0).sp,
+                            color = baseColor,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(baseColor.copy(alpha = 0.06f))
+                                .padding(12.dp)
+                        )
+                    }
                 }
             }
         }
