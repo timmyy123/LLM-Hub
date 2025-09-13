@@ -395,8 +395,8 @@ fun MessageBubble(
             // User messages - bubble design
             Surface(
                 modifier = Modifier
-                    .widthIn(min = 60.dp, max = 280.dp)
-                    .wrapContentWidth(),
+                    .wrapContentWidth()
+                    .widthIn(max = 280.dp),
                 shape = RoundedCornerShape(
                         topStart = 20.dp,
                         topEnd = 4.dp,
@@ -407,7 +407,9 @@ fun MessageBubble(
                 shadowElevation = 1.dp
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier
+                        .wrapContentWidth()
+                        .padding(16.dp)
                 ) {
                     // Display attachment if exists
                     if (message.attachmentPath != null && message.attachmentType != null) {
@@ -840,11 +842,19 @@ fun RenderMessageSegments(
         for (seg in segments) {
             when (seg) {
                 is ParsedSegment.Text -> {
+                    val textModifier = if (isUser) {
+                        Modifier
+                            .wrapContentWidth()
+                            .widthIn(max = 280.dp)
+                    } else {
+                        Modifier.fillMaxWidth()
+                    }
+
                     SelectableMarkdownText(
                         markdown = seg.text,
                         color = baseColor,
                         fontSize = fontSize,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = textModifier,
                         textAlign = if (isUser) TextAlign.End else TextAlign.Start,
                         linkColorOverride = linkColor
                     )
@@ -852,15 +862,25 @@ fun RenderMessageSegments(
                 is ParsedSegment.Code -> {
                     // Render code block with monospace and a subtle background
                     SelectionContainer {
+                        val codeModifier = if (isUser) {
+                            Modifier
+                                .wrapContentWidth()
+                                .widthIn(max = 280.dp)
+                                .background(baseColor.copy(alpha = 0.06f))
+                                .padding(12.dp)
+                        } else {
+                            Modifier
+                                .fillMaxWidth()
+                                .background(baseColor.copy(alpha = 0.06f))
+                                .padding(12.dp)
+                        }
+
                         Text(
                             text = seg.content.trimEnd('\n'),
                             fontFamily = FontFamily.Monospace,
                             fontSize = (fontSize.value - 0).sp,
                             color = baseColor,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(baseColor.copy(alpha = 0.06f))
-                                .padding(12.dp)
+                            modifier = codeModifier
                         )
                     }
                 }
