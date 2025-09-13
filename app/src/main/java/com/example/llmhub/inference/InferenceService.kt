@@ -90,6 +90,8 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
     private var overrideTemperature: Float? = null
     // Estimated tokens accumulated in current session (prompt + responses); heuristic
     private var estimatedSessionTokens: Int = 0
+    // Flag to apply one-time audio delegate warm-up delay per session
+    private var audioWarmUpDone: Boolean = false
     
     // Track when sessions are reset to help ChatViewModel use minimal context
     private val sessionResetTimes = mutableMapOf<String, Long>()
@@ -854,6 +856,13 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                         // Add audio data to session (MediaPipe expects mono WAV format)
                         currentSession.addAudio(audioData)
                         Log.d(TAG, "Successfully added audio data to session")
+
+                        // One-time warm-up delay: give delegate a moment to finish compiling on first audio
+                        if (!audioWarmUpDone) {
+                            Log.d(TAG, "Applying warm-up delay after first audio chunk")
+                            delay(5000) // 0.4s like Google Gallery
+                            audioWarmUpDone = true
+                        }
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to add audio data to session: ${e.message}", e)

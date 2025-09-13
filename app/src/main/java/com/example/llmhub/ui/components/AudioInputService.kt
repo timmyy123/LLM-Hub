@@ -15,10 +15,12 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.io.ByteArrayOutputStream
 
 class AudioInputService(private val context: Context) {
     private var audioRecord: AudioRecord? = null
-    private var outputFile: File? = null
+    private var outputFile: File? = null        // temp wav for preview / debugging
+    private val pcmStream = ByteArrayOutputStream()
     private var isRecording = false
     private var recordingThread: Thread? = null
     
@@ -57,9 +59,12 @@ class AudioInputService(private val context: Context) {
             }
             
             // Create output file for WAV format
-            outputFile = File.createTempFile("audio_", ".wav", context.cacheDir)
+            outputFile = File.createTempFile("audio_", ".wav", context.cacheDir) // optional WAV copy
+
+            // Reset PCM buffer
+            pcmStream.reset()
             
-            // Initialize AudioRecord for mono WAV recording (required by MediaPipe)
+            // Initialize AudioRecord for mono PCM recording (MediaPipe expects raw 16-bit PCM)
             audioRecord = AudioRecord(
                 MediaRecorder.AudioSource.MIC,
                 SAMPLE_RATE,
@@ -117,14 +122,20 @@ class AudioInputService(private val context: Context) {
             audioRecord = null
             recordingThread = null
             
-            val audioData = outputFile?.readBytes()
-            Log.d(TAG, "Stopped recording, audio size: ${audioData?.size ?: 0} bytes")
-            
-            // Cleanup temp file
+            val pcmData = pcmStream.toByteArray() // raw PCM16
+            Log.d(TAG, "Stopped recording, PCM16 size: ${pcmData.size} bytes")
+
+            // Convert PCM16 to float32 WAV (MediaPipe requirement)
+            val float32Wav = convertPcm16ToFloat32Wav(pcmData)
+
+            // Clear PCM buffer for next recording
+            pcmStream.reset()
+
+            // Cleanup temp WAV file
             outputFile?.delete()
             outputFile = null
             
-            return@withContext audioData
+            return@withContext float32Wav
             
         } catch (e: Exception) {
             Log.e(TAG, "Failed to stop recording", e)
@@ -163,6 +174,7 @@ class AudioInputService(private val context: Context) {
         recordingThread = null
         outputFile?.delete()
         outputFile = null
+        pcmStream.reset() // Ensure PCM buffer is empty on cleanup
     }
     
     /**
@@ -183,6 +195,10 @@ class AudioInputService(private val context: Context) {
             while (isRecording) {
                 val bytesRead = audioRecord?.read(data, 0, BUFFER_SIZE) ?: 0
                 if (bytesRead > 0) {
+                    // Write raw PCM to in-memory buffer for MediaPipe
+                    pcmStream.write(data, 0, bytesRead)
+
+                    // Also write to WAV file on disk (optional, retains header)
                     output.write(data, 0, bytesRead)
                     totalDataSize += bytesRead
                 }
@@ -246,5 +262,51 @@ class AudioInputService(private val context: Context) {
         } catch (e: Exception) {
             Log.e(TAG, "Error updating WAV header", e)
         }
+    }
+
+    // Helper to create 32-bit float mono WAV header (little-endian) at 16 kHz
+    private fun createFloat32WavHeader(audioDataSize: Int): ByteArray {
+        val header = ByteArray(44)
+        val buffer = ByteBuffer.wrap(header).order(ByteOrder.LITTLE_ENDIAN)
+
+        // RIFF chunk descriptor
+        buffer.put("RIFF".toByteArray())
+        buffer.putInt(36 + audioDataSize) // ChunkSize = 4 + (8 + SubChunk1) + (8 + SubChunk2)
+        buffer.put("WAVE".toByteArray())
+
+        // fmt sub-chunk
+        buffer.put("fmt ".toByteArray())
+        buffer.putInt(16)               // SubChunk1Size for PCM
+        buffer.putShort(3)              // AudioFormat 3 = IEEE float
+        buffer.putShort(1)              // NumChannels (mono)
+        buffer.putInt(SAMPLE_RATE)      // SampleRate
+        val byteRate = SAMPLE_RATE * 1 * 32 / 8
+        buffer.putInt(byteRate)         // ByteRate
+        buffer.putShort((1 * 32 / 8).toShort()) // BlockAlign
+        buffer.putShort(32)             // BitsPerSample
+
+        // data sub-chunk
+        buffer.put("data".toByteArray())
+        buffer.putInt(audioDataSize)
+
+        return header
+    }
+
+    // Convert signed PCM16 little-endian mono to float32 WAV mono 16 kHz
+    private fun convertPcm16ToFloat32Wav(pcm16: ByteArray): ByteArray {
+        val samples = pcm16.size / 2
+        val floatBytes = ByteArray(samples * 4)
+        val floatBuf = ByteBuffer.wrap(floatBytes).order(ByteOrder.LITTLE_ENDIAN)
+        for (i in 0 until samples) {
+            val s = (pcm16[i*2].toInt() and 0xFF) or (pcm16[i*2+1].toInt() shl 8)
+            val signed = s.toShort()
+            val normalized = signed.toFloat() / 32768.0f
+            floatBuf.putFloat(normalized)
+        }
+        val header = createFloat32WavHeader(floatBytes.size)
+        val out = ByteArray(header.size + floatBytes.size)
+        System.arraycopy(header,0,out,0,header.size)
+        System.arraycopy(floatBytes,0,out,header.size,floatBytes.size)
+        return out
     }
 }
