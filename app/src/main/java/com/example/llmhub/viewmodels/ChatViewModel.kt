@@ -944,11 +944,45 @@ class ChatViewModel(
                                                     queryEmbedding = precomputedQueryEmbedding
                                                 )
                                                 ragSearchTimeMs += (System.currentTimeMillis() - ragStartChat)
+
                                                 if (relevantChunks.isNotEmpty()) {
-                                                    Log.d("ChatViewModel", "✅ Found ${relevantChunks.size} relevant document chunks for query")
-                                                    contextParts.addAll(relevantChunks.map { chunk ->
-                                                        "📄 **${chunk.fileName}** (similarity: ${String.format("%.2f", chunk.similarity)}):\n${chunk.content}"
-                                                    })
+                                                    // Determine if we should inject memory: require user preference AND
+                                                    // either explicit memory-related user intent OR a sufficiently
+                                                    // high similarity from the top candidate.
+                                                    val memoryEnabled = memoryEnabledPref
+                                                    val explicitMemoryQuery = listOf(
+                                                        "what do you remember",
+                                                        "do you remember",
+                                                        "what do i tell",
+                                                        "what do i tell you",
+                                                        "what do you know",
+                                                        "what do you know about me",
+                                                        "show my memories",
+                                                        "show my memory",
+                                                        "what have i told you"
+                                                    ).any { kw -> lastUserContent.lowercase().contains(kw) }
+
+                                                    // Use lexical overlap (Jaccard) rather than semantic similarity
+                                                    fun wordJaccardLocal(a: String, b: String): Double {
+                                                        val wa = a.lowercase().split(Regex("\\W+")).filter { it.isNotBlank() }.toSet()
+                                                        val wb = b.lowercase().split(Regex("\\W+")).filter { it.isNotBlank() }.toSet()
+                                                        if (wa.isEmpty() || wb.isEmpty()) return 0.0
+                                                        val inter = wa.intersect(wb).size.toDouble()
+                                                        val union = wa.union(wb).size.toDouble()
+                                                        return if (union == 0.0) 0.0 else inter / union
+                                                    }
+
+                                                    val topOverlap = relevantChunks.map { chunk -> wordJaccardLocal(lastUserContent, chunk.content) }.maxOrNull() ?: 0.0
+                                                    val overlapThreshold = 0.005 // user-requested tiny lexical overlap threshold
+
+                                                    if (memoryEnabled && (explicitMemoryQuery || topOverlap > overlapThreshold)) {
+                                                        Log.d("ChatViewModel", "✅ Found ${relevantChunks.size} relevant document chunks for query (topOverlap=${"%.3f".format(topOverlap)}) - injecting into prompt")
+                                                        contextParts.addAll(relevantChunks.map { chunk ->
+                                                            "📄 **${chunk.fileName}** (similarity: ${String.format("%.2f", chunk.similarity)}):\\n${chunk.content}"
+                                                        })
+                                                    } else {
+                                                        Log.d("ChatViewModel", "ℹ️ Skipping memory injection: memoryEnabled=$memoryEnabled, explicitQuery=$explicitMemoryQuery, topOverlap=${"%.3f".format(topOverlap)} (threshold=${"%.3f".format(overlapThreshold)})")
+                                                    }
                                                 }
                                             } else {
                                                 Log.d("ChatViewModel", "ℹ️ No documents available in chat $chatId for context search")
