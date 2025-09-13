@@ -24,6 +24,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -78,7 +79,8 @@ fun ChatScreen(
     viewModelFactory: ChatViewModelFactory,
     onNavigateToSettings: () -> Unit,
     onNavigateToModels: () -> Unit,
-    onNavigateToChat: (String) -> Unit
+    onNavigateToChat: (String) -> Unit,
+    drawerState: androidx.compose.material3.DrawerState
 ) {
     val viewModel: ChatViewModel = viewModel(
         key = "chat_$chatId",
@@ -86,7 +88,41 @@ fun ChatScreen(
     )
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    var userTriggeredOpen by remember { mutableStateOf(false) }
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
+
+    // Ensure modal drawer is closed when switching to landscape to avoid auto-opening
+    LaunchedEffect(isLandscape) {
+        if (isLandscape) {
+            coroutineScope.launch {
+                try {
+                    drawerState.close()
+                } catch (_: Exception) {
+                    // ignore
+                }
+            }
+        }
+    }
+
+    // Instrument drawer state for debugging: log transitions so we can see when it opens
+    var previousDrawerValue by remember { mutableStateOf(drawerState.currentValue) }
+    LaunchedEffect(drawerState) {
+        snapshotFlow { drawerState.currentValue }
+            .collect { value ->
+                if (value != previousDrawerValue) {
+                    Log.d("ChatScreen", "Drawer state changed: $previousDrawerValue -> $value; isLandscape=$isLandscape userTriggered=$userTriggeredOpen")
+                    // If the drawer opened but there was no user trigger recently, close it immediately
+                    if (value == androidx.compose.material3.DrawerValue.Open && !userTriggeredOpen) {
+                        Log.d("ChatScreen", "Auto-closing drawer because open wasn't user-triggered")
+                        coroutineScope.launch {
+                            try { drawerState.close() } catch (_: Exception) { }
+                        }
+                    }
+                    previousDrawerValue = value
+                }
+            }
+    }
     
     val messages by viewModel.messages.collectAsState()
     val currentChat by viewModel.currentChat.collectAsState()
@@ -237,7 +273,14 @@ fun ChatScreen(
                     navigationIcon = {
                         IconButton(onClick = {
                             coroutineScope.launch {
-                                drawerState.open()
+                                userTriggeredOpen = true
+                                try {
+                                    drawerState.open()
+                                } finally {
+                                    // keep the flag true briefly so the open handler can observe it
+                                    kotlinx.coroutines.delay(800)
+                                    userTriggeredOpen = false
+                                }
                             }
                         }) {
                             Icon(

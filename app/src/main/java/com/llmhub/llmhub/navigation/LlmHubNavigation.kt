@@ -1,6 +1,10 @@
 package com.llmhub.llmhub.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.material3.DrawerValue
+import kotlinx.coroutines.launch
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -29,6 +33,8 @@ fun LlmHubNavigation(
     themeViewModel: ThemeViewModel,
     startDestination: String = Screen.Chat.createRoute()
 ) {
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+
     NavHost(
         navController = navController,
         startDestination = startDestination
@@ -37,6 +43,7 @@ fun LlmHubNavigation(
             route = Screen.Chat.route
         ) { backStackEntry ->
             val chatId = backStackEntry.arguments?.getString("chatId") ?: "new"
+
             ChatScreen(
                 chatId = chatId,
                 viewModelFactory = chatViewModelFactory,
@@ -50,7 +57,8 @@ fun LlmHubNavigation(
                     navController.navigate(Screen.Chat.createRoute(newChatId)) {
                         popUpTo(Screen.Chat.route) { inclusive = true }
                     }
-                }
+                },
+                drawerState = drawerState
             )
         }
         
