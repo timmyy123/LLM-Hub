@@ -998,18 +998,40 @@ class ChatViewModel(
                                             } catch (e: Exception) {
                                                 Log.w("ChatViewModel", "Failed to reset session for minimal prompt: ${e.message}")
                                             }
-                                            "user: ${lastUserContent}${ragContext}\nassistant:"
-                                        } else {
-                                            // Normal path: include trimmed history and explicit assistant cue
-                                            var basePrompt = if (!history.endsWith("assistant:")) {
-                                                history + "\nassistant:"
-                                            } else history
-
-                                            // Insert RAG context before the assistant response (assign the result)
-                                            if (ragContext.isNotEmpty()) {
-                                                basePrompt = basePrompt.replace("\nassistant:", "${ragContext}\nassistant:")
+                                            if (audioData != null) {
+                                                // Audio present: follow doc – inject instruction or user's text only
+                                                if (lastUserContent.trim().isEmpty()) {
+                                                    Log.d("ChatViewModel", "Audio-only message - injecting transcription instruction into addQueryChunk")
+                                                    "Transcribe the following speech segment and respond to it:"
+                                                } else {
+                                                    Log.d("ChatViewModel", "Text+audio message - injecting only user's text into addQueryChunk")
+                                                    lastUserContent
+                                                }
+                                            } else {
+                                                "user: ${lastUserContent}${ragContext}\nassistant:"
                                             }
-                                            basePrompt
+                                        } else {
+                                            if (audioData != null) {
+                                                // Audio present: follow doc – inject instruction or user's text only
+                                                if (lastUserContent.trim().isEmpty()) {
+                                                    Log.d("ChatViewModel", "Audio-only message - injecting transcription instruction into addQueryChunk")
+                                                    "Transcribe the following speech segment and respond to it:"
+                                                } else {
+                                                    Log.d("ChatViewModel", "Text+audio message - injecting only user's text into addQueryChunk")
+                                                    lastUserContent
+                                                }
+                                            } else {
+                                                // Normal path: include trimmed history and explicit assistant cue
+                                                var basePrompt = if (!history.endsWith("assistant:")) {
+                                                    history + "\nassistant:"
+                                                } else history
+
+                                                // Insert RAG context before the assistant response (assign the result)
+                                                if (ragContext.isNotEmpty()) {
+                                                    basePrompt = basePrompt.replace("\nassistant:", "${ragContext}\nassistant:")
+                                                }
+                                                basePrompt
+                                            }
                                         }
                                     } else {
                                         // Continuation: build a new context-aware history including the current response
