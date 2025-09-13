@@ -86,7 +86,7 @@ class ChatViewModel(
     // Embedding enabled state
     private val _isEmbeddingEnabled = MutableStateFlow(false)
     val isEmbeddingEnabled: StateFlow<Boolean> = _isEmbeddingEnabled.asStateFlow()
-    
+
     // Vision disabled state (for GPU with vision disabled on low RAM)
     private var isVisionDisabled: Boolean = false
     // Audio disabled state (for GPU with audio disabled on low RAM)
@@ -222,7 +222,12 @@ class ChatViewModel(
                 _currentlyLoadedModel.value = loadedModel
                 // Also update the local currentModel to keep them in sync
                 currentModel = loadedModel
-                Log.d("ChatViewModel", "Synced currently loaded model: ${loadedModel?.name ?: "None"}")
+                
+                // Sync the modality disabled states from the inference service
+                isVisionDisabled = inferenceService.isVisionCurrentlyDisabled()
+                isAudioDisabled = inferenceService.isAudioCurrentlyDisabled()
+                
+                Log.d("ChatViewModel", "Synced currently loaded model: ${loadedModel?.name ?: "None"}, vision disabled: $isVisionDisabled, audio disabled: $isAudioDisabled")
             } catch (e: Exception) {
                 Log.w("ChatViewModel", "Error syncing currently loaded model: ${e.message}")
                 // Don't update the state if there's an error
@@ -857,20 +862,20 @@ class ChatViewModel(
                                     val currentPrompt = if (continuationCount == 0) {
                                         // First generation of this reply
                                         val baseUserContent = currentUserMessage.content.trim()
-                        // Add audio token if audio data is present (MediaPipe requirement)
+                                        // Add audio token if audio data is present (MediaPipe requirement)
                         Log.d("ChatViewModel", "Audio token check: audioData=${audioData?.size ?: 0} bytes, supportsAudio=${currentModel!!.supportsAudio}, isAudioDisabled=$isAudioDisabled, baseUserContent='$baseUserContent'")
                         val lastUserContent = if (audioData != null && currentModel!!.supportsAudio && !isAudioDisabled) {
-                            if (baseUserContent.isEmpty()) {
+                                            if (baseUserContent.isEmpty()) {
                                 Log.d("ChatViewModel", "Adding audio token for audio-only message")
-                                "<audio_soft_token>" // Audio-only message
-                            } else {
+                                                "<audio_soft_token>" // Audio-only message
+                                            } else {
                                 Log.d("ChatViewModel", "Adding audio token for text+audio message")
-                                "<audio_soft_token>$baseUserContent" // Text + Audio message
-                            }
-                        } else {
+                                                "<audio_soft_token>$baseUserContent" // Text + Audio message
+                                            }
+                                        } else {
                             Log.d("ChatViewModel", "Not adding audio token - using base content: '$baseUserContent'")
-                            baseUserContent
-                        }
+                                            baseUserContent
+                                        }
                         Log.d("ChatViewModel", "Final lastUserContent: '$lastUserContent'")
                                         
                                         // Search for relevant document context using RAG (per-chat and optional global memory)

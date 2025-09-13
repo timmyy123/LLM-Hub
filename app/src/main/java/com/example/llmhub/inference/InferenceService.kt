@@ -51,6 +51,9 @@ interface InferenceService {
     fun wasSessionRecentlyReset(chatId: String): Boolean
     // Allow runtime update of generation parameters (from UI dialog)
     fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?)
+    // Get current modality disabled states
+    fun isVisionCurrentlyDisabled(): Boolean
+    fun isAudioCurrentlyDisabled(): Boolean
 }
 
 /**
@@ -348,7 +351,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             }
         }
     }
-    
+
     private suspend fun ensureModelLoaded(model: LLMModel, preferredBackend: LlmInference.Backend? = null, disableVision: Boolean = false, disableAudio: Boolean = false) {
         if (currentModel?.name != model.name) {
             val modalityInfo = buildList {
@@ -457,7 +460,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 if (disableVision) {
                     Log.d(TAG, "  - Vision modality disabled by user (maxNumImages=0)")
                 } else {
-                    Log.d(TAG, "  - Vision modality disabled (maxNumImages=0)")
+                Log.d(TAG, "  - Vision modality disabled (maxNumImages=0)")
                 }
             }
             
@@ -535,15 +538,14 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 if (disableAudio && model.supportsAudio) {
                     Log.d(TAG, "  - Audio modality disabled by user")
                 } else {
-                    Log.d(TAG, "  - Created inference engine without audio support")
+                Log.d(TAG, "  - Created inference engine without audio support")
                 }
             }
             
-            // Update model with actual capabilities detected during loading
-            val actualModel = model.copy(supportsAudio = actualAudioSupport)
-            
-            // Set current model BEFORE creating session (critical for vision modality)
-            currentModel = actualModel
+            // Preserve the model's base capabilities. Use the original model object so supportsAudio
+            // stays TRUE even if the user disabled audio for this particular load.
+            // We rely on isAudioDisabled flag to know whether the session should include audio.
+            currentModel = model
             
             // Create initial session
             val session = createSession(llmInference)
@@ -937,11 +939,10 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to add audio data to session: ${e.message}", e)
 
-                    // If audio modality isn't enabled in the current engine, don't retry; disable audio for this run
+                    // If audio modality isn't enabled in the current engine, don't retry
                     if (e.message?.contains("Audio modality is not enabled") == true) {
-                        Log.w(TAG, "Engine/session has audio disabled. Skipping audio for this request and marking model as no-audio for this session")
-                        // Update current model flag so subsequent turns don't try audio
-                        currentModel = currentModel?.copy(supportsAudio = false)
+                        Log.w(TAG, "Engine/session has audio disabled. Skipping audio for this request (but keeping model's audio capability intact)")
+                        // Don't modify currentModel.supportsAudio - it should reflect the model's base capability
                     }
                     // Continue with text/image processing even if audio fails
                 }
@@ -1147,6 +1148,14 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
 
     override fun getCurrentlyLoadedModel(): LLMModel? {
         return currentModel
+    }
+    
+    override fun isVisionCurrentlyDisabled(): Boolean {
+        return isVisionDisabled
+    }
+    
+    override fun isAudioCurrentlyDisabled(): Boolean {
+        return isAudioDisabled
     }
 
     /**
