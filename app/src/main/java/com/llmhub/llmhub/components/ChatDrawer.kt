@@ -289,4 +289,4 @@ private fun formatTimestamp(timestamp: Long): String {
         minutes > 0 -> stringResource(R.string.time_minutes_ago, minutes.toInt())
         else -> stringResource(R.string.time_just_now)
     }
-} 
+}
