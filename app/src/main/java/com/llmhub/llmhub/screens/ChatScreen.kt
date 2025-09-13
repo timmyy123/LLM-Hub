@@ -202,12 +202,14 @@ fun ChatScreen(
                                             tint = MaterialTheme.colorScheme.primary
                                         )
                                     }
-                                    // Show compact RAG indicator
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    CompactRagIndicator(
-                                        hasDocuments = documentCount > 0,
-                                        documentCount = documentCount
-                                    )
+                                    // Show compact RAG indicator only when embeddings (RAG) are NOT enabled
+                                    if (!isEmbeddingEnabled) {
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        CompactRagIndicator(
+                                            hasDocuments = documentCount > 0,
+                                            documentCount = documentCount
+                                        )
+                                    }
                                     // Show RAG enabled indicator when embeddings are enabled
                                     if (isEmbeddingEnabled) {
                                         Spacer(modifier = Modifier.width(4.dp))
