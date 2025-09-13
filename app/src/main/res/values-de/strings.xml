@@ -232,6 +232,7 @@
     <string name="global_memory_pasted_by">In globalen Speicher eingefügt</string>
     <string name="memory_upload_success">Datei im globalen Speicher gespeichert</string>
     <string name="memory_upload_failed">Datei konnte nicht im Speicher gespeichert werden (RAG möglicherweise deaktiviert)</string>
+    <string name="memory_upload_unsupported_type">Dateityp nicht für Speicher unterstützt. Nur Textdokumente (PDF, DOC, TXT, etc.) können dem Speicher hinzugefügt werden.</string>
     <string name="memory_save_success">Text im globalen Speicher gespeichert</string>
     <string name="memory_save_failed">Text konnte nicht im Speicher gespeichert werden (RAG möglicherweise deaktiviert)</string>
     <string name="saved_memories">Gespeicherte Einträge</string>

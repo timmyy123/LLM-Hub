@@ -230,6 +230,7 @@
     <string name="global_memory_pasted_by">Pegado en la memoria global</string>
     <string name="memory_upload_success">Archivo guardado en la memoria global</string>
     <string name="memory_upload_failed">Error al guardar archivo en la memoria (RAG puede estar desactivado)</string>
+    <string name="memory_upload_unsupported_type">Tipo de archivo no compatible con la memoria. Solo documentos de texto (PDF, DOC, TXT, etc.) se pueden agregar a la memoria.</string>
     <string name="memory_save_success">Texto guardado en la memoria global</string>
     <string name="memory_save_failed">Error al guardar texto en la memoria (RAG puede estar desactivado)</string>
     <string name="saved_memories">Memorias guardadas</string>

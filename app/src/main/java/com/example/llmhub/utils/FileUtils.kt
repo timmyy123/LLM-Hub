@@ -339,6 +339,22 @@ object FileUtils {
     }
     
     /**
+     * Check if file type is supported for memory/RAG functionality
+     */
+    fun isFileTypeSupportedForMemory(fileType: SupportedFileType): Boolean {
+        return when (fileType) {
+            SupportedFileType.TEXT,
+            SupportedFileType.JSON,
+            SupportedFileType.XML,
+            SupportedFileType.PDF,
+            SupportedFileType.WORD,
+            SupportedFileType.EXCEL,
+            SupportedFileType.POWERPOINT -> true
+            else -> false
+        }
+    }
+    
+    /**
      * Extract text content from supported file types
      */
     suspend fun extractTextContent(context: Context, uri: Uri, fileType: SupportedFileType): String? = 

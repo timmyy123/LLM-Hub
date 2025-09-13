@@ -304,6 +304,7 @@
     <string name="global_memory_pasted_by">Collé dans la mémoire globale</string>
     <string name="memory_upload_success">Fichier enregistré dans la mémoire globale</string>
     <string name="memory_upload_failed">Échec de l\'enregistrement du fichier dans la mémoire (RAG peut être désactivé)</string>
+    <string name="memory_upload_unsupported_type">Type de fichier non pris en charge pour la mémoire. Seuls les documents texte (PDF, DOC, TXT, etc.) peuvent être ajoutés à la mémoire.</string>
     <string name="memory_save_success">Texte enregistré dans la mémoire globale</string>
     <string name="memory_save_failed">Échec de l\'enregistrement du texte dans la mémoire (RAG peut être désactivé)</string>
     <string name="saved_memories">Entrées sauvegardées</string>
