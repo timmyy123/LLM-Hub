@@ -28,6 +28,7 @@
     <string name="global_memory_pasted_by">Вставлено в глобальную память</string>
     <string name="memory_upload_success">Файл сохранён в глобальной памяти</string>
     <string name="memory_upload_failed">Не удалось сохранить файл в памяти (RAG может быть отключён)</string>
+    <string name="memory_upload_unsupported_type">Тип файла не поддерживается для памяти. В память можно добавлять только текстовые документы (PDF, DOC, TXT и т.д.).</string>
     <string name="memory_save_success">Текст сохранён в глобальной памяти</string>
     <string name="memory_save_failed">Не удалось сохранить текст в памяти (RAG может быть отключён)</string>
     <string name="saved_memories">Сохранённые записи</string>

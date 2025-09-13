@@ -264,6 +264,13 @@ fun SettingsScreen(
                                             try {
                                                 val db = com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context)
                                                 val info = pickedFileInfo!!
+                                                
+                                                // Check if file type is supported for memory
+                                                if (!FileUtils.isFileTypeSupportedForMemory(info.type)) {
+                                                    android.widget.Toast.makeText(context, context.getString(R.string.memory_upload_unsupported_type), android.widget.Toast.LENGTH_SHORT).show()
+                                                    return@launch
+                                                }
+                                                
                                                 val content = FileUtils.extractTextContent(context, info.uri, info.type)
                                                 if (content != null) {
                                                     val id = "mem_${System.currentTimeMillis()}"

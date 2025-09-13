@@ -213,6 +213,7 @@
     <string name="global_memory_pasted_by">Colado na memória global</string>
     <string name="memory_upload_success">Arquivo salvo na memória global</string>
     <string name="memory_upload_failed">Falha ao salvar arquivo na memória (RAG pode estar desativado)</string>
+    <string name="memory_upload_unsupported_type">Tipo de arquivo não suportado para memória. Apenas documentos de texto (PDF, DOC, TXT, etc.) podem ser adicionados à memória.</string>
     <string name="memory_save_success">Texto salvo na memória global</string>
     <string name="memory_save_failed">Falha ao salvar texto na memória (RAG pode estar desativado)</string>
     <string name="saved_memories">Memórias salvas</string>
