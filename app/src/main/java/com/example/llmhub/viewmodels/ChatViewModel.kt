@@ -864,19 +864,8 @@ class ChatViewModel(
                                         val baseUserContent = currentUserMessage.content.trim()
                                         // Add audio token if audio data is present (MediaPipe requirement)
                         Log.d("ChatViewModel", "Audio token check: audioData=${audioData?.size ?: 0} bytes, supportsAudio=${currentModel!!.supportsAudio}, isAudioDisabled=$isAudioDisabled, baseUserContent='$baseUserContent'")
-                        val lastUserContent = if (audioData != null && currentModel!!.supportsAudio && !isAudioDisabled) {
-                                            if (baseUserContent.isEmpty()) {
-                                Log.d("ChatViewModel", "Adding audio token for audio-only message")
-                                                "<audio_soft_token>" // Audio-only message
-                                            } else {
-                                Log.d("ChatViewModel", "Adding audio token for text+audio message")
-                                                "<audio_soft_token>$baseUserContent" // Text + Audio message
-                                            }
-                                        } else {
-                            Log.d("ChatViewModel", "Not adding audio token - using base content: '$baseUserContent'")
-                                            baseUserContent
-                                        }
-                        Log.d("ChatViewModel", "Final lastUserContent: '$lastUserContent'")
+                        val lastUserContent = baseUserContent // Do not inject <audio_soft_token>; follow Google AI Edge Gallery pattern
+                        Log.d("ChatViewModel", "Final lastUserContent (no audio soft token): '$lastUserContent'")
                                         
                                         // Search for relevant document context using RAG (per-chat and optional global memory)
                                         var ragContext = ""
