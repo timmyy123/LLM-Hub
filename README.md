@@ -18,31 +18,41 @@
 - **🎨 Modern UI**: Clean, intuitive Material Design interface
 - **📥 Direct Downloads**: Download models directly from HuggingFace
 
-## � Download
+##  Download
 
 [![Get it on Google Play](https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png)](https://play.google.com/store/apps/details?id=com.llmhub.llmhub)
 
 *Available on Google Play Store for easy installation and automatic updates*
 
-## �📱 Supported Models
+## 📱 Supported Models
 
 ### Text Models
 - **Gemma-3 1B Series** (Google)
-  - INT4 quantization (529MB) - 2k context
-  - INT8 quantization (1005MB) - 1.2k context
-  - INT8 quantization (1024MB) - 2k context
-  - INT8 quantization (1005MB) - 4k context
+   - INT4 quantization - 2k context
+   - INT8 quantization - 1.2k context
+   - INT8 quantization - 2k context
+   - INT8 quantization - 4k context
 
 - **Llama-3.2 Series** (Meta)
-  - 1B model (1.20GB) - 1.2k context
-  - 3B model (3.08GB) - 1.2k context
+   - 1B model - 1.2k context
+   - 3B model - 1.2k context
 
 - **Phi-4 Mini** (Microsoft)
-  - INT8 quantization (3.67GB) - 1.2k context
+   - INT8 quantization - 1.2k context
 
 ### Multimodal Models (Vision + Audio + Text)
-- **Gemma-3n E2B** (2.92GB) - 4k context - Supports text, images, and audio input
-- **Gemma-3n E4B** (4.10GB) - 4k context - Supports text, images, and audio input
+- **Gemma-3n E2B** (Gemma-3n family) - Supports text, images, and audio input
+- **Gemma-3n E4B** (Gemma-3n family) - Supports text, images, and audio input
+
+**Memory & RAG (Global Context)**
+
+- **On-device RAG & Embeddings:** The app performs retrieval-augmented generation (RAG) locally on the device. Embeddings and semantic search are implemented using the app's RAG manager and embedding models (see `RagServiceManager`, `MemoryProcessor`, and the compact Gecko embedding entry in `ModelData.kt`).
+- **Global Memory (import-only):** Users can upload or paste documents into a single global memory store. This is a global context used for RAG lookups — it is not a per-conversation conversational memory. The global memory is managed via the Room database (`memoryDao`) and exposed in the Settings and Memory screens.
+- **Chunking & Persistence:** Uploaded documents are split into chunks; chunk embeddings are computed and persisted. On startup the app restores persisted chunk embeddings from the database and repopulates the in-memory RAG index.
+- **RAG Flow in Chat:** The chat pipeline queries the RAG index (both per-chat documents and optional global memory) to build a RAG context that is inserted into the prompt (the code assembles a "USER MEMORY FACTS" block before the assistant prompt). See `ChatViewModel` for the exact integration points where embeddings are generated (`generateEmbedding`) and searched (`searchRelevantContext`, `searchGlobalContext`).
+- **Controls & Settings:** Embeddings and RAG can be enabled/disabled in Settings, and the user can choose the embedding model used for semantic search (the UI exposes embedding model selection via the settings and `ThemeViewModel`).
+- **Local-only:** All embeddings, RAG searches and document chunk storage happen locally (Room DB + in-memory index). No external endpoints are used for RAG or memory lookups.
+
 
 ## 🛠️ Technology Stack
 
@@ -55,11 +65,10 @@
 
 ## 📋 Requirements
 
-- **Android 7.0** (API level 24) or higher
+- **Android 8.0** (API level 26) or higher
 - **RAM**: 
   - Minimum 2GB for small models
-  - 4GB+ recommended for better performance
-  - 8GB+ required for GPU acceleration on vision models
+  - 6GB+ recommended for better performance
 - **Storage**: 1GB - 5GB depending on selected models
 - **Internet**: Required only for model downloads
 
@@ -107,8 +116,8 @@ LLM Hub uses Google's MediaPipe framework with LiteRT to run quantized AI models
 ## 🔧 Configuration
 
 ### GPU Acceleration
-- **Gemma-3 1B models**: GPU supported on all devices
-- **Gemma-3n models**: GPU requires >8GB RAM
+- **Gemma-3 1B models**: recommend at least 4GB RAM for GPU acceleration
+- **Gemma-3n models**: recommend at least 8GB RAM for GPU acceleration
 - **Llama & Phi models**: CPU only (compatibility issues)
 
 ### Model Selection
@@ -155,13 +164,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Issues**: [GitHub Issues](https://github.com/timmyy123/LLM-Hub/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/timmyy123/LLM-Hub/discussions)
 
-## 🔄 Version History
 
-- **v1.0.0**: Initial release with Gemma, Llama, Phi, and Gemma-3n support
-
----
-
-**Made with ❤️ by the LLM Hub Team**
+**Made with ❤️ by Timmy**
 
 *Bringing AI to your pocket, privately and securely.*
 
