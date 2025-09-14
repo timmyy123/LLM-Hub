@@ -127,6 +127,17 @@ Choose models based on your device capabilities:
 - **6GB+ RAM**: Gemma-3n, Llama-3.2 3B
 - **8GB+ RAM**: Phi-4 Mini, GPU acceleration
 
+## 🔎 Web Search
+
+- **Built-in web search:** LLM Hub includes an on-device web search integration used for document lookups and optional augmentation of model responses. The implementation is a DuckDuckGo-based service (`WebSearchService` / `DuckDuckGoSearchService`) bundled with the app.
+- **How it works:** The search service first attempts content-aware searches: it detects if a query contains a URL and will fetch page content directly. For general queries it:
+   - tries DuckDuckGo Instant Answer API (JSON) for short answers and definitions,
+   - falls back to DuckDuckGo HTML search scraping when needed,
+   - performs optional content extraction: fetches result pages and extracts text snippets to return richer snippets to the app.
+- **Privacy & limits:** Searches use public DuckDuckGo endpoints (no API key required). The app performs HTTP requests from the device; network access is required for web search and content fetching. The web search implementation includes timeouts and result limits to avoid excessive requests.
+- **Usage in app:** Search results are returned as title/snippet/url tuples and can be used by the chat UI or RAG/document upload flows to provide external context or to fetch page content when users paste a URL.
+
+
 ## 🤝 Contributing
 
 We welcome contributions! Here's how you can help:
