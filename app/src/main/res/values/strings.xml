@@ -39,6 +39,7 @@
     <string name="message_copied">Message copied</string>
     <string name="tokens_per_second_format">%1$d tokens • %2$.1f tok/sec</string>
     <string name="context_multimodal_format">%1$dk context • %2$s</string>
+    <string name="multimodal_format">%1$s multimodal</string>
     <string name="multimodal">Multimodal</string>
     <string name="text_only">Text only</string>
     <string name="currently_loaded">Currently loaded</string>
@@ -72,7 +73,7 @@
     <string name="acknowledgments">Acknowledgments</string>
     <string name="acknowledgments_text">Special thanks to Google, Meta, Microsoft, and the HuggingFace community for providing the incredible LLM models that power this application. This project also relies on the amazing work of the Android development community and the open-source ecosystem.</string>
     <string name="ai_thinking">AI is thinking...</string>
-    <string name="version_number">Version 1.1.0</string>
+    <string name="version_number">Version 2.0</string>
     <string name="app_version">App Version</string>
     
     <!-- Terms of Service -->
@@ -89,7 +90,7 @@
     <string name="tos_privacy_data_title">4. Privacy and Data</string>
     <string name="tos_privacy_data_text">LLM Hub is designed with privacy in mind:\n\n• All conversations and data processing occur locally on your device\n• No personal data is transmitted to external servers\n• Chat history is stored locally and can be deleted at any time\n• Model downloads are performed directly from official repositories (HuggingFace, Google)\n• The application does not collect analytics or usage data</string>
     <string name="tos_disclaimer_title">5. Disclaimer of Warranties</string>
-    <string name="tos_disclaimer_text">LLM Hub is provided \"as is\" without warranties of any kind. We do not guarantee the accuracy, reliability, or availability of the application or its generated content. Use of AI models may produce unpredictable results.</string>
+    <string name="tos_disclaimer_text">LLM Hub is provided "as is" without warranties of any kind. We do not guarantee the accuracy, reliability, or availability of the application or its generated content. Use of AI models may produce unpredictable results.</string>
     <string name="tos_limitation_liability_title">6. Limitation of Liability</string>
     <string name="tos_limitation_liability_text">In no event shall the developers be liable for any indirect, incidental, special, or consequential damages arising from the use of LLM Hub. Your use of the application is at your own risk.</string>
     <string name="tos_model_usage_title">7. Model Usage and Licensing</string>
@@ -188,6 +189,7 @@
     <string name="no_model_selected">No model selected</string>
     <string name="no_model_downloaded">No model downloaded</string>
     <string name="model_supports_vision">Supports vision</string>
+    <string name="model_supports_multimodal">Supports multimodal</string>
     <string name="model_text_only">Text only</string>
     
     <!-- Chat Drawer -->
@@ -267,11 +269,13 @@
     <string name="text_file">Text File</string>
     <string name="tap_to_preview">Tap to preview</string>
     <string name="text_file_tap_to_preview">Text File • Tap to preview</string>
+    <string name="read_this">Read this</string>
     
     
     <!-- Audio Input -->
     <string name="audio_recording">Audio Recording</string>
     <string name="audio_description">Record voice message</string>
+    <string name="record_voice_message">Record voice message</string>
     <string name="recording">Recording…</string>
     <string name="audio_recorded">Audio Recorded</string>
     <string name="ready_to_send">Ready to send</string>
