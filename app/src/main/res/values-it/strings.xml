@@ -381,6 +381,7 @@
     
     <!-- General performance tip for all devices -->
     <string name="gemma3n_performance_tip">💡 Se riscontri arresti anomali o prestazioni basse a causa di limitazioni di RAM, prova a passare al backend CPU o a disabilitare le funzionalità di visione/audio.</string>
+    <string name="reset_to_defaults">Reimposta</string>
 </resources>
 
 
