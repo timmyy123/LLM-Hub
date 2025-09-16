@@ -53,11 +53,13 @@ fun ModelConfigsDialog(
         (screenHeightDp * 0.72f).coerceAtMost(640.dp)
     }
 
-    // Always allow GPU for Gemma-3n models - let users have full control
+    // Gemma-3n detection (used for modality toggles)
     val isGemma3nE2B = model.name.contains("Gemma-3n E2B", ignoreCase = true)
     val isGemma3nE4B = model.name.contains("Gemma-3n E4B", ignoreCase = true)
     val isGemma3nModel = isGemma3nE2B || isGemma3nE4B
-    val canUseGpu = true // Always allow GPU selection for all models
+
+    // Allow accelerator selection for any model that declares GPU support
+    val canSelectAccelerator = model.supportsGpu
 
     // Cap for max tokens
     val maxTokensCap = remember(model) { MediaPipeInferenceService.getMaxTokensForModelStatic(model) }
@@ -69,7 +71,7 @@ fun ModelConfigsDialog(
     var topK by remember { mutableStateOf(64) }
     var topP by remember { mutableStateOf(0.95f) }
     var temperature by remember { mutableStateOf(1.0f) }
-    var useGpu by remember { mutableStateOf(true) } // Default to GPU
+    var useGpu by remember { mutableStateOf(model.supportsGpu) } // Default to GPU when model supports it
     var disableVision by remember { mutableStateOf(false) }
     var disableAudio by remember { mutableStateOf(false) }
 
@@ -217,11 +219,11 @@ fun ModelConfigsDialog(
                     OutlinedTextField(value = String.format("%.2f", temperature), onValueChange = { v -> temperature = v.toFloatOrNull() ?: temperature }, modifier = Modifier.width(smallNumWidth))
                 }
 
-                // Accelerator toggle only for Gemma models
-                if (model.name.contains("Gemma", ignoreCase = true)) {
+                // Accelerator toggle when model declares GPU support (Gemma, Llama, Phi, etc.)
+                if (canSelectAccelerator) {
                     Text(text = stringResource(R.string.choose_accelerator), style = MaterialTheme.typography.bodyMedium)
                     
-                    // CPU/GPU Selection - always available
+                    // CPU/GPU Selection - available when model.supportsGpu is true
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilterChip(
                             selected = !useGpu,
@@ -239,7 +241,7 @@ fun ModelConfigsDialog(
                         )
                     }
                     
-                    // Always show toggles for multimodal models (E2B and E4B)
+                    // Always show toggles for multimodal Gemma-3n models (E2B and E4B)
                     if (isGemma3nModel && (model.supportsVision || model.supportsAudio)) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
@@ -283,7 +285,7 @@ fun ModelConfigsDialog(
                             }
                         }
                         
-                        // General performance tip for all devices
+                        // General performance tip for Gemma-3n devices
                         Text(
                             text = stringResource(R.string.gemma3n_performance_tip),
                             style = MaterialTheme.typography.bodySmall,
@@ -298,7 +300,7 @@ fun ModelConfigsDialog(
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(onClick = {
                         val finalMax = maxTokensValue.coerceIn(1, maxTokensCap)
-                        val backend = if (model.name.contains("Gemma", ignoreCase = true)) {
+                        val backend = if (canSelectAccelerator) {
                             if (useGpu) LlmInference.Backend.GPU else LlmInference.Backend.CPU
                         } else {
                             null

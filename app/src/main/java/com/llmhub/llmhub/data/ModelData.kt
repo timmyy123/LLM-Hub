@@ -85,18 +85,19 @@ object ModelData {
             modelFormat = "task"
         ),
 
+        // Phi-4 Mini updated to user-provided litertlm link
         LLMModel(
-            name = "Phi-4 Mini (INT8, 1.2k)",
-            description = "Microsoft's Phi-4 Mini model optimized for on-device inference with INT8 quantization. Ready to download from HuggingFace (3.67GB)",
-            url = "https://huggingface.co/litert-community/Phi-4-mini-instruct/resolve/main/Phi-4-mini-instruct_multi-prefill-seq_q8_ekv1280.task?download=true",
+            name = "Phi-4 Mini (INT8, 4k)",
+            description = "Phi-4 Mini INT8 variant in LiteRT LM format (litertlm).",
+            url = "https://huggingface.co/litert-community/Phi-4-mini-instruct/resolve/main/Phi-4-mini-instruct_multi-prefill-seq_q8_ekv4096.litertlm?download=true",
             category = "text",
-            sizeBytes = 3944275882L, // 3.67 GB (actual size from HuggingFace)
+            sizeBytes = 3910000000L, // 3.91 GB as reported on HuggingFace file page
             source = "Microsoft via LiteRT Community",
             supportsVision = false,
-            supportsGpu = false, // Phi models have GPU compatibility issues
+            supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 5, recommendedRamGB = 7),
-            contextWindowSize = 1280,
-            modelFormat = "task"
+            contextWindowSize = 4096,
+            modelFormat = "litertlm"
         ),
 
         // Gemma-3n Models (Multimodal - Text + Vision + Audio)
