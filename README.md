@@ -4,6 +4,19 @@
 [![Kotlin](https://img.shields.io/badge/Language-Kotlin-blue.svg)](https://kotlinlang.org)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+## 📸 Screenshots
+
+Screenshots.
+
+- Chat Screen
+
+   ![Chat screen](assets/screenshots/Screenshot_20250916_155747_LLM%20Hub.jpg)
+
+- Model list
+
+   ![Model list](assets/screenshots/Screenshot_20250916_155727_LLM%20Hub.jpg)
+
+
 **LLM Hub** is an open-source Android application that brings the power of Large Language Models (LLMs) directly to your mobile device. Experience AI conversations with state-of-the-art models like Gemma, Llama, and Phi - all running locally on your phone for maximum privacy and offline accessibility.
 
 ## 🚀 Features
@@ -205,3 +218,7 @@ To use private or gated models, you need to provide your Hugging Face (HF) acces
 **Note:**
 - Never commit your `local.properties` file or your token to version control.
 - If you change your token, update `local.properties` and re-sync Gradle.
+ - Never commit your `local.properties` file or your token to version control.
+ - If you change your token, update `local.properties` and re-sync Gradle.
+
+
