@@ -63,6 +63,9 @@ fun ModelConfigsDialog(
     val isGemma3nE4B = model.name.contains("Gemma-3n E4B", ignoreCase = true)
     val isGemma3nModel = isGemma3nE2B || isGemma3nE4B
 
+    // Phi-4 Mini detection: default to CPU for stability on mobile
+    val isPhi4Mini = model.name.contains("Phi-4 Mini", ignoreCase = true)
+
     // Allow accelerator selection for any model that declares GPU support
     val canSelectAccelerator = model.supportsGpu
 
@@ -76,7 +79,8 @@ fun ModelConfigsDialog(
     var topK by remember { mutableStateOf(64) }
     var topP by remember { mutableStateOf(0.95f) }
     var temperature by remember { mutableStateOf(1.0f) }
-    var useGpu by remember { mutableStateOf(model.supportsGpu) } // Default to GPU when model supports it
+    val defaultUseGpu = remember(model) { !isPhi4Mini && model.supportsGpu }
+    var useGpu by remember { mutableStateOf(defaultUseGpu) } // Default accelerator (Phi-4 Mini -> CPU)
     var disableVision by remember { mutableStateOf(false) }
     // Default audio disabled for Gemma-3n models to conserve resources on mobile
     var disableAudio by remember { mutableStateOf(isGemma3nModel) }
@@ -89,7 +93,7 @@ fun ModelConfigsDialog(
     LaunchedEffect(model.name) {
         try {
             val saved = modelPrefs.getModelConfig(model.name)
-            if (saved != null) {
+                if (saved != null) {
                 maxTokensValue = saved.maxTokens.coerceIn(1, maxTokensCap)
                 maxTokensText = maxTokensValue.toString()
                 topK = saved.topK
@@ -98,7 +102,7 @@ fun ModelConfigsDialog(
                 useGpu = when (saved.backend) {
                     "GPU" -> true
                     "CPU" -> false
-                    else -> model.supportsGpu
+                    else -> defaultUseGpu
                 }
                 disableVision = saved.disableVision
                 disableAudio = saved.disableAudio
@@ -346,7 +350,7 @@ fun ModelConfigsDialog(
                         topK = 64
                         topP = 0.95f
                         temperature = 1.0f
-                        useGpu = model.supportsGpu
+                        useGpu = defaultUseGpu
                         disableVision = false
                         disableAudio = isGemma3nModel
                     }, modifier = Modifier

@@ -139,6 +139,7 @@ Choose models based on your device capabilities:
 - **4GB RAM**: Gemma-3 1B INT8, Llama-3.2 1B
 - **6GB+ RAM**: Gemma-3n, Llama-3.2 3B
 - **8GB+ RAM**: Phi-4 Mini, GPU acceleration
+ - **8GB+ RAM**: Phi-4 Mini (CPU recommended by default; GPU optional on very high-memory devices)
 
 ## 🔎 Web Search
 
