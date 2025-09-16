@@ -8,13 +8,12 @@
 
 <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;">
    <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
-      <img src="assets/screenshots/Screenshot_20250916_155747_LLM%20Hub.jpg" alt="Chat screen" style="width:300px;height:auto;border-radius:8px;display:block;" />
-      <!-- <figcaption style="font-size:12px;margin-top:6px;color:var(--color-fg-muted,#6b7280)">Chat screen</figcaption> -->
-   </figure>
-
-   <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
       <img src="assets/screenshots/Screenshot_20250916_155727_LLM%20Hub.jpg" alt="Model list" style="width:300px;height:auto;border-radius:8px;display:block;" />
       <!-- <figcaption style="font-size:12px;margin-top:6px;color:var(--color-fg-muted,#6b7280)">Model list</figcaption> -->
+   </figure>
+   <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
+      <img src="assets/screenshots/Screenshot_20250916_155747_LLM%20Hub.jpg" alt="Chat screen" style="width:300px;height:auto;border-radius:8px;display:block;" />
+      <!-- <figcaption style="font-size:12px;margin-top:6px;color:var(--color-fg-muted,#6b7280)">Chat screen</figcaption> -->
    </figure>
 </div>
 
