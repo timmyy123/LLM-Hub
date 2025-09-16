@@ -6,16 +6,16 @@
 
 ## 📸 Screenshots
 
-<div style="overflow-x:auto;white-space:nowrap;padding-bottom:8px;">
-   <div style="display:inline-block;width:45vw;max-width:520px;min-width:300px;margin-right:12px;vertical-align:top">
-      <img src="assets/screenshots/Screenshot_20250916_155747_LLM%20Hub.jpg" alt="Chat screen" style="width:100%;height:auto;border-radius:8px;display:block" />
-      <div style="font-size:12px;margin-top:6px;text-align:center">Chat screen</div>
-   </div>
+<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;">
+   <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
+      <img src="assets/screenshots/Screenshot_20250916_155747_LLM%20Hub.jpg" alt="Chat screen" style="width:300px;height:auto;border-radius:8px;display:block;" />
+      <figcaption style="font-size:12px;margin-top:6px;color:var(--color-fg-muted,#6b7280)">Chat screen</figcaption>
+   </figure>
 
-   <div style="display:inline-block;width:45vw;max-width:520px;min-width:300px;vertical-align:top">
-      <img src="assets/screenshots/Screenshot_20250916_155727_LLM%20Hub.jpg" alt="Model list" style="width:100%;height:auto;border-radius:8px;display:block" />
-      <div style="font-size:12px;margin-top:6px;text-align:center">Model list</div>
-   </div>
+   <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
+      <img src="assets/screenshots/Screenshot_20250916_155727_LLM%20Hub.jpg" alt="Model list" style="width:300px;height:auto;border-radius:8px;display:block;" />
+      <figcaption style="font-size:12px;margin-top:6px;color:var(--color-fg-muted,#6b7280)">Model list</figcaption>
+   </figure>
 </div>
 
 **LLM Hub** is an open-source Android application that brings the power of Large Language Models (LLMs) directly to your mobile device. Experience AI conversations with state-of-the-art models like Gemma, Llama, and Phi - all running locally on your phone for maximum privacy and offline accessibility.
