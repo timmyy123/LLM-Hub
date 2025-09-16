@@ -31,7 +31,7 @@ android {
         buildConfigField("String", "HF_TOKEN", "\"$hfToken\"")
         
         // Specify supported locales to ensure proper resource loading
-        resourceConfigurations += listOf("en", "es", "pt", "de", "fr", "ru")
+        resourceConfigurations += listOf("en", "es", "pt", "de", "fr", "ru", "it")
         
         // NDK ABI filters and native library configuration for 16KB alignment
         ndk {
@@ -141,6 +141,9 @@ dependencies {
     
     // DataStore for settings
     implementation("androidx.datastore:datastore-preferences:1.0.0")
+
+    // AppCompat for per-app locale APIs
+    implementation("androidx.appcompat:appcompat:1.7.0")
     
     // Permissions
     implementation(libs.accompanist.permissions)

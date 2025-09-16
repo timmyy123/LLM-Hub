@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.res.Configuration
 import android.os.Build
 import android.os.LocaleList
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import java.util.Locale
 
 object LocaleHelper {
@@ -15,7 +17,8 @@ object LocaleHelper {
         "pt", // Portuguese
         "de", // German
         "fr", // French
-        "ru"  // Russian
+        "ru",  // Russian
+        "it"   // Italian
     )
     
     /**
@@ -27,6 +30,7 @@ object LocaleHelper {
     fun setLocale(context: Context, languageCode: String? = null): Context {
         val locale = getAppropriateLocale(languageCode)
         Locale.setDefault(locale)
+        applyAppCompatLocales(languageCode)
         return updateResources(context, locale)
     }
     
@@ -37,7 +41,20 @@ object LocaleHelper {
     fun applyLocale(context: Context, languageCode: String?) {
         val locale = getAppropriateLocale(languageCode)
         Locale.setDefault(locale)
+        applyAppCompatLocales(languageCode)
         updateResourcesInPlace(context, locale)
+    }
+    
+    /**
+     * Also set per-app locales via AppCompat to ensure consistency across components
+     */
+    private fun applyAppCompatLocales(languageCode: String?) {
+        val locales = if (languageCode.isNullOrEmpty()) {
+            LocaleListCompat.getEmptyLocaleList()
+        } else {
+            LocaleListCompat.forLanguageTags(languageCode)
+        }
+        AppCompatDelegate.setApplicationLocales(locales)
     }
     
     /**
