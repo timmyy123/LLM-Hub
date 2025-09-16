@@ -151,6 +151,7 @@
     <string name="language_german">Deutsch</string>
     <string name="language_french">Français</string>
     <string name="language_russian">Русский</string>
+    <string name="language_italian">Italiano</string>
     
     <!-- Errors and Messages -->
     <string name="failed_to_load_image">Échec du chargement de l\'image</string>

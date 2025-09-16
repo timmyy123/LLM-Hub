@@ -1,0 +1,386 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">LLM Hub</string>
+    
+    <!-- Common -->
+    <string name="ok">OK</string>
+    <string name="cancel">Annulla</string>
+    <string name="close">Chiudi</string>
+    <string name="save">Salva</string>
+    <string name="delete">Elimina</string>
+    <string name="send">Invia</string>
+    <string name="copy">Copia</string>
+    <string name="loading">Caricamento</string>
+    <string name="error">Errore</string>
+    <string name="retry">Riprova</string>
+    <string name="download">Scarica</string>
+    <string name="vision">Visione</string>
+    
+    <!-- Chat -->
+    <string name="welcome_to_llm_hub">Benvenuto in LLM Hub!</string>
+    <string name="no_models_downloaded">Nessun modello ancora scaricato</string>
+    <!-- Displayed when there are no saved global memories for RAG -->
+    <string name="no_memories">Nessuna memoria</string>
+    <string name="download_a_model">Scarica un Modello</string>
+    <string name="ready_to_chat">Pronto a chattare! Seleziona un modello sopra.</string>
+    <string name="start_chatting">Inizia a chattare digitando un messaggio qui sotto!</string>
+    <string name="type_a_message">Scrivi un messaggio...</string>
+    <string name="loading_model_format">Caricamento di %1$s</string>
+    <string name="please_wait_model_initialize">Attendi mentre il modello si inizializza...</string>
+    <string name="initializing_neural_network">Inizializzazione rete neurale...</string>
+    <string name="attached_image">Immagine allegata</string>
+    <string name="shared_a_file">Ha condiviso un file</string>
+    <string name="copy_message">Copia messaggio</string>
+    <string name="regenerate_response">Rigenera risposta</string>
+    <string name="cancel_generation">Annulla generazione</string>
+    <string name="image_attachment">Allegato Immagine</string>
+    <string name="save_image">Salva immagine</string>
+    <string name="tap_image_toggle_controls">Tocca l\'immagine per mostrare/nascondere i controlli</string>
+    <string name="vision_enabled">Visione abilitata</string>
+    <string name="message_copied">Messaggio copiato</string>
+    <string name="tokens_per_second_format">%1$d token • %2$.1f tok/sec</string>
+    <string name="context_multimodal_format">%1$dk contesto • %2$s</string>
+    <string name="multimodal_format">%1$s multimodale</string>
+    <string name="multimodal">Multimodale</string>
+    <string name="text_only">Solo testo</string>
+    <string name="currently_loaded">Attualmente caricato</string>
+    <string name="select_model">Seleziona modello</string>
+    <string name="unload_model">Scarica Modello</string>
+    
+    <!-- About Screen -->
+    <string name="about_llm_hub">Informazioni su LLM Hub</string>
+    <string name="about_description">LLM Hub è un\'app Android open-source che porta la potenza dei Large Language Models direttamente sul tuo dispositivo mobile. Sperimenta conversazioni IA con modelli all\'avanguardia come Gemma, Llama e Phi - tutti in esecuzione localmente sul tuo telefono per la massima privacy e accessibilità offline.</string>
+    <string name="key_features">Funzionalità Chiave</string>
+    <string name="feature_multiple_models">🤖 Molteplici Modelli LLM: Gemma-3, Llama-3.2, Phi-4 e Gemma-3n</string>
+    <string name="feature_on_device">📱 Elaborazione sul Dispositivo: Privacy totale, nessuna connessione internet richiesta</string>
+    <string name="feature_vision_support">🖼️ Supporto Visione: Modelli multimodali che comprendono le immagini</string>
+    <string name="feature_gpu_acceleration">⚡ Accelerazione GPU: Prestazioni ottimizzate sui dispositivi supportati</string>
+    <string name="feature_offline_usage">💾 Utilizzo Offline: Chatta senza connessione internet</string>
+    <string name="feature_privacy_first">🔒 Privacy Prima di Tutto: Le tue conversazioni non lasciano mai il dispositivo</string>
+    <string name="feature_modern_ui">🎨 Interfaccia Moderna: Interfaccia Material Design pulita e intuitiva</string>
+    <string name="developer_info">Informazioni Sviluppatore</string>
+    <string name="about_developer_info">Questo progetto è sviluppato da un appassionato che desidera rendere la tecnologia IA più accessibile a tutti. Il tuo feedback e i tuoi contributi sono sempre benvenuti!</string>
+    <string name="tech_stack">Stack Tecnologico</string>
+    <string name="about_tech_stack">LLM Hub è costruito con tecnologie moderne di sviluppo Android: Kotlin, Jetpack Compose, Material Design 3 e la libreria llama.cpp per un\'inferenza efficiente sul dispositivo.</string>
+    <string name="tech_kotlin_compose">🏗️ Sviluppato con Kotlin e Jetpack Compose</string>
+    <string name="tech_mediapipe_litert">🧠 Basato su MediaPipe e LiteRT</string>
+    <string name="tech_quantization">🚀 Ottimizzato con quantizzazione INT4/INT8</string>
+    <string name="tech_gpu_acceleration">⚡ Accelerazione GPU tramite LiteRT XNNPACK</string>
+    <string name="tech_models_source">🔗 Modelli da HuggingFace e Google</string>
+    <string name="contact_support">Contatto e Supporto</string>
+    <string name="contact_email">Email di Contatto:</string>
+    <string name="source_code">Codice Sorgente:</string>
+    <string name="github_repository">Repository GitHub</string>
+    <string name="acknowledgments">Ringraziamenti</string>
+    <string name="acknowledgments_text">Un ringraziamento speciale a Google, Meta, Microsoft e alla community di HuggingFace per aver fornito gli incredibili modelli LLM che alimentano questa applicazione. Questo progetto si basa anche sul fantastico lavoro della community di sviluppo Android e dell\'ecosistema open-source.</string>
+    <string name="ai_thinking">L\'IA sta pensando...</string>
+    <string name="version_number">Versione 2.0</string>
+    <string name="app_version">Versione App</string>
+    
+    <!-- Terms of Service -->
+    <string name="terms_of_service">Termini di Servizio</string>
+    <string name="tos_last_updated">Ultimo aggiornamento: 16 luglio 2025</string>
+    <string name="tos_welcome_text">Benvenuto in LLM Hub. Utilizzando la nostra applicazione, accetti di essere vincolato da questi Termini di Servizio. Per favore, leggili attentamente.</string>
+    <string name="tos_welcome">Benvenuto in LLM Hub. Utilizzando la nostra applicazione, accetti di essere vincolato da questi Termini di Servizio. Per favore, leggili attentamente.</string>
+    <string name="tos_acceptance_title">1. Accettazione dei Termini</string>
+    <string name="tos_acceptance_text">Scaricando, installando o utilizzando LLM Hub, dichiari di aver letto, compreso e di accettare di essere vincolato da questi Termini di Servizio. Se non sei d\'accordo, non utilizzare l\'applicazione.</string>
+    <string name="tos_app_description_title">2. Descrizione dell\'Applicazione</string>
+    <string name="tos_app_description_text">LLM Hub è un\'app Android open-source che fornisce accesso ai Large Language Models (LLM) per conversazioni IA sul dispositivo. L\'app elabora tutti i dati localmente e non trasmette informazioni personali a server esterni.</string>
+    <string name="tos_user_responsibilities_title">3. Responsabilità dell\'Utente</string>
+    <string name="tos_user_responsibilities_text">Accetti di usare LLM Hub in modo responsabile e in conformità con le leggi applicabili. Sei responsabile di: utilizzare l\'app solo per scopi leciti; non tentare il reverse engineering o la modifica dell\'app; non utilizzare l\'app per generare contenuti dannosi, illegali o offensivi; rispettare i diritti di proprietà intellettuale di terzi; assicurarti che il tuo dispositivo soddisfi i requisiti minimi per il corretto funzionamento.</string>
+    <string name="tos_privacy_data_title">4. Privacy e Dati</string>
+    <string name="tos_privacy_data_text">LLM Hub è progettata con la privacy in mente: tutte le conversazioni e l\'elaborazione dei dati avvengono localmente sul tuo dispositivo; nessun dato personale viene trasmesso a server esterni; la cronologia chat è memorizzata localmente e può essere eliminata in qualsiasi momento; i download dei modelli avvengono direttamente da repository ufficiali (HuggingFace, Google); l\'app non raccoglie dati analitici o di utilizzo.</string>
+    <string name="tos_disclaimer_title">5. Esclusione di Garanzie</string>
+    <string name="tos_disclaimer_text">LLM Hub è fornita "così com\'è" senza garanzie di alcun tipo. Non garantiamo l\'accuratezza, l\'affidabilità o la disponibilità dell\'applicazione o dei contenuti generati.</string>
+    <string name="tos_limitation_liability_title">6. Limitazione di Responsabilità</string>
+    <string name="tos_limitation_liability_text">In nessun caso gli sviluppatori saranno responsabili per danni indiretti, incidentali, speciali o consequenziali derivanti dall\'uso di LLM Hub. L\'uso dell\'app è a tuo rischio.</string>
+    <string name="tos_model_usage_title">7. Uso dei Modelli e Licenze</string>
+    <string name="tos_model_usage_text">I modelli IA disponibili tramite LLM Hub sono soggetti alle rispettive licenze e termini d\'uso. Gli utenti sono responsabili di rispettare i requisiti di licenza specifici del modello.</string>
+    <string name="tos_open_source_title">8. Licenza Open Source</string>
+    <string name="tos_open_source_text">LLM Hub è software open-source. Il codice sorgente è disponibile sotto licenza MIT, che consente uso, modifica e distribuzione secondo i termini della licenza. Librerie e modelli di terze parti possono avere licenze diverse.</string>
+    <string name="tos_changes_title">9. Modifiche ai Termini</string>
+    <string name="tos_changes_text">Potremmo aggiornare periodicamente questi Termini di Servizio. Gli utenti saranno informati delle modifiche significative tramite aggiornamenti dell\'app. L\'uso continuato dell\'app dopo le modifiche costituisce accettazione dei nuovi termini.</string>
+    <string name="tos_contact_title">10. Informazioni di Contatto</string>
+    <string name="tos_contact_text">Per domande su questi Termini di Servizio, contattaci a timmyboy0623@gmail.com</string>
+    
+    <!-- Navigation -->
+    <string name="chat">Chat</string>
+    <string name="models">Modelli</string>
+    <string name="settings">Impostazioni</string>
+    <string name="about">Info</string>
+    
+    <!-- Settings -->
+    <string name="appearance">Aspetto</string>
+    <string name="features">Funzionalità</string>
+    <string name="information">Informazioni</string>
+    <string name="source_code_section">Codice Sorgente</string>
+    <string name="download_models">Scarica Modelli</string>
+    <string name="browse_download_models">Sfoglia e scarica modelli LLM</string>
+    <string name="embedding_model">Modello di Embedding</string>
+    <string name="select_embedding_model">Seleziona Modello di Embedding</string>
+    <string name="no_embedding_model_selected">Nessun modello di embedding selezionato</string>
+    <string name="disable_embeddings">Disabilita embeddings</string>
+    <string name="embedding_settings_changed_title">Impostazioni Embedding Modificate</string>
+    <string name="embedding_settings_changed_message">Per favore, scarica e ricarica i modelli affinché le modifiche agli embedding abbiano effetto.</string>
+    <string name="reload_models">Ricarica Modelli</string>
+    <string name="dismiss">Ignora</string>
+    <string name="reload_models_notice">Necessario ricaricare i modelli per avere effetto</string>
+    <string name="embedding_enabled">Embeddings abilitati</string>
+    <string name="embedding_disabled">Embeddings disabilitati</string>
+    <string name="embedding_status_enabled">Stato embedding: abilitato</string>
+    <string name="embedding_status_disabled">Stato embedding: disabilitato</string>
+    <string name="rag_enabled">RAG abilitato</string>
+    <string name="web_search">Ricerca Web</string>
+    <string name="web_search_enabled">Ottieni informazioni aggiornate dal web</string>
+    <string name="web_search_disabled">Usa solo conoscenza offline</string>
+    <string name="web_search_description_enabled">Ottieni informazioni aggiornate dal web</string>
+    <string name="web_search_description_disabled">Usa solo conoscenza offline</string>
+    <string name="theme">Tema</string>
+    <string name="language">Lingua</string>
+    <string name="light_theme">Chiaro</string>
+    <string name="dark_theme">Scuro</string>
+    <string name="system_default_theme">Predefinito di Sistema</string>
+    <string name="theme_light">Chiaro</string>
+    <string name="theme_dark">Scuro</string>
+    <string name="theme_system">Predefinito di Sistema</string>
+    <string name="system_default_language">Predefinito di Sistema</string>
+    <string name="system_default">Predefinito di Sistema</string>
+    <string name="choose_theme">Scegli Tema</string>
+    <string name="choose_language">Scegli Lingua</string>
+    <string name="select_language">Seleziona Lingua</string>
+    <string name="app_information_contact">Informazioni app e contatto</string>
+    <string name="app_info_contact">Informazioni app e contatto</string>
+    <string name="legal_terms_conditions">Termini e condizioni legali</string>
+    <string name="github_repository_desc">Vedi codice sorgente e contribuisci</string>
+    <string name="view_source_contribute">Vedi codice sorgente e contribuisci</string>
+    <string name="back">Indietro</string>
+    
+    <!-- Language Names -->
+    <string name="language_english">English</string>
+    <string name="language_spanish">Español</string>
+    <string name="language_portuguese">Português</string>
+    <string name="language_german">Deutsch</string>
+    <string name="language_french">Français</string>
+    <string name="language_russian">Русский</string>
+    <string name="language_italian">Italiano</string>
+    
+    <!-- Errors and Messages -->
+    <string name="failed_to_load_image">Impossibile caricare l\'immagine</string>
+    <string name="model_loading_error">Errore nel caricamento del modello</string>
+    <string name="message_send_error">Errore nell\'invio del messaggio</string>
+    <string name="file_save_error">Errore nel salvataggio del file</string>
+    <string name="file_save_success">File salvato con successo</string>
+    
+    <!-- Accessibility -->
+    <string name="content_description_ai_bot">Bot IA</string>
+    <string name="content_description_smart_toy">Giocattolo Intelligente</string>
+    <string name="content_description_email">Email</string>
+    <string name="content_description_code">Codice Sorgente</string>
+    <string name="content_description_image">Immagine</string>
+    <string name="content_description_download">Scarica</string>
+    <string name="content_description_stop">Ferma</string>
+    <string name="content_description_refresh">Aggiorna</string>
+    <string name="content_description_copy">Copia</string>
+    <string name="content_description_speed">Velocità</string>
+    <string name="content_description_check">Verifica</string>
+    <string name="content_description_eye">Visione abilitata</string>
+    <string name="content_description_attach_image">Allega immagine</string>
+    <string name="content_description_back">Indietro</string>
+    
+    <!-- Model Information -->
+    <string name="no_model_selected">Nessun modello selezionato</string>
+    <string name="no_model_downloaded">Nessun modello scaricato</string>
+    <string name="model_supports_vision">Supporta visione</string>
+    <string name="model_supports_multimodal">Supporta multimodale</string>
+    <string name="model_text_only">Solo testo</string>
+    
+    <!-- Chat Drawer -->
+    <string name="drawer_title">LLM Hub</string>
+    <string name="drawer_new_chat">Nuova Chat</string>
+    <string name="drawer_recent_chats">Chat Recenti</string>
+    <string name="drawer_no_chats">Ancora nessuna chat</string>
+    <string name="drawer_download_models">Scarica Modelli</string>
+    <string name="drawer_clear_all_chats">Cancella Tutte le Chat</string>
+    <string name="drawer_settings">Impostazioni</string>
+    
+    <!-- Chat Management -->
+    <string name="dialog_delete_all_chats_title">Eliminare tutte le chat?</string>
+    <string name="dialog_delete_all_chats_message">Questo eliminerà definitivamente tutta la cronologia delle conversazioni. Questa azione non può essere annullata.</string>
+    <string name="dialog_delete_chat_title">Eliminare la chat?</string>
+    <string name="dialog_delete_chat_message">Eliminare la conversazione "%1$s"?</string>
+    <string name="action_delete_all">Elimina Tutto</string>
+    <string name="action_delete">Elimina</string>
+    <string name="action_cancel">Annulla</string>
+    <string name="content_description_delete_chat">Elimina Chat</string>
+    
+    <!-- Time Formatting -->
+    <string name="time_yesterday">Ieri</string>
+    <string name="time_hours_ago">%1$d h fa</string>
+    <string name="time_minutes_ago">%1$d min fa</string>
+    <string name="time_just_now">Proprio ora</string>
+    
+    <!-- Model Download Screen -->
+    <string name="ai_models">Modelli IA</string>
+    <string name="download_ai_models">Scarica Modelli IA</string>
+    <string name="choose_text_multimodal_models">Scegli tra modelli solo testo o multimodali</string>
+    <string name="text_models">Modelli di Testo</string>
+    <string name="text_models_description">Modelli ottimizzati per generazione di testo e conversazione</string>
+    <string name="vision_models">Modelli di Visione</string>
+    <string name="vision_models_description">Modelli che comprendono sia testo che immagini</string>
+    <string name="embedding_models">Modelli di Embedding</string>
+    <string name="embedding_models_description">Modelli per embedding di testo e ricerca semantica</string>
+    <string name="gpu">GPU</string>
+    <string name="variant">variante</string>
+    <string name="variants">varianti</string>
+    <string name="expand">Espandi</string>
+    <string name="collapse">Comprimi</string>
+    <string name="downloaded">Scaricato</string>
+    <string name="downloading">Download...</string>
+    <string name="not_downloaded">Non scaricato</string>
+    <string name="partial">Parziale</string>
+    <string name="paused">In pausa</string>
+    <string name="paused_downloaded_format">In pausa: %1$s scaricato</string>
+    <string name="continue_download">Continua</string>
+    <string name="pause_download">Pausa</string>
+    <string name="resume_download">Riprendi</string>
+    <string name="clear">Pulisci</string>
+    <string name="ram_requirement_format">%1$dGB RAM</string>
+    
+    <!-- File Attachments -->
+    <string name="attach_file">Allega file</string>
+    <string name="attach_image">Allega immagine</string>
+    <string name="attach_document">Allega documento</string>
+    <string name="attach_text_file">Allega file di testo</string>
+    <string name="file_attachment">Allegato file</string>
+    <string name="file_too_large">File troppo grande</string>
+    <string name="unsupported_file_type">Tipo di file non supportato</string>
+    <string name="file_processing_error">Errore di elaborazione file</string>
+    <string name="could_not_read_file">Impossibile leggere il file</string>
+    <string name="file_preview">Anteprima file</string>
+    <string name="remove_attachment">Rimuovi</string>
+    <string name="keep_attachment">Mantieni</string>
+    <string name="preview_not_available">Anteprima non disponibile</string>
+    
+    <!-- File Type Categories -->
+    <string name="images">Immagini</string>
+    <string name="documents">Documenti</string>
+    <string name="text_files">File di Testo</string>
+    <string name="images_description">JPG, PNG, GIF, WebP</string>
+    <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
+    <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
+    <string name="text_file">File di Testo</string>
+    <string name="tap_to_preview">Tocca per anteprima</string>
+    <string name="text_file_tap_to_preview">File di Testo • Tocca per anteprima</string>
+    <string name="read_this">Leggi questo</string>
+    
+    <!-- Audio Input -->
+    <string name="audio_recording">Registrazione Audio</string>
+    <string name="audio_description">Registra un messaggio vocale</string>
+    <string name="record_voice_message">Registra messaggio vocale</string>
+    <string name="recording">Registrazione…</string>
+    <string name="audio_recorded">Audio registrato</string>
+    <string name="ready_to_send">Pronto per l\'invio</string>
+    <string name="tap_to_stop">Tocca per fermare</string>
+    <string name="stop_recording">Ferma registrazione</string>
+    <string name="remove_audio">Rimuovi audio</string>
+    <string name="audio_enabled">Audio abilitato</string>
+    <string name="audio">Audio</string>
+    <string name="audio_file">File Audio</string>
+    <string name="tap_to_play">Tocca per riprodurre</string>
+    
+    <!-- Image actions -->
+    <string name="image_copied_clipboard">Immagine copiata dalla chat</string>
+    <string name="image_copied_to_clipboard">Immagine copiata negli appunti</string>
+    <string name="failed_to_copy_image">Copia dell\'immagine non riuscita</string>
+    <string name="failed_to_copy_image_with_error">Copia dell\'immagine non riuscita: %1$s</string>
+    <string name="image_saved_to_gallery">Immagine salvata nella galleria</string>
+    <string name="failed_to_save_image">Salvataggio immagine non riuscito</string>
+    <string name="failed_to_save_image_with_error">Salvataggio immagine non riuscito: %1$s</string>
+    
+    <!-- RAG (Document Chat) -->
+    <string name="searching_documents">Ricerca documenti…</string>
+    <string name="using_document_context_format">Utilizzo del contesto da %1$d sezioni di documenti</string>
+    <string name="documents_available_format">%1$d documenti disponibili</string>
+    <string name="ai_can_reference_documents">L\'IA può fare riferimento ai tuoi documenti nelle risposte</string>
+    <string name="document_chat_enabled">Chat documenti abilitata</string>
+    <string name="semantic_search_active">Ricerca semantica attiva</string>
+    <string name="memory">Memoria (Contesto Globale)</string>
+    <string name="memory_description_enabled">Consenti all\'IA di fare riferimento alla memoria globale caricata tramite RAG</string>
+    <string name="memory_requires_rag">Richiede RAG/embeddings abilitati</string>
+    <string name="manage_memory">Gestisci Memoria</string>
+    <string name="manage_memory_subtitle">Carica o incolla documenti nella memoria globale</string>
+    <string name="paste_or_upload_to_memory">Incolla testo o carica un documento per aggiungerlo alla memoria globale.</string>
+    <string name="paste_memory_placeholder">Incolla qui le tue note, documenti o conoscenze...</string>
+    <string name="upload_file">Carica</string>
+    <string name="save_to_memory">Salva</string>
+    <string name="done">Fatto</string>
+    <string name="global_memory_uploaded_by">Caricato nella memoria globale</string>
+    <string name="global_memory_pasted_by">Incollato nella memoria globale</string>
+    <string name="memory_upload_success">File salvato nella memoria globale</string>
+    <string name="memory_upload_failed">Impossibile salvare il file nella memoria (RAG potrebbe essere disabilitato)</string>
+    <string name="memory_upload_unsupported_type">Tipo di file non supportato per la memoria. Solo documenti di testo (PDF, DOC, TXT, ecc.) possono essere aggiunti alla memoria.</string>
+    <string name="memory_save_success">Testo salvato nella memoria globale</string>
+    <string name="memory_save_failed">Impossibile salvare il testo nella memoria (RAG potrebbe essere disabilitato)</string>
+    <string name="saved_memories">Memorie salvate</string>
+    <string name="clear_all">Pulisci Tutto</string>
+    <string name="memory_cleared">Tutte le memorie eliminate</string>
+    <string name="confirm_replace_memory_title">Sostituire la memoria esistente?</string>
+    <string name="confirm_replace_memory_message">Hai già una memoria globale. Sostituirla eliminerà la memoria esistente e i relativi embedding. Continuare?</string>
+    <string name="confirm_replace_action">Sostituisci</string>
+    <string name="memory_processing">Elaborazione memoria…</string>
+    
+    <!-- Gemma Backend Selection -->
+    <string name="select_backend">Seleziona Backend</string>
+    <string name="choose_backend_for_gemma">Scegli il backend di elaborazione per il modello Gemma</string>
+    <string name="gpu_backend">GPU (Consigliato)</string>
+    <string name="cpu_backend">CPU (Alternativo)</string>
+    <string name="gpu_backend_description">Elaborazione più veloce usando la GPU del dispositivo</string>
+    <string name="cpu_backend_description">Elaborazione più lenta ma più stabile</string>
+    <string name="backend_selection_hint">Se l\'app si blocca o non funziona correttamente con la GPU, prova il backend CPU</string>
+    <string name="not_available">Non disponibile</string>
+    <string name="gpu_disabled_low_memory">GPU non disponibile per questo modello su dispositivi con %1$dGB di RAM o meno</string>
+    
+    <!-- Gemma-3n specific GPU requirements -->
+    <string name="gemma3n_e2b_gpu_requires_6gb">Richiede almeno 6GB di RAM per la GPU</string>
+    <string name="gemma3n_e4b_gpu_requires_8gb">I dispositivi con 8GB o meno di RAM non possono caricare questo modello con la GPU</string>
+    <string name="audio_support">Supporto Audio</string>
+    <string name="vision_audio_text">Visione+Audio+Testo</string>
+    <string name="vision_text">Visione+Testo</string>
+    <string name="audio_text">Audio+Testo</string>
+    <string name="shared_file">Ha condiviso un file</string>
+    <string name="audio_message">Messaggio Audio</string>
+    <string name="image_message">Messaggio Immagine</string>
+    <string name="model_configs_title">Configurazioni modello</string>
+    <string name="max_tokens">Token massimi</string>
+    <string name="top_k">TopK</string>
+    <string name="top_p">TopP</string>
+    <string name="temperature">Temperatura</string>
+    <string name="choose_accelerator">Scegli acceleratore</string>
+    <string name="max">max</string>
+    
+    <!-- GPU with Vision+Audio Disabled for Gemma-3n E4B -->
+    <string name="gpu_vision_disabled_title">GPU con Visione+Audio Disabilitati</string>
+    <string name="gpu_vision_disabled_description">A causa delle limitazioni di RAM, le funzionalità di visione e audio saranno disabilitate per abilitare l\'accelerazione GPU</string>
+    <string name="gpu_with_vision_disabled">GPU (Visione+Audio Disabilitati)</string>
+    <string name="gemma3n_e4b_gpu_vision_warning">Per dispositivi con 7-8GB di RAM, l\'accelerazione GPU richiede la disabilitazione delle funzionalità di visione e audio. Gli allegati immagine e l\'input audio non saranno disponibili.</string>
+    <string name="vision_disabled_for_gpu">Visione e audio disabilitati per l\'accelerazione GPU</string>
+    <string name="vision_disabled_no_images">Le funzionalità di visione e audio sono disabilitate per questa configurazione del modello. Gli allegati immagine e l\'input audio non sono disponibili.</string>
+    <string name="ram_limit_gpu_vision_disabled">A causa del limite di RAM (%1$.1fGB), visione e audio devono essere disabilitati per usare la GPU</string>
+    
+    <!-- GPU with Audio Only Disabled for Gemma-3n E4B on 8GB devices -->
+    <string name="gpu_with_audio_disabled">GPU (Audio Disabilitato)</string>
+    <string name="gemma3n_e4b_gpu_audio_warning">Per dispositivi con 7-8GB di RAM, l\'accelerazione GPU richiede di disabilitare le funzionalità audio. L\'input audio non sarà disponibile, ma gli allegati immagine sono supportati.</string>
+    <string name="audio_disabled_for_gpu">Audio disabilitato per accelerazione GPU</string>
+    <string name="audio_disabled_no_audio">Le funzionalità audio sono disabilitate per questa configurazione del modello. L\'input audio non è disponibile, ma gli allegati immagine sono supportati.</string>
+    
+    <!-- Separate modality toggles -->
+    <string name="modality_options">Opzioni di Modalità</string>
+    <string name="enable_vision">Abilita Visione (Supporto Immagini)</string>
+    <string name="enable_audio">Abilita Audio (Input Vocale)</string>
+    <string name="gemma3n_e4b_modality_suggestion">💡 Per prestazioni stabili su dispositivi da 7-8GB, considera di disabilitare l\'audio per risparmiare memoria GPU. La visione è generalmente più stabile.</string>
+    
+    <!-- General performance tip for all devices -->
+    <string name="gemma3n_performance_tip">💡 Se riscontri arresti anomali o prestazioni basse a causa di limitazioni di RAM, prova a passare al backend CPU o a disabilitare le funzionalità di visione/audio.</string>
+</resources>
+
+
