@@ -351,6 +351,7 @@
     <string name="audio_message">Audio Message</string>
     <string name="image_message">Image Message</string>
     <string name="model_configs_title">Model configs</string>
+    <string name="reset_to_defaults">Reset</string>
     <string name="max_tokens">Max tokens</string>
     <string name="top_k">TopK</string>
     <string name="top_p">TopP</string>

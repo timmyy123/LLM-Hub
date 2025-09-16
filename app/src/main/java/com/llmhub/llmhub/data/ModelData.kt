@@ -91,7 +91,7 @@ object ModelData {
             description = "Phi-4 Mini INT8 variant in LiteRT LM format (litertlm).",
             url = "https://huggingface.co/litert-community/Phi-4-mini-instruct/resolve/main/Phi-4-mini-instruct_multi-prefill-seq_q8_ekv4096.litertlm?download=true",
             category = "text",
-            sizeBytes = 3910000000L, // 3.91 GB as reported on HuggingFace file page
+            sizeBytes = 3910090752L, // 3.91 GB as reported on HuggingFace file page
             source = "Microsoft via LiteRT Community",
             supportsVision = false,
             supportsGpu = true,

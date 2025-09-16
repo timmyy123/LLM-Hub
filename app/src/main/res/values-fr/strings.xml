@@ -338,6 +338,7 @@
     <string name="image_message">Message Image</string>
     <string name="record_voice_message">Enregistrer un message vocal</string>
     <string name="model_configs_title">Configuration du modèle</string>
+    <string name="reset_to_defaults">Réinitialiser</string>
     <string name="max_tokens">Jetons max</string>
     <string name="top_k">TopK</string>
     <string name="top_p">TopP</string>

@@ -25,6 +25,11 @@ import androidx.compose.ui.unit.dp
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.ModelPreferences
+import com.llmhub.llmhub.data.ModelConfig
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,7 +78,35 @@ fun ModelConfigsDialog(
     var temperature by remember { mutableStateOf(1.0f) }
     var useGpu by remember { mutableStateOf(model.supportsGpu) } // Default to GPU when model supports it
     var disableVision by remember { mutableStateOf(false) }
-    var disableAudio by remember { mutableStateOf(false) }
+    // Default audio disabled for Gemma-3n models to conserve resources on mobile
+    var disableAudio by remember { mutableStateOf(isGemma3nModel) }
+
+    // Load/save preferences for this model
+    val modelPrefs = ModelPreferences(context)
+    val scope = rememberCoroutineScope()
+
+    // Load saved config when dialog opens
+    LaunchedEffect(model.name) {
+        try {
+            val saved = modelPrefs.getModelConfig(model.name)
+            if (saved != null) {
+                maxTokensValue = saved.maxTokens.coerceIn(1, maxTokensCap)
+                maxTokensText = maxTokensValue.toString()
+                topK = saved.topK
+                topP = saved.topP
+                temperature = saved.temperature
+                useGpu = when (saved.backend) {
+                    "GPU" -> true
+                    "CPU" -> false
+                    else -> model.supportsGpu
+                }
+                disableVision = saved.disableVision
+                disableAudio = saved.disableAudio
+            }
+        } catch (e: Exception) {
+            // ignore failures and keep defaults
+        }
+    }
 
     val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
 
@@ -294,20 +327,66 @@ fun ModelConfigsDialog(
                     }
                 }
 
-                // Actions
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(onClick = {
-                        val finalMax = maxTokensValue.coerceIn(1, maxTokensCap)
-                        val backend = if (canSelectAccelerator) {
-                            if (useGpu) LlmInference.Backend.GPU else LlmInference.Backend.CPU
-                        } else {
-                            null
+                // Actions (even spacing, consistent styles)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+                    // Reset to defaults button
+                    TextButton(
+                        onClick = {
+                        // Remove saved config and reset UI fields
+                        scope.launch(Dispatchers.IO) {
+                            try {
+                                modelPrefs.removeModelConfig(model.name)
+                            } catch (_: Exception) {
+                            }
                         }
-                        onConfirm(finalMax.coerceIn(1, maxTokensCap), topK, topP, temperature, backend, disableVision, disableAudio)
-                        onDismiss()
-                    }) { Text(stringResource(R.string.ok)) }
+
+                        // Reset fields to defaults (do this on UI thread)
+                        maxTokensValue = initialMaxTokens.coerceIn(1, maxTokensCap)
+                        maxTokensText = maxTokensValue.toString()
+                        topK = 64
+                        topP = 0.95f
+                        temperature = 1.0f
+                        useGpu = model.supportsGpu
+                        disableVision = false
+                        disableAudio = isGemma3nModel
+                    }, modifier = Modifier
+                        .height(48.dp)
+                        .defaultMinSize(minWidth = 88.dp)) { Text(stringResource(R.string.reset_to_defaults)) }
+
+                    TextButton(onClick = onDismiss, modifier = Modifier.height(48.dp).defaultMinSize(minWidth = 88.dp)) { Text(stringResource(R.string.cancel)) }
+
+                    // OK uses the same TextButton style so visuals match Reset/Cancel; min size kept
+                    Button(
+                        onClick = {
+                            val finalMax = maxTokensValue.coerceIn(1, maxTokensCap)
+                            val backend = if (canSelectAccelerator) {
+                                if (useGpu) LlmInference.Backend.GPU else LlmInference.Backend.CPU
+                            } else {
+                                null
+                            }
+
+                            // Persist model-specific config asynchronously
+                            scope.launch(Dispatchers.IO) {
+                                try {
+                                    val cfg = ModelConfig(
+                                        maxTokens = finalMax,
+                                        topK = topK,
+                                        topP = topP,
+                                        temperature = temperature,
+                                        backend = backend?.name,
+                                        disableVision = disableVision,
+                                        disableAudio = disableAudio
+                                    )
+                                    modelPrefs.setModelConfig(model.name, cfg)
+                                } catch (e: Exception) {
+                                    // ignore persistence errors
+                                }
+                            }
+
+                            onConfirm(finalMax.coerceIn(1, maxTokensCap), topK, topP, temperature, backend, disableVision, disableAudio)
+                            onDismiss()
+                        }, modifier = Modifier.height(48.dp).defaultMinSize(minWidth = 96.dp)
+                    ) { Text(stringResource(R.string.ok)) }
                 }
             }
         }
