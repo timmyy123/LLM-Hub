@@ -396,7 +396,7 @@ fun MessageBubble(
             Surface(
                 modifier = Modifier
                     .wrapContentWidth()
-                    .widthIn(max = 280.dp),
+                    .widthIn(max = 300.dp),
                 shape = RoundedCornerShape(
                         topStart = 20.dp,
                         topEnd = 4.dp,
