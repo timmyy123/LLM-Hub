@@ -6,13 +6,13 @@
 
 ## 📸 Screenshots
 
-<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start">
-   <figure style="margin:0;flex:1 1 320px">
+<div style="display:flex;gap:12px;flex-wrap:nowrap;overflow-x:auto;padding-bottom:8px;">
+   <figure style="margin:0;flex:0 0 420px;min-width:320px;">
       <img src="assets/screenshots/Screenshot_20250916_155747_LLM%20Hub.jpg" alt="Chat screen" style="width:100%;height:auto;border-radius:8px" />
       <figcaption style="font-size:12px;margin-top:6px;text-align:center">Chat screen</figcaption>
    </figure>
 
-   <figure style="margin:0;flex:1 1 320px">
+   <figure style="margin:0;flex:0 0 420px;min-width:320px;">
       <img src="assets/screenshots/Screenshot_20250916_155727_LLM%20Hub.jpg" alt="Model list" style="width:100%;height:auto;border-radius:8px" />
       <figcaption style="font-size:12px;margin-top:6px;text-align:center">Model list</figcaption>
    </figure>
