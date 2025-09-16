@@ -6,16 +6,17 @@
 
 ## 📸 Screenshots
 
-Screenshots.
+<div style="display:flex;gap:12px;flex-wrap:nowrap;overflow-x:auto;padding-bottom:8px;">
+   <figure style="margin:0;flex:0 0 420px;min-width:320px;">
+      <img src="assets/screenshots/Screenshot_20250916_155747_LLM%20Hub.jpg" alt="Chat screen" style="width:100%;height:auto;border-radius:8px" />
+      <figcaption style="font-size:12px;margin-top:6px;text-align:center">Chat screen</figcaption>
+   </figure>
 
-- Chat Screen
-
-   ![Chat screen](assets/screenshots/Screenshot_20250916_155747_LLM%20Hub.jpg)
-
-- Model list
-
-   ![Model list](assets/screenshots/Screenshot_20250916_155727_LLM%20Hub.jpg)
-
+   <figure style="margin:0;flex:0 0 420px;min-width:320px;">
+      <img src="assets/screenshots/Screenshot_20250916_155727_LLM%20Hub.jpg" alt="Model list" style="width:100%;height:auto;border-radius:8px" />
+      <figcaption style="font-size:12px;margin-top:6px;text-align:center">Model list</figcaption>
+   </figure>
+</div>
 
 **LLM Hub** is an open-source Android application that brings the power of Large Language Models (LLMs) directly to your mobile device. Experience AI conversations with state-of-the-art models like Gemma, Llama, and Phi - all running locally on your phone for maximum privacy and offline accessibility.
 
