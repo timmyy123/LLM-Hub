@@ -73,7 +73,7 @@
     <string name="acknowledgments">Remerciements</string>
     <string name="acknowledgments_text">Remerciements spéciaux à Google, Meta, Microsoft, et à la communauté HuggingFace.</string>
     <string name="ai_thinking">L\'IA réfléchit...</string>
-    <string name="version_number">Version 2.1</string>
+    <string name="version_number">Version 2.1.1</string>
     <string name="app_version">Version de l\'App</string>
     
     <!-- Terms of Service -->

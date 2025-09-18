@@ -23,8 +23,8 @@ android {
         applicationId = "com.llmhub.llmhub"
         minSdk = 26
         targetSdk = 35
-        versionCode = 14
-        versionName = "2.1"
+        versionCode = 16
+        versionName = "2.1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         val hfToken: String = localProperties.getProperty("HF_TOKEN", "")
@@ -100,6 +100,18 @@ android {
     }
     
     // Removed externalNativeBuild - now using MediaPipe instead of native llama.cpp
+}
+
+// Prevent Play Store from removing unused language resources when generating app bundles.
+// This ensures all supported languages packaged in `resourceConfigurations` remain
+// available at runtime for per-app locale switching (AppCompat per-app locales).
+android.bundle {
+    language {
+        // Keep all languages in the base APK rather than splitting them into configuration-specific
+        // APKs. When enabled, Play may remove some language resources from the installed split
+        // APK which prevents runtime calls to update the app locale from finding translations.
+        enableSplit = false
+    }
 }
 
 dependencies {
