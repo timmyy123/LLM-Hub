@@ -63,7 +63,7 @@ fun ModelConfigsDialog(
     val isGemma3nE4B = model.name.contains("Gemma-3n E4B", ignoreCase = true)
     val isGemma3nModel = isGemma3nE2B || isGemma3nE4B
 
-    // Phi-4 Mini detection: default to CPU for stability on mobile
+    // Phi-4 Mini detection: supports GPU on devices with sufficient memory
     val isPhi4Mini = model.name.contains("Phi-4 Mini", ignoreCase = true)
 
     // Allow accelerator selection for any model that declares GPU support
@@ -79,8 +79,8 @@ fun ModelConfigsDialog(
     var topK by remember { mutableStateOf(64) }
     var topP by remember { mutableStateOf(0.95f) }
     var temperature by remember { mutableStateOf(1.0f) }
-    val defaultUseGpu = remember(model) { !isPhi4Mini && model.supportsGpu }
-    var useGpu by remember { mutableStateOf(defaultUseGpu) } // Default accelerator (Phi-4 Mini -> CPU)
+    val defaultUseGpu = remember(model) { model.supportsGpu }
+    var useGpu by remember { mutableStateOf(defaultUseGpu) } // Default accelerator based on model support
     var disableVision by remember { mutableStateOf(false) }
     // Default audio disabled for Gemma-3n models to conserve resources on mobile
     var disableAudio by remember { mutableStateOf(isGemma3nModel) }
