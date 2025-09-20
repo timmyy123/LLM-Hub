@@ -131,15 +131,15 @@ LLM Hub uses Google's MediaPipe framework with LiteRT to run quantized AI models
 ### GPU Acceleration
 - **Gemma-3 1B models**: recommend at least 4GB RAM for GPU acceleration
 - **Gemma-3n models**: recommend at least 8GB RAM for GPU acceleration
-- **Llama & Phi models**: CPU only (compatibility issues)
+- **Phi-4 Mini**: GPU supported on 8GB+ RAM devices (recommended for best performance)
+- **Llama models**: CPU only (compatibility issues)
 
 ### Model Selection
 Choose models based on your device capabilities:
 - **2GB RAM**: Gemma-3 1B INT4
 - **4GB RAM**: Gemma-3 1B INT8, Llama-3.2 1B
 - **6GB+ RAM**: Gemma-3n, Llama-3.2 3B
-- **8GB+ RAM**: Phi-4 Mini, GPU acceleration
- - **8GB+ RAM**: Phi-4 Mini (CPU recommended by default; GPU optional on very high-memory devices)
+- **8GB+ RAM**: Phi-4 Mini with GPU acceleration (recommended)
 
 ## 🔎 Web Search
 

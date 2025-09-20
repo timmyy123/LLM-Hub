@@ -65,15 +65,10 @@ data class LlmModelInstance(val engine: LlmInference, var session: LlmInferenceS
  * MediaPipe-based implementation of InferenceService following Google AI Edge Gallery pattern.
  * Uses a single session approach: one session per model that gets reset as needed.
  * 
- * Memory Management Strategy:
- * - Device RAM <= 6GB: Force CPU backend for vision models (GPU + Vision causes crashes)
- * - Device RAM 6-8GB: Use GPU for text-only, CPU for vision (warnings shown)
- * - Device RAM > 8GB: GPU + Vision allowed without restrictions
- * 
  * Backend Selection Logic:
- * - Models with known GPU issues (Phi, Llama): Always use CPU
- * - Vision models on low memory devices: Use CPU to prevent crashes
- * - Text-only or high memory devices: Use GPU for performance
+ * - Uses model.supportsGpu flag to determine GPU availability
+ * - User preferences override automatic selection
+ * - Simplified approach for better stability
  */
 class MediaPipeInferenceService(private val context: Context) : InferenceService {
     
@@ -110,109 +105,15 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         private const val DEFAULT_TEMPERATURE = 0.8f
         
         /**
-         * Determine the correct max tokens based on model's context window size.
-         * The maxTokens must not exceed the model's internal cache size.
-         * For models with "ekvXXXX" in the filename, XXXX is the cache limit.
+         * Get max tokens for model - simplified approach
          */
         private fun getMaxTokensForModel(model: LLMModel): Int {
-            // Use the model's context window size, but respect cache limitations
-            val contextWindowSize = model.contextWindowSize
-            
-            // Extract cache size from model URL if available (e.g., ekv2048 means 2048 token cache)
-            val cacheSize = extractCacheSizeFromUrl(model.url) ?: contextWindowSize
-            
-            // Use the smaller of context window size or cache size
-            val maxTokens = minOf(contextWindowSize, cacheSize)
-            
-            Log.d(TAG, "Model: ${model.name}")
-            Log.d(TAG, "Context window: $contextWindowSize, Cache size: $cacheSize, Max tokens: $maxTokens")
-            return maxTokens
+            return model.contextWindowSize
         }
 
     // Public accessor for UI code to fetch the cap without instantiating the service
     @JvmStatic
     fun getMaxTokensForModelStatic(model: LLMModel): Int = getMaxTokensForModel(model)
-        
-        /**
-         * Extract cache size from model URL (e.g., ekv2048 -> 2048)
-         */
-        private fun extractCacheSizeFromUrl(url: String): Int? {
-            val ekvPattern = Regex("ekv(\\d+)")
-            val match = ekvPattern.find(url)
-            return match?.groupValues?.get(1)?.toIntOrNull()
-        }
-        
-        /**
-         * Get device total memory in GB
-         */
-        private fun getDeviceMemoryGB(context: Context): Double {
-            val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-            val memoryInfo = ActivityManager.MemoryInfo()
-            activityManager.getMemoryInfo(memoryInfo)
-            return memoryInfo.totalMem / (1024.0 * 1024.0 * 1024.0) // Convert bytes to GB
-        }
-        
-        /**
-         * Determine optimal backend based on device memory and vision usage
-         * Memory-aware strategy:
-         * - <= 6GB RAM: Force CPU for vision models (GPU + Vision causes OOM)
-         * - 6-8GB RAM: GPU for text-only, CPU for vision (hybrid approach)
-         * - > 8GB RAM: GPU with vision allowed (sufficient memory)
-         */
-        private fun determineOptimalBackend(
-            context: Context,
-            model: LLMModel,
-            willUseImages: Boolean
-        ): LlmInference.Backend {
-            val deviceMemoryGB = getDeviceMemoryGB(context)
-            
-            // Check for models with known GPU compatibility issues
-            val hasGpuCompatibilityIssues = model.localFileName().contains("Phi-4", ignoreCase = true) ||
-                                           model.localFileName().contains("phi", ignoreCase = true) ||
-                                           model.localFileName().contains("Llama", ignoreCase = true)
-            
-            Log.d(TAG, "Memory-aware backend selection:")
-            Log.d(TAG, "  - Device memory: ${String.format("%.1f", deviceMemoryGB)}GB")
-            Log.d(TAG, "  - Model supports vision: ${model.supportsVision}")
-            Log.d(TAG, "  - Expected to use images: $willUseImages")
-            Log.d(TAG, "  - Has GPU compatibility issues: $hasGpuCompatibilityIssues")
-            
-            return when {
-                // Force CPU for models with known GPU issues
-                hasGpuCompatibilityIssues -> {
-                    Log.d(TAG, "  → CPU backend (GPU compatibility issues)")
-                    LlmInference.Backend.CPU
-                }
-                
-                // Very low memory devices: CPU for vision, GPU for text
-                deviceMemoryGB <= 6.0 -> {
-                    if (model.supportsVision) {
-                        Log.d(TAG, "  → CPU backend (low memory + vision model)")
-                        LlmInference.Backend.CPU
-                    } else {
-                        Log.d(TAG, "  → GPU backend (low memory + text-only model)")
-                        LlmInference.Backend.GPU
-                    }
-                }
-                
-                // Medium memory devices: CPU for vision usage, GPU for text
-                deviceMemoryGB <= 8.0 -> {
-                    if (model.supportsVision && willUseImages) {
-                        Log.d(TAG, "  → CPU backend (medium memory + vision with images)")
-                        LlmInference.Backend.CPU
-                    } else {
-                        Log.d(TAG, "  → GPU backend (medium memory + text or vision without images)")
-                        LlmInference.Backend.GPU
-                    }
-                }
-                
-                // High memory devices: GPU is safe for everything
-                else -> {
-                    Log.d(TAG, "  → GPU backend (high memory device)")
-                    LlmInference.Backend.GPU
-                }
-            }
-        }
     }
 
     override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?): Boolean {
@@ -427,9 +328,8 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 }
             }
             
-            // Determine backend - use preferred backend if provided, otherwise use memory-aware selection
-            val willUseImages = model.supportsVision
-            val backend = preferredBackend ?: determineOptimalBackend(context, model, willUseImages)
+            // Determine backend - use preferred backend if provided, otherwise use model's GPU support
+            val backend = preferredBackend ?: if (model.supportsGpu) LlmInference.Backend.GPU else LlmInference.Backend.CPU
             
             Log.d(TAG, "Selected backend: $backend for model: ${modelFile.name} ${if (preferredBackend != null) "(user preference)" else "(auto-selected)"}")
             
@@ -1144,21 +1044,8 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         val model = currentModel ?: return null
         if (!model.supportsVision) return null
         
-        val deviceMemoryGB = getDeviceMemoryGB(context)
-        val backend = currentBackend
-        
-        return when {
-            deviceMemoryGB <= 6.0 -> {
-                "⚠️ Low memory device (${String.format("%.1f", deviceMemoryGB)}GB RAM): Vision models may cause crashes. Consider using text-only queries."
-            }
-            deviceMemoryGB <= 8.0 && backend == LlmInference.Backend.GPU -> {
-                "⚠️ Medium memory device (${String.format("%.1f", deviceMemoryGB)}GB RAM): GPU + Vision may be unstable. Reduce image size or use text-only if crashes occur."
-            }
-            deviceMemoryGB <= 8.0 && backend == LlmInference.Backend.CPU -> {
-                "ℹ️ Using CPU backend for vision on ${String.format("%.1f", deviceMemoryGB)}GB RAM device for stability."
-            }
-            else -> null // No warning needed for high memory devices
-        }
+        // Simplified approach - just provide general guidance
+        return "ℹ️ Vision processing may use significant memory. If you experience crashes, try reducing image size or using text-only queries."
     }
 
     override fun getMemoryWarningForImages(images: List<Bitmap>): String? {

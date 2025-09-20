@@ -34,28 +34,11 @@ import androidx.compose.ui.res.stringResource
 import com.llmhub.llmhub.R
 
 /**
- * Get device total memory in GB
- */
-private fun getDeviceMemoryGB(context: Context): Double {
-    val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-    val memoryInfo = ActivityManager.MemoryInfo()
-    activityManager.getMemoryInfo(memoryInfo)
-    return memoryInfo.totalMem / (1024.0 * 1024.0 * 1024.0) // Convert bytes to GB
-}
-
-/**
- * Check if GPU is actually supported for this model on this device
+ * Check if GPU is supported for this model
+ * Simplified approach - just use the model's supportsGpu flag
  */
 private fun isGpuSupportedForModel(model: LLMModel, context: Context): Boolean {
-    if (!model.supportsGpu) return false
-    
-    // For Gemma-3n models, require >8GB RAM
-    if (model.supportsVision && model.name.contains("Gemma-3n", ignoreCase = true)) {
-        return getDeviceMemoryGB(context) > 8.0
-    }
-    
-    // For other models that support GPU, return true
-    return true
+    return model.supportsGpu
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
