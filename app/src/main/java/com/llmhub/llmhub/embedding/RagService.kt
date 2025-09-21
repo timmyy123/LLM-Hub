@@ -93,6 +93,7 @@ class InMemoryRagService(private val embeddingService: EmbeddingService) : RagSe
                     documentChunks.add(documentChunk)
                     addedChunks++
                     Log.d(TAG, "Generated embedding for chunk $index of '$fileName' (len=${chunk.length}) -> totalChunksNow=${documentChunks.size}")
+                    Log.d(TAG, "Created document chunk with metadata='$metadata' for fileName='$fileName'")
                 } else {
                     Log.w(TAG, "Failed to generate embedding for chunk $index of $fileName")
                 }
@@ -132,6 +133,17 @@ class InMemoryRagService(private val embeddingService: EmbeddingService) : RagSe
             }
 
             Log.d(TAG, "Searching for relevant context in ${chatDocuments.size} chunks for query: '${query.take(50)}...'")
+            // Debug: log metadata of all chunks
+            for (chunk in chatDocuments) {
+                Log.d(TAG, "Available chunk metadata='${chunk.metadata}', fileName='${chunk.fileName}'")
+            }
+            
+            // Filter out replicated global chunks when memory is disabled
+            // This ensures we only search chat-specific documents
+            val filteredDocuments = chatDocuments.filter { 
+                chunk -> chunk.metadata == "uploaded" || !chunk.metadata.startsWith("replicated_global:")
+            }
+            Log.d(TAG, "Filtered to ${filteredDocuments.size} chat-specific chunks (removed ${chatDocuments.size - filteredDocuments.size} replicated global chunks)")
 
             // Use the provided embedding if available to avoid re-embedding the same query
             val queryEmbCopy = queryEmbedding ?: run {
@@ -145,7 +157,7 @@ class InMemoryRagService(private val embeddingService: EmbeddingService) : RagSe
 
             val similarities = mutableListOf<ContextChunk>()
 
-            for (doc in chatDocuments) {
+            for (doc in filteredDocuments) {
                 if (doc.embedding != null) {
                     val similarity = cosineSimilarity(queryEmbCopy, doc.embedding)
                     similarities.add(

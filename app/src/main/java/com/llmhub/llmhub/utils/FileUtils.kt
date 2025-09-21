@@ -416,12 +416,7 @@ object FileUtils {
                             content
                         }
                         
-                        // Limit content size to prevent overwhelming the model
-                        if (processedContent.length > 10000) {
-                            processedContent.take(10000) + "\n\n[Content truncated - showing first 10,000 characters]"
-                        } else {
-                            processedContent
-                        }
+                        processedContent
                     }
                 }
             } catch (e: IOException) {
@@ -465,9 +460,7 @@ object FileUtils {
             result.toString()
         } catch (e: Exception) {
             // Fallback to simple formatting
-            val lines = content.lines().take(50)
-            "## CSV Data\n\n${lines.joinToString("\n")}" + 
-            if (content.lines().size > 50) "\n\n[Content truncated - showing first 50 lines]" else ""
+            "## CSV Data\n\n${content}"
         }
     }
     
@@ -501,12 +494,7 @@ object FileUtils {
                     val result = text.toString().trim()
                     
                     if (result.isNotBlank()) {
-                        // Limit content size to prevent overwhelming the model
-                        if (result.length > 15000) {
-                            result.take(15000) + "\n\n[Content truncated - showing first 15,000 characters]"
-                        } else {
-                            result
-                        }
+                        result
                     } else {
                         val fileName = getFileName(context, uri) ?: "document.pdf"
                         "[PDF Document: $fileName - No readable text content found]"
@@ -690,12 +678,7 @@ object FileUtils {
                     zipInputStream.close()
                     
                     return if (extractedText.isNotBlank()) {
-                        // Limit content size to prevent overwhelming the model
-                        if (extractedText.length > 15000) {
-                            extractedText.take(15000) + "\n\n[Content truncated - showing first 15,000 characters]"
-                        } else {
-                            extractedText
-                        }
+                        extractedText
                     } else {
                         "[Word Document - No readable text content found]"
                     }
@@ -737,12 +720,7 @@ object FileUtils {
             
             return if (worksheetTexts.isNotEmpty()) {
                 val result = worksheetTexts.joinToString("\n\n")
-                // Limit content size to prevent overwhelming the model
-                if (result.length > 15000) {
-                    result.take(15000) + "\n\n[Content truncated - showing first 15,000 characters]"
-                } else {
-                    result
-                }
+                result
             } else {
                 "[Excel Spreadsheet - No readable text content found]"
             }
@@ -779,12 +757,7 @@ object FileUtils {
             
             return if (slideTexts.isNotEmpty()) {
                 val result = slideTexts.joinToString("\n\n")
-                // Limit content size to prevent overwhelming the model
-                if (result.length > 15000) {
-                    result.take(15000) + "\n\n[Content truncated - showing first 15,000 characters]"
-                } else {
-                    result
-                }
+                result
             } else {
                 "[PowerPoint Presentation - No readable text content found]"
             }

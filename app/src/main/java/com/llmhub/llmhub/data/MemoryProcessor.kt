@@ -13,6 +13,149 @@ import com.llmhub.llmhub.embedding.RagServiceManager
 class MemoryProcessor(private val context: Context, private val db: LlmHubDatabase) {
     private val TAG = "MemoryProcessor"
     private val ragManager = com.llmhub.llmhub.embedding.RagServiceManager.getInstance(context)
+    
+    /**
+     * Create smart chunks with semantic boundaries and overlap for better context preservation
+     * Same logic as used in RagService for consistency
+     */
+    private fun createSmartChunks(text: String, maxChunkSize: Int, overlapSize: Int): List<String> {
+        if (text.length <= maxChunkSize) {
+            return listOf(text)
+        }
+        
+        val chunks = mutableListOf<String>()
+        
+        // Try to split on paragraph boundaries first
+        val paragraphs = text.split(Regex("""\n\s*\n""")).filter { it.trim().isNotEmpty() }
+        
+        if (paragraphs.size > 1) {
+            // Handle paragraph-based chunking
+            var currentChunk = StringBuilder()
+            
+            for (paragraph in paragraphs) {
+                val trimmedParagraph = paragraph.trim()
+                
+                // If adding this paragraph would exceed the limit
+                if (currentChunk.length + trimmedParagraph.length > maxChunkSize && currentChunk.isNotEmpty()) {
+                    chunks.add(currentChunk.toString().trim())
+                    
+                    // Start new chunk with overlap from previous chunk
+                    val overlapText = getOverlapText(currentChunk.toString(), overlapSize)
+                    currentChunk = StringBuilder(overlapText)
+                    
+                    // Add separator if we have overlap
+                    if (overlapText.isNotEmpty()) {
+                        currentChunk.append("\n\n")
+                    }
+                }
+                
+                // If paragraph itself is too long, split it
+                if (trimmedParagraph.length > maxChunkSize) {
+                    val subChunks = splitLongText(trimmedParagraph, maxChunkSize, overlapSize)
+                    for ((index, subChunk) in subChunks.withIndex()) {
+                        if (index == 0 && currentChunk.isNotEmpty()) {
+                            currentChunk.append(subChunk)
+                            chunks.add(currentChunk.toString().trim())
+                            currentChunk = StringBuilder()
+                        } else {
+                            chunks.add(subChunk)
+                        }
+                    }
+                } else {
+                    currentChunk.append(trimmedParagraph).append("\n\n")
+                }
+            }
+            
+            // Add remaining content
+            if (currentChunk.isNotEmpty()) {
+                chunks.add(currentChunk.toString().trim())
+            }
+        } else {
+            // Single paragraph or no clear paragraph breaks - use sentence-based chunking
+            val sentences = text.split(Regex("""(?<=[.!?])\s+""")).filter { it.trim().isNotEmpty() }
+            var currentChunk = StringBuilder()
+            
+            for (sentence in sentences) {
+                val trimmedSentence = sentence.trim()
+                
+                if (currentChunk.length + trimmedSentence.length > maxChunkSize && currentChunk.isNotEmpty()) {
+                    chunks.add(currentChunk.toString().trim())
+                    
+                    // Start new chunk with overlap
+                    val overlapText = getOverlapText(currentChunk.toString(), overlapSize)
+                    currentChunk = StringBuilder(overlapText)
+                    
+                    if (overlapText.isNotEmpty()) {
+                        currentChunk.append(" ")
+                    }
+                }
+                
+                if (trimmedSentence.length > maxChunkSize) {
+                    // Very long sentence - split by words
+                    val subChunks = splitLongText(trimmedSentence, maxChunkSize, overlapSize)
+                    for ((index, subChunk) in subChunks.withIndex()) {
+                        if (index == 0 && currentChunk.isNotEmpty()) {
+                            currentChunk.append(subChunk)
+                            chunks.add(currentChunk.toString().trim())
+                            currentChunk = StringBuilder()
+                        } else {
+                            chunks.add(subChunk)
+                        }
+                    }
+                } else {
+                    currentChunk.append(trimmedSentence).append(" ")
+                }
+            }
+            
+            if (currentChunk.isNotEmpty()) {
+                chunks.add(currentChunk.toString().trim())
+            }
+        }
+        
+        return chunks.filter { it.trim().isNotEmpty() }
+    }
+    
+    private fun getOverlapText(text: String, overlapSize: Int): String {
+        if (text.length <= overlapSize) return text
+        
+        val overlapStart = text.length - overlapSize
+        val overlapText = text.substring(overlapStart)
+        
+        // Try to start overlap at sentence boundary
+        val sentenceStart = overlapText.lastIndexOf(". ")
+        return if (sentenceStart > 0) {
+            overlapText.substring(sentenceStart + 2)
+        } else {
+            overlapText
+        }
+    }
+    
+    private fun splitLongText(text: String, maxChunkSize: Int, overlapSize: Int): List<String> {
+        val sentences = text.split(Regex("[.!?]+")).filter { it.trim().isNotEmpty() }
+        val chunks = mutableListOf<String>()
+        var currentChunk = StringBuilder()
+        
+        for (sentence in sentences) {
+            val trimmedSentence = sentence.trim()
+            if (currentChunk.length + trimmedSentence.length > maxChunkSize && currentChunk.isNotEmpty()) {
+                chunks.add(currentChunk.toString().trim())
+                
+                // Create overlap
+                val overlapText = getOverlapText(currentChunk.toString(), overlapSize)
+                currentChunk = StringBuilder(overlapText)
+                if (overlapText.isNotEmpty()) {
+                    currentChunk.append(". ")
+                }
+            }
+            currentChunk.append(trimmedSentence).append(". ")
+        }
+        
+        if (currentChunk.isNotEmpty()) {
+            chunks.add(currentChunk.toString().trim())
+        }
+        
+        return chunks.ifEmpty { listOf(text) }
+    }
 
     companion object {
         // Public state that composables can observe to know when embedding work is active
@@ -34,13 +177,13 @@ class MemoryProcessor(private val context: Context, private val db: LlmHubDataba
                         // mark in-progress
                         db.memoryDao().update(doc.copy(status = "EMBEDDING_IN_PROGRESS"))
                             Log.d(TAG, "Processing memory doc id=${doc.id} file='${doc.fileName}' status=${doc.status}")
-                        // Chunk the document into smaller chunks for embeddings.
-                        val chunks = doc.content.split(Regex("\\n\\s*\\n")).filter { it.isNotBlank() }.ifEmpty { listOf(doc.content) }
-
                         var totalChunksCreated = 0
                         var embeddingFailures = 0
                         // Ensure RAG/embedding initialized
                         val mgr = com.llmhub.llmhub.embedding.RagServiceManager.getInstance(context)
+                        
+                        // Use the same smart chunking as chat documents for consistency
+                        val chunks = createSmartChunks(doc.content, maxChunkSize = 800, overlapSize = 100)
                         val initJob = mgr.initializeAsync()
                         initJob.join()
 
