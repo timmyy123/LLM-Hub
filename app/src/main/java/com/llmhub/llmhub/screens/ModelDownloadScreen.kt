@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -22,7 +23,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import java.io.File
+import kotlinx.coroutines.launch
 import androidx.activity.ComponentActivity
+import android.content.Intent
+import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.viewmodels.ModelDownloadViewModel
@@ -32,6 +37,14 @@ import android.app.ActivityManager
 import com.llmhub.llmhub.ui.components.*
 import androidx.compose.ui.res.stringResource
 import com.llmhub.llmhub.R
+import com.llmhub.llmhub.data.ModelRequirements
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.net.Uri
+
+enum class ModelFormat {
+    TASK, LITERTLM
+}
 
 /**
  * Check if GPU is supported for this model
@@ -64,6 +77,8 @@ fun ModelDownloadScreen(
     val multimodalGrouped = multimodalModels.groupBy { it.name.substringBefore("(").trim() }
     val embeddingGrouped = embeddingModels.groupBy { it.name.substringBefore("(").trim() }
 
+    var showImportDialog by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -87,6 +102,18 @@ fun ModelDownloadScreen(
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showImportDialog = true },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = stringResource(R.string.import_external_model)
+                )
+            }
         },
         containerColor = MaterialTheme.colorScheme.surface
     ) { paddingValues ->
@@ -206,6 +233,17 @@ fun ModelDownloadScreen(
                 Spacer(modifier = Modifier.height(80.dp))
             }
         }
+        
+        // Import External Model Dialog
+        if (showImportDialog) {
+            ImportExternalModelDialog(
+                onDismiss = { showImportDialog = false },
+                onImport = { externalModel ->
+                    downloadViewModel.addExternalModel(externalModel)
+                    showImportDialog = false
+                }
+            )
+        }
     }
 }
 
@@ -278,7 +316,7 @@ private fun ModelFamilyCard(
                     
                     IconWithLabel(
                         icon = Icons.Default.Storage,
-                        label = "${variants.size} ${if (variants.size > 1) stringResource(R.string.variants) else stringResource(R.string.variant)}",
+                        label = variants.size.toString() + " " + if (variants.size > 1) stringResource(R.string.variants) else stringResource(R.string.variant),
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
@@ -355,6 +393,11 @@ private fun ModelVariantItem(
                 )
                 
                 when {
+                    model.isDownloaded && model.source == "Custom" -> StatusChip(
+                        text = stringResource(R.string.ready_to_use),
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
                     model.isDownloaded -> StatusChip(
                         text = stringResource(R.string.downloaded),
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer,
@@ -395,7 +438,7 @@ private fun ModelVariantItem(
                 
                 IconWithLabel(
                     icon = Icons.Default.Memory,
-                    label = stringResource(R.string.ram_requirement_format, model.requirements.minRamGB),
+                    label = context.getString(R.string.ram_requirement_format, model.requirements.minRamGB),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 
@@ -453,7 +496,7 @@ private fun ModelVariantItem(
                 )
                 
                 Text(
-                    text = stringResource(R.string.paused_downloaded_format, formatFileSize(model.downloadedBytes)),
+                    text = context.getString(R.string.paused_downloaded_format, formatFileSize(model.downloadedBytes)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -465,7 +508,27 @@ private fun ModelVariantItem(
                 horizontalArrangement = Arrangement.End
             ) {
                 when {
+                    model.isDownloaded && model.source == "Custom" -> {
+                        // Imported models - show Remove button
+                        OutlinedButton(
+                            onClick = { onDelete(model) },
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
+                            ),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+                        ) {
+                            Icon(
+                                Icons.Default.Remove,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.remove))
+                        }
+                    }
+                    
                     model.isDownloaded -> {
+                        // Downloaded models - show Delete button
                         OutlinedButton(
                             onClick = { onDelete(model) },
                             colors = ButtonDefaults.outlinedButtonColors(
@@ -563,11 +626,7 @@ private fun ModelVariantItem(
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = if (model.isPaused) {
-                                        stringResource(R.string.continue_download)
-                                    } else {
-                                        stringResource(R.string.resume_download)
-                                    },
+                                    text = if (model.isPaused) stringResource(R.string.continue_download) else stringResource(R.string.resume_download),
                                     style = MaterialTheme.typography.labelLarge
                                 )
                             }
@@ -634,5 +693,264 @@ private fun getModelDisplayName(model: LLMModel, context: Context): String {
             // For other formats like "INT4, 2k", return as-is
             return nameInParentheses
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ImportExternalModelDialog(
+    onDismiss: () -> Unit,
+    onImport: (LLMModel) -> Unit
+) {
+    val context = LocalContext.current
+    var modelName by remember { mutableStateOf("") }
+    var selectedFileUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedFileName by remember { mutableStateOf("") }
+    var supportsVision by remember { mutableStateOf(false) }
+    var supportsAudio by remember { mutableStateOf(false) }
+    var supportsGpu by remember { mutableStateOf(false) }
+    var modelFormat by remember { mutableStateOf(ModelFormat.TASK) }
+    var contextWindowSize by remember { mutableStateOf("2048") }
+    
+    var showError by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
+    
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri?.let {
+            selectedFileUri = it
+            val fileName = it.lastPathSegment ?: "Unknown file"
+            // Show first few words of filename, max 20 characters
+            selectedFileName = if (fileName.length > 20) {
+                fileName.take(20) + "..."
+            } else {
+                fileName
+            }
+            
+            // Request persistent permission for the URI
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    it,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+                Log.d("ModelDownloadScreen", "Successfully took persistent permission for URI: $it")
+            } catch (e: Exception) {
+                Log.w("ModelDownloadScreen", "Could not take persistent permission for URI: ${e.message}")
+            }
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = stringResource(R.string.import_external_model),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.heightIn(max = 600.dp)
+            ) {
+                item {
+                    OutlinedTextField(
+                        value = modelName,
+                        onValueChange = { modelName = it },
+                        label = { Text(stringResource(R.string.model_name)) },
+                        isError = modelName.isBlank(),
+                        supportingText = if (modelName.isBlank()) {
+                            { Text(stringResource(R.string.model_name_required)) }
+                        } else null,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                
+                item {
+                    Button(
+                        onClick = { filePickerLauncher.launch(arrayOf("*/*")) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AttachFile,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            if (selectedFileName.isNotBlank()) selectedFileName 
+                            else stringResource(R.string.select_model_file)
+                        )
+                    }
+                }
+                
+                
+                item {
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = stringResource(R.string.supports_vision),
+                            modifier = Modifier.clickable { supportsVision = !supportsVision }
+                        )
+                        RadioButton(
+                            selected = supportsVision,
+                            onClick = { supportsVision = !supportsVision }
+                        )
+                    }
+                }
+                
+                item {
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = stringResource(R.string.supports_audio),
+                            modifier = Modifier.clickable { supportsAudio = !supportsAudio }
+                        )
+                        RadioButton(
+                            selected = supportsAudio,
+                            onClick = { supportsAudio = !supportsAudio }
+                        )
+                    }
+                }
+                
+                item {
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = stringResource(R.string.supports_gpu),
+                            modifier = Modifier.clickable { supportsGpu = !supportsGpu }
+                        )
+                        RadioButton(
+                            selected = supportsGpu,
+                            onClick = { supportsGpu = !supportsGpu }
+                        )
+                    }
+                }
+                
+                item {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        var expanded by remember { mutableStateOf(false) }
+                        
+                        Box(modifier = Modifier.weight(1f)) {
+                            OutlinedTextField(
+                                value = modelFormat.name.lowercase(),
+                                onValueChange = { },
+                                label = { Text(stringResource(R.string.model_format)) },
+                                readOnly = true,
+                                trailingIcon = {
+                                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                                },
+                                modifier = Modifier.clickable { expanded = true }
+                            )
+                            
+                            DropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                ModelFormat.values().forEach { format ->
+                                    DropdownMenuItem(
+                                        text = { Text(format.name.lowercase()) },
+                                        onClick = {
+                                            modelFormat = format
+                                            expanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                        
+                        val contextWindowError = contextWindowSize.toIntOrNull() == null || contextWindowSize.toIntOrNull()!! <= 0
+                        val contextWindowErrorText = stringResource(R.string.context_window_size_invalid)
+                        
+                        OutlinedTextField(
+                            value = contextWindowSize,
+                            onValueChange = { contextWindowSize = it },
+                            label = { Text(stringResource(R.string.context_window_size)) },
+                            isError = contextWindowError,
+                            supportingText = if (contextWindowError) {
+                                { Text(contextWindowErrorText) }
+                            } else null,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+                
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    // Validate inputs
+                    val nameValid = modelName.isNotBlank()
+                    val fileValid = selectedFileUri != null
+                    val contextValid = contextWindowSize.toIntOrNull() != null && contextWindowSize.toIntOrNull()!! > 0
+                    
+                    if (!nameValid || !fileValid || !contextValid) {
+                        showError = true
+                        errorMessage = "Please fix the errors above"
+                        return@Button
+                    }
+                    
+                    val externalModel = LLMModel(
+                        name = modelName,
+                        description = "Custom model: $modelName",
+                        url = selectedFileUri.toString(), // Store original URI
+                        category = if (supportsVision || supportsAudio) "multimodal" else "text",
+                        sizeBytes = 0L, // Will be determined when loading
+                        source = "Custom",
+                        supportsVision = supportsVision,
+                        supportsAudio = supportsAudio,
+                        supportsGpu = supportsGpu,
+                        requirements = ModelRequirements(
+                            minRamGB = 4,
+                            recommendedRamGB = 8
+                        ),
+                        contextWindowSize = contextWindowSize.toInt(),
+                        modelFormat = modelFormat.name.lowercase(),
+                        isDownloaded = true, // Imported models are ready to use
+                        isDownloading = false,
+                        downloadProgress = 1.0f // 100% ready
+                    )
+
+                    onImport(externalModel)
+                },
+                enabled = modelName.isNotBlank() && selectedFileUri != null
+            ) {
+                Text(stringResource(R.string.import_model))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
+    
+    // Error dialog
+    if (showError) {
+        AlertDialog(
+            onDismissRequest = { showError = false },
+            title = { Text("Error") },
+            text = { Text(errorMessage) },
+            confirmButton = {
+                TextButton(onClick = { showError = false }) {
+                    Text("OK")
+                }
+            }
+        )
     }
 }

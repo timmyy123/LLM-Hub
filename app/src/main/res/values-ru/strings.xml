@@ -363,4 +363,20 @@
     <!-- General performance tip for all devices -->
     <string name="gemma3n_performance_tip">💡 Если вы сталкиваетесь с сбоями или низкой производительностью из-за ограничений RAM, попробуйте переключиться на CPU бэкенд или отключить функции зрения/аудио.</string>
     <string name="reset_to_defaults">Сбросить</string>
+    
+    <!-- External Model Import -->
+    <string name="import_external_model">Импорт Внешней Модели</string>
+    <string name="model_name">Имя Модели</string>
+    <string name="select_model_file">Выбрать Файл Модели</string>
+    <string name="supports_vision">Поддерживает Зрение</string>
+    <string name="supports_audio">Поддерживает Аудио</string>
+    <string name="supports_gpu">Поддерживает ГПУ</string>
+    <string name="model_format">Формат Модели</string>
+    <string name="context_window_size">Размер Контекстного Окна</string>
+    <string name="import_model">Импортировать Модель</string>
+    <string name="model_name_required">Имя модели обязательно</string>
+    <string name="context_window_size_invalid">Введите корректный размер контекстного окна</string>
+    <string name="please_fix_errors">Исправьте ошибки выше</string>
+    <string name="remove">Удалить</string>
+    <string name="ready_to_use">Готов к использованию</string>
 </resources>

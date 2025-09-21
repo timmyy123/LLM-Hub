@@ -31,6 +31,8 @@ import com.llmhub.llmhub.R
 import com.llmhub.llmhub.embedding.RagServiceManager
 import com.llmhub.llmhub.embedding.ContextChunk
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
+import androidx.lifecycle.ViewModelProvider
+import androidx.activity.ComponentActivity
 
 class ChatViewModel(
     private val inferenceService: InferenceService,
@@ -468,10 +470,26 @@ class ChatViewModel(
             }
         }
 
-        _availableModels.value = downloadedModels
+        // Get imported models from ModelDownloadViewModel
+        val importedModels = try {
+            // Get ModelDownloadViewModel instance to access imported models
+            val modelDownloadViewModel = androidx.lifecycle.ViewModelProvider(
+                context as androidx.activity.ComponentActivity,
+                androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.getInstance(context.application)
+            )[ModelDownloadViewModel::class.java]
+            modelDownloadViewModel.getImportedModels()
+        } catch (e: Exception) {
+            Log.w("ChatViewModel", "Could not get imported models: ${e.message}")
+            emptyList()
+        }
+        
+        // Combine downloaded and imported models
+        val allAvailableModels = downloadedModels + importedModels
+        
+        _availableModels.value = allAvailableModels
         
         // If we have a current model but it's not in the available models, clear it
-        if (currentModel != null && !downloadedModels.any { it.name == currentModel?.name }) {
+        if (currentModel != null && !allAvailableModels.any { it.name == currentModel?.name }) {
             Log.d("ChatViewModel", "Current model ${currentModel?.name} is no longer available")
             currentModel = null
         }
