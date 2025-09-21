@@ -16,6 +16,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.foundation.text.ClickableText
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -769,20 +774,27 @@ private fun ImportExternalModelDialog(
         }
     }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = stringResource(R.string.import_external_model),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-        },
-        text = {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.heightIn(max = 600.dp)
-            ) {
+        val keyboardController = LocalSoftwareKeyboardController.current
+        
+        AlertDialog(
+            onDismissRequest = {
+                keyboardController?.hide()
+                onDismiss()
+            },
+            title = {
+                Text(
+                    text = stringResource(R.string.import_external_model),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier
+                        .heightIn(max = 400.dp)
+                        .clickable { keyboardController?.hide() }
+                ) {
                 item {
                     OutlinedTextField(
                         value = modelName,
@@ -796,23 +808,57 @@ private fun ImportExternalModelDialog(
                     )
                 }
                 
-                item {
-                    Button(
-                        onClick = { filePickerLauncher.launch(arrayOf("*/*")) },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AttachFile,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
+                    item {
+                        Button(
+                            onClick = { filePickerLauncher.launch(arrayOf("*/*")) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AttachFile,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                if (selectedFileName.isNotBlank()) selectedFileName
+                                else stringResource(R.string.select_model_file)
+                            )
+                        }
+                    }
+                    
+                    item {
                         Text(
-                            if (selectedFileName.isNotBlank()) selectedFileName 
-                            else stringResource(R.string.select_model_file)
+                            text = stringResource(R.string.download_models_from_litert_community),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
-                }
+                    
+                    item {
+                        val context = LocalContext.current
+                        ClickableText(
+                            text = AnnotatedString(stringResource(R.string.litert_community_link)),
+                            style = TextStyle(
+                                color = MaterialTheme.colorScheme.primary,
+                                textDecoration = TextDecoration.Underline
+                            ),
+                            onClick = { offset ->
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://huggingface.co/litert-community"))
+                                context.startActivity(intent)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    
+                    item {
+                        Text(
+                            text = stringResource(R.string.import_model_warning),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 
                 
                 item {
