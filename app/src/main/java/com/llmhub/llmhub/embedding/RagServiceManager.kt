@@ -381,12 +381,20 @@ class RagServiceManager(
                         return combined
                     }
 
-                    // Memory disabled: remove replicated global chunks that were previously
+                    // Memory disabled: remove ONLY replicated global chunks that were previously
                     // replicated into the chat so they are not visible when the toggle is off.
+                    // But keep chat-specific documents with "uploaded" metadata.
                     if (!memoryEnabled) {
-                        val filtered = chatResults.filter { !it.metadata.startsWith("replicated_global:") }
+                        Log.d(TAG, "searchRelevantContext: memory disabled - checking ${chatResults.size} chat results")
+                        for (result in chatResults) {
+                            Log.d(TAG, "searchRelevantContext: chat result metadata='${result.metadata}', fileName='${result.fileName}'")
+                        }
+                        // Keep chat-specific documents (uploaded metadata) and filter out only replicated global chunks
+                        val filtered = chatResults.filter { 
+                            result -> result.metadata == "uploaded" || !result.metadata.startsWith("replicated_global:")
+                        }
                         if (filtered.size != chatResults.size) {
-                            Log.d(TAG, "searchRelevantContext: memory disabled - filtered out ${chatResults.size - filtered.size} replicated global chunks from chat results")
+                            Log.d(TAG, "searchRelevantContext: memory disabled - filtered out ${chatResults.size - filtered.size} replicated global chunks, kept ${filtered.size} chat-specific chunks")
                         }
                         return filtered
                     }
