@@ -436,11 +436,14 @@ private fun ModelVariantItem(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 
-                IconWithLabel(
-                    icon = Icons.Default.Memory,
-                    label = context.getString(R.string.ram_requirement_format, model.requirements.minRamGB),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                // Only show RAM requirement for non-imported models
+                if (model.source != "Custom") {
+                    IconWithLabel(
+                        icon = Icons.Default.Memory,
+                        label = context.getString(R.string.ram_requirement_format, model.requirements.minRamGB),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 
                 // Show the GPU icon when the model declares GPU support. If the device
                 // does not actually support GPU for this model (e.g., Gemma-3n on low-RAM
@@ -719,8 +722,33 @@ private fun ImportExternalModelDialog(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         uri?.let {
+            // Try to get filename from content resolver first, fallback to lastPathSegment
+            val fileName = try {
+                context.contentResolver.query(it, null, null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                        if (nameIndex >= 0) cursor.getString(nameIndex) else null
+                    } else null
+                } ?: it.lastPathSegment ?: "Unknown file"
+            } catch (e: Exception) {
+                it.lastPathSegment ?: "Unknown file"
+            }
+            
+            val fileExtension = fileName.substringAfterLast(".", "").lowercase()
+            
+            // Debug logging
+            Log.d("ModelImport", "Selected URI: $it")
+            Log.d("ModelImport", "Extracted fileName: $fileName")
+            Log.d("ModelImport", "Derived fileExtension: $fileExtension")
+            
+            // Validate file format
+            if (fileExtension != "task" && fileExtension != "litertlm") {
+                showError = true
+                errorMessage = context.getString(R.string.unsupported_file_format)
+                return@let
+            }
+            
             selectedFileUri = it
-            val fileName = it.lastPathSegment ?: "Unknown file"
             // Show first few words of filename, max 20 characters
             selectedFileName = if (fileName.length > 20) {
                 fileName.take(20) + "..."
@@ -905,12 +933,27 @@ private fun ImportExternalModelDialog(
                         return@Button
                     }
                     
+                    // Get file size from URI
+                    val fileSize = selectedFileUri?.let { uri ->
+                        try {
+                            context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                                if (cursor.moveToFirst()) {
+                                    val sizeIndex = cursor.getColumnIndex(android.provider.OpenableColumns.SIZE)
+                                    if (sizeIndex >= 0) cursor.getLong(sizeIndex) else 0L
+                                } else 0L
+                            } ?: 0L
+                        } catch (e: Exception) {
+                            Log.w("ModelDownloadScreen", "Could not get file size: ${e.message}")
+                            0L
+                        }
+                    } ?: 0L
+                    
                     val externalModel = LLMModel(
                         name = modelName,
                         description = "Custom model: $modelName",
                         url = selectedFileUri.toString(), // Store original URI
                         category = if (supportsVision || supportsAudio) "multimodal" else "text",
-                        sizeBytes = 0L, // Will be determined when loading
+                        sizeBytes = fileSize, // Use actual file size
                         source = "Custom",
                         supportsVision = supportsVision,
                         supportsAudio = supportsAudio,

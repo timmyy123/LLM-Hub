@@ -385,4 +385,5 @@
     <string name="please_fix_errors">Corrigez les erreurs ci-dessus</string>
     <string name="remove">Supprimer</string>
     <string name="ready_to_use">Prêt à utiliser</string>
+    <string name="unsupported_file_format">Format de fichier non pris en charge. Veuillez sélectionner un fichier .task ou .litertlm.</string>
 </resources>
