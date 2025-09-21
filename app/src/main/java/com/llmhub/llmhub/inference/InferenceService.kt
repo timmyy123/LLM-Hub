@@ -2,6 +2,7 @@ package com.llmhub.llmhub.inference
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.net.Uri
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.websearch.WebSearchService
 import com.llmhub.llmhub.websearch.DuckDuckGoSearchService
@@ -200,11 +201,32 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                     Log.d(TAG, "No ongoing generation to cancel or cancel failed: ${e.message}")
                 }
                 
-                // Small delay to let cancellation complete
-                delay(100)
+                // Longer delay to let cancellation complete, especially for "Previous invocation still processing" errors
+                delay(500)
                 
-                instance.session.close()
-                Log.d(TAG, "Closed existing session")
+                // Try to close the session with retry logic
+                var closeAttempts = 0
+                val maxCloseAttempts = 3
+                while (closeAttempts < maxCloseAttempts) {
+                    try {
+                        instance.session.close()
+                        Log.d(TAG, "Closed existing session")
+                        break
+                    } catch (e: Exception) {
+                        closeAttempts++
+                        if (e.message?.contains("Previous invocation still processing") == true) {
+                            Log.w(TAG, "Session still processing, waiting longer (attempt $closeAttempts/$maxCloseAttempts)")
+                            delay(1000) // Wait longer for processing to complete
+                        } else {
+                            Log.w(TAG, "Failed to close session (attempt $closeAttempts/$maxCloseAttempts): ${e.message}")
+                            if (closeAttempts >= maxCloseAttempts) {
+                                Log.e(TAG, "Failed to close session after $maxCloseAttempts attempts")
+                                throw e
+                            }
+                            delay(500)
+                        }
+                    }
+                }
                 
                 // Create new session with same options
                 val newSession = createSession(instance.engine)
@@ -291,40 +313,75 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
 
     private suspend fun loadModelFromPath(model: LLMModel, preferredBackend: LlmInference.Backend? = null, disableVision: Boolean = false, disableAudio: Boolean = false) {
         try {
-            // Determine model path
-            val modelAssetPath = if (model.url.startsWith("file://models/")) {
-                model.url.removePrefix("file://")
-            } else {
-                "models/${model.localFileName()}"
-            }
+            val modelFile: File
             
-            Log.d(TAG, "Loading model from: $modelAssetPath")
-            
-            // Check if model exists in assets folder
-            val modelFile = try {
-                context.assets.open(modelAssetPath).use { 
-                    // File exists in assets, copy to files directory
-                    val targetFile = File(context.filesDir, "models/${model.localFileName()}")
-                    targetFile.parentFile?.mkdirs()
-                    
-                    if (!targetFile.exists()) {
-                        targetFile.outputStream().use { outputStream ->
-                            context.assets.open(modelAssetPath).use { inputStream ->
+            // Handle imported models (Custom source with URI)
+            if (model.source == "Custom" && model.url.startsWith("content://")) {
+                Log.d(TAG, "Loading imported model from URI: ${model.url}")
+                
+                // For imported models, we need to copy to local storage for MediaPipe
+                // MediaPipe requires a local file path, not a content URI
+                val targetFile = File(context.filesDir, "models/${model.localFileName()}")
+                targetFile.parentFile?.mkdirs()
+                
+                // Only copy if file doesn't exist or is outdated
+                if (!targetFile.exists()) {
+                    try {
+                        context.contentResolver.openInputStream(Uri.parse(model.url))?.use { inputStream ->
+                            targetFile.outputStream().use { outputStream ->
                                 inputStream.copyTo(outputStream)
                             }
                         }
-                        Log.d(TAG, "Copied model to ${targetFile.absolutePath}")
+                        Log.d(TAG, "Copied imported model to: ${targetFile.absolutePath}")
+                    } catch (e: SecurityException) {
+                        Log.e(TAG, "Permission denied for URI: ${model.url}")
+                        throw IllegalStateException("Permission denied for imported model. Please re-import the model.", e)
                     }
-                    targetFile
-                }
-            } catch (e: Exception) {
-                // Try to find model in files directory
-                val modelFile = File(context.filesDir, modelAssetPath)
-                if (modelFile.exists()) {
-                    Log.d(TAG, "Model found in files directory: ${modelFile.absolutePath}")
-                    modelFile
                 } else {
-                    throw IllegalStateException("Model not found in assets or files: $modelAssetPath")
+                    Log.d(TAG, "Using existing copied model: ${targetFile.absolutePath}")
+                }
+                
+                if (targetFile.exists()) {
+                    modelFile = targetFile
+                } else {
+                    throw IllegalStateException("Failed to access imported model from URI: ${model.url}")
+                }
+            } else {
+                // Handle regular models (assets or files directory)
+                val modelAssetPath = if (model.url.startsWith("file://models/")) {
+                    model.url.removePrefix("file://")
+                } else {
+                    "models/${model.localFileName()}"
+                }
+                
+                Log.d(TAG, "Loading model from: $modelAssetPath")
+                
+                // Check if model exists in assets folder
+                modelFile = try {
+                    context.assets.open(modelAssetPath).use { 
+                        // File exists in assets, copy to files directory
+                        val targetFile = File(context.filesDir, "models/${model.localFileName()}")
+                        targetFile.parentFile?.mkdirs()
+                        
+                        if (!targetFile.exists()) {
+                            targetFile.outputStream().use { outputStream ->
+                                context.assets.open(modelAssetPath).use { inputStream ->
+                                    inputStream.copyTo(outputStream)
+                                }
+                            }
+                            Log.d(TAG, "Copied model to ${targetFile.absolutePath}")
+                        }
+                        targetFile
+                    }
+                } catch (e: Exception) {
+                    // Try to find model in files directory
+                    val modelFile = File(context.filesDir, modelAssetPath)
+                    if (modelFile.exists()) {
+                        Log.d(TAG, "Model found in files directory: ${modelFile.absolutePath}")
+                        modelFile
+                    } else {
+                        throw IllegalStateException("Model not found in assets or files: $modelAssetPath")
+                    }
                 }
             }
             
@@ -918,6 +975,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         return errorMessage.contains("detokenizercalculator") ||
                 errorMessage.contains("id >= 0") ||
                 errorMessage.contains("no id available to be decoded") ||
+                errorMessage.contains("previous invocation still processing") ||
                 errorMessage.contains("llmexecutorcalculator") ||
                 errorMessage.contains("please create a new session") ||
                 errorMessage.contains("invalid_argument") ||

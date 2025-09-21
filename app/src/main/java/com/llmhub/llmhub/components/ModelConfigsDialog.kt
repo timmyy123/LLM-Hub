@@ -278,8 +278,8 @@ fun ModelConfigsDialog(
                         )
                     }
                     
-                    // Always show toggles for multimodal Gemma-3n models (E2B and E4B)
-                    if (isGemma3nModel && (model.supportsVision || model.supportsAudio)) {
+                    // Show toggles for any model that supports vision or audio
+                    if (model.supportsVision || model.supportsAudio) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = stringResource(R.string.modality_options), 

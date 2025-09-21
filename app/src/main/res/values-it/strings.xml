@@ -382,6 +382,22 @@
     <!-- General performance tip for all devices -->
     <string name="gemma3n_performance_tip">💡 Se riscontri arresti anomali o prestazioni basse a causa di limitazioni di RAM, prova a passare al backend CPU o a disabilitare le funzionalità di visione/audio.</string>
     <string name="reset_to_defaults">Reimposta</string>
+    
+    <!-- External Model Import -->
+    <string name="import_external_model">Importa Modello Esterno</string>
+    <string name="model_name">Nome del Modello</string>
+    <string name="select_model_file">Seleziona File del Modello</string>
+    <string name="supports_vision">Supporta Visione</string>
+    <string name="supports_audio">Supporta Audio</string>
+    <string name="supports_gpu">Supporta GPU</string>
+    <string name="model_format">Formato del Modello</string>
+    <string name="context_window_size">Dimensione Finestra di Contesto</string>
+    <string name="import_model">Importa Modello</string>
+    <string name="model_name_required">Il nome del modello è obbligatorio</string>
+    <string name="context_window_size_invalid">Inserisci una dimensione valida della finestra di contesto</string>
+    <string name="please_fix_errors">Correggi gli errori sopra</string>
+    <string name="remove">Rimuovi</string>
+    <string name="ready_to_use">Pronto all\'uso</string>
 </resources>
 
 

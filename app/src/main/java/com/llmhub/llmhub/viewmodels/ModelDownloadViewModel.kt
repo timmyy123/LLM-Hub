@@ -21,6 +21,7 @@ import com.llmhub.llmhub.data.localFileName
 import android.content.Context
 import com.llmhub.llmhub.BuildConfig
 import com.llmhub.llmhub.data.isModelFileValid
+import com.google.gson.Gson
 
 class ModelDownloadViewModel(application: Application) : AndroidViewModel(application) {
     private val _models = MutableStateFlow<List<LLMModel>>(emptyList())
@@ -48,6 +49,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         modelDownloader = ModelDownloader(ktorClient, context, savedToken)
         
         loadModels()
+        loadImportedModels()
     }
 
     override fun onCleared() {
@@ -326,6 +328,16 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         // First cancel any ongoing download
         cancelDownload(model)
         
+        // Handle imported models differently - just remove from list, don't delete file
+        if (model.source == "Custom") {
+            val currentModels = _models.value.toMutableList()
+            currentModels.removeAll { it.name == model.name }
+            _models.value = currentModels
+            saveImportedModels()
+            android.util.Log.d("ModelDownloadViewModel", "[deleteModel] Removed imported model: ${model.name}")
+            return
+        }
+        
         viewModelScope.launch(Dispatchers.IO) {
             // Physically remove the file from the app's private storage so that
             // the model will no longer be detected as «downloaded» next time we
@@ -364,6 +376,64 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                 totalBytes = null,
                 downloadSpeedBytesPerSec = null
             )
+        }
+    }
+
+    fun addExternalModel(externalModel: LLMModel) {
+        val currentModels = _models.value.toMutableList()
+        
+        // Check if model with same name already exists
+        if (currentModels.any { it.name == externalModel.name }) {
+            android.util.Log.w("ModelDownloadViewModel", "Model with name '${externalModel.name}' already exists")
+            return
+        }
+        
+        // Add the external model to the list
+        currentModels.add(externalModel)
+        _models.value = currentModels
+        
+        android.util.Log.d("ModelDownloadViewModel", "Added external model: ${externalModel.name}")
+        saveImportedModels()
+    }
+    
+    fun getImportedModels(): List<LLMModel> {
+        return _models.value.filter { it.source == "Custom" && it.isDownloaded }
+    }
+    
+    private fun loadImportedModels() {
+        val prefs = context.getSharedPreferences("model_prefs", Context.MODE_PRIVATE)
+        val importedModelsJson = prefs.getString("imported_models", null)
+        
+        if (importedModelsJson != null) {
+            try {
+                val importedModels = Gson().fromJson(importedModelsJson, Array<LLMModel>::class.java).toList()
+                val currentModels = _models.value.toMutableList()
+                
+                // Add imported models that aren't already in the list
+                importedModels.forEach { importedModel ->
+                    if (!currentModels.any { it.name == importedModel.name }) {
+                        currentModels.add(importedModel)
+                    }
+                }
+                
+                _models.value = currentModels
+                android.util.Log.d("ModelDownloadViewModel", "Loaded ${importedModels.size} imported models from preferences")
+            } catch (e: Exception) {
+                android.util.Log.e("ModelDownloadViewModel", "Failed to load imported models: ${e.message}")
+            }
+        }
+    }
+    
+    private fun saveImportedModels() {
+        val importedModels = getImportedModels()
+        val prefs = context.getSharedPreferences("model_prefs", Context.MODE_PRIVATE)
+        
+        try {
+            val json = Gson().toJson(importedModels)
+            prefs.edit().putString("imported_models", json).apply()
+            android.util.Log.d("ModelDownloadViewModel", "Saved ${importedModels.size} imported models to preferences")
+        } catch (e: Exception) {
+            android.util.Log.e("ModelDownloadViewModel", "Failed to save imported models: ${e.message}")
         }
     }
 

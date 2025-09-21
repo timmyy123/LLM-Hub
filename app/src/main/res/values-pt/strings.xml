@@ -345,6 +345,22 @@
     
     <!-- General performance tip for all devices -->
     <string name="gemma3n_performance_tip">💡 Se você experimentar travamentos ou baixo desempenho devido a limitações de RAM, tente mudar para o backend de CPU ou desabilitar recursos de visão/áudio.</string>
+    
+    <!-- External Model Import -->
+    <string name="import_external_model">Importar Modelo Externo</string>
+    <string name="model_name">Nome do Modelo</string>
+    <string name="select_model_file">Selecionar Arquivo do Modelo</string>
+    <string name="supports_vision">Suporta Visão</string>
+    <string name="supports_audio">Suporta Áudio</string>
+    <string name="supports_gpu">Suporta GPU</string>
+    <string name="model_format">Formato do Modelo</string>
+    <string name="context_window_size">Tamanho da Janela de Contexto</string>
+    <string name="import_model">Importar Modelo</string>
+    <string name="model_name_required">Nome do modelo é obrigatório</string>
+    <string name="context_window_size_invalid">Digite um tamanho válido da janela de contexto</string>
+    <string name="please_fix_errors">Corrija os erros acima</string>
+    <string name="remove">Remover</string>
+    <string name="ready_to_use">Pronto para usar</string>
 </resources>
 
 

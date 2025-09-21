@@ -362,4 +362,20 @@
     
     <!-- General performance tip for all devices -->
     <string name="gemma3n_performance_tip">💡 Wenn Sie Abstürze oder niedrige Leistung aufgrund von RAM-Beschränkungen erleben, versuchen Sie zum CPU-Backend zu wechseln oder Vision/Audio-Funktionen zu deaktivieren.</string>
+    
+    <!-- External Model Import -->
+    <string name="import_external_model">Externes Modell Importieren</string>
+    <string name="model_name">Modellname</string>
+    <string name="select_model_file">Modell-Datei Auswählen</string>
+    <string name="supports_vision">Unterstützt Vision</string>
+    <string name="supports_audio">Unterstützt Audio</string>
+    <string name="supports_gpu">Unterstützt GPU</string>
+    <string name="model_format">Modellformat</string>
+    <string name="context_window_size">Kontextfenster-Größe</string>
+    <string name="import_model">Modell Importieren</string>
+    <string name="model_name_required">Modellname ist erforderlich</string>
+    <string name="context_window_size_invalid">Geben Sie eine gültige Kontextfenster-Größe ein</string>
+    <string name="please_fix_errors">Bitte korrigieren Sie die Fehler oben</string>
+    <string name="remove">Entfernen</string>
+    <string name="ready_to_use">Bereit zur Verwendung</string>
 </resources>

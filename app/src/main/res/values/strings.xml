@@ -382,4 +382,20 @@
     
     <!-- General performance tip for all devices -->
     <string name="gemma3n_performance_tip">💡 If you experience crashing or low performance due to RAM limitations, try switching to CPU backend or disabling vision/audio features.</string>
+    
+    <!-- External Model Import -->
+    <string name="import_external_model">Import External Model</string>
+    <string name="model_name">Model Name</string>
+    <string name="select_model_file">Select Model File</string>
+    <string name="supports_vision">Supports Vision</string>
+    <string name="supports_audio">Supports Audio</string>
+    <string name="supports_gpu">Supports GPU</string>
+    <string name="model_format">Model Format</string>
+    <string name="context_window_size">Context Window Size</string>
+    <string name="import_model">Import Model</string>
+    <string name="model_name_required">Model name is required</string>
+    <string name="context_window_size_invalid">Please enter a valid context window size</string>
+    <string name="please_fix_errors">Please fix the errors above</string>
+    <string name="remove">Remove</string>
+    <string name="ready_to_use">Ready to use</string>
 </resources>
