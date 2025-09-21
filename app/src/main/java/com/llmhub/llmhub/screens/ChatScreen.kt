@@ -36,7 +36,6 @@ import com.llmhub.llmhub.components.ChatDrawer
 import com.llmhub.llmhub.components.MessageBubble
 import com.llmhub.llmhub.components.MessageInput
 import com.llmhub.llmhub.components.ModelConfigsDialog
-import com.llmhub.llmhub.components.CompactRagIndicator
 import com.llmhub.llmhub.ui.components.ModernCard
 import com.llmhub.llmhub.ui.components.StatusChip
 import com.llmhub.llmhub.ui.components.SectionHeader
@@ -163,6 +162,17 @@ fun ChatScreen(
         viewModel.initializeChat(chatId, context)
     }
     
+    // Sync model state immediately to show icons
+    LaunchedEffect(Unit) {
+        // Force immediate sync
+        viewModel.syncCurrentlyLoadedModel()
+    }
+    
+    // Also sync when the currently loaded model changes
+    LaunchedEffect(viewModel.currentlyLoadedModel) {
+        viewModel.syncCurrentlyLoadedModel()
+    }
+    
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -229,7 +239,9 @@ fun ChatScreen(
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
-                                    if (model.supportsVision) {
+                                    // Use the currently loaded model state to show icons
+                                    val currentModel = viewModel.currentlyLoadedModel.collectAsState().value
+                                    if (currentModel?.supportsVision == true && !viewModel.isVisionCurrentlyDisabled()) {
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Icon(
                                             Icons.Default.RemoveRedEye,
@@ -238,14 +250,25 @@ fun ChatScreen(
                                             tint = MaterialTheme.colorScheme.primary
                                         )
                                     }
-                                    // Show compact RAG indicator only when embeddings (RAG) are NOT enabled
-                                    if (!isEmbeddingEnabled) {
+                                    if (currentModel?.supportsAudio == true && !viewModel.isAudioCurrentlyDisabled()) {
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        CompactRagIndicator(
-                                            hasDocuments = documentCount > 0,
-                                            documentCount = documentCount
+                                        Icon(
+                                            Icons.Default.Mic,
+                                            contentDescription = "Audio enabled",
+                                            modifier = Modifier.size(12.dp),
+                                            tint = MaterialTheme.colorScheme.primary
                                         )
                                     }
+                                    if (viewModel.isGpuBackendEnabled()) {
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Icon(
+                                            Icons.Default.Speed,
+                                            contentDescription = "GPU enabled",
+                                            modifier = Modifier.size(12.dp),
+                                            tint = MaterialTheme.colorScheme.secondary
+                                        )
+                                    }
+                                    // RAG indicator removed from top bar
                                     // Show RAG enabled indicator when embeddings are enabled
                                     if (isEmbeddingEnabled) {
                                         Spacer(modifier = Modifier.width(4.dp))

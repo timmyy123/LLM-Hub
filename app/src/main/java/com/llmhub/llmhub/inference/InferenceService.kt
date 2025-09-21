@@ -55,6 +55,7 @@ interface InferenceService {
     // Get current modality disabled states
     fun isVisionCurrentlyDisabled(): Boolean
     fun isAudioCurrentlyDisabled(): Boolean
+    fun isGpuBackendEnabled(): Boolean
 }
 
 /**
@@ -86,8 +87,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
     private var overrideTemperature: Float? = null
     // Estimated tokens accumulated in current session (prompt + responses); heuristic
     private var estimatedSessionTokens: Int = 0
-    // Flag to apply one-time audio delegate warm-up delay per session
-    private var audioWarmUpDone: Boolean = false
+    private var isGenerating: Boolean = false
     
     // Track when sessions are reset to help ChatViewModel use minimal context
     private val sessionResetTimes = mutableMapOf<String, Long>()
@@ -202,31 +202,50 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 }
                 
                 // Longer delay to let cancellation complete, especially for "Previous invocation still processing" errors
-                delay(500)
+                delay(1000) // Increased delay to ensure cancellation completes
                 
-                // Try to close the session with retry logic
-                var closeAttempts = 0
-                val maxCloseAttempts = 3
-                while (closeAttempts < maxCloseAttempts) {
-                    try {
-                        instance.session.close()
-                        Log.d(TAG, "Closed existing session")
-                        break
-                    } catch (e: Exception) {
-                        closeAttempts++
-                        if (e.message?.contains("Previous invocation still processing") == true) {
-                            Log.w(TAG, "Session still processing, waiting longer (attempt $closeAttempts/$maxCloseAttempts)")
-                            delay(1000) // Wait longer for processing to complete
-                        } else {
-                            Log.w(TAG, "Failed to close session (attempt $closeAttempts/$maxCloseAttempts): ${e.message}")
-                            if (closeAttempts >= maxCloseAttempts) {
-                                Log.e(TAG, "Failed to close session after $maxCloseAttempts attempts")
-                                throw e
-                            }
-                            delay(500)
+                try {
+                    instance.session.close()
+                    Log.d(TAG, "Closed existing session")
+                } catch (closeException: Exception) {
+                    if (closeException.message?.contains("Previous invocation still processing") == true) {
+                        Log.w(TAG, "Session still processing, forcing close after delay")
+                        delay(2000) // Wait even longer
+                        try {
+                            instance.session.close()
+                            Log.d(TAG, "Forced close of session")
+                        } catch (forceCloseException: Exception) {
+                            Log.e(TAG, "Failed to force close session: ${forceCloseException.message}")
+                            // Continue with session creation anyway
                         }
+                    } else {
+                        throw closeException
                     }
                 }
+                
+//                // Try to close the session with retry logic
+//                var closeAttempts = 0
+//                val maxCloseAttempts = 3
+//                while (closeAttempts < maxCloseAttempts) {
+//                    try {
+//                        instance.session.close()
+//                        Log.d(TAG, "Closed existing session")
+//                        break
+//                    } catch (e: Exception) {
+//                        closeAttempts++
+//                        if (e.message?.contains("Previous invocation still processing") == true) {
+//                            Log.w(TAG, "Session still processing, waiting longer (attempt $closeAttempts/$maxCloseAttempts)")
+//                            delay(1000) // Wait longer for processing to complete
+//                        } else {
+//                            Log.w(TAG, "Failed to close session (attempt $closeAttempts/$maxCloseAttempts): ${e.message}")
+//                            if (closeAttempts >= maxCloseAttempts) {
+//                                Log.e(TAG, "Failed to close session after $maxCloseAttempts attempts")
+//                                throw e
+//                            }
+//                            delay(500)
+//                        }
+//                    }
+//                }
                 
                 // Create new session with same options
                 val newSession = createSession(instance.engine)
@@ -242,7 +261,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 // On error, try to recreate the entire model instance
                 try {
                     currentModel?.let { model ->
-                        loadModelFromPath(model)
+                        loadModelFromPath(model, currentBackend)
                     }
                 } catch (retryException: Exception) {
                     Log.e(TAG, "Failed to recreate model instance: ${retryException.message}", retryException)
@@ -699,13 +718,45 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             val instance = modelInstance ?: throw IllegalStateException("No model loaded")
             val session = instance.session
             
+            // Check if we're already generating and wait for completion
+            if (isGenerating) {
+                Log.w(TAG, "Generation already in progress for chat $chatId, waiting...")
+                var waitAttempts = 0
+                val maxWaitAttempts = 50 // 5 seconds total
+                while (isGenerating && waitAttempts < maxWaitAttempts) {
+                    delay(100)
+                    waitAttempts++
+                }
+                if (isGenerating) {
+                    Log.e(TAG, "Generation still in progress after waiting, forcing reset")
+                    resetChatSession(chatId)
+                    return@callbackFlow
+                }
+            }
+            
             // Check if previous generation is still processing and cancel it
             try {
                 session.cancelGenerateResponseAsync()
                 Log.d(TAG, "Cancelled any previous generation for chat $chatId")
-                delay(100) // Wait for cancellation to complete
+                delay(500) // Wait longer for cancellation to complete
             } catch (e: Exception) {
                 Log.d(TAG, "No previous generation to cancel: ${e.message}")
+                // If cancellation fails, the session might be in an invalid state
+                // Try to reset the session immediately
+                if (e.message?.contains("Previous invocation still processing") == true) {
+                    Log.w(TAG, "Session still processing, resetting immediately for chat $chatId")
+                    try {
+                        session.close()
+                        val newSession = createSession(instance.engine)
+                        instance.session = newSession
+                        estimatedSessionTokens = 0
+                        Log.d(TAG, "Created fresh session due to processing conflict")
+                        delay(200) // Brief delay after reset
+                    } catch (resetException: Exception) {
+                        Log.e(TAG, "Failed to reset session after processing conflict: ${resetException.message}")
+                        throw resetException
+                    }
+                }
             }
             
             // Check token count and reset session if approaching limit (Gallery approach)
@@ -723,8 +774,8 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             Log.d(TAG, "  - Prompt tokens: $promptTokens")
             Log.d(TAG, "  - Max tokens: $maxTokens")
             
-            // If adding the prompt would exceed ~80% of max tokens, reset the session
-            val tokenThreshold = maxTokens - outputReserve
+            // If adding the prompt would exceed ~90% of max tokens, reset the session
+            val tokenThreshold = (maxTokens * 0.9).toInt()
             if (currentTokens + promptTokens > tokenThreshold) {
                 Log.w(TAG, "Token count ($currentTokens + $promptTokens = ${currentTokens + promptTokens}) approaching limit ($maxTokens)")
                 Log.w(TAG, "Resetting session for chat $chatId to prevent OUT_OF_RANGE error")
@@ -770,6 +821,11 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 Log.d(TAG, "Adding default vision query for images in chat $chatId")
                 currentSession.addQueryChunk("What do you see in this image?")
                 estimatedSessionTokens += session.sizeInTokens("What do you see in this image?")
+            } else if (audioData != null && model.supportsAudio && enhancedPrompt.trim().isEmpty()) {
+                // If we have audio but no text, add a default query for audio models
+                Log.d(TAG, "Adding default audio query for audio-only prompt in chat $chatId")
+                currentSession.addQueryChunk("Transcribe the following speech segment and respond to it:")
+                estimatedSessionTokens += session.sizeInTokens("Transcribe the following speech segment and respond to it:")
             }
             
             // Add images AFTER text query (MediaPipe requirement for vision models)
@@ -813,13 +869,6 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                         // Add audio data to session (MediaPipe expects mono WAV format)
                         currentSession.addAudio(audioData)
                         Log.d(TAG, "Successfully added audio data to session")
-
-                        // One-time warm-up delay: give delegate a moment to finish compiling on first audio
-                        if (!audioWarmUpDone) {
-                            Log.d(TAG, "Applying warm-up delay after first audio chunk")
-                            delay(5000) // 0.4s like Google Gallery
-                            audioWarmUpDone = true
-                        }
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to add audio data to session: ${e.message}", e)
@@ -837,17 +886,31 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 Log.d(TAG, "No audio provided for audio-capable model ${model.name}")
             }
             
+            val responseBuilder = StringBuilder()
+            isGenerating = true
             currentSession.generateResponseAsync { partialResult, done ->
                 if (!isClosedForSend) {
                     trySend(partialResult)
+                    responseBuilder.append(partialResult)
                 }
                 if (done) {
                     isGenerationComplete = true
+                    isGenerating = false
+                    // Update token count with the full response tokens
+                    try {
+                        val fullResponse = responseBuilder.toString()
+                        val responseTokens = session.sizeInTokens(fullResponse)
+                        estimatedSessionTokens += responseTokens
+                        Log.d(TAG, "Updated session tokens: +$responseTokens = $estimatedSessionTokens")
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Failed to update token count: ${e.message}")
+                    }
                     close()
                 }
             }
             
         } catch (e: Exception) {
+            isGenerating = false
             Log.e(TAG, "Streaming inference failed for chat $chatId: ${e.message}", e)
             
             // Check if this is a MediaPipe session error and try to recover
@@ -962,6 +1025,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         }
 
         awaitClose {
+            isGenerating = false
             Log.d(TAG, "Generation complete for chat $chatId")
             // Don't close the session here - it's managed by the model instance
         }
@@ -1043,6 +1107,10 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
     override fun isAudioCurrentlyDisabled(): Boolean {
         return isAudioDisabled
     }
+    
+    override fun isGpuBackendEnabled(): Boolean {
+        return currentBackend == LlmInference.Backend.GPU
+    }
 
     /**
      * Force recreate the entire session when reset fails (last resort recovery)
@@ -1076,7 +1144,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 // Reload the model if we had one
                 if (currentModelBackup != null) {
                     try {
-                        loadModelFromPath(currentModelBackup)
+                        loadModelFromPath(currentModelBackup, currentBackend)
                         Log.d(TAG, "Successfully force recreated session")
                         return@withLock true
                     } catch (e: Exception) {
