@@ -399,6 +399,9 @@
     <string name="remove">Rimuovi</string>
     <string name="ready_to_use">Pronto all\'uso</string>
     <string name="unsupported_file_format">Formato file non supportato. Seleziona un file .task o .litertlm.</string>
+    <string name="download_models_from_litert_community">Puoi scaricare modelli compatibili da:</string>
+    <string name="litert_community_link">LiteRT Community su Hugging Face</string>
+    <string name="import_model_warning">⚠️ Importante: Per favore leggi il README del modello su Hugging Face prima di importare. Inserisci le capacità corrette (visione, audio, GPU) e la dimensione della finestra di contesto come specificato nella documentazione del modello. Impostazioni errate potrebbero far sì che il modello non funzioni correttamente.</string>
 </resources>
 
 
