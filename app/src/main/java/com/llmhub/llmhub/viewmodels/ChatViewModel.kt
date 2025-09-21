@@ -980,7 +980,11 @@ class ChatViewModel(
                                                         "what have i told you"
                                                     ).any { kw -> lastUserContent.lowercase().contains(kw) }
 
-                                                    // Use lexical overlap (Jaccard) rather than semantic similarity
+                                                    // Smart memory injection: use both semantic similarity AND lexical overlap
+                                                    // to avoid false positives while maintaining good recall
+                                                    val topSimilarity = relevantChunks.map { chunk -> chunk.similarity }.maxOrNull() ?: 0.0f
+                                                    
+                                                    // Calculate lexical overlap for additional validation
                                                     fun wordJaccardLocal(a: String, b: String): Double {
                                                         val wa = a.lowercase().split(Regex("\\W+")).filter { it.isNotBlank() }.toSet()
                                                         val wb = b.lowercase().split(Regex("\\W+")).filter { it.isNotBlank() }.toSet()
@@ -989,17 +993,22 @@ class ChatViewModel(
                                                         val union = wa.union(wb).size.toDouble()
                                                         return if (union == 0.0) 0.0 else inter / union
                                                     }
-
+                                                    
                                                     val topOverlap = relevantChunks.map { chunk -> wordJaccardLocal(lastUserContent, chunk.content) }.maxOrNull() ?: 0.0
-                                                    val overlapThreshold = 0.005 // user-requested tiny lexical overlap threshold
+                                                    
+                                                    // Smart decision: require either explicit query OR (high semantic similarity AND some lexical overlap)
+                                                    // Use lower lexical threshold for very high semantic similarity to avoid false negatives
+                                                    val shouldInject = explicitMemoryQuery || 
+                                                        (topSimilarity > 0.80f && topOverlap > 0.05) ||  // High semantic + some lexical overlap
+                                                        (topSimilarity > 0.95f && topOverlap > 0.005)  // Very high semantic + minimal lexical overlap
 
-                                                    if (memoryEnabled && (explicitMemoryQuery || topOverlap > overlapThreshold)) {
-                                                        Log.d("ChatViewModel", "✅ Found ${relevantChunks.size} relevant document chunks for query (topOverlap=${"%.3f".format(topOverlap)}) - injecting into prompt")
+                                                    if (memoryEnabled && shouldInject) {
+                                                        Log.d("ChatViewModel", "✅ Found ${relevantChunks.size} relevant document chunks for query (similarity=${"%.3f".format(topSimilarity)}, overlap=${"%.3f".format(topOverlap)}) - injecting into prompt")
                                                         contextParts.addAll(relevantChunks.map { chunk ->
                                                             "📄 **${chunk.fileName}** (similarity: ${String.format("%.2f", chunk.similarity)}):\\n${chunk.content}"
                                                         })
                                                     } else {
-                                                        Log.d("ChatViewModel", "ℹ️ Skipping memory injection: memoryEnabled=$memoryEnabled, explicitQuery=$explicitMemoryQuery, topOverlap=${"%.3f".format(topOverlap)} (threshold=${"%.3f".format(overlapThreshold)})")
+                                                        Log.d("ChatViewModel", "ℹ️ Skipping memory injection: memoryEnabled=$memoryEnabled, explicitQuery=$explicitMemoryQuery, similarity=${"%.3f".format(topSimilarity)}, overlap=${"%.3f".format(topOverlap)}")
                                                     }
                                                 }
                                             } else {
