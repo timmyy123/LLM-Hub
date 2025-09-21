@@ -217,7 +217,7 @@ class ChatViewModel(
         }
     }
 
-    private fun syncCurrentlyLoadedModel() {
+    fun syncCurrentlyLoadedModel() {
         viewModelScope.launch {
             try {
                 val loadedModel = inferenceService.getCurrentlyLoadedModel()
@@ -287,10 +287,15 @@ class ChatViewModel(
                 currentChatId = newChatId
                 _currentChat.value = repository.getChatById(newChatId)
                 
-                // Ensure a fresh inference session for the brand new chat to avoid stale context
+                // Only reset session if there's an existing session that might have stale context
                 try {
-                    inferenceService.resetChatSession(newChatId)
-                    Log.d("ChatViewModel", "Proactively reset session for new chat $newChatId")
+                    val currentModel = inferenceService.getCurrentlyLoadedModel()
+                    if (currentModel != null) {
+                        inferenceService.resetChatSession(newChatId)
+                        Log.d("ChatViewModel", "Proactively reset session for new chat $newChatId")
+                    } else {
+                        Log.d("ChatViewModel", "Skipping session reset for new chat - no model loaded yet")
+                    }
                 } catch (e: Exception) {
                     Log.w("ChatViewModel", "Unable to reset session for new chat: ${e.message}")
                 }
@@ -727,18 +732,33 @@ class ChatViewModel(
                         _documentCount.value = count
                         _ragStatus.value = context.getString(R.string.documents_available_format, count)
                         Log.d("ChatViewModel", "✅ Added document '$fileName' to RAG system for chat $chatId")
+                        
+                        // For chat-specific documents, always use semantic search to find relevant content
+                        // Don't inject the entire document - let RAG find the relevant parts
+                        modelPromptContent = messageText
                     } else {
                         Log.w("ChatViewModel", "❌ Failed to add document '$fileName' to RAG system (embeddings disabled or service unavailable)")
                         // Show localized failure
                         _ragStatus.value = context.getString(R.string.memory_upload_failed)
+                        
+                        // When RAG is disabled, inject the full document content directly
+                        Log.d("ChatViewModel", "📄 RAG disabled - injecting full document content directly")
+                        modelPromptContent = if (messageText.isNotEmpty()) {
+                            "$messageText\n\n---\n\n$fileTextContent"
+                        } else {
+                            fileTextContent
+                        }
                     }
                 } catch (e: Exception) {
                     Log.w("ChatViewModel", "Failed to add document to RAG: ${e.message}")
+                    // When RAG fails, inject the full document content directly
+                    Log.d("ChatViewModel", "📄 RAG failed - injecting full document content directly")
+                    modelPromptContent = if (messageText.isNotEmpty()) {
+                        "$messageText\n\n---\n\n$fileTextContent"
+                    } else {
+                        fileTextContent
+                    }
                 }
-                
-                // For chat-specific documents, always use semantic search to find relevant content
-                // Don't inject the entire document - let RAG find the relevant parts
-                modelPromptContent = messageText
                 
                 // Keep user message clean - just show that a file was attached
                 if (messageText.isEmpty()) {
@@ -1586,25 +1606,30 @@ class ChatViewModel(
                     Log.d("ChatViewModel", "Cleared first generation guard for model: ${newModel.name}")
                 }
                 
-                // Reset the current chat session to ensure it works with the new model
+                // Only reset session if we're switching to a different model
                 currentChatId?.let { chatId ->
-                    try {
-                        delay(500) // Give more time for model loading to complete
-                        inferenceService.resetChatSession(chatId)
-                        delay(200) // Additional time for session to stabilize
-                        Log.d("ChatViewModel", "Reset chat session $chatId after model switch")
-                    } catch (e: Exception) {
-                        Log.w("ChatViewModel", "Failed to reset chat session after model switch: ${e.message}")
-                        // If reset fails, try to clear and recreate the entire session
+                    val currentModel = inferenceService.getCurrentlyLoadedModel()
+                    if (currentModel?.name != newModel.name) {
                         try {
-                            delay(300)
-                            inferenceService.onCleared()
-                            delay(300)
-                            inferenceService.loadModel(newModel)
-                            Log.d("ChatViewModel", "Force recreated session after reset failure")
-                        } catch (recreateException: Exception) {
-                            Log.w("ChatViewModel", "Force recreation also failed: ${recreateException.message}")
+                            delay(500) // Give more time for model loading to complete
+                            inferenceService.resetChatSession(chatId)
+                            delay(200) // Additional time for session to stabilize
+                            Log.d("ChatViewModel", "Reset chat session $chatId after model switch")
+                        } catch (e: Exception) {
+                            Log.w("ChatViewModel", "Failed to reset chat session after model switch: ${e.message}")
+                            // If reset fails, try to clear and recreate the entire session
+                            try {
+                                delay(300)
+                                inferenceService.onCleared()
+                                delay(300)
+                                inferenceService.loadModel(newModel)
+                                Log.d("ChatViewModel", "Force recreated session after reset failure")
+                            } catch (recreateException: Exception) {
+                                Log.w("ChatViewModel", "Force recreation also failed: ${recreateException.message}")
+                            }
                         }
+                    } else {
+                        Log.d("ChatViewModel", "Skipping session reset - same model already loaded")
                     }
                 }
                 
@@ -1677,25 +1702,30 @@ class ChatViewModel(
                     Log.d("ChatViewModel", "Cleared first generation guard for model: ${newModel.name}")
                 }
                 
-                // Reset the current chat session to ensure it works with the new model
+                // Only reset session if we're switching to a different model
                 currentChatId?.let { chatId ->
-                    try {
-                        delay(500) // Give more time for model loading to complete
-                        inferenceService.resetChatSession(chatId)
-                        delay(200) // Additional time for session to stabilize
-                        Log.d("ChatViewModel", "Reset chat session $chatId after model switch")
-                    } catch (e: Exception) {
-                        Log.w("ChatViewModel", "Failed to reset chat session after model switch: ${e.message}")
-                        // If reset fails, try to clear and recreate the entire session
+                    val currentModel = inferenceService.getCurrentlyLoadedModel()
+                    if (currentModel?.name != newModel.name) {
                         try {
-                            delay(300)
-                            inferenceService.onCleared()
-                            delay(300)
-                            inferenceService.loadModel(newModel, backend)
-                            Log.d("ChatViewModel", "Force recreated session after reset failure")
-                        } catch (recreateException: Exception) {
-                            Log.w("ChatViewModel", "Force recreation also failed: ${recreateException.message}")
+                            delay(500) // Give more time for model loading to complete
+                            inferenceService.resetChatSession(chatId)
+                            delay(200) // Additional time for session to stabilize
+                            Log.d("ChatViewModel", "Reset chat session $chatId after model switch")
+                        } catch (e: Exception) {
+                            Log.w("ChatViewModel", "Failed to reset chat session after model switch: ${e.message}")
+                            // If reset fails, try to clear and recreate the entire session
+                            try {
+                                delay(300)
+                                inferenceService.onCleared()
+                                delay(300)
+                                inferenceService.loadModel(newModel, backend)
+                                Log.d("ChatViewModel", "Force recreated session after reset failure")
+                            } catch (recreateException: Exception) {
+                                Log.w("ChatViewModel", "Force recreation also failed: ${recreateException.message}")
+                            }
                         }
+                    } else {
+                        Log.d("ChatViewModel", "Skipping session reset - same model already loaded")
                     }
                 }
                 
@@ -1774,25 +1804,30 @@ class ChatViewModel(
                     Log.d("ChatViewModel", "Cleared first generation guard for model: ${newModel.name}")
                 }
                 
-                // Reset the current chat session to ensure it works with the new model
+                // Only reset session if we're switching to a different model
                 currentChatId?.let { chatId ->
-                    try {
-                        delay(500) // Give more time for model loading to complete
-                        inferenceService.resetChatSession(chatId)
-                        delay(200) // Additional time for session to stabilize
-                        Log.d("ChatViewModel", "Reset chat session $chatId after model switch")
-                    } catch (e: Exception) {
-                        Log.w("ChatViewModel", "Failed to reset chat session after model switch: ${e.message}")
-                        // If reset fails, try to clear and recreate the entire session
+                    val currentModel = inferenceService.getCurrentlyLoadedModel()
+                    if (currentModel?.name != newModel.name) {
                         try {
-                            delay(300)
-                            inferenceService.onCleared()
-                            delay(300)
-                            inferenceService.loadModel(newModel, backend, disableVision)
-                            Log.d("ChatViewModel", "Force recreated session after reset failure")
-                        } catch (recreateException: Exception) {
-                            Log.w("ChatViewModel", "Force recreation also failed: ${recreateException.message}")
+                            delay(500) // Give more time for model loading to complete
+                            inferenceService.resetChatSession(chatId)
+                            delay(200) // Additional time for session to stabilize
+                            Log.d("ChatViewModel", "Reset chat session $chatId after model switch")
+                        } catch (e: Exception) {
+                            Log.w("ChatViewModel", "Failed to reset chat session after model switch: ${e.message}")
+                            // If reset fails, try to clear and recreate the entire session
+                            try {
+                                delay(300)
+                                inferenceService.onCleared()
+                                delay(300)
+                                inferenceService.loadModel(newModel, backend, disableVision)
+                                Log.d("ChatViewModel", "Force recreated session after reset failure")
+                            } catch (recreateException: Exception) {
+                                Log.w("ChatViewModel", "Force recreation also failed: ${recreateException.message}")
+                            }
                         }
+                    } else {
+                        Log.d("ChatViewModel", "Skipping session reset - same model already loaded")
                     }
                 }
                 
@@ -1892,6 +1927,18 @@ class ChatViewModel(
     fun currentModelSupportsAudio(): Boolean {
         val currentModel = inferenceService.getCurrentlyLoadedModel()
         return currentModel?.supportsAudio == true && !isAudioDisabled
+    }
+    
+    fun isGpuBackendEnabled(): Boolean {
+        return inferenceService.isGpuBackendEnabled()
+    }
+    
+    fun isVisionCurrentlyDisabled(): Boolean {
+        return isVisionDisabled
+    }
+    
+    fun isAudioCurrentlyDisabled(): Boolean {
+        return isAudioDisabled
     }
 
     fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?) {
