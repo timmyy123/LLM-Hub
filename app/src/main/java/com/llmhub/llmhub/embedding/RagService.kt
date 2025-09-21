@@ -39,15 +39,6 @@ data class ContextChunk(
  * - Context ranking and filtering
  */
 class InMemoryRagService(private val embeddingService: EmbeddingService) : RagService {
-    private companion object {
-        // Cache perturbed retry embeddings across searches to avoid re-embedding
-        // the same perturbed query multiple times. Bounded to avoid unbounded growth.
-        private val retryEmbGlobalCache = object : java.util.LinkedHashMap<String, FloatArray>(64, 0.75f, true) {
-            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, FloatArray>?): Boolean {
-                return this.size > 128
-            }
-        }
-    }
     
     private val documents = mutableMapOf<String, MutableList<DocumentChunk>>()
     private val mutex = Mutex()
@@ -153,15 +144,9 @@ class InMemoryRagService(private val embeddingService: EmbeddingService) : RagSe
             }
 
             val similarities = mutableListOf<ContextChunk>()
-            // Keep a map from (fileName, chunkIndex) -> embedding so we can log diagnostics
-            val embeddingMap = mutableMapOf<Pair<String, Int>, FloatArray>()
-            // Cache for a single perturbed retry embedding per search to avoid
-            // re-embedding the same perturbed query repeatedly across candidates.
-            var retryEmbCache: FloatArray? = null
 
             for (doc in chatDocuments) {
                 if (doc.embedding != null) {
-                    // Use the defensive copy for comparisons
                     val similarity = cosineSimilarity(queryEmbCopy, doc.embedding)
                     similarities.add(
                         ContextChunk(
@@ -172,257 +157,15 @@ class InMemoryRagService(private val embeddingService: EmbeddingService) : RagSe
                             chunkIndex = doc.chunkIndex
                         )
                     )
-                    // Store a copy in the diagnostic map as well
-                    embeddingMap[Pair(doc.fileName, doc.chunkIndex)] = doc.embedding.copyOf()
                 } else {
                     Log.d(TAG, "Skipping doc chunk ${doc.chunkIndex} of '${doc.fileName}' due to missing embedding")
                 }
             }
 
-            // Return top similar chunks with more nuanced filtering to avoid false positives
-            val primarySimilarityThreshold = 0.60f // high-confidence semantic match
-            val fallbackSimilarityThreshold = 0.35f // moderate semantic match
-            // When caller requests a relaxed lexical fallback (explicit memory queries),
-            // be more permissive when falling back due to embedder unreliability
-            // and consider a larger candidate pool so short/pasted memories aren't
-            // lost behind large documents like resumes.
-            val lexicalFallbackMinOverlap = if (relaxedLexicalFallback) 0.05 else 0.15
-            val shortMemoryOverlapReq = if (relaxedLexicalFallback) 0.10 else 0.25
-            val candidateMultiplier = if (relaxedLexicalFallback) 10 else 3
-
-            // Helper: compute simple Jaccard word overlap between query and chunk content
-            fun wordJaccard(a: String, b: String): Double {
-                val wa = a.lowercase().split(Regex("\\W+")).filter { it.isNotBlank() }.toSet()
-                val wb = b.lowercase().split(Regex("\\W+")).filter { it.isNotBlank() }.toSet()
-                if (wa.isEmpty() || wb.isEmpty()) return 0.0
-                val inter = wa.intersect(wb).size.toDouble()
-                val union = wa.union(wb).size.toDouble()
-                return if (union == 0.0) 0.0 else inter / union
-            }
-
-            // Evaluate candidates: require either a high similarity OR a moderate similarity paired
-            // with non-trivial word overlap to avoid returning very short memories for unrelated queries.
-            // Expand candidate set for relaxed lexical fallback to ensure short
-            // explicit memories (e.g., pasted "your name is David") are considered.
-            val candidates = similarities.sortedByDescending { it.similarity }.take(maxResults * candidateMultiplier)
-
-            // Small diagnostic preview for debugging: list filenames and short previews
-            try {
-                // Filter out replicated global chunks from preview logging to avoid
-                // exposing global memory filenames in logs when they were replicated
-                // into a chat for local searches.
-                val preview = candidates
-                    .filter { !it.metadata.startsWith("replicated_global:") }
-                    .map { c -> "${c.fileName}:${c.content.trim().take(80).replace("\n"," ")}" }
-                if (preview.isNotEmpty()) {
-                    Log.d(TAG, "RAG diag: candidate previews=${preview}")
-                } else {
-                    Log.d(TAG, "RAG diag: candidate previews omitted (only replicated global chunks present)")
-                }
-            } catch (_: Exception) {
-                // ignore preview failures
-            }
-            val filtered = mutableListOf<ContextChunk>()
-            var suspiciousExactEqualCount = 0
-            for (candidate in candidates) {
-                val sim = candidate.similarity
-                val overlap = wordJaccard(query, candidate.content)
-
-                // Heuristic: avoid injecting very short memories (e.g., "I am David.") for
-                // unrelated queries. For short chunks, require a higher lexical overlap OR
-                // an extremely high semantic similarity to accept them.
-                val isShortMemory = candidate.content.trim().length < 40
-                val accept = if (isShortMemory) {
-                    // For short memories require either decent overlap or near-exact semantic match
-                    (overlap >= 0.25) || (sim >= 0.95f)
-                } else {
-                    when {
-                        sim >= primarySimilarityThreshold -> true
-                        sim >= fallbackSimilarityThreshold && overlap >= 0.15 -> true
-                        else -> false
-                    }
-                }
-
-                val displayFile = if (candidate.metadata.startsWith("replicated_global:")) "(global memory)" else candidate.fileName
-                Log.d(TAG, "RAG candidate filter: sim=${"%.3f".format(sim)}, overlap=${"%.3f".format(overlap)}, short=$isShortMemory, accept=$accept, file=$displayFile")
-
-                // If we've already accepted this candidate based on heuristics,
-                // use it immediately and skip the expensive diagnostic re-embed.
-                if (accept) {
-                    filtered.add(candidate)
-                    if (filtered.size >= maxResults) break
-                    continue
-                }
-
-                // Diagnostics: if similarity is very high, log candidate preview and embedding comparisons
-                val DIAG_SIM_THRESHOLD = 0.95f
-                // Track whether the query embedding equals the document embedding exactly.
-                // Declared here so it can be referenced later for fallback logic.
-                var exactEqual = false
-                if (sim >= DIAG_SIM_THRESHOLD) {
-                        try {
-                        val key = Pair(candidate.fileName, candidate.chunkIndex)
-                        val docEmb = embeddingMap[key]
-                        Log.d(TAG, "RAG diag: high-sim candidate preview='${candidate.content.take(120).replace("\n", " ")}' file=$displayFile chunkIndex=${candidate.chunkIndex}")
-                            if (docEmb != null) {
-                            // Print first few components of each vector for quick eyeballing
-                            val previewN = min(6, min(queryEmbCopy.size, docEmb.size))
-                            val qPreview = (0 until previewN).joinToString(",") { i -> "${"%.6f".format(queryEmbCopy[i])}" }
-                            val dPreview = (0 until previewN).joinToString(",") { i -> "${"%.6f".format(docEmb[i])}" }
-                            // Compute L2 distance
-                            var sumSq = 0.0f
-                            val minLen = min(queryEmbCopy.size, docEmb.size)
-                            for (i in 0 until minLen) {
-                                val diff = queryEmbCopy[i] - docEmb[i]
-                                sumSq += diff * diff
-                            }
-                            val l2 = sqrt(sumSq.toDouble())
-                            exactEqual = if (queryEmbCopy.size == docEmb.size) queryEmbCopy.contentEquals(docEmb) else false
-                            if (exactEqual && candidate.content.trim() != query.trim()) {
-                                Log.w(TAG, "RAG diag: exact-equal embeddings for different texts - possible embedder buffer reuse; attempting re-embed for query and falling back to lexical overlap if necessary. file=${candidate.fileName} idx=${candidate.chunkIndex}")
-
-                                // Try re-embedding the query with a tiny perturbation to avoid
-                                // embedder buffer-reuse / caching issues. If re-embed yields a
-                                // different vector, use that to recompute similarity.
-                                try {
-                                    val perturbedKey = query // use raw query as cache key (perturbed is deterministic)
-                                    val perturbed = query + "\u200B" // zero-width space
-                                    if (retryEmbCache == null) {
-                                        synchronized(retryEmbGlobalCache) {
-                                            retryEmbCache = retryEmbGlobalCache[perturbedKey]
-                                        }
-                                        if (retryEmbCache == null) {
-                                            val retryEmb = embeddingService.generateEmbedding(perturbed)
-                                            if (retryEmb != null) {
-                                                retryEmbCache = retryEmb.copyOf()
-                                                synchronized(retryEmbGlobalCache) {
-                                                    retryEmbGlobalCache[perturbedKey] = retryEmbCache!!
-                                                }
-                                            }
-                                        }
-                                    }
-                                    val retryEmbCopy = retryEmbCache
-                                    if (retryEmbCopy != null) {
-                                        val minLen2 = min(retryEmbCopy.size, docEmb.size)
-                                        var sumSq2 = 0.0f
-                                        var dot2 = 0f
-                                        var normA2 = 0f
-                                        var normB2 = 0f
-                                        for (i in 0 until minLen2) {
-                                            dot2 += retryEmbCopy[i] * docEmb[i]
-                                            normA2 += retryEmbCopy[i] * retryEmbCopy[i]
-                                            normB2 += docEmb[i] * docEmb[i]
-                                        }
-                                        val denom2 = sqrt(normA2) * sqrt(normB2)
-                                        val newSim = if (denom2 == 0f) 0f else dot2 / denom2
-                                        Log.d(TAG, "RAG diag: re-embed similarity for perturbed query vs doc=${"%.6f".format(newSim)}")
-
-                                        // If the re-embed produced a different vector (not exact equal),
-                                        // use that similarity for the acceptance heuristics below.
-                                        val newExact = if (retryEmbCopy.size == docEmb.size) retryEmbCopy.contentEquals(docEmb) else false
-                                        if (!newExact) {
-                                            // Replace queryEmbCopy for subsequent diagnostics/formatting
-                                            // Note: don't mutate original queryEmbedding variable
-                                            Log.d(TAG, "RAG diag: re-embed produced different vector; using new similarity")
-                                            // recompute qPreview for logging
-                                            val previewN2 = min(6, min(retryEmbCopy.size, docEmb.size))
-                                            val qPreview2 = (0 until previewN2).joinToString(",") { i -> "${"%.6f".format(retryEmbCopy[i])}" }
-                                            Log.d(TAG, "RAG diag: qPreview=[$qPreview2] dPreview=[$dPreview] l2=${"%.6f".format(sqrt(sumSq2.toDouble()))} exactEqual=$newExact")
-                                            val overlapNew = wordJaccard(query, candidate.content)
-                                            val isShortMemoryNew = candidate.content.trim().length < 40
-                                            val acceptNew = if (isShortMemoryNew) {
-                                                (overlapNew >= shortMemoryOverlapReq) || (newSim >= 0.95f)
-                                            } else {
-                                                when {
-                                                    newSim >= primarySimilarityThreshold -> true
-                                                    newSim >= fallbackSimilarityThreshold && overlapNew >= lexicalFallbackMinOverlap -> true
-                                                    else -> false
-                                                }
-                                            }
-                                            if (acceptNew) {
-                                                filtered.add(candidate)
-                                            }
-                                            if (filtered.size >= maxResults) break
-                                            // We've handled this candidate via re-embed path; continue outer loop
-                                            continue
-                                        }
-                                    }
-                                } catch (e: Exception) {
-                                    Log.w(TAG, "RAG diag: re-embed attempt failed: ${e.message}")
-                                }
-
-                                // If we reach here the re-embed either failed or produced no change.
-                                // Fall back to a lexical-only decision to avoid silently dropping
-                                // potentially relevant memories when the embedder is unreliable.
-                                val fallbackAccept = if (isShortMemory) {
-                                    // If the embedding similarity is still high enough (>= primarySimilarityThreshold),
-                                    // trust the semantic signal even when lexical overlap is very low.
-                                    overlap >= shortMemoryOverlapReq || sim >= primarySimilarityThreshold
-                                } else {
-                                    val isMediumMemory = candidate.content.length < 150 // allow short personal facts
-                                    overlap >= lexicalFallbackMinOverlap || (sim >= primarySimilarityThreshold && isMediumMemory)
-                                    }
-                                Log.w(TAG, "RAG diag: embedder unreliable; falling back to lexical overlap (overlap=${"%.3f".format(overlap)}) -> accept=$fallbackAccept relaxed=$relaxedLexicalFallback")
-                                if (fallbackAccept) filtered.add(candidate)
-                                if (filtered.size >= maxResults) break
-                                // continue to next candidate
-                                continue
-                            }
-                            Log.d(TAG, "RAG diag: qPreview=[$qPreview] dPreview=[$dPreview] l2=${"%.6f".format(l2)} exactEqual=$exactEqual")
-                            } else {
-                            Log.d(TAG, "RAG diag: no embedding available for candidate (file=$displayFile idx=${candidate.chunkIndex})")
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "RAG diag: failed to log diagnostics for candidate", e)
-                    }
-                }
-                if (accept) filtered.add(candidate)
-                else if (exactEqual && candidate.content.trim() != query.trim()) {
-                    // Track suspicious exact-equal cases for potential lexical fallback
-                    suspiciousExactEqualCount++
-                }
-                if (filtered.size >= maxResults) break
-            }
-
-            // If we skipped many exact-equal candidates (embedder likely unreliable) and
-            // ended up with no results, perform a lexical-only fallback based on word overlap
-            // to avoid silently dropping short but relevant memories.
-            var results = filtered.distinctBy { it.content.take(100) }.take(maxResults)
-            if (results.isEmpty() && suspiciousExactEqualCount > 0 && candidates.isNotEmpty()) {
-                Log.w(TAG, "RAG diag: embedder unreliable detected (suspiciousExactEqualCount=$suspiciousExactEqualCount). Falling back to lexical selection.")
-                val minimalOverlap = if (relaxedLexicalFallback) 0.0 else 0.10
-                // Compute lexical candidates (use >= so equal scores at threshold are considered)
-                val lexicalCandidates = candidates.map { cand ->
-                    val overlapScore = wordJaccard(query, cand.content)
-                    Pair(cand, overlapScore)
-                }.filter { it.second >= minimalOverlap }
-                    .sortedByDescending { it.second }
-
-                // When relaxed fallback is requested, be permissive: if no candidates pass the
-                // minimal overlap filter, fall back to selecting the top candidates by overlap
-                // regardless of whether they meet the minimal threshold. This ensures explicit
-                // user queries ("what's in my resume") still return candidate memories.
-                // If no lexical candidates pass the minimal overlap threshold, be more
-                // permissive when either the caller requested a relaxed fallback or when
-                // the embedder appears unreliable (suspiciousExactEqualCount>0). In those
-                // cases select the top candidates by overlap regardless of the minimal
-                // threshold so explicit user queries still get context.
-                val finalLexical = if (lexicalCandidates.isEmpty()) {
-                    if (relaxedLexicalFallback || suspiciousExactEqualCount > 0) {
-                        Log.w(TAG, "RAG diag: selecting top candidates by overlap due to relaxed fallback=${relaxedLexicalFallback} or embedder-unreliable (suspiciousExactEqualCount=$suspiciousExactEqualCount)")
-                        candidates.map { cand -> Pair(cand, wordJaccard(query, cand.content)) }
-                            .sortedByDescending { it.second }
-                    } else {
-                        lexicalCandidates
-                    }
-                } else lexicalCandidates
-
-                results = finalLexical.map { it.first }.distinctBy { it.content.take(100) }.take(maxResults)
-                Log.d(TAG, "RAG diag: lexical fallback selected ${results.size} candidates -> overlaps=${finalLexical.take(maxResults).map { "${"%.3f".format(it.second)}" }}")
-            }
+            // Simplified similarity filtering with clear thresholds
+            val results = filterSimilarityCandidates(similarities, query, maxResults, relaxedLexicalFallback)
 
             Log.d(TAG, "Similarity candidates count=${similarities.size}; returning ${results.size} results -> scores=${results.map { "%.3f".format(it.similarity) }}")
-
             return results
                 
         } catch (e: Exception) {
@@ -445,6 +188,78 @@ class InMemoryRagService(private val embeddingService: EmbeddingService) : RagSe
             documents.remove(chatId)
             Log.d(TAG, "Cleared $count document chunks for chat $chatId")
         }
+    }
+    
+    /**
+     * Simplified similarity filtering with clear, maintainable logic
+     */
+    private fun filterSimilarityCandidates(
+        similarities: List<ContextChunk>,
+        query: String,
+        maxResults: Int,
+        relaxedLexicalFallback: Boolean
+    ): List<ContextChunk> {
+        // Clear thresholds
+        val primaryThreshold = 0.60f      // High confidence semantic match
+        val fallbackThreshold = 0.35f     // Moderate semantic match
+        val lexicalThreshold = 0.15       // Minimum word overlap for fallback
+        
+        // Helper: compute Jaccard word overlap
+        fun wordJaccard(a: String, b: String): Double {
+            val wordsA = a.lowercase().split(Regex("\\W+")).filter { it.isNotBlank() }.toSet()
+            val wordsB = b.lowercase().split(Regex("\\W+")).filter { it.isNotBlank() }.toSet()
+            if (wordsA.isEmpty() || wordsB.isEmpty()) return 0.0
+            val intersection = wordsA.intersect(wordsB).size.toDouble()
+            val union = wordsA.union(wordsB).size.toDouble()
+            return if (union == 0.0) 0.0 else intersection / union
+        }
+        
+        // Simple acceptance logic
+        fun shouldAccept(similarity: Float, overlap: Double, isShortMemory: Boolean): Boolean {
+            return when {
+                // High semantic similarity - always accept
+                similarity >= primaryThreshold -> true
+                
+                // Moderate semantic similarity with lexical overlap
+                similarity >= fallbackThreshold && overlap >= lexicalThreshold -> true
+                
+                // Short memories need higher standards to avoid noise
+                isShortMemory -> (overlap >= 0.25) || (similarity >= 0.95f)
+                
+                else -> false
+            }
+        }
+        
+        // Get candidates sorted by similarity
+        val candidates = similarities.sortedByDescending { it.similarity }
+        
+        // Filter candidates
+        val filtered = mutableListOf<ContextChunk>()
+        for (candidate in candidates) {
+            if (filtered.size >= maxResults) break
+            
+            val similarity = candidate.similarity
+            val overlap = wordJaccard(query, candidate.content)
+            val isShortMemory = candidate.content.trim().length < 40
+            
+            if (shouldAccept(similarity, overlap, isShortMemory)) {
+                filtered.add(candidate)
+            }
+        }
+        
+        // If no semantic matches and relaxed fallback is enabled, try lexical-only
+        if (filtered.isEmpty() && relaxedLexicalFallback) {
+            val lexicalCandidates = candidates.map { candidate ->
+                val overlap = wordJaccard(query, candidate.content)
+                Pair(candidate, overlap)
+            }.filter { it.second > 0.05 } // Very low threshold for relaxed mode
+              .sortedByDescending { it.second }
+              .take(maxResults)
+            
+            return lexicalCandidates.map { it.first }
+        }
+        
+        return filtered.distinctBy { it.content.take(100) }
     }
     
     /**
