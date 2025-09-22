@@ -2881,4 +2881,125 @@ class ChatViewModel(
             }
         }
     }
+
+    /**
+     * Edit the last user message content and resend from that point, replacing subsequent messages.
+     */
+    fun editLastUserMessageAndResend(context: Context, newUserText: String) {
+        val chatId = currentChatId ?: return
+        val trimmed = newUserText.trim()
+        if (trimmed.isEmpty()) return
+
+        viewModelScope.launch {
+            val currentMessages = _messages.value
+            val lastUser = currentMessages.lastOrNull { it.isFromUser } ?: return@launch
+
+            // Prevent while loading/switching
+            if (_isLoadingModel.value || firstGenerationSinceLoad) {
+                repository.addMessage(chatId, "Please wait for the model to finish loading before editing.", isFromUser = false)
+                return@launch
+            }
+
+            // Update message content in DB
+            repository.updateMessageContent(lastUser.id, trimmed)
+
+            // Delete all messages after the edited user message
+            repository.deleteMessagesAfter(chatId, lastUser.timestamp)
+
+            // Update local state to reflect truncation
+            val kept = currentMessages.takeWhile { it.id != lastUser.id } + lastUser.copy(content = trimmed)
+            _messages.value = kept
+
+            // Ensure model is ready
+            try {
+                inferenceService.loadModel(currentModel!!)
+                syncCurrentlyLoadedModel()
+            } catch (e: Exception) {
+                Log.w("ChatViewModel", "Failed to ensure model is loaded for edit+resend: ${e.message}")
+                repository.addMessage(chatId, "Failed to load model. Please try again.", isFromUser = false)
+                return@launch
+            }
+
+            // Reset session for clean context
+            try {
+                delay(300)
+                inferenceService.resetChatSession(chatId)
+                delay(200)
+            } catch (e: Exception) {
+                Log.w("ChatViewModel", "Error resetting session for edit+resend: ${e.message}")
+                try {
+                    delay(200)
+                    inferenceService.onCleared()
+                    delay(500)
+                    inferenceService.loadModel(currentModel!!)
+                    delay(200)
+                } catch (re: Exception) {
+                    repository.addMessage(chatId, "Failed to prepare session. Try switching models.", isFromUser = false)
+                    return@launch
+                }
+            }
+
+            _isLoading.value = true
+            isGenerating = true
+
+            // Build history up to but excluding the edited user message
+            val historyMessages = kept.filter { it.id != lastUser.id }
+            val history = buildContextAwareHistory(historyMessages)
+
+            // Create a new response placeholder
+            val placeholderId = repository.addMessage(chatId, "…", isFromUser = false)
+            _streamingContents.value = mapOf(placeholderId to "")
+
+            // Start generation with edited prompt
+            generationJob = launch {
+                val generationStartTime = System.currentTimeMillis()
+                var totalContent = ""
+                try {
+                    val fullHistory = if (history.isNotEmpty()) {
+                        "$history\n\nuser: ${trimmed}\nassistant:"
+                    } else {
+                        "user: ${trimmed}\nassistant:"
+                    }
+
+                    _isLoadingModel.value = true
+                    inferenceService.loadModel(currentModel!!)
+                    _isLoadingModel.value = false
+
+                    val webSearchEnabled = runBlocking { themePreferences.webSearchEnabled.first() }
+
+                    // For now, do not include images/audio during edit-resend; extend if needed
+                    val images: List<android.graphics.Bitmap> = emptyList()
+                    val responseStream = inferenceService.generateResponseStreamWithSession(
+                        fullHistory,
+                        currentModel!!,
+                        chatId,
+                        images,
+                        null,
+                        webSearchEnabled
+                    )
+
+                    responseStream.collect { chunk ->
+                        totalContent += chunk
+                        _streamingContents.value = _streamingContents.value + (placeholderId to totalContent)
+                    }
+
+                    // Finalize message
+                    repository.updateMessageContent(placeholderId, totalContent)
+                    _streamingContents.value = emptyMap()
+
+                    // Stats
+                    val durationMs = System.currentTimeMillis() - generationStartTime
+                    finalizeMessage(placeholderId, totalContent, durationMs)
+                } catch (e: CancellationException) {
+                    Log.i("ChatViewModel", "Generation cancelled: ${e.message}")
+                } catch (e: Exception) {
+                    Log.e("ChatViewModel", "Error during generation (edit+resend): ${e.message}", e)
+                    repository.updateMessageContent(placeholderId, "Generation failed: ${e.message ?: "Unknown error"}")
+                } finally {
+                    _isLoading.value = false
+                    isGenerating = false
+                }
+            }
+        }
+    }
 }
