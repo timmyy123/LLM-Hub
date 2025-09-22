@@ -182,6 +182,8 @@ class ChatViewModel(
 
     // Avoid aggressive continuation for the very first generation after model load
     private var firstGenerationSinceLoad: Boolean = false
+    // Guard to avoid infinite retry loops when a response comes back empty
+    private val oneShotRetriedMessageIds = mutableSetOf<String>()
 
     fun hasDownloadedModels(): Boolean {
         return _availableModels.value.isNotEmpty()
@@ -1069,7 +1071,24 @@ class ChatViewModel(
                                                     lastUserContent
                                                 }
                                             } else {
-                                                "user: ${lastUserContent}${ragContext}\nassistant:"
+                                                // Minimal path after reset: keep a small sanitized tail of history (last 2 pairs)
+                                                val tail = _messages.value.takeLast(4)
+                                                    .map { it.copy(content = sanitizeForPrompt(it.content)) }
+                                                    .filter { it.content.isNotBlank() && it.content.length >= 20 && it.content != "…" }
+                                                val tailHistory = if (tail.isNotEmpty()) {
+                                                    tail.joinToString("\n\n") { msg ->
+                                                        if (msg.isFromUser) "user: ${msg.content}" else "assistant: ${msg.content}"
+                                                    }
+                                                } else ""
+                                                var basePrompt = if (tailHistory.isNotEmpty()) {
+                                                    "$tailHistory\n\nuser: ${sanitizeForPrompt(lastUserContent)}\nassistant:"
+                                                } else {
+                                                    "user: ${sanitizeForPrompt(lastUserContent)}\nassistant:"
+                                                }
+                                                if (ragContext.isNotEmpty()) {
+                                                    basePrompt = basePrompt.replace("\nassistant:", "${ragContext}\nassistant:")
+                                                }
+                                                basePrompt
                                             }
                                         } else {
                                             if (audioData != null) {
@@ -1285,7 +1304,41 @@ class ChatViewModel(
                                 Log.d("ChatViewModel", "Generation completed successfully with ${continuationCount} continuations")
                                 Log.d("ChatViewModel", "Final content length: ${finalContent.length}")
                                 val safeFinal = if (finalContent.isBlank()) {
-                                    "No response produced. (Possible: safety refusal or token limit reached and session reset). Try a shorter or different prompt."
+                                    // Try a one-shot minimal retry to recover from OUT_OF_RANGE or empty stream
+                                    val canRetry = !oneShotRetriedMessageIds.contains(placeholderId)
+                                    if (canRetry) {
+                                        oneShotRetriedMessageIds.add(placeholderId)
+                                        viewModelScope.launch(Dispatchers.IO) {
+                                            try {
+                                                inferenceService.resetChatSession(chatId)
+                                                delay(200)
+                                                val userLine = _messages.value.lastOrNull { it.isFromUser }?.content ?: return@launch
+                                                val tail = _messages.value.takeLast(4)
+                                                    .map { it.copy(content = sanitizeForPrompt(it.content)) }
+                                                    .filter { it.content.isNotBlank() && it.content.length >= 20 && it.content != "…" }
+                                                val tailHistory = if (tail.isNotEmpty()) {
+                                                    tail.joinToString("\n\n") { msg -> if (msg.isFromUser) "user: ${msg.content}" else "assistant: ${msg.content}" }
+                                                } else ""
+                                                val minimalPrompt = if (tailHistory.isNotEmpty()) {
+                                                    "$tailHistory\n\nuser: ${sanitizeForPrompt(userLine)}\nassistant:"
+                                                } else {
+                                                    "user: ${sanitizeForPrompt(userLine)}\nassistant:"
+                                                }
+                                                inferenceService.generateResponseStreamWithSession(
+                                                    chatId = chatId,
+                                                    model = currentModel!!,
+                                                    prompt = minimalPrompt,
+                                                    images = emptyList(),
+                                                    audioData = null,
+                                                ).collect { chunk ->
+                                                    if (chunk.isNotBlank()) {
+                                                        repository.updateMessageContent(placeholderId, chunk)
+                                                    }
+                                                }
+                                            } catch (_: Exception) { }
+                                        }
+                                    }
+                                    "No response produced. Retrying once with a smaller context…"
                                 } else finalContent
                                 repository.updateMessageContent(placeholderId, safeFinal.trimEnd())
                                 val time = System.currentTimeMillis() - generationStartTime
@@ -1739,6 +1792,22 @@ class ChatViewModel(
             _isLoading.value = false
             isGenerating = false
         }
+    }
+
+    // Remove stray artifacts that confuse tiny models (ellipsis blocks, zero-width spaces, markdown fences)
+    private fun sanitizeForPrompt(text: String): String {
+        if (text.isBlank()) return text
+        var cleaned = text
+            .replace("\u200B", "")
+            .replace(Regex("[\u2028\u2029]"), "\n")
+            .replace(Regex("`{3,}"), "")
+            .replace(Regex("\n{3,}"), "\n\n")
+            .trim()
+        cleaned = cleaned.lines()
+            .map { it.trimEnd() }
+            .filter { line -> line.length >= 3 && !Regex("^[`*._-]+$").matches(line) }
+            .joinToString("\n")
+        return cleaned
     }
     
     fun switchModelWithBackend(newModel: LLMModel, backend: LlmInference.Backend, disableVision: Boolean) {
