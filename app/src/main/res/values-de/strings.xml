@@ -242,6 +242,8 @@
     <string name="confirm_replace_memory_message">Sie haben bereits eine globale Erinnerung. Wenn Sie diese ersetzen, wird die bestehende Erinnerung und ihre Embeddings gelöscht. Fortfahren?</string>
     <string name="confirm_replace_action">Ersetzen</string>
     <string name="memory_processing">Erinnerung wird verarbeitet…</string>
+    <string name="reembedding_memory_in_progress">Globale Speicher-Einträge werden für das neue Embedding-Modell neu eingebettet…</string>
+    <string name="reembedding_memory_done">Globaler Speicher neu eingebettet</string>
     <string name="embedding_disabled">Embeddings deaktiviert</string>
     <string name="embedding_status_enabled">Embedding-Status: aktiviert</string>
     <string name="embedding_status_disabled">Embedding-Status: deaktiviert</string>

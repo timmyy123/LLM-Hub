@@ -240,6 +240,8 @@
     <string name="confirm_replace_memory_message">Ya tienes una memoria global. Reemplazarla eliminará la memoria existente y sus embeddings. ¿Continuar?</string>
     <string name="confirm_replace_action">Reemplazar</string>
     <string name="memory_processing">Procesando memoria…</string>
+    <string name="reembedding_memory_in_progress">Re-embebiendo la memoria global para el nuevo modelo de embedding…</string>
+    <string name="reembedding_memory_done">Memoria global re-embebida</string>
     <string name="reload_models_notice">Necesita recargar modelos para tomar efecto</string>
     <string name="embedding_enabled">Embeddings activados</string>
     <string name="embedding_disabled">Embeddings desactivados</string>

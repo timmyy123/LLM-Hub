@@ -328,6 +328,8 @@
     <string name="confirm_replace_memory_message">Hai già una memoria globale. Sostituirla eliminerà la memoria esistente e i relativi embedding. Continuare?</string>
     <string name="confirm_replace_action">Sostituisci</string>
     <string name="memory_processing">Elaborazione memoria…</string>
+    <string name="reembedding_memory_in_progress">Ri-embedding della memoria globale per il nuovo modello di embedding…</string>
+    <string name="reembedding_memory_done">Memoria globale ri-embeddizzata</string>
     
     <!-- Gemma Backend Selection -->
     <string name="select_backend">Seleziona Backend</string>

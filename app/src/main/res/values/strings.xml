@@ -328,6 +328,8 @@
     <string name="confirm_replace_memory_message">You already have a global memory. Replacing it will delete the existing memory and its embeddings. Continue?</string>
     <string name="confirm_replace_action">Replace</string>
     <string name="memory_processing">Processing memory…</string>
+    <string name="reembedding_memory_in_progress">Re-embedding global memory for new embedding model…</string>
+    <string name="reembedding_memory_done">Global memory re-embedded</string>
     
     <!-- Gemma Backend Selection -->
     <string name="select_backend">Select Backend</string>

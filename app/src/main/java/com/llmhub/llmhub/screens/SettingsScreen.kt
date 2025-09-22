@@ -31,6 +31,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.window.Dialog
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.runtime.rememberCoroutineScope
 import android.net.Uri
@@ -52,6 +54,9 @@ fun SettingsScreen(
     themeViewModel: ThemeViewModel = viewModel()
 ) {
     val uriHandler = LocalUriHandler.current
+    val coroutineScope = rememberCoroutineScope()
+    var showReembedDialogGlobal by remember { mutableStateOf(false) }
+    val context = LocalContext.current
     var showThemeDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
     val currentThemeMode by themeViewModel.themeMode.collectAsState()
@@ -182,6 +187,60 @@ fun SettingsScreen(
                                     return@Switch
                                 }
                                 themeViewModel.setMemoryEnabled(enabled)
+
+                                if (enabled) {
+                                    // If user re-enables memory after changing embedding model, show re-embedding
+                                    coroutineScope.launch {
+                                        try {
+                                            val prefs = com.llmhub.llmhub.data.ThemePreferences(context)
+                                            val embeddingsOn = prefs.embeddingEnabled.first()
+                                            val currentModel = prefs.selectedEmbeddingModel.first()
+                                            if (!embeddingsOn || currentModel.isNullOrBlank()) return@launch
+
+                                            val db = com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context)
+                                            val hasAnyMemory = withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                                db.memoryDao().getAllMemory().first().isNotEmpty()
+                                            }
+                                            if (!hasAnyMemory) return@launch
+
+                                            val needsReembed = withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                                val chunks = db.memoryDao().getAllChunks()
+                                                // No chunks (docs exist but not embedded) or any chunk model differs
+                                                chunks.isEmpty() || chunks.any { it.embeddingModel != currentModel }
+                                            }
+                                            if (!needsReembed) return@launch
+
+                                            showReembedDialogGlobal = true
+
+                                            withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                                val ragManager = com.llmhub.llmhub.embedding.RagServiceManager.getInstance(context)
+                                                try {
+                                                    ragManager.clearGlobalDocuments()
+                                                    val docs = db.memoryDao().getAllMemory().first()
+                                                    docs.forEach { doc ->
+                                                        try { db.memoryDao().update(doc.copy(status = "PENDING", chunkCount = 0)) } catch (_: Exception) { }
+                                                    }
+                                                    try { db.memoryDao().deleteAllChunks() } catch (_: Exception) { }
+
+                                                    val processor = com.llmhub.llmhub.data.MemoryProcessor(context, db)
+                                                    processor.processPending()
+
+                                                    try { withTimeoutOrNull(5_000) { com.llmhub.llmhub.data.MemoryProcessor.processing.first { it } } } catch (_: Exception) { }
+                                                    com.llmhub.llmhub.data.MemoryProcessor.processing.first { running -> !running }
+                                                } catch (e: Exception) {
+                                                    android.util.Log.w("SettingsScreen", "Re-embedding after memory enable failed: ${e.message}")
+                                                } finally {
+                                                    withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                                        showReembedDialogGlobal = false
+                                                        android.widget.Toast.makeText(context, context.getString(com.llmhub.llmhub.R.string.reembedding_memory_done), android.widget.Toast.LENGTH_SHORT).show()
+                                                    }
+                                                }
+                                            }
+                                        } catch (e: Exception) {
+                                            android.util.Log.w("SettingsScreen", "Failed to check/trigger re-embedding on memory enable: ${e.message}")
+                                        }
+                                    }
+                                }
                             },
                             enabled = embeddingEnabled && !selectedEmbeddingModel.isNullOrBlank()
                         )
@@ -702,6 +761,29 @@ fun SettingsScreen(
             }
         )
     }
+
+    // Global re-embedding modal dialog when triggered by memory re-enable path
+    if (showReembedDialogGlobal) {
+        Dialog(onDismissRequest = { /* block dismiss while running */ }) {
+            Surface(
+                shape = MaterialTheme.shapes.large,
+                tonalElevation = 8.dp,
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                modifier = Modifier
+                    .fillMaxWidth(0.92f)
+                    .wrapContentHeight()
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(text = stringResource(id = com.llmhub.llmhub.R.string.reembedding_memory_in_progress), style = MaterialTheme.typography.bodyLarge)
+                    CircularProgressIndicator()
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -783,11 +865,66 @@ private fun EmbeddingModelSelector(themeViewModel: ThemeViewModel) {
     val selectedEmbeddingModel by themeViewModel.selectedEmbeddingModel.collectAsState()
     var showEmbeddingModelDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    var showReembedDialog by remember { mutableStateOf(false) }
     
     // Function to handle embedding model change
     fun handleEmbeddingModelChange(newModel: String?) {
         themeViewModel.setSelectedEmbeddingModel(newModel)
         showEmbeddingModelDialog = false
+
+        // Kick off re-embedding immediately when switching between non-null models and memory is enabled
+        coroutineScope.launch {
+            try {
+                val prefs = com.llmhub.llmhub.data.ThemePreferences(context)
+                val embeddingsOn = prefs.embeddingEnabled.first()
+                val memoryOn = prefs.memoryEnabled.first()
+                if (!embeddingsOn || !memoryOn || newModel.isNullOrBlank()) return@launch
+
+                val db = com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context)
+                val hasAnyMemory = withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    db.memoryDao().getAllMemory().first().isNotEmpty()
+                }
+                if (!hasAnyMemory) return@launch
+
+                showReembedDialog = true
+
+                withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    val ragManager = com.llmhub.llmhub.embedding.RagServiceManager.getInstance(context)
+                    try {
+                        // Clear in-memory global docs
+                        ragManager.clearGlobalDocuments()
+
+                        // Mark docs pending and clear chunks
+                        val docs = db.memoryDao().getAllMemory().first()
+                        docs.forEach { doc ->
+                            try { db.memoryDao().update(doc.copy(status = "PENDING", chunkCount = 0)) } catch (_: Exception) { }
+                        }
+                        try { db.memoryDao().deleteAllChunks() } catch (_: Exception) { }
+
+                        // Start processing
+                        val processor = com.llmhub.llmhub.data.MemoryProcessor(context, db)
+                        processor.processPending()
+
+                        // Wait until processing starts then completes
+                        try {
+                            withTimeoutOrNull(5_000) { com.llmhub.llmhub.data.MemoryProcessor.processing.first { it } }
+                        } catch (_: Exception) { }
+                        com.llmhub.llmhub.data.MemoryProcessor.processing.first { running -> !running }
+                    } catch (e: Exception) {
+                        android.util.Log.w("SettingsScreen", "Re-embedding from settings failed: ${e.message}")
+                    } finally {
+                        // Switch back to main for UI updates
+                        showReembedDialog = false
+                        android.os.Handler(android.os.Looper.getMainLooper()).post {
+                            android.widget.Toast.makeText(context, context.getString(com.llmhub.llmhub.R.string.reembedding_memory_done), android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.w("SettingsScreen", "Failed to trigger re-embedding: ${e.message}")
+            }
+        }
     }
     
     // Get downloaded embedding models only
@@ -873,5 +1010,28 @@ private fun EmbeddingModelSelector(themeViewModel: ThemeViewModel) {
                 }
             }
         )
+    }
+
+    // Re-embedding modal dialog (blocking dismiss while running)
+    if (showReembedDialog) {
+        androidx.compose.ui.window.Dialog(onDismissRequest = { /* block dismiss while running */ }) {
+            Surface(
+                shape = MaterialTheme.shapes.large,
+                tonalElevation = 6.dp,
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                modifier = Modifier
+                    .fillMaxWidth(0.9f)
+                    .wrapContentHeight()
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(text = stringResource(id = com.llmhub.llmhub.R.string.reembedding_memory_in_progress), style = MaterialTheme.typography.bodyLarge)
+                    CircularProgressIndicator()
+                }
+            }
+        }
     }
 } 
