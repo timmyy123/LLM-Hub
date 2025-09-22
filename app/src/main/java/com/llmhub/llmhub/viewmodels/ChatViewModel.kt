@@ -2204,15 +2204,18 @@ class ChatViewModel(
     // synthetic summary note in that case.
     val recentResetWindowMs = 5_000L
     val now = System.currentTimeMillis()
-    val recentlyReset = (now - lastSessionResetAt) < recentResetWindowMs
+    // Consider both local and service-level reset markers
+    val recentlyResetLocal = (now - lastSessionResetAt) < recentResetWindowMs
+    val recentlyResetService = try { inferenceService.wasSessionRecentlyReset(currentChatId) } catch (_: Exception) { false }
+    val recentlyReset = recentlyResetLocal || recentlyResetService
         
         // Filter messages to only include current chat messages
         val chatMessages = messages.filter { it.chatId == currentChatId }
         
-    // Use at most a safety fraction of model window for HISTORY ONLY. Leave generous room
-    // for: the upcoming user prompt + model system overhead + generated answer.
+    // Sliding window policy: reserve ~1/3 of the model window for the next response and
+    // system overhead. Use the remaining ~2/3 for history + current user prompt.
     // If we just reset, be stricter to guarantee fast recovery.
-    val historyFraction = if (recentlyReset) 0.30 else 0.60
+    val historyFraction = if (recentlyReset) 0.30 else 0.66
     val maxContextTokens = (model.contextWindowSize * historyFraction).toInt().coerceAtLeast(256)
         val maxContextChars = maxContextTokens * 4 // Rough character limit (1 token ≈ 4 characters)
         
@@ -2284,7 +2287,7 @@ class ChatViewModel(
         val recentPairs = mutableListOf<String>()
         var currentLength = 0
         
-    // Always keep the last few conversation pairs (minimum viable context)
+    // Always keep at least a small recent window (minimum viable context)
     val minimumPairs = 3
         
     // Hard upper bound safeguard: never include more than maxPairsHistory pairs to avoid pathological large messages.
@@ -2309,7 +2312,7 @@ class ChatViewModel(
             }
         }
         
-        // If we had to truncate, add context summary
+        // If we had to truncate, add context summary and ensure sliding window semantics are clear
         val truncatedCount = cappedPairStrings.size - recentPairs.size
         val result = if (truncatedCount > 0) {
             val contextSummary = "[Previous conversation context: ${truncatedCount} earlier exchanges were truncated to fit context window]"
@@ -2395,7 +2398,8 @@ class ChatViewModel(
             // Rough estimate of token count (1 token ≈ 4 characters)
             val estimatedTokens = fullPrompt.length / 4
             val maxTokens = minOf(model.contextWindowSize, extractCacheSizeFromUrl(model.url) ?: model.contextWindowSize)
-            val tokenThreshold = (maxTokens * 0.7).toInt() // Reset at 70% to be safe
+            // Reserve ~1/3 for response; reset only when prompt+history exceeds ~2/3
+            val tokenThreshold = (maxTokens * 0.66).toInt()
             
             Log.d("ChatViewModel", "Token check for chat $chatId: ~$estimatedTokens tokens, threshold: $tokenThreshold, max: $maxTokens")
             
@@ -2748,7 +2752,7 @@ class ChatViewModel(
                 
                 // Find the user message that prompted this response
                 val messageIndex = currentMessages.indexOf(messageToRegenerate)
-                val userMessage = if (messageIndex > 0) {
+                var userMessage = if (messageIndex > 0) {
                     // Look for the previous user message
                     currentMessages.subList(0, messageIndex).lastOrNull { it.isFromUser }
                 } else null
@@ -2771,8 +2775,15 @@ class ChatViewModel(
                     return@launch
                 }
                 
-                // Delete the current AI response and any messages after it
-                val messagesToKeep = currentMessages.takeWhile { it.id != messageId }
+                // If there is a newer user message (typed after this assistant reply), regenerate for the latest user turn
+                val latestUser = currentMessages.lastOrNull { it.isFromUser }
+                if (latestUser != null && userMessage != null && latestUser.timestamp > userMessage.timestamp) {
+                    Log.d("ChatViewModel", "Regenerate targets newer user turn; switching from ${userMessage.id} -> ${latestUser.id}")
+                    userMessage = latestUser
+                }
+
+                // Delete the current AI response and any messages after the target user message
+                val messagesToKeep = currentMessages.takeWhile { it.id != (userMessage?.id ?: messageId) }
                 
                 // Clear messages after the user message from database
                 repository.deleteMessagesAfter(chatId, userMessage.timestamp)
@@ -2802,6 +2813,8 @@ class ChatViewModel(
                     // Give more time to ensure any previous operations have completed
                     delay(300)
                     inferenceService.resetChatSession(chatId)
+                    // Record the reset time so history builder aggressively trims after reset
+                    lastSessionResetAt = System.currentTimeMillis()
                     delay(200) // Additional time for session to stabilize
                     Log.d("ChatViewModel", "Reset session for regeneration")
                 } catch (e: Exception) {
