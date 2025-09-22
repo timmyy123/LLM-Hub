@@ -1198,8 +1198,22 @@ class ChatViewModel(
                         Log.w("ChatViewModel", "Failed to log prompt preview: ${e.message}")
                     }
 
+                    // Safety guard: ensure the latest user message is present in the final prompt
+                    val finalPrompt = try {
+                        val latestUser = _messages.value.lastOrNull { it.isFromUser }?.content ?: ""
+                        var p = currentPrompt
+                        if (latestUser.isNotBlank()) {
+                            val mustContain = "user: ${sanitizeForPrompt(latestUser)}"
+                            if (!p.contains(mustContain)) {
+                                Log.w("ChatViewModel", "Latest user line missing from prompt. Appending minimal user line before generation.")
+                                p = p.trimEnd() + "\n\n" + mustContain + "\nassistant:"
+                            }
+                        }
+                        p
+                    } catch (_: Exception) { currentPrompt }
+
                     val responseStream = inferenceService.generateResponseStreamWithSession(
-                        currentPrompt,
+                        finalPrompt,
                         currentModel!!, 
                         chatId, 
                         images, 
@@ -1300,45 +1314,11 @@ class ChatViewModel(
                                     // Small delay to prevent overwhelming the model
                                     delay(100)
                                 }                                // SUCCESS: This section now executes only after the stream is fully collected
-                                val finalContent = totalContent
+                                val finalContent = sanitizeModelOutput(totalContent)
                                 Log.d("ChatViewModel", "Generation completed successfully with ${continuationCount} continuations")
                                 Log.d("ChatViewModel", "Final content length: ${finalContent.length}")
                                 val safeFinal = if (finalContent.isBlank()) {
-                                    // Try a one-shot minimal retry to recover from OUT_OF_RANGE or empty stream
-                                    val canRetry = !oneShotRetriedMessageIds.contains(placeholderId)
-                                    if (canRetry) {
-                                        oneShotRetriedMessageIds.add(placeholderId)
-                                        viewModelScope.launch(Dispatchers.IO) {
-                                            try {
-                                                inferenceService.resetChatSession(chatId)
-                                                delay(200)
-                                                val userLine = _messages.value.lastOrNull { it.isFromUser }?.content ?: return@launch
-                                                val tail = _messages.value.takeLast(4)
-                                                    .map { it.copy(content = sanitizeForPrompt(it.content)) }
-                                                    .filter { it.content.isNotBlank() && it.content.length >= 20 && it.content != "…" }
-                                                val tailHistory = if (tail.isNotEmpty()) {
-                                                    tail.joinToString("\n\n") { msg -> if (msg.isFromUser) "user: ${msg.content}" else "assistant: ${msg.content}" }
-                                                } else ""
-                                                val minimalPrompt = if (tailHistory.isNotEmpty()) {
-                                                    "$tailHistory\n\nuser: ${sanitizeForPrompt(userLine)}\nassistant:"
-                                                } else {
-                                                    "user: ${sanitizeForPrompt(userLine)}\nassistant:"
-                                                }
-                                                inferenceService.generateResponseStreamWithSession(
-                                                    chatId = chatId,
-                                                    model = currentModel!!,
-                                                    prompt = minimalPrompt,
-                                                    images = emptyList(),
-                                                    audioData = null,
-                                                ).collect { chunk ->
-                                                    if (chunk.isNotBlank()) {
-                                                        repository.updateMessageContent(placeholderId, chunk)
-                                                    }
-                                                }
-                                            } catch (_: Exception) { }
-                                        }
-                                    }
-                                    "No response produced. Retrying once with a smaller context…"
+                                    "No response produced. (Possible: token limit or session reset). Tap Regenerate."
                                 } else finalContent
                                 repository.updateMessageContent(placeholderId, safeFinal.trimEnd())
                                 val time = System.currentTimeMillis() - generationStartTime
@@ -1383,8 +1363,8 @@ class ChatViewModel(
                         // ALWAYS save final content and call finalizeMessage (for both cancel and error) even if the parent Job is cancelled
                         withContext(kotlinx.coroutines.NonCancellable) {
                             val safeFinal = if (finalContent.isBlank()) {
-                                "No response produced. (Session likely full or content blocked). Try simplifying or changing the topic."
-                            } else finalContent
+                                "No response produced. (Possible: token limit or session reset). Tap Regenerate."
+                            } else sanitizeModelOutput(finalContent)
                             repository.updateMessageContent(placeholderId, safeFinal.trimEnd())
                             Log.d("ChatViewModel", "About to call finalizeMessage (NonCancellable)")
                             finalizeMessage(placeholderId, safeFinal, netTime)
@@ -1439,6 +1419,35 @@ class ChatViewModel(
         // User requested to always allow responses, so client-side disallow list is disabled.
         // Retain method for potential future policy reinstatement; always return false now.
         return false
+    }
+
+    /**
+     * Sanitize raw model output:
+     * - Trim surrounding whitespace
+     * - Drop leading role tags like "assistant:" / "user:" that some models echo
+     * - Collapse excessive blank lines
+     */
+    private fun sanitizeModelOutput(raw: String): String {
+        if (raw.isBlank()) return ""
+        var cleaned = raw
+            .replace("\r\n", "\n")
+            .replace("\r", "\n")
+            // Convert visible escape sequences like "\n" into real newlines if the model emitted them
+            .replace("\\n", "\n")
+            .trim()
+
+        // Remove any leading role tags on first line
+        cleaned = cleaned.replaceFirst(Regex("^(assistant|system|user)\\s*:\\s*", RegexOption.IGNORE_CASE), "")
+
+        // If the whole thing is just a role word, blank it out
+        if (cleaned.equals("assistant", ignoreCase = true) || cleaned.equals("user", ignoreCase = true) || cleaned.equals("system", ignoreCase = true)) {
+            return ""
+        }
+
+        // Collapse runs of 3+ newlines to at most 2
+        cleaned = cleaned.replace(Regex("\n{3,}"), "\n\n")
+
+        return cleaned.trimEnd()
     }
     
     /**
@@ -1549,7 +1558,10 @@ class ChatViewModel(
         
         // Check for sentence/phrase repetition (n-gram at word level)
         if (trimmed.length > 160) {
-            val words = trimmed.split(Regex("\\s+")).map { it.lowercase() }
+            val words = trimmed
+                .lowercase()
+                .replace(Regex("[^a-z0-9\\n\\r\\t\\s']"), " ") // remove most punctuation
+                .split(Regex("\\s+")).filter { it.isNotBlank() }
             if (words.size > 30) {
                 // compare last 8-15 word shingles with the previous window
                 val windowSizes = listOf(8, 10, 12, 15)
@@ -1562,6 +1574,33 @@ class ChatViewModel(
                             return true
                         }
                     }
+                }
+
+                // Additional heuristic: dominant word frequency in the recent window
+                val recentWindow = words.takeLast(120)
+                val freq = recentWindow.groupingBy { it }.eachCount()
+                val maxEntry = freq.maxByOrNull { it.value }
+                val topWord = maxEntry?.key ?: ""
+                val topCount = maxEntry?.value ?: 0
+                val dominance = if (recentWindow.isNotEmpty()) topCount.toDouble() / recentWindow.size else 0.0
+                if (topCount >= 25 && dominance >= 0.33 && topWord.length <= 4) {
+                    Log.d("ChatViewModel", "Real-time: Detected dominant word repetition '$topWord' (${String.format("%.0f", dominance*100)}%)")
+                    return true
+                }
+                // Repeated bigrams/trigrams
+                fun hasDominantNGram(n: Int, threshold: Int): Boolean {
+                    if (recentWindow.size < n * 3) return false
+                    val counts = mutableMapOf<String, Int>()
+                    for (i in 0..recentWindow.size - n) {
+                        val gram = recentWindow.subList(i, i + n).joinToString(" ")
+                        counts[gram] = (counts[gram] ?: 0) + 1
+                    }
+                    val max = counts.maxByOrNull { it.value }?.value ?: 0
+                    return max >= threshold
+                }
+                if (hasDominantNGram(2, 6) || hasDominantNGram(3, 5)) {
+                    Log.d("ChatViewModel", "Real-time: Detected dominant n-gram repetition")
+                    return true
                 }
             }
         }
