@@ -1068,7 +1068,7 @@ class ChatViewModel(
                                                     "Transcribe the following speech segment and respond to it:"
                                                 } else {
                                                     Log.d("ChatViewModel", "Text+audio message - injecting only user's text into addQueryChunk")
-                                                    lastUserContent
+                                                    "$lastUserContent\n\nNote: The attached audio clip is spoken by the user."
                                                 }
                                             } else {
                                                 // Minimal path after reset: keep a small sanitized tail of history (last 2 pairs)
@@ -1098,7 +1098,7 @@ class ChatViewModel(
                                                     "Transcribe the following speech segment and respond to it:"
                                                 } else {
                                                     Log.d("ChatViewModel", "Text+audio message - injecting only user's text into addQueryChunk")
-                                                    lastUserContent
+                                                    "$lastUserContent\n\nNote: The attached audio clip is sent from the user."
                                                 }
                                             } else {
                                                 // Normal path: include trimmed history and explicit assistant cue
