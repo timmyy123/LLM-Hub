@@ -760,40 +760,17 @@ private fun TypingIndicator() {
 
 @Composable
 private fun ModelLoadingIndicator(modelName: String) {
-    // Multiple smooth animations for the loading indicator
+    // Smooth breathing effect (scale only). No transparency or icon rotation.
     val infiniteTransition = rememberInfiniteTransition(label = "ModelLoadingAnimations")
-    
-    // Gentle pulsing scale animation
+
     val scale by infiniteTransition.animateFloat(
-        initialValue = 0.98f,
-        targetValue = 1.02f,
+        initialValue = 0.96f,
+        targetValue = 1.04f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = EaseInOutCubic),
+            animation = tween(durationMillis = 1600, easing = EaseInOutSine),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "ModelLoadingScale"
-    )
-    
-    // Subtle glow effect through alpha animation
-    val glowAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 0.8f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1800, easing = EaseInOutSine),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "ModelLoadingGlow"
-    )
-    
-    // Gentle rotation for the icon
-    val iconRotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(4000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "ModelLoadingIconRotation"
+        label = "ModelLoadingBreathScale"
     )
     
     Column(
@@ -808,7 +785,6 @@ private fun ModelLoadingIndicator(modelName: String) {
                 .graphicsLayer {
                     scaleX = scale
                     scaleY = scale
-                    alpha = glowAlpha
                 },
             shape = MaterialTheme.shapes.large,
             color = MaterialTheme.colorScheme.primaryContainer,
@@ -830,10 +806,7 @@ private fun ModelLoadingIndicator(modelName: String) {
                             Icons.Default.SmartToy,
                             contentDescription = null,
                             modifier = Modifier
-                                .size(24.dp)
-                                .graphicsLayer {
-                                    rotationZ = iconRotation
-                                },
+                                .size(24.dp),
                             tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
