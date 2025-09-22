@@ -37,6 +37,8 @@
     <string name="confirm_replace_memory_message">У вас уже есть глобальная память. Замена удалит существующую память и её embeddings. Продолжить?</string>
     <string name="confirm_replace_action">Заменить</string>
     <string name="memory_processing">Обработка памяти…</string>
+    <string name="reembedding_memory_in_progress">Пере-встраивание (re-embedding) глобальной памяти для новой модели эмбеддингов…</string>
+    <string name="reembedding_memory_done">Глобальная память пере-встроена</string>
     <string name="embedding_disabled">Эмбеддинги отключены</string>
     <string name="embedding_status_enabled">Статус эмбеддингов: включены</string>
     <string name="embedding_status_disabled">Статус эмбеддингов: отключены</string>

@@ -223,6 +223,8 @@
     <string name="confirm_replace_memory_message">Você já tem uma memória global. Substituí-la excluirá a memória existente e seus embeddings. Continuar?</string>
     <string name="confirm_replace_action">Substituir</string>
     <string name="memory_processing">Processando memória…</string>
+    <string name="reembedding_memory_in_progress">Re-embeddando a memória global para o novo modelo de embedding…</string>
+    <string name="reembedding_memory_done">Memória global re-embeddada</string>
     <string name="reload_models_notice">Necessário recarregar modelos para ter efeito</string>
     <string name="embedding_enabled">Embeddings ativados</string>
     <string name="embedding_disabled">Embeddings desativados</string>

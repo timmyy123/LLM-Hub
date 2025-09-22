@@ -88,6 +88,9 @@ class ChatViewModel(
     // Embedding enabled state
     private val _isEmbeddingEnabled = MutableStateFlow(false)
     val isEmbeddingEnabled: StateFlow<Boolean> = _isEmbeddingEnabled.asStateFlow()
+    // Re-embedding in progress (when embedding model changes)
+    private val _isReembedding = MutableStateFlow(false)
+    val isReembedding: StateFlow<Boolean> = _isReembedding.asStateFlow()
 
     // Vision disabled state (for GPU with vision disabled on low RAM)
     private var isVisionDisabled: Boolean = false
@@ -142,6 +145,26 @@ class ChatViewModel(
                             "Document chat unavailable"
                         }
                         Log.d("ChatViewModel", "RAG service reinitialized successfully")
+
+                        // After RAG has been reinitialized due to embedding toggle, rehydrate
+                        // persisted global memory chunks so memory isn't lost when the user
+                        // disabled both embeddings (RAG) and memory and then re-enabled them.
+                        if (_isRagReady.value && isEnabled) {
+                            try {
+                                val memoryEnabledPref = themePreferences.memoryEnabled.first()
+                                if (memoryEnabledPref) {
+                                    val chunkList = withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                        com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context).memoryDao().getAllChunks()
+                                    }
+                                    if (chunkList.isNotEmpty()) {
+                                        Log.d("ChatViewModel", "Restoring ${chunkList.size} global memory chunks after RAG reinit")
+                                        ragServiceManager.restoreGlobalDocumentsFromChunks(chunkList)
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                Log.w("ChatViewModel", "Failed to restore global memory chunks after RAG reinit: ${e.message}")
+                            }
+                        }
                     } catch (e: Exception) {
                         Log.e("ChatViewModel", "Failed to reinitialize RAG service", e)
                         _ragStatus.value = "Document chat failed to initialize"
@@ -149,6 +172,81 @@ class ChatViewModel(
                     }
                 }
                 isFirstEmbeddingUpdate = false
+            }
+        }
+
+        // Observe embedding model changes specifically to trigger re-embedding of existing memory
+        viewModelScope.launch {
+            var prevModel: String? = try { themePreferences.selectedEmbeddingModel.first() } catch (_: Exception) { null }
+            themePreferences.selectedEmbeddingModel.collect { currentModelName ->
+                try {
+                    val embeddingsOn = themePreferences.embeddingEnabled.first()
+                    val memoryOn = themePreferences.memoryEnabled.first()
+                    val modelChanged = prevModel != null && currentModelName != null && prevModel != currentModelName
+                    prevModel = currentModelName
+
+                    if (!embeddingsOn || !memoryOn) return@collect
+                    if (!modelChanged) return@collect
+
+                    // Check if there is any memory to re-embed
+                    val db = com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context)
+                    val hasAnyMemory = withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        db.memoryDao().getAllMemory().first().isNotEmpty()
+                    }
+                    if (!hasAnyMemory) return@collect
+
+                    // Start re-embedding flow
+                    _isReembedding.value = true
+                    _ragStatus.value = context.getString(R.string.reembedding_memory_in_progress)
+
+                    viewModelScope.launch(Dispatchers.IO) {
+                        try {
+                            // Clear in-memory global documents first to avoid mixing vector spaces
+                            ragServiceManager.clearGlobalDocuments()
+
+                            // Reset all chunk embeddings and mark docs pending
+                            val docs = db.memoryDao().getAllMemory().first()
+                            docs.forEach { doc ->
+                                try {
+                                    db.memoryDao().update(doc.copy(status = "PENDING", chunkCount = 0))
+                                } catch (_: Exception) { }
+                            }
+                            try {
+                                db.memoryDao().deleteAllChunks()
+                            } catch (_: Exception) { }
+
+                            // Kick off (re)processing with new embedding model
+                            val processor = com.llmhub.llmhub.data.MemoryProcessor(context, db)
+                            processor.processPending()
+
+                            // Wait for processing to start (become true), then to finish (become false)
+                            try {
+                                withTimeoutOrNull(5_000) {
+                                    com.llmhub.llmhub.data.MemoryProcessor.processing
+                                        .first { it }
+                                }
+                            } catch (_: Exception) { }
+
+                            com.llmhub.llmhub.data.MemoryProcessor.processing
+                                .first { running -> !running }
+                        } catch (_: CancellationException) {
+                            // Used to break collection when processing completes
+                        } catch (e: Exception) {
+                            Log.w("ChatViewModel", "Re-embedding failed: ${e.message}")
+                        } finally {
+                            withContext(Dispatchers.Main) {
+                                _isReembedding.value = false
+                                _ragStatus.value = if (_isRagReady.value) {
+                                    context.getString(R.string.reembedding_memory_done)
+                                } else {
+                                    "Document chat unavailable"
+                                }
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.w("ChatViewModel", "Error reacting to embedding model change: ${e.message}")
+                }
             }
         }
     }
@@ -930,7 +1028,7 @@ class ChatViewModel(
                                             // global chunks can be added twice (direct global fetch + merged chat+global).
                                             var forcedInjectedGlobal = false
 
-                                            if (memoryEnabledPref) {
+                                            if (memoryEnabledPref && !_isReembedding.value) {
                                                 if (recentSessionReset) {
                                                     Log.d("ChatViewModel", "🔔 Recent session reset detected - forcibly injecting global memories into prompt")
                                                     // Try semantic search first
@@ -966,8 +1064,10 @@ class ChatViewModel(
                                                     // which already merges chat-specific and global results when memory is enabled.
                                                     Log.d("ChatViewModel", "🔍 Memory enabled - deferring global inclusion to combined chat search to avoid duplication")
                                                 }
-                                            } else {
+                                            } else if (!memoryEnabledPref) {
                                                 Log.d("ChatViewModel", "ℹ️ Global memory disabled by user preference; not querying global memory")
+                                            } else if (_isReembedding.value) {
+                                                Log.d("ChatViewModel", "ℹ️ Skipping global memory during re-embedding")
                                             }
 
                                             // Always search per-chat documents for relevant content
