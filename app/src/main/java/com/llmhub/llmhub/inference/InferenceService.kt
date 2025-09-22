@@ -26,6 +26,7 @@ import android.util.Log
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.launch
 import android.app.ActivityManager
 
 /**
@@ -88,6 +89,8 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
     // Estimated tokens accumulated in current session (prompt + responses); heuristic
     private var estimatedSessionTokens: Int = 0
     private var isGenerating: Boolean = false
+    // Track chats where we aborted due to repetition so we can reset session after close
+    private val repetitionAbortFlags = mutableSetOf<String>()
     
     // Track when sessions are reset to help ChatViewModel use minimal context
     private val sessionResetTimes = mutableMapOf<String, Long>()
@@ -763,8 +766,10 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             val defaultMaxTokens = getMaxTokensForModel(model)
             val maxTokens = overrideMaxTokens?.coerceAtMost(defaultMaxTokens) ?: defaultMaxTokens
             Log.d(TAG, "Using token limits - defaultMaxTokens=$defaultMaxTokens overrideMaxTokens=${overrideMaxTokens ?: "null"} effectiveMaxTokens=$maxTokens")
-            // Proactive token accounting using internal estimate
-            val promptTokens = session.sizeInTokens(enhancedPrompt)
+            // Use conservative token estimation to avoid crashes with sizeInTokens()
+            // Only estimate tokens for the current user input, not the entire conversation history
+            val currentUserInput = extractCurrentUserMessage(prompt)
+            val promptTokens = (currentUserInput.length / 3).coerceAtLeast(1)
             val outputReserve = (maxTokens * 0.15).toInt().coerceAtLeast(128) // reserve space for response
             var currentTokens = estimatedSessionTokens
             // If our estimate undercounts (e.g., after recovery) fall back to session.sizeInTokens(prompt) heuristic not available; keep estimate
@@ -774,8 +779,9 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             Log.d(TAG, "  - Prompt tokens: $promptTokens")
             Log.d(TAG, "  - Max tokens: $maxTokens")
             
-            // If adding the prompt would exceed ~90% of max tokens, reset the session
-            val tokenThreshold = (maxTokens * 0.9).toInt()
+            // If adding the prompt would exceed ~80% of max tokens, reset the session
+            // Use a lower threshold since we're using conservative estimation
+            val tokenThreshold = (maxTokens * 0.8).toInt()
             if (currentTokens + promptTokens > tokenThreshold) {
                 Log.w(TAG, "Token count ($currentTokens + $promptTokens = ${currentTokens + promptTokens}) approaching limit ($maxTokens)")
                 Log.w(TAG, "Resetting session for chat $chatId to prevent OUT_OF_RANGE error")
@@ -893,13 +899,23 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                     trySend(partialResult)
                     responseBuilder.append(partialResult)
                 }
+                // Simple repetition detection: check recent window for repeated n-grams
+                val recent = responseBuilder.takeLast(600).toString()
+                if (recent.isNotEmpty() && hasRepetitionPattern(recent)) {
+                    Log.w(TAG, "Detected repetition pattern in output for chat $chatId - aborting stream and scheduling session reset")
+                    repetitionAbortFlags.add(chatId)
+                    isGenerating = false
+                    isGenerationComplete = true
+                    close()
+                    return@generateResponseAsync
+                }
                 if (done) {
                     isGenerationComplete = true
                     isGenerating = false
-                    // Update token count with the full response tokens
+                    // Update session token count with response tokens (using safe estimation)
                     try {
                         val fullResponse = responseBuilder.toString()
-                        val responseTokens = session.sizeInTokens(fullResponse)
+                        val responseTokens = (fullResponse.length / 3).coerceAtLeast(1)
                         estimatedSessionTokens += responseTokens
                         Log.d(TAG, "Updated session tokens: +$responseTokens = $estimatedSessionTokens")
                     } catch (e: Exception) {
@@ -1028,8 +1044,36 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             isGenerating = false
             Log.d(TAG, "Generation complete for chat $chatId")
             // Don't close the session here - it's managed by the model instance
+            // If we aborted due to repetition, reset the session to clear cached state
+            if (repetitionAbortFlags.remove(chatId)) {
+                Log.w(TAG, "Resetting session after repetition abort for chat $chatId")
+                // Launch a coroutine since awaitClose is not a suspend context
+                launch(Dispatchers.IO) {
+                    try {
+                        resetChatSession(chatId)
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Failed to reset session after repetition abort: ${e.message}")
+                    }
+                }
+            }
         }
     }.flowOn(Dispatchers.IO)
+
+    // Detect simple repetition patterns in a small window of text.
+    // Looks for any n-gram (n=4) that occurs 3+ times in the recent window.
+    private fun hasRepetitionPattern(textWindow: String, n: Int = 4, repeats: Int = 3): Boolean {
+        if (textWindow.length < n * repeats) return false
+        val tokens = textWindow.split(Regex("\\s+")).filter { it.isNotEmpty() }
+        if (tokens.size < n * repeats) return false
+        val counts = HashMap<String, Int>()
+        for (i in 0..tokens.size - n) {
+            val key = tokens.subList(i, i + n).joinToString(" ")
+            val c = (counts[key] ?: 0) + 1
+            if (c >= repeats) return true
+            counts[key] = c
+        }
+        return false
+    }
 
     /**
      * Check if the exception is a known MediaPipe session error
