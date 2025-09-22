@@ -150,6 +150,11 @@ fun ChatScreen(
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
     
+    // Edit-last-prompt state
+    var isEditingLastPrompt by remember { mutableStateOf(false) }
+    var editedPromptText by remember { mutableStateOf("") }
+    val latestUserMessage = messages.lastOrNull { it.isFromUser }
+
     // Auto-scroll to bottom when a new message finishes
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
@@ -548,11 +553,19 @@ fun ChatScreen(
                                                 message.content != "…" && 
                                                 message == messages.lastOrNull { !it.isFromUser }
                         val canRegenerate = isLatestAiMessage && !isLoading && !isLoadingModel
+                        val canEditThisUser = message.isFromUser && message.id == latestUserMessage?.id && !isLoading && !isLoadingModel
                         MessageBubble(
                             message = message,
                             streamingContent = streamingText,
                             onRegenerateResponse = if (canRegenerate) {
                                 { viewModel.regenerateResponse(context, message.id) }
+                            } else null,
+                            onEditUserMessage = if (canEditThisUser) {
+                                {
+                                    isEditingLastPrompt = true
+                                    editedPromptText = message.content
+                                    // Do not clear focus; MessageInput will request focus and open keyboard
+                                }
                             } else null
                         )
                     }
@@ -574,7 +587,23 @@ fun ChatScreen(
                     isLoading = isLoading,
                     onCancelGeneration = if (isLoading) {
                         { viewModel.stopGeneration() }
-                    } else null
+                    } else null,
+                    isEditing = isEditingLastPrompt,
+                    editText = editedPromptText,
+                    onEditTextChange = { editedPromptText = it },
+                    onConfirmEdit = {
+                        val text = editedPromptText.trim()
+                        if (text.isNotEmpty()) {
+                            isEditingLastPrompt = false
+                            editedPromptText = ""
+                            // Dispatch after clearing local UI state so input doesn't linger
+                            viewModel.editLastUserMessageAndResend(context, text)
+                        }
+                    },
+                    onCancelEdit = {
+                        isEditingLastPrompt = false
+                        editedPromptText = ""
+                    }
                 )
                 }
             }

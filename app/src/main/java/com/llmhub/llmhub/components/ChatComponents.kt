@@ -90,6 +90,10 @@ import kotlinx.coroutines.launch
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.TextRange
 
 /**
  * Custom selectable markdown text component that supports both markdown rendering and text selection.
@@ -379,7 +383,8 @@ fun parseInlineMarkdown(text: String, baseColor: Color, builder: AnnotatedString
 fun MessageBubble(
     message: MessageEntity,
     streamingContent: String = "",
-    onRegenerateResponse: (() -> Unit)? = null
+    onRegenerateResponse: (() -> Unit)? = null,
+    onEditUserMessage: (() -> Unit)? = null
 ) {
     var showFullScreenImage by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -475,7 +480,7 @@ fun MessageBubble(
                 }
             }
             
-            // Show copy button for user messages
+            // Show actions row for user messages
             if (message.content.isNotEmpty() && message.content != "Shared a file") {
                 Row(
                     modifier = Modifier
@@ -497,6 +502,20 @@ fun MessageBubble(
                             modifier = Modifier.size(12.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                    }
+                    if (onEditUserMessage != null) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        IconButton(
+                            onClick = onEditUserMessage,
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                Icons.Outlined.Edit,
+                                contentDescription = "Edit message",
+                                modifier = Modifier.size(12.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
@@ -1004,12 +1023,18 @@ fun MessageInput(
     supportsVision: Boolean = false,
     supportsAudio: Boolean = false, // New parameter for audio support
     isLoading: Boolean = false,
-    onCancelGeneration: (() -> Unit)? = null
+    onCancelGeneration: (() -> Unit)? = null,
+    // Edit mode support
+    isEditing: Boolean = false,
+    editText: String? = null,
+    onEditTextChange: ((String) -> Unit)? = null,
+    onConfirmEdit: (() -> Unit)? = null,
+    onCancelEdit: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-    var text by remember { mutableStateOf("") }
+    var textState by remember { mutableStateOf(TextFieldValue("")) }
     var attachmentUri by remember { mutableStateOf<Uri?>(null) }
     var attachmentInfo by remember { mutableStateOf<FileUtils.FileInfo?>(null) }
     var showFilePreview by remember { mutableStateOf(false) }
@@ -1024,6 +1049,27 @@ fun MessageInput(
     // Audio service
     val audioService = remember { AudioInputService(context) }
     val coroutineScope = rememberCoroutineScope()
+    // Sync internal text with external edit text when provided
+    LaunchedEffect(isEditing, editText) {
+        if (isEditing && editText != null) {
+            textState = TextFieldValue(
+                text = editText,
+                selection = TextRange(editText.length)
+            )
+        }
+    }
+
+    // Focus management for edit mode
+    val inputFocusRequester = remember { FocusRequester() }
+    LaunchedEffect(isEditing) {
+        if (isEditing) {
+            // Small delay to ensure composable is in the tree before requesting focus
+            kotlinx.coroutines.delay(50)
+            runCatching { inputFocusRequester.requestFocus() }
+            keyboardController?.show()
+        }
+    }
+
     
     // Audio permission launcher
     val audioPermissionLauncher = rememberLauncherForActivityResult(
@@ -1313,9 +1359,14 @@ fun MessageInput(
 
             // Input field with modern styling
             OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
-                modifier = Modifier.fillMaxWidth(),
+                value = textState,
+                onValueChange = {
+                    textState = it
+                    onEditTextChange?.invoke(it.text)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(inputFocusRequester),
                 placeholder = { 
                     Text(
                         stringResource(R.string.type_a_message),
@@ -1461,27 +1512,89 @@ fun MessageInput(
                                 )
                             }
                         }
+                    } else if (isEditing && (onConfirmEdit != null || onCancelEdit != null)) {
+                        // Show confirm/cancel when editing
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (onCancelEdit != null || onEditTextChange != null) {
+                                IconButton(onClick = {
+                                    if (textState.text.isNotEmpty()) {
+                                        textState = TextFieldValue("")
+                                        onEditTextChange?.invoke("")
+                                    } else {
+                                        onCancelEdit?.invoke()
+                                    }
+                                }) {
+                                    Surface(
+                                        modifier = Modifier.size(32.dp),
+                                        shape = RoundedCornerShape(16.dp),
+                                        color = MaterialTheme.colorScheme.surfaceVariant
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Close,
+                                            contentDescription = stringResource(R.string.close),
+                                            modifier = Modifier.padding(6.dp),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                            if (onConfirmEdit != null) {
+                                IconButton(
+                                    onClick = {
+                                        if (textState.text.isNotBlank() || attachmentUri != null || recordedAudioData != null) {
+                                            keyboardController?.hide()
+                                            focusManager.clearFocus()
+                                            onConfirmEdit()
+                                            // Immediately clear local input state after edit-send
+                                            textState = TextFieldValue("")
+                                            onEditTextChange?.invoke("")
+                                            attachmentUri = null
+                                            attachmentInfo = null
+                                            recordedAudioData = null
+                                        }
+                                    },
+                                    enabled = enabled && textState.text.isNotBlank()
+                                ) {
+                                    Surface(
+                                        modifier = Modifier.size(32.dp),
+                                        shape = RoundedCornerShape(16.dp),
+                                        color = if (enabled && textState.text.isNotBlank())
+                                            MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.surfaceVariant
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Send,
+                                            contentDescription = stringResource(R.string.send),
+                                            modifier = Modifier.padding(6.dp),
+                                            tint = if (enabled && textState.text.isNotBlank())
+                                                MaterialTheme.colorScheme.onPrimary
+                                            else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     } else {
                         // Show send button when not loading
                         IconButton(
                             onClick = {
-                                if (text.isNotBlank() || attachmentUri != null || recordedAudioData != null) {
+                                if (textState.text.isNotBlank() || attachmentUri != null || recordedAudioData != null) {
                                     // Aggressively hide keyboard using multiple methods
                                     keyboardController?.hide()
                                     focusManager.clearFocus()
-                                    onSendMessage(text, attachmentUri, recordedAudioData)
-                                    text = ""
+                                    onSendMessage(textState.text, attachmentUri, recordedAudioData)
+                                    textState = TextFieldValue("")
                                     attachmentUri = null
                                     attachmentInfo = null
                                     recordedAudioData = null
                                 }
                             },
-                            enabled = enabled && (text.isNotBlank() || attachmentUri != null || recordedAudioData != null)
+                            enabled = enabled && (textState.text.isNotBlank() || attachmentUri != null || recordedAudioData != null)
                         ) {
                             Surface(
                                 modifier = Modifier.size(32.dp),
                                 shape = RoundedCornerShape(16.dp),
-                                color = if (enabled && (text.isNotBlank() || attachmentUri != null || recordedAudioData != null)) 
+                                color = if (enabled && (textState.text.isNotBlank() || attachmentUri != null || recordedAudioData != null)) 
                                     MaterialTheme.colorScheme.primary 
                                 else MaterialTheme.colorScheme.surfaceVariant
                             ) {
@@ -1489,7 +1602,7 @@ fun MessageInput(
                                     Icons.Default.Send,
                                     contentDescription = stringResource(R.string.send),
                                     modifier = Modifier.padding(6.dp),
-                                    tint = if (enabled && (text.isNotBlank() || attachmentUri != null || recordedAudioData != null)) 
+                                    tint = if (enabled && (textState.text.isNotBlank() || attachmentUri != null || recordedAudioData != null)) 
                                         MaterialTheme.colorScheme.onPrimary 
                                     else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
