@@ -1917,7 +1917,7 @@ fun FileAttachmentCard(
 }
 
 /**
- * Audio message card with playback controls
+ * Audio message card with waveform playback controls
  */
 @Composable
 fun AudioMessageCard(
@@ -1970,49 +1970,7 @@ fun AudioMessageCard(
         Column(
             modifier = Modifier.padding(12.dp)
         ) {
-            // Audio info header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Default.VolumeUp,
-                    contentDescription = stringResource(R.string.audio_file),
-                    tint = if (isFromUser) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-                )
-                
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = fileName,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (isFromUser) {
-                            MaterialTheme.colorScheme.onPrimaryContainer
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = "${stringResource(R.string.audio_file)} • ${fileSize?.let { "${it / 1000}KB" } ?: "Unknown size"}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (isFromUser) {
-                            MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                        }
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            // Playback controls
+            // Playback controls with waveform
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -2072,25 +2030,48 @@ fun AudioMessageCard(
                     )
                 }
                 
-                // Progress bar
+                // Waveform progress visualization
+                val progress = if (duration > 0) currentPosition.toFloat() / duration.toFloat() else 0f
+                // Use high-contrast colors so the waveform is visible on both themes
+                val baseActiveColor = if (isFromUser) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                }
+                val activeColor = baseActiveColor
+                val inactiveColor = baseActiveColor.copy(alpha = 0.35f)
+                val barHeights = remember(audioPath) {
+                    val random = java.util.Random(audioPath.hashCode().toLong())
+                    List(64) { 0.35f + random.nextFloat() * 0.65f }
+                }
+                Canvas(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                ) {
+                    val barCount = barHeights.size
+                    val spacingPx = 3f
+                    val totalSpacing = spacingPx * (barCount - 1)
+                    val barWidth = (size.width - totalSpacing) / barCount
+                    val centerY = size.height / 2f
+                    val maxBarHeight = size.height
+                    val progressBars = (progress * barCount).coerceIn(0f, barCount.toFloat())
+                    for (i in 0 until barCount) {
+                        val height = (barHeights[i] * maxBarHeight).coerceAtMost(maxBarHeight)
+                        val left = i * (barWidth + spacingPx)
+                        val top = centerY - height / 2f
+                        val color = if (i < progressBars) activeColor else inactiveColor
+                        drawRoundRect(
+                            color = color,
+                            topLeft = androidx.compose.ui.geometry.Offset(left, top),
+                            size = androidx.compose.ui.geometry.Size(barWidth, height),
+                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(x = barWidth / 2f, y = barWidth / 2f)
+                        )
+                    }
+                }
+                
+                // Time text or hint
                 if (duration > 0) {
-                    LinearProgressIndicator(
-                        progress = currentPosition.toFloat() / duration.toFloat(),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(4.dp),
-                        color = if (isFromUser) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                        trackColor = if (isFromUser) {
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-                        }
-                    )
-                    
                     Text(
                         text = "${formatTime(currentPosition)} / ${formatTime(duration)}",
                         style = MaterialTheme.typography.bodySmall,
@@ -2101,7 +2082,6 @@ fun AudioMessageCard(
                         }
                     )
                 } else {
-                    Spacer(modifier = Modifier.weight(1f))
                     Text(
                         text = stringResource(R.string.tap_to_play),
                         style = MaterialTheme.typography.bodySmall,
