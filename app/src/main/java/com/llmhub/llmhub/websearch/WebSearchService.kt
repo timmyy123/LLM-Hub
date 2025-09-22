@@ -658,43 +658,163 @@ object SearchIntentDetector {
     
     private val searchKeywords = listOf(
         // Direct search requests
-        "search for", "search", "look up", "find information about", "find info about",
+        "search for", "search", "look up", "find me", "find information about", "find info about",
         "google", "bing", "search the web", "web search",
+        // German
+        "suche nach", "suche", "nachschlagen", "finde mir", "finde informationen über", "im web suchen", "websuche", "suche im internet",
+        // Spanish
+        "buscar", "busca", "búscame", "buscar información sobre", "buscar en la web", "búsqueda web",
+        // French
+        "rechercher", "cherche", "chercher", "trouver des informations sur", "recherche sur le web", "recherche web",
+        // Italian
+        "cerca", "cercare", "cerca informazioni su", "cercami", "ricerca sul web", "ricerca web",
+        // Portuguese
+        "pesquisar", "pesquise", "procure", "procurar informações sobre", "pesquisa na web", "buscar na web",
+        // Russian
+        "поиск", "найди", "найти", "найди информацию о", "поиск в интернете", "веб-поиск",
         
         // Current/recent information requests
         "what's the latest", "latest news", "recent", "current", "today", "this week",
         "what happened", "news about", "recent news", "latest update",
+        // German
+        "was ist neu", "neueste nachrichten", "neueste", "aktuell", "heute", "diese woche", "was ist passiert", "nachrichten über", "aktualisierung",
+        // Spanish
+        "qué hay de nuevo", "últimas noticias", "reciente", "actual", "hoy", "esta semana", "qué pasó", "noticias sobre", "actualización",
+        // French
+        "quoi de neuf", "dernières nouvelles", "récent", "actuel", "aujourd'hui", "cette semaine", "que s'est-il passé", "actualités sur", "mise à jour",
+        // Italian
+        "cosa c'è di nuovo", "ultime notizie", "recente", "attuale", "oggi", "questa settimana", "cosa è successo", "notizie su", "aggiornamento",
+        // Portuguese
+        "o que há de novo", "últimas notícias", "recente", "atual", "hoje", "esta semana", "o que aconteceu", "notícias sobre", "atualização",
+        // Russian
+        "что нового", "последние новости", "недавние", "актуальные", "сегодня", "на этой неделе", "что произошло", "новости о", "обновление",
         
         // Question words that often need current info
         "what is happening", "what's happening", "what's new", "what are the latest",
+        // German
+        "was passiert", "was gibt's neues",
+        // Spanish
+        "qué está pasando", "qué hay de nuevo",
+        // French
+        "que se passe-t-il", "quoi de neuf",
+        // Italian
+        "cosa sta succedendo", "cosa c'è di nuovo",
+        // Portuguese
+        "o que está acontecendo", "o que há de novo",
+        // Russian
+        "что происходит", "что нового",
         
         // Time-sensitive queries
         "now", "currently", "at the moment", "right now", "today's",
+        // German
+        "jetzt", "derzeit", "im moment", "heute",
+        // Spanish
+        "ahora", "actualmente", "en este momento", "de hoy",
+        // French
+        "maintenant", "actuellement", "en ce moment", "d'aujourd'hui",
+        // Italian
+        "adesso", "attualmente", "in questo momento", "di oggi",
+        // Portuguese
+        "agora", "atualmente", "neste momento", "de hoje",
+        // Russian
+        "сейчас", "в настоящее время", "в данный момент", "сегодняшний",
         
         // Stock/price/weather queries
         "stock price", "weather", "temperature", "forecast", "price of",
+        // German
+        "aktienkurs", "wetter", "temperatur", "vorhersage", "preis",
+        // Spanish
+        "precio de la acción", "clima", "tiempo", "temperatura", "pronóstico", "precio de",
+        // French
+        "cours de l'action", "météo", "température", "prévision", "prix de",
+        // Italian
+        "prezzo delle azioni", "meteo", "temperatura", "previsioni", "prezzo di",
+        // Portuguese
+        "preço da ação", "clima", "tempo", "temperatura", "previsão", "preço de",
+        // Russian
+        "курс акции", "погода", "температура", "прогноз", "цена",
         
         // Events and schedules
         "when is", "schedule", "events", "concerts", "movies",
+        // German
+        "wann ist", "zeitplan", "veranstaltungen", "konzerte", "filme",
+        // Spanish
+        "cuándo es", "programación", "eventos", "conciertos", "películas",
+        // French
+        "quand est", "programme", "événements", "concerts", "films",
+        // Italian
+        "quando è", "programma", "eventi", "concerti", "film",
+        // Portuguese
+        "quando é", "agenda", "eventos", "shows", "filmes",
+        // Russian
+        "когда", "расписание", "события", "концерты", "фильмы",
         
         // Technology and product info
-        "release date", "specs", "reviews", "latest version"
+        "release date", "specs", "reviews", "latest version",
+        // German
+        "veröffentlichungsdatum", "spezifikationen", "bewertungen", "neueste version",
+        // Spanish
+        "fecha de lanzamiento", "especificaciones", "reseñas", "última versión",
+        // French
+        "date de sortie", "caractéristiques", "avis", "dernière version",
+        // Italian
+        "data di rilascio", "specifiche", "recensioni", "ultima versione",
+        // Portuguese
+        "data de lançamento", "especificações", "avaliações", "última versão",
+        // Russian
+        "дата выхода", "характеристики", "отзывы", "последняя версия"
     )
     
     private val weatherKeywords = listOf(
         "weather", "temperature", "forecast", "rain", "snow", "sunny", "cloudy",
-        "hot", "cold", "warm", "cool", "humid", "wind", "storm", "climate"
+        "hot", "cold", "warm", "cool", "humid", "wind", "storm", "climate",
+        // German
+        "wetter", "temperatur", "vorhersage", "regen", "schnee", "sonnig", "bewölkt", "heiß", "kalt", "warm", "kühl", "feucht", "wind", "sturm", "klima",
+        // Spanish
+        "clima", "tiempo", "temperatura", "pronóstico", "lluvia", "nieve", "soleado", "nublado", "calor", "frío", "templado", "fresco", "húmedo", "viento", "tormenta",
+        // French
+        "météo", "temps", "température", "prévision", "pluie", "neige", "ensoleillé", "nuageux", "chaud", "froid", "doux", "frais", "humide", "vent", "tempête", "climat",
+        // Italian
+        "meteo", "tempo", "temperatura", "previsioni", "pioggia", "neve", "soleggiato", "nuvoloso", "caldo", "freddo", "umido", "vento", "tempesta", "clima",
+        // Portuguese
+        "clima", "tempo", "temperatura", "previsão", "chuva", "neve", "ensolarado", "nublado", "calor", "frio", "ameno", "fresco", "úmido", "vento", "tempestade",
+        // Russian
+        "погода", "температура", "прогноз", "дождь", "снег", "солнечно", "облачно", "жарко", "холодно", "тепло", "прохладно", "влажно", "ветер", "шторм", "климат"
     )
     
     private val locationKeywords = listOf(
         "in my city", "my city", "my location", "here", "current location",
-        "where I am", "locally", "nearby", "around me"
+        "where I am", "locally", "nearby", "around me",
+        // German
+        "in meiner stadt", "meine stadt", "mein standort", "hier", "aktueller standort", "wo ich bin", "in der nähe", "in meiner nähe", "um mich herum", "lokal",
+        // Spanish
+        "en mi ciudad", "mi ciudad", "mi ubicación", "aquí", "ubicación actual", "donde estoy", "cerca", "cercano", "alrededor de mí",
+        // French
+        "dans ma ville", "ma ville", "ma position", "ici", "position actuelle", "où je suis", "à proximité", "près de moi", "autour de moi", "localement",
+        // Italian
+        "nella mia città", "la mia città", "la mia posizione", "qui", "posizione attuale", "dove sono", "vicino", "nelle vicinanze", "intorno a me", "localmente",
+        // Portuguese
+        "na minha cidade", "minha cidade", "minha localização", "aqui", "localização atual", "onde estou", "perto", "perto de mim", "nas proximidades", "ao meu redor", "localmente",
+        // Russian
+        "в моем городе", "мой город", "мое местоположение", "здесь", "текущее местоположение", "где я", "рядом", "поблизости", "вокруг меня", "локально"
     )
     
     private val currentInfoKeywords = listOf(
         "2024", "2025", "latest", "newest", "recent", "current", "today", "now",
         "breaking", "news", "update", "announcement", "today's", "this week",
-        "right now", "currently"
+        "right now", "currently",
+        // German
+        "neueste", "aktuell", "heute", "jetzt", "diese woche", "nachrichten", "aktualisierung", "ankündigung",
+        // Spanish
+        "últimas", "lo último", "reciente", "actual", "hoy", "ahora", "esta semana", "noticias", "actualización", "anuncio",
+        // French
+        "dernières", "récent", "actuel", "aujourd'hui", "maintenant", "cette semaine", "actualités", "mise à jour", "annonce",
+        // Italian
+        "ultime", "recente", "attuale", "oggi", "adesso", "questa settimana", "notizie", "aggiornamento", "annuncio",
+        // Portuguese
+        "últimas", "recente", "atual", "hoje", "agora", "esta semana", "notícias", "atualização", "anúncio",
+        // Russian
+        "последние", "актуальные", "сегодня", "сейчас", "на этой неделе", "новости", "обновление", "объявление"
     )
     
     fun needsWebSearch(query: String): Boolean {
