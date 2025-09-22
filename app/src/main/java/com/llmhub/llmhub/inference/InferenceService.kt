@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import android.app.ActivityManager
+import kotlinx.coroutines.CancellationException
 
 /**
  * Interface for a service that can run model inference.
@@ -261,13 +262,33 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 
             } catch (e: Exception) {
                 Log.e(TAG, "Error resetting session for chat $chatId: ${e.message}", e)
-                // On error, try to recreate the entire model instance
+                // Avoid full model reload for benign cancellations (e.g., repetition abort path)
+                val isBenignCancellation = (e is CancellationException) ||
+                        (e.message?.contains("ProducerCoroutine was cancelled", ignoreCase = true) == true)
+
                 try {
-                    currentModel?.let { model ->
-                        loadModelFromPath(model, currentBackend)
+                    val instance = modelInstance
+                    if (instance != null) {
+                        try {
+                            instance.session.close()
+                        } catch (closeEx: Exception) {
+                            Log.w(TAG, "Error closing session during recovery: ${closeEx.message}")
+                        }
+                        instance.session = createSession(instance.engine)
+                        estimatedSessionTokens = 0
+                        Log.d(TAG, "Recreated session on existing engine after reset error (benign=${isBenignCancellation})")
+                        delay(300)
+                    } else if (!isBenignCancellation) {
+                        // If we truly have no instance and this wasn't a benign cancellation, last resort reload
+                        currentModel?.let { model ->
+                            loadModelFromPath(model, currentBackend)
+                            Log.d(TAG, "Reloaded model as last resort due to missing instance")
+                        }
+                    } else {
+                        Log.w(TAG, "No model instance present; skipping model reload after benign cancellation")
                     }
                 } catch (retryException: Exception) {
-                    Log.e(TAG, "Failed to recreate model instance: ${retryException.message}", retryException)
+                    Log.e(TAG, "Recovery after reset error failed: ${retryException.message}", retryException)
                 }
             }
             
@@ -1162,45 +1183,40 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
     private suspend fun forceRecreateSession(): Boolean {
         return sessionMutex.withLock {
             try {
-                Log.d(TAG, "Force recreating session as last resort")
-                val currentModelBackup = currentModel
-                
-                // Close everything
-                modelInstance?.let { instance ->
+                Log.d(TAG, "Force recreating session (session-only)")
+                val instance = modelInstance
+                if (instance != null) {
                     try {
                         instance.session.close()
                     } catch (e: Exception) {
                         Log.d(TAG, "Error closing session during force recreate: ${e.message}")
                     }
-                    try {
-                        instance.engine.close()
-                    } catch (e: Exception) {
-                        Log.d(TAG, "Error closing engine during force recreate: ${e.message}")
+                    // Do not close engine; rebuild session only
+                    instance.session = createSession(instance.engine)
+                    estimatedSessionTokens = 0
+                    delay(300)
+                    Log.d(TAG, "Successfully recreated session without model reload")
+                    true
+                } else {
+                    // Only if there is truly no instance, reload as a last last resort
+                    val currentModelBackup = currentModel
+                    if (currentModelBackup != null) {
+                        try {
+                            loadModelFromPath(currentModelBackup, currentBackend)
+                            Log.d(TAG, "Recreated engine+session due to missing instance")
+                            true
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Failed to reload model during force recreate: ${e.message}", e)
+                            false
+                        }
+                    } else {
+                        Log.e(TAG, "No model to reload during force recreate")
+                        false
                     }
                 }
-                
-                modelInstance = null
-                currentModel = null
-                
-                // Wait longer for cleanup
-                delay(1000)
-                
-                // Reload the model if we had one
-                if (currentModelBackup != null) {
-                    try {
-                        loadModelFromPath(currentModelBackup, currentBackend)
-                        Log.d(TAG, "Successfully force recreated session")
-                        return@withLock true
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to reload model during force recreate: ${e.message}", e)
-                    }
-                }
-                
-                Log.e(TAG, "Force recreate failed")
-                return@withLock false
             } catch (e: Exception) {
-                Log.e(TAG, "Exception during force recreate: ${e.message}", e)
-                return@withLock false
+                Log.e(TAG, "Exception during session-only force recreate: ${e.message}", e)
+                false
             }
         }
     }
