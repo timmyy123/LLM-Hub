@@ -787,11 +787,10 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             val defaultMaxTokens = getMaxTokensForModel(model)
             val maxTokens = overrideMaxTokens?.coerceAtMost(defaultMaxTokens) ?: defaultMaxTokens
             Log.d(TAG, "Using token limits - defaultMaxTokens=$defaultMaxTokens overrideMaxTokens=${overrideMaxTokens ?: "null"} effectiveMaxTokens=$maxTokens")
-            // Use conservative token estimation to avoid crashes with sizeInTokens()
-            // Only estimate tokens for the current user input, not the entire conversation history
+            // Reserve ~1/3 for model response; prevent sending input when it eats into reserve
             val currentUserInput = extractCurrentUserMessage(prompt)
             val promptTokens = (currentUserInput.length / 3).coerceAtLeast(1)
-            val outputReserve = (maxTokens * 0.15).toInt().coerceAtLeast(128) // reserve space for response
+            val outputReserve = (maxTokens * 0.33).toInt().coerceAtLeast(128)
             var currentTokens = estimatedSessionTokens
             // If our estimate undercounts (e.g., after recovery) fall back to session.sizeInTokens(prompt) heuristic not available; keep estimate
             
@@ -802,8 +801,8 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             
             // If adding the prompt would exceed ~80% of max tokens, reset the session
             // Use a lower threshold since we're using conservative estimation
-            val tokenThreshold = (maxTokens * 0.8).toInt()
-            if (currentTokens + promptTokens > tokenThreshold) {
+            val tokenThreshold = (maxTokens - outputReserve).coerceAtLeast(1)
+            if (currentTokens + promptTokens >= tokenThreshold) {
                 Log.w(TAG, "Token count ($currentTokens + $promptTokens = ${currentTokens + promptTokens}) approaching limit ($maxTokens)")
                 Log.w(TAG, "Resetting session for chat $chatId to prevent OUT_OF_RANGE error")
                 
@@ -841,18 +840,71 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             // This is required by MediaPipe's vision implementation
             if (enhancedPrompt.trim().isNotEmpty()) {
                 Log.d(TAG, "Adding text query to session for chat $chatId: '${enhancedPrompt.take(100)}...'")
-                currentSession.addQueryChunk(enhancedPrompt)
-                estimatedSessionTokens += promptTokens
+                try {
+                    currentSession.addQueryChunk(enhancedPrompt)
+                    estimatedSessionTokens += promptTokens
+                } catch (e: Exception) {
+                    val msg = e.message ?: ""
+                    if (msg.contains("Previous invocation still processing", ignoreCase = true)) {
+                        Log.w(TAG, "Session busy on addQueryChunk; doing one session-only recreate and retry once")
+                        // One-shot session-only recreate, no model reload
+                        sessionMutex.withLock {
+                            modelInstance?.let { inst ->
+                                try { inst.session.close() } catch (_: Exception) {}
+                                inst.session = createSession(inst.engine)
+                            }
+                        }
+                        // single retry
+                        currentSession.addQueryChunk(enhancedPrompt)
+                        estimatedSessionTokens += promptTokens
+                    } else {
+                        throw e
+                    }
+                }
             } else if (images.isNotEmpty() && model.supportsVision) {
                 // If we have images but no text, add a default query for vision models
                 Log.d(TAG, "Adding default vision query for images in chat $chatId")
-                currentSession.addQueryChunk("What do you see in this image?")
-                estimatedSessionTokens += session.sizeInTokens("What do you see in this image?")
+                try {
+                    currentSession.addQueryChunk("What do you see in this image?")
+                    estimatedSessionTokens += session.sizeInTokens("What do you see in this image?")
+                } catch (e: Exception) {
+                    val msg = e.message ?: ""
+                    if (msg.contains("Previous invocation still processing", ignoreCase = true)) {
+                        Log.w(TAG, "Session busy on vision default query; session-only recreate then single retry")
+                        sessionMutex.withLock {
+                            modelInstance?.let { inst ->
+                                try { inst.session.close() } catch (_: Exception) {}
+                                inst.session = createSession(inst.engine)
+                            }
+                        }
+                        currentSession.addQueryChunk("What do you see in this image?")
+                        estimatedSessionTokens += session.sizeInTokens("What do you see in this image?")
+                    } else {
+                        throw e
+                    }
+                }
             } else if (audioData != null && model.supportsAudio && enhancedPrompt.trim().isEmpty()) {
                 // If we have audio but no text, add a default query for audio models
                 Log.d(TAG, "Adding default audio query for audio-only prompt in chat $chatId")
-                currentSession.addQueryChunk("Transcribe the following speech segment and respond to it:")
-                estimatedSessionTokens += session.sizeInTokens("Transcribe the following speech segment and respond to it:")
+                try {
+                    currentSession.addQueryChunk("Transcribe the following speech segment and respond to it:")
+                    estimatedSessionTokens += session.sizeInTokens("Transcribe the following speech segment and respond to it:")
+                } catch (e: Exception) {
+                    val msg = e.message ?: ""
+                    if (msg.contains("Previous invocation still processing", ignoreCase = true)) {
+                        Log.w(TAG, "Session busy on audio default query; session-only recreate then single retry")
+                        sessionMutex.withLock {
+                            modelInstance?.let { inst ->
+                                try { inst.session.close() } catch (_: Exception) {}
+                                inst.session = createSession(inst.engine)
+                            }
+                        }
+                        currentSession.addQueryChunk("Transcribe the following speech segment and respond to it:")
+                        estimatedSessionTokens += session.sizeInTokens("Transcribe the following speech segment and respond to it:")
+                    } else {
+                        throw e
+                    }
+                }
             }
             
             // Add images AFTER text query (MediaPipe requirement for vision models)
@@ -1277,7 +1329,8 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
     override fun wasSessionRecentlyReset(chatId: String): Boolean {
         val resetTime = sessionResetTimes[chatId] ?: return false
         val timeSinceReset = System.currentTimeMillis() - resetTime
-        return timeSinceReset < 2000 // 2 seconds
+        // Extend window so downstream callers reliably detect a fresh reset
+        return timeSinceReset < 10_000 // 10 seconds
     }
     
     /**
