@@ -985,10 +985,10 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 if (done) {
                     isGenerationComplete = true
                     isGenerating = false
-                    // Update session token count with response tokens (using safe estimation)
+                    // Update session token count with response tokens (using standardized 4 chars/token estimation)
                     try {
                         val fullResponse = responseBuilder.toString()
-                        val responseTokens = (fullResponse.length / 3).coerceAtLeast(1)
+                        val responseTokens = kotlin.math.ceil(fullResponse.length / 4.0).toInt().coerceAtLeast(1)
                         estimatedSessionTokens += responseTokens
                         Log.d(TAG, "Updated session tokens: +$responseTokens = $estimatedSessionTokens")
                     } catch (e: Exception) {

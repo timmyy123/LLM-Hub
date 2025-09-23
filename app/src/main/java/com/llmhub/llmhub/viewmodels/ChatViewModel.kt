@@ -977,6 +977,8 @@ class ChatViewModel(
                             // from the model generation timing used for tok/sec reporting.
                             var ragSearchTimeMs = 0L
                             var totalContent = ""
+                            var firstChunkAt = 0L
+                            var lastChunkAt = 0L
                             
                             try {
                                 // Pre-load model separately from generation timing
@@ -1322,12 +1324,16 @@ class ChatViewModel(
                         audioData, // Pass audio data for Gemma-3n models
                         webSearchEnabled
                     )
+                    // Track precise generation window based on first and last streamed chunks
                                     var lastUpdateTime = 0L
                                     val updateIntervalMs = 50L // Update UI every 50ms instead of every token
                                     var segmentEnded = false
                                     var segmentHasContent = false
                                     
                                     responseStream.collect { piece ->
+                        val nowTs = System.currentTimeMillis()
+                        if (piece.isNotEmpty() && firstChunkAt == 0L) firstChunkAt = nowTs
+                        lastChunkAt = nowTs
                                         currentSegment += piece
                                         totalContent += piece
                                         
@@ -1426,8 +1432,9 @@ class ChatViewModel(
                                 repository.updateMessageContent(placeholderId, safeFinal.trimEnd())
                                 val time = System.currentTimeMillis() - generationStartTime
                                 val netTime = (time - ragSearchTimeMs).coerceAtLeast(1L)
-                                Log.d("ChatViewModel", "About to call finalizeMessage for success (raw=${time}ms, rag=${ragSearchTimeMs}ms, net=${netTime}ms)")
-                                finalizeMessage(placeholderId, safeFinal, netTime)
+                                val streamDurationMs = ((if (lastChunkAt > 0) lastChunkAt else System.currentTimeMillis()) - (if (firstChunkAt > 0) firstChunkAt else generationStartTime)).coerceAtLeast(1L)
+                                Log.d("ChatViewModel", "About to call finalizeMessage for success (raw=${time}ms, rag=${ragSearchTimeMs}ms, net=${netTime}ms, stream=${streamDurationMs}ms)")
+                                finalizeMessage(placeholderId, safeFinal, streamDurationMs)
 
                     } catch (e: Exception) {
                         val finalContent = totalContent
@@ -1470,7 +1477,8 @@ class ChatViewModel(
                             } else sanitizeModelOutput(finalContent)
                             repository.updateMessageContent(placeholderId, safeFinal.trimEnd())
                             Log.d("ChatViewModel", "About to call finalizeMessage (NonCancellable)")
-                            finalizeMessage(placeholderId, safeFinal, netTime)
+                            val streamDurationMs = ((if (lastChunkAt > 0) lastChunkAt else System.currentTimeMillis()) - (if (firstChunkAt > 0) firstChunkAt else generationStartTime)).coerceAtLeast(1L)
+                            finalizeMessage(placeholderId, safeFinal, streamDurationMs)
                         }
                     } finally {
                         _isLoading.value = false
@@ -2889,6 +2897,8 @@ class ChatViewModel(
                     val generationStartTime = System.currentTimeMillis()
                     var ragSearchTimeMs = 0L
                     var totalContent = ""
+                    var firstChunkAt = 0L
+                    var lastChunkAt = 0L
                     
                     try {
                         // Build the full history including the user message at the end
@@ -2921,6 +2931,9 @@ class ChatViewModel(
                         val updateIntervalMs = 50L
                         
                         responseStream.collect { piece ->
+                            val nowTs = System.currentTimeMillis()
+                            if (piece.isNotEmpty() && firstChunkAt == 0L) firstChunkAt = nowTs
+                            lastChunkAt = nowTs
                             totalContent += piece
                             
                             // Real-time checks for repetition and length
@@ -2970,8 +2983,9 @@ class ChatViewModel(
                         repository.updateMessageContent(placeholderId, finalContent.trimEnd())
                         val time = System.currentTimeMillis() - generationStartTime
                         val netTime = (time - ragSearchTimeMs).coerceAtLeast(1L)
-                        Log.d("ChatViewModel", "About to call finalizeMessage for regeneration (raw=${time}ms, rag=${ragSearchTimeMs}ms, net=${netTime}ms)")
-                        finalizeMessage(placeholderId, finalContent, netTime)
+                        val streamDurationMs = ((if (lastChunkAt > 0) lastChunkAt else System.currentTimeMillis()) - (if (firstChunkAt > 0) firstChunkAt else generationStartTime)).coerceAtLeast(1L)
+                        Log.d("ChatViewModel", "About to call finalizeMessage for regeneration (raw=${time}ms, rag=${ragSearchTimeMs}ms, net=${netTime}ms, stream=${streamDurationMs}ms)")
+                        finalizeMessage(placeholderId, finalContent, streamDurationMs)
                         
                         Log.d("ChatViewModel", "Regeneration completed successfully")
                         
@@ -2986,7 +3000,8 @@ class ChatViewModel(
                         withContext(kotlinx.coroutines.NonCancellable) {
                             repository.updateMessageContent(placeholderId, finalContent.trimEnd())
                             Log.d("ChatViewModel", "About to call finalizeMessage for regeneration (exception) (raw=${time}ms, rag=${ragSearchTimeMs}ms, net=${netTime}ms)")
-                            finalizeMessage(placeholderId, finalContent, netTime)
+                            val streamDurationMs = ((if (lastChunkAt > 0) lastChunkAt else System.currentTimeMillis()) - (if (firstChunkAt > 0) firstChunkAt else generationStartTime)).coerceAtLeast(1L)
+                            finalizeMessage(placeholderId, finalContent, streamDurationMs)
                         }
                         
                     } finally {
@@ -3080,6 +3095,8 @@ class ChatViewModel(
             generationJob = launch {
                 val generationStartTime = System.currentTimeMillis()
                 var totalContent = ""
+                var firstChunkAt = 0L
+                var lastChunkAt = 0L
                 try {
                     val fullHistory = if (history.isNotEmpty()) {
                         "$history\n\nuser: ${trimmed}\nassistant:"
@@ -3105,6 +3122,9 @@ class ChatViewModel(
                     )
 
                     responseStream.collect { chunk ->
+                        val nowTs = System.currentTimeMillis()
+                        if (chunk.isNotEmpty() && firstChunkAt == 0L) firstChunkAt = nowTs
+                        lastChunkAt = nowTs
                         totalContent += chunk
                         _streamingContents.value = _streamingContents.value + (placeholderId to totalContent)
                     }
@@ -3113,9 +3133,9 @@ class ChatViewModel(
                     repository.updateMessageContent(placeholderId, totalContent)
                     _streamingContents.value = emptyMap()
 
-                    // Stats
-                    val durationMs = System.currentTimeMillis() - generationStartTime
-                    finalizeMessage(placeholderId, totalContent, durationMs)
+                    // Stats based on streaming window
+                    val streamDurationMs = ((if (lastChunkAt > 0) lastChunkAt else System.currentTimeMillis()) - (if (firstChunkAt > 0) firstChunkAt else generationStartTime)).coerceAtLeast(1L)
+                    finalizeMessage(placeholderId, totalContent, streamDurationMs)
                 } catch (e: CancellationException) {
                     Log.i("ChatViewModel", "Generation cancelled: ${e.message}")
                 } catch (e: Exception) {
