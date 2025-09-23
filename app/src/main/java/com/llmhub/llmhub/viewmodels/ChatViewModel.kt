@@ -265,6 +265,9 @@ class ChatViewModel(
     private var lastSessionResetAt = 0L
     // Force drop of history on the next prompt after any session reset
     private var dropHistoryOnce = false
+    // When returning to an existing chat, prime the next prompt with only the last
+    // user/assistant pair. Consumed once inside buildContextAwareHistory.
+    private var primeWithLastPairOnce = false
     
     private var currentChatId: String?
         get() = savedStateHandle.get<String>(KEY_CURRENT_CHAT_ID)
@@ -473,6 +476,9 @@ class ChatViewModel(
                 } catch (e: Exception) {
                     Log.w("ChatViewModel", "Failed to replicate global chunks into chat $chatId: ${e.message}")
                 }
+                // We are returning to an existing chat: on the next prompt construction,
+                // include only the last prompt/response pair for quick context priming.
+                primeWithLastPairOnce = true
                 val foundModel = _availableModels.value.find { it.name == chat.modelName }
                     ?: ModelData.models.find { it.name == chat.modelName }
                 
@@ -2207,6 +2213,47 @@ class ChatViewModel(
     private fun buildContextAwareHistory(messages: List<MessageEntity>): String {
         val model = currentModel ?: return ""
         val currentChatId = currentChatId ?: return ""
+        
+        // One-time priming: when returning to a chat from history, include ONLY
+        // the last user/assistant pair to quickly re-establish immediate context.
+        if (primeWithLastPairOnce) {
+            val chatMessages = messages.filter { it.chatId == currentChatId }
+            // Find the last assistant message and its preceding user message
+            var lastAssistant: MessageEntity? = null
+            var precedingUser: MessageEntity? = null
+            for (i in chatMessages.indices.reversed()) {
+                val msg = chatMessages[i]
+                if (!msg.isFromUser) {
+                    lastAssistant = msg
+                    // Walk backwards to find the nearest prior user message
+                    var j = i - 1
+                    while (j >= 0) {
+                        val prev = chatMessages[j]
+                        if (prev.isFromUser) {
+                            precedingUser = prev
+                            break
+                        }
+                        j--
+                    }
+                    break
+                }
+            }
+            primeWithLastPairOnce = false
+            if (lastAssistant != null && precedingUser != null) {
+                val userText = if (precedingUser!!.attachmentPath != null && precedingUser!!.attachmentType == "image") {
+                    val base = precedingUser!!.content
+                    if (base.isNotEmpty()) "$base [Image attached]" else "[Image attached]"
+                } else {
+                    precedingUser!!.content
+                }
+                return listOf(
+                    "user: $userText",
+                    if (lastAssistant!!.content.isNotEmpty()) "assistant: ${lastAssistant!!.content}" else "assistant:"
+                ).joinToString("\n\n")
+            } else {
+                // If no complete pair, fall through to normal handling
+            }
+        }
         
     // If we very recently reset the underlying model session, avoid immediately stuffing
     // the entire prior history back in. That would just refill the fresh session and can
