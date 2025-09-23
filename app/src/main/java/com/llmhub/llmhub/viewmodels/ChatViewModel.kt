@@ -263,6 +263,8 @@ class ChatViewModel(
 
     // Track when session was reset due to repetitive content to ensure clean next generation
     private var lastSessionResetAt = 0L
+    // Force drop of history on the next prompt after any session reset
+    private var dropHistoryOnce = false
     
     private var currentChatId: String?
         get() = savedStateHandle.get<String>(KEY_CURRENT_CHAT_ID)
@@ -1361,7 +1363,8 @@ class ChatViewModel(
                                             // Reset the session to prevent future issues
                                             try {
                                                 inferenceService.resetChatSession(chatId)
-                                                Log.d("ChatViewModel", "Reset MediaPipe session due to length limit")
+                                                dropHistoryOnce = true
+                                                Log.d("ChatViewModel", "Reset MediaPipe session due to length limit; will drop history on next prompt")
                                             } catch (e: Exception) {
                                                 Log.w("ChatViewModel", "Failed to reset session: ${e.message}")
                                             }
@@ -2208,6 +2211,11 @@ class ChatViewModel(
     val recentlyResetLocal = (now - lastSessionResetAt) < recentResetWindowMs
     val recentlyResetService = try { inferenceService.wasSessionRecentlyReset(currentChatId) } catch (_: Exception) { false }
     val recentlyReset = recentlyResetLocal || recentlyResetService
+    if (dropHistoryOnce) {
+        Log.d("ChatViewModel", "dropHistoryOnce flag set; returning empty history and clearing flag")
+        dropHistoryOnce = false
+        return ""
+    }
         
         // Filter messages to only include current chat messages
         val chatMessages = messages.filter { it.chatId == currentChatId }
@@ -2266,15 +2274,10 @@ class ChatViewModel(
         // Calculate total length
         val fullHistory = pairStrings.joinToString(separator = "\n\n")
         
-        // QUICK EXIT: If recent reset, aggressively trim to just last few exchanges regardless of size
-        val aggressiveTailPairs = if (recentlyReset) 2 else 0
+        // QUICK EXIT: If recent reset, drop all prior history. Start truly fresh.
         if (recentlyReset) {
-            val trimmed = pairStrings.takeLast(aggressiveTailPairs).joinToString(separator = "\n\n")
-            val withNote = if (pairStrings.size > aggressiveTailPairs) {
-                "[Earlier conversation summarized internally after session reset to free context]\n\n$trimmed"
-            } else trimmed
-            Log.d("ChatViewModel", "Recent reset detected; returning aggressively trimmed history (${withNote.length} chars, ${aggressiveTailPairs} tail pairs)")
-            return withNote.take(maxContextChars)
+            Log.d("ChatViewModel", "Recent reset detected; returning empty history (fully fresh context)")
+            return ""
         }
         
         // If full history fits under relaxed (non-reset) fraction, return it.
@@ -2398,10 +2401,11 @@ class ChatViewModel(
             // Rough estimate of token count (1 token ≈ 4 characters)
             val estimatedTokens = fullPrompt.length / 4
             val maxTokens = minOf(model.contextWindowSize, extractCacheSizeFromUrl(model.url) ?: model.contextWindowSize)
-            // Reserve ~1/3 for response; reset only when prompt+history exceeds ~2/3
-            val tokenThreshold = (maxTokens * 0.66).toInt()
+            // Reserve ~1/3 of the context window for model response. Reset when input >= (max - reserve)
+            val reserveForResponse = (maxTokens * 0.33).toInt().coerceAtLeast(128)
+            val tokenThreshold = (maxTokens - reserveForResponse).coerceAtLeast(1)
             
-            Log.d("ChatViewModel", "Token check for chat $chatId: ~$estimatedTokens tokens, threshold: $tokenThreshold, max: $maxTokens")
+            Log.d("ChatViewModel", "Token check for chat $chatId: ~$estimatedTokens tokens, threshold=$tokenThreshold (reserve=$reserveForResponse), max=$maxTokens")
             
             if (estimatedTokens > tokenThreshold) {
                 Log.w("ChatViewModel", "Token usage approaching limit ($estimatedTokens > $tokenThreshold), recommending session reset")
@@ -2750,6 +2754,9 @@ class ChatViewModel(
                     return@launch
                 }
                 
+                // If the message was a "no response" sentinel, force a fresh context (forget history for this regen)
+                val forceFreshContext = messageToRegenerate.content.contains("No response produced.")
+
                 // Find the user message that prompted this response
                 val messageIndex = currentMessages.indexOf(messageToRegenerate)
                 var userMessage = if (messageIndex > 0) {
@@ -2813,8 +2820,9 @@ class ChatViewModel(
                     // Give more time to ensure any previous operations have completed
                     delay(300)
                     inferenceService.resetChatSession(chatId)
-                    // Record the reset time so history builder aggressively trims after reset
+                    // Record the reset and force-drop history for the next prompt
                     lastSessionResetAt = System.currentTimeMillis()
+                    dropHistoryOnce = true
                     delay(200) // Additional time for session to stabilize
                     Log.d("ChatViewModel", "Reset session for regeneration")
                 } catch (e: Exception) {
@@ -2837,8 +2845,13 @@ class ChatViewModel(
                 }
                 
                 // Build conversation history up to the user message (excluding the user message itself)
-                val historyMessages = messagesToKeep.filter { it.id != userMessage.id }
-                val history = buildContextAwareHistory(historyMessages)
+                val history = if (forceFreshContext) {
+                    Log.d("ChatViewModel", "Force fresh context for regeneration (dropping all prior history)")
+                    ""
+                } else {
+                    val historyMessages = messagesToKeep.filter { it.id != userMessage.id }
+                    buildContextAwareHistory(historyMessages)
+                }
                 
                 // Extract images and handle documents if the user message has attachments
                 val images = if (currentModel!!.supportsVision && userMessage.attachmentPath != null) {
