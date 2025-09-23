@@ -1109,7 +1109,7 @@ class ChatViewModel(
                                                     if (shouldInject) {
                                                         Log.d("ChatViewModel", "✅ Found ${relevantChunks.size} relevant document chunks for query (similarity=${"%.3f".format(topSimilarity)}, overlap=${"%.3f".format(topOverlap)}) - injecting into prompt")
                                                         contextParts.addAll(relevantChunks.map { chunk ->
-                                                            "📄 **${chunk.fileName}** (similarity: ${String.format("%.2f", chunk.similarity)}):\\n${chunk.content}"
+                                                            "📄 **${chunk.fileName}** (similarity: ${String.format("%.2f", chunk.similarity)}):\n${chunk.content}"
                                                         })
                                                     } else {
                                                         Log.d("ChatViewModel", "ℹ️ Skipping document injection: similarity=${"%.3f".format(topSimilarity)}, overlap=${"%.3f".format(topOverlap)} (below thresholds)")
@@ -1122,7 +1122,7 @@ class ChatViewModel(
                                             if (contextParts.isNotEmpty()) {
                                                 // Strong instruction: treat the following lines as confirmed user facts.
                                                 // Do NOT ask the user to paste file contents or reference file names.
-                                                val memoryInstruction = "IMPORTANT: The following lines are USER MEMORY facts. Incorporate them directly into your answer if relevant. Do NOT ask for file contents or reference filenames. If a fact is irrelevant, ignore it."
+                                                val memoryInstruction = "IMPORTANT: The following lines are USER MEMORY facts or relevant content in attatched documents. Incorporate them directly into your answer if relevant. Do NOT ask for file contents or reference filenames. If a fact is irrelevant, ignore it."
                                                     ragContext = "\n\n---\n\nUSER MEMORY FACTS:\n\n" +
                                                         memoryInstruction + "\n\n" +
                                                         contextParts.joinToString("\n\n") +
