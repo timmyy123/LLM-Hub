@@ -32,6 +32,7 @@ fun ChatDrawer(
     onCreateNewChat: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToModels: () -> Unit,
+    onNavigateBack: () -> Unit,
     onClearAllChats: (() -> Unit)? = null,
     viewModel: ChatDrawerViewModel = viewModel()
 ) {
@@ -82,15 +83,26 @@ fun ChatDrawer(
                 .fillMaxHeight()
                 .padding(16.dp)
         ) {
-            // Header
+            // Header with Back Arrow
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 4.dp)
+                modifier = Modifier.padding(bottom = 12.dp)
             ) {
+                IconButton(
+                    onClick = onNavigateBack,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = stringResource(R.string.back),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Spacer(modifier = Modifier.width(4.dp))
                 Icon(
                     Icons.Default.PhoneAndroid,
                     contentDescription = null,
-                    modifier = Modifier.size(32.dp),
+                    modifier = Modifier.size(28.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.width(8.dp))

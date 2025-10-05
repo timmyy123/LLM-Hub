@@ -266,9 +266,7 @@
     <string name="paused_downloaded_format">Приостановлено: %1$s скачано</string>
     <string name="continue_download">Продолжить</string>
     <string name="pause_download">Пауза</string>
-    <string name="resume_download">Возобновить</string>
-    <string name="clear">Очистить</string>
-    <string name="ram_requirement_format">%1$dГБ ОЗУ</string>
+    <string name="resume_download">Возобновить</string>    <string name="ram_requirement_format">%1$dГБ ОЗУ</string>
     
     <!-- File Attachments -->
     <string name="attach_file">Прикрепить файл</string>
@@ -296,17 +294,6 @@
     <string name="tap_to_preview">Нажмите для просмотра</string>
     <string name="text_file_tap_to_preview">Текстовый Файл • Нажмите для просмотра</string>
     <string name="read_this">прочитай это</string>
-    
-    <!-- Gemma Backend Selection -->
-    <string name="select_backend">Выбрать Backend</string>
-    <string name="choose_backend_for_gemma">Выберите backend обработки для модели Gemma</string>
-    <string name="gpu_backend">GPU (Рекомендуется)</string>
-    <string name="cpu_backend">CPU (Резервный)</string>
-    <string name="gpu_backend_description">Более быстрая обработка с использованием GPU устройства</string>
-    <string name="cpu_backend_description">Более медленная, но более стабильная обработка</string>
-    <string name="backend_selection_hint">Если приложение падает или работает неправильно с GPU, попробуйте CPU backend</string>
-    <string name="not_available">Недоступно</string>
-    <string name="gpu_disabled_low_memory">GPU недоступно для этой модели на устройствах с %1$dГБ RAM или меньше</string>
     
     <!-- Audio Recording -->
     <string name="audio_recording">Запись Звука</string>
@@ -385,4 +372,196 @@
     <string name="download_models_from_litert_community">Вы можете скачать совместимые модели с:</string>
     <string name="litert_community_link">LiteRT Community на Hugging Face</string>
     <string name="import_model_warning">⚠️ Важно: Пожалуйста, прочитайте README модели на Hugging Face перед импортом. Введите правильные возможности (зрение, аудио, GPU) и размер контекстного окна, как указано в документации модели. Неправильные настройки могут привести к тому, что модель не будет работать должным образом.</string>
-</resources>
+    
+    <!-- Home Screen -->
+    <string name="home_welcome">Добро пожаловать в LLM Hub</string>
+    <string name="home_subtitle">Раскройте силу ИИ в вашем кармане — приватно, быстро и офлайн!</string>
+    
+    <!-- Feature Cards -->
+    <string name="feature_ai_chat">ИИ Чат</string>
+    <string name="feature_ai_chat_desc">Многоэтапные беседы с моделями ИИ</string>
+    <string name="feature_writing_aid">Помощник в письме</string>
+    <string name="feature_writing_aid_desc">Грамматика, стиль, перефразирование и настройка тона</string>
+    <string name="feature_translator">Переводчик</string>
+    <string name="feature_translator_desc">Переводите текст конфиденциально с помощью мультимодальных моделей</string>
+    <string name="feature_transcriber">Транскрибатор</string>
+    <string name="feature_transcriber_desc">Транскрибируйте голос или аудио в текст офлайн</string>
+    <string name="feature_code_assistant">Помощник по коду</string>
+    <string name="feature_code_assistant_desc">Генерируйте и объясняйте фрагменты кода локально</string>
+    
+    <!-- Writing Aid Screen -->
+    <string name="writing_aid_title">Помощник в письме</string>
+    <string name="writing_aid_input_label">Введите ваш текст</string>
+    <string name="writing_aid_input_hint">Введите или вставьте текст, который хотите улучшить...</string>
+    <string name="writing_aid_mode_grammar">Проверка грамматики</string>
+    <string name="writing_aid_mode_paraphrase">Перефразировать</string>
+    <string name="writing_aid_mode_tone">Изменить тон</string>
+    <string name="writing_aid_mode_email">Ответ по Email</string>
+    <string name="writing_aid_mode_sms">Ответ по SMS</string>
+    <string name="writing_aid_select_mode">Выберите режим</string>
+    <string name="writing_aid_process">Обработать</string>
+    <string name="writing_aid_result">Результат</string>
+    <string name="writing_aid_no_model">Модель не загружена. Пожалуйста, сначала загрузите и выберите модель.</string>
+    
+    <!-- Translator Screen -->
+    <string name="translator_title">Офлайн переводчик</string>
+    <string name="translator_input_label">Текст для перевода</string>
+    <string name="translator_input_hint">Введите текст для перевода...</string>
+    <string name="translator_source_lang">Исходный язык</string>
+    <string name="translator_target_lang">Целевой язык</string>
+    <string name="translator_auto_detect">Автоопределение</string>
+    <string name="translator_translate">Перевести</string>
+    <string name="translator_result">Перевод</string>
+    <string name="translator_requires_gemma3n">Эта функция требует модель Gemma-3n. Пожалуйста, загрузите её с экрана Модели.</string>
+    
+    <!-- Transcriber Screen -->
+    <string name="transcriber_title">Офлайн транскрибатор</string>
+    <string name="transcriber_record">Записать аудио</string>
+    <string name="transcriber_upload">Загрузить аудио</string>
+    <string name="transcriber_transcribe">Транскрибировать</string>
+    <string name="transcriber_result">Транскрипция</string>
+    <string name="transcriber_recording">Запись...</string>
+    <string name="transcriber_stop">Остановить запись</string>
+    <string name="transcriber_requires_gemma3n">Эта функция требует модель Gemma-3n с поддержкой аудио. Пожалуйста, загрузите её с экрана Модели.</string>
+    
+    <!-- Code Assistant Screen -->
+    <string name="code_assistant_title">Помощник по коду</string>
+    <string name="code_assistant_input_label">Опишите, что вам нужно</string>
+    <string name="code_assistant_input_hint">Например, \"Создать функцию для сортировки массива\" или \"Объяснить этот код\"...</string>
+    <string name="code_assistant_mode_generate">Генерировать код</string>
+    <string name="code_assistant_mode_explain">Объяснить код</string>
+    <string name="code_assistant_mode_debug">Помощь в отладке</string>
+    <string name="code_assistant_mode_refactor">Рефакторинг</string>
+    <string name="code_assistant_select_mode">Выберите режим</string>
+    <string name="code_assistant_process">Генерировать</string>
+    <string name="code_assistant_result">Сгенерированный код</string>
+    <string name="code_assistant_no_model">Модель не загружена. Пожалуйста, сначала загрузите и выберите модель.</string>
+    
+    <!-- Common Feature Strings -->
+    <string name="feature_no_model_title">Модель недоступна</string>
+    <string name="feature_download_model">Загрузить модели</string>
+    <string name="feature_processing">Обработка...</string>
+    <string name="feature_error">Произошла ошибка</string>
+    <string name="feature_copy_result">Копировать результат</string>
+    <string name="feature_share_result">Поделиться результатом</string>
+    <string name="feature_clear">Очистить</string>
+    
+    <!-- Language Names for Translator (Gemma-3n Supported Languages) - Alphabetically Ordered -->
+    <string name="lang_english">Английский</string>
+    <string name="lang_afrikaans">Африкаанс</string>
+    <string name="lang_amharic">Амхарский</string>
+    <string name="lang_arabic">Арабский</string>
+    <string name="lang_armenian">Армянский</string>
+    <string name="lang_azerbaijani">Азербайджанский</string>
+    <string name="lang_basque">Баскский</string>
+    <string name="lang_bengali">Бенгальский</string>
+    <string name="lang_bulgarian">Болгарский</string>
+    <string name="lang_burmese">Бирманский</string>
+    <string name="lang_catalan">Каталанский</string>
+    <string name="lang_chinese">Китайский (Упрощённый)</string>
+    <string name="lang_chinese_traditional">Китайский (Традиционный)</string>
+    <string name="lang_croatian">Хорватский</string>
+    <string name="lang_czech">Чешский</string>
+    <string name="lang_danish">Датский</string>
+    <string name="lang_dutch">Нидерландский</string>
+    <string name="lang_estonian">Эстонский</string>
+    <string name="lang_filipino">Филиппинский (Тагальский)</string>
+    <string name="lang_finnish">Финский</string>
+    <string name="lang_french">Французский</string>
+    <string name="lang_galician">Галисийский</string>
+    <string name="lang_georgian">Грузинский</string>
+    <string name="lang_german">Немецкий</string>
+    <string name="lang_greek">Греческий</string>
+    <string name="lang_gujarati">Гуджарати</string>
+    <string name="lang_hausa">Хауса</string>
+    <string name="lang_hebrew">Иврит</string>
+    <string name="lang_hindi">Хинди</string>
+    <string name="lang_hungarian">Венгерский</string>
+    <string name="lang_icelandic">Исландский</string>
+    <string name="lang_igbo">Игбо</string>
+    <string name="lang_indonesian">Индонезийский</string>
+    <string name="lang_italian">Итальянский</string>
+    <string name="lang_japanese">Японский</string>
+    <string name="lang_kannada">Каннада</string>
+    <string name="lang_kazakh">Казахский</string>
+    <string name="lang_khmer">Кхмерский</string>
+    <string name="lang_korean">Корейский</string>
+    <string name="lang_lao">Лаосский</string>
+    <string name="lang_latvian">Латышский</string>
+    <string name="lang_lithuanian">Литовский</string>
+    <string name="lang_malay">Малайский</string>
+    <string name="lang_malayalam">Малаялам</string>
+    <string name="lang_marathi">Маратхи</string>
+    <string name="lang_nepali">Непальский</string>
+    <string name="lang_norwegian">Норвежский</string>
+    <string name="lang_pashto">Пушту</string>
+    <string name="lang_persian">Персидский (Фарси)</string>
+    <string name="lang_polish">Польский</string>
+    <string name="lang_portuguese">Португальский</string>
+    <string name="lang_punjabi">Панджаби</string>
+    <string name="lang_romanian">Румынский</string>
+    <string name="lang_russian">Русский</string>
+    <string name="lang_serbian">Сербский</string>
+    <string name="lang_sindhi">Синдхи</string>
+    <string name="lang_sinhala">Сингальский</string>
+    <string name="lang_slovak">Словацкий</string>
+    <string name="lang_slovenian">Словенский</string>
+    <string name="lang_somali">Сомалийский</string>
+    <string name="lang_spanish">Испанский</string>
+    <string name="lang_swahili">Суахили</string>
+    <string name="lang_swedish">Шведский</string>
+    <string name="lang_tamil">Тамильский</string>
+    <string name="lang_telugu">Телугу</string>
+    <string name="lang_thai">Тайский</string>
+    <string name="lang_turkish">Турецкий</string>
+    <string name="lang_ukrainian">Украинский</string>
+    <string name="lang_urdu">Урду</string>
+    <string name="lang_uzbek">Узбекский</string>
+    <string name="lang_vietnamese">Вьетнамский</string>
+    <string name="lang_yoruba">Йоруба</string>
+    <string name="lang_zulu">Зулу</string>
+    
+    <!-- Model Selection -->
+    <string name="select_model_title">Выбрать модель</string>
+    <string name="no_models_available">Нет доступных моделей</string>
+    <string name="download_models_first">Пожалуйста, сначала загрузите модели</string>
+    <string name="select_backend">Выбрать бэкенд</string>
+    <string name="backend_cpu">ЦП</string>
+    <string name="backend_gpu">ГП</string>
+    <string name="gpu_not_supported">ГП не поддерживается этой моделью</string>
+    <string name="load_model">Загрузить модель</string>
+    <string name="model_loaded">Модель успешно загружена</string>
+    <string name="model_loading">Загрузка модели…</string>
+    <string name="model_load_failed">Не удалось загрузить модель</string>
+    <string name="multimodal_models_only">Поддерживаются только мультимодальные (Gemma-3n) модели</string>
+    <string name="text_models_only">Поддерживаются только текстовые модели</string>
+    
+    <!-- Audio Features -->
+    <string name="enable_audio_input">Включить аудиовход</string>
+    <string name="audio_input_enabled">Аудиовход включен</string>
+    <string name="audio_input_disabled">Аудиовход выключен</string>
+    <string name="record_audio">Записать аудио</string>
+    
+    <!-- Auto-detect Language -->
+    <string name="lang_auto_detect">Автоопределение</string>
+    <string name="auto_detecting_language">Определение языка…</string>
+    <string name="language_detected">Обнаружен язык: %1$s</string>
+    
+    <!-- Feature-specific Processing -->
+    <string name="processing">Обработка…</string>
+    <string name="translating">Перевод…</string>
+    <string name="transcribing">Транскрипция…</string>
+    <string name="analyzing_code">Анализ кода…</string>
+    <string name="processing_text">Обработка текста…</string>
+
+    <!-- Vision Features -->
+    <string name="input_options">Input Options</string>
+    <string name="enable_vision_input">Enable vision input</string>
+    <string name="translate_from_image">Translate text from image</string>
+    <string name="speak_to_translate">Speak to translate</string>
+    <string name="select_image">Select Image</string>
+    <string name="change_image">Change Image</string></resources>
+
+
+
+

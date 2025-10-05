@@ -331,17 +331,6 @@
     <string name="reembedding_memory_in_progress">Re-embedding global memory for new embedding model…</string>
     <string name="reembedding_memory_done">Global memory re-embedded</string>
     
-    <!-- Gemma Backend Selection -->
-    <string name="select_backend">Select Backend</string>
-    <string name="choose_backend_for_gemma">Choose processing backend for Gemma model</string>
-    <string name="gpu_backend">GPU (Recommended)</string>
-    <string name="cpu_backend">CPU (Fallback)</string>
-    <string name="gpu_backend_description">Faster processing using device GPU</string>
-    <string name="cpu_backend_description">Slower but more stable processing</string>
-    <string name="backend_selection_hint">If the app crashes or doesn\'t work properly with GPU, try CPU backend</string>
-    <string name="not_available">Not Available</string>
-    <string name="gpu_disabled_low_memory">GPU not available for this model on devices with %1$dGB RAM or less</string>
-    
     <!-- Gemma-3n specific GPU requirements -->
     <string name="gemma3n_e2b_gpu_requires_6gb">Requires at least 6GB RAM for GPU</string>
     <string name="gemma3n_e4b_gpu_requires_8gb">Devices with 8GB or less RAM can\'t load this model with GPU</string>
@@ -404,4 +393,195 @@
     <string name="download_models_from_litert_community">You can download compatible models from:</string>
     <string name="litert_community_link">LiteRT Community on Hugging Face</string>
     <string name="import_model_warning">⚠️ Important: Please read the model\'s README on Hugging Face before importing. Enter the correct capabilities (vision, audio, GPU) and context window size as specified in the model documentation. Incorrect settings may cause the model to not work properly.</string>
+    
+    <!-- Home Screen -->
+    <string name="home_welcome">Welcome to LLM Hub</string>
+    <string name="home_subtitle">Unlock the power of AI in your pocket — private, fast, and offline!</string>
+    
+    <!-- Feature Cards -->
+    <string name="feature_ai_chat">AI Chat</string>
+    <string name="feature_ai_chat_desc">Multi-turn conversations with AI models</string>
+    <string name="feature_writing_aid">Writing Aid</string>
+    <string name="feature_writing_aid_desc">Grammar, style, paraphrasing, and tone adjustment</string>
+    <string name="feature_translator">Translator</string>
+    <string name="feature_translator_desc">Translate text privately using multimodal models</string>
+    <string name="feature_transcriber">Transcriber</string>
+    <string name="feature_transcriber_desc">Transcribe voice or audio to text offline</string>
+    <string name="feature_code_assistant">Code Assistant</string>
+    <string name="feature_code_assistant_desc">Generate and explain code snippets locally</string>
+    
+    <!-- Writing Aid Screen -->
+    <string name="writing_aid_title">Writing Aid</string>
+    <string name="writing_aid_input_label">Enter your text</string>
+    <string name="writing_aid_input_hint">Type or paste the text you want to improve...</string>
+    <string name="writing_aid_mode_grammar">Grammar Check</string>
+    <string name="writing_aid_mode_paraphrase">Paraphrase</string>
+    <string name="writing_aid_mode_tone">Adjust Tone</string>
+    <string name="writing_aid_mode_email">Email Reply</string>
+    <string name="writing_aid_mode_sms">SMS Reply</string>
+    <string name="writing_aid_select_mode">Select Mode</string>
+    <string name="writing_aid_process">Process</string>
+    <string name="writing_aid_result">Result</string>
+    <string name="writing_aid_no_model">No model loaded. Please download and select a model first.</string>
+    
+    <!-- Translator Screen -->
+    <string name="translator_title">Offline Translator</string>
+    <string name="translator_input_label">Text to translate</string>
+    <string name="translator_input_hint">Enter text to translate...</string>
+    <string name="translator_source_lang">Source Language</string>
+    <string name="translator_target_lang">Target Language</string>
+    <string name="translator_auto_detect">Auto Detect</string>
+    <string name="translator_translate">Translate</string>
+    <string name="translator_result">Translation</string>
+    <string name="translator_requires_gemma3n">This feature requires a Gemma-3n model. Please download one from the Models screen.</string>
+    
+    <!-- Transcriber Screen -->
+    <string name="transcriber_title">Offline Transcriber</string>
+    <string name="transcriber_record">Record Audio</string>
+    <string name="transcriber_upload">Upload Audio</string>
+    <string name="transcriber_transcribe">Transcribe</string>
+    <string name="transcriber_result">Transcription</string>
+    <string name="transcriber_recording">Recording...</string>
+    <string name="transcriber_stop">Stop Recording</string>
+    <string name="transcriber_requires_gemma3n">This feature requires a Gemma-3n model with audio support. Please download one from the Models screen.</string>
+    
+    <!-- Code Assistant Screen -->
+    <string name="code_assistant_title">Code Assistant</string>
+    <string name="code_assistant_input_label">Describe what you need</string>
+    <string name="code_assistant_input_hint">E.g., \"Create a function to sort an array\" or \"Explain this code\"...</string>
+    <string name="code_assistant_mode_generate">Generate Code</string>
+    <string name="code_assistant_mode_explain">Explain Code</string>
+    <string name="code_assistant_mode_debug">Debug Help</string>
+    <string name="code_assistant_mode_refactor">Refactor</string>
+    <string name="code_assistant_select_mode">Select Mode</string>
+    <string name="code_assistant_process">Generate</string>
+    <string name="code_assistant_result">Generated Code</string>
+    <string name="code_assistant_no_model">No model loaded. Please download and select a model first.</string>
+    
+    <!-- Common Feature Strings -->
+    <string name="feature_no_model_title">No Model Available</string>
+    <string name="feature_download_model">Download Models</string>
+    <string name="feature_processing">Processing...</string>
+    <string name="feature_error">An error occurred</string>
+    <string name="feature_copy_result">Copy Result</string>
+    <string name="feature_share_result">Share Result</string>
+    <string name="feature_clear">Clear</string>
+    
+    <!-- Language Names for Translator (Gemma-3n Supported Languages) - Alphabetically Ordered -->
+    <string name="lang_english">English</string>
+    <string name="lang_afrikaans">Afrikaans</string>
+    <string name="lang_amharic">Amharic</string>
+    <string name="lang_arabic">Arabic</string>
+    <string name="lang_armenian">Armenian</string>
+    <string name="lang_azerbaijani">Azerbaijani</string>
+    <string name="lang_basque">Basque</string>
+    <string name="lang_bengali">Bengali</string>
+    <string name="lang_bulgarian">Bulgarian</string>
+    <string name="lang_burmese">Burmese</string>
+    <string name="lang_catalan">Catalan</string>
+    <string name="lang_chinese">Chinese (Simplified)</string>
+    <string name="lang_chinese_traditional">Chinese (Traditional)</string>
+    <string name="lang_croatian">Croatian</string>
+    <string name="lang_czech">Czech</string>
+    <string name="lang_danish">Danish</string>
+    <string name="lang_dutch">Dutch</string>
+    <string name="lang_estonian">Estonian</string>
+    <string name="lang_filipino">Filipino (Tagalog)</string>
+    <string name="lang_finnish">Finnish</string>
+    <string name="lang_french">French</string>
+    <string name="lang_galician">Galician</string>
+    <string name="lang_georgian">Georgian</string>
+    <string name="lang_german">German</string>
+    <string name="lang_greek">Greek</string>
+    <string name="lang_gujarati">Gujarati</string>
+    <string name="lang_hausa">Hausa</string>
+    <string name="lang_hebrew">Hebrew</string>
+    <string name="lang_hindi">Hindi</string>
+    <string name="lang_hungarian">Hungarian</string>
+    <string name="lang_icelandic">Icelandic</string>
+    <string name="lang_igbo">Igbo</string>
+    <string name="lang_indonesian">Indonesian</string>
+    <string name="lang_italian">Italian</string>
+    <string name="lang_japanese">Japanese</string>
+    <string name="lang_kannada">Kannada</string>
+    <string name="lang_kazakh">Kazakh</string>
+    <string name="lang_khmer">Khmer</string>
+    <string name="lang_korean">Korean</string>
+    <string name="lang_lao">Lao</string>
+    <string name="lang_latvian">Latvian</string>
+    <string name="lang_lithuanian">Lithuanian</string>
+    <string name="lang_malay">Malay</string>
+    <string name="lang_malayalam">Malayalam</string>
+    <string name="lang_marathi">Marathi</string>
+    <string name="lang_nepali">Nepali</string>
+    <string name="lang_norwegian">Norwegian</string>
+    <string name="lang_pashto">Pashto</string>
+    <string name="lang_persian">Persian (Farsi)</string>
+    <string name="lang_polish">Polish</string>
+    <string name="lang_portuguese">Portuguese</string>
+    <string name="lang_punjabi">Punjabi</string>
+    <string name="lang_romanian">Romanian</string>
+    <string name="lang_russian">Russian</string>
+    <string name="lang_serbian">Serbian</string>
+    <string name="lang_sindhi">Sindhi</string>
+    <string name="lang_sinhala">Sinhala</string>
+    <string name="lang_slovak">Slovak</string>
+    <string name="lang_slovenian">Slovenian</string>
+    <string name="lang_somali">Somali</string>
+    <string name="lang_spanish">Spanish</string>
+    <string name="lang_swahili">Swahili</string>
+    <string name="lang_swedish">Swedish</string>
+    <string name="lang_tamil">Tamil</string>
+    <string name="lang_telugu">Telugu</string>
+    <string name="lang_thai">Thai</string>
+    <string name="lang_turkish">Turkish</string>
+    <string name="lang_ukrainian">Ukrainian</string>
+    <string name="lang_urdu">Urdu</string>
+    <string name="lang_uzbek">Uzbek</string>
+    <string name="lang_vietnamese">Vietnamese</string>
+    <string name="lang_yoruba">Yoruba</string>
+    <string name="lang_zulu">Zulu</string>
+    
+    <!-- Model Selection -->
+    <string name="select_model_title">Select Model</string>
+    <string name="no_models_available">No models available</string>
+    <string name="download_models_first">Please download models first</string>
+    <string name="select_backend">Select Backend</string>
+    <string name="backend_cpu">CPU</string>
+    <string name="backend_gpu">GPU</string>
+    <string name="gpu_not_supported">GPU not supported by this model</string>
+    <string name="load_model">Load Model</string>
+    <string name="model_loaded">Model loaded successfully</string>
+    <string name="model_loading">Loading model…</string>
+    <string name="model_load_failed">Failed to load model</string>
+    <string name="multimodal_models_only">Only multimodal (Gemma-3n) models supported</string>
+    <string name="text_models_only">Text-only models supported</string>
+    
+    <!-- Audio Features -->
+    <string name="enable_audio_input">Enable audio input</string>
+    <string name="audio_input_enabled">Audio input enabled</string>
+    <string name="audio_input_disabled">Audio input disabled</string>
+    <string name="record_audio">Record audio</string>
+    
+    <!-- Auto-detect Language -->
+    <string name="lang_auto_detect">Auto-detect</string>
+    <string name="auto_detecting_language">Detecting language…</string>
+    <string name="language_detected">Language detected: %1$s</string>
+    
+    <!-- Feature-specific Processing -->
+    <string name="processing">Processing…</string>
+    <string name="translating">Translating…</string>
+    <string name="transcribing">Transcribing…</string>
+    <string name="analyzing_code">Analyzing code…</string>
+    <string name="processing_text">Processing text…</string>
+    
+    <!-- Vision Features -->
+    <string name="input_options">Input Options</string>
+    <string name="enable_vision_input">Enable vision input</string>
+    <string name="translate_from_image">Translate text from image</string>
+    <string name="speak_to_translate">Speak to translate</string>
+    <string name="select_image">Select Image</string>
+    <string name="change_image">Change Image</string>
+    <string name="transcription_result">Transcription</string>
 </resources>
+
