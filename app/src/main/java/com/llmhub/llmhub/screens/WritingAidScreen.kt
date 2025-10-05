@@ -13,7 +13,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -22,10 +26,6 @@ import com.llmhub.llmhub.components.ModelSelectorCard
 import com.llmhub.llmhub.viewmodels.WritingAidViewModel
 import com.llmhub.llmhub.viewmodels.WritingMode
 
-enum class WritingMode {
-    GRAMMAR, PARAPHRASE, TONE, EMAIL, SMS
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WritingAidScreen(
@@ -33,10 +33,16 @@ fun WritingAidScreen(
     onNavigateToModels: () -> Unit,
     viewModel: WritingAidViewModel = viewModel()
 ) {
-    var inputText by remember { mutableStateOf("") }
-    var selectedMode by remember { mutableStateOf(WritingMode.GRAMMAR) }
-    var showModeMenu by remember { mutableStateOf(false) }
+    val keyboard = LocalSoftwareKeyboardController.current
+    val clipboardManager = LocalClipboardManager.current
     
+    // UI State
+    var inputText by remember { mutableStateOf("") }
+    var selectedMode by remember { mutableStateOf(WritingMode.FRIENDLY) }
+    var showModeMenu by remember { mutableStateOf(false) }
+    var showSettingsSheet by remember { mutableStateOf(false) }
+    
+    // ViewModel states
     val availableModels by viewModel.availableModels.collectAsState()
     val selectedModel by viewModel.selectedModel.collectAsState()
     val selectedBackend by viewModel.selectedBackend.collectAsState()
@@ -55,13 +61,90 @@ fun WritingAidScreen(
         }
     }
     
+    // Settings Bottom Sheet
+    if (showSettingsSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showSettingsSheet = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.select_model_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                ModelSelectorCard(
+                    models = availableModels,
+                    selectedModel = selectedModel,
+                    selectedBackend = selectedBackend,
+                    isLoading = isLoading,
+                    isModelLoaded = isModelLoaded,
+                    onModelSelected = { viewModel.selectModel(it) },
+                    onBackendSelected = { viewModel.selectBackend(it) },
+                    onLoadModel = { viewModel.loadModel() },
+                    onUnloadModel = { viewModel.unloadModel() },
+                    filterMultimodalOnly = false,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // Tone Selector
+                Text(
+                    text = stringResource(R.string.writing_aid_select_mode),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                ExposedDropdownMenuBox(
+                    expanded = showModeMenu,
+                    onExpandedChange = { showModeMenu = !showModeMenu }
+                ) {
+                    OutlinedTextField(
+                        value = getModeString(selectedMode),
+                        onValueChange = {},
+                        readOnly = true,
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showModeMenu) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(),
+                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    ExposedDropdownMenu(
+                        expanded = showModeMenu,
+                        onDismissRequest = { showModeMenu = false }
+                    ) {
+                        WritingMode.values().forEach { mode ->
+                            DropdownMenuItem(
+                                text = { Text(getModeString(mode)) },
+                                onClick = {
+                                    selectedMode = mode
+                                    showModeMenu = false
+                                }
+                            )
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(32.dp))
+            }
+        }
+    }
+    
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
                         text = stringResource(R.string.writing_aid_title),
-                        style = MaterialTheme.typography.headlineSmall,
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -72,244 +155,143 @@ fun WritingAidScreen(
                             contentDescription = stringResource(R.string.back)
                         )
                     }
+                },
+                actions = {
+                    IconButton(onClick = { showSettingsSheet = true }) {
+                        Icon(Icons.Default.Tune, contentDescription = "Settings")
+                    }
                 }
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .imePadding()
         ) {
-            // Model Selector
-            ModelSelectorCard(
-                models = availableModels,
-                selectedModel = selectedModel,
-                onModelSelected = { viewModel.selectModel(it) },
-                selectedBackend = selectedBackend,
-                onBackendSelected = { viewModel.selectBackend(it) },
-                onLoadModel = { viewModel.loadModel() },
-                isLoading = isLoading,
-                filterMultimodalOnly = false
-            )
-            
-            // Show processing status
-            AnimatedVisibility(
-                visible = isModelLoaded,
-                enter = fadeIn() + expandVertically()
+            // Scrollable content (input + output)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(bottom = 80.dp) // Space for fixed button
             ) {
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    )
+                // Input Area (no background card, just text field)
+                Column(
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    OutlinedTextField(
+                        value = inputText,
+                        onValueChange = { inputText = it },
+                        placeholder = { 
+                            Text(
+                                stringResource(
+                                    if (!isModelLoaded) R.string.load_model_to_start 
+                                    else R.string.writing_aid_input_hint
+                                )
+                            ) 
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        minLines = 3,
+                        maxLines = 10,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color.Transparent,
+                            unfocusedBorderColor = Color.Transparent
+                        )
+                    )
+                }
+                
+                // Output Area (no title, no card background)
+                if (outputText.isNotEmpty()) {
+                    Divider()
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Icon(
-                            Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Text(
-                            text = stringResource(R.string.model_loaded),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                }
-            }
-            // Mode Selector
-            AnimatedVisibility(
-                visible = true,
-                enter = fadeIn() + slideInVertically()
-            ) {
-                Card(
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text(
-                            text = stringResource(R.string.writing_aid_select_mode),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        ExposedDropdownMenuBox(
-                            expanded = showModeMenu,
-                            onExpandedChange = { showModeMenu = !showModeMenu }
-                        ) {
-                            OutlinedTextField(
-                                value = getModeString(selectedMode),
-                                onValueChange = {},
-                                readOnly = true,
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showModeMenu) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .menuAnchor(),
-                                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                                shape = RoundedCornerShape(16.dp)
-                            )
-                            ExposedDropdownMenu(
-                                expanded = showModeMenu,
-                                onDismissRequest = { showModeMenu = false }
-                            ) {
-                                WritingMode.values().forEach { mode ->
-                                    DropdownMenuItem(
-                                        text = { Text(getModeString(mode)) },
-                                        onClick = {
-                                            selectedMode = mode
-                                            showModeMenu = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            
-            // Input Section
-            AnimatedVisibility(
-                visible = true,
-                enter = fadeIn() + slideInVertically()
-            ) {
-                Card(
-                    shape = RoundedCornerShape(24.dp)
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text(
-                            text = stringResource(R.string.writing_aid_input_label),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = inputText,
-                            onValueChange = { inputText = it },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(min = 150.dp),
-                            placeholder = { Text(stringResource(R.string.writing_aid_input_hint)) },
-                            maxLines = 10,
-                            shape = RoundedCornerShape(16.dp)
-                        )
-                    }
-                }
-            }
-            
-            // Process Button
-            Button(
-                onClick = {
-                    viewModel.processText(inputText, selectedMode)
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = inputText.isNotBlank() && !isProcessing && isModelLoaded,
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                if (isProcessing) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.processing_text), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
-                } else {
-                    Icon(Icons.Default.PlayArrow, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = stringResource(R.string.writing_aid_process),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-            
-            // Result Section
-            AnimatedVisibility(
-                visible = outputText.isNotEmpty(),
-                enter = fadeIn() + slideInVertically()
-            ) {
-                Card(
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    )
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.Top
                         ) {
                             Text(
-                                text = stringResource(R.string.writing_aid_result),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
+                                text = outputText,
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.weight(1f)
                             )
-                            IconButton(onClick = { /* Copy to clipboard */ }) {
-                                Icon(Icons.Default.ContentCopy, contentDescription = stringResource(R.string.copy))
+                            IconButton(
+                                onClick = { 
+                                    clipboardManager.setText(AnnotatedString(outputText))
+                                }
+                            ) {
+                                Icon(
+                                    Icons.Default.ContentCopy,
+                                    contentDescription = stringResource(R.string.copy),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
                             }
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = outputText,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
                     }
                 }
             }
             
-            // Info Card
-            AnimatedVisibility(
-                visible = !isModelLoaded,
-                enter = fadeIn() + expandVertically()
+            // Fixed Process Button at bottom
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth(),
+                shadowElevation = 8.dp,
+                color = MaterialTheme.colorScheme.surface
             ) {
-                Card(
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer
-                    )
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Info,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onTertiaryContainer
-                        )
-                        Column {
-                            Text(
-                                text = stringResource(R.string.writing_aid_no_model),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                fontWeight = FontWeight.Medium
+                if (isProcessing) {
+                    // Show Cancel button while processing
+                    OutlinedButton(
+                        onClick = { viewModel.cancelProcessing() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
+                        border = ButtonDefaults.outlinedButtonBorder.copy(
+                            brush = Brush.linearGradient(
+                                colors = listOf(MaterialTheme.colorScheme.error, MaterialTheme.colorScheme.error)
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            TextButton(
-                                onClick = onNavigateToModels,
-                                colors = ButtonDefaults.textButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-                                )
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.download_models),
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
+                        )
+                    ) {
+                        Icon(Icons.Default.StopCircle, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(R.string.processing_tap_to_cancel),
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                } else {
+                    Button(
+                        onClick = {
+                            keyboard?.hide()
+                            viewModel.processText(inputText, selectedMode)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        enabled = inputText.isNotBlank() && !isProcessing && isModelLoaded,
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(R.string.writing_aid_process),
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
@@ -320,10 +302,8 @@ fun WritingAidScreen(
 @Composable
 private fun getModeString(mode: WritingMode): String {
     return when (mode) {
-        WritingMode.GRAMMAR -> stringResource(R.string.writing_aid_mode_grammar)
-        WritingMode.PARAPHRASE -> stringResource(R.string.writing_aid_mode_paraphrase)
-        WritingMode.TONE -> stringResource(R.string.writing_aid_mode_tone)
-        WritingMode.EMAIL -> stringResource(R.string.writing_aid_mode_email)
-        WritingMode.SMS -> stringResource(R.string.writing_aid_mode_sms)
+        WritingMode.FRIENDLY -> stringResource(R.string.writing_aid_tone_friendly)
+        WritingMode.PROFESSIONAL -> stringResource(R.string.writing_aid_tone_professional)
+        WritingMode.CONCISE -> stringResource(R.string.writing_aid_tone_concise)
     }
 }

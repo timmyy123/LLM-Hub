@@ -394,13 +394,18 @@
     <string name="writing_aid_title">Schreibhilfe</string>
     <string name="writing_aid_input_label">Geben Sie Ihren Text ein</string>
     <string name="writing_aid_input_hint">Geben Sie den Text ein oder fügen Sie ihn ein, den Sie verbessern möchten...</string>
+    <string name="writing_aid_input_hint_no_model">Laden Sie ein Modell, um zu beginnen</string>
     <string name="writing_aid_mode_grammar">Grammatikprüfung</string>
     <string name="writing_aid_mode_paraphrase">Umformulieren</string>
     <string name="writing_aid_mode_tone">Ton anpassen</string>
     <string name="writing_aid_mode_email">E-Mail-Antwort</string>
     <string name="writing_aid_mode_sms">SMS-Antwort</string>
-    <string name="writing_aid_select_mode">Modus auswählen</string>
+    <string name="writing_aid_tone_friendly">Freundlich</string>
+    <string name="writing_aid_tone_professional">Professionell</string>
+    <string name="writing_aid_tone_concise">Prägnant</string>
+    <string name="writing_aid_select_mode">Ton auswählen</string>
     <string name="writing_aid_process">Verarbeiten</string>
+    <string name="processing_tap_to_cancel">Verarbeitung (zum Abbrechen tippen)</string>
     <string name="writing_aid_result">Ergebnis</string>
     <string name="writing_aid_no_model">Kein Modell geladen. Bitte laden Sie zuerst ein Modell herunter und wählen Sie es aus.</string>
     

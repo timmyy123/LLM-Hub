@@ -415,13 +415,18 @@
     <string name="writing_aid_title">Writing Aid</string>
     <string name="writing_aid_input_label">Enter your text</string>
     <string name="writing_aid_input_hint">Type or paste the text you want to improve...</string>
+    <string name="writing_aid_input_hint_no_model">Load a model to start</string>
     <string name="writing_aid_mode_grammar">Grammar Check</string>
     <string name="writing_aid_mode_paraphrase">Paraphrase</string>
     <string name="writing_aid_mode_tone">Adjust Tone</string>
     <string name="writing_aid_mode_email">Email Reply</string>
     <string name="writing_aid_mode_sms">SMS Reply</string>
-    <string name="writing_aid_select_mode">Select Mode</string>
+    <string name="writing_aid_tone_friendly">Friendly</string>
+    <string name="writing_aid_tone_professional">Professional</string>
+    <string name="writing_aid_tone_concise">Concise</string>
+    <string name="writing_aid_select_mode">Select Tone</string>
     <string name="writing_aid_process">Process</string>
+    <string name="processing_tap_to_cancel">Processing (tap to cancel)</string>
     <string name="writing_aid_result">Result</string>
     <string name="writing_aid_no_model">No model loaded. Please download and select a model first.</string>
     

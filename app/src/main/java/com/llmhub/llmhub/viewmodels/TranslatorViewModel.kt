@@ -431,8 +431,7 @@ $inputText""".trimIndent()
         // Simple heuristic to detect language mentions in response
         // This is a basic implementation - could be enhanced with better detection
         val languageMentions = listOf(
-            "English", "Spanish", "French", "German", "Chinese", "Japanese",
-            "Korean", "Arabic", "Russian", "Portuguese", "Italian", "Hindi"
+            "English", "Spanish", "French", "German", "Russian", "Portuguese", "Italian", "Hindi", "Tamil", "Telugu", "Malayalam", "Kannada", "Bengali", "Punjabi", "Gujarati", "Japanese", "Arabic"
         )
         
         for (lang in languageMentions) {
