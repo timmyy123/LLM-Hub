@@ -395,13 +395,18 @@
     <string name="writing_aid_title">Помощник в письме</string>
     <string name="writing_aid_input_label">Введите ваш текст</string>
     <string name="writing_aid_input_hint">Введите или вставьте текст, который хотите улучшить...</string>
+    <string name="writing_aid_input_hint_no_model">Загрузите модель для начала</string>
     <string name="writing_aid_mode_grammar">Проверка грамматики</string>
     <string name="writing_aid_mode_paraphrase">Перефразировать</string>
     <string name="writing_aid_mode_tone">Изменить тон</string>
     <string name="writing_aid_mode_email">Ответ по Email</string>
     <string name="writing_aid_mode_sms">Ответ по SMS</string>
-    <string name="writing_aid_select_mode">Выберите режим</string>
+    <string name="writing_aid_tone_friendly">Дружелюбный</string>
+    <string name="writing_aid_tone_professional">Профессиональный</string>
+    <string name="writing_aid_tone_concise">Краткий</string>
+    <string name="writing_aid_select_mode">Выберите тон</string>
     <string name="writing_aid_process">Обработать</string>
+    <string name="processing_tap_to_cancel">Обработка (нажмите для отмены)</string>
     <string name="writing_aid_result">Результат</string>
     <string name="writing_aid_no_model">Модель не загружена. Пожалуйста, сначала загрузите и выберите модель.</string>
     

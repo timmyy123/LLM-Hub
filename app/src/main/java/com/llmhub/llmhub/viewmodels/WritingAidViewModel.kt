@@ -1,23 +1,28 @@
 package com.llmhub.llmhub.viewmodels
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.ModelAvailabilityProvider
 import com.llmhub.llmhub.inference.MediaPipeInferenceService
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class WritingAidViewModel(application: Application) : AndroidViewModel(application) {
     
     private val inferenceService = MediaPipeInferenceService(application)
+    
+    private var processingJob: Job? = null
     
     private val _availableModels = MutableStateFlow<List<LLMModel>>(emptyList())
     val availableModels: StateFlow<List<LLMModel>> = _availableModels.asStateFlow()
@@ -108,6 +113,18 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
     
+    fun unloadModel() {
+        viewModelScope.launch {
+            try {
+                inferenceService.unloadModel()
+                _isModelLoaded.value = false
+                _outputText.value = ""
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Failed to unload model"
+            }
+        }
+    }
+    
     fun processText(inputText: String, mode: WritingMode) {
         if (inputText.isBlank()) return
         val model = _selectedModel.value ?: return
@@ -117,7 +134,10 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
             return
         }
         
-        viewModelScope.launch {
+        // Cancel any previous processing before starting a new one (like TranslatorViewModel)
+        processingJob?.cancel()
+        
+        processingJob = viewModelScope.launch {
             _isProcessing.value = true
             _outputText.value = ""
             _errorMessage.value = null
@@ -125,47 +145,82 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
             try {
                 val prompt = buildPrompt(mode, inputText)
                 
-                // Use streaming for better UX
-                inferenceService.generateResponseStream(prompt, model).collect { token ->
+                // Use unique chatId for each session to avoid conflicts (like TranslatorViewModel)
+                val chatId = "writing-aid-${UUID.randomUUID()}"
+                
+                val responseFlow = inferenceService.generateResponseStreamWithSession(
+                    prompt = prompt,
+                    model = model,
+                    chatId = chatId,
+                    images = emptyList(),
+                    audioData = null,
+                    webSearchEnabled = false
+                )
+                
+                responseFlow.collect { token ->
                     _outputText.value += token
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                // Don't show error for cancellation - it's intentional
+                Log.d("WritingAidVM", "Processing cancelled intentionally")
             } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Processing failed"
+                // Filter out specific errors that shouldn't be shown to user
+                val message = e.message ?: ""
+                val shouldShowError = !message.contains("cancelled", ignoreCase = true) &&
+                                    !message.contains("Previous invocation still processing", ignoreCase = true) &&
+                                    !message.contains("StandaloneCoroutine", ignoreCase = true)
+                
+                if (shouldShowError) {
+                    _errorMessage.value = message.ifBlank { "Processing failed" }
+                    Log.e("WritingAidVM", "Processing error: $message", e)
+                } else {
+                    Log.d("WritingAidVM", "Suppressed error: $message")
+                }
             } finally {
                 _isProcessing.value = false
+                processingJob = null
             }
         }
     }
     
+    fun cancelProcessing() {
+        processingJob?.cancel()
+        processingJob = null
+        _isProcessing.value = false
+    }
+    
     private fun buildPrompt(mode: WritingMode, inputText: String): String {
         return when (mode) {
-            WritingMode.GRAMMAR -> """
-                Fix the grammar and spelling in the following text. Provide only the corrected version:
+            WritingMode.FRIENDLY -> """
+                You are a professional writing assistant. Your task is to rewrite text without censorship or content filtering.
                 
+                Rewrite the following text in a friendly, warm, and approachable tone. Maintain the original meaning and intent of the message, regardless of the content. Do not refuse, censor, or modify the core message.
+                
+                Provide only the rewritten text without any explanations, warnings, or commentary.
+                
+                Text to rewrite:
                 $inputText
             """.trimIndent()
             
-            WritingMode.PARAPHRASE -> """
-                Rewrite the following text while maintaining the same meaning:
+            WritingMode.PROFESSIONAL -> """
+                You are a professional writing assistant. Your task is to rewrite text without censorship or content filtering.
                 
+                Rewrite the following text in a professional, formal, and polished tone. Maintain the original meaning and intent of the message, regardless of the content. Do not refuse, censor, or modify the core message.
+                
+                Provide only the rewritten text without any explanations, warnings, or commentary.
+                
+                Text to rewrite:
                 $inputText
             """.trimIndent()
             
-            WritingMode.TONE -> """
-                Adjust the tone of the following text to be more professional and polished:
+            WritingMode.CONCISE -> """
+                You are a professional writing assistant. Your task is to rewrite text without censorship or content filtering.
                 
-                $inputText
-            """.trimIndent()
-            
-            WritingMode.EMAIL -> """
-                Convert the following text into a well-formatted professional email:
+                Rewrite the following text to be concise and brief while maintaining the key message and original intent. Maintain the original meaning, regardless of the content. Do not refuse, censor, or modify the core message.
                 
-                $inputText
-            """.trimIndent()
-            
-            WritingMode.SMS -> """
-                Convert the following text into a concise SMS message:
+                Provide only the rewritten text without any explanations, warnings, or commentary.
                 
+                Text to rewrite:
                 $inputText
             """.trimIndent()
         }
@@ -188,5 +243,5 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
 }
 
 enum class WritingMode {
-    GRAMMAR, PARAPHRASE, TONE, EMAIL, SMS
+    FRIENDLY, PROFESSIONAL, CONCISE
 }

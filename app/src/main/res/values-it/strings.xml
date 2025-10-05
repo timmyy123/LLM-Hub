@@ -414,13 +414,18 @@
     <string name="writing_aid_title">Assistente alla scrittura</string>
     <string name="writing_aid_input_label">Inserisci il tuo testo</string>
     <string name="writing_aid_input_hint">Digita o incolla il testo che vuoi migliorare...</string>
+    <string name="writing_aid_input_hint_no_model">Carica un modello per iniziare</string>
     <string name="writing_aid_mode_grammar">Controllo grammaticale</string>
     <string name="writing_aid_mode_paraphrase">Parafrasa</string>
     <string name="writing_aid_mode_tone">Regola il tono</string>
     <string name="writing_aid_mode_email">Risposta email</string>
     <string name="writing_aid_mode_sms">Risposta SMS</string>
-    <string name="writing_aid_select_mode">Seleziona modalità</string>
+    <string name="writing_aid_tone_friendly">Amichevole</string>
+    <string name="writing_aid_tone_professional">Professionale</string>
+    <string name="writing_aid_tone_concise">Conciso</string>
+    <string name="writing_aid_select_mode">Seleziona tono</string>
     <string name="writing_aid_process">Elabora</string>
+    <string name="processing_tap_to_cancel">Elaborazione (tocca per annullare)</string>
     <string name="writing_aid_result">Risultato</string>
     <string name="writing_aid_no_model">Nessun modello caricato. Per favore scarica e seleziona prima un modello.</string>
     

@@ -441,13 +441,18 @@
     <string name="writing_aid_title">Aide à la Rédaction</string>
     <string name="writing_aid_input_label">Entrez votre texte</string>
     <string name="writing_aid_input_hint">Tapez ou collez le texte que vous souhaitez améliorer...</string>
+    <string name="writing_aid_input_hint_no_model">Chargez un modèle pour commencer</string>
     <string name="writing_aid_mode_grammar">Vérification Grammaticale</string>
     <string name="writing_aid_mode_paraphrase">Paraphrase</string>
     <string name="writing_aid_mode_tone">Ajuster le Ton</string>
     <string name="writing_aid_mode_email">Réponse Email</string>
     <string name="writing_aid_mode_sms">Réponse SMS</string>
-    <string name="writing_aid_select_mode">Sélectionner le Mode</string>
+    <string name="writing_aid_tone_friendly">Amical</string>
+    <string name="writing_aid_tone_professional">Professionnel</string>
+    <string name="writing_aid_tone_concise">Concis</string>
+    <string name="writing_aid_select_mode">Sélectionner le Ton</string>
     <string name="writing_aid_process">Traiter</string>
+    <string name="processing_tap_to_cancel">Traitement (appuyez pour annuler)</string>
     <string name="writing_aid_result">Résultat</string>
     <string name="writing_aid_no_model">Aucun modèle chargé. Veuillez d\'abord télécharger et sélectionner un modèle.</string>
     
