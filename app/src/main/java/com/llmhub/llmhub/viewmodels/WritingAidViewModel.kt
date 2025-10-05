@@ -4,7 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.data.LLMModel
-import com.llmhub.llmhub.data.ModelData
+import com.llmhub.llmhub.data.ModelAvailabilityProvider
 import com.llmhub.llmhub.inference.MediaPipeInferenceService
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import kotlinx.coroutines.Dispatchers
@@ -49,13 +49,13 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
     
     private fun loadAvailableModels() {
         viewModelScope.launch {
-            ModelData.models.filter { it.category != "embedding" }
-                .also { models ->
-                    _availableModels.value = models.filter { it.isDownloaded }
-                    if (_selectedModel.value == null) {
-                        _availableModels.value.firstOrNull()?.let { selectModel(it) }
-                    }
-                }
+            val context = getApplication<Application>()
+            val available = ModelAvailabilityProvider.loadAvailableModels(context)
+                .filter { it.category != "embedding" }
+            _availableModels.value = available
+            if (_selectedModel.value == null) {
+                available.firstOrNull()?.let { selectModel(it) }
+            }
         }
     }
     

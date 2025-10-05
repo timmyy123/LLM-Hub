@@ -5,6 +5,7 @@
     <string name="currently_loaded">Текущая загрузка</string>
     <string name="select_model">Выбрать модель</string>
     <string name="unload_model">Выгрузить модель</string>
+    <string name="reload_model">Перезагрузить модель</string>
     <string name="vision_models_description">Модели, которые могут понимать текст и изображения</string>
     <string name="embedding_models">Модели Эмбеддингов</string>
     <string name="embedding_models_description">Модели для текстовых эмбеддингов и семантического поиска</string>
@@ -84,6 +85,7 @@
     <string name="image_attachment">Вложение Изображения</string>
     <string name="save_image">Сохранить изображение</string>
     <string name="tap_image_toggle_controls">Нажмите на изображение для переключения элементов управления</string>
+    <string name="translating_tap_to_cancel">Идёт перевод (нажмите, чтобы отменить)</string>
     <string name="vision_enabled">Зрение включено</string>
     <string name="message_copied">Сообщение скопировано</string>
     <string name="tokens_per_second_format">%1$d токенов • %2$.1f ток/сек</string>
@@ -407,6 +409,7 @@
     <string name="translator_title">Офлайн переводчик</string>
     <string name="translator_input_label">Текст для перевода</string>
     <string name="translator_input_hint">Введите текст для перевода...</string>
+    <string name="load_model_to_start">Загрузите модель для начала</string>
     <string name="translator_source_lang">Исходный язык</string>
     <string name="translator_target_lang">Целевой язык</string>
     <string name="translator_auto_detect">Автоопределение</string>

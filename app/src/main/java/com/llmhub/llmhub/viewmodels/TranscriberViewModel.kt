@@ -5,7 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.data.LLMModel
-import com.llmhub.llmhub.data.ModelData
+import com.llmhub.llmhub.data.ModelAvailabilityProvider
 import com.llmhub.llmhub.inference.MediaPipeInferenceService
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import java.util.UUID
@@ -56,16 +56,13 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
     
     private fun loadAvailableModels() {
         viewModelScope.launch {
-            // Filter to audio-capable Gemma-3n models
-            val models = ModelData.models
-                .filter { it.category != "embedding" }
-                .filter { it.supportsAudio }
-                .filter { it.isDownloaded }
-            _availableModels.value = models
-            
-            // Auto-select first model if available
-            if (models.isNotEmpty() && _selectedModel.value == null) {
-                _selectedModel.value = models.first()
+            val context = getApplication<Application>()
+            val allModels = ModelAvailabilityProvider.loadAvailableModels(context)
+            val audioModels = allModels.filter { it.supportsAudio }
+            _availableModels.value = audioModels
+
+            if (audioModels.isNotEmpty() && _selectedModel.value == null) {
+                _selectedModel.value = audioModels.first()
             }
         }
     }

@@ -46,6 +46,7 @@
     <string name="currently_loaded">Attualmente caricato</string>
     <string name="select_model">Seleziona modello</string>
     <string name="unload_model">Scarica Modello</string>
+    <string name="reload_model">Ricarica Modello</string>
     
     <!-- About Screen -->
     <string name="about_llm_hub">Informazioni su LLM Hub</string>
@@ -285,6 +286,7 @@
     <string name="audio">Audio</string>
     <string name="audio_file">File Audio</string>
     <string name="tap_to_play">Tocca per riprodurre</string>
+    <string name="translating_tap_to_cancel">Traduzione in corso (tocca per annullare)</string>
     
     <!-- Image actions -->
     <string name="image_copied_clipboard">Immagine copiata dalla chat</string>
@@ -426,6 +428,7 @@
     <string name="translator_title">Traduttore offline</string>
     <string name="translator_input_label">Testo da tradurre</string>
     <string name="translator_input_hint">Inserisci il testo da tradurre...</string>
+    <string name="load_model_to_start">Carica un modello per iniziare</string>
     <string name="translator_source_lang">Lingua di origine</string>
     <string name="translator_target_lang">Lingua di destinazione</string>
     <string name="translator_auto_detect">Rilevamento automatico</string>
