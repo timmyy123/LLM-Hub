@@ -8,18 +8,20 @@ import kotlinx.coroutines.launch
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.llmhub.llmhub.screens.ChatScreen
-import com.llmhub.llmhub.screens.SettingsScreen
-import com.llmhub.llmhub.screens.ModelDownloadScreen
-import com.llmhub.llmhub.screens.AboutScreen
-import com.llmhub.llmhub.screens.TermsOfServiceScreen
+import com.llmhub.llmhub.screens.*
 import com.llmhub.llmhub.viewmodels.ChatViewModelFactory
 import com.llmhub.llmhub.viewmodels.ThemeViewModel
 
 sealed class Screen(val route: String) {
+    object Home : Screen("home")
     object Chat : Screen("chat/{chatId}") {
         fun createRoute(chatId: String = "new") = "chat/$chatId"
     }
+    object ChatHistory : Screen("chat_history")
+    object WritingAid : Screen("writing_aid")
+    object Translator : Screen("translator")
+    object Transcriber : Screen("transcriber")
+    object CodeAssistant : Screen("code_assistant")
     object Settings : Screen("settings")
     object Models : Screen("models")
     object About : Screen("about")
@@ -31,7 +33,7 @@ fun LlmHubNavigation(
     navController: NavHostController,
     chatViewModelFactory: ChatViewModelFactory,
     themeViewModel: ThemeViewModel,
-    startDestination: String = Screen.Chat.createRoute()
+    startDestination: String = Screen.Home.route
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
 
@@ -39,6 +41,46 @@ fun LlmHubNavigation(
         navController = navController,
         startDestination = startDestination
     ) {
+        // Home/Landing Screen
+        composable(Screen.Home.route) {
+            HomeScreen(
+                onNavigateToFeature = { route ->
+                    when (route) {
+                        "chat" -> navController.navigate(Screen.Chat.createRoute("new"))
+                        "writing_aid" -> navController.navigate(Screen.WritingAid.route)
+                        "translator" -> navController.navigate(Screen.Translator.route)
+                        "transcriber" -> navController.navigate(Screen.Transcriber.route)
+                        "code_assistant" -> navController.navigate(Screen.CodeAssistant.route)
+                    }
+                },
+                onNavigateToSettings = {
+                    navController.navigate(Screen.Settings.route)
+                },
+                onNavigateToModels = {
+                    navController.navigate(Screen.Models.route)
+                },
+                onNavigateToChatHistory = {
+                    navController.navigate(Screen.ChatHistory.route)
+                }
+            )
+        }
+        
+        // Chat History Screen
+        composable(Screen.ChatHistory.route) {
+            ChatHistoryScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToChat = { chatId ->
+                    navController.navigate(Screen.Chat.createRoute(chatId))
+                },
+                onCreateNewChat = {
+                    navController.navigate(Screen.Chat.createRoute("new"))
+                }
+            )
+        }
+        
+        // Chat Screen (existing functionality preserved)
         composable(
             route = Screen.Chat.route
         ) { backStackEntry ->
@@ -58,7 +100,39 @@ fun LlmHubNavigation(
                         popUpTo(Screen.Chat.route) { inclusive = true }
                     }
                 },
+                onNavigateBack = {
+                    navController.popBackStack(Screen.Home.route, inclusive = false)
+                },
                 drawerState = drawerState
+            )
+        }
+        
+        // Feature Screens
+        composable(Screen.WritingAid.route) {
+            WritingAidScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToModels = { navController.navigate(Screen.Models.route) }
+            )
+        }
+        
+        composable(Screen.Translator.route) {
+            TranslatorScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToModels = { navController.navigate(Screen.Models.route) }
+            )
+        }
+        
+        composable(Screen.Transcriber.route) {
+            TranscriberScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToModels = { navController.navigate(Screen.Models.route) }
+            )
+        }
+        
+        composable(Screen.CodeAssistant.route) {
+            CodeAssistantScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToModels = { navController.navigate(Screen.Models.route) }
             )
         }
         

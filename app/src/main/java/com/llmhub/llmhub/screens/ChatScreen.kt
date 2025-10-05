@@ -79,6 +79,7 @@ fun ChatScreen(
     onNavigateToSettings: () -> Unit,
     onNavigateToModels: () -> Unit,
     onNavigateToChat: (String) -> Unit,
+    onNavigateBack: () -> Unit,
     drawerState: androidx.compose.material3.DrawerState
 ) {
     val viewModel: ChatViewModel = viewModel(
@@ -205,6 +206,12 @@ fun ChatScreen(
                         drawerState.close()
                     }
                     onNavigateToModels()
+                },
+                onNavigateBack = {
+                    coroutineScope.launch {
+                        drawerState.close()
+                    }
+                    onNavigateBack()
                 },
                 onClearAllChats = {
                     coroutineScope.launch {

@@ -1,0 +1,284 @@
+package com.llmhub.llmhub.components
+
+import androidx.compose.animation.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.llmhub.llmhub.R
+import com.llmhub.llmhub.data.LLMModel
+import com.google.mediapipe.tasks.genai.llminference.LlmInference
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ModelSelectorCard(
+    models: List<LLMModel>,
+    selectedModel: LLMModel?,
+    onModelSelected: (LLMModel) -> Unit,
+    selectedBackend: LlmInference.Backend?,
+    onBackendSelected: (LlmInference.Backend) -> Unit,
+    onLoadModel: () -> Unit,
+    isLoading: Boolean,
+    filterMultimodalOnly: Boolean = false,
+    modifier: Modifier = Modifier
+) {
+    val filteredModels = if (filterMultimodalOnly) {
+        models.filter { it.supportsAudio || it.supportsVision }
+    } else {
+        models
+    }
+    
+    var showModelMenu by remember { mutableStateOf(false) }
+    var showBackendMenu by remember { mutableStateOf(false) }
+    
+    Card(
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        modifier = modifier
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Title
+            Text(
+                text = stringResource(R.string.select_model_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            
+            if (filteredModels.isEmpty()) {
+                // No models available
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                    Column {
+                        Text(
+                            text = stringResource(R.string.no_models_available),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = stringResource(
+                                if (filterMultimodalOnly) R.string.multimodal_models_only 
+                                else R.string.download_models_first
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            } else {
+                // Model Dropdown
+                ExposedDropdownMenuBox(
+                    expanded = showModelMenu,
+                    onExpandedChange = { showModelMenu = !showModelMenu }
+                ) {
+                    OutlinedTextField(
+                        value = selectedModel?.name ?: stringResource(R.string.select_model),
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text(stringResource(R.string.select_model)) },
+                        trailingIcon = { 
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = showModelMenu) 
+                        },
+                        leadingIcon = {
+                            Icon(Icons.Default.Memory, contentDescription = null)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(),
+                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    ExposedDropdownMenu(
+                        expanded = showModelMenu,
+                        onDismissRequest = { showModelMenu = false }
+                    ) {
+                        filteredModels.forEach { model ->
+                            DropdownMenuItem(
+                                text = { 
+                                    Column {
+                                        Text(
+                                            text = model.name,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        Text(
+                                            text = buildString {
+                                                if (model.supportsVision) append("👁️ ")
+                                                if (model.supportsAudio) append("🎤 ")
+                                                if (model.supportsGpu) append("⚡ ")
+                                            },
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    onModelSelected(model)
+                                    showModelMenu = false
+                                },
+                                leadingIcon = {
+                                    if (selectedModel?.name == model.name) {
+                                        Icon(
+                                            Icons.Default.CheckCircle,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+                
+                // Backend Selection
+                AnimatedVisibility(
+                    visible = selectedModel != null,
+                    enter = fadeIn() + expandVertically()
+                ) {
+                    ExposedDropdownMenuBox(
+                        expanded = showBackendMenu,
+                        onExpandedChange = { showBackendMenu = !showBackendMenu }
+                    ) {
+                        OutlinedTextField(
+                            value = when(selectedBackend) {
+                                LlmInference.Backend.CPU -> stringResource(R.string.backend_cpu)
+                                LlmInference.Backend.GPU -> stringResource(R.string.backend_gpu)
+                                else -> stringResource(R.string.select_backend)
+                            },
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text(stringResource(R.string.select_backend)) },
+                            trailingIcon = { 
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = showBackendMenu) 
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    if (selectedBackend == LlmInference.Backend.GPU) Icons.Default.Bolt 
+                                    else Icons.Default.Computer,
+                                    contentDescription = null
+                                )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(),
+                            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        ExposedDropdownMenu(
+                            expanded = showBackendMenu,
+                            onDismissRequest = { showBackendMenu = false }
+                        ) {
+                            // CPU Option
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.backend_cpu)) },
+                                onClick = {
+                                    onBackendSelected(LlmInference.Backend.CPU)
+                                    showBackendMenu = false
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Computer, contentDescription = null)
+                                },
+                                trailingIcon = {
+                                    if (selectedBackend == LlmInference.Backend.CPU) {
+                                        Icon(
+                                            Icons.Default.CheckCircle,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            )
+                            
+                            // GPU Option
+                            val gpuSupported = selectedModel?.supportsGpu == true
+                            DropdownMenuItem(
+                                text = { 
+                                    Column {
+                                        Text(stringResource(R.string.backend_gpu))
+                                        if (!gpuSupported) {
+                                            Text(
+                                                text = stringResource(R.string.gpu_not_supported),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.error
+                                            )
+                                        }
+                                    }
+                                },
+                                onClick = {
+                                    if (gpuSupported) {
+                                        onBackendSelected(LlmInference.Backend.GPU)
+                                        showBackendMenu = false
+                                    }
+                                },
+                                enabled = gpuSupported,
+                                leadingIcon = {
+                                    Icon(Icons.Default.Bolt, contentDescription = null)
+                                },
+                                trailingIcon = {
+                                    if (selectedBackend == LlmInference.Backend.GPU && gpuSupported) {
+                                        Icon(
+                                            Icons.Default.CheckCircle,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+                
+                // Load Model Button
+                AnimatedVisibility(
+                    visible = selectedModel != null && selectedBackend != null,
+                    enter = fadeIn() + expandVertically()
+                ) {
+                    Button(
+                        onClick = onLoadModel,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isLoading,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.model_loading), fontWeight = FontWeight.Bold)
+                        } else {
+                            Icon(Icons.Default.PlayArrow, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.load_model), fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
