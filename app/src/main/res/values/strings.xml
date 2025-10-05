@@ -45,6 +45,7 @@
     <string name="currently_loaded">Currently loaded</string>
     <string name="select_model">Select model</string>
     <string name="unload_model">Unload Model</string>
+    <string name="reload_model">Reload Model</string>
     
     <!-- About Screen -->
     <string name="about_llm_hub">About LLM Hub</string>
@@ -428,6 +429,7 @@
     <string name="translator_title">Offline Translator</string>
     <string name="translator_input_label">Text to translate</string>
     <string name="translator_input_hint">Enter text to translate...</string>
+    <string name="load_model_to_start">Load a model to start</string>
     <string name="translator_source_lang">Source Language</string>
     <string name="translator_target_lang">Target Language</string>
     <string name="translator_auto_detect">Auto Detect</string>
@@ -571,6 +573,7 @@
     <!-- Feature-specific Processing -->
     <string name="processing">Processing…</string>
     <string name="translating">Translating…</string>
+    <string name="translating_tap_to_cancel">Translating (tap to cancel)</string>
     <string name="transcribing">Transcribing…</string>
     <string name="analyzing_code">Analyzing code…</string>
     <string name="processing_text">Processing text…</string>

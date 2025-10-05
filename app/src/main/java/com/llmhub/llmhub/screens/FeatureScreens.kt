@@ -1,9 +1,11 @@
 package com.llmhub.llmhub.screens
 
+import android.Manifest
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -17,7 +19,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -25,8 +32,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.components.ModelSelectorCard
+import com.llmhub.llmhub.ui.components.AudioInputService
 import com.llmhub.llmhub.viewmodels.TranslatorViewModel
 import com.llmhub.llmhub.viewmodels.TranscriberViewModel
+import kotlinx.coroutines.launch
 
 // Language data class
 data class Language(val code: String, val nameResId: Int)
@@ -115,34 +124,141 @@ fun TranslatorScreen(
     onNavigateToModels: () -> Unit,
     viewModel: TranslatorViewModel = viewModel()
 ) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val keyboard = LocalSoftwareKeyboardController.current
+    
     // ViewModel states
     val availableModels by viewModel.availableModels.collectAsState()
     val selectedModel by viewModel.selectedModel.collectAsState()
     val selectedBackend by viewModel.selectedBackend.collectAsState()
     val isLoadingModel by viewModel.isLoadingModel.collectAsState()
+    val isModelLoaded by viewModel.isModelLoaded.collectAsState()
     val isTranslating by viewModel.isTranslating.collectAsState()
     val loadError by viewModel.loadError.collectAsState()
-    val visionEnabled by viewModel.visionEnabled.collectAsState()
-    val audioEnabled by viewModel.audioEnabled.collectAsState()
     val autoDetectSource by viewModel.autoDetectSource.collectAsState()
     val detectedLanguage by viewModel.detectedLanguage.collectAsState()
     val inputText by viewModel.inputText.collectAsState()
     val inputImageUri by viewModel.inputImageUri.collectAsState()
+    val inputAudioUri by viewModel.inputAudioUri.collectAsState()
+    val inputMode by viewModel.inputMode.collectAsState()
     val outputText by viewModel.outputText.collectAsState()
+    val visionEnabled by viewModel.visionEnabled.collectAsState()
+    val audioEnabled by viewModel.audioEnabled.collectAsState()
     
-    // UI state
-    var sourceLanguageIndex by remember { mutableStateOf(0) } // English
-    var targetLanguageIndex by remember { mutableStateOf(supportedLanguages.indexOfFirst { it.code == "es" }) } // Spanish
+    // Clipboard manager
+    val clipboardManager = LocalClipboardManager.current
+    
+    // Parsed transcription and translation for audio mode
+    var transcriptionText by remember { mutableStateOf("") }
+    var translationText by remember { mutableStateOf("") }
+    
+    // Parse output when it changes
+    LaunchedEffect(outputText, inputMode) {
+        if (inputMode == TranslatorViewModel.InputMode.AUDIO && 
+            outputText.contains("Transcription:") && 
+            outputText.contains("Translation:")) {
+            
+            transcriptionText = outputText
+                .substringAfter("Transcription:", "")
+                .substringBefore("Translation:", "")
+                .trim()
+            
+            translationText = outputText
+                .substringAfter("Translation:", "")
+                .trim()
+        } else {
+            transcriptionText = ""
+            translationText = ""
+        }
+    }
+    
+    // Audio recording states
+    var isRecording by remember { mutableStateOf(false) }
+    var recordedAudioData by remember { mutableStateOf<ByteArray?>(null) }
+    var hasAudioPermission by remember { mutableStateOf(false) }
+    
+    // Audio playback states
+    var audioPlayer by remember { mutableStateOf<android.media.MediaPlayer?>(null) }
+    var isAudioPlaying by remember { mutableStateOf(false) }
+    var audioCurrentPosition by remember { mutableStateOf(0) }
+    var audioDuration by remember { mutableStateOf(0) }
+    
+    // Audio service
+    val audioService = remember { AudioInputService(context) }
+
+    // UI state (initialize from persisted codes)
+    val persistedSourceCode by viewModel.sourceLanguageCode.collectAsState()
+    val persistedTargetCode by viewModel.targetLanguageCode.collectAsState()
+    var sourceLanguageIndex by remember(persistedSourceCode) { mutableStateOf(supportedLanguages.indexOfFirst { it.code == persistedSourceCode }.coerceAtLeast(0)) }
+    var targetLanguageIndex by remember(persistedTargetCode) { mutableStateOf(supportedLanguages.indexOfFirst { it.code == persistedTargetCode }.coerceAtLeast(0)) }
     var sourceExpanded by remember { mutableStateOf(false) }
     var targetExpanded by remember { mutableStateOf(false) }
-    
-    // Image picker
+    var showSettingsSheet by remember { mutableStateOf(false) }
+
+    // Pickers
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        viewModel.setInputImage(uri)
+        uri?.let { viewModel.setInputImage(it) }
     }
     
+    // Audio permission launcher
+    val audioPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasAudioPermission = isGranted
+        if (isGranted) {
+            isRecording = true
+        }
+    }
+    
+    // Check audio permission on first composition
+    LaunchedEffect(Unit) {
+        hasAudioPermission = audioService.hasAudioPermission()
+    }
+    
+    // Audio recording effect
+    LaunchedEffect(isRecording) {
+        if (isRecording && hasAudioPermission) {
+            val success = audioService.startRecording()
+            if (!success) {
+                isRecording = false
+            }
+        } else if (!isRecording && audioService.isRecording()) {
+            // Stop recording when isRecording becomes false
+            val audioData = audioService.stopRecording()
+            if (audioData != null) {
+                recordedAudioData = audioData
+                // Set the audio data in the viewmodel
+                viewModel.setInputAudioData(audioData)
+            }
+        }
+    }
+    
+    // Audio playback progress tracking
+    LaunchedEffect(isAudioPlaying) {
+        while (isAudioPlaying && audioPlayer != null) {
+            audioCurrentPosition = audioPlayer?.currentPosition ?: 0
+            audioDuration = audioPlayer?.duration ?: 0
+            kotlinx.coroutines.delay(50) // Update every 50ms
+        }
+    }
+    
+    // Cleanup on dispose
+    DisposableEffect(Unit) {
+        onDispose {
+            if (audioService.isRecording()) {
+                coroutineScope.launch {
+                    audioService.stopRecording()
+                }
+            }
+            // Release audio player
+            audioPlayer?.release()
+            audioPlayer = null
+        }
+    }
+
     // Snackbar
     val snackbarHostState = remember { SnackbarHostState() }
     
@@ -153,13 +269,113 @@ fun TranslatorScreen(
         }
     }
     
+    // Settings Bottom Sheet
+    if (showSettingsSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showSettingsSheet = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.select_model_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                ModelSelectorCard(
+                    models = availableModels,
+                    selectedModel = selectedModel,
+                    selectedBackend = selectedBackend,
+                    isLoading = isLoadingModel,
+                    isModelLoaded = isModelLoaded,
+                    onModelSelected = { viewModel.selectModel(it) },
+                    onBackendSelected = { viewModel.selectBackend(it) },
+                    onLoadModel = { viewModel.loadModel() },
+                    onUnloadModel = { viewModel.unloadModel() },
+                    filterMultimodalOnly = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // Vision toggle
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Enable Vision",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "Translate text from images",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = visionEnabled,
+                        onCheckedChange = { viewModel.toggleVision(it) },
+                        enabled = selectedModel?.supportsVision == true
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // Audio toggle
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Enable Audio",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "Translate audio recordings",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = audioEnabled,
+                        onCheckedChange = { viewModel.toggleAudio(it) },
+                        enabled = selectedModel?.supportsAudio == true
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(32.dp))
+            }
+        }
+    }
+    
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.translator_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.translator_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { showSettingsSheet = true }) {
+                        Icon(Icons.Default.Tune, contentDescription = "Settings")
                     }
                 }
             )
@@ -170,352 +386,555 @@ fun TranslatorScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Model Selection Card
-            ModelSelectorCard(
-                models = availableModels,
-                selectedModel = selectedModel,
-                selectedBackend = selectedBackend,
-                isLoading = isLoadingModel,
-                onModelSelected = { viewModel.selectModel(it) },
-                onBackendSelected = { viewModel.selectBackend(it) },
-                onLoadModel = { viewModel.loadModel() },
-                filterMultimodalOnly = true
-            )
-            
-            // Modality Toggles Card
-            AnimatedVisibility(
-                visible = selectedModel != null,
-                enter = fadeIn() + slideInVertically()
+            // Language Selection Bar
+            Card(
+                shape = RoundedCornerShape(0.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
             ) {
-                Card(
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.input_options),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        
-                        // Vision toggle
-                        if (selectedModel?.supportsVision == true) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.Image, contentDescription = null)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Column {
-                                        Text(
-                                            text = stringResource(R.string.enable_vision_input),
-                                            style = MaterialTheme.typography.bodyLarge
-                                        )
-                                        Text(
-                                            text = stringResource(R.string.translate_from_image),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                                Switch(
-                                    checked = visionEnabled,
-                                    onCheckedChange = { viewModel.toggleVision(it) }
-                                )
-                            }
-                        }
-                        
-                        // Audio toggle
-                        if (selectedModel?.supportsAudio == true) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.Mic, contentDescription = null)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Column {
-                                        Text(
-                                            text = stringResource(R.string.enable_audio_input),
-                                            style = MaterialTheme.typography.bodyLarge
-                                        )
-                                        Text(
-                                            text = stringResource(R.string.speak_to_translate),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                                Switch(
-                                    checked = audioEnabled,
-                                    onCheckedChange = { viewModel.toggleAudio(it) }
-                                )
-                            }
-                        }
-                        
-                        // Auto-detect language toggle
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                    // Source Language
+                    Box(modifier = Modifier.weight(1f)) {
+                        TextButton(
+                            onClick = { sourceExpanded = true },
+                            enabled = !autoDetectSource,
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Translate, contentDescription = null)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Column {
-                                    Text(
-                                        text = stringResource(R.string.lang_auto_detect),
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                    detectedLanguage?.let { lang ->
-                                        Text(
-                                            text = stringResource(R.string.language_detected, lang),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.primary,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
-                            }
-                            Switch(
-                                checked = autoDetectSource,
-                                onCheckedChange = { viewModel.toggleAutoDetect(it) }
-                            )
-                        }
-                    }
-                }
-            }
-            
-            // Language Selection Card
-            AnimatedVisibility(
-                visible = true,
-                enter = fadeIn() + slideInVertically()
-            ) {
-                Card(
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Source Language Dropdown
-                            ExposedDropdownMenuBox(
-                                expanded = sourceExpanded,
-                                onExpandedChange = { sourceExpanded = it },
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                OutlinedTextField(
-                                    value = if (autoDetectSource) stringResource(R.string.lang_auto_detect) else stringResource(supportedLanguages[sourceLanguageIndex].nameResId),
-                                    onValueChange = {},
-                                    readOnly = true,
-                                    enabled = !autoDetectSource,
-                                    label = { Text(stringResource(R.string.translator_source_lang)) },
-                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = sourceExpanded) },
-                                    modifier = Modifier
-                                        .menuAnchor()
-                                        .fillMaxWidth(),
-                                    shape = RoundedCornerShape(16.dp)
-                                )
-                                ExposedDropdownMenu(
-                                    expanded = sourceExpanded,
-                                    onDismissRequest = { sourceExpanded = false }
-                                ) {
-                                    supportedLanguages.forEachIndexed { index, language ->
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(language.nameResId)) },
-                                            onClick = {
-                                                sourceLanguageIndex = index
-                                                sourceExpanded = false
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-
-                            // Swap Languages Button
-                            IconButton(
-                                onClick = {
-                                    val temp = sourceLanguageIndex
-                                    sourceLanguageIndex = targetLanguageIndex
-                                    targetLanguageIndex = temp
-                                },
-                                enabled = !autoDetectSource
-                            ) {
-                                Icon(Icons.Default.SwapHoriz, contentDescription = "Swap languages")
-                            }
-
-                            // Target Language Dropdown
-                            ExposedDropdownMenuBox(
-                                expanded = targetExpanded,
-                                onExpandedChange = { targetExpanded = it },
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                OutlinedTextField(
-                                    value = stringResource(supportedLanguages[targetLanguageIndex].nameResId),
-                                    onValueChange = {},
-                                    readOnly = true,
-                                    label = { Text(stringResource(R.string.translator_target_lang)) },
-                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = targetExpanded) },
-                                    modifier = Modifier
-                                        .menuAnchor()
-                                        .fillMaxWidth(),
-                                    shape = RoundedCornerShape(16.dp)
-                                )
-                                ExposedDropdownMenu(
-                                    expanded = targetExpanded,
-                                    onDismissRequest = { targetExpanded = false }
-                                ) {
-                                    supportedLanguages.forEachIndexed { index, language ->
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(language.nameResId)) },
-                                            onClick = {
-                                                targetLanguageIndex = index
-                                                targetExpanded = false
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            
-            // Image Picker (if vision enabled)
-            AnimatedVisibility(
-                visible = visionEnabled,
-                enter = fadeIn() + slideInVertically()
-            ) {
-                Card(
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Button(
-                            onClick = { imagePickerLauncher.launch("image/*") },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Icon(Icons.Default.AddPhotoAlternate, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                if (inputImageUri != null) stringResource(R.string.change_image)
-                                else stringResource(R.string.select_image),
+                                text = if (autoDetectSource) stringResource(R.string.lang_auto_detect) 
+                                       else stringResource(supportedLanguages[sourceLanguageIndex].nameResId),
+                                style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Bold
                             )
                         }
-                        
-                        inputImageUri?.let { uri ->
-                            AsyncImage(
-                                model = uri,
-                                contentDescription = "Selected image",
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(200.dp)
-                                    .background(
-                                        MaterialTheme.colorScheme.surface,
-                                        RoundedCornerShape(16.dp)
-                                    )
+                        DropdownMenu(
+                            expanded = sourceExpanded,
+                            onDismissRequest = { sourceExpanded = false }
+                        ) {
+                            // Auto detect option on top
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.lang_auto_detect)) },
+                                onClick = {
+                                    sourceExpanded = false
+                                    // Enable auto-detect and disable source selection
+                                    viewModel.toggleAutoDetect(true)
+                                }
                             )
+                            Divider()
+                            supportedLanguages.forEachIndexed { index, language ->
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(language.nameResId)) },
+                                    onClick = {
+                                        sourceLanguageIndex = index
+                                        sourceExpanded = false
+                                        // Disable auto-detect when user selects specific source
+                                        if (autoDetectSource) viewModel.toggleAutoDetect(false)
+                                        viewModel.setSourceLanguageCode(supportedLanguages[index].code)
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    
+                    // Swap Languages
+                    IconButton(
+                        onClick = {
+                            val temp = sourceLanguageIndex
+                            sourceLanguageIndex = targetLanguageIndex
+                            targetLanguageIndex = temp
+                        },
+                        enabled = !autoDetectSource
+                    ) {
+                        Icon(Icons.Default.SwapHoriz, contentDescription = "Swap")
+                    }
+                    
+                    // Target Language
+                    Box(modifier = Modifier.weight(1f)) {
+                        TextButton(
+                            onClick = { targetExpanded = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = stringResource(supportedLanguages[targetLanguageIndex].nameResId),
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = targetExpanded,
+                            onDismissRequest = { targetExpanded = false }
+                        ) {
+                            supportedLanguages.forEachIndexed { index, language ->
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(language.nameResId)) },
+                                    onClick = {
+                                        targetLanguageIndex = index
+                                        targetExpanded = false
+                                        viewModel.setTargetLanguageCode(supportedLanguages[index].code)
+                                    }
+                                )
+                            }
                         }
                     }
                 }
             }
             
-            // Input Text Field
-            AnimatedVisibility(
-                visible = true,
-                enter = fadeIn() + slideInVertically()
-            ) {
-                Card(
-                    shape = RoundedCornerShape(24.dp)
-                ) {
-                    OutlinedTextField(
-                        value = inputText,
-                        onValueChange = { viewModel.setInputText(it) },
-                        label = { Text(stringResource(R.string.translator_input_label), fontWeight = FontWeight.Bold) },
-                        placeholder = { Text(stringResource(R.string.translator_input_hint)) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
-                            .padding(12.dp),
-                        maxLines = 10,
-                        shape = RoundedCornerShape(16.dp)
-                    )
-                }
-            }
+            Divider()
             
-            // Translate Button
-            Button(
-                onClick = {
-                    viewModel.translate(
-                        sourceLanguage = supportedLanguages[sourceLanguageIndex],
-                        targetLanguage = supportedLanguages[targetLanguageIndex]
-                    )
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = (inputText.isNotBlank() || inputImageUri != null) && !isTranslating && selectedModel != null,
-                shape = RoundedCornerShape(16.dp)
+            // Box with scrollable content and fixed button at bottom
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .imePadding()
             ) {
-                if (isTranslating) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.translating), fontWeight = FontWeight.Bold)
-                } else {
-                    Icon(Icons.Default.Translate, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.translator_translate), fontWeight = FontWeight.Bold)
-                }
-            }
-            
-            // Output Text Field
-            AnimatedVisibility(
-                visible = outputText.isNotEmpty(),
-                enter = fadeIn() + slideInVertically()
-            ) {
-                Card(
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    )
+                // Scrollable content (input + output)
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(bottom = 80.dp) // Space for fixed button
                 ) {
-                    OutlinedTextField(
-                        value = outputText,
-                        onValueChange = {},
-                        label = { Text(stringResource(R.string.translator_result), fontWeight = FontWeight.Bold) },
-                        readOnly = true,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
-                            .padding(12.dp),
-                        maxLines = 10,
-                        shape = RoundedCornerShape(16.dp)
-                    )
+                    // Input Area
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        // Text/Image/Audio Input based on mode
+                        when (inputMode) {
+                            TranslatorViewModel.InputMode.TEXT -> {
+                                Column {
+                                    OutlinedTextField(
+                                        value = inputText,
+                                        onValueChange = { viewModel.setInputText(it) },
+                                        placeholder = { 
+                                            Text(
+                                                stringResource(
+                                                    if (!isModelLoaded) R.string.load_model_to_start 
+                                                    else R.string.translator_input_hint
+                                                )
+                                            ) 
+                                        },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        minLines = 3,
+                                        maxLines = 8,
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = Color.Transparent,
+                                            unfocusedBorderColor = Color.Transparent
+                                        )
+                                    )
+                                    
+                                    // Input action bar with paste and attachment buttons
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        // Paste button
+                                        IconButton(
+                                            onClick = { /* TODO: Implement paste functionality */ }
+                                        ) {
+                                            Icon(
+                                                Icons.Default.ContentPaste,
+                                                contentDescription = "Paste",
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                        
+                                        Spacer(modifier = Modifier.weight(1f))
+                                        
+                                        // Image attachment (only show if vision is enabled)
+                                        if (visionEnabled && selectedModel?.supportsVision == true) {
+                                            IconButton(
+                                                onClick = { imagePickerLauncher.launch("image/*") }
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Image,
+                                                    contentDescription = "Attach image",
+                                                    tint = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+                                        }
+                                        
+                                        // Audio recording button (only show if audio is enabled)
+                                        if (audioEnabled && selectedModel?.supportsAudio == true) {
+                                            IconButton(
+                                                onClick = { 
+                                                    if (isRecording) {
+                                                        isRecording = false
+                                                    } else {
+                                                        if (hasAudioPermission) {
+                                                            isRecording = true
+                                                        } else {
+                                                            audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                                        }
+                                                    }
+                                                }
+                                            ) {
+                                                Icon(
+                                                    if (isRecording) Icons.Default.Stop else Icons.Default.Mic,
+                                                    contentDescription = if (isRecording) "Stop recording" else "Record audio",
+                                                    tint = if (isRecording) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            TranslatorViewModel.InputMode.IMAGE -> {
+                                inputImageUri?.let { uri ->
+                                    Column(
+                                        modifier = Modifier.padding(16.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        AsyncImage(
+                                            model = uri,
+                                            contentDescription = "Selected image",
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(250.dp)
+                                                .background(
+                                                    MaterialTheme.colorScheme.surfaceVariant,
+                                                    RoundedCornerShape(12.dp)
+                                                )
+                                        )
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            OutlinedButton(
+                                                onClick = { imagePickerLauncher.launch("image/*") },
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                Text("Change")
+                                            }
+                                            OutlinedButton(
+                                                onClick = { viewModel.clearInput() },
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                Text("Remove")
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            TranslatorViewModel.InputMode.AUDIO -> {
+                                Column(
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    if (isRecording) {
+                                        // Recording in progress
+                                        Card(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            colors = CardDefaults.cardColors(
+                                                containerColor = MaterialTheme.colorScheme.errorContainer
+                                            )
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(16.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.FiberManualRecord,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(24.dp),
+                                                    tint = MaterialTheme.colorScheme.error
+                                                )
+                                                Text(
+                                                    text = "Recording...",
+                                                    style = MaterialTheme.typography.bodyLarge,
+                                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                                )
+                                                Spacer(Modifier.weight(1f))
+                                                IconButton(
+                                                    onClick = { isRecording = false }
+                                                ) {
+                                                    Icon(
+                                                        Icons.Default.Stop,
+                                                        contentDescription = "Stop recording",
+                                                        tint = MaterialTheme.colorScheme.error
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    } else if (recordedAudioData != null) {
+                                        // Audio player card
+                                        Card(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            colors = CardDefaults.cardColors(
+                                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                            )
+                                        ) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .padding(12.dp)
+                                                    .fillMaxWidth(),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                // Play/Pause button
+                                                IconButton(
+                                                    onClick = {
+                                                        try {
+                                                            if (isAudioPlaying) {
+                                                                audioPlayer?.pause()
+                                                                isAudioPlaying = false
+                                                            } else {
+                                                                if (audioPlayer == null) {
+                                                                    // Write bytes to a temp file so MediaPlayer can read
+                                                                    val tmp = java.io.File(context.cacheDir, "audio_${System.currentTimeMillis()}.wav")
+                                                                    tmp.writeBytes(recordedAudioData!!)
+                                                                    audioPlayer = android.media.MediaPlayer().apply {
+                                                                        setDataSource(tmp.absolutePath)
+                                                                        setOnCompletionListener {
+                                                                            isAudioPlaying = false
+                                                                            audioCurrentPosition = 0
+                                                                            runCatching { tmp.delete() }
+                                                                        }
+                                                                        setOnPreparedListener { player ->
+                                                                            audioDuration = player.duration
+                                                                            player.start()
+                                                                            isAudioPlaying = true
+                                                                        }
+                                                                        prepareAsync()
+                                                                    }
+                                                                } else {
+                                                                    audioPlayer?.start()
+                                                                    isAudioPlaying = true
+                                                                }
+                                                            }
+                                                        } catch (e: Exception) {
+                                                            android.util.Log.e("TranslatorScreen", "Audio playback failed: ${e.message}", e)
+                                                            isAudioPlaying = false
+                                                        }
+                                                    },
+                                                    modifier = Modifier.size(40.dp)
+                                                ) {
+                                                    Icon(
+                                                        if (isAudioPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                                        contentDescription = if (isAudioPlaying) "Pause" else "Play",
+                                                        tint = MaterialTheme.colorScheme.primary
+                                                    )
+                                                }
+                                                
+                                                // Waveform visualization with progress
+                                                val barHeights = remember {
+                                                    val random = java.util.Random(recordedAudioData.hashCode().toLong())
+                                                    List(32) { 0.35f + random.nextFloat() * 0.65f }
+                                                }
+                                                val waveformColor = MaterialTheme.colorScheme.primary
+                                                val progress = if (audioDuration > 0) {
+                                                    audioCurrentPosition.toFloat() / audioDuration.toFloat()
+                                                } else 0f
+                                                
+                                                Canvas(
+                                                    modifier = Modifier
+                                                        .weight(1f)
+                                                        .height(40.dp)
+                                                ) {
+                                                    val barCount = barHeights.size
+                                                    val spacingPx = 3f
+                                                    val totalSpacing = spacingPx * (barCount - 1)
+                                                    val barWidth = (size.width - totalSpacing) / barCount
+                                                    val centerY = size.height / 2f
+                                                    val maxBarHeight = size.height
+                                                    val activeColor = waveformColor
+                                                    val inactiveColor = waveformColor.copy(alpha = 0.35f)
+                                                    val progressBars = (progress * barCount).coerceIn(0f, barCount.toFloat())
+                                                    
+                                                    for (i in 0 until barCount) {
+                                                        val height = (barHeights[i] * maxBarHeight).coerceAtMost(maxBarHeight)
+                                                        val left = i * (barWidth + spacingPx)
+                                                        val top = centerY - height / 2f
+                                                        val color = if (i < progressBars) activeColor else inactiveColor
+                                                        drawRoundRect(
+                                                            color = color,
+                                                            topLeft = androidx.compose.ui.geometry.Offset(left, top),
+                                                            size = androidx.compose.ui.geometry.Size(barWidth, height),
+                                                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(barWidth / 2f)
+                                                        )
+                                                    }
+                                                }
+                                                
+                                                // Delete button
+                                                IconButton(
+                                                    onClick = { 
+                                                        audioPlayer?.release()
+                                                        audioPlayer = null
+                                                        isAudioPlaying = false
+                                                        audioCurrentPosition = 0
+                                                        audioDuration = 0
+                                                        recordedAudioData = null
+                                                        viewModel.clearInput()
+                                                    }
+                                                ) {
+                                                    Icon(
+                                                        Icons.Default.Delete,
+                                                        contentDescription = "Delete",
+                                                        tint = MaterialTheme.colorScheme.error
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        
+                                        // Show transcription if available (after translation) - plain style (no Card)
+                                        if (transcriptionText.isNotEmpty()) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(top = 8.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.Top
+                                            ) {
+                                                Text(
+                                                    text = transcriptionText,
+                                                    style = MaterialTheme.typography.bodyLarge,
+                                                    modifier = Modifier.weight(1f),
+                                                    color = MaterialTheme.colorScheme.onSurface
+                                                )
+                                                IconButton(
+                                                    onClick = { 
+                                                        clipboardManager.setText(AnnotatedString(transcriptionText))
+                                                    }
+                                                ) {
+                                                    Icon(
+                                                        Icons.Default.ContentCopy,
+                                                        contentDescription = "Copy",
+                                                        tint = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Output Area - directly below input
+                    if (outputText.isNotEmpty()) {
+                        Divider()
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            // For audio mode, only show translation (transcription is above divider) - plain style (no Card)
+                            if (inputMode == TranslatorViewModel.InputMode.AUDIO && translationText.isNotEmpty()) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.Top
+                                ) {
+                                    Text(
+                                        text = translationText,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    IconButton(
+                                        onClick = { 
+                                            clipboardManager.setText(AnnotatedString(translationText))
+                                        }
+                                    ) {
+                                        Icon(
+                                            Icons.Default.ContentCopy,
+                                            contentDescription = "Copy",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            } else if (inputMode != TranslatorViewModel.InputMode.AUDIO) {
+                                // Regular output for text/image modes
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.Top
+                                ) {
+                                    Text(
+                                        text = outputText,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    IconButton(
+                                        onClick = { 
+                                            clipboardManager.setText(AnnotatedString(outputText))
+                                        }
+                                    ) {
+                                        Icon(
+                                            Icons.Default.ContentCopy,
+                                            contentDescription = "Copy",
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Fixed Translate Button at bottom
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth(),
+                    shadowElevation = 8.dp,
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    if (isTranslating) {
+                        // Show Cancel button while translating
+                        OutlinedButton(
+                            onClick = { viewModel.cancelTranslation() },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
+                            ),
+                            border = ButtonDefaults.outlinedButtonBorder.copy(
+                                brush = Brush.linearGradient(
+                                    colors = listOf(MaterialTheme.colorScheme.error, MaterialTheme.colorScheme.error)
+                                )
+                            )
+                        ) {
+                            Icon(Icons.Default.StopCircle, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.translating_tap_to_cancel))
+                        }
+                    } else {
+                        FilledTonalButton(
+                            onClick = {
+                                keyboard?.hide()
+                                viewModel.translate(
+                                    sourceLanguage = if (autoDetectSource) Language("", R.string.lang_auto_detect) else supportedLanguages[sourceLanguageIndex],
+                                    targetLanguage = supportedLanguages[targetLanguageIndex]
+                                )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            enabled = (inputText.isNotBlank() || inputImageUri != null || inputAudioUri != null || recordedAudioData != null) && !isTranslating && isModelLoaded,
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(stringResource(R.string.translator_translate))
+                        }
+                    }
                 }
             }
         }

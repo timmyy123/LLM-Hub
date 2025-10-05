@@ -45,6 +45,7 @@
     <string name="currently_loaded">Atualmente carregado</string>
     <string name="select_model">Selecionar modelo</string>
     <string name="unload_model">Descarregar Modelo</string>
+    <string name="reload_model">Recarregar Modelo</string>
     
     <!-- About Screen -->
     <string name="about_llm_hub">Sobre o LLM Hub</string>
@@ -287,6 +288,7 @@
     <string name="audio_recorded">Áudio gravado</string>
     <string name="audio_file">Arquivo de Áudio</string>
     <string name="tap_to_play">Toque para reproduzir</string>
+    <string name="translating_tap_to_cancel">Traduzindo (toque para cancelar)</string>
     
     <!-- Multimodal Support -->
     <string name="model_supports_multimodal">Visão+Áudio+Texto</string>
@@ -389,6 +391,7 @@
     <string name="translator_title">Tradutor Offline</string>
     <string name="translator_input_label">Texto para traduzir</string>
     <string name="translator_input_hint">Digite o texto a traduzir...</string>
+    <string name="load_model_to_start">Carregue um modelo para começar</string>
     <string name="translator_source_lang">Idioma de Origem</string>
     <string name="translator_target_lang">Idioma de Destino</string>
     <string name="translator_auto_detect">Detectar Automaticamente</string>

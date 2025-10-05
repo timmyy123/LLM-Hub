@@ -1,6 +1,7 @@
 package com.llmhub.llmhub.components
 
 import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -29,8 +30,11 @@ fun ModelSelectorCard(
     onBackendSelected: (LlmInference.Backend) -> Unit,
     onLoadModel: () -> Unit,
     isLoading: Boolean,
+    isModelLoaded: Boolean = false,
+    onUnloadModel: (() -> Unit)? = null,
     filterMultimodalOnly: Boolean = false,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    extraContent: (@Composable ColumnScope.() -> Unit)? = null
 ) {
     val filteredModels = if (filterMultimodalOnly) {
         models.filter { it.supportsAudio || it.supportsVision }
@@ -118,21 +122,11 @@ fun ModelSelectorCard(
                         filteredModels.forEach { model ->
                             DropdownMenuItem(
                                 text = { 
-                                    Column {
-                                        Text(
-                                            text = model.name,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                        Text(
-                                            text = buildString {
-                                                if (model.supportsVision) append("👁️ ")
-                                                if (model.supportsAudio) append("🎤 ")
-                                                if (model.supportsGpu) append("⚡ ")
-                                            },
-                                            style = MaterialTheme.typography.bodySmall
-                                        )
-                                    }
+                                    Text(
+                                        text = model.name,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium
+                                    )
                                 },
                                 onClick = {
                                     onModelSelected(model)
@@ -250,34 +244,69 @@ fun ModelSelectorCard(
                     }
                 }
                 
-                // Load Model Button
+                // Load/Reload/Unload Model Buttons
                 AnimatedVisibility(
                     visible = selectedModel != null && selectedBackend != null,
                     enter = fadeIn() + expandVertically()
                 ) {
-                    Button(
-                        onClick = onLoadModel,
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !isLoading,
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        )
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        if (isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                color = MaterialTheme.colorScheme.onPrimary
+                        // Load or Reload Model Button
+                        Button(
+                            onClick = onLoadModel,
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !isLoading,
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.model_loading), fontWeight = FontWeight.Bold)
-                        } else {
-                            Icon(Icons.Default.PlayArrow, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.load_model), fontWeight = FontWeight.Bold)
+                        ) {
+                            if (isLoading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.model_loading), fontWeight = FontWeight.Bold)
+                            } else {
+                                Text(
+                                    text = stringResource(
+                                        if (isModelLoaded) R.string.reload_model 
+                                        else R.string.load_model
+                                    ), 
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                        
+                        // Unload Model Button (only show when model is loaded)
+                        if (isModelLoaded && onUnloadModel != null) {
+                            OutlinedButton(
+                                onClick = onUnloadModel,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error
+                                ),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+                            ) {
+                                Icon(
+                                    Icons.Default.PowerOff,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.unload_model), fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
                 }
+            }
+
+            extraContent?.let { content ->
+                Spacer(modifier = Modifier.height(8.dp))
+                content()
             }
         }
     }

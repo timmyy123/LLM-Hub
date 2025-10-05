@@ -7,7 +7,7 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.data.LLMModel
-import com.llmhub.llmhub.data.ModelData
+import com.llmhub.llmhub.data.ModelAvailabilityProvider
 import com.llmhub.llmhub.screens.Language
 import com.llmhub.llmhub.inference.MediaPipeInferenceService
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
@@ -18,10 +18,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 
 class TranslatorViewModel(application: Application) : AndroidViewModel(application) {
     private val inferenceService = MediaPipeInferenceService(application)
+    private val prefs = application.getSharedPreferences("translator_prefs", android.content.Context.MODE_PRIVATE)
     
     // Model selection state
     private val _availableModels = MutableStateFlow<List<LLMModel>>(emptyList())
@@ -37,8 +40,14 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
     private val _isLoadingModel = MutableStateFlow(false)
     val isLoadingModel: StateFlow<Boolean> = _isLoadingModel.asStateFlow()
     
+    private val _isModelLoaded = MutableStateFlow(false)
+    val isModelLoaded: StateFlow<Boolean> = _isModelLoaded.asStateFlow()
+    
     private val _isTranslating = MutableStateFlow(false)
     val isTranslating: StateFlow<Boolean> = _isTranslating.asStateFlow()
+    // Track running translation to allow cancellation
+    private var translationJob: Job? = null
+    private var currentChatId: String? = null
     
     private val _loadError = MutableStateFlow<String?>(null)
     val loadError: StateFlow<String?> = _loadError.asStateFlow()
@@ -57,6 +66,13 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
     private val _detectedLanguage = MutableStateFlow<String?>(null)
     val detectedLanguage: StateFlow<String?> = _detectedLanguage.asStateFlow()
     
+    // Persisted language selections (ISO codes)
+    private val _sourceLanguageCode = MutableStateFlow("en")
+    val sourceLanguageCode: StateFlow<String> = _sourceLanguageCode.asStateFlow()
+    
+    private val _targetLanguageCode = MutableStateFlow("es")
+    val targetLanguageCode: StateFlow<String> = _targetLanguageCode.asStateFlow()
+    
     // Translation input/output
     private val _inputText = MutableStateFlow("")
     val inputText: StateFlow<String> = _inputText.asStateFlow()
@@ -64,27 +80,88 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
     private val _inputImageUri = MutableStateFlow<Uri?>(null)
     val inputImageUri: StateFlow<Uri?> = _inputImageUri.asStateFlow()
     
+    private val _inputAudioUri = MutableStateFlow<Uri?>(null)
+    val inputAudioUri: StateFlow<Uri?> = _inputAudioUri.asStateFlow()
+    
+    private val _inputAudioData = MutableStateFlow<ByteArray?>(null)
+    val inputAudioData: StateFlow<ByteArray?> = _inputAudioData.asStateFlow()
+    
     private val _outputText = MutableStateFlow("")
     val outputText: StateFlow<String> = _outputText.asStateFlow()
     
+    // Input mode (exclusive: TEXT, IMAGE, or AUDIO)
+    enum class InputMode { TEXT, IMAGE, AUDIO }
+    private val _inputMode = MutableStateFlow(InputMode.TEXT)
+    val inputMode: StateFlow<InputMode> = _inputMode.asStateFlow()
+    
     init {
         loadAvailableModels()
+        loadSavedSettings()
     }
     
     private fun loadAvailableModels() {
         viewModelScope.launch {
-            // Filter to multimodal Gemma-3n models that support vision or audio
-            val models = ModelData.models
-                .filter { it.category != "embedding" }
-                .filter { it.supportsVision || it.supportsAudio }
-                .filter { it.isDownloaded }
-            _availableModels.value = models
+            val context = getApplication<Application>()
+            val allModels = ModelAvailabilityProvider.loadAvailableModels(context)
+            val multimodalModels = allModels.filter { it.supportsVision || it.supportsAudio }
+            _availableModels.value = multimodalModels
+
+            // Restore saved model or use first as default
+            val savedModelName = prefs.getString("selected_model_name", null)
+            if (savedModelName != null) {
+                val savedModel = multimodalModels.find { it.name == savedModelName }
+                if (savedModel != null) {
+                    _selectedModel.value = savedModel
+                }
+            }
             
-            // Auto-select first model if available
-            if (models.isNotEmpty() && _selectedModel.value == null) {
-                _selectedModel.value = models.first()
+            if (multimodalModels.isNotEmpty() && _selectedModel.value == null) {
+                _selectedModel.value = multimodalModels.first()
             }
         }
+    }
+    
+    private fun loadSavedSettings() {
+        // Restore backend (store enum name, fallback to GPU)
+        val savedBackendName = prefs.getString("selected_backend", LlmInference.Backend.GPU.name)
+        _selectedBackend.value = try {
+            LlmInference.Backend.valueOf(savedBackendName ?: LlmInference.Backend.GPU.name)
+        } catch (_: IllegalArgumentException) {
+            LlmInference.Backend.GPU
+        }
+        
+        // Restore modality settings
+        _visionEnabled.value = prefs.getBoolean("vision_enabled", false)
+        _audioEnabled.value = prefs.getBoolean("audio_enabled", false)
+        _autoDetectSource.value = prefs.getBoolean("auto_detect", false)
+
+        // Restore language selections
+        _sourceLanguageCode.value = prefs.getString("source_lang", "en") ?: "en"
+        _targetLanguageCode.value = prefs.getString("target_lang", "es") ?: "es"
+    }
+    
+    private fun saveSettings() {
+        prefs.edit().apply {
+            putString("selected_model_name", _selectedModel.value?.name)
+            // Save backend using enum name to avoid non-exhaustive mappings
+            putString("selected_backend", _selectedBackend.value.name)
+            putBoolean("vision_enabled", _visionEnabled.value)
+            putBoolean("audio_enabled", _audioEnabled.value)
+            putBoolean("auto_detect", _autoDetectSource.value)
+            putString("source_lang", _sourceLanguageCode.value)
+            putString("target_lang", _targetLanguageCode.value)
+            apply()
+        }
+    }
+
+    fun setSourceLanguageCode(code: String) {
+        _sourceLanguageCode.value = code
+        saveSettings()
+    }
+
+    fun setTargetLanguageCode(code: String) {
+        _targetLanguageCode.value = code
+        saveSettings()
     }
     
     fun selectModel(model: LLMModel) {
@@ -96,10 +173,12 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
         if (!model.supportsAudio) {
             _audioEnabled.value = false
         }
+        saveSettings()
     }
     
     fun selectBackend(backend: LlmInference.Backend) {
         _selectedBackend.value = backend
+        saveSettings()
     }
     
     fun toggleVision(enabled: Boolean) {
@@ -107,10 +186,12 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
         if (!enabled) {
             _inputImageUri.value = null
         }
+        saveSettings()
     }
     
     fun toggleAudio(enabled: Boolean) {
         _audioEnabled.value = enabled
+        saveSettings()
     }
     
     fun toggleAutoDetect(enabled: Boolean) {
@@ -118,14 +199,54 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
         if (!enabled) {
             _detectedLanguage.value = null
         }
+        saveSettings()
     }
     
     fun setInputText(text: String) {
         _inputText.value = text
+        if (text.isNotEmpty()) {
+            _inputMode.value = InputMode.TEXT
+            _inputImageUri.value = null
+            _inputAudioUri.value = null
+        }
     }
     
     fun setInputImage(uri: Uri?) {
         _inputImageUri.value = uri
+        if (uri != null) {
+            _inputMode.value = InputMode.IMAGE
+            _inputText.value = ""
+            _inputAudioUri.value = null
+        }
+    }
+    
+    fun setInputAudio(uri: Uri?) {
+        _inputAudioUri.value = uri
+        _inputAudioData.value = null
+        if (uri != null) {
+            _inputMode.value = InputMode.AUDIO
+            _inputText.value = ""
+            _inputImageUri.value = null
+        }
+    }
+    
+    fun setInputAudioData(data: ByteArray?) {
+        _inputAudioData.value = data
+        _inputAudioUri.value = null
+        if (data != null) {
+            _inputMode.value = InputMode.AUDIO
+            _inputText.value = ""
+            _inputImageUri.value = null
+        }
+    }
+    
+    fun clearInput() {
+        _inputText.value = ""
+        _inputImageUri.value = null
+        _inputAudioUri.value = null
+        _inputAudioData.value = null
+        _inputMode.value = InputMode.TEXT
+        _outputText.value = ""
     }
     
     fun clearError() {
@@ -150,10 +271,26 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
                     disableVision = disableVision,
                     disableAudio = disableAudio
                 )
+                _isModelLoaded.value = true
             } catch (e: Exception) {
                 _loadError.value = e.message ?: "Failed to load model"
+                _isModelLoaded.value = false
             } finally {
                 _isLoadingModel.value = false
+            }
+        }
+    }
+    
+    fun unloadModel() {
+        viewModelScope.launch {
+            try {
+                // Cancel any in-flight translation before unloading
+                translationJob?.cancel()
+                inferenceService.unloadModel()
+                _isModelLoaded.value = false
+                _outputText.value = ""
+            } catch (e: Exception) {
+                _loadError.value = e.message ?: "Failed to unload model"
             }
         }
     }
@@ -163,8 +300,10 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
         targetLanguage: Language
     ) {
         val model = _selectedModel.value ?: return
+        // Cancel any previous translation before starting a new one
+        translationJob?.cancel()
         
-        viewModelScope.launch {
+        translationJob = viewModelScope.launch {
             _isTranslating.value = true
             _outputText.value = ""
             _detectedLanguage.value = null
@@ -174,16 +313,27 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
                     sourceLanguage = if (_autoDetectSource.value) null else sourceLanguage,
                     targetLanguage = targetLanguage,
                     inputText = _inputText.value,
-                    hasImage = _inputImageUri.value != null
+                    hasImage = _inputImageUri.value != null,
+                    hasAudio = _inputAudioUri.value != null || _inputAudioData.value != null
                 )
                 
-                val images = if (_visionEnabled.value) {
+                val images = if (_inputMode.value == InputMode.IMAGE) {
                     _inputImageUri.value?.let { uri ->
                         loadBitmapFromUri(uri)?.let { listOf(it) } ?: emptyList()
                     } ?: emptyList()
                 } else {
                     emptyList()
                 }
+                
+                val audioData = if (_inputMode.value == InputMode.AUDIO) {
+                    // Prefer recorded audio data over URI
+                    _inputAudioData.value ?: _inputAudioUri.value?.let { uri ->
+                        loadAudioFromUri(uri)
+                    }
+                } else {
+                    null
+                }
+                
                 val chatId = "translator-${UUID.randomUUID()}"
 
                 val responseFlow = inferenceService.generateResponseStreamWithSession(
@@ -191,7 +341,7 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
                     model = model,
                     chatId = chatId,
                     images = images,
-                    audioData = null,
+                    audioData = audioData,
                     webSearchEnabled = false
                 )
 
@@ -204,6 +354,8 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
                         }
                     }
                 }
+            } catch (_: CancellationException) {
+                // Swallow cancellation - user-initiated cancel
             } catch (e: Exception) {
                 _loadError.value = e.message ?: "Translation failed"
             } finally {
@@ -211,12 +363,17 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
             }
         }
     }
+
+    fun cancelTranslation() {
+        translationJob?.cancel()
+    }
     
     private fun buildTranslationPrompt(
         sourceLanguage: Language?,
         targetLanguage: Language,
         inputText: String,
-        hasImage: Boolean
+        hasImage: Boolean,
+        hasAudio: Boolean
     ): String {
         return when {
             hasImage && sourceLanguage == null -> {
@@ -232,6 +389,22 @@ If there's also text input: $inputText, translate that as well.""".trimIndent()
 Translate the text in the image from ${sourceLanguage.code} to ${targetLanguage.code}.
 Provide only the translation.
 ${if (inputText.isNotBlank()) "Also translate this text: $inputText" else ""}""".trimIndent()
+            }
+            hasAudio && sourceLanguage == null -> {
+                // Auto-detect from audio
+                """You are a professional translator. 
+Listen to the audio, transcribe what was said, detect the language, and translate the speech to ${targetLanguage.code}.
+Format your response exactly as follows:
+Transcription: [the transcribed text in the original language]
+Translation: [the translation in ${targetLanguage.code}]""".trimIndent()
+            }
+            hasAudio && sourceLanguage != null -> {
+                // Audio with known source language
+                """You are a professional translator.
+Listen to the audio, transcribe what was said in ${sourceLanguage.code}, and translate it to ${targetLanguage.code}.
+Format your response exactly as follows:
+Transcription: [the transcribed text in ${sourceLanguage.code}]
+Translation: [the translation in ${targetLanguage.code}]""".trimIndent()
             }
             sourceLanguage == null -> {
                 // Auto-detect from text
@@ -276,6 +449,19 @@ $inputText""".trimIndent()
             try {
                 app.contentResolver.openInputStream(uri)?.use { stream ->
                     BitmapFactory.decodeStream(stream)
+                }
+            } catch (_: Exception) {
+                null
+            }
+        }
+    }
+    
+    private suspend fun loadAudioFromUri(uri: Uri): ByteArray? {
+        val app = getApplication<Application>()
+        return withContext(Dispatchers.IO) {
+            try {
+                app.contentResolver.openInputStream(uri)?.use { stream ->
+                    stream.readBytes()
                 }
             } catch (_: Exception) {
                 null
