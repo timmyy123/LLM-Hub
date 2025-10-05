@@ -14,11 +14,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class TranscriberViewModel(application: Application) : AndroidViewModel(application) {
     private val inferenceService = MediaPipeInferenceService(application)
+    private val prefs = application.getSharedPreferences("transcriber_prefs", android.content.Context.MODE_PRIVATE)
     
     // Model selection state
     private val _availableModels = MutableStateFlow<List<LLMModel>>(emptyList())
@@ -36,22 +39,28 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
     
     private val _isTranscribing = MutableStateFlow(false)
     val isTranscribing: StateFlow<Boolean> = _isTranscribing.asStateFlow()
+    private var transcribeJob: Job? = null
     
     private val _isRecording = MutableStateFlow(false)
     val isRecording: StateFlow<Boolean> = _isRecording.asStateFlow()
     
     private val _loadError = MutableStateFlow<String?>(null)
     val loadError: StateFlow<String?> = _loadError.asStateFlow()
+    private val _isModelLoaded = MutableStateFlow(false)
+    val isModelLoaded: StateFlow<Boolean> = _isModelLoaded.asStateFlow()
     
     // Audio input/output
     private val _audioUri = MutableStateFlow<Uri?>(null)
     val audioUri: StateFlow<Uri?> = _audioUri.asStateFlow()
+    private val _audioData = MutableStateFlow<ByteArray?>(null)
+    val audioData: StateFlow<ByteArray?> = _audioData.asStateFlow()
     
     private val _transcriptionText = MutableStateFlow("")
     val transcriptionText: StateFlow<String> = _transcriptionText.asStateFlow()
     
     init {
         loadAvailableModels()
+        loadSavedSettings()
     }
     
     private fun loadAvailableModels() {
@@ -61,26 +70,54 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
             val audioModels = allModels.filter { it.supportsAudio }
             _availableModels.value = audioModels
 
+            // restore selected model by name
+            val savedModelName = prefs.getString("selected_model_name", null)
+            if (savedModelName != null) {
+                val saved = audioModels.find { it.name == savedModelName }
+                if (saved != null) _selectedModel.value = saved
+            }
             if (audioModels.isNotEmpty() && _selectedModel.value == null) {
                 _selectedModel.value = audioModels.first()
             }
         }
     }
+    private fun loadSavedSettings() {
+        val savedBackendName = prefs.getString("selected_backend", LlmInference.Backend.GPU.name)
+        _selectedBackend.value = try {
+            LlmInference.Backend.valueOf(savedBackendName ?: LlmInference.Backend.GPU.name)
+        } catch (_: IllegalArgumentException) {
+            LlmInference.Backend.GPU
+        }
+    }
+    private fun saveSettings() {
+        prefs.edit().apply {
+            putString("selected_model_name", _selectedModel.value?.name)
+            putString("selected_backend", _selectedBackend.value.name)
+            apply()
+        }
+    }
     
     fun selectModel(model: LLMModel) {
         _selectedModel.value = model
+        saveSettings()
     }
     
     fun selectBackend(backend: LlmInference.Backend) {
         _selectedBackend.value = backend
+        saveSettings()
     }
     
     fun setAudioUri(uri: Uri?) {
         _audioUri.value = uri
+        _audioData.value = null
     }
     
     fun setRecording(recording: Boolean) {
         _isRecording.value = recording
+    }
+    fun setAudioData(data: ByteArray?) {
+        _audioData.value = data
+        if (data != null) _audioUri.value = null
     }
     
     fun clearError() {
@@ -102,23 +139,37 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
                     disableVision = true,  // Only audio, no vision
                     disableAudio = false   // Enable audio
                 )
+                _isModelLoaded.value = true
             } catch (e: Exception) {
                 _loadError.value = e.message ?: "Failed to load model"
+                _isModelLoaded.value = false
             } finally {
                 _isLoadingModel.value = false
             }
         }
     }
-    
-    fun transcribe(audioUri: Uri) {
-        val model = _selectedModel.value ?: return
-        
+    fun unloadModel() {
         viewModelScope.launch {
+            try {
+                transcribeJob?.cancel()
+                inferenceService.unloadModel()
+                _isModelLoaded.value = false
+            } catch (e: Exception) {
+                _loadError.value = e.message ?: "Failed to unload model"
+            }
+        }
+    }
+    
+    fun transcribe(audioUri: Uri? = null) {
+        val model = _selectedModel.value ?: return
+        transcribeJob?.cancel()
+        
+        transcribeJob = viewModelScope.launch {
             _isTranscribing.value = true
             _transcriptionText.value = ""
             
             try {
-                val audioBytes = readAudioBytes(audioUri)
+                val audioBytes = _audioData.value ?: (audioUri?.let { readAudioBytes(it) })
                     ?: throw IllegalStateException("Unable to read audio input")
                 
                 val prompt = """You are a professional transcriber.
@@ -142,6 +193,8 @@ Do not add any commentary or explanations.""".trimIndent()
                         _transcriptionText.value += token
                     }
                 }
+            } catch (_: CancellationException) {
+                // ignore cancel
             } catch (e: Exception) {
                 _loadError.value = e.message ?: "Transcription failed"
             } finally {
