@@ -434,8 +434,8 @@
     <string name="feature_translator_desc">Traduire du texte en privé avec des modèles multimodaux</string>
     <string name="feature_transcriber">Transcripteur</string>
     <string name="feature_transcriber_desc">Transcrire la voix ou l\'audio en texte hors ligne</string>
-    <string name="feature_code_assistant">Assistant de Code</string>
-    <string name="feature_code_assistant_desc">Générer et expliquer des extraits de code localement</string>
+    <string name="feature_scam_detector">Détecteur d\'Arnaques</string>
+    <string name="feature_scam_detector_desc">Analyser le texte, les images ou les URL pour détecter les arnaques potentielles</string>
     
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">Aide à la Rédaction</string>
@@ -478,18 +478,19 @@
     <string name="transcriber_stop">Arrêter l\'Enregistrement</string>
     <string name="transcriber_requires_gemma3n">Cette fonctionnalité nécessite un modèle Gemma-3n avec support audio. Veuillez en télécharger un depuis l\'écran Modèles.</string>
     
-    <!-- Code Assistant Screen -->
-    <string name="code_assistant_title">Assistant de Code</string>
-    <string name="code_assistant_input_label">Décrivez ce dont vous avez besoin</string>
-    <string name="code_assistant_input_hint">Ex., \"Créer une fonction pour trier un tableau\" ou \"Expliquer ce code\"...</string>
-    <string name="code_assistant_mode_generate">Générer le Code</string>
-    <string name="code_assistant_mode_explain">Expliquer le Code</string>
-    <string name="code_assistant_mode_debug">Aide au Débogage</string>
-    <string name="code_assistant_mode_refactor">Refactoriser</string>
-    <string name="code_assistant_select_mode">Sélectionner le Mode</string>
-    <string name="code_assistant_process">Générer</string>
-    <string name="code_assistant_result">Code Généré</string>
-    <string name="code_assistant_no_model">Aucun modèle chargé. Veuillez d\'abord télécharger et sélectionner un modèle.</string>
+    <!-- Scam Detector Screen -->
+    <string name="scam_detector_title">Détecteur d\'Arnaques</string>
+    <string name="scam_detector_input_label">Entrez le contenu à analyser</string>
+    <string name="scam_detector_input_hint">Collez du texte, téléchargez une image ou entrez une URL pour analyser les arnaques...</string>
+    <string name="scam_detector_url_hint">Entrez l\'URL à analyser</string>
+    <string name="scam_detector_analyze">Analyser</string>
+    <string name="scam_detector_analyzing">Analyse en cours (appuyez pour annuler)</string>
+    <string name="scam_detector_result">Résultat de l\'Analyse</string>
+    <string name="scam_detector_no_model">Aucun modèle chargé. Veuillez d\'abord télécharger et sélectionner un modèle.</string>
+    <string name="scam_detector_load_model">Charger le Modèle</string>
+    <string name="scam_detector_enable_vision">Activer la Vision</string>
+    <string name="scam_detector_vision_desc">Analyser les images pour détecter les arnaques</string>
+    <string name="scam_detector_fetching_url">Récupération du contenu de l\'URL...</string>
     
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">Aucun Modèle Disponible</string>

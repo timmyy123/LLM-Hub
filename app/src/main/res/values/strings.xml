@@ -408,8 +408,8 @@
     <string name="feature_translator_desc">Translate text privately using multimodal models</string>
     <string name="feature_transcriber">Transcriber</string>
     <string name="feature_transcriber_desc">Transcribe voice or audio to text offline</string>
-    <string name="feature_code_assistant">Code Assistant</string>
-    <string name="feature_code_assistant_desc">Generate and explain code snippets locally</string>
+    <string name="feature_scam_detector">Scam Detector</string>
+    <string name="feature_scam_detector_desc">Analyze text, images, or URLs for potential scams</string>
     
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">Writing Aid</string>
@@ -452,18 +452,19 @@
     <string name="transcriber_stop">Stop Recording</string>
     <string name="transcriber_requires_gemma3n">This feature requires a Gemma-3n model with audio support. Please download one from the Models screen.</string>
     
-    <!-- Code Assistant Screen -->
-    <string name="code_assistant_title">Code Assistant</string>
-    <string name="code_assistant_input_label">Describe what you need</string>
-    <string name="code_assistant_input_hint">E.g., \"Create a function to sort an array\" or \"Explain this code\"...</string>
-    <string name="code_assistant_mode_generate">Generate Code</string>
-    <string name="code_assistant_mode_explain">Explain Code</string>
-    <string name="code_assistant_mode_debug">Debug Help</string>
-    <string name="code_assistant_mode_refactor">Refactor</string>
-    <string name="code_assistant_select_mode">Select Mode</string>
-    <string name="code_assistant_process">Generate</string>
-    <string name="code_assistant_result">Generated Code</string>
-    <string name="code_assistant_no_model">No model loaded. Please download and select a model first.</string>
+    <!-- Scam Detector Screen -->
+    <string name="scam_detector_title">Scam Detector</string>
+    <string name="scam_detector_input_label">Enter content to analyze</string>
+    <string name="scam_detector_input_hint">Paste text, upload image, or enter URL to analyze for scams...</string>
+    <string name="scam_detector_url_hint">Enter URL to analyze</string>
+    <string name="scam_detector_analyze">Analyze</string>
+    <string name="scam_detector_analyzing">Analyzing (tap to cancel)</string>
+    <string name="scam_detector_result">Analysis Result</string>
+    <string name="scam_detector_no_model">No model loaded. Please download and select a model first.</string>
+    <string name="scam_detector_load_model">Load Model</string>
+    <string name="scam_detector_enable_vision">Enable Vision</string>
+    <string name="scam_detector_vision_desc">Analyze images for scams</string>
+    <string name="scam_detector_fetching_url">Fetching URL content...</string>
     
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">No Model Available</string>

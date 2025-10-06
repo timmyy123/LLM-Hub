@@ -21,7 +21,7 @@ sealed class Screen(val route: String) {
     object WritingAid : Screen("writing_aid")
     object Translator : Screen("translator")
     object Transcriber : Screen("transcriber")
-    object CodeAssistant : Screen("code_assistant")
+    object ScamDetector : Screen("scam_detector")
     object Settings : Screen("settings")
     object Models : Screen("models")
     object About : Screen("about")
@@ -50,7 +50,7 @@ fun LlmHubNavigation(
                         "writing_aid" -> navController.navigate(Screen.WritingAid.route)
                         "translator" -> navController.navigate(Screen.Translator.route)
                         "transcriber" -> navController.navigate(Screen.Transcriber.route)
-                        "code_assistant" -> navController.navigate(Screen.CodeAssistant.route)
+                        "scam_detector" -> navController.navigate(Screen.ScamDetector.route)
                     }
                 },
                 onNavigateToSettings = {
@@ -129,8 +129,8 @@ fun LlmHubNavigation(
             )
         }
         
-        composable(Screen.CodeAssistant.route) {
-            CodeAssistantScreen(
+        composable(Screen.ScamDetector.route) {
+            ScamDetectorScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToModels = { navController.navigate(Screen.Models.route) }
             )

@@ -387,8 +387,8 @@
     <string name="feature_translator_desc">Text privat mit multimodalen Modellen übersetzen</string>
     <string name="feature_transcriber">Transkriptor</string>
     <string name="feature_transcriber_desc">Sprache oder Audio offline zu Text transkribieren</string>
-    <string name="feature_code_assistant">Code-Assistent</string>
-    <string name="feature_code_assistant_desc">Code-Schnipsel lokal generieren und erklären</string>
+    <string name="feature_scam_detector">Betrugsmelder</string>
+    <string name="feature_scam_detector_desc">Analysiere Text, Bilder oder URLs auf mögliche Betrügereien</string>
     
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">Schreibhilfe</string>
@@ -431,18 +431,19 @@
     <string name="transcriber_stop">Aufnahme stoppen</string>
     <string name="transcriber_requires_gemma3n">Diese Funktion erfordert ein Gemma-3n-Modell mit Audio-Unterstützung. Bitte laden Sie eines vom Modellbildschirm herunter.</string>
     
-    <!-- Code Assistant Screen -->
-    <string name="code_assistant_title">Code-Assistent</string>
-    <string name="code_assistant_input_label">Beschreiben Sie, was Sie brauchen</string>
-    <string name="code_assistant_input_hint">Z.B. \"Erstelle eine Funktion zum Sortieren eines Arrays\" oder \"Erkläre diesen Code\"...</string>
-    <string name="code_assistant_mode_generate">Code generieren</string>
-    <string name="code_assistant_mode_explain">Code erklären</string>
-    <string name="code_assistant_mode_debug">Debug-Hilfe</string>
-    <string name="code_assistant_mode_refactor">Refaktorieren</string>
-    <string name="code_assistant_select_mode">Modus auswählen</string>
-    <string name="code_assistant_process">Generieren</string>
-    <string name="code_assistant_result">Generierter Code</string>
-    <string name="code_assistant_no_model">Kein Modell geladen. Bitte laden Sie zuerst ein Modell herunter und wählen Sie es aus.</string>
+    <!-- Scam Detector Screen -->
+    <string name="scam_detector_title">Betrugsmelder</string>
+    <string name="scam_detector_input_label">Geben Sie zu analysierenden Inhalt ein</string>
+    <string name="scam_detector_input_hint">Text einfügen, Bild hochladen oder URL eingeben, um auf Betrug zu analysieren...</string>
+    <string name="scam_detector_url_hint">Geben Sie die URL zur Analyse ein</string>
+    <string name="scam_detector_analyze">Analysieren</string>
+    <string name="scam_detector_analyzing">Analysiere (zum Abbrechen tippen)</string>
+    <string name="scam_detector_result">Analyseergebnis</string>
+    <string name="scam_detector_no_model">Kein Modell geladen. Bitte laden Sie zuerst ein Modell herunter und wählen Sie es aus.</string>
+    <string name="scam_detector_load_model">Modell Laden</string>
+    <string name="scam_detector_enable_vision">Vision Aktivieren</string>
+    <string name="scam_detector_vision_desc">Bilder auf Betrug analysieren</string>
+    <string name="scam_detector_fetching_url">URL-Inhalt wird abgerufen...</string>
     
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">Kein Modell verfügbar</string>

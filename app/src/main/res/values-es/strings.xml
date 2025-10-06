@@ -386,8 +386,8 @@
     <string name="feature_translator_desc">Traduce texto de forma privada usando modelos multimodales</string>
     <string name="feature_transcriber">Transcriptor</string>
     <string name="feature_transcriber_desc">Transcribe voz o audio a texto sin conexión</string>
-    <string name="feature_code_assistant">Asistente de Código</string>
-    <string name="feature_code_assistant_desc">Genera y explica fragmentos de código localmente</string>
+    <string name="feature_scam_detector">Detector de Estafas</string>
+    <string name="feature_scam_detector_desc">Analiza texto, imágenes o URLs en busca de posibles estafas</string>
     
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">Ayuda de Escritura</string>
@@ -430,18 +430,19 @@
     <string name="transcriber_stop">Detener Grabación</string>
     <string name="transcriber_requires_gemma3n">Esta función requiere un modelo Gemma-3n con soporte de audio. Por favor descarga uno desde la pantalla de Modelos.</string>
     
-    <!-- Code Assistant Screen -->
-    <string name="code_assistant_title">Asistente de Código</string>
-    <string name="code_assistant_input_label">Describe lo que necesitas</string>
-    <string name="code_assistant_input_hint">Ej., \"Crea una función para ordenar un arreglo\" o \"Explica este código\"...</string>
-    <string name="code_assistant_mode_generate">Generar Código</string>
-    <string name="code_assistant_mode_explain">Explicar Código</string>
-    <string name="code_assistant_mode_debug">Ayuda de Depuración</string>
-    <string name="code_assistant_mode_refactor">Refactorizar</string>
-    <string name="code_assistant_select_mode">Seleccionar Modo</string>
-    <string name="code_assistant_process">Generar</string>
-    <string name="code_assistant_result">Código Generado</string>
-    <string name="code_assistant_no_model">No hay modelo cargado. Por favor descarga y selecciona un modelo primero.</string>
+    <!-- Scam Detector Screen -->
+    <string name="scam_detector_title">Detector de Estafas</string>
+    <string name="scam_detector_input_label">Ingresa el contenido a analizar</string>
+    <string name="scam_detector_input_hint">Pega texto, sube una imagen o ingresa una URL para analizar estafas...</string>
+    <string name="scam_detector_url_hint">Ingresa la URL a analizar</string>
+    <string name="scam_detector_analyze">Analizar</string>
+    <string name="scam_detector_analyzing">Analizando (toca para cancelar)</string>
+    <string name="scam_detector_result">Resultado del Análisis</string>
+    <string name="scam_detector_no_model">No hay modelo cargado. Por favor descarga y selecciona un modelo primero.</string>
+    <string name="scam_detector_load_model">Cargar Modelo</string>
+    <string name="scam_detector_enable_vision">Habilitar Visión</string>
+    <string name="scam_detector_vision_desc">Analizar imágenes en busca de estafas</string>
+    <string name="scam_detector_fetching_url">Obteniendo contenido de la URL...</string>
     
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">No Hay Modelo Disponible</string>

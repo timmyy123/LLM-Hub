@@ -83,11 +83,11 @@ fun HomeScreen(
                 route = "transcriber"
             ),
             FeatureCard(
-                title = "feature_code_assistant",
-                description = "feature_code_assistant_desc",
-                icon = Icons.Filled.Code,
+                title = "feature_scam_detector",
+                description = "feature_scam_detector_desc",
+                icon = Icons.Filled.Security,
                 gradient = Pair(Color(0xFFfa709a), Color(0xFFfee140)),
-                route = "code_assistant"
+                route = "scam_detector"
             )
         )
     }
@@ -370,8 +370,8 @@ private fun getStringResourceId(key: String): Int {
         "feature_translator_desc" -> R.string.feature_translator_desc
         "feature_transcriber" -> R.string.feature_transcriber
         "feature_transcriber_desc" -> R.string.feature_transcriber_desc
-        "feature_code_assistant" -> R.string.feature_code_assistant
-        "feature_code_assistant_desc" -> R.string.feature_code_assistant_desc
+        "feature_scam_detector" -> R.string.feature_scam_detector
+        "feature_scam_detector_desc" -> R.string.feature_scam_detector_desc
         else -> R.string.app_name
     }
 }
