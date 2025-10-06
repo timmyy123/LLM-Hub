@@ -3,17 +3,22 @@
 [![Android](https://img.shields.io/badge/Platform-Android-green.svg)](https://android.com)
 [![Kotlin](https://img.shields.io/badge/Language-Kotlin-blue.svg)](https://kotlinlang.org)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/Version-3.0-blue.svg)](https://github.com/timmyy123/LLM-Hub/releases)
 
 ## 📸 Screenshots
 
 <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;">
    <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
-      <img src="assets/screenshots/Screenshot_20250916_155727_LLM%20Hub.jpg" alt="Model list" style="width:300px;height:auto;border-radius:8px;display:block;" />
-      <!-- <figcaption style="font-size:12px;margin-top:6px;color:var(--color-fg-muted,#6b7280)">Model list</figcaption> -->
+      <img src="assets/screenshots/Screenshot_20251007_041833_LLM%20Hub.jpg" alt="AI Models" style="width:300px;height:auto;border-radius:8px;display:block;" />
+      <figcaption style="font-size:12px;margin-top:6px;color:#6b7280">Model Selection with Text & Vision Models</figcaption>
    </figure>
    <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
-      <img src="assets/screenshots/Screenshot_20250916_155747_LLM%20Hub.jpg" alt="Chat screen" style="width:300px;height:auto;border-radius:8px;display:block;" />
-      <!-- <figcaption style="font-size:12px;margin-top:6px;color:var(--color-fg-muted,#6b7280)">Chat screen</figcaption> -->
+      <img src="assets/screenshots/Screenshot_20251007_042114_LLM%20Hub.jpg" alt="AI Features" style="width:300px;height:auto;border-radius:8px;display:block;" />
+      <figcaption style="font-size:12px;margin-top:6px;color:#6b7280">AI Tools: Translator, Writing Aid, Scam Detector & More</figcaption>
+   </figure>
+   <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
+      <img src="assets/screenshots/Screenshot_20251007_042146_LLM%20Hub.jpg" alt="Chat Interface" style="width:300px;height:auto;border-radius:8px;display:block;" />
+      <figcaption style="font-size:12px;margin-top:6px;color:#6b7280">Smart Chat with RAG Memory & Web Search</figcaption>
    </figure>
 </div>
 
@@ -21,6 +26,7 @@
 
 ## 🚀 Features
 
+### Core AI Features
 - **🤖 Multiple LLM Models**: Support for Gemma-3, Llama-3.2, Phi-4, and Gemma-3n
 - **📱 On-Device Processing**: Complete privacy - no internet required for inference
 - **🖼️ Vision Support**: Multimodal models that understand text, images, and audio input
@@ -28,14 +34,94 @@
 - **⚡ GPU Acceleration**: Optimized performance on supported devices (8GB+ RAM)
 - **💾 Offline Usage**: Chat without internet connection after model download
 - **🔒 Privacy First**: Your conversations never leave your device
-- **🎨 Modern UI**: Clean, intuitive Material Design interface
+
+### Smart AI Tools
+- **✍️ Writing Aid**: Enhance your writing with AI-powered assistance
+  - Summarize, expand, rewrite, or improve text
+  - Generate code from descriptions
+  - Professional tone adjustment
+  - Grammar and style suggestions
+  
+- **🌍 Translator**: Real-time language translation
+  - Support for 30+ languages
+  - Text-to-text translation
+  - Image-to-text translation (OCR + translate)
+  - Audio-to-text translation (speech recognition + translate)
+  - Offline translation with on-device models
+
+- **�️ Transcriber**: Audio transcription
+  - Convert speech to text
+  - Support for multiple audio formats
+  - Works with Gemma-3n audio-capable models
+  - Offline transcription
+
+- **🛡️ Scam Detector**: AI-powered scam detection
+  - Analyze text messages, emails, and images
+  - Detect phishing attempts and fraudulent content
+  - Vision support for screenshot analysis
+  - Real-time risk assessment
+
+### Additional Features
+- **�🎨 Modern UI**: Clean, intuitive Material Design interface
 - **📥 Direct Downloads**: Download models directly from HuggingFace
+- **🧠 RAG Memory**: Global context memory for enhanced responses
+- **🌐 Web Search**: Optional web search integration for fact-checking
 
 ##  Download
 
 [![Get it on Google Play](https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png)](https://play.google.com/store/apps/details?id=com.llmhub.llmhub)
 
 *Available on Google Play Store for easy installation and automatic updates*
+
+## 🛠️ AI Tools Overview
+
+### 💬 Chat
+Multi-turn conversations with advanced features:
+- **Context awareness**: Maintains conversation history
+- **RAG Memory**: Access global knowledge base
+- **Web Search**: Optional internet search for real-time information
+- **Multimodal input**: Text, images, and audio (model-dependent)
+- **Code highlighting**: Syntax highlighting for programming languages
+
+### ✍️ Writing Aid
+Professional writing assistance powered by AI:
+- **Modes**: Summarize, Expand, Rewrite, Improve, Code Generation
+- **Use cases**: 
+  - Create concise summaries of long documents
+  - Expand bullet points into full paragraphs
+  - Rewrite content in different styles
+  - Improve grammar and clarity
+  - Generate code from natural language descriptions
+- **Customizable**: Adjust temperature and creativity settings
+
+### 🌍 Translator
+Comprehensive translation tool with multiple input methods:
+- **30+ languages**: Major world languages supported
+- **Input methods**:
+  - **Text input**: Type or paste text to translate
+  - **Image translation**: Upload images with text (OCR + translate)
+  - **Audio translation**: Record speech and translate (with Gemma-3n)
+- **Offline capable**: Works without internet using on-device models
+- **Bidirectional**: Translate in both directions
+
+### 🎙️ Transcriber
+Convert audio to text with high accuracy:
+- **Audio formats**: WAV, MP3, and other common formats
+- **Real-time processing**: Quick transcription on-device
+- **Multimodal models**: Requires Gemma-3n audio-capable models
+- **Privacy-focused**: Audio never leaves your device
+
+### 🛡️ Scam Detector
+Protect yourself from fraud and phishing:
+- **Text analysis**: Detect suspicious patterns in messages and emails
+- **Image analysis**: Scan screenshots for phishing indicators
+- **Risk assessment**: Clear risk level indicators (High/Medium/Low)
+- **Detailed explanation**: Understand why something is flagged as suspicious
+- **Use cases**:
+  - Verify suspicious emails
+  - Check text messages for scams
+  - Analyze social media messages
+  - Review website screenshots
 
 ## 📱 Supported Models
 
@@ -111,11 +197,17 @@ cd LLM-Hub
 
 ### Usage
 
-1. **Launch the app**
-2. **Go to Settings → Download Models**
-3. **Select and download your preferred model**
-4. **Start chatting** once the model is downloaded
-5. **For vision models**: Tap the image icon to upload photos
+1. **Launch the app** and explore the home screen
+2. **Go to Settings → Download Models** to get AI models
+3. **Select and download** your preferred model based on device capabilities
+4. **Choose your AI tool**:
+   - **Chat**: Multi-turn conversations with context memory
+   - **Writing Aid**: Improve, summarize, or generate text
+   - **Translator**: Translate text, images, or audio across 30+ languages
+   - **Transcriber**: Convert audio to text
+   - **Scam Detector**: Analyze suspicious messages or images
+5. **For vision models**: Tap the image icon to upload photos for image understanding
+6. **For audio models**: Use the microphone icon to record audio input
 
 ## 📖 How It Works
 
