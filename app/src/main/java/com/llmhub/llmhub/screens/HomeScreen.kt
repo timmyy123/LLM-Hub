@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -100,12 +101,22 @@ fun HomeScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Psychology,
-                            contentDescription = null,
-                            modifier = Modifier.size(32.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                        // App launcher icon - center cropped with equal edges removed
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.mipmap.ic_launcher_foreground),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(52.dp)
+                                    .scale(1.6f),
+                                tint = Color.Unspecified
+                            )
+                        }
                         Text(
                             text = stringResource(R.string.app_name),
                             style = MaterialTheme.typography.headlineSmall,
@@ -114,7 +125,8 @@ fun HomeScreen(
                     }
                 },
                 actions = {
-                    // Chat History Button
+                    // Chat History Button - Commented out
+                    /*
                     IconButton(onClick = onNavigateToChatHistory) {
                         Icon(
                             imageVector = Icons.Outlined.History,
@@ -122,6 +134,7 @@ fun HomeScreen(
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
+                    */
                     
                     // Models Button
                     IconButton(onClick = onNavigateToModels) {
@@ -207,7 +220,7 @@ fun AnimatedWelcomeHeader() {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 24.dp, horizontal = 16.dp),
+                .padding(vertical = 12.dp, horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Animated gradient text for "Welcome to LLM Hub"
@@ -229,7 +242,7 @@ fun AnimatedWelcomeHeader() {
                 textAlign = TextAlign.Center,
                 letterSpacing = 0.5.sp
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = stringResource(R.string.home_subtitle),
                 style = MaterialTheme.typography.bodyLarge,

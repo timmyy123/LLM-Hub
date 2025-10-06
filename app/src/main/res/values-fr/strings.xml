@@ -276,6 +276,7 @@
     <string name="audio_file">Fichier Audio</string>
     <string name="tap_to_play">Toucher pour lire</string>
     <string name="translating_tap_to_cancel">Traduction en cours (touchez pour annuler)</string>
+    <string name="transcribing_tap_to_cancel">Transcription en cours (touchez pour annuler)</string>
     
     <!-- Image actions -->
     <string name="image_copied_clipboard">Image copiée du chat</string>
@@ -591,4 +592,10 @@
     <string name="model_load_failed">Échec du chargement du modèle</string>
     <string name="multimodal_models_only">Seuls les modèles multimodaux (Gemma-3n) sont supportés</string>
     <string name="text_models_only">Seuls les modèles texte sont supportés</string>
+    
+    <!-- Translator Settings -->
+    <string name="translator_enable_vision">Activer la Vision</string>
+    <string name="translator_vision_description">Traduire le texte des images</string>
+    <string name="translator_enable_audio">Activer l\'Audio</string>
+    <string name="translator_audio_description">Traduire les enregistrements audio</string>
 </resources>

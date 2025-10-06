@@ -16,12 +16,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalConfiguration
@@ -674,12 +676,17 @@ private fun WelcomeMessage(
                 color = MaterialTheme.colorScheme.primaryContainer,
                 tonalElevation = 8.dp
             ) {
-                Box(contentAlignment = Alignment.Center) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.clip(MaterialTheme.shapes.medium)
+                ) {
                     Icon(
-                        Icons.Default.SmartToy,
+                        painter = painterResource(id = R.mipmap.ic_launcher_foreground),
                         contentDescription = null,
-                        modifier = Modifier.size(32.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                        modifier = Modifier
+                            .size(54.dp)
+                            .scale(2.0f),
+                        tint = Color.Unspecified
                     )
                 }
             }
@@ -815,13 +822,19 @@ private fun ModelLoadingIndicator(modelName: String) {
                     color = MaterialTheme.colorScheme.primary,
                     tonalElevation = 8.dp
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(MaterialTheme.shapes.medium),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Icon(
-                            Icons.Default.SmartToy,
+                            painter = painterResource(R.mipmap.ic_launcher_foreground),
                             contentDescription = null,
                             modifier = Modifier
-                                .size(24.dp),
-                            tint = MaterialTheme.colorScheme.onPrimary
+                                .size(52.dp)
+                                .scale(1.6f),
+                            tint = Color.Unspecified
                         )
                     }
                 }

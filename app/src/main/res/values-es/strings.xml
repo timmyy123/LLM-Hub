@@ -306,6 +306,7 @@
     <string name="audio_file">Archivo de Audio</string>
     <string name="tap_to_play">Tocar para reproducir</string>
     <string name="translating_tap_to_cancel">Traduciendo (toca para cancelar)</string>
+    <string name="transcribing_tap_to_cancel">Transcribiendo (toca para cancelar)</string>
     
     <!-- Multimodal Support -->
     <string name="model_supports_multimodal">Visión+Audio+Texto</string>
@@ -569,7 +570,14 @@
     <string name="translate_from_image">Translate text from image</string>
     <string name="speak_to_translate">Speak to translate</string>
     <string name="select_image">Select Image</string>
-    <string name="change_image">Change Image</string></resources>
+    <string name="change_image">Change Image</string>
+    
+    <!-- Translator Settings -->
+    <string name="translator_enable_vision">Habilitar Visión</string>
+    <string name="translator_vision_description">Traducir texto de imágenes</string>
+    <string name="translator_enable_audio">Habilitar Audio</string>
+    <string name="translator_audio_description">Traducir grabaciones de audio</string>
+</resources>
 
 
 

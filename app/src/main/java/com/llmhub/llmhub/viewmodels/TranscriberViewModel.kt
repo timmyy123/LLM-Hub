@@ -175,6 +175,12 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
     
+    fun cancelTranscription() {
+        transcribeJob?.cancel()
+        transcribeJob = null
+        _isTranscribing.value = false
+    }
+    
     fun transcribe(audioUri: Uri? = null) {
         val model = _selectedModel.value ?: return
         transcribeJob?.cancel()

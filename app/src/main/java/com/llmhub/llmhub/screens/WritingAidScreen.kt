@@ -38,7 +38,6 @@ fun WritingAidScreen(
     
     // UI State
     var inputText by remember { mutableStateOf("") }
-    var selectedMode by remember { mutableStateOf(WritingMode.FRIENDLY) }
     var showModeMenu by remember { mutableStateOf(false) }
     var showSettingsSheet by remember { mutableStateOf(false) }
     
@@ -46,6 +45,7 @@ fun WritingAidScreen(
     val availableModels by viewModel.availableModels.collectAsState()
     val selectedModel by viewModel.selectedModel.collectAsState()
     val selectedBackend by viewModel.selectedBackend.collectAsState()
+    val selectedMode by viewModel.selectedMode.collectAsState()
     val isModelLoaded by viewModel.isModelLoaded.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val isProcessing by viewModel.isProcessing.collectAsState()
@@ -132,7 +132,7 @@ fun WritingAidScreen(
                             DropdownMenuItem(
                                 text = { Text(getModeString(mode)) },
                                 onClick = {
-                                    selectedMode = mode
+                                    viewModel.selectMode(mode)
                                     showModeMenu = false
                                 }
                             )
@@ -275,16 +275,15 @@ fun WritingAidScreen(
                             .padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+                        Text(
+                            text = outputText,
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.Top
+                            horizontalArrangement = Arrangement.End
                         ) {
-                            Text(
-                                text = outputText,
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.weight(1f)
-                            )
                             IconButton(
                                 onClick = { 
                                     clipboardManager.setText(AnnotatedString(outputText))
@@ -293,8 +292,7 @@ fun WritingAidScreen(
                                 Icon(
                                     Icons.Default.ContentCopy,
                                     contentDescription = stringResource(R.string.copy),
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
                             }
                         }

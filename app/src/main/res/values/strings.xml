@@ -583,6 +583,7 @@
     <string name="translating">Translating…</string>
     <string name="translating_tap_to_cancel">Translating (tap to cancel)</string>
     <string name="transcribing">Transcribing…</string>
+    <string name="transcribing_tap_to_cancel">Transcribing (tap to cancel)</string>
     <string name="analyzing_code">Analyzing code…</string>
     <string name="processing_text">Processing text…</string>
     
@@ -594,5 +595,11 @@
     <string name="select_image">Select Image</string>
     <string name="change_image">Change Image</string>
     <string name="transcription_result">Transcription</string>
+    
+    <!-- Translator Settings -->
+    <string name="translator_enable_vision">Enable Vision</string>
+    <string name="translator_vision_description">Translate text from images</string>
+    <string name="translator_enable_audio">Enable Audio</string>
+    <string name="translator_audio_description">Translate audio recordings</string>
 </resources>
 

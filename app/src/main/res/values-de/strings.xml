@@ -302,6 +302,7 @@
     <string name="recording">Aufnahme…</string>
     <string name="tap_to_stop">Tippen zum Stoppen</string>
     <string name="translating_tap_to_cancel">Übersetzen (zum Abbrechen tippen)</string>
+    <string name="transcribing_tap_to_cancel">Transkription (zum Abbrechen tippen)</string>
     <string name="ready_to_send">Bereit zum Senden</string>
     <string name="audio_recorded">Audio aufgenommen</string>
     <string name="audio_file">Audiodatei</string>
@@ -570,7 +571,14 @@
     <string name="translate_from_image">Translate text from image</string>
     <string name="speak_to_translate">Speak to translate</string>
     <string name="select_image">Select Image</string>
-    <string name="change_image">Change Image</string></resources>
+    <string name="change_image">Change Image</string>
+    
+    <!-- Translator Settings -->
+    <string name="translator_enable_vision">Vision aktivieren</string>
+    <string name="translator_vision_description">Text aus Bildern übersetzen</string>
+    <string name="translator_enable_audio">Audio aktivieren</string>
+    <string name="translator_audio_description">Audioaufnahmen übersetzen</string>
+</resources>
 
 
 
