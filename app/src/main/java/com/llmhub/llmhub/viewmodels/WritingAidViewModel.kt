@@ -1,6 +1,7 @@
 package com.llmhub.llmhub.viewmodels
 
 import android.app.Application
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -21,6 +22,7 @@ import kotlinx.coroutines.withContext
 class WritingAidViewModel(application: Application) : AndroidViewModel(application) {
     
     private val inferenceService = MediaPipeInferenceService(application)
+    private val prefs = application.getSharedPreferences("writing_aid_prefs", Context.MODE_PRIVATE)
     
     private var processingJob: Job? = null
     
@@ -32,6 +34,9 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
     
     private val _selectedBackend = MutableStateFlow<LlmInference.Backend?>(null)
     val selectedBackend: StateFlow<LlmInference.Backend?> = _selectedBackend.asStateFlow()
+    
+    private val _selectedMode = MutableStateFlow(WritingMode.FRIENDLY)
+    val selectedMode: StateFlow<WritingMode> = _selectedMode.asStateFlow()
     
     private val _isModelLoaded = MutableStateFlow(false)
     val isModelLoaded: StateFlow<Boolean> = _isModelLoaded.asStateFlow()
@@ -50,6 +55,46 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
     
     init {
         loadAvailableModels()
+        loadSavedSettings()
+    }
+    
+    private fun loadSavedSettings() {
+        // Restore backend
+        val savedBackendName = prefs.getString("selected_backend", LlmInference.Backend.GPU.name)
+        _selectedBackend.value = try {
+            LlmInference.Backend.valueOf(savedBackendName ?: LlmInference.Backend.GPU.name)
+        } catch (_: IllegalArgumentException) {
+            LlmInference.Backend.GPU
+        }
+        
+        // Restore writing mode
+        val savedModeName = prefs.getString("selected_mode", WritingMode.FRIENDLY.name)
+        _selectedMode.value = try {
+            WritingMode.valueOf(savedModeName ?: WritingMode.FRIENDLY.name)
+        } catch (_: IllegalArgumentException) {
+            WritingMode.FRIENDLY
+        }
+        
+        // Restore selected model by name
+        val savedModelName = prefs.getString("selected_model_name", null)
+        if (savedModelName != null) {
+            viewModelScope.launch {
+                kotlinx.coroutines.delay(100)
+                val model = _availableModels.value.find { it.name == savedModelName }
+                if (model != null) {
+                    _selectedModel.value = model
+                }
+            }
+        }
+    }
+    
+    private fun saveSettings() {
+        prefs.edit().apply {
+            putString("selected_model_name", _selectedModel.value?.name)
+            putString("selected_backend", _selectedBackend.value?.name)
+            putString("selected_mode", _selectedMode.value.name)
+            apply()
+        }
     }
     
     private fun loadAvailableModels() {
@@ -59,7 +104,17 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
                 .filter { it.category != "embedding" }
             _availableModels.value = available
             if (_selectedModel.value == null) {
-                available.firstOrNull()?.let { selectModel(it) }
+                available.firstOrNull()?.let {
+                    _selectedModel.value = it
+                    // Auto-select backend if not already set
+                    if (_selectedBackend.value == null) {
+                        _selectedBackend.value = if (it.supportsGpu) {
+                            LlmInference.Backend.GPU
+                        } else {
+                            LlmInference.Backend.CPU
+                        }
+                    }
+                }
             }
         }
     }
@@ -71,6 +126,8 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
         }
         
         _selectedModel.value = model
+        _isModelLoaded.value = false
+        
         // Auto-select backend based on GPU support
         if (_selectedBackend.value == null) {
             _selectedBackend.value = if (model.supportsGpu) {
@@ -79,6 +136,8 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
                 LlmInference.Backend.CPU
             }
         }
+        
+        saveSettings()
     }
     
     fun selectBackend(backend: LlmInference.Backend) {
@@ -88,6 +147,13 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
         }
         
         _selectedBackend.value = backend
+        _isModelLoaded.value = false
+        saveSettings()
+    }
+    
+    fun selectMode(mode: WritingMode) {
+        _selectedMode.value = mode
+        saveSettings()
     }
     
     fun loadModel() {

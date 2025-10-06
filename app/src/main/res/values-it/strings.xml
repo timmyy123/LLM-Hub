@@ -287,6 +287,7 @@
     <string name="audio_file">File Audio</string>
     <string name="tap_to_play">Tocca per riprodurre</string>
     <string name="translating_tap_to_cancel">Traduzione in corso (tocca per annullare)</string>
+    <string name="transcribing_tap_to_cancel">Trascrizione in corso (tocca per annullare)</string>
     
     <!-- Image actions -->
     <string name="image_copied_clipboard">Immagine copiata dalla chat</string>
@@ -592,7 +593,14 @@
     <string name="translate_from_image">Translate text from image</string>
     <string name="speak_to_translate">Speak to translate</string>
     <string name="select_image">Select Image</string>
-    <string name="change_image">Change Image</string></resources>
+    <string name="change_image">Change Image</string>
+    
+    <!-- Translator Settings -->
+    <string name="translator_enable_vision">Abilita Visione</string>
+    <string name="translator_vision_description">Traduci testo dalle immagini</string>
+    <string name="translator_enable_audio">Abilita Audio</string>
+    <string name="translator_audio_description">Traduci registrazioni audio</string>
+</resources>
 
 
 

@@ -317,12 +317,12 @@ fun TranslatorScreen(
                 ) {
                     Column {
                         Text(
-                            text = "Enable Vision",
+                            text = stringResource(R.string.translator_enable_vision),
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Medium
                         )
                         Text(
-                            text = "Translate text from images",
+                            text = stringResource(R.string.translator_vision_description),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -346,12 +346,12 @@ fun TranslatorScreen(
                 ) {
                     Column {
                         Text(
-                            text = "Enable Audio",
+                            text = stringResource(R.string.translator_enable_audio),
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Medium
                         )
                         Text(
-                            text = "Translate audio recordings",
+                            text = stringResource(R.string.translator_audio_description),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -1297,19 +1297,36 @@ fun TranscriberScreen(
             }
 
             // Bottom Transcribe button
-            FilledTonalButton(
-                onClick = { viewModel.transcribe() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                enabled = recordedAudioData != null && !isTranscribing && isModelLoaded,
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                if (isTranscribing) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp))
+            if (isTranscribing) {
+                // Show Cancel button while transcribing
+                OutlinedButton(
+                    onClick = { viewModel.cancelTranscription() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    ),
+                    border = ButtonDefaults.outlinedButtonBorder.copy(
+                        brush = Brush.linearGradient(
+                            colors = listOf(MaterialTheme.colorScheme.error, MaterialTheme.colorScheme.error)
+                        )
+                    )
+                ) {
+                    Icon(Icons.Default.StopCircle, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.transcriber_transcribe))
-                } else {
+                    Text(stringResource(R.string.transcribing_tap_to_cancel))
+                }
+            } else {
+                FilledTonalButton(
+                    onClick = { viewModel.transcribe() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    enabled = recordedAudioData != null && !isTranscribing && isModelLoaded,
+                    shape = RoundedCornerShape(12.dp)
+                ) {
                     Text(stringResource(R.string.transcriber_transcribe))
                 }
             }
