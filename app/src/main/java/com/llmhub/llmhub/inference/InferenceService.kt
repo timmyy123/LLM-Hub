@@ -454,15 +454,17 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 .setPreferredBackend(backend)
                 
             // Enable vision modality for multimodal models (following Google AI Edge Gallery pattern)
+            // In version 0.10.29+, setting maxNumImages > 0 triggers vision model pre-loading
+            // which significantly increases initialization time. Only enable when actually needed.
             if (model.supportsVision && !disableVision) {
                 optionsBuilder.setMaxNumImages(10) // Allow up to 10 images per session
-                Log.d(TAG, "  - Enabled vision modality with max 10 images")
+                Log.d(TAG, "  - Enabled vision modality with max 10 images (WARNING: increases load time)")
             } else {
                 optionsBuilder.setMaxNumImages(0) // Explicitly disable for non-vision models or when vision is disabled
                 if (disableVision) {
-                    Log.d(TAG, "  - Vision modality disabled by user (maxNumImages=0)")
+                    Log.d(TAG, "  - Vision modality disabled by user (maxNumImages=0) - faster loading")
                 } else {
-                Log.d(TAG, "  - Vision modality disabled (maxNumImages=0)")
+                Log.d(TAG, "  - Vision modality disabled (maxNumImages=0) - faster loading")
                 }
             }
             

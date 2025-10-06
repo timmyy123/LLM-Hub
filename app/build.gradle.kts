@@ -177,8 +177,10 @@ dependencies {
     implementation("io.ktor:ktor-client-content-negotiation:2.3.6")
     implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.6")
 
-    // MediaPipe Tasks (updated to latest as of Aug 28 2025)
-    // tasks-genai latest: 0.10.27; tasks-vision latest: 0.10.26.1; tasks-text latest: 0.10.15
+    // MediaPipe Tasks (updated to latest as of Oct 2025)
+    // NOTE: Version 0.10.29 has slower initial load for multimodal models due to eager
+    // vision/audio component initialization. Disable vision/audio when not needed for faster loading.
+    // tasks-genai latest: 0.10.29; tasks-vision latest: 0.10.29; tasks-text latest: 0.10.29
     implementation("com.google.mediapipe:tasks-genai:0.10.29")
     implementation("com.google.mediapipe:tasks-vision:0.10.29")
     implementation("com.google.mediapipe:tasks-text:0.10.29")
