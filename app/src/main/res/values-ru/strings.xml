@@ -388,8 +388,8 @@
     <string name="feature_translator_desc">Переводите текст конфиденциально с помощью мультимодальных моделей</string>
     <string name="feature_transcriber">Транскрибатор</string>
     <string name="feature_transcriber_desc">Транскрибируйте голос или аудио в текст офлайн</string>
-    <string name="feature_code_assistant">Помощник по коду</string>
-    <string name="feature_code_assistant_desc">Генерируйте и объясняйте фрагменты кода локально</string>
+    <string name="feature_scam_detector">Детектор Мошенничества</string>
+    <string name="feature_scam_detector_desc">Анализируйте текст, изображения или URL на наличие возможных мошенничеств</string>
     
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">Помощник в письме</string>
@@ -432,18 +432,19 @@
     <string name="transcriber_stop">Остановить запись</string>
     <string name="transcriber_requires_gemma3n">Эта функция требует модель Gemma-3n с поддержкой аудио. Пожалуйста, загрузите её с экрана Модели.</string>
     
-    <!-- Code Assistant Screen -->
-    <string name="code_assistant_title">Помощник по коду</string>
-    <string name="code_assistant_input_label">Опишите, что вам нужно</string>
-    <string name="code_assistant_input_hint">Например, \"Создать функцию для сортировки массива\" или \"Объяснить этот код\"...</string>
-    <string name="code_assistant_mode_generate">Генерировать код</string>
-    <string name="code_assistant_mode_explain">Объяснить код</string>
-    <string name="code_assistant_mode_debug">Помощь в отладке</string>
-    <string name="code_assistant_mode_refactor">Рефакторинг</string>
-    <string name="code_assistant_select_mode">Выберите режим</string>
-    <string name="code_assistant_process">Генерировать</string>
-    <string name="code_assistant_result">Сгенерированный код</string>
-    <string name="code_assistant_no_model">Модель не загружена. Пожалуйста, сначала загрузите и выберите модель.</string>
+    <!-- Scam Detector Screen -->
+    <string name="scam_detector_title">Детектор Мошенничества</string>
+    <string name="scam_detector_input_label">Введите содержимое для анализа</string>
+    <string name="scam_detector_input_hint">Вставьте текст, загрузите изображение или введите URL для анализа на мошенничество...</string>
+    <string name="scam_detector_url_hint">Введите URL для анализа</string>
+    <string name="scam_detector_analyze">Анализировать</string>
+    <string name="scam_detector_analyzing">Анализ (нажмите для отмены)</string>
+    <string name="scam_detector_result">Результат Анализа</string>
+    <string name="scam_detector_no_model">Модель не загружена. Пожалуйста, сначала загрузите и выберите модель.</string>
+    <string name="scam_detector_load_model">Загрузить Модель</string>
+    <string name="scam_detector_enable_vision">Включить Зрение</string>
+    <string name="scam_detector_vision_desc">Анализировать изображения на мошенничество</string>
+    <string name="scam_detector_fetching_url">Получение содержимого URL...</string>
     
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">Модель недоступна</string>

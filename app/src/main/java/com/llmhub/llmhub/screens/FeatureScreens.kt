@@ -33,6 +33,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.components.ModelSelectorCard
+import com.llmhub.llmhub.components.SelectableMarkdownText
 import com.llmhub.llmhub.ui.components.AudioInputService
 import com.llmhub.llmhub.viewmodels.TranslatorViewModel
 import com.llmhub.llmhub.viewmodels.TranscriberViewModel
@@ -1213,87 +1214,370 @@ fun TranscriberScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CodeAssistantScreen(
+fun ScamDetectorScreen(
     onNavigateBack: () -> Unit,
-    onNavigateToModels: () -> Unit
+    onNavigateToModels: () -> Unit,
+    viewModel: com.llmhub.llmhub.viewmodels.ScamDetectorViewModel = viewModel()
 ) {
+    val context = LocalContext.current
+    val keyboard = LocalSoftwareKeyboardController.current
+    val clipboardManager = LocalClipboardManager.current
+    val coroutineScope = rememberCoroutineScope()
+    
+    // ViewModel states
+    val availableModels by viewModel.availableModels.collectAsState()
+    val selectedModel by viewModel.selectedModel.collectAsState()
+    val selectedBackend by viewModel.selectedBackend.collectAsState()
+    val isLoadingModel by viewModel.isLoadingModel.collectAsState()
+    val isModelLoaded by viewModel.isModelLoaded.collectAsState()
+    val visionEnabled by viewModel.visionEnabled.collectAsState()
+    val isAnalyzing by viewModel.isAnalyzing.collectAsState()
+    val isFetchingUrl by viewModel.isFetchingUrl.collectAsState()
+    val inputText by viewModel.inputText.collectAsState()
+    val inputImageUri by viewModel.inputImageUri.collectAsState()
+    val outputText by viewModel.outputText.collectAsState()
+    val loadError by viewModel.loadError.collectAsState()
+    
+    // Settings sheet state
+    var showSettingsSheet by remember { mutableStateOf(false) }
+    
+    // Scroll state for auto-scrolling
+    val scrollState = rememberScrollState()
+    
+    // Snackbar
+    val snackbarHostState = remember { SnackbarHostState() }
+    
+    LaunchedEffect(loadError) {
+        loadError?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearError()
+        }
+    }
+    
+    // Auto-scroll to bottom when output text changes (during generation)
+    LaunchedEffect(outputText) {
+        if (outputText.isNotEmpty() && isAnalyzing) {
+            coroutineScope.launch {
+                scrollState.animateScrollTo(scrollState.maxValue)
+            }
+        }
+    }
+    
+    // Image picker
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        viewModel.setInputImageUri(uri)
+    }
+    
+    // Settings Bottom Sheet
+    if (showSettingsSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showSettingsSheet = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Text(
+                    text = "Settings",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+                
+                // Model Selector
+                ModelSelectorCard(
+                    models = availableModels,
+                    selectedModel = selectedModel,
+                    selectedBackend = selectedBackend,
+                    isLoading = isLoadingModel,
+                    isModelLoaded = isModelLoaded,
+                    onModelSelected = { viewModel.selectModel(it) },
+                    onBackendSelected = { viewModel.selectBackend(it) },
+                    onLoadModel = { viewModel.loadModel() },
+                    onUnloadModel = { viewModel.unloadModel() }
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Vision toggle
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = stringResource(R.string.scam_detector_enable_vision),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = stringResource(R.string.scam_detector_vision_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = visionEnabled,
+                        onCheckedChange = { viewModel.toggleVision(it) },
+                        enabled = selectedModel?.supportsVision == true
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(32.dp))
+            }
+        }
+    }
+    
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.code_assistant_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.scam_detector_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
+                },
+                actions = {
+                    IconButton(onClick = { showSettingsSheet = true }) {
+                        Icon(Icons.Default.Tune, contentDescription = "Settings")
+                    }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
-            contentAlignment = Alignment.Center
+                .padding(paddingValues)
         ) {
-            AnimatedVisibility(
-                visible = true,
-                enter = fadeIn() + slideInVertically()
-            ) {
-                Card(
-                    modifier = Modifier.padding(24.dp),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+            // Show "Load Model First" message if no model is loaded
+            if (!isModelLoaded) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.padding(32.dp)
+                    Icon(
+                        Icons.Default.Security,
+                        contentDescription = null,
+                        modifier = Modifier.size(80.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text(
+                        text = stringResource(R.string.scam_detector_no_model),
+                        style = MaterialTheme.typography.titleLarge,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    FilledTonalButton(
+                        onClick = { showSettingsSheet = true },
+                        modifier = Modifier.fillMaxWidth(0.7f),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
-                        Box(
+                        Icon(Icons.Default.Tune, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.scam_detector_load_model))
+                    }
+                }
+            } else {
+                // Show input/output interface when model is loaded
+            // Box with scrollable content and fixed button at bottom
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .imePadding()
+            ) {
+                // Scrollable content (input + output)
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(scrollState)
+                        .padding(bottom = 80.dp) // Space for fixed button
+                ) {
+                    // Input Area
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = stringResource(R.string.scam_detector_input_label),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                        
+                        OutlinedTextField(
+                            value = inputText,
+                            onValueChange = { viewModel.setInputText(it) },
                             modifier = Modifier
-                                .size(80.dp)
-                                .background(
-                                    brush = Brush.linearGradient(
-                                        colors = listOf(
-                                            MaterialTheme.colorScheme.primary,
-                                            MaterialTheme.colorScheme.tertiary
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
+                                .heightIn(min = 120.dp),
+                            placeholder = { Text(stringResource(R.string.scam_detector_input_hint)) },
+                            enabled = !isAnalyzing,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color.Transparent,
+                                unfocusedBorderColor = Color.Transparent,
+                                disabledBorderColor = Color.Transparent
+                            )
+                        )
+                        
+                        // Image input section (only show if vision is enabled)
+                        if (visionEnabled && selectedModel?.supportsVision == true) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                if (inputImageUri != null) {
+                                    Card(
+                                        modifier = Modifier.weight(1f),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant
                                         )
-                                    ),
-                                    shape = CircleShape
-                                ),
-                            contentAlignment = Alignment.Center
+                                    ) {
+                                        Box {
+                                            AsyncImage(
+                                                model = inputImageUri,
+                                                contentDescription = "Selected image",
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .heightIn(max = 200.dp)
+                                            )
+                                            IconButton(
+                                                onClick = { viewModel.setInputImageUri(null) },
+                                                modifier = Modifier.align(Alignment.TopEnd)
+                                            ) {
+                                                Icon(Icons.Default.Close, "Remove image")
+                                            }
+                                        }
+                                    }
+                                }
+                                
+                                if (inputImageUri == null) {
+                                    OutlinedButton(
+                                        onClick = { imagePickerLauncher.launch("image/*") },
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(Icons.Default.Image, contentDescription = null)
+                                        Spacer(Modifier.width(8.dp))
+                                        Text("Add Image")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // URL fetching indicator
+                    if (isFetchingUrl) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Icon(
-                                Icons.Default.Code,
-                                contentDescription = null,
-                                modifier = Modifier.size(40.dp),
-                                tint = MaterialTheme.colorScheme.onPrimary
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                            Text(
+                                text = stringResource(R.string.scam_detector_fetching_url),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
-                        Text(
-                            text = stringResource(R.string.code_assistant_title),
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = stringResource(R.string.code_assistant_no_model),
-                            style = MaterialTheme.typography.bodyLarge,
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Button(
-                            onClick = onNavigateToModels,
-                            shape = RoundedCornerShape(16.dp)
+                    }
+                    
+                    // Output Area
+                    if (outputText.isNotEmpty()) {
+                        Divider()
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
                         ) {
-                            Icon(Icons.Default.Download, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.download_models), fontWeight = FontWeight.Bold)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                SelectableMarkdownText(
+                                    markdown = outputText,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontSize = MaterialTheme.typography.bodyLarge.fontSize,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                IconButton(
+                                    onClick = {
+                                        clipboardManager.setText(AnnotatedString(outputText))
+                                    }
+                                ) {
+                                    Icon(
+                                        Icons.Default.ContentCopy,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Fixed Analyze button at bottom
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.BottomCenter),
+                    shadowElevation = 8.dp,
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    if (isAnalyzing) {
+                        FilledTonalButton(
+                            onClick = { viewModel.cancelAnalysis() },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        ) {
+                            Icon(Icons.Default.StopCircle, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.scam_detector_analyzing))
+                        }
+                    } else {
+                        FilledTonalButton(
+                            onClick = {
+                                keyboard?.hide()
+                                viewModel.analyze()
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            enabled = (inputText.isNotBlank() || inputImageUri != null) && !isAnalyzing && isModelLoaded,
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(stringResource(R.string.scam_detector_analyze))
                         }
                     }
                 }
             }
+            } // end else (model loaded)
         }
     }
 }
+
+
