@@ -61,6 +61,13 @@ fun WritingAidScreen(
         }
     }
     
+    // Cleanup on dispose - unload model to free memory
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.unloadModel()
+        }
+    }
+    
     // Settings Bottom Sheet
     if (showSettingsSheet) {
         ModalBottomSheet(
@@ -74,7 +81,7 @@ fun WritingAidScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = stringResource(R.string.select_model_title),
+                    text = stringResource(R.string.feature_settings_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -165,6 +172,59 @@ fun WritingAidScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
+        // Show "Load Model First" screen if model not loaded
+        if (!isModelLoaded) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(32.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ModelTraining,
+                    contentDescription = null,
+                    modifier = Modifier.size(80.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(
+                    text = stringResource(
+                        if (availableModels.isEmpty()) R.string.download_models_first
+                        else R.string.scam_detector_load_model
+                    ),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = stringResource(R.string.scam_detector_load_model_desc),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(32.dp))
+                FilledTonalButton(
+                    onClick = { 
+                        if (availableModels.isEmpty()) onNavigateToModels()
+                        else showSettingsSheet = true
+                    },
+                    modifier = Modifier.fillMaxWidth(0.6f)
+                ) {
+                    Icon(
+                        imageVector = if (availableModels.isEmpty()) Icons.Default.GetApp else Icons.Default.Tune,
+                        contentDescription = null
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(
+                        if (availableModels.isEmpty()) R.string.download_models
+                        else R.string.feature_settings_title
+                    ))
+                }
+            }
+        } else {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -295,6 +355,7 @@ fun WritingAidScreen(
                     }
                 }
             }
+        }
         }
     }
 }

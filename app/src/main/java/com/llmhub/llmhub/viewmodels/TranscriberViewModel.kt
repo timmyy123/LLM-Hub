@@ -98,11 +98,21 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
     }
     
     fun selectModel(model: LLMModel) {
+        // Unload current model before switching
+        if (_isModelLoaded.value) {
+            unloadModel()
+        }
+        
         _selectedModel.value = model
         saveSettings()
     }
     
     fun selectBackend(backend: LlmInference.Backend) {
+        // Unload current model before switching backend
+        if (_isModelLoaded.value) {
+            unloadModel()
+        }
+        
         _selectedBackend.value = backend
         saveSettings()
     }
@@ -126,6 +136,11 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
     
     fun loadModel() {
         val model = _selectedModel.value ?: return
+        
+        // Prevent concurrent loads
+        if (_isLoadingModel.value || _isModelLoaded.value) {
+            return
+        }
         
         viewModelScope.launch {
             _isLoadingModel.value = true

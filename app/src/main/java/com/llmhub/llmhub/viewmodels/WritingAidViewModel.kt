@@ -65,6 +65,11 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
     }
     
     fun selectModel(model: LLMModel) {
+        // Unload current model before switching
+        if (_isModelLoaded.value) {
+            unloadModel()
+        }
+        
         _selectedModel.value = model
         // Auto-select backend based on GPU support
         if (_selectedBackend.value == null) {
@@ -77,12 +82,22 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
     }
     
     fun selectBackend(backend: LlmInference.Backend) {
+        // Unload current model before switching backend
+        if (_isModelLoaded.value) {
+            unloadModel()
+        }
+        
         _selectedBackend.value = backend
     }
     
     fun loadModel() {
         val model = _selectedModel.value ?: return
         val backend = _selectedBackend.value ?: return
+        
+        // Prevent concurrent loads
+        if (_isLoading.value || _isModelLoaded.value) {
+            return
+        }
         
         viewModelScope.launch {
             _isLoading.value = true

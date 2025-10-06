@@ -165,6 +165,11 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
     }
     
     fun selectModel(model: LLMModel) {
+        // Unload current model before switching
+        if (_isModelLoaded.value) {
+            unloadModel()
+        }
+        
         _selectedModel.value = model
         // Reset modality toggles based on model capabilities
         if (!model.supportsVision) {
@@ -177,11 +182,21 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
     }
     
     fun selectBackend(backend: LlmInference.Backend) {
+        // Unload current model before switching backend
+        if (_isModelLoaded.value) {
+            unloadModel()
+        }
+        
         _selectedBackend.value = backend
         saveSettings()
     }
     
     fun toggleVision(enabled: Boolean) {
+        // Unload current model before changing vision setting
+        if (_isModelLoaded.value) {
+            unloadModel()
+        }
+        
         _visionEnabled.value = enabled
         if (!enabled) {
             _inputImageUri.value = null
@@ -190,6 +205,11 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
     }
     
     fun toggleAudio(enabled: Boolean) {
+        // Unload current model before changing audio setting
+        if (_isModelLoaded.value) {
+            unloadModel()
+        }
+        
         _audioEnabled.value = enabled
         saveSettings()
     }
@@ -255,6 +275,11 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
     
     fun loadModel() {
         val model = _selectedModel.value ?: return
+        
+        // Prevent concurrent loads
+        if (_isLoadingModel.value || _isModelLoaded.value) {
+            return
+        }
         
         viewModelScope.launch {
             _isLoadingModel.value = true
@@ -431,7 +456,7 @@ $inputText""".trimIndent()
         // Simple heuristic to detect language mentions in response
         // This is a basic implementation - could be enhanced with better detection
         val languageMentions = listOf(
-            "English", "Spanish", "French", "German", "Russian", "Portuguese", "Italian", "Hindi", "Tamil", "Telugu", "Malayalam", "Kannada", "Bengali", "Punjabi", "Gujarati", "Japanese", "Arabic"
+            "English", "Spanish"
         )
         
         for (lang in languageMentions) {

@@ -488,6 +488,7 @@
     <string name="scam_detector_result">Résultat de l\'Analyse</string>
     <string name="scam_detector_no_model">Aucun modèle chargé. Veuillez d\'abord télécharger et sélectionner un modèle.</string>
     <string name="scam_detector_load_model">Charger le Modèle</string>
+    <string name="scam_detector_load_model_desc">Veuillez charger un modèle pour commencer à analyser le contenu</string>
     <string name="scam_detector_enable_vision">Activer la Vision</string>
     <string name="scam_detector_vision_desc">Analyser les images pour détecter les arnaques</string>
     <string name="scam_detector_fetching_url">Récupération du contenu de l\'URL...</string>
@@ -577,6 +578,7 @@
     <string name="lang_zulu">Zoulou</string>
     
     <!-- Model Selection -->
+    <string name="feature_settings_title">Paramètres</string>
     <string name="select_model_title">Sélectionner le Modèle</string>
     <string name="no_models_available">Aucun modèle disponible</string>
     <string name="download_models_first">Veuillez d\'abord télécharger des modèles</string>
