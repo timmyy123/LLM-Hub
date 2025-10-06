@@ -258,6 +258,8 @@ fun TranslatorScreen(
             // Release audio player
             audioPlayer?.release()
             audioPlayer = null
+            // Unload model to free memory
+            viewModel.unloadModel()
         }
     }
 
@@ -284,7 +286,7 @@ fun TranslatorScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = stringResource(R.string.select_model_title),
+                    text = stringResource(R.string.feature_settings_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -490,6 +492,59 @@ fun TranslatorScreen(
             }
             
             Divider()
+            
+            // Show "Load Model First" screen if model not loaded
+            if (!isModelLoaded) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ModelTraining,
+                        contentDescription = null,
+                        modifier = Modifier.size(80.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text(
+                        text = stringResource(
+                            if (availableModels.isEmpty()) R.string.download_models_first
+                            else R.string.scam_detector_load_model
+                        ),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = stringResource(R.string.scam_detector_load_model_desc),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(32.dp))
+                    FilledTonalButton(
+                        onClick = { 
+                            if (availableModels.isEmpty()) onNavigateToModels()
+                            else showSettingsSheet = true
+                        },
+                        modifier = Modifier.fillMaxWidth(0.6f)
+                    ) {
+                        Icon(
+                            imageVector = if (availableModels.isEmpty()) Icons.Default.GetApp else Icons.Default.Tune,
+                            contentDescription = null
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(
+                            if (availableModels.isEmpty()) R.string.download_models
+                            else R.string.feature_settings_title
+                        ))
+                    }
+                }
+            } else {
             
             // Box with scrollable content and fixed button at bottom
             Box(
@@ -939,6 +994,7 @@ fun TranslatorScreen(
                     }
                 }
             }
+            }
         }
     }
 }
@@ -1018,8 +1074,13 @@ fun TranscriberScreen(
                 coroutineScope.launch { audioService.stopRecording() }
             }
             audioPlayer?.release(); audioPlayer = null
+            // Unload model to free memory
+            viewModel.unloadModel()
         }
     }
+
+    var showSettingsSheet by remember { mutableStateOf(false) }
+    val settingsSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     Scaffold(
         topBar = {
@@ -1028,6 +1089,11 @@ fun TranscriberScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { showSettingsSheet = true }) {
+                        Icon(Icons.Default.Tune, contentDescription = stringResource(R.string.feature_settings_title))
                     }
                 }
             )
@@ -1043,19 +1109,58 @@ fun TranscriberScreen(
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Model Selection Card (always enable audio, vision disabled)
-            ModelSelectorCard(
-                models = availableModels,
-                selectedModel = selectedModel,
-                selectedBackend = selectedBackend,
-                isLoading = isLoadingModel,
-                isModelLoaded = isModelLoaded,
-                onModelSelected = { viewModel.selectModel(it) },
-                onBackendSelected = { viewModel.selectBackend(it) },
-                onLoadModel = { viewModel.loadModel() },
-                onUnloadModel = { viewModel.unloadModel() },
-                filterMultimodalOnly = true
-            )
+            // Show "Load Model First" screen if model not loaded
+            if (!isModelLoaded) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ModelTraining,
+                        contentDescription = null,
+                        modifier = Modifier.size(80.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text(
+                        text = stringResource(
+                            if (availableModels.isEmpty()) R.string.download_models_first
+                            else R.string.scam_detector_load_model
+                        ),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = stringResource(R.string.scam_detector_load_model_desc),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(32.dp))
+                    FilledTonalButton(
+                        onClick = { 
+                            if (availableModels.isEmpty()) onNavigateToModels()
+                            else showSettingsSheet = true
+                        },
+                        modifier = Modifier.fillMaxWidth(0.6f)
+                    ) {
+                        Icon(
+                            imageVector = if (availableModels.isEmpty()) Icons.Default.GetApp else Icons.Default.Tune,
+                            contentDescription = null
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(
+                            if (availableModels.isEmpty()) R.string.download_models
+                            else R.string.feature_settings_title
+                        ))
+                    }
+                }
+            } else {
             
             // Recording + Replay (same pattern as Translator)
             if (selectedModel != null) {
@@ -1208,6 +1313,44 @@ fun TranscriberScreen(
                     Text(stringResource(R.string.transcriber_transcribe))
                 }
             }
+            }
+        }
+    }
+    
+    // Settings Bottom Sheet
+    if (showSettingsSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showSettingsSheet = false },
+            sheetState = settingsSheetState
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 32.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Text(
+                    text = stringResource(R.string.feature_settings_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+                
+                // Model Selector (always enable audio, vision disabled)
+                ModelSelectorCard(
+                    models = availableModels,
+                    selectedModel = selectedModel,
+                    selectedBackend = selectedBackend,
+                    isLoading = isLoadingModel,
+                    isModelLoaded = isModelLoaded,
+                    onModelSelected = { viewModel.selectModel(it) },
+                    onBackendSelected = { viewModel.selectBackend(it) },
+                    onLoadModel = { viewModel.loadModel() },
+                    onUnloadModel = { viewModel.unloadModel() },
+                    filterMultimodalOnly = true
+                )
+            }
         }
     }
 }
@@ -1263,6 +1406,13 @@ fun ScamDetectorScreen(
         }
     }
     
+    // Cleanup on dispose - unload model to free memory
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.unloadModel()
+        }
+    }
+    
     // Image picker
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -1283,7 +1433,7 @@ fun ScamDetectorScreen(
                     .verticalScroll(rememberScrollState())
             ) {
                 Text(
-                    text = "Settings",
+                    text = stringResource(R.string.feature_settings_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 16.dp)
@@ -1369,27 +1519,45 @@ fun ScamDetectorScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Icon(
-                        Icons.Default.Security,
+                        imageVector = Icons.Default.ModelTraining,
                         contentDescription = null,
                         modifier = Modifier.size(80.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(24.dp))
                     Text(
-                        text = stringResource(R.string.scam_detector_no_model),
+                        text = stringResource(
+                            if (availableModels.isEmpty()) R.string.download_models_first
+                            else R.string.scam_detector_load_model
+                        ),
                         style = MaterialTheme.typography.titleLarge,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurface
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
                     )
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = stringResource(R.string.scam_detector_load_model_desc),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(32.dp))
                     FilledTonalButton(
-                        onClick = { showSettingsSheet = true },
-                        modifier = Modifier.fillMaxWidth(0.7f),
-                        shape = RoundedCornerShape(12.dp)
+                        onClick = { 
+                            if (availableModels.isEmpty()) onNavigateToModels()
+                            else showSettingsSheet = true
+                        },
+                        modifier = Modifier.fillMaxWidth(0.6f)
                     ) {
-                        Icon(Icons.Default.Tune, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text(stringResource(R.string.scam_detector_load_model))
+                        Icon(
+                            imageVector = if (availableModels.isEmpty()) Icons.Default.GetApp else Icons.Default.Tune,
+                            contentDescription = null
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(
+                            if (availableModels.isEmpty()) R.string.download_models
+                            else R.string.feature_settings_title
+                        ))
                     }
                 }
             } else {
@@ -1507,17 +1675,17 @@ fun ScamDetectorScreen(
                                 .fillMaxWidth()
                                 .padding(16.dp)
                         ) {
+                            SelectableMarkdownText(
+                                markdown = outputText,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontSize = MaterialTheme.typography.bodyLarge.fontSize,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.Top
+                                horizontalArrangement = Arrangement.End
                             ) {
-                                SelectableMarkdownText(
-                                    markdown = outputText,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    fontSize = MaterialTheme.typography.bodyLarge.fontSize,
-                                    modifier = Modifier.weight(1f)
-                                )
                                 IconButton(
                                     onClick = {
                                         clipboardManager.setText(AnnotatedString(outputText))
@@ -1525,7 +1693,7 @@ fun ScamDetectorScreen(
                                 ) {
                                     Icon(
                                         Icons.Default.ContentCopy,
-                                        contentDescription = null,
+                                        contentDescription = "Copy",
                                         tint = MaterialTheme.colorScheme.primary
                                     )
                                 }

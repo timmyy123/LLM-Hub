@@ -132,6 +132,11 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
     }
     
     fun selectModel(model: LLMModel) {
+        // Unload current model before switching
+        if (_isModelLoaded.value) {
+            unloadModel()
+        }
+        
         _selectedModel.value = model
         _isModelLoaded.value = false
         
@@ -153,12 +158,22 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
     }
     
     fun selectBackend(backend: LlmInference.Backend) {
+        // Unload current model before switching backend
+        if (_isModelLoaded.value) {
+            unloadModel()
+        }
+        
         _selectedBackend.value = backend
         _isModelLoaded.value = false
         saveSettings()
     }
     
     fun toggleVision(enabled: Boolean) {
+        // Unload current model before changing vision setting
+        if (_isModelLoaded.value) {
+            unloadModel()
+        }
+        
         _visionEnabled.value = enabled
         _isModelLoaded.value = false
         // Clear image if vision is disabled
@@ -183,6 +198,12 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
     fun loadModel() {
         val model = _selectedModel.value ?: return
         val backend = _selectedBackend.value ?: return
+        
+        // Prevent concurrent loads
+        if (_isLoadingModel.value || _isModelLoaded.value) {
+            Log.d(TAG, "Model already loading or loaded, ignoring duplicate request")
+            return
+        }
         
         viewModelScope.launch {
             _isLoadingModel.value = true

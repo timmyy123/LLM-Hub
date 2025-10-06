@@ -179,6 +179,13 @@ fun ChatScreen(
         viewModel.syncCurrentlyLoadedModel()
     }
     
+    // Cleanup on dispose - unload model to free memory
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.unloadModel()
+        }
+    }
+    
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {

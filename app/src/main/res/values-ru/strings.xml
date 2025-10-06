@@ -442,6 +442,7 @@
     <string name="scam_detector_result">Результат Анализа</string>
     <string name="scam_detector_no_model">Модель не загружена. Пожалуйста, сначала загрузите и выберите модель.</string>
     <string name="scam_detector_load_model">Загрузить Модель</string>
+    <string name="scam_detector_load_model_desc">Пожалуйста, загрузите модель, чтобы начать анализ контента</string>
     <string name="scam_detector_enable_vision">Включить Зрение</string>
     <string name="scam_detector_vision_desc">Анализировать изображения на мошенничество</string>
     <string name="scam_detector_fetching_url">Получение содержимого URL...</string>
@@ -531,6 +532,7 @@
     <string name="lang_zulu">Зулу</string>
     
     <!-- Model Selection -->
+    <string name="feature_settings_title">Настройки</string>
     <string name="select_model_title">Выбрать модель</string>
     <string name="no_models_available">Нет доступных моделей</string>
     <string name="download_models_first">Пожалуйста, сначала загрузите модели</string>
