@@ -10,15 +10,15 @@
 <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;">
    <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
       <img src="assets/screenshots/Screenshot_20251007_041833_LLM%20Hub.jpg" alt="AI Models" style="width:300px;height:auto;border-radius:8px;display:block;" />
-      <figcaption style="font-size:12px;margin-top:6px;color:#6b7280">Model Selection with Text & Vision Models</figcaption>
+      <!-- <figcaption style="font-size:12px;margin-top:6px;color:#6b7280">Model Selection with Text & Vision Models</figcaption> -->
    </figure>
    <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
       <img src="assets/screenshots/Screenshot_20251007_042114_LLM%20Hub.jpg" alt="AI Features" style="width:300px;height:auto;border-radius:8px;display:block;" />
-      <figcaption style="font-size:12px;margin-top:6px;color:#6b7280">AI Tools: Translator, Writing Aid, Scam Detector & More</figcaption>
+      <!-- <figcaption style="font-size:12px;margin-top:6px;color:#6b7280">AI Tools: Translator, Writing Aid, Scam Detector & More</figcaption> -->
    </figure>
    <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
       <img src="assets/screenshots/Screenshot_20251007_042146_LLM%20Hub.jpg" alt="Chat Interface" style="width:300px;height:auto;border-radius:8px;display:block;" />
-      <figcaption style="font-size:12px;margin-top:6px;color:#6b7280">Smart Chat with RAG Memory & Web Search</figcaption>
+      <!-- <figcaption style="font-size:12px;margin-top:6px;color:#6b7280">Smart Chat with RAG Memory & Web Search</figcaption> -->
    </figure>
 </div>
 
