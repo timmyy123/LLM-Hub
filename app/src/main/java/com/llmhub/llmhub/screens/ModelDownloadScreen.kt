@@ -917,9 +917,13 @@ private fun ImportExternalModelDialog(
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        var expanded by remember { mutableStateOf(false) }
+                        var showFormatMenu by remember { mutableStateOf(false) }
                         
-                        Box(modifier = Modifier.weight(1f)) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { showFormatMenu = true }
+                        ) {
                             OutlinedTextField(
                                 value = modelFormat.name.lowercase(),
                                 onValueChange = { },
@@ -928,19 +932,26 @@ private fun ImportExternalModelDialog(
                                 trailingIcon = {
                                     Icon(Icons.Default.ArrowDropDown, contentDescription = null)
                                 },
-                                modifier = Modifier.clickable { expanded = true }
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = false,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                    disabledBorderColor = MaterialTheme.colorScheme.outline,
+                                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             )
                             
                             DropdownMenu(
-                                expanded = expanded,
-                                onDismissRequest = { expanded = false }
+                                expanded = showFormatMenu,
+                                onDismissRequest = { showFormatMenu = false }
                             ) {
                                 ModelFormat.values().forEach { format ->
                                     DropdownMenuItem(
                                         text = { Text(format.name.lowercase()) },
                                         onClick = {
                                             modelFormat = format
-                                            expanded = false
+                                            showFormatMenu = false
                                         }
                                     )
                                 }
