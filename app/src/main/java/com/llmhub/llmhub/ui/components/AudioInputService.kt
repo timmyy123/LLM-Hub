@@ -10,6 +10,12 @@ import android.util.Log
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -23,6 +29,19 @@ class AudioInputService(private val context: Context) {
     private val pcmStream = ByteArrayOutputStream()
     private var isRecording = false
     private var recordingThread: Thread? = null
+    private var recordingStartTime: Long = 0
+    var maxRecordingReached: Boolean = false
+        private set
+    
+    // Coroutine scope for callbacks
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    
+    // Expose elapsed time as a flow for UI updates
+    private val _elapsedTimeMs = MutableStateFlow(0L)
+    val elapsedTimeMs: StateFlow<Long> = _elapsedTimeMs.asStateFlow()
+    
+    // Callback for when recording stops automatically
+    var onRecordingAutoStopped: (() -> Unit)? = null
     
     companion object {
         private const val TAG = "AudioInputService"
@@ -30,6 +49,7 @@ class AudioInputService(private val context: Context) {
         private const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO // Mono channel
         private const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT // 16-bit PCM
         private val BUFFER_SIZE = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT)
+        private const val MAX_RECORDING_DURATION_MS = 29500L // 29.5 seconds
     }
     
     /**
@@ -82,6 +102,10 @@ class AudioInputService(private val context: Context) {
             isRecording = true
             audioRecord?.startRecording()
             
+            // Reset max recording flag and record start time
+            maxRecordingReached = false
+            recordingStartTime = System.currentTimeMillis()
+            
             // Start recording thread
             recordingThread = Thread {
                 writeAudioDataToFile()
@@ -104,8 +128,10 @@ class AudioInputService(private val context: Context) {
      */
     suspend fun stopRecording(): ByteArray? = withContext(Dispatchers.IO) {
         try {
-            if (!isRecording) {
-                Log.w(TAG, "Not currently recording")
+            // Allow stopping even if isRecording is false (for auto-stop case)
+            // Check if we have an active recording thread or audio data
+            if (audioRecord == null && pcmStream.size() == 0) {
+                Log.w(TAG, "No recording in progress or already stopped")
                 return@withContext null
             }
             
@@ -159,6 +185,9 @@ class AudioInputService(private val context: Context) {
     private fun cleanup() {
         try {
             isRecording = false
+            maxRecordingReached = false
+            recordingStartTime = 0
+            _elapsedTimeMs.value = 0L
             audioRecord?.apply {
                 if (state == AudioRecord.STATE_INITIALIZED) {
                     stop()
@@ -193,6 +222,21 @@ class AudioInputService(private val context: Context) {
             var totalDataSize = 0
             
             while (isRecording) {
+                // Check if max duration reached and update elapsed time
+                val elapsedTime = System.currentTimeMillis() - recordingStartTime
+                _elapsedTimeMs.value = elapsedTime
+                
+                if (elapsedTime >= MAX_RECORDING_DURATION_MS) {
+                    Log.d(TAG, "Max recording duration reached ($MAX_RECORDING_DURATION_MS ms)")
+                    maxRecordingReached = true
+                    isRecording = false
+                    // Notify UI that recording stopped automatically (on main thread)
+                    serviceScope.launch {
+                        onRecordingAutoStopped?.invoke()
+                    }
+                    break
+                }
+                
                 val bytesRead = audioRecord?.read(data, 0, BUFFER_SIZE) ?: 0
                 if (bytesRead > 0) {
                     // Write raw PCM to in-memory buffer for MediaPipe
