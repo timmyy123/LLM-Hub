@@ -94,20 +94,6 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
         
         // Restore vision setting
         _visionEnabled.value = prefs.getBoolean("vision_enabled", false)
-        
-        // Restore selected model by name (will be matched after models are loaded)
-        val savedModelName = prefs.getString("selected_model_name", null)
-        if (savedModelName != null) {
-            // Wait for models to load, then select the saved model
-            viewModelScope.launch {
-                // Give time for models to load
-                kotlinx.coroutines.delay(100)
-                val model = _availableModels.value.find { it.name == savedModelName }
-                if (model != null) {
-                    _selectedModel.value = model
-                }
-            }
-        }
     }
     
     private fun saveSettings() {
@@ -125,8 +111,18 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
             val available = ModelAvailabilityProvider.loadAvailableModels(context)
                 .filter { it.category != "embedding" }
             _availableModels.value = available
-            if (_selectedModel.value == null) {
-                available.firstOrNull()?.let { selectModel(it) }
+            
+            // Restore saved model or use first as default
+            val savedModelName = prefs.getString("selected_model_name", null)
+            if (savedModelName != null) {
+                val savedModel = available.find { it.name == savedModelName }
+                if (savedModel != null) {
+                    _selectedModel.value = savedModel
+                }
+            }
+            
+            if (available.isNotEmpty() && _selectedModel.value == null) {
+                _selectedModel.value = available.first()
             }
         }
     }
@@ -145,7 +141,7 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
             _visionEnabled.value = false
         }
         
-        // Auto-select backend based on GPU support
+        // Only auto-select backend if none is selected yet
         if (_selectedBackend.value == null) {
             _selectedBackend.value = if (model.supportsGpu) {
                 LlmInference.Backend.GPU
