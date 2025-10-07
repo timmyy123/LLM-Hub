@@ -25,6 +25,7 @@ import com.llmhub.llmhub.R
 import com.llmhub.llmhub.components.ModelSelectorCard
 import com.llmhub.llmhub.viewmodels.WritingAidViewModel
 import com.llmhub.llmhub.viewmodels.WritingMode
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,12 +53,25 @@ fun WritingAidScreen(
     val outputText by viewModel.outputText.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     
+    // Scroll state for auto-scrolling
+    val scrollState = rememberScrollState()
+    val coroutineScope = rememberCoroutineScope()
+    
     // Show error snackbar
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(errorMessage) {
         errorMessage?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.clearError()
+        }
+    }
+    
+    // Auto-scroll to bottom when output text changes (during generation)
+    LaunchedEffect(outputText) {
+        if (outputText.isNotEmpty() && isProcessing) {
+            coroutineScope.launch {
+                scrollState.animateScrollTo(scrollState.maxValue)
+            }
         }
     }
     
@@ -235,7 +249,7 @@ fun WritingAidScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(scrollState)
                     .padding(bottom = 80.dp) // Space for fixed button
             ) {
                 // Input Area (no background card, just text field)
@@ -264,6 +278,31 @@ fun WritingAidScreen(
                             unfocusedBorderColor = Color.Transparent
                         )
                     )
+                    
+                    // Input action bar with paste button
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.Start,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Paste button
+                        IconButton(
+                            onClick = { 
+                                val clipText = clipboardManager.getText()?.text
+                                if (!clipText.isNullOrBlank()) {
+                                    inputText += clipText
+                                }
+                            }
+                        ) {
+                            Icon(
+                                Icons.Default.ContentPaste,
+                                contentDescription = "Paste",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                 }
                 
                 // Output Area (no title, no card background)

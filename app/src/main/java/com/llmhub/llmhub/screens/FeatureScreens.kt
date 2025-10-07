@@ -266,6 +266,10 @@ fun TranslatorScreen(
     // Audio service
     val audioService = remember { AudioInputService(context) }
 
+    // Observe elapsed time from audio service for countdown and auto-stop
+    val elapsedTimeMs by audioService.elapsedTimeMs.collectAsState()
+    val remainingSeconds = ((29500L - elapsedTimeMs) / 1000).coerceAtLeast(0)
+
     // UI state (initialize from persisted codes)
     val persistedSourceCode by viewModel.sourceLanguageCode.collectAsState()
     val persistedTargetCode by viewModel.targetLanguageCode.collectAsState()
@@ -292,9 +296,14 @@ fun TranslatorScreen(
         }
     }
     
-    // Check audio permission on first composition
+    // Check audio permission on first composition and register auto-stop callback
     LaunchedEffect(Unit) {
         hasAudioPermission = audioService.hasAudioPermission()
+
+        // When the service auto-stops (time limit reached), update UI state as if user pressed stop
+        audioService.onRecordingAutoStopped = {
+            isRecording = false
+        }
     }
     
     // Audio recording effect
@@ -304,13 +313,15 @@ fun TranslatorScreen(
             if (!success) {
                 isRecording = false
             }
-        } else if (!isRecording && audioService.isRecording()) {
-            // Stop recording when isRecording becomes false
-            val audioData = audioService.stopRecording()
-            if (audioData != null) {
-                recordedAudioData = audioData
-                // Set the audio data in the viewmodel
-                viewModel.setInputAudioData(audioData)
+        } else if (!isRecording) {
+            // Stop recording when isRecording becomes false (either manual or auto-stop)
+            if (audioService.isRecording() || recordedAudioData == null) {
+                val audioData = audioService.stopRecording()
+                if (audioData != null) {
+                    recordedAudioData = audioData
+                    // Set the audio data in the viewmodel
+                    viewModel.setInputAudioData(audioData)
+                }
             }
         }
     }
@@ -340,6 +351,9 @@ fun TranslatorScreen(
         }
     }
 
+    // Scroll state for auto-scrolling
+    val scrollState = rememberScrollState()
+    
     // Snackbar
     val snackbarHostState = remember { SnackbarHostState() }
     
@@ -347,6 +361,15 @@ fun TranslatorScreen(
         loadError?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.clearError()
+        }
+    }
+    
+    // Auto-scroll to bottom when output text changes (during generation)
+    LaunchedEffect(outputText) {
+        if (outputText.isNotEmpty() && isTranslating) {
+            coroutineScope.launch {
+                scrollState.animateScrollTo(scrollState.maxValue)
+            }
         }
     }
     
@@ -634,7 +657,7 @@ fun TranslatorScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
+                        .verticalScroll(scrollState)
                         .padding(bottom = 80.dp) // Space for fixed button
                 ) {
                     // Input Area
@@ -678,7 +701,12 @@ fun TranslatorScreen(
                                     ) {
                                         // Paste button
                                         IconButton(
-                                            onClick = { /* TODO: Implement paste functionality */ }
+                                            onClick = { 
+                                                val clipText = clipboardManager.getText()?.text
+                                                if (!clipText.isNullOrBlank()) {
+                                                    viewModel.setInputText(inputText + clipText)
+                                                }
+                                            }
                                         ) {
                                             Icon(
                                                 Icons.Default.ContentPaste,
@@ -704,24 +732,40 @@ fun TranslatorScreen(
                                         
                                         // Audio recording button (only show if audio is enabled)
                                         if (audioEnabled && selectedModel?.supportsAudio == true) {
-                                            IconButton(
-                                                onClick = { 
-                                                    if (isRecording) {
-                                                        isRecording = false
-                                                    } else {
-                                                        if (hasAudioPermission) {
-                                                            isRecording = true
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                if (isRecording) {
+                                                    Text(
+                                                        text = "${remainingSeconds}s ${stringResource(R.string.remaining)}",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        fontWeight = if (remainingSeconds <= 5) FontWeight.Bold else FontWeight.Normal,
+                                                        color = if (remainingSeconds <= 5) 
+                                                            MaterialTheme.colorScheme.error 
+                                                        else 
+                                                            MaterialTheme.colorScheme.onSurface
+                                                    )
+                                                }
+                                                IconButton(
+                                                    onClick = { 
+                                                        if (isRecording) {
+                                                            isRecording = false
                                                         } else {
-                                                            audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                                            if (hasAudioPermission) {
+                                                                isRecording = true
+                                                            } else {
+                                                                audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                                            }
                                                         }
                                                     }
+                                                ) {
+                                                    Icon(
+                                                        if (isRecording) Icons.Default.Stop else Icons.Default.Mic,
+                                                        contentDescription = if (isRecording) "Stop recording" else "Record audio",
+                                                        tint = if (isRecording) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                                                    )
                                                 }
-                                            ) {
-                                                Icon(
-                                                    if (isRecording) Icons.Default.Stop else Icons.Default.Mic,
-                                                    contentDescription = if (isRecording) "Stop recording" else "Record audio",
-                                                    tint = if (isRecording) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-                                                )
                                             }
                                         }
                                     }
@@ -788,11 +832,22 @@ fun TranslatorScreen(
                                                     modifier = Modifier.size(24.dp),
                                                     tint = MaterialTheme.colorScheme.error
                                                 )
-                                                Text(
-                                                    text = "Recording...",
-                                                    style = MaterialTheme.typography.bodyLarge,
-                                                    color = MaterialTheme.colorScheme.onErrorContainer
-                                                )
+                                                Column {
+                                                    Text(
+                                                        text = "Recording...",
+                                                        style = MaterialTheme.typography.bodyLarge,
+                                                        color = MaterialTheme.colorScheme.onErrorContainer
+                                                    )
+                                                    Text(
+                                                        text = "${remainingSeconds}s ${stringResource(R.string.remaining)}",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        fontWeight = if (remainingSeconds <= 5) FontWeight.Bold else FontWeight.Normal,
+                                                        color = if (remainingSeconds <= 5) 
+                                                            MaterialTheme.colorScheme.error 
+                                                        else 
+                                                            MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f)
+                                                    )
+                                                }
                                                 Spacer(Modifier.weight(1f))
                                                 IconButton(
                                                     onClick = { isRecording = false }
@@ -1171,8 +1226,20 @@ fun TranscriberScreen(
         }
     }
 
+    // Scroll state for auto-scrolling
+    val scrollState = rememberScrollState()
+    
     var showSettingsSheet by remember { mutableStateOf(false) }
     val settingsSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    
+    // Auto-scroll to bottom when transcription text changes (during generation)
+    LaunchedEffect(transcriptionText) {
+        if (transcriptionText.isNotEmpty() && isTranscribing) {
+            coroutineScope.launch {
+                scrollState.animateScrollTo(scrollState.maxValue)
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -1255,7 +1322,7 @@ fun TranscriberScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
+                        .verticalScroll(scrollState)
                         .padding(bottom = 80.dp) // Space for fixed button
                         .padding(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -1759,6 +1826,31 @@ fun ScamDetectorScreen(
                                 disabledBorderColor = Color.Transparent
                             )
                         )
+                        
+                        // Input action bar with paste button
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.Start,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Paste button
+                            IconButton(
+                                onClick = { 
+                                    val clipText = clipboardManager.getText()?.text
+                                    if (!clipText.isNullOrBlank()) {
+                                        viewModel.setInputText(inputText + clipText)
+                                    }
+                                }
+                            ) {
+                                Icon(
+                                    Icons.Default.ContentPaste,
+                                    contentDescription = "Paste",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
                         
                         // Image input section (only show if vision is enabled)
                         if (visionEnabled && selectedModel?.supportsVision == true) {
