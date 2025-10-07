@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.ModelAvailabilityProvider
 import com.llmhub.llmhub.screens.Language
+import com.llmhub.llmhub.screens.languageCodeToEnglishName
 import com.llmhub.llmhub.inference.MediaPipeInferenceService
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import java.util.UUID
@@ -373,10 +374,6 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
                 responseFlow.collect { token ->
                     if (token.isNotEmpty()) {
                         _outputText.value += token
-
-                        if (_autoDetectSource.value && _detectedLanguage.value == null) {
-                            detectLanguageFromResponse(_outputText.value)
-                        }
                     }
                 }
             } catch (_: CancellationException) {
@@ -400,41 +397,45 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
         hasImage: Boolean,
         hasAudio: Boolean
     ): String {
+        // Get full English names for languages
+        val targetLangName = languageCodeToEnglishName[targetLanguage.code] ?: targetLanguage.code
+        val sourceLangName = sourceLanguage?.let { languageCodeToEnglishName[it.code] ?: it.code }
+        
         return when {
             hasImage && sourceLanguage == null -> {
                 // Auto-detect from image
                 """You are a professional translator. 
-Detect the language in the image and translate any text you see to ${targetLanguage.code}.
+Detect the language in the image and translate any text you see to $targetLangName.
 Provide only the translation without explaining the detected language.
 If there's also text input: $inputText, translate that as well.""".trimIndent()
             }
             hasImage && sourceLanguage != null -> {
                 // Image with known source language
                 """You are a professional translator.
-Translate the text in the image from ${sourceLanguage.code} to ${targetLanguage.code}.
+Translate the text in the image from $sourceLangName to $targetLangName.
 Provide only the translation.
 ${if (inputText.isNotBlank()) "Also translate this text: $inputText" else ""}""".trimIndent()
             }
             hasAudio && sourceLanguage == null -> {
                 // Auto-detect from audio
                 """You are a professional translator. 
-Listen to the audio, transcribe what was said, detect the language, and translate the speech to ${targetLanguage.code}.
+Listen to the audio, transcribe what was said, detect the language, and translate the speech to $targetLangName.
 Format your response exactly as follows:
 Transcription: [the transcribed text in the original language]
-Translation: [the translation in ${targetLanguage.code}]""".trimIndent()
+Translation: [the translation in $targetLangName]""".trimIndent()
             }
             hasAudio && sourceLanguage != null -> {
                 // Audio with known source language
                 """You are a professional translator.
-Listen to the audio, transcribe what was said in ${sourceLanguage.code}, and translate it to ${targetLanguage.code}.
+Listen to the audio, transcribe what was said in $sourceLangName, and translate it to $targetLangName.
 Format your response exactly as follows:
-Transcription: [the transcribed text in ${sourceLanguage.code}]
-Translation: [the translation in ${targetLanguage.code}]""".trimIndent()
+Transcription: [the transcribed text in $sourceLangName]
+Translation: [the translation in $targetLangName]""".trimIndent()
             }
             sourceLanguage == null -> {
                 // Auto-detect from text
                 """You are a professional translator.
-Detect the language of the following text and translate it to ${targetLanguage.code}.
+Detect the language of the following text and translate it to $targetLangName.
 Provide only the translation without explaining the detected language.
 
 Text to translate:
@@ -443,26 +444,11 @@ $inputText""".trimIndent()
             else -> {
                 // Normal text translation
                 """You are a professional translator.
-Translate the following text from ${sourceLanguage.code} to ${targetLanguage.code}.
+Translate the following text from $sourceLangName to $targetLangName.
 Provide only the translation.
 
 Text to translate:
 $inputText""".trimIndent()
-            }
-        }
-    }
-    
-    private fun detectLanguageFromResponse(response: String) {
-        // Simple heuristic to detect language mentions in response
-        // This is a basic implementation - could be enhanced with better detection
-        val languageMentions = listOf(
-            "English", "Spanish"
-        )
-        
-        for (lang in languageMentions) {
-            if (response.contains(lang, ignoreCase = true)) {
-                _detectedLanguage.value = lang
-                break
             }
         }
     }

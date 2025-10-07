@@ -42,6 +42,83 @@ import kotlinx.coroutines.launch
 // Language data class
 data class Language(val code: String, val nameResId: Int)
 
+// Map of language codes to English names for AI prompts
+val languageCodeToEnglishName = mapOf(
+    "en" to "English",
+    "af" to "Afrikaans",
+    "am" to "Amharic",
+    "ar" to "Arabic",
+    "hy" to "Armenian",
+    "az" to "Azerbaijani",
+    "eu" to "Basque",
+    "bn" to "Bengali",
+    "bg" to "Bulgarian",
+    "my" to "Burmese",
+    "ca" to "Catalan",
+    "zh-CN" to "Chinese (Simplified)",
+    "zh-TW" to "Chinese (Traditional)",
+    "hr" to "Croatian",
+    "cs" to "Czech",
+    "da" to "Danish",
+    "nl" to "Dutch",
+    "et" to "Estonian",
+    "tl" to "Filipino",
+    "fi" to "Finnish",
+    "fr" to "French",
+    "gl" to "Galician",
+    "ka" to "Georgian",
+    "de" to "German",
+    "el" to "Greek",
+    "gu" to "Gujarati",
+    "ha" to "Hausa",
+    "he" to "Hebrew",
+    "hi" to "Hindi",
+    "hu" to "Hungarian",
+    "is" to "Icelandic",
+    "ig" to "Igbo",
+    "id" to "Indonesian",
+    "it" to "Italian",
+    "ja" to "Japanese",
+    "kn" to "Kannada",
+    "kk" to "Kazakh",
+    "km" to "Khmer",
+    "ko" to "Korean",
+    "lo" to "Lao",
+    "lv" to "Latvian",
+    "lt" to "Lithuanian",
+    "ms" to "Malay",
+    "ml" to "Malayalam",
+    "mr" to "Marathi",
+    "ne" to "Nepali",
+    "no" to "Norwegian",
+    "ps" to "Pashto",
+    "fa" to "Persian",
+    "pl" to "Polish",
+    "pt" to "Portuguese",
+    "pa" to "Punjabi",
+    "ro" to "Romanian",
+    "ru" to "Russian",
+    "sr" to "Serbian",
+    "sd" to "Sindhi",
+    "si" to "Sinhala",
+    "sk" to "Slovak",
+    "sl" to "Slovenian",
+    "so" to "Somali",
+    "es" to "Spanish",
+    "sw" to "Swahili",
+    "sv" to "Swedish",
+    "ta" to "Tamil",
+    "te" to "Telugu",
+    "th" to "Thai",
+    "tr" to "Turkish",
+    "uk" to "Ukrainian",
+    "ur" to "Urdu",
+    "uz" to "Uzbek",
+    "vi" to "Vietnamese",
+    "yo" to "Yoruba",
+    "zu" to "Zulu"
+)
+
 // All supported languages in alphabetical order
 val supportedLanguages = listOf(
     Language("en", R.string.lang_english),
@@ -409,7 +486,6 @@ fun TranslatorScreen(
                     Box(modifier = Modifier.weight(1f)) {
                         TextButton(
                             onClick = { sourceExpanded = true },
-                            enabled = !autoDetectSource,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(
@@ -421,7 +497,8 @@ fun TranslatorScreen(
                         }
                         DropdownMenu(
                             expanded = sourceExpanded,
-                            onDismissRequest = { sourceExpanded = false }
+                            onDismissRequest = { sourceExpanded = false },
+                            modifier = Modifier.heightIn(max = 500.dp)
                         ) {
                             // Auto detect option on top
                             DropdownMenuItem(
@@ -474,7 +551,8 @@ fun TranslatorScreen(
                         }
                         DropdownMenu(
                             expanded = targetExpanded,
-                            onDismissRequest = { targetExpanded = false }
+                            onDismissRequest = { targetExpanded = false },
+                            modifier = Modifier.heightIn(max = 500.dp)
                         ) {
                             supportedLanguages.forEachIndexed { index, language ->
                                 DropdownMenuItem(
