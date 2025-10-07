@@ -75,7 +75,7 @@
     <string name="acknowledgments">Ringraziamenti</string>
     <string name="acknowledgments_text">Un ringraziamento speciale a Google, Meta, Microsoft e alla community di HuggingFace per aver fornito gli incredibili modelli LLM che alimentano questa applicazione. Questo progetto si basa anche sul fantastico lavoro della community di sviluppo Android e dell\'ecosistema open-source.</string>
     <string name="ai_thinking">L\'IA sta pensando...</string>
-    <string name="version_number">Versione 3.0</string>
+    <string name="version_number">Versione 3.0.1</string>
     <string name="app_version">Versione App</string>
     
     <!-- Terms of Service -->
