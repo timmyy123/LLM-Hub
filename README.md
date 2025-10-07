@@ -10,17 +10,25 @@
 <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;">
    <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
       <img src="assets/screenshots/Screenshot_20251007_041833_LLM%20Hub.jpg" alt="AI Models" style="width:300px;height:auto;border-radius:8px;display:block;" />
-      <!-- <figcaption style="font-size:12px;margin-top:6px;color:#6b7280">Model Selection with Text & Vision Models</figcaption> -->
+      <figcaption style="font-size:12px;margin-top:6px;color:#6b7280">Model Selection with Text & Vision Models</figcaption>
    </figure>
    <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
       <img src="assets/screenshots/Screenshot_20251007_042114_LLM%20Hub.jpg" alt="AI Features" style="width:300px;height:auto;border-radius:8px;display:block;" />
-      <!-- <figcaption style="font-size:12px;margin-top:6px;color:#6b7280">AI Tools: Translator, Writing Aid, Scam Detector & More</figcaption> -->
+      <figcaption style="font-size:12px;margin-top:6px;color:#6b7280">AI Tools: Translator, Writing Aid, Scam Detector & More</figcaption>
    </figure>
    <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
       <img src="assets/screenshots/Screenshot_20251007_042146_LLM%20Hub.jpg" alt="Chat Interface" style="width:300px;height:auto;border-radius:8px;display:block;" />
-      <!-- <figcaption style="font-size:12px;margin-top:6px;color:#6b7280">Smart Chat with RAG Memory & Web Search</figcaption> -->
+      <figcaption style="font-size:12px;margin-top:6px;color:#6b7280">Smart Chat with RAG Memory & Web Search</figcaption>
    </figure>
 </div>
+
+##  Download
+
+[![Get it on Google Play](https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png)](https://play.google.com/store/apps/details?id=com.llmhub.llmhub)
+
+*Available on Google Play Store for easy installation and automatic updates*
+
+---
 
 **LLM Hub** is an open-source Android application that brings the power of Large Language Models (LLMs) directly to your mobile device. Experience AI conversations with state-of-the-art models like Gemma, Llama, and Phi - all running locally on your phone for maximum privacy and offline accessibility.
 
@@ -62,16 +70,10 @@
   - Real-time risk assessment
 
 ### Additional Features
-- **�🎨 Modern UI**: Clean, intuitive Material Design interface
+- **🎨 Modern UI**: Clean, intuitive Material Design interface
 - **📥 Direct Downloads**: Download models directly from HuggingFace
 - **🧠 RAG Memory**: Global context memory for enhanced responses
 - **🌐 Web Search**: Optional web search integration for fact-checking
-
-##  Download
-
-[![Get it on Google Play](https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png)](https://play.google.com/store/apps/details?id=com.llmhub.llmhub)
-
-*Available on Google Play Store for easy installation and automatic updates*
 
 ## 🛠️ AI Tools Overview
 
@@ -208,6 +210,25 @@ cd LLM-Hub
    - **Scam Detector**: Analyze suspicious messages or images
 5. **For vision models**: Tap the image icon to upload photos for image understanding
 6. **For audio models**: Use the microphone icon to record audio input
+
+### Importing Custom Models
+
+LLM Hub supports importing external models in MediaPipe-compatible formats:
+
+- **Supported formats**: `.task` and `.litertlm` files
+- **How to import**:
+  1. Go to **Settings → Download Models**
+  2. Tap the **"Import Model"** button (folder icon)
+  3. Select your `.task` or `.litertlm` file from device storage
+  4. The model will be copied to the app's model directory
+  5. Access your imported model from the model selection screen
+
+- **Compatible models**: Any model converted to MediaPipe format using:
+  - [MediaPipe Model Maker](https://ai.google.dev/edge/mediapipe/solutions/model_maker)
+  - [AI Edge Converter](https://ai.google.dev/edge/litert/inference/convert_models)
+  - LiteRT model conversion tools
+
+- **Note**: Imported models appear under the "Custom" source in your model list
 
 ## 📖 How It Works
 
