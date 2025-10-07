@@ -1049,6 +1049,10 @@ fun MessageInput(
     // Audio service
     val audioService = remember { AudioInputService(context) }
     val coroutineScope = rememberCoroutineScope()
+    
+    // Observe elapsed time from audio service
+    val elapsedTimeMs by audioService.elapsedTimeMs.collectAsState()
+    val remainingSeconds = ((29500L - elapsedTimeMs) / 1000).coerceAtLeast(0)
     // Sync internal text with external edit text when provided
     LaunchedEffect(isEditing, editText) {
         if (isEditing && editText != null) {
@@ -1084,6 +1088,11 @@ fun MessageInput(
     // Check audio permission on first composition
     LaunchedEffect(Unit) {
         hasAudioPermission = audioService.hasAudioPermission()
+        
+        // Set up callback for auto-stop
+        audioService.onRecordingAutoStopped = {
+            isRecording = false
+        }
     }
     
     // Audio recording effect
@@ -1093,11 +1102,13 @@ fun MessageInput(
             if (!success) {
                 isRecording = false
             }
-        } else if (!isRecording && audioService.isRecording()) {
-            // Stop recording when isRecording becomes false
-            val audioData = audioService.stopRecording()
-            if (audioData != null) {
-                recordedAudioData = audioData
+        } else if (!isRecording) {
+            // Stop recording when isRecording becomes false (either manual or auto-stop)
+            if (audioService.isRecording() || recordedAudioData == null) {
+                val audioData = audioService.stopRecording()
+                if (audioData != null) {
+                    recordedAudioData = audioData
+                }
             }
         }
     }
@@ -1265,9 +1276,12 @@ fun MessageInput(
                             )
                             if (isRecording) {
                                 Text(
-                                    text = stringResource(R.string.tap_to_stop),
+                                    text = "${remainingSeconds}s ${stringResource(R.string.remaining)}",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f)
+                                    fontWeight = if (remainingSeconds <= 5) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (remainingSeconds <= 5) 
+                                        MaterialTheme.colorScheme.error
+                                    else MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f)
                                 )
                             } else {
                                 Text(

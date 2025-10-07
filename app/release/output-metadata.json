@@ -11,8 +11,8 @@
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 22,
-      "versionName": "3.0.1",
+      "versionCode": 23,
+      "versionName": "3.0.2",
       "outputFile": "app-release.apk"
     }
   ],

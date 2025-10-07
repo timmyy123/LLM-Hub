@@ -74,7 +74,7 @@
     <string name="acknowledgments">Agradecimentos</string>
     <string name="acknowledgments_text">Agradecimentos especiais ao Google, Meta, Microsoft, e à comunidade HuggingFace por fornecerem os incríveis modelos LLM que alimentam esta aplicação. Este projeto também depende do trabalho incrível da comunidade de desenvolvimento Android e do ecossistema de código aberto.</string>
     <string name="ai_thinking">A IA está pensando...</string>
-    <string name="version_number">Versão 3.0.1</string>
+    <string name="version_number">Versão 3.0.2</string>
     <string name="app_version">Versão do App</string>
     
     <!-- Navigation -->
@@ -288,6 +288,8 @@
     <string name="audio_recorded">Áudio gravado</string>
     <string name="audio_file">Arquivo de Áudio</string>
     <string name="tap_to_play">Toque para reproduzir</string>
+    <string name="max_recording_reached">Duração máxima de gravação atingida (30 segundos)</string>
+    <string name="remaining">restantes</string>
     <string name="translating_tap_to_cancel">Traduzindo (toque para cancelar)</string>
     <string name="transcribing_tap_to_cancel">Transcrevendo (toque para cancelar)</string>
     

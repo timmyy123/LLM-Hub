@@ -74,7 +74,7 @@
     <string name="acknowledgments">Remerciements</string>
     <string name="acknowledgments_text">Remerciements spéciaux à Google, Meta, Microsoft, et à la communauté HuggingFace.</string>
     <string name="ai_thinking">L\'IA réfléchit...</string>
-    <string name="version_number">Version 3.0.1</string>
+    <string name="version_number">Version 3.0.2</string>
     <string name="app_version">Version de l\'App</string>
     
     <!-- Terms of Service -->
@@ -275,6 +275,8 @@
     <string name="audio">Audio</string>
     <string name="audio_file">Fichier Audio</string>
     <string name="tap_to_play">Toucher pour lire</string>
+    <string name="max_recording_reached">Durée maximale d\'enregistrement atteinte (30 secondes)</string>
+    <string name="remaining">restant</string>
     <string name="translating_tap_to_cancel">Traduction en cours (touchez pour annuler)</string>
     <string name="transcribing_tap_to_cancel">Transcription en cours (touchez pour annuler)</string>
     

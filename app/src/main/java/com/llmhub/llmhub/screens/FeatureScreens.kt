@@ -1115,6 +1115,10 @@ fun TranscriberScreen(
     var isAudioPlaying by remember { mutableStateOf(false) }
     var audioCurrentPosition by remember { mutableStateOf(0) }
     var audioDuration by remember { mutableStateOf(0) }
+    
+    // Observe elapsed time from audio service
+    val elapsedTimeMs by audioService.elapsedTimeMs.collectAsState()
+    val remainingSeconds = ((29500L - elapsedTimeMs) / 1000).coerceAtLeast(0)
 
     val audioPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -1123,17 +1127,27 @@ fun TranscriberScreen(
         if (granted) viewModel.setRecording(true)
     }
 
-    LaunchedEffect(Unit) { hasAudioPermission = audioService.hasAudioPermission() }
+    LaunchedEffect(Unit) { 
+        hasAudioPermission = audioService.hasAudioPermission()
+        
+        // Set up callback for auto-stop
+        audioService.onRecordingAutoStopped = {
+            viewModel.setRecording(false)
+        }
+    }
 
     LaunchedEffect(isRecording) {
         if (isRecording && hasAudioPermission) {
             val ok = audioService.startRecording()
             if (!ok) viewModel.setRecording(false)
-        } else if (!isRecording && audioService.isRecording()) {
-            val data = audioService.stopRecording()
-            if (data != null) {
-                recordedAudioData = data
-                viewModel.setAudioData(data)
+        } else if (!isRecording) {
+            // Stop recording when isRecording becomes false (either manual or auto-stop)
+            if (audioService.isRecording() || recordedAudioData == null) {
+                val data = audioService.stopRecording()
+                if (data != null) {
+                    recordedAudioData = data
+                    viewModel.setAudioData(data)
+                }
             }
         }
     }
@@ -1178,236 +1192,285 @@ fun TranscriberScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .imePadding()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // Show "Load Model First" screen if model not loaded
-            if (!isModelLoaded) {
+        // Show "Load Model First" screen if model not loaded
+        if (!isModelLoaded) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(32.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ModelTraining,
+                    contentDescription = null,
+                    modifier = Modifier.size(80.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(
+                    text = stringResource(
+                        if (availableModels.isEmpty()) R.string.download_models_first
+                        else R.string.scam_detector_load_model
+                    ),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = stringResource(R.string.scam_detector_load_model_desc),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(32.dp))
+                FilledTonalButton(
+                    onClick = { 
+                        if (availableModels.isEmpty()) onNavigateToModels()
+                        else showSettingsSheet = true
+                    },
+                    modifier = Modifier.fillMaxWidth(0.6f)
+                ) {
+                    Icon(
+                        imageVector = if (availableModels.isEmpty()) Icons.Default.GetApp else Icons.Default.Tune,
+                        contentDescription = null
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(
+                        if (availableModels.isEmpty()) R.string.download_models
+                        else R.string.feature_settings_title
+                    ))
+                }
+            }
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .imePadding()
+            ) {
+                // Scrollable content
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(32.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .verticalScroll(rememberScrollState())
+                        .padding(bottom = 80.dp) // Space for fixed button
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.ModelTraining,
-                        contentDescription = null,
-                        modifier = Modifier.size(80.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Text(
-                        text = stringResource(
-                            if (availableModels.isEmpty()) R.string.download_models_first
-                            else R.string.scam_detector_load_model
-                        ),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = stringResource(R.string.scam_detector_load_model_desc),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(32.dp))
-                    FilledTonalButton(
-                        onClick = { 
-                            if (availableModels.isEmpty()) onNavigateToModels()
-                            else showSettingsSheet = true
-                        },
-                        modifier = Modifier.fillMaxWidth(0.6f)
-                    ) {
-                        Icon(
-                            imageVector = if (availableModels.isEmpty()) Icons.Default.GetApp else Icons.Default.Tune,
-                            contentDescription = null
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(
-                            if (availableModels.isEmpty()) R.string.download_models
-                            else R.string.feature_settings_title
-                        ))
-                    }
-                }
-            } else {
-            
-            // Recording + Replay (same pattern as Translator)
-            if (selectedModel != null) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    if (recordedAudioData != null) {
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp).fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                IconButton(onClick = {
-                                    try {
-                                        if (isAudioPlaying) {
-                                            audioPlayer?.pause(); isAudioPlaying = false
-                                        } else {
-                                            if (audioPlayer == null) {
-                                                val tmp = java.io.File(context.cacheDir, "audio_${System.currentTimeMillis()}.wav")
-                                                tmp.writeBytes(recordedAudioData!!)
-                                                audioPlayer = android.media.MediaPlayer().apply {
-                                                    setDataSource(tmp.absolutePath)
-                                                    setOnCompletionListener { isAudioPlaying = false; audioCurrentPosition = 0; runCatching { tmp.delete() } }
-                                                    setOnPreparedListener { player -> audioDuration = player.duration; player.start(); isAudioPlaying = true }
-                                                    prepareAsync()
+                    // Recording + Replay (same pattern as Translator)
+                    if (selectedModel != null) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            if (recordedAudioData != null) {
+                                Card(
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(12.dp).fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        IconButton(onClick = {
+                                            try {
+                                                if (isAudioPlaying) {
+                                                    audioPlayer?.pause(); isAudioPlaying = false
+                                                } else {
+                                                    if (audioPlayer == null) {
+                                                        val tmp = java.io.File(context.cacheDir, "audio_${System.currentTimeMillis()}.wav")
+                                                        tmp.writeBytes(recordedAudioData!!)
+                                                        audioPlayer = android.media.MediaPlayer().apply {
+                                                            setDataSource(tmp.absolutePath)
+                                                            setOnCompletionListener { isAudioPlaying = false; audioCurrentPosition = 0; runCatching { tmp.delete() } }
+                                                            setOnPreparedListener { player -> audioDuration = player.duration; player.start(); isAudioPlaying = true }
+                                                            prepareAsync()
+                                                        }
+                                                    } else {
+                                                        audioPlayer?.start(); isAudioPlaying = true
+                                                    }
                                                 }
-                                            } else {
-                                                audioPlayer?.start(); isAudioPlaying = true
+                                            } catch (_: Exception) { isAudioPlaying = false }
+                                        }) { Icon(if (isAudioPlaying) Icons.Default.Pause else Icons.Default.PlayArrow, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
+
+                                        val barHeights = remember { val rnd = java.util.Random(recordedAudioData.hashCode().toLong()); List(32) { 0.35f + rnd.nextFloat() * 0.65f } }
+                                        val waveformColor = MaterialTheme.colorScheme.primary
+                                        val progress = if (audioDuration > 0) audioCurrentPosition.toFloat()/audioDuration.toFloat() else 0f
+                                        Canvas(modifier = Modifier.weight(1f).height(40.dp)) {
+                                            val barCount = barHeights.size
+                                            val spacingPx = 3f
+                                            val totalSpacing = spacingPx * (barCount - 1)
+                                            val barWidth = (size.width - totalSpacing) / barCount
+                                            val centerY = size.height / 2f
+                                            val maxBarHeight = size.height
+                                            val activeColor = waveformColor
+                                            val inactiveColor = waveformColor.copy(alpha = 0.35f)
+                                            val progressBars = (progress * barCount).coerceIn(0f, barCount.toFloat())
+                                            for (i in 0 until barCount) {
+                                                val height = (barHeights[i] * maxBarHeight).coerceAtMost(maxBarHeight)
+                                                val left = i * (barWidth + spacingPx)
+                                                val top = centerY - height / 2f
+                                                val color = if (i < progressBars) activeColor else inactiveColor
+                                                drawRoundRect(color = color, topLeft = androidx.compose.ui.geometry.Offset(left, top), size = androidx.compose.ui.geometry.Size(barWidth, height), cornerRadius = androidx.compose.ui.geometry.CornerRadius(barWidth/2f))
                                             }
                                         }
-                                    } catch (_: Exception) { isAudioPlaying = false }
-                                }) { Icon(if (isAudioPlaying) Icons.Default.Pause else Icons.Default.PlayArrow, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
-
-                                val barHeights = remember { val rnd = java.util.Random(recordedAudioData.hashCode().toLong()); List(32) { 0.35f + rnd.nextFloat() * 0.65f } }
-                                val waveformColor = MaterialTheme.colorScheme.primary
-                                val progress = if (audioDuration > 0) audioCurrentPosition.toFloat()/audioDuration.toFloat() else 0f
-                                Canvas(modifier = Modifier.weight(1f).height(40.dp)) {
-                                    val barCount = barHeights.size
-                                    val spacingPx = 3f
-                                    val totalSpacing = spacingPx * (barCount - 1)
-                                    val barWidth = (size.width - totalSpacing) / barCount
-                                    val centerY = size.height / 2f
-                                    val maxBarHeight = size.height
-                                    val activeColor = waveformColor
-                                    val inactiveColor = waveformColor.copy(alpha = 0.35f)
-                                    val progressBars = (progress * barCount).coerceIn(0f, barCount.toFloat())
-                                    for (i in 0 until barCount) {
-                                        val height = (barHeights[i] * maxBarHeight).coerceAtMost(maxBarHeight)
-                                        val left = i * (barWidth + spacingPx)
-                                        val top = centerY - height / 2f
-                                        val color = if (i < progressBars) activeColor else inactiveColor
-                                        drawRoundRect(color = color, topLeft = androidx.compose.ui.geometry.Offset(left, top), size = androidx.compose.ui.geometry.Size(barWidth, height), cornerRadius = androidx.compose.ui.geometry.CornerRadius(barWidth/2f))
+                                        IconButton(onClick = {
+                                            audioPlayer?.release(); audioPlayer = null; isAudioPlaying = false; audioCurrentPosition = 0; audioDuration = 0; recordedAudioData = null; viewModel.setAudioData(null)
+                                        }) { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) }
                                     }
                                 }
-                                IconButton(onClick = {
-                                    audioPlayer?.release(); audioPlayer = null; isAudioPlaying = false; audioCurrentPosition = 0; audioDuration = 0; recordedAudioData = null; viewModel.setAudioData(null)
-                                }) { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) }
+                            } else {
+                                // Hero-style recording card UI (also used while recording)
+                                Card(
+                                    shape = RoundedCornerShape(24.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                                    ),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(24.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .align(Alignment.CenterHorizontally)
+                                                .size(120.dp)
+                                                .background(
+                                                    brush = Brush.linearGradient(
+                                                        colors = listOf(
+                                                            MaterialTheme.colorScheme.primary,
+                                                            MaterialTheme.colorScheme.tertiary
+                                                        )
+                                                    ),
+                                                    shape = CircleShape
+                                                )
+                                                .clickable {
+                                                    if (isRecording) {
+                                                        viewModel.setRecording(false)
+                                                    } else {
+                                                        if (hasAudioPermission) {
+                                                            viewModel.setRecording(true)
+                                                        } else {
+                                                            audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                                        }
+                                                    }
+                                                },
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Mic,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(60.dp),
+                                                tint = if (isRecording) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onPrimary
+                                            )
+                                        }
+
+                                        Text(
+                                            text = if (isRecording) stringResource(R.string.recording) else stringResource(R.string.record_voice_message),
+                                            style = MaterialTheme.typography.titleLarge,
+                                            fontWeight = FontWeight.Bold,
+                                            textAlign = TextAlign.Center,
+                                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                                        )
+                                        
+                                        // Show countdown timer when recording
+                                        if (isRecording) {
+                                            Text(
+                                                text = "${remainingSeconds}s",
+                                                style = MaterialTheme.typography.headlineMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (remainingSeconds <= 5) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onPrimaryContainer,
+                                                textAlign = TextAlign.Center,
+                                                modifier = Modifier.align(Alignment.CenterHorizontally)
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
-                    } else {
-                        // Hero-style recording card UI (also used while recording)
-                        Card(
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer
-                            ),
-                            modifier = Modifier.fillMaxWidth()
+                    }
+                    
+                    if (transcriptionText.isNotEmpty()) {
+                        Divider()
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(24.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            Text(
+                                text = transcriptionText,
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .align(Alignment.CenterHorizontally)
-                                        .size(120.dp)
-                                        .background(
-                                            brush = Brush.linearGradient(
-                                                colors = listOf(
-                                                    MaterialTheme.colorScheme.primary,
-                                                    MaterialTheme.colorScheme.tertiary
-                                                )
-                                            ),
-                                            shape = CircleShape
-                                        )
-                                        .clickable {
-                                            if (isRecording) {
-                                                viewModel.setRecording(false)
-                                            } else {
-                                                if (hasAudioPermission) {
-                                                    viewModel.setRecording(true)
-                                                } else {
-                                                    audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                                                }
-                                            }
-                                        },
-                                    contentAlignment = Alignment.Center
+                                val clipboard = LocalClipboardManager.current
+                                IconButton(
+                                    onClick = { 
+                                        clipboard.setText(AnnotatedString(transcriptionText))
+                                    }
                                 ) {
                                     Icon(
-                                        Icons.Default.Mic,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(60.dp),
-                                        tint = if (isRecording) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onPrimary
+                                        Icons.Default.ContentCopy,
+                                        contentDescription = stringResource(R.string.copy),
+                                        tint = MaterialTheme.colorScheme.primary
                                     )
                                 }
-
-                                Text(
-                                    text = if (isRecording) stringResource(R.string.recording) else stringResource(R.string.record_voice_message),
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                                )
                             }
                         }
                     }
                 }
-            }
-            
-            if (transcriptionText.isNotEmpty()) {
-                Divider()
-                Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
-                        Text(text = transcriptionText, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-                        val clipboard = LocalClipboardManager.current
-                        IconButton(onClick = { clipboard.setText(AnnotatedString(transcriptionText)) }) { Icon(Icons.Default.ContentCopy, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
+                
+                // Fixed Transcribe button at bottom
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth(),
+                    shadowElevation = 8.dp,
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    if (isTranscribing) {
+                        // Show Cancel button while transcribing
+                        OutlinedButton(
+                            onClick = { viewModel.cancelTranscription() },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
+                            ),
+                            border = ButtonDefaults.outlinedButtonBorder.copy(
+                                brush = Brush.linearGradient(
+                                    colors = listOf(MaterialTheme.colorScheme.error, MaterialTheme.colorScheme.error)
+                                )
+                            )
+                        ) {
+                            Icon(Icons.Default.StopCircle, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.transcribing_tap_to_cancel))
+                        }
+                    } else {
+                        FilledTonalButton(
+                            onClick = { viewModel.transcribe() },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            enabled = recordedAudioData != null && !isTranscribing && isModelLoaded,
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(stringResource(R.string.transcriber_transcribe))
+                        }
                     }
                 }
-            }
-
-            // Bottom Transcribe button
-            if (isTranscribing) {
-                // Show Cancel button while transcribing
-                OutlinedButton(
-                    onClick = { viewModel.cancelTranscription() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    ),
-                    border = ButtonDefaults.outlinedButtonBorder.copy(
-                        brush = Brush.linearGradient(
-                            colors = listOf(MaterialTheme.colorScheme.error, MaterialTheme.colorScheme.error)
-                        )
-                    )
-                ) {
-                    Icon(Icons.Default.StopCircle, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.transcribing_tap_to_cancel))
-                }
-            } else {
-                FilledTonalButton(
-                    onClick = { viewModel.transcribe() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    enabled = recordedAudioData != null && !isTranscribing && isModelLoaded,
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(stringResource(R.string.transcriber_transcribe))
-                }
-            }
             }
         }
     }
