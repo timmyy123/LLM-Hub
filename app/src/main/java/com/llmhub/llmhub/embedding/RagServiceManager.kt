@@ -466,6 +466,14 @@ class RagServiceManager(
             Log.e(TAG, "Error during cleanup", e)
         }
     }
+    
+    /**
+     * Get the current embedding model name (e.g., "EmbeddingGemma", "Gecko", etc.)
+     * Returns null if embedding service is not initialized
+     */
+    fun getCurrentEmbeddingModelName(): String? {
+        return embeddingService?.getCurrentModelName()
+    }
 
     /**
      * Replicate persisted global memory chunks into the in-memory RAG index for a specific chat.

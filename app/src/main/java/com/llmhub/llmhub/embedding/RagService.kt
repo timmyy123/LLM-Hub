@@ -203,7 +203,8 @@ class InMemoryRagService(private val embeddingService: EmbeddingService) : RagSe
     }
     
     /**
-     * Simplified similarity filtering with clear, maintainable logic
+     * Similarity filtering using model-specific thresholds.
+     * Uses the SAME criteria as ChatViewModel for consistency.
      */
     private fun filterSimilarityCandidates(
         similarities: List<ContextChunk>,
@@ -211,10 +212,9 @@ class InMemoryRagService(private val embeddingService: EmbeddingService) : RagSe
         maxResults: Int,
         relaxedLexicalFallback: Boolean
     ): List<ContextChunk> {
-        // Clear thresholds
-        val primaryThreshold = 0.60f      // High confidence semantic match
-        val fallbackThreshold = 0.35f     // Moderate semantic match
-        val lexicalThreshold = 0.15       // Minimum word overlap for fallback
+        // Detect which embedding model is being used
+        val modelName = embeddingService.getCurrentModelName() ?: "Gecko"
+        val isEmbeddingGemma = modelName.contains("EmbeddingGemma", ignoreCase = true)
         
         // Helper: compute Jaccard word overlap
         fun wordJaccard(a: String, b: String): Double {
@@ -226,21 +226,20 @@ class InMemoryRagService(private val embeddingService: EmbeddingService) : RagSe
             return if (union == 0.0) 0.0 else intersection / union
         }
         
-        // Simple acceptance logic
-        fun shouldAccept(similarity: Float, overlap: Double, isShortMemory: Boolean): Boolean {
-            return when {
-                // High semantic similarity - always accept
-                similarity >= primaryThreshold -> true
-                
-                // Moderate semantic similarity with lexical overlap
-                similarity >= fallbackThreshold && overlap >= lexicalThreshold -> true
-                
-                // Short memories need higher standards to avoid noise
-                isShortMemory -> (overlap >= 0.25) || (similarity >= 0.95f)
-                
-                else -> false
+        // Acceptance logic - MUST MATCH ChatViewModel criteria exactly
+        fun shouldAccept(similarity: Float, overlap: Double): Boolean {
+            return if (isEmbeddingGemma) {
+                // EmbeddingGemma: trust semantic similarity more, need less lexical overlap
+                (similarity > 0.65f) ||  // High semantic alone
+                (similarity > 0.50f && overlap > 0.035)  // Moderate semantic + minimal lexical
+            } else {
+                // Gecko: need higher thresholds and more lexical validation
+                (similarity > 0.80f && overlap > 0.05) ||  // High semantic + some lexical overlap
+                (similarity > 0.95f && overlap > 0.005)  // Very high semantic + minimal lexical overlap
             }
         }
+        
+        Log.d(TAG, "Using ${if (isEmbeddingGemma) "EmbeddingGemma" else "Gecko"} filtering criteria (same as ChatViewModel)")
         
         // Get candidates sorted by similarity
         val candidates = similarities.sortedByDescending { it.similarity }
@@ -252,9 +251,8 @@ class InMemoryRagService(private val embeddingService: EmbeddingService) : RagSe
             
             val similarity = candidate.similarity
             val overlap = wordJaccard(query, candidate.content)
-            val isShortMemory = candidate.content.trim().length < 40
             
-            if (shouldAccept(similarity, overlap, isShortMemory)) {
+            if (shouldAccept(similarity, overlap)) {
                 filtered.add(candidate)
             }
         }

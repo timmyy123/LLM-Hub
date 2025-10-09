@@ -19,6 +19,7 @@ interface EmbeddingService {
     suspend fun isInitialized(): Boolean
     suspend fun initialize(): Boolean
     fun cleanup()
+    fun getCurrentModelName(): String?
 }
 
 /**
@@ -39,6 +40,7 @@ class MediaPipeEmbeddingService(
     private var geckoEmbedder: GeckoEmbeddingModel? = null
     private var isInitialized = false
     private val initMutex = Mutex()
+    private var currentModelName: String? = null
     
     companion object {
         private const val TAG = "GeckoEmbedding"
@@ -85,6 +87,8 @@ class MediaPipeEmbeddingService(
                     if (testEmbedding != null && testEmbedding.isNotEmpty()) {
                         Log.d(TAG, "Gecko embedder initialized successfully. Embedding dimension: ${testEmbedding.size}")
                         isInitialized = true
+                        currentModelName = getModelNameFromPath(modelPath)
+                        Log.d(TAG, "Current embedding model: $currentModelName")
                         return@withLock true
                     } else {
                         Log.e(TAG, "Gecko embedder test failed - no embeddings returned")
@@ -206,9 +210,24 @@ class MediaPipeEmbeddingService(
             // Just set to null and let GC handle it
             geckoEmbedder = null
             isInitialized = false
+            currentModelName = null
             Log.d(TAG, "Gecko embedder cleaned up")
         } catch (e: Exception) {
             Log.e(TAG, "Error cleaning up Gecko embedder", e)
+        }
+    }
+    
+    override fun getCurrentModelName(): String? {
+        return currentModelName
+    }
+    
+    private fun getModelNameFromPath(path: String): String {
+        // Extract model name from file path
+        val fileName = File(path).name
+        return when {
+            fileName.contains("embeddinggemma", ignoreCase = true) -> "EmbeddingGemma"
+            fileName.contains("Gecko", ignoreCase = true) -> "Gecko"
+            else -> "Unknown"
         }
     }
 }
