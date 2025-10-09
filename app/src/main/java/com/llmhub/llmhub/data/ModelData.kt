@@ -234,6 +234,60 @@ object ModelData {
             requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
             contextWindowSize = 1024,
             modelFormat = "tflite"
+        ),
+        
+        // EmbeddingGemma Models - High-quality text embeddings from Google
+        LLMModel(
+            name = "EmbeddingGemma 300M (256 seq)",
+            description = "Google EmbeddingGemma 300M model with 256 sequence length. High-quality text embeddings for semantic search and similarity tasks. Mixed-precision for optimal performance. Ready to download from HuggingFace (170.84MB)",
+            url = "https://huggingface.co/litert-community/embeddinggemma-300m/resolve/main/embeddinggemma-300M_seq256_mixed-precision.tflite?download=true",
+            category = "embedding",
+            sizeBytes = 179131736L, // 170.84 MB
+            source = "Google via LiteRT Community",
+            supportsVision = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            contextWindowSize = 256,
+            modelFormat = "tflite"
+        ),
+        LLMModel(
+            name = "EmbeddingGemma 300M (512 seq)",
+            description = "Google EmbeddingGemma 300M model with 512 sequence length. High-quality text embeddings for semantic search and similarity tasks. Mixed-precision for optimal performance. Ready to download from HuggingFace (170.84MB)",
+            url = "https://huggingface.co/litert-community/embeddinggemma-300m/resolve/main/embeddinggemma-300M_seq512_mixed-precision.tflite?download=true",
+            category = "embedding",
+            sizeBytes = 179132472L, // 170.84 MB
+            source = "Google via LiteRT Community",
+            supportsVision = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            contextWindowSize = 512,
+            modelFormat = "tflite"
+        ),
+        LLMModel(
+            name = "EmbeddingGemma 300M (1024 seq)",
+            description = "Google EmbeddingGemma 300M model with 1024 sequence length. High-quality text embeddings for semantic search and similarity tasks. Mixed-precision for optimal performance. Ready to download from HuggingFace (174.84MB)",
+            url = "https://huggingface.co/litert-community/embeddinggemma-300m/resolve/main/embeddinggemma-300M_seq1024_mixed-precision.tflite?download=true",
+            category = "embedding",
+            sizeBytes = 183329528L, // 174.84 MB
+            source = "Google via LiteRT Community",
+            supportsVision = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            contextWindowSize = 1024,
+            modelFormat = "tflite"
+        ),
+        LLMModel(
+            name = "EmbeddingGemma 300M (2048 seq)",
+            description = "Google EmbeddingGemma 300M model with 2048 sequence length. High-quality text embeddings for semantic search and similarity tasks. Mixed-precision for optimal performance. Ready to download from HuggingFace (186.84MB)",
+            url = "https://huggingface.co/litert-community/embeddinggemma-300m/resolve/main/embeddinggemma-300M_seq2048_mixed-precision.tflite?download=true",
+            category = "embedding",
+            sizeBytes = 195912440L, // 186.84 MB
+            source = "Google via LiteRT Community",
+            supportsVision = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            contextWindowSize = 2048,
+            modelFormat = "tflite"
         )
         // Note: Gecko tokenizer removed - Gecko models have built-in tokenizers
     )
