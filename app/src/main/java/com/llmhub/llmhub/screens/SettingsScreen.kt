@@ -12,6 +12,8 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -463,6 +465,60 @@ fun SettingsScreen(
                                             ) {
                                                 Text(stringResource(R.string.save_to_memory))
                                             }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        
+                                        // Import Chat History button
+                                        var showChatImportDialog by remember { mutableStateOf(false) }
+                                        Button(
+                                            onClick = { showChatImportDialog = true },
+                                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                                            enabled = embeddingEnabled && !selectedEmbeddingModel.isNullOrBlank(),
+                                            shape = MaterialTheme.shapes.large
+                                        ) {
+                                            Text(stringResource(R.string.import_chat_history))
+                                        }
+                                        
+                                        // Chat Import Dialog
+                                        if (showChatImportDialog) {
+                                            ChatImportDialog(
+                                                onDismiss = { showChatImportDialog = false },
+                                                onImport = { selectedChats ->
+                                                    coroutineScope.launch {
+                                                        val db = com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context)
+                                                        selectedChats.forEach { chat ->
+                                                            val messages = db.messageDao().getMessagesForChatSync(chat.id)
+                                                            val chatText = messages.joinToString("\n\n") { msg ->
+                                                                val role = if (msg.isFromUser) "User" else "Assistant"
+                                                                "$role: ${msg.content}"
+                                                            }
+                                                            
+                                                            if (chatText.isNotBlank()) {
+                                                                val id = "mem_chat_${chat.id}_${System.currentTimeMillis()}"
+                                                                val doc = com.llmhub.llmhub.data.MemoryDocument(
+                                                                    id = id,
+                                                                    fileName = "Chat: ${chat.title}",
+                                                                    content = chatText,
+                                                                    metadata = "chat_import",
+                                                                    createdAt = System.currentTimeMillis(),
+                                                                    status = "PENDING",
+                                                                    chunkCount = 0
+                                                                )
+                                                                db.memoryDao().insert(doc)
+                                                            }
+                                                        }
+                                                        val processor = com.llmhub.llmhub.data.MemoryProcessor(context, db)
+                                                        processor.processPending()
+                                                        android.widget.Toast.makeText(
+                                                            context,
+                                                            context.getString(R.string.chat_imported_to_memory),
+                                                            android.widget.Toast.LENGTH_SHORT
+                                                        ).show()
+                                                        showChatImportDialog = false
+                                                    }
+                                                }
+                                            )
                                         }
 
                                         Spacer(modifier = Modifier.height(12.dp))
@@ -1030,6 +1086,124 @@ private fun EmbeddingModelSelector(themeViewModel: ThemeViewModel) {
                 ) {
                     Text(text = stringResource(id = com.llmhub.llmhub.R.string.reembedding_memory_in_progress), style = MaterialTheme.typography.bodyLarge)
                     CircularProgressIndicator()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ChatImportDialog(
+    onDismiss: () -> Unit,
+    onImport: (List<com.llmhub.llmhub.data.ChatEntity>) -> Unit
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val db = remember { com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context) }
+    val allChats by db.chatDao().getNonEmptyChats().collectAsState(initial = emptyList())
+    val selectedChats = remember { mutableStateListOf<com.llmhub.llmhub.data.ChatEntity>() }
+    
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = MaterialTheme.shapes.large,
+            tonalElevation = 6.dp,
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            modifier = Modifier
+                .fillMaxWidth(0.9f)
+                .fillMaxHeight(0.7f)
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.import_chat_history),
+                    style = MaterialTheme.typography.headlineSmall
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.select_chats_to_import),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Chat list
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(allChats) { chat ->
+                        val isSelected = selectedChats.contains(chat)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    if (isSelected) {
+                                        selectedChats.remove(chat)
+                                    } else {
+                                        selectedChats.add(chat)
+                                    }
+                                }
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = isSelected,
+                                onCheckedChange = {
+                                    if (it) {
+                                        selectedChats.add(chat)
+                                    } else {
+                                        selectedChats.remove(chat)
+                                    }
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = chat.title,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                                Text(
+                                    text = android.text.format.DateFormat.getDateFormat(context).format(chat.updatedAt),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Action buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TextButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(stringResource(android.R.string.cancel))
+                    }
+                    Button(
+                        onClick = {
+                            if (selectedChats.isNotEmpty()) {
+                                onImport(selectedChats.toList())
+                            } else {
+                                android.widget.Toast.makeText(
+                                    context,
+                                    context.getString(R.string.no_chats_selected),
+                                    android.widget.Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        enabled = selectedChats.isNotEmpty()
+                    ) {
+                        Text(stringResource(R.string.import_selected_chats))
+                    }
                 }
             }
         }
