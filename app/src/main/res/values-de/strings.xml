@@ -229,6 +229,14 @@
     <string name="paste_memory_placeholder">Fügen Sie hier Ihre Notizen, Dokumente oder Ihr Wissen ein...</string>
     <string name="upload_file">Hochladen</string>
     <string name="save_to_memory">Speichern</string>
+    <string name="import_chat_history">Chatverlauf importieren</string>
+    <string name="select_chats_to_import">Wählen Sie Chats aus, die in den Speicher importiert werden sollen</string>
+    <string name="import_selected_chats">Ausgewählte importieren</string>
+    <string name="chat_imported_to_memory">Chatverlauf in Speicher importiert</string>
+    <string name="no_chats_selected">Keine Chats ausgewählt</string>
+    <string name="edit_memory">Erinnerung bearbeiten</string>
+    <string name="memory_content">Speicherinhalt</string>
+    <string name="save_changes">Änderungen speichern</string>
     <string name="done">Fertig</string>
     <string name="global_memory_uploaded_by">In globalen Speicher hochgeladen</string>
     <string name="global_memory_pasted_by">In globalen Speicher eingefügt</string>

@@ -574,6 +574,8 @@ fun SettingsScreen(
                                                 verticalArrangement = Arrangement.spacedBy(6.dp)
                                             ) {
                                                 items(memoryList) { mem ->
+                                                    var showEditDialog by remember { mutableStateOf(false) }
+                                                    
                                                     Row(
                                                         verticalAlignment = Alignment.CenterVertically,
                                                         modifier = Modifier
@@ -588,10 +590,20 @@ fun SettingsScreen(
                                                             val metaLabel = when (mem.metadata) {
                                                                 "uploaded" -> context.getString(R.string.global_memory_uploaded_by)
                                                                 "pasted" -> context.getString(R.string.global_memory_pasted_by)
+                                                                "chat_import" -> context.getString(R.string.chat_imported_to_memory)
                                                                 else -> mem.metadata
                                                             }
                                                             Text(metaLabel + " • " + android.text.format.DateFormat.getDateFormat(context).format(mem.createdAt), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                                         }
+                                                        
+                                                        // Edit button (only for pasted memories)
+                                                        if (mem.metadata == "pasted") {
+                                                            IconButton(onClick = { showEditDialog = true }) {
+                                                                Icon(Icons.Default.Edit, contentDescription = "Edit")
+                                                            }
+                                                        }
+                                                        
+                                                        // Delete button
                                                         IconButton(onClick = {
                                                             coroutineScope.launch {
                                                                 val db = com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context)
@@ -611,6 +623,50 @@ fun SettingsScreen(
                                                         }) {
                                                             Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete))
                                                         }
+                                                    }
+                                                    
+                                                    // Edit Dialog
+                                                    if (showEditDialog) {
+                                                        EditMemoryDialog(
+                                                            memory = mem,
+                                                            onDismiss = { showEditDialog = false },
+                                                            onSave = { updatedContent ->
+                                                                coroutineScope.launch {
+                                                                    val db = com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context)
+                                                                    val ragManager = RagServiceManager.getInstance(context)
+                                                                    try {
+                                                                        // Update content
+                                                                        val updatedMem = mem.copy(
+                                                                            content = updatedContent,
+                                                                            status = "PENDING"
+                                                                        )
+                                                                        db.memoryDao().update(updatedMem)
+                                                                        
+                                                                        // Delete old chunks and re-embed
+                                                                        db.memoryDao().deleteChunksForDoc(mem.id)
+                                                                        ragManager.removeGlobalDocumentChunks(mem.id)
+                                                                        
+                                                                        // Trigger re-embedding
+                                                                        val processor = com.llmhub.llmhub.data.MemoryProcessor(context, db)
+                                                                        processor.processPending()
+                                                                        
+                                                                        android.widget.Toast.makeText(
+                                                                            context,
+                                                                            "Memory updated and re-embedded",
+                                                                            android.widget.Toast.LENGTH_SHORT
+                                                                        ).show()
+                                                                        showEditDialog = false
+                                                                    } catch (e: Exception) {
+                                                                        android.util.Log.e("SettingsScreen", "Failed to update memory: ${e.message}")
+                                                                        android.widget.Toast.makeText(
+                                                                            context,
+                                                                            "Failed to update memory",
+                                                                            android.widget.Toast.LENGTH_SHORT
+                                                                        ).show()
+                                                                    }
+                                                                }
+                                                            }
+                                                        )
                                                     }
                                                 }
                                             }
@@ -1208,4 +1264,55 @@ fun ChatImportDialog(
             }
         }
     }
+}
+
+@Composable
+fun EditMemoryDialog(
+    memory: com.llmhub.llmhub.data.MemoryDocument,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit
+) {
+    val context = LocalContext.current
+    var editedContent by remember { mutableStateOf(memory.content) }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.edit_memory)) },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = editedContent,
+                    onValueChange = { editedContent = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 200.dp, max = 400.dp),
+                    placeholder = { Text(stringResource(R.string.memory_content)) },
+                    maxLines = 20
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (editedContent.isNotBlank()) {
+                        onSave(editedContent.trim())
+                    } else {
+                        android.widget.Toast.makeText(
+                            context,
+                            "Memory content cannot be empty",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                },
+                enabled = editedContent.isNotBlank()
+            ) {
+                Text(stringResource(R.string.save_changes))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(android.R.string.cancel))
+            }
+        }
+    )
 } 
