@@ -24,6 +24,14 @@
     <string name="paste_memory_placeholder">Вставьте ваши заметки, документы или знания здесь...</string>
     <string name="upload_file">Загрузить</string>
     <string name="save_to_memory">Сохранить</string>
+    <string name="import_chat_history">Импортировать историю чата</string>
+    <string name="select_chats_to_import">Выберите чаты для импорта в память</string>
+    <string name="import_selected_chats">Импортировать выбранные</string>
+    <string name="chat_imported_to_memory">История чата импортирована в память</string>
+    <string name="no_chats_selected">Чаты не выбраны</string>
+    <string name="edit_memory">Редактировать память</string>
+    <string name="memory_content">Содержимое памяти</string>
+    <string name="save_changes">Сохранить изменения</string>
     <string name="done">Готово</string>
     <string name="global_memory_uploaded_by">Загружено в глобальную память</string>
     <string name="global_memory_pasted_by">Вставлено в глобальную память</string>

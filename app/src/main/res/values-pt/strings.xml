@@ -210,6 +210,14 @@
     <string name="paste_memory_placeholder">Cole suas notas, documentos ou conhecimentos aqui...</string>
     <string name="upload_file">Enviar</string>
     <string name="save_to_memory">Salvar</string>
+    <string name="import_chat_history">Importar Histórico de Chat</string>
+    <string name="select_chats_to_import">Selecione chats para importar para a memória</string>
+    <string name="import_selected_chats">Importar Selecionados</string>
+    <string name="chat_imported_to_memory">Histórico de chat importado para a memória</string>
+    <string name="no_chats_selected">Nenhum chat selecionado</string>
+    <string name="edit_memory">Editar Memória</string>
+    <string name="memory_content">Conteúdo da memória</string>
+    <string name="save_changes">Salvar Alterações</string>
     <string name="done">Concluído</string>
     <string name="global_memory_uploaded_by">Enviado para a memória global</string>
     <string name="global_memory_pasted_by">Colado na memória global</string>

@@ -321,6 +321,9 @@
     <string name="import_selected_chats">Import Selected</string>
     <string name="chat_imported_to_memory">Chat history imported to memory</string>
     <string name="no_chats_selected">No chats selected</string>
+    <string name="edit_memory">Edit Memory</string>
+    <string name="memory_content">Memory content</string>
+    <string name="save_changes">Save Changes</string>
     <string name="done">Done</string>
     <string name="global_memory_uploaded_by">Uploaded to global memory</string>
     <string name="global_memory_pasted_by">Pasted into global memory</string>
