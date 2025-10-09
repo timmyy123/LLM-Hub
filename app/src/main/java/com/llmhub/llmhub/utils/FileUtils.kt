@@ -630,9 +630,10 @@ object FileUtils {
     /**
      * Check if file is too large (limit to 10MB for now)
      */
-    fun isFileTooLarge(bytes: Long): Boolean {
-        return bytes > 10 * 1024 * 1024 // 10MB limit
-    }
+    // File size limit check removed - no longer enforced
+    // fun isFileTooLarge(bytes: Long): Boolean {
+    //     return bytes > 10 * 1024 * 1024 // 10MB limit
+    // }
     
     /**
      * Copy file to internal storage for persistence

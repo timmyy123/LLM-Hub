@@ -717,16 +717,6 @@ class ChatViewModel(
                         return@launch
                     }
                     
-                    // Check file size limits
-                    if (FileUtils.isFileTooLarge(attachmentFileInfo.size)) {
-                        Log.w("ChatViewModel", "File too large: ${FileUtils.formatFileSize(attachmentFileInfo.size)}")
-                        val errorMessage = "📄 **File Too Large**\n\nThe file you selected is **${FileUtils.formatFileSize(attachmentFileInfo.size)}**, which exceeds the **10MB limit**.\n\n---\n\n## 🎯 To Fix This:\n\n1. **Compress the file** using a file compression tool\n2. **Split large documents** into smaller sections\n3. **Use a different format** (e.g., export PDF as text)\n\n---\n\n💡 **Tip:** For large documents, consider copying and pasting the most relevant sections as text!"
-                        repository.addMessage(chatId, errorMessage, isFromUser = false)
-                        _isLoading.value = false
-                        isGenerating = false
-                        return@launch
-                    }
-                    
                     when (attachmentFileInfo.type) {
                         FileUtils.SupportedFileType.IMAGE -> {
                             // Check if current model supports vision before processing image
