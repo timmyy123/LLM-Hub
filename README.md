@@ -139,11 +139,21 @@ Protect yourself from fraud and phishing:
    - 3B model - 1.2k context
 
 - **Phi-4 Mini** (Microsoft)
-   - INT8 quantization - 1.2k context
+   - INT8 quantization - 4k context
 
 ### Multimodal Models (Vision + Audio + Text)
-- **Gemma-3n E2B** (Gemma-3n family) - Supports text, images, and audio input
-- **Gemma-3n E4B** (Gemma-3n family) - Supports text, images, and audio input
+- **Gemma-3n E2B** - Supports text, images, and audio input (4k context)
+- **Gemma-3n E4B** - Supports text, images, and audio input (4k context)
+
+### Embedding Models (for RAG & Semantic Search)
+- **Gecko-110M Series** - Compact embeddings (64D, 256D, 512D, 1024D)
+   - Quantized and Float32 variants available
+   - Optimized for on-device semantic search
+
+- **EmbeddingGemma-300M Series** - High-quality text embeddings
+   - 256, 512, 1024, and 2048 sequence length variants
+   - Mixed-precision for optimal performance
+   - Ideal for RAG applications and document search
 
 **Memory & RAG (Global Context)**
 
@@ -332,7 +342,4 @@ To use private or gated models, you need to provide your Hugging Face (HF) acces
 **Note:**
 - Never commit your `local.properties` file or your token to version control.
 - If you change your token, update `local.properties` and re-sync Gradle.
- - Never commit your `local.properties` file or your token to version control.
- - If you change your token, update `local.properties` and re-sync Gradle.
-
 
