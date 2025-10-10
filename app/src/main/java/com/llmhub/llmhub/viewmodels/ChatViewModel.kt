@@ -1352,47 +1352,14 @@ class ChatViewModel(
                                             segmentHasContent = true
                                         }
                                         
-                                        // Real-time repetition check to stop runaway generation immediately
-                                        if (totalContent.length > 200) {
-                                            val isRepetitive = checkForRepetition(totalContent)
-                                            if (isRepetitive) {
-                                                Log.w("ChatViewModel", "Stopping generation due to repetitive content detected")
-                                                // Force a complete session reset to prevent future issues
-                                                try {
-                                                    Log.d("ChatViewModel", "Performing thorough session reset due to repetitive content")
-                                                    inferenceService.resetChatSession(chatId)
-                                                    // Give extra time for MediaPipe to fully clean up after repetitive content
-                                                    kotlinx.coroutines.delay(750)
-                                                    lastSessionResetAt = System.currentTimeMillis()
-                                                    Log.d("ChatViewModel", "Completed thorough reset after repetitive content")
-                                                } catch (e: Exception) {
-                                                    Log.w("ChatViewModel", "Failed to reset session after repetitive content: ${e.message}")
-                                                }
-                                                // Actively cancel the running generation coroutine so the stream stops immediately
-                                                throw kotlinx.coroutines.CancellationException("Repetitive content detected")
-                                            }
-                                        }
-                                        
-                                        // Maximum response length check to prevent runaway generation
-                                        if (totalContent.length > 5000) {
-                                            Log.w("ChatViewModel", "Stopping generation due to maximum length exceeded (${totalContent.length} chars)")
-                                            // Reset the session to prevent future issues
-                                            try {
-                                                inferenceService.resetChatSession(chatId)
-                                                dropHistoryOnce = true
-                                                Log.d("ChatViewModel", "Reset MediaPipe session due to length limit; will drop history on next prompt")
-                                            } catch (e: Exception) {
-                                                Log.w("ChatViewModel", "Failed to reset session: ${e.message}")
-                                            }
-                                            // Actively cancel to terminate collection immediately
-                                            throw kotlinx.coroutines.CancellationException("Length limit reached")
-                                        }
+                                        // Note: Repetition detection is handled at the InferenceService layer
+                                        // Note: No artificial length limit - let the model's natural token limit handle it
+                                        // The model will stop when it reaches its context window or generates EOS token
                                         
                                         // Update UI with the complete content so far
                                         val updated = _streamingContents.value.toMutableMap()
                                         updated[placeholderId] = totalContent
                                         _streamingContents.value = updated
-                                        
                                         // Debounced database updates to reduce blinking
                                         val currentTime = System.currentTimeMillis()
                                         if (currentTime - lastUpdateTime > updateIntervalMs) {
@@ -1663,94 +1630,6 @@ class ChatViewModel(
     }
 
     /** Quick check for repetitive patterns during streaming */
-    private fun checkForRepetition(content: String): Boolean {
-        if (content.length < 100) return false
-        
-        val trimmed = content.trim()
-        
-        // Check for excessive repetition of the same character (like 7777777...)
-        val last50Chars = trimmed.takeLast(50)
-        val charCounts = last50Chars.groupingBy { it }.eachCount()
-        val mostCommonChar = charCounts.maxByOrNull { it.value }
-        if (mostCommonChar != null && mostCommonChar.value > 30) {
-            Log.d("ChatViewModel", "Real-time: Detected excessive character repetition: '${mostCommonChar.key}' repeated ${mostCommonChar.value} times")
-            return true
-        }
-        
-        // Check for sentence/phrase repetition (n-gram at word level)
-        if (trimmed.length > 160) {
-            val words = trimmed
-                .lowercase()
-                .replace(Regex("[^a-z0-9\\n\\r\\t\\s']"), " ") // remove most punctuation
-                .split(Regex("\\s+")).filter { it.isNotBlank() }
-            if (words.size > 30) {
-                // compare last 8-15 word shingles with the previous window
-                val windowSizes = listOf(8, 10, 12, 15)
-                for (n in windowSizes) {
-                    if (words.size > n * 2) {
-                        val tail = words.takeLast(n)
-                        val before = words.dropLast(n).takeLast(n)
-                        if (tail == before) {
-                            Log.d("ChatViewModel", "Real-time: Detected ${n}-word repetition block")
-                            return true
-                        }
-                    }
-                }
-
-                // Additional heuristic: dominant word frequency in the recent window
-                val recentWindow = words.takeLast(120)
-                val freq = recentWindow.groupingBy { it }.eachCount()
-                val maxEntry = freq.maxByOrNull { it.value }
-                val topWord = maxEntry?.key ?: ""
-                val topCount = maxEntry?.value ?: 0
-                val dominance = if (recentWindow.isNotEmpty()) topCount.toDouble() / recentWindow.size else 0.0
-                if (topCount >= 25 && dominance >= 0.33 && topWord.length <= 4) {
-                    Log.d("ChatViewModel", "Real-time: Detected dominant word repetition '$topWord' (${String.format("%.0f", dominance*100)}%)")
-                    return true
-                }
-                // Repeated bigrams/trigrams
-                fun hasDominantNGram(n: Int, threshold: Int): Boolean {
-                    if (recentWindow.size < n * 3) return false
-                    val counts = mutableMapOf<String, Int>()
-                    for (i in 0..recentWindow.size - n) {
-                        val gram = recentWindow.subList(i, i + n).joinToString(" ")
-                        counts[gram] = (counts[gram] ?: 0) + 1
-                    }
-                    val max = counts.maxByOrNull { it.value }?.value ?: 0
-                    return max >= threshold
-                }
-                if (hasDominantNGram(2, 6) || hasDominantNGram(3, 5)) {
-                    Log.d("ChatViewModel", "Real-time: Detected dominant n-gram repetition")
-                    return true
-                }
-            }
-        }
-
-        // Check for character-level repetition patterns
-        if (trimmed.length > 100) {
-            val last30Chars = trimmed.takeLast(30)
-            val before30Chars = trimmed.dropLast(30).takeLast(30)
-            if (last30Chars == before30Chars) {
-                Log.d("ChatViewModel", "Real-time: Detected character-level repetition")
-                return true
-            }
-        }
-        
-        // Check for URLs getting too long
-        if (trimmed.contains("http") || trimmed.contains("www")) {
-            val urlPattern = Regex("https?://[^\\s]+|www\\.[^\\s]+")
-            val urls = urlPattern.findAll(trimmed).toList()
-            for (url in urls) {
-                if (url.value.length > 200) {
-                    Log.d("ChatViewModel", "Real-time: Detected excessively long URL pattern")
-                    return true
-                }
-            }
-        }
-        
-        return false
-    }
-
     /** Interrupt the current response generation if one is running */
     fun stopGeneration() {
         generationJob?.cancel()
@@ -2987,34 +2866,8 @@ class ChatViewModel(
                             lastChunkAt = nowTs
                             totalContent += piece
                             
-                            // Real-time checks for repetition and length
-                            if (totalContent.length > 200) {
-                                val isRepetitive = checkForRepetition(totalContent)
-                                if (isRepetitive) {
-                                    Log.w("ChatViewModel", "Stopping regeneration due to repetitive content")
-                                    try {
-                                        Log.d("ChatViewModel", "Performing thorough session reset during regeneration")
-                                        inferenceService.resetChatSession(chatId)
-                                        // Give extra time for MediaPipe to fully clean up after repetitive content
-                                        kotlinx.coroutines.delay(750)
-                                        lastSessionResetAt = System.currentTimeMillis()
-                                        Log.d("ChatViewModel", "Completed thorough reset during regeneration")
-                                    } catch (e: Exception) {
-                                        Log.w("ChatViewModel", "Failed to reset session during regeneration: ${e.message}")
-                                    }
-                                    throw kotlinx.coroutines.CancellationException("Repetitive content detected")
-                                }
-                            }
-                            
-                            if (totalContent.length > 5000) {
-                                Log.w("ChatViewModel", "Stopping regeneration due to maximum length exceeded")
-                                try {
-                                    inferenceService.resetChatSession(chatId)
-                                } catch (e: Exception) {
-                                    Log.w("ChatViewModel", "Failed to reset session: ${e.message}")
-                                }
-                                throw kotlinx.coroutines.CancellationException("Length limit reached")
-                            }
+                            // Note: Repetition detection is handled at the InferenceService layer
+                            // Note: No artificial length limit - let the model's natural token limit handle it
                             
                             // Update UI
                             val updated = _streamingContents.value.toMutableMap()
