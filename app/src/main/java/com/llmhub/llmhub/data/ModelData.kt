@@ -103,10 +103,10 @@ object ModelData {
         // Gemma-3n Models (Multimodal - Text + Vision + Audio)
         LLMModel(
             name = "Gemma-3n E2B",
-            description = "Google Gemma-3n E2B with multimodal capabilities (text, vision, and audio). Effective 2B parameters with selective parameter activation. Supports 4k context window and multimodal input including text, images, and audio. Ready to download from HuggingFace (3.15GB)",
+            description = "Google Gemma-3n E2B with multimodal capabilities (text, vision, and audio). Effective 2B parameters with selective parameter activation. Supports 4k context window and multimodal input including text, images, and audio. Ready to download from HuggingFace (3.1.15GB)",
             url = "https://huggingface.co/google/gemma-3n-E2B-it-litert-lm/resolve/main/gemma-3n-E2B-it-int4.litertlm?download=true",
             category = "multimodal",
-            sizeBytes = 3388604416L, // 3.15GB (actual downloaded size)
+            sizeBytes = 3388604416L, // 3.1.15GB (actual downloaded size)
             source = "Google (LiteRT LM)",
             supportsVision = true,
             supportsAudio = true,
@@ -310,7 +310,7 @@ object ModelData {
         • Gemma-3 1B (INT8, 4k context) - 1005MB
         
         🔹 GEMMA-3N SERIES (Google - Multimodal):
-        • Gemma-3n E2B (Vision+Audio+Text, 4k context) - 3.15GB
+        • Gemma-3n E2B (Vision+Audio+Text, 4k context) - 3.1.15GB
         • Gemma-3n E4B (Vision+Audio+Text, 4k context) - 4.33GB
         
         🔹 LLAMA-3.2 SERIES (Meta):
