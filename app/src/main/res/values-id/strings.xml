@@ -1,0 +1,629 @@
+<resources>
+    <string name="app_name">LLM Hub</string>
+    
+    <!-- Common -->
+    <string name="ok">OK</string>
+    <string name="cancel">Batal</string>
+    <string name="close">Tutup</string>
+    <string name="save">Simpan</string>
+    <string name="delete">Hapus</string>
+    <string name="send">Kirim</string>
+    <string name="copy">Salin</string>
+    <string name="loading">Memuat</string>
+    <string name="error">Kesalahan</string>
+    <string name="retry">Coba Lagi</string>
+    <string name="download">Unduh</string>
+    <string name="vision">Visi</string>
+    
+    <!-- Chat -->
+    <string name="welcome_to_llm_hub">Selamat Datang di LLM Hub!</string>
+    <string name="no_models_downloaded">Belum ada model yang diunduh</string>
+    <!-- Displayed when there are no saved global memories for RAG -->
+    <string name="no_memories">Belum ada memori</string>
+    <string name="download_a_model">Unduh Model</string>
+    <string name="ready_to_chat">Siap untuk mengobrol! Silakan pilih model di atas.</string>
+    <string name="start_chatting">Mulai mengobrol dengan mengetik pesan di bawah!</string>
+    <string name="type_a_message">Ketik pesan...</string>
+    <string name="loading_model_format">Memuat %1$s</string>
+    <string name="please_wait_model_initialize">Harap tunggu sementara model diinisialisasi...</string>
+    <string name="initializing_neural_network">Menginisialisasi jaringan neural...</string>
+    <string name="attached_image">Gambar terlampir</string>
+    <string name="shared_a_file">Membagikan file</string>
+    <string name="copy_message">Salin pesan</string>
+    <string name="regenerate_response">Buat ulang respons</string>
+    <string name="cancel_generation">Batalkan pembuatan</string>
+    <string name="image_attachment">Lampiran Gambar</string>
+    <string name="save_image">Simpan gambar</string>
+    <string name="tap_image_toggle_controls">Ketuk gambar untuk mengalihkan kontrol</string>
+    <string name="vision_enabled">Visi diaktifkan</string>
+    <string name="message_copied">Pesan disalin</string>
+    <string name="tokens_per_second_format">%1$d token • %2$.1f tok/det</string>
+    <string name="context_multimodal_format">%1$dk konteks • %2$s</string>
+    <string name="multimodal_format">%1$s multimodal</string>
+    <string name="multimodal">Multimodal</string>
+    <string name="text_only">Teks saja</string>
+    <string name="currently_loaded">Saat ini dimuat</string>
+    <string name="select_model">Pilih model</string>
+    <string name="unload_model">Bongkar Model</string>
+    <string name="reload_model">Muat Ulang Model</string>
+    
+    <!-- About Screen -->
+    <string name="about_llm_hub">Tentang LLM Hub</string>
+    <string name="about_description">LLM Hub adalah aplikasi Android sumber terbuka yang membawa kekuatan Model Bahasa Besar langsung ke perangkat seluler Anda. Rasakan percakapan AI dengan model terkini seperti Gemma, Llama, dan Phi - semuanya berjalan secara lokal di ponsel Anda untuk privasi maksimal dan aksesibilitas offline.</string>
+    <string name="key_features">Fitur Utama</string>
+    <string name="feature_multiple_models">🤖 Beberapa Model LLM: Gemma-3, Llama-3.2, Phi-4, dan Gemma-3n</string>
+    <string name="feature_on_device">📱 Pemrosesan di Perangkat: Privasi lengkap, tidak perlu internet</string>
+    <string name="feature_vision_support">🖼️ Dukungan Visi: Model multimodal yang memahami gambar</string>
+    <string name="feature_gpu_acceleration">⚡ Akselerasi GPU: Kinerja dioptimalkan pada perangkat yang didukung</string>
+    <string name="feature_offline_usage">💾 Penggunaan Offline: Mengobrol tanpa koneksi internet</string>
+    <string name="feature_privacy_first">🔒 Privasi Utama: Percakapan Anda tidak pernah meninggalkan perangkat</string>
+    <string name="feature_modern_ui">🎨 UI Modern: Antarmuka Material Design yang bersih dan intuitif</string>
+    <string name="developer_info">Info Pengembang</string>
+    <string name="about_developer_info">Proyek ini dikembangkan oleh penggemar yang bersemangat membuat teknologi AI lebih mudah diakses oleh semua orang. Umpan balik dan kontribusi Anda selalu diterima!</string>
+    <string name="tech_stack">Tumpukan Teknologi</string>
+    <string name="about_tech_stack">LLM Hub dibangun menggunakan teknologi pengembangan Android modern: Kotlin, Jetpack Compose, Material Design 3, dan pustaka llama.cpp untuk inferensi yang efisien di perangkat.</string>
+    <string name="tech_kotlin_compose">🏗️ Dibangun dengan Kotlin dan Jetpack Compose</string>
+    <string name="tech_mediapipe_litert">🧠 Didukung oleh MediaPipe dan LiteRT</string>
+    <string name="tech_quantization">🚀 Dioptimalkan dengan kuantisasi INT4/INT8</string>
+    <string name="tech_gpu_acceleration">⚡ Akselerasi GPU melalui LiteRT XNNPACK</string>
+    <string name="tech_models_source">🔗 Model dari HuggingFace dan Google</string>
+    <string name="contact_support">Kontak dan Dukungan</string>
+    <string name="contact_email">Email Kontak:</string>
+    <string name="source_code">Kode Sumber:</string>
+    <string name="github_repository">Repositori GitHub</string>
+    <string name="acknowledgments">Ucapan Terima Kasih</string>
+    <string name="acknowledgments_text">Terima kasih khusus kepada Google, Meta, Microsoft, dan komunitas HuggingFace karena menyediakan model LLM luar biasa yang mendukung aplikasi ini. Proyek ini juga bergantung pada karya luar biasa dari komunitas pengembangan Android dan ekosistem sumber terbuka.</string>
+    <string name="ai_thinking">AI sedang berpikir...</string>
+    <string name="version_number">Versi 3.1</string>
+    <string name="app_version">Versi Aplikasi</string>
+    
+    <!-- Terms of Service -->
+    <string name="terms_of_service">Ketentuan Layanan</string>
+    <string name="tos_last_updated">Terakhir diperbarui: 16 Juli 2025</string>
+    <string name="tos_welcome_text">Selamat datang di LLM Hub. Dengan menggunakan aplikasi kami, Anda setuju untuk terikat oleh Ketentuan Layanan ini. Harap baca dengan seksama.</string>
+    <string name="tos_welcome">Selamat datang di LLM Hub. Dengan menggunakan aplikasi kami, Anda setuju untuk terikat oleh Ketentuan Layanan ini. Harap baca dengan seksama.</string>
+    <string name="tos_acceptance_title">1. Penerimaan Ketentuan</string>
+    <string name="tos_acceptance_text">Dengan mengunduh, menginstal, atau menggunakan LLM Hub, Anda mengakui bahwa Anda telah membaca, memahami, dan setuju untuk terikat oleh Ketentuan Layanan ini. Jika Anda tidak setuju dengan ketentuan ini, jangan gunakan aplikasi.</string>
+    <string name="tos_app_description_title">2. Deskripsi Aplikasi</string>
+    <string name="tos_app_description_text">LLM Hub adalah aplikasi Android sumber terbuka yang menyediakan akses ke Model Bahasa Besar (LLM) untuk percakapan AI di perangkat. Aplikasi memproses semua data secara lokal di perangkat Anda dan tidak mengirimkan informasi pribadi ke server eksternal.</string>
+    <string name="tos_user_responsibilities_title">3. Tanggung Jawab Pengguna</string>
+    <string name="tos_user_responsibilities_text">Anda setuju untuk menggunakan LLM Hub secara bertanggung jawab dan sesuai dengan hukum yang berlaku. Anda bertanggung jawab untuk:\n\n• Menggunakan aplikasi hanya untuk tujuan yang sah\n• Tidak mencoba merekayasa balik atau memodifikasi aplikasi\n• Tidak menggunakan aplikasi untuk menghasilkan konten yang berbahaya, ilegal, atau menyinggung\n• Menghormati hak kekayaan intelektual pihak ketiga\n• Memastikan perangkat Anda memenuhi persyaratan minimum untuk operasi yang tepat</string>
+    <string name="tos_privacy_data_title">4. Privasi dan Data</string>
+    <string name="tos_privacy_data_text">LLM Hub dirancang dengan mengutamakan privasi:\n\n• Semua percakapan dan pemrosesan data terjadi secara lokal di perangkat Anda\n• Tidak ada data pribadi yang dikirim ke server eksternal\n• Riwayat obrolan disimpan secara lokal dan dapat dihapus kapan saja\n• Pengunduhan model dilakukan langsung dari repositori resmi (HuggingFace, Google)\n• Aplikasi tidak mengumpulkan analitik atau data penggunaan</string>
+    <string name="tos_disclaimer_title">5. Penafian Jaminan</string>
+    <string name="tos_disclaimer_text">LLM Hub disediakan \"sebagaimana adanya\" tanpa jaminan apa pun. Kami tidak menjamin keakuratan, keandalan, atau ketersediaan aplikasi atau konten yang dihasilkannya. Penggunaan model AI dapat menghasilkan hasil yang tidak terduga.</string>
+    <string name="tos_limitation_liability_title">6. Batasan Tanggung Jawab</string>
+    <string name="tos_limitation_liability_text">Dalam hal apa pun pengembang tidak akan bertanggung jawab atas kerusakan tidak langsung, insidental, khusus, atau konsekuensial yang timbul dari penggunaan LLM Hub. Penggunaan aplikasi adalah risiko Anda sendiri.</string>
+    <string name="tos_model_usage_title">7. Penggunaan Model dan Lisensi</string>
+    <string name="tos_model_usage_text">Model AI yang tersedia melalui LLM Hub tunduk pada lisensi dan ketentuan penggunaan masing-masing. Pengguna bertanggung jawab untuk mematuhi persyaratan lisensi khusus model saat menggunakan model yang diunduh.</string>
+    <string name="tos_open_source_title">8. Lisensi Sumber Terbuka</string>
+    <string name="tos_open_source_text">LLM Hub adalah perangkat lunak sumber terbuka. Kode sumber tersedia di bawah Lisensi MIT, yang mengizinkan penggunaan, modifikasi, dan distribusi dengan tunduk pada ketentuan lisensi. Pustaka dan model pihak ketiga mungkin memiliki ketentuan lisensi yang berbeda.</string>
+    <string name="tos_changes_title">9. Perubahan pada Ketentuan</string>
+    <string name="tos_changes_text">Kami dapat memperbarui Ketentuan Layanan ini dari waktu ke waktu. Pengguna akan diberitahu tentang perubahan signifikan melalui pembaruan aplikasi. Penggunaan aplikasi yang berkelanjutan setelah perubahan merupakan penerimaan ketentuan baru.</string>
+    <string name="tos_contact_title">10. Informasi Kontak</string>
+    <string name="tos_contact_text">Untuk pertanyaan tentang Ketentuan Layanan ini, silakan hubungi kami di timmyboy0623@gmail.com</string>
+    
+    <!-- Navigation -->
+    <string name="chat">Obrolan</string>
+    <string name="models">Model</string>
+    <string name="settings">Pengaturan</string>
+    <string name="about">Tentang</string>
+    
+    <!-- Settings -->
+    <string name="appearance">Tampilan</string>
+    <string name="features">Fitur</string>
+    <string name="information">Informasi</string>
+    <string name="source_code_section">Kode Sumber</string>
+    <string name="download_models">Unduh Model</string>
+    <string name="browse_download_models">Telusuri dan unduh model LLM</string>
+    <string name="embedding_model">Model Penyematan</string>
+    <string name="select_embedding_model">Pilih Model Penyematan</string>
+    <string name="no_embedding_model_selected">Tidak ada model penyematan yang dipilih</string>
+    <string name="disable_embeddings">Nonaktifkan penyematan</string>
+    <string name="embedding_settings_changed_title">Pengaturan Penyematan Diubah</string>
+    <string name="embedding_settings_changed_message">Harap bongkar dan muat ulang model Anda agar perubahan penyematan berlaku.</string>
+    <string name="reload_models">Muat Ulang Model</string>
+    <string name="dismiss">Tutup</string>
+    <string name="reload_models_notice">Perlu memuat ulang model agar berlaku</string>
+    <string name="embedding_enabled">Penyematan diaktifkan</string>
+    <string name="embedding_disabled">Penyematan dinonaktifkan</string>
+    <string name="embedding_status_enabled">Status penyematan: diaktifkan</string>
+    <string name="embedding_status_disabled">Status penyematan: dinonaktifkan</string>
+    <string name="rag_enabled">RAG diaktifkan</string>
+    <string name="web_search">Pencarian Web</string>
+    <string name="web_search_enabled">Dapatkan informasi terkini dari web</string>
+    <string name="web_search_disabled">Gunakan pengetahuan offline saja</string>
+    <string name="web_search_description_enabled">Dapatkan informasi terkini dari web</string>
+    <string name="web_search_description_disabled">Gunakan pengetahuan offline saja</string>
+    <string name="theme">Tema</string>
+    <string name="language">Bahasa</string>
+    <string name="light_theme">Terang</string>
+    <string name="dark_theme">Gelap</string>
+    <string name="system_default_theme">Default Sistem</string>
+    <string name="theme_light">Terang</string>
+    <string name="theme_dark">Gelap</string>
+    <string name="theme_system">Default Sistem</string>
+    <string name="system_default_language">Default Sistem</string>
+    <string name="system_default">Default Sistem</string>
+    <string name="choose_theme">Pilih Tema</string>
+    <string name="choose_language">Pilih Bahasa</string>
+    <string name="select_language">Pilih Bahasa</string>
+    <string name="app_information_contact">Informasi aplikasi dan kontak</string>
+    <string name="app_info_contact">Informasi aplikasi dan kontak</string>
+    <string name="legal_terms_conditions">Ketentuan dan kondisi hukum</string>
+    <string name="github_repository_desc">Lihat kode sumber dan berkontribusi</string>
+    <string name="view_source_contribute">Lihat kode sumber dan berkontribusi</string>
+    <string name="back">Kembali</string>
+    
+    <!-- Language Names -->
+    <string name="language_english">English</string>
+    <string name="language_spanish">Español</string>
+    <string name="language_portuguese">Português</string>
+    <string name="language_german">Deutsch</string>
+    <string name="language_french">Français</string>
+    <string name="language_russian">Русский</string>
+    <string name="language_italian">Italiano</string>
+    <string name="language_turkish">Türkçe</string>
+    <string name="language_polish">Polski</string>
+    <string name="language_arabic">العربية</string>
+    <string name="language_japanese">日本語</string>
+    <string name="language_indonesian">Indonesia</string>
+    
+    <!-- Errors and Messages -->
+    <string name="failed_to_load_image">Gagal memuat gambar</string>
+    <string name="model_loading_error">Kesalahan memuat model</string>
+    <string name="message_send_error">Kesalahan mengirim pesan</string>
+    <string name="file_save_error">Kesalahan menyimpan file</string>
+    <string name="file_save_success">File berhasil disimpan</string>
+    
+    <!-- Accessibility -->
+    <string name="content_description_ai_bot">Bot AI</string>
+    <string name="content_description_smart_toy">Mainan Pintar</string>
+    <string name="content_description_email">Email</string>
+    <string name="content_description_code">Kode Sumber</string>
+    <string name="content_description_image">Gambar</string>
+    <string name="content_description_download">Unduh</string>
+    <string name="content_description_stop">Berhenti</string>
+    <string name="content_description_refresh">Refresh</string>
+    <string name="content_description_copy">Salin</string>
+    <string name="content_description_speed">Kecepatan</string>
+    <string name="content_description_check">Periksa</string>
+    <string name="content_description_eye">Visi diaktifkan</string>
+    <string name="content_description_attach_image">Lampirkan gambar</string>
+    <string name="content_description_back">Kembali</string>
+    
+    <!-- Model Information -->
+    <string name="no_model_selected">Tidak ada model yang dipilih</string>
+    <string name="no_model_downloaded">Tidak ada model yang diunduh</string>
+    <string name="model_supports_vision">Mendukung visi</string>
+    <string name="model_supports_multimodal">Mendukung multimodal</string>
+    <string name="model_text_only">Teks saja</string>
+    
+    <!-- Chat Drawer -->
+    <string name="drawer_title">LLM Hub</string>
+    <string name="drawer_new_chat">Obrolan Baru</string>
+    <string name="drawer_recent_chats">Obrolan Terkini</string>
+    <string name="drawer_no_chats">Belum ada obrolan</string>
+    <string name="drawer_download_models">Unduh Model</string>
+    <string name="drawer_clear_all_chats">Hapus Semua Obrolan</string>
+    <string name="drawer_settings">Pengaturan</string>
+    
+    <!-- Chat Management -->
+    <string name="dialog_delete_all_chats_title">Hapus Semua Obrolan?</string>
+    <string name="dialog_delete_all_chats_message">Ini akan menghapus semua riwayat percakapan secara permanen. Tindakan ini tidak dapat dibatalkan.</string>
+    <string name="dialog_delete_chat_title">Hapus Obrolan?</string>
+    <string name="dialog_delete_chat_message">Hapus percakapan \"%1$s\"?</string>
+    <string name="action_delete_all">Hapus Semua</string>
+    <string name="action_delete">Hapus</string>
+    <string name="action_cancel">Batal</string>
+    <string name="content_description_delete_chat">Hapus Obrolan</string>
+    
+    <!-- Time Formatting -->
+    <string name="time_yesterday">Kemarin</string>
+    <string name="time_hours_ago">%1$d jam yang lalu</string>
+    <string name="time_minutes_ago">%1$d menit yang lalu</string>
+    <string name="time_just_now">Baru saja</string>
+    
+    <!-- Model Download Screen -->
+    <string name="ai_models">Model AI</string>
+    <string name="download_ai_models">Unduh Model AI</string>
+    <string name="choose_text_multimodal_models">Pilih dari model khusus teks atau multimodal</string>
+    <string name="text_models">Model Teks</string>
+    <string name="text_models_description">Model yang dioptimalkan untuk generasi teks dan percakapan</string>
+    <string name="vision_models">Model Visi</string>
+    <string name="vision_models_description">Model yang dapat memahami teks dan gambar</string>
+    <string name="embedding_models">Model Penyematan</string>
+    <string name="embedding_models_description">Model untuk penyematan teks dan pencarian semantik</string>
+    <string name="gpu">GPU</string>
+    <string name="variant">varian</string>
+    <string name="variants">varian</string>
+    <string name="expand">Perluas</string>
+    <string name="collapse">Ciutkan</string>
+    <string name="downloaded">Diunduh</string>
+    <string name="downloading">Mengunduh...</string>
+    <string name="not_downloaded">Belum diunduh</string>
+    <string name="partial">Sebagian</string>
+    <string name="paused">Dijeda</string>
+    <string name="paused_downloaded_format">Dijeda: %1$s diunduh</string>
+    <string name="continue_download">Lanjutkan</string>
+    <string name="pause_download">Jeda</string>
+    <string name="resume_download">Lanjutkan</string>
+    <string name="clear">Hapus</string>
+    <string name="ram_requirement_format">%1$dGB RAM</string>
+    
+    <!-- File Attachments -->
+    <string name="attach_file">Lampirkan file</string>
+    <string name="attach_image">Lampirkan gambar</string>
+    <string name="attach_document">Lampirkan dokumen</string>
+    <string name="attach_text_file">Lampirkan file teks</string>
+    <string name="file_attachment">Lampiran file</string>
+    <string name="file_too_large">File terlalu besar</string>
+    <string name="unsupported_file_type">Jenis file tidak didukung</string>
+    <string name="file_processing_error">Kesalahan pemrosesan file</string>
+    <string name="could_not_read_file">Tidak dapat membaca file</string>
+    <string name="file_preview">Pratinjau File</string>
+    <string name="remove_attachment">Hapus</string>
+    <string name="keep_attachment">Simpan</string>
+    <string name="preview_not_available">Pratinjau tidak tersedia</string>
+    
+    <!-- File Type Categories -->
+    <string name="images">Gambar</string>
+    <string name="documents">Dokumen</string>
+    <string name="text_files">File Teks</string>
+    <string name="images_description">JPG, PNG, GIF, WebP</string>
+    <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
+    <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
+    <string name="text_file">File Teks</string>
+    <string name="tap_to_preview">Ketuk untuk pratinjau</string>
+    <string name="text_file_tap_to_preview">File Teks • Ketuk untuk pratinjau</string>
+    <string name="read_this">Baca ini</string>
+    
+    
+    <!-- Audio Input -->
+    <string name="audio_recording">Rekaman Audio</string>
+    <string name="audio_description">Rekam pesan suara</string>
+    <string name="record_voice_message">Rekam pesan suara</string>
+    <string name="recording">Merekam…</string>
+    <string name="audio_recorded">Audio Direkam</string>
+    <string name="ready_to_send">Siap untuk dikirim</string>
+    <string name="tap_to_stop">Ketuk untuk berhenti</string>
+    <string name="stop_recording">Hentikan rekaman</string>
+    <string name="remove_audio">Hapus audio</string>
+    <string name="audio_enabled">Audio diaktifkan</string>
+    <string name="audio">Audio</string>
+    <string name="audio_file">File Audio</string>
+    <string name="tap_to_play">Ketuk untuk memutar</string>
+    <string name="max_recording_reached">Durasi rekaman maksimum tercapai (30 detik)</string>
+    <string name="remaining">tersisa</string>
+
+    <!-- Image actions -->
+    <string name="image_copied_clipboard">Gambar disalin dari obrolan</string>
+    <string name="image_copied_to_clipboard">Gambar disalin ke clipboard</string>
+    <string name="failed_to_copy_image">Gagal menyalin gambar</string>
+    <string name="failed_to_copy_image_with_error">Gagal menyalin gambar: %1$s</string>
+    <string name="image_saved_to_gallery">Gambar disimpan ke galeri</string>
+    <string name="failed_to_save_image">Gagal menyimpan gambar</string>
+    <string name="failed_to_save_image_with_error">Gagal menyimpan gambar: %1$s</string>
+    
+    <!-- RAG (Document Chat) -->
+    <string name="searching_documents">Mencari dokumen…</string>
+    <string name="using_document_context_format">Menggunakan konteks dari %1$d bagian dokumen</string>
+    <string name="documents_available_format">%1$d dokumen tersedia</string>
+    <string name="ai_can_reference_documents">AI dapat mereferensikan dokumen Anda dalam respons</string>
+    <string name="document_chat_enabled">Obrolan dokumen diaktifkan</string>
+    <string name="semantic_search_active">Pencarian semantik aktif</string>
+    <string name="memory">Memori (Konteks Global)</string>
+    <string name="memory_description_enabled">Izinkan AI mereferensikan memori global yang Anda unggah melalui RAG</string>
+    <string name="memory_requires_rag">Memerlukan RAG/penyematan untuk diaktifkan</string>
+    <string name="manage_memory">Kelola Memori</string>
+    <string name="manage_memory_subtitle">Unggah atau tempelkan dokumen ke memori global</string>
+    <string name="paste_or_upload_to_memory">Tempelkan teks atau unggah dokumen untuk menambahkannya ke memori global.</string>
+    <string name="paste_memory_placeholder">Tempelkan catatan, dokumen, atau pengetahuan Anda di sini...</string>
+    <string name="upload_file">Unggah</string>
+    <string name="save_to_memory">Simpan</string>
+    <string name="import_chat_history">Impor Riwayat Obrolan</string>
+    <string name="select_chats_to_import">Pilih obrolan untuk diimpor ke memori</string>
+    <string name="import_selected_chats">Impor yang Dipilih</string>
+    <string name="chat_imported_to_memory">Riwayat obrolan diimpor ke memori</string>
+    <string name="no_chats_selected">Tidak ada obrolan yang dipilih</string>
+    <string name="edit_memory">Edit Memori</string>
+    <string name="memory_content">Konten memori</string>
+    <string name="save_changes">Simpan Perubahan</string>
+    <string name="done">Selesai</string>
+    <string name="global_memory_uploaded_by">Diunggah ke memori global</string>
+    <string name="global_memory_pasted_by">Ditempelkan ke memori global</string>
+    <string name="memory_upload_success">File disimpan ke memori global</string>
+    <string name="memory_upload_failed">Gagal menyimpan file ke memori (RAG mungkin dinonaktifkan)</string>
+    <string name="memory_upload_unsupported_type">Jenis file tidak didukung untuk memori. Hanya dokumen teks (PDF, DOC, TXT, dll.) yang dapat ditambahkan ke memori.</string>
+    <string name="memory_save_success">Teks disimpan ke memori global</string>
+    <string name="memory_save_failed">Gagal menyimpan teks ke memori (RAG mungkin dinonaktifkan)</string>
+    <string name="saved_memories">Memori tersimpan</string>
+    <string name="clear_all">Hapus Semua</string>
+    <string name="memory_cleared">Semua memori dihapus</string>
+    <string name="confirm_replace_memory_title">Ganti memori yang ada?</string>
+    <string name="confirm_replace_memory_message">Anda sudah memiliki memori global. Menggantinya akan menghapus memori yang ada dan penyematannya. Lanjutkan?</string>
+    <string name="confirm_replace_action">Ganti</string>
+    <string name="memory_processing">Memproses memori…</string>
+    <string name="reembedding_memory_in_progress">Menyematkan ulang memori global untuk model penyematan baru…</string>
+    <string name="reembedding_memory_done">Memori global disematkan ulang</string>
+    
+    <!-- Gemma-3n specific GPU requirements -->
+    <string name="gemma3n_e2b_gpu_requires_6gb">Memerlukan setidaknya 6GB RAM untuk GPU</string>
+    <string name="gemma3n_e4b_gpu_requires_8gb">Perangkat dengan 8GB RAM atau kurang tidak dapat memuat model ini dengan GPU</string>
+    <string name="audio_support">Dukungan Audio</string>
+    <string name="vision_audio_text">Visi+Audio+Teks</string>
+    <string name="vision_text">Visi+Teks</string>
+    <string name="audio_text">Audio+Teks</string>
+    <string name="shared_file">Membagikan file</string>
+    <string name="audio_message">Pesan Audio</string>
+    <string name="image_message">Pesan Gambar</string>
+    <string name="model_configs_title">Konfigurasi model</string>
+    <string name="reset_to_defaults">Reset</string>
+    <string name="max_tokens">Token maks</string>
+    <string name="top_k">TopK</string>
+    <string name="top_p">TopP</string>
+    <string name="temperature">Temperatur</string>
+    <string name="choose_accelerator">Pilih akselerator</string>
+    <string name="max">maks</string>
+    
+    <!-- GPU with Vision+Audio Disabled for Gemma-3n E4B -->
+    <string name="gpu_vision_disabled_title">GPU dengan Visi+Audio Dinonaktifkan</string>
+    <string name="gpu_vision_disabled_description">Karena keterbatasan RAM, fitur visi dan audio akan dinonaktifkan untuk mengaktifkan akselerasi GPU</string>
+    <string name="gpu_with_vision_disabled">GPU (Visi+Audio Dinonaktifkan)</string>
+    <string name="gemma3n_e4b_gpu_vision_warning">Untuk perangkat dengan 7-8GB RAM, akselerasi GPU memerlukan penonaktifan fitur visi dan audio. Lampiran gambar dan input audio tidak akan tersedia.</string>
+    <string name="vision_disabled_for_gpu">Visi dan audio dinonaktifkan untuk akselerasi GPU</string>
+    <string name="vision_disabled_no_images">Fitur visi dan audio dinonaktifkan untuk konfigurasi model ini. Lampiran gambar dan input audio tidak tersedia.</string>
+    <string name="ram_limit_gpu_vision_disabled">Karena batas RAM (%.1fGB), visi dan audio harus dinonaktifkan untuk menggunakan GPU</string>
+    
+    <!-- GPU with Audio Only Disabled for Gemma-3n E4B on 8GB devices -->
+    <string name="gpu_with_audio_disabled">GPU (Audio Dinonaktifkan)</string>
+    <string name="gemma3n_e4b_gpu_audio_warning">Untuk perangkat dengan 7-8GB RAM, akselerasi GPU memerlukan penonaktifan fitur audio. Input audio tidak akan tersedia, tetapi lampiran gambar didukung.</string>
+    <string name="audio_disabled_for_gpu">Audio dinonaktifkan untuk akselerasi GPU</string>
+    <string name="audio_disabled_no_audio">Fitur audio dinonaktifkan untuk konfigurasi model ini. Input audio tidak tersedia, tetapi lampiran gambar didukung.</string>
+    
+    <!-- Separate modality toggles -->
+    <string name="modality_options">Opsi Modalitas</string>
+    <string name="enable_vision">Aktifkan Visi (Dukungan Gambar)</string>
+    <string name="enable_audio">Aktifkan Audio (Input Suara)</string>
+    <string name="gemma3n_e4b_modality_suggestion">💡 Untuk kinerja yang stabil pada perangkat 7-8GB, pertimbangkan untuk menonaktifkan audio untuk menghemat memori GPU. Visi umumnya lebih stabil.</string>
+    
+    <!-- General performance tip for all devices -->
+    <string name="gemma3n_performance_tip">💡 Jika Anda mengalami crash atau kinerja rendah karena keterbatasan RAM, coba beralih ke backend CPU atau menonaktifkan fitur visi/audio.</string>
+    
+    <!-- External Model Import -->
+    <string name="import_external_model">Impor Model Eksternal</string>
+    <string name="model_name">Nama Model</string>
+    <string name="select_model_file">Pilih File Model</string>
+    <string name="supports_vision">Mendukung Visi</string>
+    <string name="supports_audio">Mendukung Audio</string>
+    <string name="supports_gpu">Mendukung GPU</string>
+    <string name="model_format">Format Model</string>
+    <string name="context_window_size">Ukuran Jendela Konteks</string>
+    <string name="import_model">Impor Model</string>
+    <string name="model_name_required">Nama model diperlukan</string>
+    <string name="context_window_size_invalid">Harap masukkan ukuran jendela konteks yang valid</string>
+    <string name="please_fix_errors">Harap perbaiki kesalahan di atas</string>
+    <string name="remove">Hapus</string>
+    <string name="ready_to_use">Siap digunakan</string>
+    <string name="unsupported_file_format">Format file tidak didukung. Harap pilih file .task atau .litertlm.</string>
+    <string name="download_models_from_litert_community">Anda dapat mengunduh model yang kompatibel dari:</string>
+    <string name="litert_community_link">Komunitas LiteRT di Hugging Face</string>
+    <string name="import_model_warning">⚠️ Penting: Harap baca README model di Hugging Face sebelum mengimpor. Masukkan kemampuan yang benar (visi, audio, GPU) dan ukuran jendela konteks seperti yang ditentukan dalam dokumentasi model. Pengaturan yang salah dapat menyebabkan model tidak berfungsi dengan benar.</string>
+    
+    <!-- Home Screen -->
+    <string name="home_welcome">Selamat Datang di LLM Hub</string>
+    <string name="home_subtitle">Buka kekuatan AI di saku Anda — pribadi, cepat, dan offline!</string>
+    
+    <!-- Feature Cards -->
+    <string name="feature_ai_chat">Obrolan AI</string>
+    <string name="feature_ai_chat_desc">Percakapan multi-giliran dengan model AI</string>
+    <string name="feature_writing_aid">Bantuan Menulis</string>
+    <string name="feature_writing_aid_desc">Tata bahasa, gaya, parafrase, dan penyesuaian nada</string>
+    <string name="feature_translator">Penerjemah</string>
+    <string name="feature_translator_desc">Terjemahkan teks secara pribadi menggunakan model multimodal</string>
+    <string name="feature_transcriber">Transkriptor</string>
+    <string name="feature_transcriber_desc">Transkripsi suara atau audio ke teks secara offline</string>
+    <string name="feature_scam_detector">Detektor Penipuan</string>
+    <string name="feature_scam_detector_desc">Analisis teks, gambar, atau URL untuk penipuan potensial</string>
+    
+    <!-- Writing Aid Screen -->
+    <string name="writing_aid_title">Bantuan Menulis</string>
+    <string name="writing_aid_input_label">Masukkan teks Anda</string>
+    <string name="writing_aid_input_hint">Ketik atau tempelkan teks yang ingin Anda tingkatkan...</string>
+    <string name="writing_aid_input_hint_no_model">Muat model untuk memulai</string>
+    <string name="writing_aid_mode_grammar">Periksa Tata Bahasa</string>
+    <string name="writing_aid_mode_paraphrase">Parafrase</string>
+    <string name="writing_aid_mode_tone">Sesuaikan Nada</string>
+    <string name="writing_aid_mode_email">Balasan Email</string>
+    <string name="writing_aid_mode_sms">Balasan SMS</string>
+    <string name="writing_aid_tone_friendly">Ramah</string>
+    <string name="writing_aid_tone_professional">Profesional</string>
+    <string name="writing_aid_tone_concise">Ringkas</string>
+    <string name="writing_aid_select_mode">Pilih Nada</string>
+    <string name="writing_aid_process">Proses</string>
+    <string name="processing_tap_to_cancel">Memproses (ketuk untuk membatalkan)</string>
+    <string name="writing_aid_result">Hasil</string>
+    <string name="writing_aid_no_model">Tidak ada model yang dimuat. Harap unduh dan pilih model terlebih dahulu.</string>
+    
+    <!-- Translator Screen -->
+    <string name="translator_title">Penerjemah Offline</string>
+    <string name="translator_input_label">Teks untuk diterjemahkan</string>
+    <string name="translator_input_hint">Masukkan teks untuk diterjemahkan...</string>
+    <string name="load_model_to_start">Muat model untuk memulai</string>
+    <string name="translator_source_lang">Bahasa Sumber</string>
+    <string name="translator_target_lang">Bahasa Target</string>
+    <string name="translator_auto_detect">Deteksi Otomatis</string>
+    <string name="translator_translate">Terjemahkan</string>
+    <string name="translator_result">Terjemahan</string>
+    <string name="translator_requires_gemma3n">Fitur ini memerlukan model Gemma-3n. Harap unduh satu dari layar Model.</string>
+    
+    <!-- Transcriber Screen -->
+    <string name="transcriber_title">Transkriptor Offline</string>
+    <string name="transcriber_record">Rekam Audio</string>
+    <string name="transcriber_upload">Unggah Audio</string>
+    <string name="transcriber_transcribe">Transkripsi</string>
+    <string name="transcriber_result">Transkripsi</string>
+    <string name="transcriber_recording">Merekam...</string>
+    <string name="transcriber_stop">Hentikan Rekaman</string>
+    <string name="transcriber_requires_gemma3n">Fitur ini memerlukan model Gemma-3n dengan dukungan audio. Harap unduh satu dari layar Model.</string>
+    
+    <!-- Scam Detector Screen -->
+    <string name="scam_detector_title">Detektor Penipuan</string>
+    <string name="scam_detector_input_label">Masukkan konten untuk dianalisis</string>
+    <string name="scam_detector_input_hint">Tempelkan teks, unggah gambar, atau masukkan URL untuk menganalisis penipuan...</string>
+    <string name="scam_detector_url_hint">Masukkan URL untuk dianalisis</string>
+    <string name="scam_detector_analyze">Analisis</string>
+    <string name="scam_detector_analyzing">Menganalisis (ketuk untuk membatalkan)</string>
+    <string name="scam_detector_result">Hasil Analisis</string>
+    <string name="scam_detector_no_model">Tidak ada model yang dimuat. Harap unduh dan pilih model terlebih dahulu.</string>
+    <string name="scam_detector_load_model">Muat Model</string>
+    <string name="scam_detector_load_model_desc">Harap muat model untuk mulai menganalisis konten</string>
+    <string name="scam_detector_enable_vision">Aktifkan Visi</string>
+    <string name="scam_detector_vision_desc">Analisis gambar untuk penipuan</string>
+    <string name="scam_detector_fetching_url">Mengambil konten URL...</string>
+    
+    <!-- Common Feature Strings -->
+    <string name="feature_no_model_title">Tidak Ada Model Tersedia</string>
+    <string name="feature_download_model">Unduh Model</string>
+    <string name="feature_processing">Memproses...</string>
+    <string name="feature_error">Terjadi kesalahan</string>
+    <string name="feature_copy_result">Salin Hasil</string>
+    <string name="feature_share_result">Bagikan Hasil</string>
+    <string name="feature_clear">Hapus</string>
+    
+    <!-- Language Names for Translator (Gemma-3n Supported Languages) - Alphabetically Ordered -->
+    <string name="lang_english">Inggris</string>
+    <string name="lang_afrikaans">Afrikaans</string>
+    <string name="lang_amharic">Amharik</string>
+    <string name="lang_arabic">Arab</string>
+    <string name="lang_armenian">Armenia</string>
+    <string name="lang_azerbaijani">Azerbaijan</string>
+    <string name="lang_basque">Basque</string>
+    <string name="lang_bengali">Bengali</string>
+    <string name="lang_bulgarian">Bulgaria</string>
+    <string name="lang_burmese">Burma</string>
+    <string name="lang_catalan">Katalan</string>
+    <string name="lang_chinese">Tionghoa (Sederhana)</string>
+    <string name="lang_chinese_traditional">Tionghoa (Tradisional)</string>
+    <string name="lang_croatian">Kroasia</string>
+    <string name="lang_czech">Ceko</string>
+    <string name="lang_danish">Denmark</string>
+    <string name="lang_dutch">Belanda</string>
+    <string name="lang_estonian">Estonia</string>
+    <string name="lang_filipino">Filipino (Tagalog)</string>
+    <string name="lang_finnish">Finlandia</string>
+    <string name="lang_french">Prancis</string>
+    <string name="lang_galician">Galisia</string>
+    <string name="lang_georgian">Georgia</string>
+    <string name="lang_german">Jerman</string>
+    <string name="lang_greek">Yunani</string>
+    <string name="lang_gujarati">Gujarat</string>
+    <string name="lang_hausa">Hausa</string>
+    <string name="lang_hebrew">Ibrani</string>
+    <string name="lang_hindi">Hindi</string>
+    <string name="lang_hungarian">Hungaria</string>
+    <string name="lang_icelandic">Islandia</string>
+    <string name="lang_igbo">Igbo</string>
+    <string name="lang_indonesian">Indonesia</string>
+    <string name="lang_italian">Italia</string>
+    <string name="lang_japanese">Jepang</string>
+    <string name="lang_kannada">Kannada</string>
+    <string name="lang_kazakh">Kazakh</string>
+    <string name="lang_khmer">Khmer</string>
+    <string name="lang_korean">Korea</string>
+    <string name="lang_lao">Lao</string>
+    <string name="lang_latvian">Latvia</string>
+    <string name="lang_lithuanian">Lituania</string>
+    <string name="lang_malay">Melayu</string>
+    <string name="lang_malayalam">Malayalam</string>
+    <string name="lang_marathi">Marathi</string>
+    <string name="lang_nepali">Nepal</string>
+    <string name="lang_norwegian">Norwegia</string>
+    <string name="lang_pashto">Pashto</string>
+    <string name="lang_persian">Persia (Farsi)</string>
+    <string name="lang_polish">Polandia</string>
+    <string name="lang_portuguese">Portugis</string>
+    <string name="lang_punjabi">Punjab</string>
+    <string name="lang_romanian">Rumania</string>
+    <string name="lang_russian">Rusia</string>
+    <string name="lang_serbian">Serbia</string>
+    <string name="lang_sindhi">Sindhi</string>
+    <string name="lang_sinhala">Sinhala</string>
+    <string name="lang_slovak">Slovakia</string>
+    <string name="lang_slovenian">Slovenia</string>
+    <string name="lang_somali">Somalia</string>
+    <string name="lang_spanish">Spanyol</string>
+    <string name="lang_swahili">Swahili</string>
+    <string name="lang_swedish">Swedia</string>
+    <string name="lang_tamil">Tamil</string>
+    <string name="lang_telugu">Telugu</string>
+    <string name="lang_thai">Thai</string>
+    <string name="lang_turkish">Turki</string>
+    <string name="lang_ukrainian">Ukraina</string>
+    <string name="lang_urdu">Urdu</string>
+    <string name="lang_uzbek">Uzbek</string>
+    <string name="lang_vietnamese">Vietnam</string>
+    <string name="lang_yoruba">Yoruba</string>
+    <string name="lang_zulu">Zulu</string>
+    
+    <!-- Model Selection -->
+    <string name="feature_settings_title">Pengaturan</string>
+    <string name="select_model_title">Pilih Model</string>
+    <string name="no_models_available">Tidak ada model yang tersedia</string>
+    <string name="download_models_first">Harap unduh model terlebih dahulu</string>
+    <string name="select_backend">Pilih Backend</string>
+    <string name="backend_cpu">CPU</string>
+    <string name="backend_gpu">GPU</string>
+    <string name="gpu_not_supported">GPU tidak didukung oleh model ini</string>
+    <string name="load_model">Muat Model</string>
+    <string name="model_loaded">Model berhasil dimuat</string>
+    <string name="model_loading">Memuat model…</string>
+    <string name="model_load_failed">Gagal memuat model</string>
+    <string name="multimodal_models_only">Hanya model multimodal (Gemma-3n) yang didukung</string>
+    <string name="text_models_only">Model khusus teks didukung</string>
+    
+    <!-- Audio Features -->
+    <string name="enable_audio_input">Aktifkan input audio</string>
+    <string name="audio_input_enabled">Input audio diaktifkan</string>
+    <string name="audio_input_disabled">Input audio dinonaktifkan</string>
+    <string name="record_audio">Rekam audio</string>
+    
+    <!-- Auto-detect Language -->
+    <string name="lang_auto_detect">Deteksi otomatis</string>
+    <string name="auto_detecting_language">Mendeteksi bahasa…</string>
+    <string name="language_detected">Bahasa terdeteksi: %1$s</string>
+    
+    <!-- Feature-specific Processing -->
+    <string name="processing">Memproses…</string>
+    <string name="translating">Menerjemahkan…</string>
+    <string name="translating_tap_to_cancel">Menerjemahkan (ketuk untuk membatalkan)</string>
+    <string name="transcribing">Mentranskripsi…</string>
+    <string name="transcribing_tap_to_cancel">Mentranskripsi (ketuk untuk membatalkan)</string>
+    <string name="analyzing_code">Menganalisis kode…</string>
+    <string name="processing_text">Memproses teks…</string>
+    
+    <!-- Vision Features -->
+    <string name="input_options">Opsi Input</string>
+    <string name="enable_vision_input">Aktifkan input visi</string>
+    <string name="translate_from_image">Terjemahkan teks dari gambar</string>
+    <string name="speak_to_translate">Bicara untuk menerjemahkan</string>
+    <string name="select_image">Pilih Gambar</string>
+    <string name="change_image">Ubah Gambar</string>
+    <string name="transcription_result">Transkripsi</string>
+    
+    <!-- Translator Settings -->
+    <string name="translator_enable_vision">Aktifkan Visi</string>
+    <string name="translator_vision_description">Terjemahkan teks dari gambar</string>
+    <string name="translator_enable_audio">Aktifkan Audio</string>
+    <string name="translator_audio_description">Terjemahkan rekaman audio</string>
+    
+    <!-- Backend Selection -->
+    <string name="choose_backend_for_gemma">Pilih backend pemrosesan untuk model Gemma</string>
+    <string name="gpu_backend">GPU (Direkomendasikan)</string>
+    <string name="cpu_backend">CPU (Alternatif)</string>
+    <string name="gpu_backend_description">Pemrosesan lebih cepat menggunakan GPU perangkat</string>
+    <string name="cpu_backend_description">Pemrosesan lebih lambat tetapi lebih stabil</string>
+    <string name="backend_selection_hint">Jika aplikasi crash atau tidak bekerja dengan baik dengan GPU, coba backend CPU</string>
+    <string name="not_available">Tidak tersedia</string>
+    <string name="gpu_disabled_low_memory">GPU tidak tersedia untuk model ini pada perangkat dengan %1$dGB RAM atau kurang</string>
+</resources>

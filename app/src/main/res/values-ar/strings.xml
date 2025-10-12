@@ -1,0 +1,628 @@
+<resources>
+    <string name="app_name">LLM Hub</string>
+
+    <!-- Common -->
+    <string name="ok">موافق</string>
+    <string name="cancel">إلغاء</string>
+    <string name="close">إغلاق</string>
+    <string name="save">حفظ</string>
+    <string name="delete">حذف</string>
+    <string name="send">إرسال</string>
+    <string name="copy">نسخ</string>
+    <string name="loading">جارٍ التحميل</string>
+    <string name="error">خطأ</string>
+    <string name="retry">إعادة المحاولة</string>
+    <string name="download">تنزيل</string>
+    <string name="vision">الرؤية</string>
+
+    <!-- Chat -->
+    <string name="welcome_to_llm_hub">مرحبًا بك في LLM Hub!</string>
+    <string name="no_models_downloaded">لا توجد نماذج مُنزّلة بعد</string>
+    <!-- Displayed when there are no saved global memories for RAG -->
+    <string name="no_memories">لا توجد ذكريات بعد</string>
+    <string name="download_a_model">تنزيل نموذج</string>
+    <string name="ready_to_chat">جاهز للدردشة! يرجى اختيار نموذج من الأعلى.</string>
+    <string name="start_chatting">ابدأ الدردشة بكتابة رسالة أدناه!</string>
+    <string name="type_a_message">اكتب رسالة...</string>
+    <string name="loading_model_format">جارٍ تحميل %1$s</string>
+    <string name="please_wait_model_initialize">يرجى الانتظار أثناء تهيئة النموذج...</string>
+    <string name="initializing_neural_network">جارٍ تهيئة الشبكة العصبية...</string>
+    <string name="attached_image">تم إرفاق صورة</string>
+    <string name="shared_a_file">تمت مشاركة ملف</string>
+    <string name="copy_message">نسخ الرسالة</string>
+    <string name="regenerate_response">إعادة توليد الرد</string>
+    <string name="cancel_generation">إلغاء التوليد</string>
+    <string name="image_attachment">مرفق صورة</string>
+    <string name="save_image">حفظ الصورة</string>
+    <string name="tap_image_toggle_controls">انقر على الصورة لإظهار/إخفاء عناصر التحكم</string>
+    <string name="vision_enabled">تم تفعيل الرؤية</string>
+    <string name="message_copied">تم نسخ الرسالة</string>
+    <string name="tokens_per_second_format">%1$d رمز • %2$.1f رمز/ث</string>
+    <string name="context_multimodal_format">%1$dk سياق • %2$s</string>
+    <string name="multimodal_format">%1$s متعدد الوسائط</string>
+    <string name="multimodal">متعدد الوسائط</string>
+    <string name="text_only">نص فقط</string>
+    <string name="currently_loaded">محمل حاليًا</string>
+    <string name="select_model">اختر نموذجًا</string>
+    <string name="unload_model">إلغاء تحميل النموذج</string>
+    <string name="reload_model">إعادة تحميل النموذج</string>
+
+    <!-- About Screen -->
+    <string name="about_llm_hub">نبذة عن LLM Hub</string>
+    <string name="about_description">LLM Hub هو تطبيق أندرويد مفتوح المصدر يجلب قوة نماذج اللغة الضخمة مباشرة إلى جهازك المحمول. اختبر محادثات الذكاء الاصطناعي مع نماذج متقدمة مثل Gemma وLlama وPhi — جميعها تعمل محليًا على هاتفك لأقصى قدر من الخصوصية وإمكانية الاستخدام دون اتصال.</string>
+    <string name="key_features">الميزات الرئيسية</string>
+    <string name="feature_multiple_models">🤖 عدة نماذج LLM: ‏Gemma-3 وLlama-3.2 وPhi-4 وGemma-3n</string>
+    <string name="feature_on_device">📱 معالجة على الجهاز: خصوصية كاملة، بدون إنترنت</string>
+    <string name="feature_vision_support">🖼️ دعم الرؤية: نماذج متعددة الوسائط تفهم الصور</string>
+    <string name="feature_gpu_acceleration">⚡ تسريع GPU: أداء محسن على الأجهزة المدعومة</string>
+    <string name="feature_offline_usage">💾 استخدام دون اتصال: دردشة بدون اتصال بالإنترنت</string>
+    <string name="feature_privacy_first">🔒 الخصوصية أولاً: محادثاتك لا تغادر جهازك</string>
+    <string name="feature_modern_ui">🎨 واجهة حديثة: تصميم Material نظيف وبديهي</string>
+    <string name="developer_info">معلومات المطوّر</string>
+    <string name="about_developer_info">تم تطوير هذا المشروع بشغف لجعل تقنيات الذكاء الاصطناعي في متناول الجميع. يسعدنا تلقي ملاحظاتك ومساهماتك دائمًا!</string>
+    <string name="tech_stack">التقنيات المستخدمة</string>
+    <string name="about_tech_stack">تم بناء LLM Hub بتقنيات تطوير أندرويد الحديثة: ‏Kotlin وJetpack Compose وMaterial Design 3 ومكتبة llama.cpp للاستدلال الفعال على الجهاز.</string>
+    <string name="tech_kotlin_compose">🏗️ مبني بـ Kotlin وJetpack Compose</string>
+    <string name="tech_mediapipe_litert">🧠 مدعوم بـ MediaPipe وLiteRT</string>
+    <string name="tech_quantization">🚀 مُحسَّن بكمّية INT4/INT8</string>
+    <string name="tech_gpu_acceleration">⚡ تسريع GPU عبر LiteRT XNNPACK</string>
+    <string name="tech_models_source">🔗 النماذج من HuggingFace وGoogle</string>
+    <string name="contact_support">التواصل والدعم</string>
+    <string name="contact_email">البريد الإلكتروني:</string>
+    <string name="source_code">الكود المصدري:</string>
+    <string name="github_repository">مستودع GitHub</string>
+    <string name="acknowledgments">شكر وتقدير</string>
+    <string name="acknowledgments_text">شكر خاص إلى Google وMeta وMicrosoft ومجتمع HuggingFace لتقديم نماذج LLM المذهلة التي تدعم هذا التطبيق. يعتمد هذا المشروع أيضًا على عمل مجتمع مطوري أندرويد ونظام المصادر المفتوحة الرائع.</string>
+    <string name="ai_thinking">الذكاء الاصطناعي يفكر...</string>
+    <string name="version_number">الإصدار 3.1</string>
+    <string name="app_version">إصدار التطبيق</string>
+
+    <!-- Terms of Service -->
+    <string name="terms_of_service">شروط الخدمة</string>
+    <string name="tos_last_updated">آخر تحديث: 16 يوليو 2025</string>
+    <string name="tos_welcome_text">مرحبًا بك في LLM Hub. باستخدامك لتطبيقنا، فإنك توافق على الالتزام بهذه الشروط. يرجى قراءتها بعناية.</string>
+    <string name="tos_welcome">مرحبًا بك في LLM Hub. باستخدامك لتطبيقنا، فإنك توافق على الالتزام بهذه الشروط. يرجى قراءتها بعناية.</string>
+    <string name="tos_acceptance_title">1. قبول الشروط</string>
+    <string name="tos_acceptance_text">بتنزيلك أو تثبيتك أو استخدامك لـ LLM Hub، فإنك تقر بأنك قرأت وفهمت ووافقت على الالتزام بهذه الشروط. إذا لم توافق على الشروط، يرجى عدم استخدام التطبيق.</string>
+    <string name="tos_app_description_title">2. وصف التطبيق</string>
+    <string name="tos_app_description_text">LLM Hub هو تطبيق أندرويد مفتوح المصدر يوفّر الوصول إلى نماذج اللغة الضخمة لإجراء محادثات ذكاء اصطناعي على الجهاز. تتم معالجة جميع البيانات محليًا على جهازك ولا يتم إرسال أي معلومات شخصية إلى خوادم خارجية.</string>
+    <string name="tos_user_responsibilities_title">3. مسؤوليات المستخدم</string>
+    <string name="tos_user_responsibilities_text">أنت توافق على استخدام LLM Hub بمسؤولية ووفقًا للقوانين المعمول بها. أنت مسؤول عن:\n\n• استخدام التطبيق لأغراض قانونية فقط\n• عدم محاولة الهندسة العكسية أو تعديل التطبيق\n• عدم استخدام التطبيق لإنشاء محتوى ضار أو غير قانوني أو مسيء\n• احترام حقوق الملكية الفكرية للغير\n• التأكد من أن جهازك يلبّي الحد الأدنى من المتطلبات للتشغيل الصحيح</string>
+    <string name="tos_privacy_data_title">4. الخصوصية والبيانات</string>
+    <string name="tos_privacy_data_text">تم تصميم LLM Hub مع مراعاة الخصوصية:\n\n• تتم جميع المحادثات والمعالجة محليًا على جهازك\n• لا يتم إرسال أي بيانات شخصية إلى خوادم خارجية\n• يتم حفظ سجل الدردشة محليًا ويمكن حذفه في أي وقت\n• يتم تنزيل النماذج مباشرة من المستودعات الرسمية (HuggingFace وGoogle)\n• لا يجمع التطبيق أي تحليلات أو بيانات استخدام</string>
+    <string name="tos_disclaimer_title">5. إخلاء المسؤولية</string>
+    <string name="tos_disclaimer_text">يُقدَّم LLM Hub "كما هو" دون أي ضمانات من أي نوع. لا نضمن دقة أو موثوقية أو توافر التطبيق أو المحتوى المولّد. قد ينتج عن استخدام نماذج الذكاء الاصطناعي نتائج غير متوقعة.</string>
+    <string name="tos_limitation_liability_title">6. تحديد المسؤولية</string>
+    <string name="tos_limitation_liability_text">في أي حال، لا يتحمّل المطوّرون أي مسؤولية عن الأضرار غير المباشرة أو العرضية أو الخاصة أو اللاحقة الناشئة عن استخدام LLM Hub. استخدامك للتطبيق على مسؤوليتك الخاصة.</string>
+    <string name="tos_model_usage_title">7. استخدام النماذج والتراخيص</string>
+    <string name="tos_model_usage_text">تخضع نماذج الذكاء الاصطناعي المتاحة عبر LLM Hub لتراخيصها وشروط استخدامها الخاصة. يتحمّل المستخدم مسؤولية الالتزام بمتطلبات الترخيص الخاصة بكل نموذج عند استخدامه.</string>
+    <string name="tos_open_source_title">8. ترخيص المصدر المفتوح</string>
+    <string name="tos_open_source_text">LLM Hub هو برنامج مفتوح المصدر. الشيفرة المصدرية متاحة بموجب ترخيص MIT، والذي يسمح بالاستخدام والتعديل والتوزيع وفق شروط الترخيص. قد تخضع مكتبات ونماذج الجهات الخارجية لشروط ترخيص مختلفة.</string>
+    <string name="tos_changes_title">9. تغييرات على الشروط</string>
+    <string name="tos_changes_text">قد نقوم بتحديث شروط الخدمة هذه من حين لآخر. سيتم إخطار المستخدمين بالتغييرات المهمة من خلال تحديثات التطبيق. يشكّل الاستمرار في استخدام التطبيق بعد التغييرات قبولًا للشروط الجديدة.</string>
+    <string name="tos_contact_title">10. معلومات الاتصال</string>
+    <string name="tos_contact_text">للاستفسارات حول شروط الخدمة هذه، يرجى التواصل عبر البريد: timmyboy0623@gmail.com</string>
+
+    <!-- Navigation -->
+    <string name="chat">دردشة</string>
+    <string name="models">نماذج</string>
+    <string name="settings">الإعدادات</string>
+    <string name="about">حول</string>
+
+    <!-- Settings -->
+    <string name="appearance">المظهر</string>
+    <string name="features">الميزات</string>
+    <string name="information">المعلومات</string>
+    <string name="source_code_section">الكود المصدري</string>
+    <string name="download_models">تنزيل النماذج</string>
+    <string name="browse_download_models">استعرض ونزّل نماذج LLM</string>
+    <string name="embedding_model">نموذج التضمين</string>
+    <string name="select_embedding_model">اختر نموذج التضمين</string>
+    <string name="no_embedding_model_selected">لم يتم اختيار نموذج تضمين</string>
+    <string name="disable_embeddings">تعطيل التضمينات</string>
+    <string name="embedding_settings_changed_title">تم تغيير إعدادات التضمين</string>
+    <string name="embedding_settings_changed_message">يرجى إلغاء تحميل وإعادة تحميل النماذج لتطبيق تغييرات التضمين.</string>
+    <string name="reload_models">إعادة تحميل النماذج</string>
+    <string name="dismiss">تجاهل</string>
+    <string name="reload_models_notice">يلزم إعادة تحميل النماذج لتطبيق التغييرات</string>
+    <string name="embedding_enabled">تم تفعيل التضمينات</string>
+    <string name="embedding_disabled">تم تعطيل التضمينات</string>
+    <string name="embedding_status_enabled">حالة التضمين: مفعّل</string>
+    <string name="embedding_status_disabled">حالة التضمين: معطّل</string>
+    <string name="rag_enabled">تم تفعيل RAG</string>
+    <string name="web_search">البحث على الويب</string>
+    <string name="web_search_enabled">الحصول على معلومات حديثة من الويب</string>
+    <string name="web_search_disabled">استخدام المعرفة دون اتصال فقط</string>
+    <string name="web_search_description_enabled">الحصول على معلومات حديثة من الويب</string>
+    <string name="web_search_description_disabled">استخدام المعرفة دون اتصال فقط</string>
+    <string name="theme">السمة</string>
+    <string name="language">اللغة</string>
+    <string name="light_theme">فاتح</string>
+    <string name="dark_theme">داكن</string>
+    <string name="system_default_theme">افتراضي النظام</string>
+    <string name="theme_light">فاتح</string>
+    <string name="theme_dark">داكن</string>
+    <string name="theme_system">افتراضي النظام</string>
+    <string name="system_default_language">افتراضي النظام</string>
+    <string name="system_default">افتراضي النظام</string>
+    <string name="choose_theme">اختر السمة</string>
+    <string name="choose_language">اختر اللغة</string>
+    <string name="select_language">حدد اللغة</string>
+    <string name="app_information_contact">معلومات التطبيق ووسائل التواصل</string>
+    <string name="app_info_contact">معلومات التطبيق ووسائل التواصل</string>
+    <string name="legal_terms_conditions">الشروط والأحكام القانونية</string>
+    <string name="github_repository_desc">اعرض الكود المصدري وساهم</string>
+    <string name="view_source_contribute">اعرض الكود المصدري وساهم</string>
+    <string name="back">رجوع</string>
+
+    <!-- Language Names -->
+    <string name="language_english">English</string>
+    <string name="language_spanish">Español</string>
+    <string name="language_portuguese">Português</string>
+    <string name="language_german">Deutsch</string>
+    <string name="language_french">Français</string>
+    <string name="language_russian">Русский</string>
+    <string name="language_italian">Italiano</string>
+    <string name="language_turkish">Türkçe</string>
+    <string name="language_polish">Polski</string>
+    <string name="language_arabic">العربية</string>
+    <string name="language_japanese">日本語</string>
+    <string name="language_indonesian">Indonesia</string>
+
+    <!-- Errors and Messages -->
+    <string name="failed_to_load_image">فشل تحميل الصورة</string>
+    <string name="model_loading_error">خطأ في تحميل النموذج</string>
+    <string name="message_send_error">خطأ في إرسال الرسالة</string>
+    <string name="file_save_error">خطأ في حفظ الملف</string>
+    <string name="file_save_success">تم حفظ الملف بنجاح</string>
+
+    <!-- Accessibility -->
+    <string name="content_description_ai_bot">روبوت ذكاء اصطناعي</string>
+    <string name="content_description_smart_toy">لعبة ذكية</string>
+    <string name="content_description_email">بريد إلكتروني</string>
+    <string name="content_description_code">الكود المصدري</string>
+    <string name="content_description_image">صورة</string>
+    <string name="content_description_download">تنزيل</string>
+    <string name="content_description_stop">إيقاف</string>
+    <string name="content_description_refresh">تحديث</string>
+    <string name="content_description_copy">نسخ</string>
+    <string name="content_description_speed">السرعة</string>
+    <string name="content_description_check">تحقق</string>
+    <string name="content_description_eye">تم تفعيل الرؤية</string>
+    <string name="content_description_attach_image">إرفاق صورة</string>
+    <string name="content_description_back">رجوع</string>
+
+    <!-- Model Information -->
+    <string name="no_model_selected">لم يتم اختيار نموذج</string>
+    <string name="no_model_downloaded">لا يوجد نموذج مُنزّل</string>
+    <string name="model_supports_vision">يدعم الرؤية</string>
+    <string name="model_supports_multimodal">يدعم الوسائط المتعددة</string>
+    <string name="model_text_only">نص فقط</string>
+
+    <!-- Chat Drawer -->
+    <string name="drawer_title">LLM Hub</string>
+    <string name="drawer_new_chat">دردشة جديدة</string>
+    <string name="drawer_recent_chats">الدردشات الحديثة</string>
+    <string name="drawer_no_chats">لا توجد دردشات بعد</string>
+    <string name="drawer_download_models">تنزيل النماذج</string>
+    <string name="drawer_clear_all_chats">مسح كل الدردشات</string>
+    <string name="drawer_settings">الإعدادات</string>
+
+    <!-- Chat Management -->
+    <string name="dialog_delete_all_chats_title">حذف كل الدردشات؟</string>
+    <string name="dialog_delete_all_chats_message">سيؤدي ذلك إلى حذف سجل المحادثات نهائيًا. لا يمكن التراجع عن هذا الإجراء.</string>
+    <string name="dialog_delete_chat_title">حذف الدردشة؟</string>
+    <string name="dialog_delete_chat_message">هل تريد حذف المحادثة "%1$s"؟</string>
+    <string name="action_delete_all">حذف الكل</string>
+    <string name="action_delete">حذف</string>
+    <string name="action_cancel">إلغاء</string>
+    <string name="content_description_delete_chat">حذف الدردشة</string>
+
+    <!-- Time Formatting -->
+    <string name="time_yesterday">الأمس</string>
+    <string name="time_hours_ago">%1$d ساعة مضت</string>
+    <string name="time_minutes_ago">%1$d دقيقة مضت</string>
+    <string name="time_just_now">لتوّه</string>
+
+    <!-- Model Download Screen -->
+    <string name="ai_models">نماذج الذكاء الاصطناعي</string>
+    <string name="download_ai_models">تنزيل نماذج الذكاء الاصطناعي</string>
+    <string name="choose_text_multimodal_models">اختر من نماذج النص فقط أو متعددة الوسائط</string>
+    <string name="text_models">نماذج نصية</string>
+    <string name="text_models_description">نماذج مُحسّنة لتوليد النصوص والمحادثة</string>
+    <string name="vision_models">نماذج رؤية</string>
+    <string name="vision_models_description">نماذج تفهم النصوص والصور معًا</string>
+    <string name="embedding_models">نماذج التضمين</string>
+    <string name="embedding_models_description">نماذج لتضمين النص والبحث الدلالي</string>
+    <string name="gpu">GPU</string>
+    <string name="variant">متغير</string>
+    <string name="variants">متغيرات</string>
+    <string name="expand">توسيع</string>
+    <string name="collapse">طيّ</string>
+    <string name="downloaded">تم التنزيل</string>
+    <string name="downloading">جارٍ التنزيل...</string>
+    <string name="not_downloaded">غير مُنزّل</string>
+    <string name="partial">جزئي</string>
+    <string name="paused">متوقّف مؤقتًا</string>
+    <string name="paused_downloaded_format">متوقّف مؤقتًا: %1$s مُنزّل</string>
+    <string name="continue_download">متابعة</string>
+    <string name="pause_download">إيقاف مؤقت</string>
+    <string name="resume_download">استئناف</string>
+    <string name="clear">مسح</string>
+    <string name="ram_requirement_format">%1$dGB ذاكرة عشوائية</string>
+
+    <!-- File Attachments -->
+    <string name="attach_file">إرفاق ملف</string>
+    <string name="attach_image">إرفاق صورة</string>
+    <string name="attach_document">إرفاق مستند</string>
+    <string name="attach_text_file">إرفاق ملف نصي</string>
+    <string name="file_attachment">مرفق ملف</string>
+    <string name="file_too_large">الملف كبير جدًا</string>
+    <string name="unsupported_file_type">نوع الملف غير مدعوم</string>
+    <string name="file_processing_error">خطأ في معالجة الملف</string>
+    <string name="could_not_read_file">تعذّر قراءة الملف</string>
+    <string name="file_preview">معاينة الملف</string>
+    <string name="remove_attachment">إزالة</string>
+    <string name="keep_attachment">احتفاظ</string>
+    <string name="preview_not_available">المعاينة غير متاحة</string>
+
+    <!-- File Type Categories -->
+    <string name="images">صور</string>
+    <string name="documents">مستندات</string>
+    <string name="text_files">ملفات نصية</string>
+    <string name="images_description">JPG, PNG, GIF, WebP</string>
+    <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
+    <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
+    <string name="text_file">ملف نصي</string>
+    <string name="tap_to_preview">انقر للمعاينة</string>
+    <string name="text_file_tap_to_preview">ملف نصي • انقر للمعاينة</string>
+    <string name="read_this">اقرأ هذا</string>
+
+    <!-- Audio Input -->
+    <string name="audio_recording">تسجيل صوتي</string>
+    <string name="audio_description">سجّل رسالة صوتية</string>
+    <string name="record_voice_message">سجّل رسالة صوتية</string>
+    <string name="recording">جارٍ التسجيل…</string>
+    <string name="audio_recorded">تم تسجيل الصوت</string>
+    <string name="ready_to_send">جاهز للإرسال</string>
+    <string name="tap_to_stop">انقر للإيقاف</string>
+    <string name="stop_recording">إيقاف التسجيل</string>
+    <string name="remove_audio">إزالة الصوت</string>
+    <string name="audio_enabled">تم تفعيل الصوت</string>
+    <string name="audio">صوت</string>
+    <string name="audio_file">ملف صوتي</string>
+    <string name="tap_to_play">انقر للتشغيل</string>
+    <string name="max_recording_reached">تم بلوغ مدة التسجيل القصوى (30 ثانية)</string>
+    <string name="remaining">متبقٍ</string>
+
+    <!-- Image actions -->
+    <string name="image_copied_clipboard">تم نسخ الصورة من الدردشة</string>
+    <string name="image_copied_to_clipboard">تم نسخ الصورة إلى الحافظة</string>
+    <string name="failed_to_copy_image">فشل نسخ الصورة</string>
+    <string name="failed_to_copy_image_with_error">فشل نسخ الصورة: %1$s</string>
+    <string name="image_saved_to_gallery">تم حفظ الصورة في المعرض</string>
+    <string name="failed_to_save_image">فشل حفظ الصورة</string>
+    <string name="failed_to_save_image_with_error">فشل حفظ الصورة: %1$s</string>
+
+    <!-- RAG (Document Chat) -->
+    <string name="searching_documents">جارٍ البحث في المستندات…</string>
+    <string name="using_document_context_format">يتم استخدام السياق من %1$d أقسام مستند</string>
+    <string name="documents_available_format">%1$d مستندات متاحة</string>
+    <string name="ai_can_reference_documents">يمكن للذكاء الاصطناعي الرجوع إلى مستنداتك في الردود</string>
+    <string name="document_chat_enabled">تم تفعيل دردشة المستندات</string>
+    <string name="semantic_search_active">البحث الدلالي فعّال</string>
+    <string name="memory">الذاكرة (سياق عام)</string>
+    <string name="memory_description_enabled">اسمح للذكاء الاصطناعي بالرجوع إلى ذاكرتك العامة المرفوعة عبر RAG</string>
+    <string name="memory_requires_rag">يتطلب تفعيل RAG/التضمينات</string>
+    <string name="manage_memory">إدارة الذاكرة</string>
+    <string name="manage_memory_subtitle">ارفع أو الصق المستندات إلى الذاكرة العامة</string>
+    <string name="paste_or_upload_to_memory">الصق نصًا أو ارفع مستندًا لإضافته إلى الذاكرة العامة.</string>
+    <string name="paste_memory_placeholder">الصق ملاحظاتك أو مستنداتك أو معارفك هنا...</string>
+    <string name="upload_file">رفع</string>
+    <string name="save_to_memory">حفظ</string>
+    <string name="import_chat_history">استيراد سجل الدردشة</string>
+    <string name="select_chats_to_import">اختر الدردشات لاستيرادها إلى الذاكرة</string>
+    <string name="import_selected_chats">استيراد المحدد</string>
+    <string name="chat_imported_to_memory">تم استيراد سجل الدردشة إلى الذاكرة</string>
+    <string name="no_chats_selected">لم يتم اختيار أي دردشات</string>
+    <string name="edit_memory">تعديل الذاكرة</string>
+    <string name="memory_content">محتوى الذاكرة</string>
+    <string name="save_changes">حفظ التغييرات</string>
+    <string name="done">تم</string>
+    <string name="global_memory_uploaded_by">تم الرفع إلى الذاكرة العامة</string>
+    <string name="global_memory_pasted_by">تم اللصق في الذاكرة العامة</string>
+    <string name="memory_upload_success">تم حفظ الملف في الذاكرة العامة</string>
+    <string name="memory_upload_failed">فشل حفظ الملف في الذاكرة (قد تكون RAG معطّلة)</string>
+    <string name="memory_upload_unsupported_type">نوع الملف غير مدعوم للذاكرة. يمكن إضافة المستندات النصية فقط (PDF وDOC وTXT وما إلى ذلك).</string>
+    <string name="memory_save_success">تم حفظ النص في الذاكرة العامة</string>
+    <string name="memory_save_failed">فشل حفظ النص في الذاكرة (قد تكون RAG معطّلة)</string>
+    <string name="saved_memories">ذكريات محفوظة</string>
+    <string name="clear_all">مسح الكل</string>
+    <string name="memory_cleared">تم مسح كل الذكريات</string>
+    <string name="confirm_replace_memory_title">استبدال الذاكرة الحالية؟</string>
+    <string name="confirm_replace_memory_message">لديك ذاكرة عامة بالفعل. سيؤدي الاستبدال إلى حذف الذاكرة الحالية وتضميناتها. هل تريد المتابعة؟</string>
+    <string name="confirm_replace_action">استبدال</string>
+    <string name="memory_processing">جارٍ معالجة الذاكرة…</string>
+    <string name="reembedding_memory_in_progress">جارٍ إعادة تضمين الذاكرة العامة لنموذج التضمين الجديد…</string>
+    <string name="reembedding_memory_done">تمت إعادة تضمين الذاكرة العامة</string>
+
+    <!-- Gemma-3n specific GPU requirements -->
+    <string name="gemma3n_e2b_gpu_requires_6gb">يتطلب ما لا يقل عن 6GB من الذاكرة لـ GPU</string>
+    <string name="gemma3n_e4b_gpu_requires_8gb">الأجهزة ذات 8GB من الذاكرة أو أقل لا يمكنها تحميل هذا النموذج مع GPU</string>
+    <string name="audio_support">دعم الصوت</string>
+    <string name="vision_audio_text">رؤية + صوت + نص</string>
+    <string name="vision_text">رؤية + نص</string>
+    <string name="audio_text">صوت + نص</string>
+    <string name="shared_file">تمت مشاركة ملف</string>
+    <string name="audio_message">رسالة صوتية</string>
+    <string name="image_message">رسالة بصورة</string>
+    <string name="model_configs_title">إعدادات النموذج</string>
+    <string name="reset_to_defaults">إعادة الضبط</string>
+    <string name="max_tokens">الحد الأقصى للرموز</string>
+    <string name="top_k">TopK</string>
+    <string name="top_p">TopP</string>
+    <string name="temperature">درجة الحرارة</string>
+    <string name="choose_accelerator">اختر المُسرّع</string>
+    <string name="max">الحد الأقصى</string>
+
+    <!-- GPU with Vision+Audio Disabled for Gemma-3n E4B -->
+    <string name="gpu_vision_disabled_title">GPU مع تعطيل الرؤية والصوت</string>
+    <string name="gpu_vision_disabled_description">نظرًا لقيود الذاكرة، سيتم تعطيل ميزات الرؤية والصوت لتمكين تسريع GPU</string>
+    <string name="gpu_with_vision_disabled">GPU (الرؤية + الصوت معطّلان)</string>
+    <string name="gemma3n_e4b_gpu_vision_warning">بالنسبة للأجهزة ذات ذاكرة 7-8GB، يتطلب تسريع GPU تعطيل الرؤية والصوت. لن تكون مرفقات الصور وإدخال الصوت متاحة.</string>
+    <string name="vision_disabled_for_gpu">تم تعطيل الرؤية والصوت لتسريع GPU</string>
+    <string name="vision_disabled_no_images">تم تعطيل ميزات الرؤية والصوت لهذا الإعداد. مرفقات الصور وإدخال الصوت غير متاحة.</string>
+    <string name="ram_limit_gpu_vision_disabled">بسبب حد الذاكرة (%.1fGB)، يجب تعطيل الرؤية والصوت لاستخدام GPU</string>
+
+    <!-- GPU with Audio Only Disabled for Gemma-3n E4B on 8GB devices -->
+    <string name="gpu_with_audio_disabled">GPU (الصوت معطّل)</string>
+    <string name="gemma3n_e4b_gpu_audio_warning">بالنسبة للأجهزة ذات ذاكرة 7-8GB، يتطلب تسريع GPU تعطيل ميزات الصوت. لن يتوفر إدخال الصوت، ولكن مرفقات الصور مدعومة.</string>
+    <string name="audio_disabled_for_gpu">تم تعطيل الصوت لتسريع GPU</string>
+    <string name="audio_disabled_no_audio">تم تعطيل ميزات الصوت لهذا الإعداد. إدخال الصوت غير متاح، لكن مرفقات الصور مدعومة.</string>
+
+    <!-- Separate modality toggles -->
+    <string name="modality_options">خيارات الوسائط</string>
+    <string name="enable_vision">تفعيل الرؤية (دعم الصور)</string>
+    <string name="enable_audio">تفعيل الصوت (إدخال صوتي)</string>
+    <string name="gemma3n_e4b_modality_suggestion">💡 لأداء أكثر استقرارًا على أجهزة 7-8GB، فكّر في تعطيل الصوت لتوفير ذاكرة GPU. عادةً ما تكون الرؤية أكثر استقرارًا.</string>
+
+    <!-- General performance tip for all devices -->
+    <string name="gemma3n_performance_tip">💡 إذا واجهت انهيارًا أو أداءً منخفضًا بسبب قيود الذاكرة، جرّب التبديل إلى معالج CPU أو تعطيل ميزات الرؤية/الصوت.</string>
+
+    <!-- External Model Import -->
+    <string name="import_external_model">استيراد نموذج خارجي</string>
+    <string name="model_name">اسم النموذج</string>
+    <string name="select_model_file">اختر ملف النموذج</string>
+    <string name="supports_vision">يدعم الرؤية</string>
+    <string name="supports_audio">يدعم الصوت</string>
+    <string name="supports_gpu">يدعم GPU</string>
+    <string name="model_format">صيغة النموذج</string>
+    <string name="context_window_size">حجم نافذة السياق</string>
+    <string name="import_model">استيراد النموذج</string>
+    <string name="model_name_required">اسم النموذج مطلوب</string>
+    <string name="context_window_size_invalid">يرجى إدخال حجم نافذة سياق صالح</string>
+    <string name="please_fix_errors">يرجى تصحيح الأخطاء أعلاه</string>
+    <string name="remove">إزالة</string>
+    <string name="ready_to_use">جاهز للاستخدام</string>
+    <string name="unsupported_file_format">صيغة ملف غير مدعومة. يرجى اختيار ملف ‎.task أو ‎.litertlm.</string>
+    <string name="download_models_from_litert_community">يمكنك تنزيل نماذج متوافقة من:</string>
+    <string name="litert_community_link">مجتمع LiteRT على Hugging Face</string>
+    <string name="import_model_warning">⚠️ مهم: يرجى قراءة ملف README للنموذج على Hugging Face قبل الاستيراد. أدخل القدرات الصحيحة (الرؤية، الصوت، GPU) وحجم نافذة السياق كما هو مذكور في توثيق النموذج. قد تؤدي الإعدادات غير الصحيحة إلى عدم عمل النموذج كما ينبغي.</string>
+
+    <!-- Home Screen -->
+    <string name="home_welcome">مرحبًا بك في LLM Hub</string>
+    <string name="home_subtitle">أطلق قوة الذكاء الاصطناعي في جيبك — خاص وسريع ودون اتصال!</string>
+
+    <!-- Feature Cards -->
+    <string name="feature_ai_chat">دردشة ذكاء اصطناعي</string>
+    <string name="feature_ai_chat_desc">محادثات متعددة الأدوار مع نماذج الذكاء الاصطناعي</string>
+    <string name="feature_writing_aid">مساعد الكتابة</string>
+    <string name="feature_writing_aid_desc">قواعد، أسلوب، إعادة صياغة، وضبط النبرة</string>
+    <string name="feature_translator">مترجم</string>
+    <string name="feature_translator_desc">ترجمة نصوص بشكل خاص باستخدام نماذج متعددة الوسائط</string>
+    <string name="feature_transcriber">ناسخ صوتي</string>
+    <string name="feature_transcriber_desc">تحويل الصوت أو التسجيل إلى نص دون اتصال</string>
+    <string name="feature_scam_detector">كاشف الاحتيال</string>
+    <string name="feature_scam_detector_desc">تحليل النصوص والصور أو الروابط لاكتشاف الاحتيال المحتمل</string>
+
+    <!-- Writing Aid Screen -->
+    <string name="writing_aid_title">مساعد الكتابة</string>
+    <string name="writing_aid_input_label">أدخل نصك</string>
+    <string name="writing_aid_input_hint">اكتب أو الصق النص الذي تريد تحسينه...</string>
+    <string name="writing_aid_input_hint_no_model">حمّل نموذجًا للبدء</string>
+    <string name="writing_aid_mode_grammar">تدقيق نحوي</string>
+    <string name="writing_aid_mode_paraphrase">إعادة صياغة</string>
+    <string name="writing_aid_mode_tone">ضبط النبرة</string>
+    <string name="writing_aid_mode_email">رد على بريد إلكتروني</string>
+    <string name="writing_aid_mode_sms">رد على رسالة نصية</string>
+    <string name="writing_aid_tone_friendly">ودّي</string>
+    <string name="writing_aid_tone_professional">احترافي</string>
+    <string name="writing_aid_tone_concise">موجز</string>
+    <string name="writing_aid_select_mode">اختر النبرة</string>
+    <string name="writing_aid_process">معالجة</string>
+    <string name="processing_tap_to_cancel">جارٍ المعالجة (انقر للإلغاء)</string>
+    <string name="writing_aid_result">النتيجة</string>
+    <string name="writing_aid_no_model">لا يوجد نموذج محمّل. يرجى تنزيل واختيار نموذج أولًا.</string>
+
+    <!-- Translator Screen -->
+    <string name="translator_title">مترجم دون اتصال</string>
+    <string name="translator_input_label">النص المراد ترجمته</string>
+    <string name="translator_input_hint">أدخل نصًا للترجمة...</string>
+    <string name="load_model_to_start">حمّل نموذجًا للبدء</string>
+    <string name="translator_source_lang">اللغة المصدر</string>
+    <string name="translator_target_lang">اللغة الهدف</string>
+    <string name="translator_auto_detect">اكتشاف تلقائي</string>
+    <string name="translator_translate">ترجمة</string>
+    <string name="translator_result">الترجمة</string>
+    <string name="translator_requires_gemma3n">تتطلب هذه الميزة نموذج Gemma-3n. يرجى تنزيل نموذج من شاشة النماذج.</string>
+
+    <!-- Transcriber Screen -->
+    <string name="transcriber_title">ناسخ دون اتصال</string>
+    <string name="transcriber_record">تسجيل صوت</string>
+    <string name="transcriber_upload">رفع ملف صوتي</string>
+    <string name="transcriber_transcribe">نسخ</string>
+    <string name="transcriber_result">النص الناتج</string>
+    <string name="transcriber_recording">جارٍ التسجيل...</string>
+    <string name="transcriber_stop">إيقاف التسجيل</string>
+    <string name="transcriber_requires_gemma3n">تتطلب هذه الميزة نموذج Gemma-3n مع دعم الصوت. يرجى تنزيل نموذج من شاشة النماذج.</string>
+
+    <!-- Scam Detector Screen -->
+    <string name="scam_detector_title">كاشف الاحتيال</string>
+    <string name="scam_detector_input_label">أدخل المحتوى للتحليل</string>
+    <string name="scam_detector_input_hint">الصق نصًا أو ارفع صورة أو أدخل رابطًا لتحليل الاحتيال...</string>
+    <string name="scam_detector_url_hint">أدخل رابطًا لتحليله</string>
+    <string name="scam_detector_analyze">تحليل</string>
+    <string name="scam_detector_analyzing">جارٍ التحليل (انقر للإلغاء)</string>
+    <string name="scam_detector_result">نتيجة التحليل</string>
+    <string name="scam_detector_no_model">لا يوجد نموذج محمّل. يرجى تنزيل واختيار نموذج أولًا.</string>
+    <string name="scam_detector_load_model">تحميل نموذج</string>
+    <string name="scam_detector_load_model_desc">يرجى تحميل نموذج لبدء تحليل المحتوى</string>
+    <string name="scam_detector_enable_vision">تفعيل الرؤية</string>
+    <string name="scam_detector_vision_desc">حلّل الصور لاكتشاف الاحتيال</string>
+    <string name="scam_detector_fetching_url">جارٍ جلب محتوى الرابط...</string>
+
+    <!-- Common Feature Strings -->
+    <string name="feature_no_model_title">لا يوجد نموذج متاح</string>
+    <string name="feature_download_model">تنزيل النماذج</string>
+    <string name="feature_processing">جارٍ المعالجة...</string>
+    <string name="feature_error">حدث خطأ</string>
+    <string name="feature_copy_result">نسخ النتيجة</string>
+    <string name="feature_share_result">مشاركة النتيجة</string>
+    <string name="feature_clear">مسح</string>
+
+    <!-- Language Names for Translator (Gemma-3n Supported Languages) - Alphabetically Ordered -->
+    <string name="lang_english">الإنجليزية</string>
+    <string name="lang_afrikaans">الأفريقانية</string>
+    <string name="lang_amharic">الأمهرية</string>
+    <string name="lang_arabic">العربية</string>
+    <string name="lang_armenian">الأرمينية</string>
+    <string name="lang_azerbaijani">الأذربيجانية</string>
+    <string name="lang_basque">الباسكية</string>
+    <string name="lang_bengali">البنغالية</string>
+    <string name="lang_bulgarian">البلغارية</string>
+    <string name="lang_burmese">البورمية</string>
+    <string name="lang_catalan">الكتالونية</string>
+    <string name="lang_chinese">الصينية (المبسطة)</string>
+    <string name="lang_chinese_traditional">الصينية (التقليدية)</string>
+    <string name="lang_croatian">الكرواتية</string>
+    <string name="lang_czech">التشيكية</string>
+    <string name="lang_danish">الدنماركية</string>
+    <string name="lang_dutch">الهولندية</string>
+    <string name="lang_estonian">الإستونية</string>
+    <string name="lang_filipino">الفلبينية (التاغالوغ)</string>
+    <string name="lang_finnish">الفنلندية</string>
+    <string name="lang_french">الفرنسية</string>
+    <string name="lang_galician">الجاليكية</string>
+    <string name="lang_georgian">الجورجية</string>
+    <string name="lang_german">الألمانية</string>
+    <string name="lang_greek">اليونانية</string>
+    <string name="lang_gujarati">الغوجاراتية</string>
+    <string name="lang_hausa">الهوسا</string>
+    <string name="lang_hebrew">العبرية</string>
+    <string name="lang_hindi">الهندية</string>
+    <string name="lang_hungarian">الهنغارية</string>
+    <string name="lang_icelandic">الآيسلندية</string>
+    <string name="lang_igbo">الإيغبو</string>
+    <string name="lang_indonesian">الإندونيسية</string>
+    <string name="lang_italian">الإيطالية</string>
+    <string name="lang_japanese">اليابانية</string>
+    <string name="lang_kannada">الكانادا</string>
+    <string name="lang_kazakh">الكازاخية</string>
+    <string name="lang_khmer">الخميرية</string>
+    <string name="lang_korean">الكورية</string>
+    <string name="lang_lao">اللاوية</string>
+    <string name="lang_latvian">اللاتفية</string>
+    <string name="lang_lithuanian">الليتوانية</string>
+    <string name="lang_malay">الملايو</string>
+    <string name="lang_malayalam">المالايالامية</string>
+    <string name="lang_marathi">الماراثية</string>
+    <string name="lang_nepali">النيبالية</string>
+    <string name="lang_norwegian">النرويجية</string>
+    <string name="lang_pashto">البشتونية</string>
+    <string name="lang_persian">الفارسية (فارسي)</string>
+    <string name="lang_polish">البولندية</string>
+    <string name="lang_portuguese">البرتغالية</string>
+    <string name="lang_punjabi">البنجابية</string>
+    <string name="lang_romanian">الرومانية</string>
+    <string name="lang_russian">الروسية</string>
+    <string name="lang_serbian">الصربية</string>
+    <string name="lang_sindhi">السندية</string>
+    <string name="lang_sinhala">السنهالية</string>
+    <string name="lang_slovak">السلوفاكية</string>
+    <string name="lang_slovenian">السلوفينية</string>
+    <string name="lang_somali">الصومالية</string>
+    <string name="lang_spanish">الإسبانية</string>
+    <string name="lang_swahili">السواحيلية</string>
+    <string name="lang_swedish">السويدية</string>
+    <string name="lang_tamil">التاميلية</string>
+    <string name="lang_telugu">التيلجو</string>
+    <string name="lang_thai">التايلاندية</string>
+    <string name="lang_turkish">التركية</string>
+    <string name="lang_ukrainian">الأوكرانية</string>
+    <string name="lang_urdu">الأوردية</string>
+    <string name="lang_uzbek">الأوزبكية</string>
+    <string name="lang_vietnamese">الفيتنامية</string>
+    <string name="lang_yoruba">اليوروبا</string>
+    <string name="lang_zulu">الزولو</string>
+
+    <!-- Model Selection -->
+    <string name="feature_settings_title">الإعدادات</string>
+    <string name="select_model_title">اختر نموذجًا</string>
+    <string name="no_models_available">لا توجد نماذج متاحة</string>
+    <string name="download_models_first">يرجى تنزيل النماذج أولًا</string>
+    <string name="select_backend">اختر الواجهة الخلفية</string>
+    <string name="backend_cpu">CPU</string>
+    <string name="backend_gpu">GPU</string>
+    <string name="gpu_not_supported">GPU غير مدعوم لهذا النموذج</string>
+    <string name="load_model">تحميل النموذج</string>
+    <string name="model_loaded">تم تحميل النموذج بنجاح</string>
+    <string name="model_loading">جارٍ تحميل النموذج…</string>
+    <string name="model_load_failed">فشل تحميل النموذج</string>
+    <string name="multimodal_models_only">النماذج متعددة الوسائط (Gemma-3n) فقط مدعومة</string>
+    <string name="text_models_only">النماذج النصية فقط مدعومة</string>
+
+    <!-- Audio Features -->
+    <string name="enable_audio_input">تفعيل الإدخال الصوتي</string>
+    <string name="audio_input_enabled">تم تفعيل الإدخال الصوتي</string>
+    <string name="audio_input_disabled">تم تعطيل الإدخال الصوتي</string>
+    <string name="record_audio">تسجيل صوت</string>
+
+    <!-- Auto-detect Language -->
+    <string name="lang_auto_detect">اكتشاف تلقائي</string>
+    <string name="auto_detecting_language">جارٍ اكتشاف اللغة…</string>
+    <string name="language_detected">تم اكتشاف اللغة: %1$s</string>
+
+    <!-- Feature-specific Processing -->
+    <string name="processing">جارٍ المعالجة…</string>
+    <string name="translating">جارٍ الترجمة…</string>
+    <string name="translating_tap_to_cancel">جارٍ الترجمة (انقر للإلغاء)</string>
+    <string name="transcribing">جارٍ النسخ…</string>
+    <string name="transcribing_tap_to_cancel">جارٍ النسخ (انقر للإلغاء)</string>
+    <string name="analyzing_code">جارٍ تحليل الشفرة…</string>
+    <string name="processing_text">جارٍ معالجة النص…</string>
+
+    <!-- Vision Features -->
+    <string name="input_options">خيارات الإدخال</string>
+    <string name="enable_vision_input">تفعيل إدخال الرؤية</string>
+    <string name="translate_from_image">ترجمة النص من صورة</string>
+    <string name="speak_to_translate">تحدث للترجمة</string>
+    <string name="select_image">اختر صورة</string>
+    <string name="change_image">تغيير الصورة</string>
+    <string name="transcription_result">النص الناتج</string>
+
+    <!-- Translator Settings -->
+    <string name="translator_enable_vision">تفعيل الرؤية</string>
+    <string name="translator_vision_description">ترجمة نص من الصور</string>
+    <string name="translator_enable_audio">تفعيل الصوت</string>
+    <string name="translator_audio_description">ترجمة التسجيلات الصوتية</string>
+
+    <!-- Backend Selection -->
+    <string name="choose_backend_for_gemma">اختر واجهة المعالجة لنموذج Gemma</string>
+    <string name="gpu_backend">GPU (موصى به)</string>
+    <string name="cpu_backend">CPU (بديل)</string>
+    <string name="gpu_backend_description">معالجة أسرع باستخدام GPU الخاص بالجهاز</string>
+    <string name="cpu_backend_description">معالجة أبطأ لكنها أكثر استقرارًا</string>
+    <string name="backend_selection_hint">إذا تعطّل التطبيق أو لم يعمل جيدًا مع GPU، جرّب واجهة CPU</string>
+    <string name="not_available">غير متاح</string>
+    <string name="gpu_disabled_low_memory">GPU غير متاح لهذا النموذج على الأجهزة ذات %1$dGB من الذاكرة أو أقل</string>
+</resources>

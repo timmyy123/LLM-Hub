@@ -164,6 +164,11 @@
     <string name="language_french">Français</string>
     <string name="language_russian">Русский</string>
     <string name="language_italian">Italiano</string>
+    <string name="language_turkish">Türkçe</string>
+    <string name="language_polish">Polski</string>
+    <string name="language_arabic">العربية</string>
+    <string name="language_japanese">日本語</string>
+    <string name="language_indonesian">Indonesia</string>
     
     <!-- Errors and Messages -->
     <string name="failed_to_load_image">Impossibile caricare l\'immagine</string>

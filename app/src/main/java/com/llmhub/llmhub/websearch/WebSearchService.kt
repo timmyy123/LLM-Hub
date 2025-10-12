@@ -672,6 +672,16 @@ object SearchIntentDetector {
         "pesquisar", "pesquise", "procure", "procurar informações sobre", "pesquisa na web", "buscar na web",
         // Russian
         "поиск", "найди", "найти", "найди информацию о", "поиск в интернете", "веб-поиск",
+        // Turkish
+        "ara", "arama", "bul", "bana bul", "hakkında bilgi bul", "web'de ara", "web araması", "internette ara",
+        // Polish
+        "szukaj", "szukać", "znajdź", "znajdź mi", "znajdź informacje o", "szukaj w internecie", "wyszukiwanie w sieci",
+        // Arabic
+        "ابحث عن", "ابحث", "بحث", "ابحث لي", "ابحث عن معلومات", "بحث على الإنترنت", "بحث الويب",
+        // Japanese
+        "検索", "探す", "検索して", "調べる", "情報を探す", "ウェブ検索", "ネット検索", "インターネット検索",
+        // Indonesian
+        "cari", "pencarian", "cari tahu", "temukan", "cari informasi tentang", "cari di web", "pencarian web",
         
         // Current/recent information requests
         "what's the latest", "latest news", "recent", "current", "today", "this week",
@@ -688,6 +698,16 @@ object SearchIntentDetector {
         "o que há de novo", "últimas notícias", "recente", "atual", "hoje", "esta semana", "o que aconteceu", "notícias sobre", "atualização",
         // Russian
         "что нового", "последние новости", "недавние", "актуальные", "сегодня", "на этой неделе", "что произошло", "новости о", "обновление",
+        // Turkish
+        "en son", "en yeni haberler", "son", "güncel", "bugün", "bu hafta", "ne oldu", "hakkında haberler", "güncelleme",
+        // Polish
+        "co nowego", "najnowsze wiadomości", "ostatnie", "aktualny", "dzisiaj", "w tym tygodniu", "co się stało", "wiadomości o", "aktualizacja",
+        // Arabic
+        "ما الجديد", "آخر الأخبار", "الأخير", "الحالي", "اليوم", "هذا الأسبوع", "ماذا حدث", "أخبار عن", "تحديث",
+        // Japanese
+        "最新", "最新ニュース", "最近", "現在", "今日", "今週", "何が起こった", "についてのニュース", "更新",
+        // Indonesian
+        "terbaru", "berita terkini", "baru-baru ini", "saat ini", "hari ini", "minggu ini", "apa yang terjadi", "berita tentang", "pembaruan",
         
         // Question words that often need current info
         "what is happening", "what's happening", "what's new", "what are the latest",
@@ -703,6 +723,16 @@ object SearchIntentDetector {
         "o que está acontecendo", "o que há de novo",
         // Russian
         "что происходит", "что нового",
+        // Turkish
+        "ne oluyor", "yeni ne var",
+        // Polish
+        "co się dzieje", "co nowego",
+        // Arabic
+        "ماذا يحدث", "ما الجديد",
+        // Japanese
+        "何が起きている", "何が新しい",
+        // Indonesian
+        "apa yang terjadi", "apa yang baru",
         
         // Time-sensitive queries
         "now", "currently", "at the moment", "right now", "today's",
@@ -718,6 +748,16 @@ object SearchIntentDetector {
         "agora", "atualmente", "neste momento", "de hoje",
         // Russian
         "сейчас", "в настоящее время", "в данный момент", "сегодняшний",
+        // Turkish
+        "şimdi", "şu anda", "şu an", "bugünkü",
+        // Polish
+        "teraz", "obecnie", "w tej chwili", "dzisiejszy",
+        // Arabic
+        "الآن", "حالياً", "في الوقت الحالي", "اليوم",
+        // Japanese
+        "今", "現在", "今この瞬間", "今日の",
+        // Indonesian
+        "sekarang", "saat ini", "pada saat ini", "hari ini",
         
         // Stock/price/weather queries
         "stock price", "weather", "temperature", "forecast", "price of",
@@ -733,6 +773,16 @@ object SearchIntentDetector {
         "preço da ação", "clima", "tempo", "temperatura", "previsão", "preço de",
         // Russian
         "курс акции", "погода", "температура", "прогноз", "цена",
+        // Turkish
+        "hisse fiyatı", "hava durumu", "sıcaklık", "tahmin", "fiyatı",
+        // Polish
+        "cena akcji", "pogoda", "temperatura", "prognoza", "cena",
+        // Arabic
+        "سعر السهم", "الطقس", "درجة الحرارة", "التوقعات", "سعر",
+        // Japanese
+        "株価", "天気", "気温", "予報", "価格",
+        // Indonesian
+        "harga saham", "cuaca", "suhu", "ramalan", "harga",
         
         // Events and schedules
         "when is", "schedule", "events", "concerts", "movies",
@@ -748,6 +798,16 @@ object SearchIntentDetector {
         "quando é", "agenda", "eventos", "shows", "filmes",
         // Russian
         "когда", "расписание", "события", "концерты", "фильмы",
+        // Turkish
+        "ne zaman", "program", "etkinlikler", "konserler", "filmler",
+        // Polish
+        "kiedy jest", "harmonogram", "wydarzenia", "koncerty", "filmy",
+        // Arabic
+        "متى", "جدول", "فعاليات", "حفلات", "أفلام",
+        // Japanese
+        "いつ", "スケジュール", "イベント", "コンサート", "映画",
+        // Indonesian
+        "kapan", "jadwal", "acara", "konser", "film",
         
         // Technology and product info
         "release date", "specs", "reviews", "latest version",
@@ -762,7 +822,17 @@ object SearchIntentDetector {
         // Portuguese
         "data de lançamento", "especificações", "avaliações", "última versão",
         // Russian
-        "дата выхода", "характеристики", "отзывы", "последняя версия"
+        "дата выхода", "характеристики", "отзывы", "последняя версия",
+        // Turkish
+        "çıkış tarihi", "özellikler", "incelemeler", "en son sürüm",
+        // Polish
+        "data wydania", "specyfikacje", "recenzje", "najnowsza wersja",
+        // Arabic
+        "تاريخ الإصدار", "المواصفات", "المراجعات", "أحدث إصدار",
+        // Japanese
+        "発売日", "仕様", "レビュー", "最新バージョン",
+        // Indonesian
+        "tanggal rilis", "spesifikasi", "ulasan", "versi terbaru"
     )
     
     private val weatherKeywords = listOf(
@@ -779,7 +849,17 @@ object SearchIntentDetector {
         // Portuguese
         "clima", "tempo", "temperatura", "previsão", "chuva", "neve", "ensolarado", "nublado", "calor", "frio", "ameno", "fresco", "úmido", "vento", "tempestade",
         // Russian
-        "погода", "температура", "прогноз", "дождь", "снег", "солнечно", "облачно", "жарко", "холодно", "тепло", "прохладно", "влажно", "ветер", "шторм", "климат"
+        "погода", "температура", "прогноз", "дождь", "снег", "солнечно", "облачно", "жарко", "холодно", "тепло", "прохладно", "влажно", "ветер", "шторм", "климат",
+        // Turkish
+        "hava durumu", "sıcaklık", "tahmin", "yağmur", "kar", "güneşli", "bulutlu", "sıcak", "soğuk", "ılık", "serin", "nemli", "rüzgar", "fırtına", "iklim",
+        // Polish
+        "pogoda", "temperatura", "prognoza", "deszcz", "śnieg", "słonecznie", "pochmurno", "gorąco", "zimno", "ciepło", "chłodno", "wilgotno", "wiatr", "burza", "klimat",
+        // Arabic
+        "الطقس", "درجة الحرارة", "التوقعات", "مطر", "ثلج", "مشمس", "غائم", "حار", "بارد", "دافئ", "بارد", "رطب", "رياح", "عاصفة", "مناخ",
+        // Japanese
+        "天気", "気温", "予報", "雨", "雪", "晴れ", "曇り", "暑い", "寒い", "暖かい", "涼しい", "湿気", "風", "嵐", "気候",
+        // Indonesian
+        "cuaca", "suhu", "ramalan", "hujan", "salju", "cerah", "berawan", "panas", "dingin", "hangat", "sejuk", "lembab", "angin", "badai", "iklim"
     )
     
     private val locationKeywords = listOf(
