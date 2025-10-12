@@ -74,7 +74,7 @@
     <string name="acknowledgments">Ucapan Terima Kasih</string>
     <string name="acknowledgments_text">Terima kasih khusus kepada Google, Meta, Microsoft, dan komunitas HuggingFace karena menyediakan model LLM luar biasa yang mendukung aplikasi ini. Proyek ini juga bergantung pada karya luar biasa dari komunitas pengembangan Android dan ekosistem sumber terbuka.</string>
     <string name="ai_thinking">AI sedang berpikir...</string>
-    <string name="version_number">Versi 3.1</string>
+    <string name="version_number">Versi 3.1.1</string>
     <string name="app_version">Versi Aplikasi</string>
     
     <!-- Terms of Service -->
