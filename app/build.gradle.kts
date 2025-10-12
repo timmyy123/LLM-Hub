@@ -31,7 +31,8 @@ android {
         buildConfigField("String", "HF_TOKEN", "\"$hfToken\"")
         
         // Specify supported locales to ensure proper resource loading
-        resourceConfigurations += listOf("en", "es", "pt", "de", "fr", "ru", "it")
+        // Note: Indonesian uses both "id" (modern) and "in" (legacy) for maximum compatibility
+        resourceConfigurations += listOf("en", "es", "pt", "de", "fr", "ru", "it", "tr", "pl", "ar", "ja", "id", "in")
         
         // NDK ABI filters and native library configuration for 16KB alignment
         ndk {

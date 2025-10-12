@@ -17,8 +17,14 @@ object LocaleHelper {
         "pt", // Portuguese
         "de", // German
         "fr", // French
-        "ru",  // Russian
-        "it"   // Italian
+        "ru", // Russian
+        "it", // Italian
+        "tr", // Turkish
+        "pl", // Polish
+        "ar", // Arabic
+        "ja", // Japanese
+        "id", // Indonesian (modern ISO 639-1 code)
+        "in"  // Indonesian (legacy Android code for compatibility)
     )
     
     /**
@@ -52,7 +58,14 @@ object LocaleHelper {
         val locales = if (languageCode.isNullOrEmpty()) {
             LocaleListCompat.getEmptyLocaleList()
         } else {
-            LocaleListCompat.forLanguageTags(languageCode)
+            // Handle Indonesian language code properly
+            // Android resources use "id" but Locale internally uses "in" for legacy reasons
+            // We need to use "in" for AppCompat locale setting for proper resource resolution
+            val normalizedCode = when (languageCode) {
+                "id" -> "in" // Indonesian: use legacy "in" for AppCompat
+                else -> languageCode
+            }
+            LocaleListCompat.forLanguageTags(normalizedCode)
         }
         AppCompatDelegate.setApplicationLocales(locales)
     }
@@ -168,12 +181,25 @@ object LocaleHelper {
      * Get list of supported locales with their display names
      */
     fun getSupportedLanguages(context: Context): List<Pair<String, String>> {
-        return supportedLocales.map { code ->
-            val locale = Locale(code)
-            val displayName = locale.getDisplayLanguage(locale).replaceFirstChar { 
-                if (it.isLowerCase()) it.titlecase(locale) else it.toString() 
+        return supportedLocales
+            .filter { it != "in" } // Filter out legacy "in" code to avoid duplicate Indonesian entry
+            .map { code ->
+                val locale = Locale(code)
+                val displayName = locale.getDisplayLanguage(locale).replaceFirstChar { 
+                    if (it.isLowerCase()) it.titlecase(locale) else it.toString() 
+                }
+                code to displayName
             }
-            code to displayName
+    }
+    
+    /**
+     * Normalize language code to handle legacy mappings
+     * Indonesian: both "id" and "in" map to "id" for user preference storage
+     */
+    fun normalizeLanguageCode(languageCode: String): String {
+        return when (languageCode) {
+            "in" -> "id" // Normalize legacy Indonesian code to modern code
+            else -> languageCode
         }
     }
 }

@@ -1,0 +1,629 @@
+<resources>
+    <string name="app_name">LLM Hub</string>
+    
+    <!-- Common -->
+    <string name="ok">OK</string>
+    <string name="cancel">キャンセル</string>
+    <string name="close">閉じる</string>
+    <string name="save">保存</string>
+    <string name="delete">削除</string>
+    <string name="send">送信</string>
+    <string name="copy">コピー</string>
+    <string name="loading">読み込み中</string>
+    <string name="error">エラー</string>
+    <string name="retry">再試行</string>
+    <string name="download">ダウンロード</string>
+    <string name="vision">ビジョン</string>
+    
+    <!-- Chat -->
+    <string name="welcome_to_llm_hub">LLM Hubへようこそ！</string>
+    <string name="no_models_downloaded">まだモデルがダウンロードされていません</string>
+    <!-- Displayed when there are no saved global memories for RAG -->
+    <string name="no_memories">まだメモリーがありません</string>
+    <string name="download_a_model">モデルをダウンロード</string>
+    <string name="ready_to_chat">チャットの準備ができました！上からモデルを選択してください。</string>
+    <string name="start_chatting">下にメッセージを入力してチャットを開始しましょう！</string>
+    <string name="type_a_message">メッセージを入力...</string>
+    <string name="loading_model_format">%1$sを読み込み中</string>
+    <string name="please_wait_model_initialize">モデルの初期化をお待ちください...</string>
+    <string name="initializing_neural_network">ニューラルネットワークを初期化中...</string>
+    <string name="attached_image">添付画像</string>
+    <string name="shared_a_file">ファイルを共有しました</string>
+    <string name="copy_message">メッセージをコピー</string>
+    <string name="regenerate_response">応答を再生成</string>
+    <string name="cancel_generation">生成をキャンセル</string>
+    <string name="image_attachment">画像添付</string>
+    <string name="save_image">画像を保存</string>
+    <string name="tap_image_toggle_controls">画像をタップしてコントロールを切り替え</string>
+    <string name="vision_enabled">ビジョン有効</string>
+    <string name="message_copied">メッセージがコピーされました</string>
+    <string name="tokens_per_second_format">%1$d トークン • %2$.1f tok/秒</string>
+    <string name="context_multimodal_format">%1$dk コンテキスト • %2$s</string>
+    <string name="multimodal_format">%1$s マルチモーダル</string>
+    <string name="multimodal">マルチモーダル</string>
+    <string name="text_only">テキストのみ</string>
+    <string name="currently_loaded">現在読み込み済み</string>
+    <string name="select_model">モデルを選択</string>
+    <string name="unload_model">モデルをアンロード</string>
+    <string name="reload_model">モデルを再読み込み</string>
+    
+    <!-- About Screen -->
+    <string name="about_llm_hub">LLM Hubについて</string>
+    <string name="about_description">LLM Hubは、大規模言語モデルの力をモバイルデバイスに直接もたらすオープンソースのAndroidアプリケーションです。Gemma、Llama、Phiなどの最先端モデルとのAI会話を体験してください - すべて最大限のプライバシーとオフラインアクセスのために、スマートフォン上でローカルに実行されます。</string>
+    <string name="key_features">主な機能</string>
+    <string name="feature_multiple_models">🤖 複数のLLMモデル：Gemma-3、Llama-3.2、Phi-4、Gemma-3n</string>
+    <string name="feature_on_device">📱 デバイス上処理：完全なプライバシー、インターネット不要</string>
+    <string name="feature_vision_support">🖼️ ビジョンサポート：画像を理解するマルチモーダルモデル</string>
+    <string name="feature_gpu_acceleration">⚡ GPU高速化：サポートされているデバイスでの最適化されたパフォーマンス</string>
+    <string name="feature_offline_usage">💾 オフライン使用：インターネット接続なしでチャット</string>
+    <string name="feature_privacy_first">🔒 プライバシー第一：会話がデバイスから出ることはありません</string>
+    <string name="feature_modern_ui">🎨 モダンUI：クリーンで直感的なMaterial Designインターフェース</string>
+    <string name="developer_info">開発者情報</string>
+    <string name="about_developer_info">このプロジェクトは、AI技術をすべての人にとってよりアクセスしやすくすることに情熱を注ぐ愛好家によって開発されています。フィードバックと貢献はいつでも歓迎します！</string>
+    <string name="tech_stack">技術スタック</string>
+    <string name="about_tech_stack">LLM Hubは、最新のAndroid開発技術を使用して構築されています：Kotlin、Jetpack Compose、Material Design 3、そして効率的なデバイス上推論のためのllama.cppライブラリ。</string>
+    <string name="tech_kotlin_compose">🏗️ KotlinとJetpack Composeで構築</string>
+    <string name="tech_mediapipe_litert">🧠 MediaPipeとLiteRTによって駆動</string>
+    <string name="tech_quantization">🚀 INT4/INT8量子化で最適化</string>
+    <string name="tech_gpu_acceleration">⚡ LiteRT XNNPACKによるGPU高速化</string>
+    <string name="tech_models_source">🔗 HuggingFaceとGoogleからのモデル</string>
+    <string name="contact_support">連絡先とサポート</string>
+    <string name="contact_email">連絡先メール：</string>
+    <string name="source_code">ソースコード：</string>
+    <string name="github_repository">GitHubリポジトリ</string>
+    <string name="acknowledgments">謝辞</string>
+    <string name="acknowledgments_text">このアプリケーションを支える素晴らしいLLMモデルを提供してくれたGoogle、Meta、Microsoft、およびHuggingFaceコミュニティに特別な感謝を。このプロジェクトは、Android開発コミュニティとオープンソースエコシステムの素晴らしい仕事にも依存しています。</string>
+    <string name="ai_thinking">AIが考え中...</string>
+    <string name="version_number">バージョン 3.1</string>
+    <string name="app_version">アプリバージョン</string>
+    
+    <!-- Terms of Service -->
+    <string name="terms_of_service">利用規約</string>
+    <string name="tos_last_updated">最終更新：2025年7月16日</string>
+    <string name="tos_welcome_text">LLM Hubへようこそ。当アプリケーションを使用することにより、本利用規約に拘束されることに同意したものとみなされます。注意深くお読みください。</string>
+    <string name="tos_welcome">LLM Hubへようこそ。当アプリケーションを使用することにより、本利用規約に拘束されることに同意したものとみなされます。注意深くお読みください。</string>
+    <string name="tos_acceptance_title">1. 規約の承諾</string>
+    <string name="tos_acceptance_text">LLM Hubをダウンロード、インストール、または使用することにより、本利用規約を読み、理解し、これに拘束されることに同意したことを認めるものとします。これらの規約に同意しない場合は、アプリケーションを使用しないでください。</string>
+    <string name="tos_app_description_title">2. アプリケーションの説明</string>
+    <string name="tos_app_description_text">LLM Hubは、デバイス上でのAI会話のために大規模言語モデル（LLM）へのアクセスを提供するオープンソースのAndroidアプリケーションです。アプリはすべてのデータをデバイス上でローカルに処理し、個人情報を外部サーバーに送信しません。</string>
+    <string name="tos_user_responsibilities_title">3. ユーザーの責任</string>
+    <string name="tos_user_responsibilities_text">LLM Hubを責任を持って、適用される法律に従って使用することに同意するものとします。以下の責任があります：\n\n• 合法的な目的のためにのみアプリケーションを使用すること\n• アプリケーションのリバースエンジニアリングまたは改変を試みないこと\n• 有害、違法、または攻撃的なコンテンツを生成するためにアプリケーションを使用しないこと\n• 第三者の知的財産権を尊重すること\n• デバイスが適切な動作のための最小要件を満たしていることを確認すること</string>
+    <string name="tos_privacy_data_title">4. プライバシーとデータ</string>
+    <string name="tos_privacy_data_text">LLM Hubはプライバシーを念頭に設計されています：\n\n• すべての会話とデータ処理はデバイス上でローカルに行われます\n• 個人データは外部サーバーに送信されません\n• チャット履歴はローカルに保存され、いつでも削除できます\n• モデルのダウンロードは公式リポジトリ（HuggingFace、Google）から直接実行されます\n• アプリケーションは分析または使用データを収集しません</string>
+    <string name="tos_disclaimer_title">5. 保証の否認</string>
+    <string name="tos_disclaimer_text">LLM Hubはいかなる種類の保証もなく「現状のまま」提供されます。アプリケーションまたはその生成されたコンテンツの正確性、信頼性、または可用性を保証しません。AIモデルの使用は予測不可能な結果をもたらす可能性があります。</string>
+    <string name="tos_limitation_liability_title">6. 責任の制限</string>
+    <string name="tos_limitation_liability_text">LLM Hubの使用から生じるいかなる間接的、偶発的、特別、または結果的な損害についても、開発者は一切責任を負いません。アプリケーションの使用は自己責任で行ってください。</string>
+    <string name="tos_model_usage_title">7. モデルの使用とライセンス</string>
+    <string name="tos_model_usage_text">LLM Hubを通じて利用可能なAIモデルは、それぞれのライセンスと利用規約の対象となります。ユーザーは、ダウンロードしたモデルを使用する際に、モデル固有のライセンス要件を遵守する責任があります。</string>
+    <string name="tos_open_source_title">8. オープンソースライセンス</string>
+    <string name="tos_open_source_text">LLM Hubはオープンソースソフトウェアです。ソースコードはMITライセンスの下で利用可能であり、ライセンス条項に従って使用、変更、配布が許可されています。サードパーティのライブラリとモデルは異なるライセンス条項を持つ場合があります。</string>
+    <string name="tos_changes_title">9. 規約の変更</string>
+    <string name="tos_changes_text">本利用規約を随時更新することがあります。ユーザーは、アプリの更新を通じて重要な変更について通知されます。変更後もアプリケーションを継続して使用することは、新しい規約の承諾を構成します。</string>
+    <string name="tos_contact_title">10. 連絡先情報</string>
+    <string name="tos_contact_text">本利用規約に関するご質問は、timmyboy0623@gmail.comまでお問い合わせください</string>
+    
+    <!-- Navigation -->
+    <string name="chat">チャット</string>
+    <string name="models">モデル</string>
+    <string name="settings">設定</string>
+    <string name="about">について</string>
+    
+    <!-- Settings -->
+    <string name="appearance">外観</string>
+    <string name="features">機能</string>
+    <string name="information">情報</string>
+    <string name="source_code_section">ソースコード</string>
+    <string name="download_models">モデルをダウンロード</string>
+    <string name="browse_download_models">LLMモデルを閲覧してダウンロード</string>
+    <string name="embedding_model">埋め込みモデル</string>
+    <string name="select_embedding_model">埋め込みモデルを選択</string>
+    <string name="no_embedding_model_selected">埋め込みモデルが選択されていません</string>
+    <string name="disable_embeddings">埋め込みを無効化</string>
+    <string name="embedding_settings_changed_title">埋め込み設定が変更されました</string>
+    <string name="embedding_settings_changed_message">埋め込みの変更を有効にするには、モデルをアンロードして再読み込みしてください。</string>
+    <string name="reload_models">モデルを再読み込み</string>
+    <string name="dismiss">閉じる</string>
+    <string name="reload_models_notice">有効にするにはモデルの再読み込みが必要です</string>
+    <string name="embedding_enabled">埋め込みが有効</string>
+    <string name="embedding_disabled">埋め込みが無効</string>
+    <string name="embedding_status_enabled">埋め込みステータス：有効</string>
+    <string name="embedding_status_disabled">埋め込みステータス：無効</string>
+    <string name="rag_enabled">RAGが有効</string>
+    <string name="web_search">ウェブ検索</string>
+    <string name="web_search_enabled">ウェブから最新情報を取得</string>
+    <string name="web_search_disabled">オフライン知識のみを使用</string>
+    <string name="web_search_description_enabled">ウェブから最新情報を取得</string>
+    <string name="web_search_description_disabled">オフライン知識のみを使用</string>
+    <string name="theme">テーマ</string>
+    <string name="language">言語</string>
+    <string name="light_theme">ライト</string>
+    <string name="dark_theme">ダーク</string>
+    <string name="system_default_theme">システムデフォルト</string>
+    <string name="theme_light">ライト</string>
+    <string name="theme_dark">ダーク</string>
+    <string name="theme_system">システムデフォルト</string>
+    <string name="system_default_language">システムデフォルト</string>
+    <string name="system_default">システムデフォルト</string>
+    <string name="choose_theme">テーマを選択</string>
+    <string name="choose_language">言語を選択</string>
+    <string name="select_language">言語を選択</string>
+    <string name="app_information_contact">アプリ情報と連絡先</string>
+    <string name="app_info_contact">アプリ情報と連絡先</string>
+    <string name="legal_terms_conditions">法的条件と規約</string>
+    <string name="github_repository_desc">ソースコードを表示して貢献</string>
+    <string name="view_source_contribute">ソースコードを表示して貢献</string>
+    <string name="back">戻る</string>
+    
+    <!-- Language Names -->
+    <string name="language_english">English</string>
+    <string name="language_spanish">Español</string>
+    <string name="language_portuguese">Português</string>
+    <string name="language_german">Deutsch</string>
+    <string name="language_french">Français</string>
+    <string name="language_russian">Русский</string>
+    <string name="language_italian">Italiano</string>
+    <string name="language_turkish">Türkçe</string>
+    <string name="language_polish">Polski</string>
+    <string name="language_arabic">العربية</string>
+    <string name="language_japanese">日本語</string>
+    <string name="language_indonesian">Indonesia</string>
+    
+    <!-- Errors and Messages -->
+    <string name="failed_to_load_image">画像の読み込みに失敗しました</string>
+    <string name="model_loading_error">モデルの読み込みエラー</string>
+    <string name="message_send_error">メッセージ送信エラー</string>
+    <string name="file_save_error">ファイル保存エラー</string>
+    <string name="file_save_success">ファイルが正常に保存されました</string>
+    
+    <!-- Accessibility -->
+    <string name="content_description_ai_bot">AIボット</string>
+    <string name="content_description_smart_toy">スマートトイ</string>
+    <string name="content_description_email">メール</string>
+    <string name="content_description_code">ソースコード</string>
+    <string name="content_description_image">画像</string>
+    <string name="content_description_download">ダウンロード</string>
+    <string name="content_description_stop">停止</string>
+    <string name="content_description_refresh">更新</string>
+    <string name="content_description_copy">コピー</string>
+    <string name="content_description_speed">速度</string>
+    <string name="content_description_check">チェック</string>
+    <string name="content_description_eye">ビジョン有効</string>
+    <string name="content_description_attach_image">画像を添付</string>
+    <string name="content_description_back">戻る</string>
+    
+    <!-- Model Information -->
+    <string name="no_model_selected">モデルが選択されていません</string>
+    <string name="no_model_downloaded">モデルがダウンロードされていません</string>
+    <string name="model_supports_vision">ビジョンをサポート</string>
+    <string name="model_supports_multimodal">マルチモーダルをサポート</string>
+    <string name="model_text_only">テキストのみ</string>
+    
+    <!-- Chat Drawer -->
+    <string name="drawer_title">LLM Hub</string>
+    <string name="drawer_new_chat">新しいチャット</string>
+    <string name="drawer_recent_chats">最近のチャット</string>
+    <string name="drawer_no_chats">まだチャットがありません</string>
+    <string name="drawer_download_models">モデルをダウンロード</string>
+    <string name="drawer_clear_all_chats">すべてのチャットをクリア</string>
+    <string name="drawer_settings">設定</string>
+    
+    <!-- Chat Management -->
+    <string name="dialog_delete_all_chats_title">すべてのチャットを削除しますか？</string>
+    <string name="dialog_delete_all_chats_message">すべての会話履歴が完全に削除されます。この操作は元に戻せません。</string>
+    <string name="dialog_delete_chat_title">チャットを削除しますか？</string>
+    <string name="dialog_delete_chat_message">会話「%1$s」を削除しますか？</string>
+    <string name="action_delete_all">すべて削除</string>
+    <string name="action_delete">削除</string>
+    <string name="action_cancel">キャンセル</string>
+    <string name="content_description_delete_chat">チャットを削除</string>
+    
+    <!-- Time Formatting -->
+    <string name="time_yesterday">昨日</string>
+    <string name="time_hours_ago">%1$d時間前</string>
+    <string name="time_minutes_ago">%1$d分前</string>
+    <string name="time_just_now">たった今</string>
+    
+    <!-- Model Download Screen -->
+    <string name="ai_models">AIモデル</string>
+    <string name="download_ai_models">AIモデルをダウンロード</string>
+    <string name="choose_text_multimodal_models">テキストのみまたはマルチモーダルモデルから選択</string>
+    <string name="text_models">テキストモデル</string>
+    <string name="text_models_description">テキスト生成と会話に最適化されたモデル</string>
+    <string name="vision_models">ビジョンモデル</string>
+    <string name="vision_models_description">テキストと画像の両方を理解できるモデル</string>
+    <string name="embedding_models">埋め込みモデル</string>
+    <string name="embedding_models_description">テキスト埋め込みとセマンティック検索用のモデル</string>
+    <string name="gpu">GPU</string>
+    <string name="variant">バリアント</string>
+    <string name="variants">バリアント</string>
+    <string name="expand">展開</string>
+    <string name="collapse">折りたたむ</string>
+    <string name="downloaded">ダウンロード済み</string>
+    <string name="downloading">ダウンロード中...</string>
+    <string name="not_downloaded">未ダウンロード</string>
+    <string name="partial">部分的</string>
+    <string name="paused">一時停止</string>
+    <string name="paused_downloaded_format">一時停止：%1$sダウンロード済み</string>
+    <string name="continue_download">続行</string>
+    <string name="pause_download">一時停止</string>
+    <string name="resume_download">再開</string>
+    <string name="clear">クリア</string>
+    <string name="ram_requirement_format">%1$dGB RAM</string>
+    
+    <!-- File Attachments -->
+    <string name="attach_file">ファイルを添付</string>
+    <string name="attach_image">画像を添付</string>
+    <string name="attach_document">ドキュメントを添付</string>
+    <string name="attach_text_file">テキストファイルを添付</string>
+    <string name="file_attachment">ファイル添付</string>
+    <string name="file_too_large">ファイルが大きすぎます</string>
+    <string name="unsupported_file_type">サポートされていないファイルタイプ</string>
+    <string name="file_processing_error">ファイル処理エラー</string>
+    <string name="could_not_read_file">ファイルを読み取れませんでした</string>
+    <string name="file_preview">ファイルプレビュー</string>
+    <string name="remove_attachment">削除</string>
+    <string name="keep_attachment">保持</string>
+    <string name="preview_not_available">プレビュー利用不可</string>
+    
+    <!-- File Type Categories -->
+    <string name="images">画像</string>
+    <string name="documents">ドキュメント</string>
+    <string name="text_files">テキストファイル</string>
+    <string name="images_description">JPG、PNG、GIF、WebP</string>
+    <string name="documents_description">PDF、Word、Excel、PowerPoint</string>
+    <string name="text_files_description">TXT、MD、JSON、XML、CSV</string>
+    <string name="text_file">テキストファイル</string>
+    <string name="tap_to_preview">タップしてプレビュー</string>
+    <string name="text_file_tap_to_preview">テキストファイル • タップしてプレビュー</string>
+    <string name="read_this">これを読む</string>
+    
+    
+    <!-- Audio Input -->
+    <string name="audio_recording">音声録音</string>
+    <string name="audio_description">音声メッセージを録音</string>
+    <string name="record_voice_message">音声メッセージを録音</string>
+    <string name="recording">録音中…</string>
+    <string name="audio_recorded">音声録音済み</string>
+    <string name="ready_to_send">送信準備完了</string>
+    <string name="tap_to_stop">タップして停止</string>
+    <string name="stop_recording">録音を停止</string>
+    <string name="remove_audio">音声を削除</string>
+    <string name="audio_enabled">音声有効</string>
+    <string name="audio">音声</string>
+    <string name="audio_file">音声ファイル</string>
+    <string name="tap_to_play">タップして再生</string>
+    <string name="max_recording_reached">最大録音時間に達しました（30秒）</string>
+    <string name="remaining">残り</string>
+
+    <!-- Image actions -->
+    <string name="image_copied_clipboard">チャットから画像をコピーしました</string>
+    <string name="image_copied_to_clipboard">画像がクリップボードにコピーされました</string>
+    <string name="failed_to_copy_image">画像のコピーに失敗しました</string>
+    <string name="failed_to_copy_image_with_error">画像のコピーに失敗しました：%1$s</string>
+    <string name="image_saved_to_gallery">画像がギャラリーに保存されました</string>
+    <string name="failed_to_save_image">画像の保存に失敗しました</string>
+    <string name="failed_to_save_image_with_error">画像の保存に失敗しました：%1$s</string>
+    
+    <!-- RAG (Document Chat) -->
+    <string name="searching_documents">ドキュメントを検索中…</string>
+    <string name="using_document_context_format">%1$dドキュメントセクションからコンテキストを使用</string>
+    <string name="documents_available_format">%1$dドキュメント利用可能</string>
+    <string name="ai_can_reference_documents">AIは応答でドキュメントを参照できます</string>
+    <string name="document_chat_enabled">ドキュメントチャット有効</string>
+    <string name="semantic_search_active">セマンティック検索アクティブ</string>
+    <string name="memory">メモリー（グローバルコンテキスト）</string>
+    <string name="memory_description_enabled">RAGを介してアップロードされたグローバルメモリーをAIが参照できるようにする</string>
+    <string name="memory_requires_rag">RAG/埋め込みの有効化が必要</string>
+    <string name="manage_memory">メモリーを管理</string>
+    <string name="manage_memory_subtitle">グローバルメモリーにドキュメントをアップロードまたは貼り付け</string>
+    <string name="paste_or_upload_to_memory">テキストを貼り付けるか、ドキュメントをアップロードしてグローバルメモリーに追加します。</string>
+    <string name="paste_memory_placeholder">メモ、ドキュメント、または知識をここに貼り付けてください...</string>
+    <string name="upload_file">アップロード</string>
+    <string name="save_to_memory">保存</string>
+    <string name="import_chat_history">チャット履歴をインポート</string>
+    <string name="select_chats_to_import">メモリーにインポートするチャットを選択</string>
+    <string name="import_selected_chats">選択したものをインポート</string>
+    <string name="chat_imported_to_memory">チャット履歴がメモリーにインポートされました</string>
+    <string name="no_chats_selected">チャットが選択されていません</string>
+    <string name="edit_memory">メモリーを編集</string>
+    <string name="memory_content">メモリーコンテンツ</string>
+    <string name="save_changes">変更を保存</string>
+    <string name="done">完了</string>
+    <string name="global_memory_uploaded_by">グローバルメモリーにアップロードされました</string>
+    <string name="global_memory_pasted_by">グローバルメモリーに貼り付けられました</string>
+    <string name="memory_upload_success">ファイルがグローバルメモリーに保存されました</string>
+    <string name="memory_upload_failed">ファイルのメモリーへの保存に失敗しました（RAGが無効の可能性があります）</string>
+    <string name="memory_upload_unsupported_type">ファイルタイプはメモリーでサポートされていません。テキストドキュメント（PDF、DOC、TXTなど）のみメモリーに追加できます。</string>
+    <string name="memory_save_success">テキストがグローバルメモリーに保存されました</string>
+    <string name="memory_save_failed">テキストのメモリーへの保存に失敗しました（RAGが無効の可能性があります）</string>
+    <string name="saved_memories">保存されたメモリー</string>
+    <string name="clear_all">すべてクリア</string>
+    <string name="memory_cleared">すべてのメモリーがクリアされました</string>
+    <string name="confirm_replace_memory_title">既存のメモリーを置き換えますか？</string>
+    <string name="confirm_replace_memory_message">すでにグローバルメモリーがあります。置き換えると既存のメモリーとその埋め込みが削除されます。続行しますか？</string>
+    <string name="confirm_replace_action">置き換える</string>
+    <string name="memory_processing">メモリーを処理中…</string>
+    <string name="reembedding_memory_in_progress">新しい埋め込みモデル用にグローバルメモリーを再埋め込み中…</string>
+    <string name="reembedding_memory_done">グローバルメモリーが再埋め込みされました</string>
+    
+    <!-- Gemma-3n specific GPU requirements -->
+    <string name="gemma3n_e2b_gpu_requires_6gb">GPUには少なくとも6GB RAMが必要です</string>
+    <string name="gemma3n_e4b_gpu_requires_8gb">8GB以下のRAMを搭載したデバイスはこのモデルをGPUで読み込めません</string>
+    <string name="audio_support">音声サポート</string>
+    <string name="vision_audio_text">ビジョン+音声+テキスト</string>
+    <string name="vision_text">ビジョン+テキスト</string>
+    <string name="audio_text">音声+テキスト</string>
+    <string name="shared_file">ファイルを共有しました</string>
+    <string name="audio_message">音声メッセージ</string>
+    <string name="image_message">画像メッセージ</string>
+    <string name="model_configs_title">モデル設定</string>
+    <string name="reset_to_defaults">リセット</string>
+    <string name="max_tokens">最大トークン</string>
+    <string name="top_k">TopK</string>
+    <string name="top_p">TopP</string>
+    <string name="temperature">温度</string>
+    <string name="choose_accelerator">アクセラレータを選択</string>
+    <string name="max">最大</string>
+    
+    <!-- GPU with Vision+Audio Disabled for Gemma-3n E4B -->
+    <string name="gpu_vision_disabled_title">GPU（ビジョン+音声無効）</string>
+    <string name="gpu_vision_disabled_description">RAM制限のため、GPU高速化を有効にするにはビジョンと音声機能が無効化されます</string>
+    <string name="gpu_with_vision_disabled">GPU（ビジョン+音声無効）</string>
+    <string name="gemma3n_e4b_gpu_vision_warning">7〜8GB RAMのデバイスの場合、GPU高速化にはビジョンと音声機能の無効化が必要です。画像添付と音声入力は利用できません。</string>
+    <string name="vision_disabled_for_gpu">GPU高速化のためビジョンと音声が無効化されました</string>
+    <string name="vision_disabled_no_images">このモデル構成ではビジョンと音声機能が無効化されています。画像添付と音声入力は利用できません。</string>
+    <string name="ram_limit_gpu_vision_disabled">RAM制限（%.1fGB）のため、GPUを使用するにはビジョンと音声を無効化する必要があります</string>
+    
+    <!-- GPU with Audio Only Disabled for Gemma-3n E4B on 8GB devices -->
+    <string name="gpu_with_audio_disabled">GPU（音声無効）</string>
+    <string name="gemma3n_e4b_gpu_audio_warning">7〜8GB RAMのデバイスの場合、GPU高速化には音声機能の無効化が必要です。音声入力は利用できませんが、画像添付はサポートされています。</string>
+    <string name="audio_disabled_for_gpu">GPU高速化のため音声が無効化されました</string>
+    <string name="audio_disabled_no_audio">このモデル構成では音声機能が無効化されています。音声入力は利用できませんが、画像添付はサポートされています。</string>
+    
+    <!-- Separate modality toggles -->
+    <string name="modality_options">モダリティオプション</string>
+    <string name="enable_vision">ビジョンを有効化（画像サポート）</string>
+    <string name="enable_audio">音声を有効化（音声入力）</string>
+    <string name="gemma3n_e4b_modality_suggestion">💡 7〜8GBデバイスで安定したパフォーマンスを得るには、GPUメモリを節約するために音声を無効化することを検討してください。ビジョンは一般的により安定しています。</string>
+    
+    <!-- General performance tip for all devices -->
+    <string name="gemma3n_performance_tip">💡 RAM制限によりクラッシュや低パフォーマンスが発生する場合は、CPUバックエンドへの切り替えまたはビジョン/音声機能の無効化を試してください。</string>
+    
+    <!-- External Model Import -->
+    <string name="import_external_model">外部モデルをインポート</string>
+    <string name="model_name">モデル名</string>
+    <string name="select_model_file">モデルファイルを選択</string>
+    <string name="supports_vision">ビジョンをサポート</string>
+    <string name="supports_audio">音声をサポート</string>
+    <string name="supports_gpu">GPUをサポート</string>
+    <string name="model_format">モデルフォーマット</string>
+    <string name="context_window_size">コンテキストウィンドウサイズ</string>
+    <string name="import_model">モデルをインポート</string>
+    <string name="model_name_required">モデル名は必須です</string>
+    <string name="context_window_size_invalid">有効なコンテキストウィンドウサイズを入力してください</string>
+    <string name="please_fix_errors">上記のエラーを修正してください</string>
+    <string name="remove">削除</string>
+    <string name="ready_to_use">使用準備完了</string>
+    <string name="unsupported_file_format">サポートされていないファイル形式です。.taskまたは.litertlmファイルを選択してください。</string>
+    <string name="download_models_from_litert_community">互換性のあるモデルは以下からダウンロードできます：</string>
+    <string name="litert_community_link">Hugging FaceのLiteRTコミュニティ</string>
+    <string name="import_model_warning">⚠️ 重要：インポート前にHugging FaceでモデルのREADMEをお読みください。モデルドキュメントで指定されている正しい機能（ビジョン、音声、GPU）とコンテキストウィンドウサイズを入力してください。不正な設定はモデルが正しく動作しない原因となります。</string>
+    
+    <!-- Home Screen -->
+    <string name="home_welcome">LLM Hubへようこそ</string>
+    <string name="home_subtitle">ポケットの中でAIの力を解き放とう — プライベート、高速、そしてオフライン！</string>
+    
+    <!-- Feature Cards -->
+    <string name="feature_ai_chat">AIチャット</string>
+    <string name="feature_ai_chat_desc">AIモデルとのマルチターン会話</string>
+    <string name="feature_writing_aid">ライティング支援</string>
+    <string name="feature_writing_aid_desc">文法、スタイル、言い換え、トーン調整</string>
+    <string name="feature_translator">翻訳者</string>
+    <string name="feature_translator_desc">マルチモーダルモデルを使用してテキストをプライベートに翻訳</string>
+    <string name="feature_transcriber">文字起こし</string>
+    <string name="feature_transcriber_desc">音声またはオーディオをオフラインでテキストに変換</string>
+    <string name="feature_scam_detector">詐欺検出器</string>
+    <string name="feature_scam_detector_desc">テキスト、画像、URLを分析して潜在的な詐欺を検出</string>
+    
+    <!-- Writing Aid Screen -->
+    <string name="writing_aid_title">ライティング支援</string>
+    <string name="writing_aid_input_label">テキストを入力</string>
+    <string name="writing_aid_input_hint">改善したいテキストを入力または貼り付けてください...</string>
+    <string name="writing_aid_input_hint_no_model">開始するにはモデルを読み込んでください</string>
+    <string name="writing_aid_mode_grammar">文法チェック</string>
+    <string name="writing_aid_mode_paraphrase">言い換え</string>
+    <string name="writing_aid_mode_tone">トーン調整</string>
+    <string name="writing_aid_mode_email">メール返信</string>
+    <string name="writing_aid_mode_sms">SMS返信</string>
+    <string name="writing_aid_tone_friendly">フレンドリー</string>
+    <string name="writing_aid_tone_professional">プロフェッショナル</string>
+    <string name="writing_aid_tone_concise">簡潔</string>
+    <string name="writing_aid_select_mode">トーンを選択</string>
+    <string name="writing_aid_process">処理</string>
+    <string name="processing_tap_to_cancel">処理中（タップしてキャンセル）</string>
+    <string name="writing_aid_result">結果</string>
+    <string name="writing_aid_no_model">モデルが読み込まれていません。最初にモデルをダウンロードして選択してください。</string>
+    
+    <!-- Translator Screen -->
+    <string name="translator_title">オフライン翻訳者</string>
+    <string name="translator_input_label">翻訳するテキスト</string>
+    <string name="translator_input_hint">翻訳するテキストを入力...</string>
+    <string name="load_model_to_start">開始するにはモデルを読み込んでください</string>
+    <string name="translator_source_lang">ソース言語</string>
+    <string name="translator_target_lang">ターゲット言語</string>
+    <string name="translator_auto_detect">自動検出</string>
+    <string name="translator_translate">翻訳</string>
+    <string name="translator_result">翻訳</string>
+    <string name="translator_requires_gemma3n">この機能にはGemma-3nモデルが必要です。モデル画面から1つダウンロードしてください。</string>
+    
+    <!-- Transcriber Screen -->
+    <string name="transcriber_title">オフライン文字起こし</string>
+    <string name="transcriber_record">音声を録音</string>
+    <string name="transcriber_upload">音声をアップロード</string>
+    <string name="transcriber_transcribe">文字起こし</string>
+    <string name="transcriber_result">文字起こし結果</string>
+    <string name="transcriber_recording">録音中...</string>
+    <string name="transcriber_stop">録音を停止</string>
+    <string name="transcriber_requires_gemma3n">この機能には音声サポート付きのGemma-3nモデルが必要です。モデル画面から1つダウンロードしてください。</string>
+    
+    <!-- Scam Detector Screen -->
+    <string name="scam_detector_title">詐欺検出器</string>
+    <string name="scam_detector_input_label">分析するコンテンツを入力</string>
+    <string name="scam_detector_input_hint">詐欺を分析するためにテキストを貼り付け、画像をアップロード、またはURLを入力...</string>
+    <string name="scam_detector_url_hint">分析するURLを入力</string>
+    <string name="scam_detector_analyze">分析</string>
+    <string name="scam_detector_analyzing">分析中（タップしてキャンセル）</string>
+    <string name="scam_detector_result">分析結果</string>
+    <string name="scam_detector_no_model">モデルが読み込まれていません。最初にモデルをダウンロードして選択してください。</string>
+    <string name="scam_detector_load_model">モデルを読み込む</string>
+    <string name="scam_detector_load_model_desc">コンテンツの分析を開始するにはモデルを読み込んでください</string>
+    <string name="scam_detector_enable_vision">ビジョンを有効化</string>
+    <string name="scam_detector_vision_desc">詐欺の画像を分析</string>
+    <string name="scam_detector_fetching_url">URLコンテンツを取得中...</string>
+    
+    <!-- Common Feature Strings -->
+    <string name="feature_no_model_title">利用可能なモデルがありません</string>
+    <string name="feature_download_model">モデルをダウンロード</string>
+    <string name="feature_processing">処理中...</string>
+    <string name="feature_error">エラーが発生しました</string>
+    <string name="feature_copy_result">結果をコピー</string>
+    <string name="feature_share_result">結果を共有</string>
+    <string name="feature_clear">クリア</string>
+    
+    <!-- Language Names for Translator (Gemma-3n Supported Languages) - Alphabetically Ordered -->
+    <string name="lang_english">英語</string>
+    <string name="lang_afrikaans">アフリカーンス語</string>
+    <string name="lang_amharic">アムハラ語</string>
+    <string name="lang_arabic">アラビア語</string>
+    <string name="lang_armenian">アルメニア語</string>
+    <string name="lang_azerbaijani">アゼルバイジャン語</string>
+    <string name="lang_basque">バスク語</string>
+    <string name="lang_bengali">ベンガル語</string>
+    <string name="lang_bulgarian">ブルガリア語</string>
+    <string name="lang_burmese">ビルマ語</string>
+    <string name="lang_catalan">カタルーニャ語</string>
+    <string name="lang_chinese">中国語（簡体字）</string>
+    <string name="lang_chinese_traditional">中国語（繁体字）</string>
+    <string name="lang_croatian">クロアチア語</string>
+    <string name="lang_czech">チェコ語</string>
+    <string name="lang_danish">デンマーク語</string>
+    <string name="lang_dutch">オランダ語</string>
+    <string name="lang_estonian">エストニア語</string>
+    <string name="lang_filipino">フィリピン語（タガログ語）</string>
+    <string name="lang_finnish">フィンランド語</string>
+    <string name="lang_french">フランス語</string>
+    <string name="lang_galician">ガリシア語</string>
+    <string name="lang_georgian">ジョージア語</string>
+    <string name="lang_german">ドイツ語</string>
+    <string name="lang_greek">ギリシャ語</string>
+    <string name="lang_gujarati">グジャラート語</string>
+    <string name="lang_hausa">ハウサ語</string>
+    <string name="lang_hebrew">ヘブライ語</string>
+    <string name="lang_hindi">ヒンディー語</string>
+    <string name="lang_hungarian">ハンガリー語</string>
+    <string name="lang_icelandic">アイスランド語</string>
+    <string name="lang_igbo">イボ語</string>
+    <string name="lang_indonesian">インドネシア語</string>
+    <string name="lang_italian">イタリア語</string>
+    <string name="lang_japanese">日本語</string>
+    <string name="lang_kannada">カンナダ語</string>
+    <string name="lang_kazakh">カザフ語</string>
+    <string name="lang_khmer">クメール語</string>
+    <string name="lang_korean">韓国語</string>
+    <string name="lang_lao">ラオ語</string>
+    <string name="lang_latvian">ラトビア語</string>
+    <string name="lang_lithuanian">リトアニア語</string>
+    <string name="lang_malay">マレー語</string>
+    <string name="lang_malayalam">マラヤーラム語</string>
+    <string name="lang_marathi">マラーティー語</string>
+    <string name="lang_nepali">ネパール語</string>
+    <string name="lang_norwegian">ノルウェー語</string>
+    <string name="lang_pashto">パシュトー語</string>
+    <string name="lang_persian">ペルシア語（ファルシー語）</string>
+    <string name="lang_polish">ポーランド語</string>
+    <string name="lang_portuguese">ポルトガル語</string>
+    <string name="lang_punjabi">パンジャブ語</string>
+    <string name="lang_romanian">ルーマニア語</string>
+    <string name="lang_russian">ロシア語</string>
+    <string name="lang_serbian">セルビア語</string>
+    <string name="lang_sindhi">シンド語</string>
+    <string name="lang_sinhala">シンハラ語</string>
+    <string name="lang_slovak">スロバキア語</string>
+    <string name="lang_slovenian">スロベニア語</string>
+    <string name="lang_somali">ソマリ語</string>
+    <string name="lang_spanish">スペイン語</string>
+    <string name="lang_swahili">スワヒリ語</string>
+    <string name="lang_swedish">スウェーデン語</string>
+    <string name="lang_tamil">タミル語</string>
+    <string name="lang_telugu">テルグ語</string>
+    <string name="lang_thai">タイ語</string>
+    <string name="lang_turkish">トルコ語</string>
+    <string name="lang_ukrainian">ウクライナ語</string>
+    <string name="lang_urdu">ウルドゥー語</string>
+    <string name="lang_uzbek">ウズベク語</string>
+    <string name="lang_vietnamese">ベトナム語</string>
+    <string name="lang_yoruba">ヨルバ語</string>
+    <string name="lang_zulu">ズールー語</string>
+    
+    <!-- Model Selection -->
+    <string name="feature_settings_title">設定</string>
+    <string name="select_model_title">モデルを選択</string>
+    <string name="no_models_available">利用可能なモデルがありません</string>
+    <string name="download_models_first">最初にモデルをダウンロードしてください</string>
+    <string name="select_backend">バックエンドを選択</string>
+    <string name="backend_cpu">CPU</string>
+    <string name="backend_gpu">GPU</string>
+    <string name="gpu_not_supported">このモデルはGPUをサポートしていません</string>
+    <string name="load_model">モデルを読み込む</string>
+    <string name="model_loaded">モデルが正常に読み込まれました</string>
+    <string name="model_loading">モデルを読み込み中…</string>
+    <string name="model_load_failed">モデルの読み込みに失敗しました</string>
+    <string name="multimodal_models_only">マルチモーダル（Gemma-3n）モデルのみサポートされています</string>
+    <string name="text_models_only">テキストのみのモデルがサポートされています</string>
+    
+    <!-- Audio Features -->
+    <string name="enable_audio_input">音声入力を有効化</string>
+    <string name="audio_input_enabled">音声入力が有効</string>
+    <string name="audio_input_disabled">音声入力が無効</string>
+    <string name="record_audio">音声を録音</string>
+    
+    <!-- Auto-detect Language -->
+    <string name="lang_auto_detect">自動検出</string>
+    <string name="auto_detecting_language">言語を検出中…</string>
+    <string name="language_detected">検出された言語：%1$s</string>
+    
+    <!-- Feature-specific Processing -->
+    <string name="processing">処理中…</string>
+    <string name="translating">翻訳中…</string>
+    <string name="translating_tap_to_cancel">翻訳中（タップしてキャンセル）</string>
+    <string name="transcribing">文字起こし中…</string>
+    <string name="transcribing_tap_to_cancel">文字起こし中（タップしてキャンセル）</string>
+    <string name="analyzing_code">コードを分析中…</string>
+    <string name="processing_text">テキストを処理中…</string>
+    
+    <!-- Vision Features -->
+    <string name="input_options">入力オプション</string>
+    <string name="enable_vision_input">ビジョン入力を有効化</string>
+    <string name="translate_from_image">画像からテキストを翻訳</string>
+    <string name="speak_to_translate">話して翻訳</string>
+    <string name="select_image">画像を選択</string>
+    <string name="change_image">画像を変更</string>
+    <string name="transcription_result">文字起こし結果</string>
+    
+    <!-- Translator Settings -->
+    <string name="translator_enable_vision">ビジョンを有効化</string>
+    <string name="translator_vision_description">画像からテキストを翻訳</string>
+    <string name="translator_enable_audio">音声を有効化</string>
+    <string name="translator_audio_description">音声録音を翻訳</string>
+    
+    <!-- Backend Selection -->
+    <string name="choose_backend_for_gemma">Gemmaモデルの処理バックエンドを選択</string>
+    <string name="gpu_backend">GPU（推奨）</string>
+    <string name="cpu_backend">CPU（代替）</string>
+    <string name="gpu_backend_description">デバイスGPUを使用した高速処理</string>
+    <string name="cpu_backend_description">より遅いがより安定した処理</string>
+    <string name="backend_selection_hint">GPUでアプリがクラッシュするか正しく動作しない場合は、CPUバックエンドを試してください</string>
+    <string name="not_available">利用不可</string>
+    <string name="gpu_disabled_low_memory">%1$dGB以下のRAMを搭載したデバイスでは、このモデルでGPUは利用できません</string>
+</resources>
