@@ -1,5 +1,14 @@
 🤖 LLM Hub - Your Private AI Assistant
 
+=== SHORT DESCRIPTION (45 chars max for ASO) ===
+AI Chat, Translate, Write - 100% Private
+
+=== ALTERNATIVE SHORT DESCRIPTIONS ===
+Private AI: Chat, Translate & Write Offline
+Offline AI Assistant - Chat, Translate, TTS
+AI Chat & Tools - Private, Offline, Secure
+Private AI Chat with Voice & Translation
+
 Advanced AI runs completely on your phone - no internet required, no data shared, complete privacy guaranteed. State-of-the-art Large Language Models in your pocket!
 
 ✨ FIVE POWERFUL AI TOOLS

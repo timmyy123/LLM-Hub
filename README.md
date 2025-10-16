@@ -39,6 +39,11 @@
 - **📱 On-Device Processing**: Complete privacy - no internet required for inference
 - **🖼️ Vision Support**: Multimodal models that understand text, images, and audio input
 - **🎙️ Audio Input**: Voice recording support for Gemma-3n models with speech recognition
+- **🔊 Text-to-Speech (TTS)**: AI responses can be read aloud with natural voice output
+  - Auto-readout mode for hands-free conversations
+  - Manual playback control for each message
+  - Multi-language support with automatic language detection
+  - Adjustable speech rate and pitch
 - **⚡ GPU Acceleration**: Optimized performance on supported devices (8GB+ RAM)
 - **💾 Offline Usage**: Chat without internet connection after model download
 - **🔒 Privacy First**: Your conversations never leave your device
@@ -84,6 +89,11 @@ Multi-turn conversations with advanced features:
 - **Web Search**: Optional internet search for real-time information
 - **Multimodal input**: Text, images, and audio (model-dependent)
 - **Code highlighting**: Syntax highlighting for programming languages
+- **Text-to-Speech**: Listen to AI responses with natural voice output
+  - Auto-readout mode: Automatically plays responses as they're generated
+  - Manual playback: Tap speaker icon to play any message
+  - Language detection: Automatically detects and uses appropriate voice
+  - Playback controls: Stop playback anytime with a single tap
 
 ### ✍️ Writing Aid
 Professional writing assistance powered by AI:
