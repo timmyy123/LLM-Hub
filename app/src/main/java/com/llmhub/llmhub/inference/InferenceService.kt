@@ -885,29 +885,9 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                         throw e
                     }
                 }
-            } else if (audioData != null && model.supportsAudio && enhancedPrompt.trim().isEmpty()) {
-                // If we have audio but no text, add a default query for audio models
-                Log.d(TAG, "Adding default audio query for audio-only prompt in chat $chatId")
-                try {
-                    currentSession.addQueryChunk("Transcribe the following speech segment and respond to it:")
-                    estimatedSessionTokens += session.sizeInTokens("Transcribe the following speech segment and respond to it:")
-                } catch (e: Exception) {
-                    val msg = e.message ?: ""
-                    if (msg.contains("Previous invocation still processing", ignoreCase = true)) {
-                        Log.w(TAG, "Session busy on audio default query; session-only recreate then single retry")
-                        sessionMutex.withLock {
-                            modelInstance?.let { inst ->
-                                try { inst.session.close() } catch (_: Exception) {}
-                                inst.session = createSession(inst.engine)
-                            }
-                        }
-                        currentSession.addQueryChunk("Transcribe the following speech segment and respond to it:")
-                        estimatedSessionTokens += session.sizeInTokens("Transcribe the following speech segment and respond to it:")
-                    } else {
-                        throw e
-                    }
-                }
             }
+            // Note: Audio handling - ChatViewModel adds "Respond to the audio:" instruction
+            // when user sends audio without text, so we don't need a separate check here
             
             // Add images AFTER text query (MediaPipe requirement for vision models)
             if (images.isNotEmpty() && model.supportsVision) {
