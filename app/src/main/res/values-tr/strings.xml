@@ -74,7 +74,7 @@
     <string name="acknowledgments">Teşekkürler</string>
     <string name="acknowledgments_text">Bu uygulamayı destekleyen inanılmaz LLM modellerini sağladıkları için Google, Meta, Microsoft ve HuggingFace topluluğuna özel teşekkürler. Bu proje ayrıca Android geliştirme topluluğunun ve açık kaynak ekosisteminin harika çalışmalarına dayanmaktadır.</string>
     <string name="ai_thinking">Yapay zeka düşünüyor...</string>
-    <string name="version_number">Sürüm 3.1.1</string>
+    <string name="version_number">Sürüm 3.2</string>
     <string name="app_version">Uygulama Sürümü</string>
     
     <!-- Terms of Service -->
