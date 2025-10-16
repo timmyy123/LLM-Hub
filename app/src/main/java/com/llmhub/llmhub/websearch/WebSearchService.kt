@@ -682,6 +682,8 @@ object SearchIntentDetector {
         "検索", "探す", "検索して", "調べる", "情報を探す", "ウェブ検索", "ネット検索", "インターネット検索",
         // Indonesian
         "cari", "pencarian", "cari tahu", "temukan", "cari informasi tentang", "cari di web", "pencarian web",
+        // Korean
+        "검색", "검색해줘", "찾아줘", "정보 찾아", "웹 검색", "인터넷 검색", "알아봐줘", "찾아봐",
         
         // Current/recent information requests
         "what's the latest", "latest news", "recent", "current", "today", "this week",
@@ -708,6 +710,8 @@ object SearchIntentDetector {
         "最新", "最新ニュース", "最近", "現在", "今日", "今週", "何が起こった", "についてのニュース", "更新",
         // Indonesian
         "terbaru", "berita terkini", "baru-baru ini", "saat ini", "hari ini", "minggu ini", "apa yang terjadi", "berita tentang", "pembaruan",
+        // Korean
+        "최신", "최신 뉴스", "최근", "현재", "오늘", "이번 주", "무슨 일이", "뉴스", "업데이트", "새소식",
         
         // Question words that often need current info
         "what is happening", "what's happening", "what's new", "what are the latest",
@@ -733,6 +737,8 @@ object SearchIntentDetector {
         "何が起きている", "何が新しい",
         // Indonesian
         "apa yang terjadi", "apa yang baru",
+        // Korean
+        "무슨 일이야", "뭐가 새로워", "무슨 일이 일어나고 있어",
         
         // Time-sensitive queries
         "now", "currently", "at the moment", "right now", "today's",
@@ -758,6 +764,8 @@ object SearchIntentDetector {
         "今", "現在", "今この瞬間", "今日の",
         // Indonesian
         "sekarang", "saat ini", "pada saat ini", "hari ini",
+        // Korean
+        "지금", "현재", "지금 당장", "오늘의", "현재의",
         
         // Stock/price/weather queries
         "stock price", "weather", "temperature", "forecast", "price of",
@@ -783,6 +791,8 @@ object SearchIntentDetector {
         "株価", "天気", "気温", "予報", "価格",
         // Indonesian
         "harga saham", "cuaca", "suhu", "ramalan", "harga",
+        // Korean
+        "주식 가격", "날씨", "기온", "예보", "가격", "시세",
         
         // Events and schedules
         "when is", "schedule", "events", "concerts", "movies",
@@ -808,6 +818,8 @@ object SearchIntentDetector {
         "いつ", "スケジュール", "イベント", "コンサート", "映画",
         // Indonesian
         "kapan", "jadwal", "acara", "konser", "film",
+        // Korean
+        "언제", "일정", "이벤트", "행사", "콘서트", "영화",
         
         // Technology and product info
         "release date", "specs", "reviews", "latest version",
@@ -832,7 +844,9 @@ object SearchIntentDetector {
         // Japanese
         "発売日", "仕様", "レビュー", "最新バージョン",
         // Indonesian
-        "tanggal rilis", "spesifikasi", "ulasan", "versi terbaru"
+        "tanggal rilis", "spesifikasi", "ulasan", "versi terbaru",
+        // Korean
+        "출시일", "출시 날짜", "사양", "스펙", "리뷰", "후기", "최신 버전"
     )
     
     private val weatherKeywords = listOf(
@@ -859,7 +873,9 @@ object SearchIntentDetector {
         // Japanese
         "天気", "気温", "予報", "雨", "雪", "晴れ", "曇り", "暑い", "寒い", "暖かい", "涼しい", "湿気", "風", "嵐", "気候",
         // Indonesian
-        "cuaca", "suhu", "ramalan", "hujan", "salju", "cerah", "berawan", "panas", "dingin", "hangat", "sejuk", "lembab", "angin", "badai", "iklim"
+        "cuaca", "suhu", "ramalan", "hujan", "salju", "cerah", "berawan", "panas", "dingin", "hangat", "sejuk", "lembab", "angin", "badai", "iklim",
+        // Korean
+        "날씨", "기온", "온도", "예보", "비", "눈", "맑음", "흐림", "더움", "추움", "따뜻함", "시원함", "습함", "바람", "폭풍", "기후"
     )
     
     private val locationKeywords = listOf(

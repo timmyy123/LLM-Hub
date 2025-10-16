@@ -168,6 +168,7 @@
     <string name="language_arabic">العربية</string>
     <string name="language_japanese">日本語</string>
     <string name="language_indonesian">Indonesia</string>
+    <string name="language_korean">한국어</string>
     
     <!-- Errors and Messages -->
     <string name="failed_to_load_image">Gagal memuat gambar</string>
