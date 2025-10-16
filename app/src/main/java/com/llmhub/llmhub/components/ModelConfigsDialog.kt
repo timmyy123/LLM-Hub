@@ -81,8 +81,8 @@ fun ModelConfigsDialog(
     var temperature by remember { mutableStateOf(1.0f) }
     val defaultUseGpu = remember(model) { if (isPhi4Mini) false else model.supportsGpu }
     var useGpu by remember { mutableStateOf(defaultUseGpu) } // Default accelerator based on model support
-    var disableVision by remember { mutableStateOf(false) }
-    // Default audio disabled for Gemma-3n models to conserve resources on mobile
+    // Default vision and audio disabled for Gemma-3n models to conserve resources on mobile
+    var disableVision by remember { mutableStateOf(isGemma3nModel) }
     var disableAudio by remember { mutableStateOf(isGemma3nModel) }
 
     // Load/save preferences for this model
@@ -351,7 +351,7 @@ fun ModelConfigsDialog(
                         topP = 0.95f
                         temperature = 1.0f
                         useGpu = defaultUseGpu
-                        disableVision = false
+                        disableVision = isGemma3nModel
                         disableAudio = isGemma3nModel
                     }, modifier = Modifier
                         .height(48.dp)
