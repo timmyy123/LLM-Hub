@@ -24,7 +24,8 @@ object LocaleHelper {
         "ar", // Arabic
         "ja", // Japanese
         "id", // Indonesian (modern ISO 639-1 code)
-        "in"  // Indonesian (legacy Android code for compatibility)
+        "in", // Indonesian (legacy Android code for compatibility)
+        "ko"  // Korean
     )
     
     /**
