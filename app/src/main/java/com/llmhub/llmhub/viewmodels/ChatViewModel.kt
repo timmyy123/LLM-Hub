@@ -1182,57 +1182,58 @@ class ChatViewModel(
                                             } catch (e: Exception) {
                                                 Log.w("ChatViewModel", "Failed to reset session for minimal prompt: ${e.message}")
                                             }
-                                            if (audioData != null) {
-                                                // Audio present: follow doc – inject instruction or user's text only
+                                            // Minimal path after reset: keep a small sanitized tail of history (last 2 pairs)
+                                            val tail = _messages.value.takeLast(4)
+                                                .map { it.copy(content = sanitizeForPrompt(it.content)) }
+                                                .filter { it.content.isNotBlank() && it.content.length >= 20 && it.content != "…" }
+                                            val tailHistory = if (tail.isNotEmpty()) {
+                                                tail.joinToString("\n\n") { msg ->
+                                                    if (msg.isFromUser) "user: ${msg.content}" else "assistant: ${msg.content}"
+                                                }
+                                            } else ""
+                                            
+                                            // For audio messages, include instruction in the user message
+                                            val userMessage = if (audioData != null) {
                                                 if (lastUserContent.trim().isEmpty()) {
-                                                    Log.d("ChatViewModel", "Audio-only message - injecting transcription instruction into addQueryChunk")
-                                                    "Transcribe the following speech segment and respond to it:"
+                                                    // Audio-only: provide clear instruction to transcribe and respond
+                                                    "Listen to the audio and respond to it's content like normal text prompt" // More explicit instruction
                                                 } else {
-                                                    Log.d("ChatViewModel", "Text+audio message - injecting only user's text into addQueryChunk")
-                                                    "$lastUserContent\n\nNote: The attached audio clip is spoken by the user."
+                                                    lastUserContent // Text+audio: use user's text as-is
                                                 }
                                             } else {
-                                                // Minimal path after reset: keep a small sanitized tail of history (last 2 pairs)
-                                                val tail = _messages.value.takeLast(4)
-                                                    .map { it.copy(content = sanitizeForPrompt(it.content)) }
-                                                    .filter { it.content.isNotBlank() && it.content.length >= 20 && it.content != "…" }
-                                                val tailHistory = if (tail.isNotEmpty()) {
-                                                    tail.joinToString("\n\n") { msg ->
-                                                        if (msg.isFromUser) "user: ${msg.content}" else "assistant: ${msg.content}"
-                                                    }
-                                                } else ""
-                                                var basePrompt = if (tailHistory.isNotEmpty()) {
-                                                    "$tailHistory\n\nuser: ${sanitizeForPrompt(lastUserContent)}\nassistant:"
-                                                } else {
-                                                    "user: ${sanitizeForPrompt(lastUserContent)}\nassistant:"
-                                                }
-                                                if (ragContext.isNotEmpty()) {
-                                                    basePrompt = basePrompt.replace("\nassistant:", "${ragContext}\nassistant:")
-                                                }
-                                                basePrompt
+                                                sanitizeForPrompt(lastUserContent)
                                             }
-                                        } else {
-                                            if (audioData != null) {
-                                                // Audio present: follow doc – inject instruction or user's text only
-                                                if (lastUserContent.trim().isEmpty()) {
-                                                    Log.d("ChatViewModel", "Audio-only message - injecting transcription instruction into addQueryChunk")
-                                                    "Transcribe the following speech segment and respond to it:"
-                                                } else {
-                                                    Log.d("ChatViewModel", "Text+audio message - injecting only user's text into addQueryChunk")
-                                                    "$lastUserContent\n\nNote: The attached audio clip is sent from the user."
-                                                }
+                                            
+                                            var basePrompt = if (tailHistory.isNotEmpty()) {
+                                                "$tailHistory\n\nuser: $userMessage\nassistant:"
                                             } else {
-                                                // Normal path: include trimmed history and explicit assistant cue
-                                                var basePrompt = if (!history.endsWith("assistant:")) {
+                                                "user: $userMessage\nassistant:"
+                                            }
+                                            if (ragContext.isNotEmpty()) {
+                                                basePrompt = basePrompt.replace("\nassistant:", "${ragContext}\nassistant:")
+                                            }
+                                            basePrompt
+                                        } else {
+                                            // Normal path: include trimmed history and explicit assistant cue
+                                            // For audio messages, we add the instruction as part of the user message
+                                            var basePrompt = if (audioData != null && lastUserContent.trim().isEmpty()) {
+                                                // Audio-only: replace the last user message with clear audio instruction
+                                                val historyLines = history.split("\n")
+                                                val modifiedHistory = historyLines.dropLast(1).joinToString("\n") + 
+                                                    "\nuser: Listen to the audio and respond to what was said.\nassistant:"
+                                                modifiedHistory
+                                            } else {
+                                                // Text-only or text+audio: use history as-is
+                                                if (!history.endsWith("assistant:")) {
                                                     history + "\nassistant:"
                                                 } else history
-
-                                                // Insert RAG context before the assistant response (assign the result)
-                                                if (ragContext.isNotEmpty()) {
-                                                    basePrompt = basePrompt.replace("\nassistant:", "${ragContext}\nassistant:")
-                                                }
-                                                basePrompt
                                             }
+
+                                            // Insert RAG context before the assistant response (assign the result)
+                                            if (ragContext.isNotEmpty()) {
+                                                basePrompt = basePrompt.replace("\nassistant:", "${ragContext}\nassistant:")
+                                            }
+                                            basePrompt
                                         }
                                     } else {
                                         // Continuation: build a new context-aware history including the current response
