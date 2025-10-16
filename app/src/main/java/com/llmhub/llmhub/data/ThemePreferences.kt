@@ -25,7 +25,8 @@ class ThemePreferences(private val context: Context) {
         private val LANGUAGE_KEY = stringPreferencesKey("app_language")
         private val EMBEDDING_ENABLED_KEY = booleanPreferencesKey("embedding_enabled")
         private val SELECTED_EMBEDDING_MODEL_KEY = stringPreferencesKey("selected_embedding_model")
-    private val MEMORY_ENABLED_KEY = booleanPreferencesKey("memory_enabled")
+        private val MEMORY_ENABLED_KEY = booleanPreferencesKey("memory_enabled")
+        private val AUTO_READOUT_ENABLED_KEY = booleanPreferencesKey("auto_readout_enabled")
     }
 
     val themeMode: Flow<ThemeMode> = context.dataStore.data
@@ -61,6 +62,11 @@ class ThemePreferences(private val context: Context) {
     val selectedEmbeddingModel: Flow<String?> = context.dataStore.data
         .map { preferences ->
             preferences[SELECTED_EMBEDDING_MODEL_KEY]
+        }
+
+    val autoReadoutEnabled: Flow<Boolean> = context.dataStore.data
+        .map { preferences ->
+            preferences[AUTO_READOUT_ENABLED_KEY] ?: false // Default to disabled
         }
 
     suspend fun setThemeMode(themeMode: ThemeMode) {
@@ -104,6 +110,12 @@ class ThemePreferences(private val context: Context) {
             } else {
                 preferences.remove(SELECTED_EMBEDDING_MODEL_KEY)
             }
+        }
+    }
+
+    suspend fun setAutoReadoutEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[AUTO_READOUT_ENABLED_KEY] = enabled
         }
     }
 }

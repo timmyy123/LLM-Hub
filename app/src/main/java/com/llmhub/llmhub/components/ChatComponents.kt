@@ -384,7 +384,10 @@ fun MessageBubble(
     message: MessageEntity,
     streamingContent: String = "",
     onRegenerateResponse: (() -> Unit)? = null,
-    onEditUserMessage: (() -> Unit)? = null
+    onEditUserMessage: (() -> Unit)? = null,
+    onTtsSpeak: ((String) -> Unit)? = null,
+    onTtsStop: (() -> Unit)? = null,
+    isTtsSpeaking: Boolean = false
 ) {
     var showFullScreenImage by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -598,6 +601,28 @@ fun MessageBubble(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        // TTS button (Read aloud)
+                        if (onTtsSpeak != null && onTtsStop != null) {
+                            IconButton(
+                                onClick = {
+                                    if (isTtsSpeaking) {
+                                        onTtsStop()
+                                    } else {
+                                        val displayContent = if (streamingContent.isNotEmpty()) streamingContent else message.content
+                                        onTtsSpeak(displayContent)
+                                    }
+                                },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    if (isTtsSpeaking) Icons.Filled.Stop else Icons.Filled.VolumeUp,
+                                    contentDescription = if (isTtsSpeaking) "Stop reading" else "Read aloud",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = if (isTtsSpeaking) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        
                         // Copy button
                         IconButton(
                             onClick = {

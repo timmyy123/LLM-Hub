@@ -297,6 +297,10 @@
     <string name="max_recording_reached">最大録音時間に達しました（30秒）</string>
     <string name="remaining">残り</string>
 
+    <!-- Text-to-Speech -->
+    <string name="auto_readout">自動読み上げ</string>
+    <string name="auto_readout_description">メッセージ送信後、AIの応答を自動的に音声で読み上げます</string>
+
     <!-- Image actions -->
     <string name="image_copied_clipboard">チャットから画像をコピーしました</string>
     <string name="image_copied_to_clipboard">画像がクリップボードにコピーされました</string>

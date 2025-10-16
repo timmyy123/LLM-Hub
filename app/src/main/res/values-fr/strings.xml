@@ -283,6 +283,11 @@
     <string name="tap_to_play">Toucher pour lire</string>
     <string name="max_recording_reached">Durée maximale d\'enregistrement atteinte (30 secondes)</string>
     <string name="remaining">restant</string>
+    
+    <!-- Text-to-Speech -->
+    <string name="auto_readout">Lecture Automatique</string>
+    <string name="auto_readout_description">Lire automatiquement les réponses de l\'IA à haute voix après l\'envoi d\'un message</string>
+    
     <string name="translating_tap_to_cancel">Traduction en cours (touchez pour annuler)</string>
     <string name="transcribing_tap_to_cancel">Transcription en cours (touchez pour annuler)</string>
     

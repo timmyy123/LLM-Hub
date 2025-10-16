@@ -296,6 +296,10 @@
     <string name="max_recording_reached">تم بلوغ مدة التسجيل القصوى (30 ثانية)</string>
     <string name="remaining">متبقٍ</string>
 
+    <!-- Text-to-Speech -->
+    <string name="auto_readout">القراءة التلقائية</string>
+    <string name="auto_readout_description">قراءة ردود الذكاء الاصطناعي بصوت عالٍ تلقائيًا بعد إرسال الطلب</string>
+
     <!-- Image actions -->
     <string name="image_copied_clipboard">تم نسخ الصورة من الدردشة</string>
     <string name="image_copied_to_clipboard">تم نسخ الصورة إلى الحافظة</string>

@@ -324,6 +324,10 @@
     <string name="max_recording_reached">Maximale Aufnahmedauer erreicht (30 Sekunden)</string>
     <string name="remaining">verbleibend</string>
     
+    <!-- Text-to-Speech -->
+    <string name="auto_readout">Automatisches Vorlesen</string>
+    <string name="auto_readout_description">KI-Antworten nach dem Senden einer Anfrage automatisch laut vorlesen</string>
+    
     <!-- Multimodal Support -->
     <string name="model_supports_multimodal">Vision+Audio+Text</string>
     <string name="multimodal_format">%1$s+%2$s+Text</string>

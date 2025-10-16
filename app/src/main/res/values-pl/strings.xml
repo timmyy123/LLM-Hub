@@ -297,6 +297,10 @@
     <string name="max_recording_reached">Osiągnięto maksymalny czas nagrywania (30 sekund)</string>
     <string name="remaining">pozostało</string>
 
+    <!-- Text-to-Speech -->
+    <string name="auto_readout">Automatyczne Odczytywanie</string>
+    <string name="auto_readout_description">Automatycznie odczytuj odpowiedzi AI na głos po wysłaniu wiadomości</string>
+
     <!-- Image actions -->
     <string name="image_copied_clipboard">Obraz skopiowany z czatu</string>
     <string name="image_copied_to_clipboard">Obraz skopiowany do schowka</string>

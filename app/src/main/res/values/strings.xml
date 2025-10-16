@@ -296,7 +296,7 @@
     <string name="tap_to_play">Tap to play</string>
     <string name="max_recording_reached">Maximum recording duration reached (30 seconds)</string>
     <string name="remaining">remaining</string>
-
+    
     <!-- Image actions -->
     <string name="image_copied_clipboard">Image copied from chat</string>
     <string name="image_copied_to_clipboard">Image copied to clipboard</string>
@@ -340,6 +340,11 @@
     <string name="memory_save_failed">Failed to save text to memory (RAG may be disabled)</string>
     <string name="saved_memories">Saved memories</string>
     <string name="clear_all">Clear All</string>
+    
+    <!-- Text-to-Speech -->
+    <string name="auto_readout">Auto Readout</string>
+    <string name="auto_readout_description">Automatically read AI responses aloud after sending a prompt</string>
+    
     <string name="memory_cleared">All memories cleared</string>
     <string name="confirm_replace_memory_title">Replace existing memory?</string>
     <string name="confirm_replace_memory_message">You already have a global memory. Replacing it will delete the existing memory and its embeddings. Continue?</string>

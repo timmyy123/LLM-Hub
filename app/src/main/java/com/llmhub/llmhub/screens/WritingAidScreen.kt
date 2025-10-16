@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -34,6 +35,7 @@ fun WritingAidScreen(
     onNavigateToModels: () -> Unit,
     viewModel: WritingAidViewModel = viewModel()
 ) {
+    val context = LocalContext.current
     val keyboard = LocalSoftwareKeyboardController.current
     val clipboardManager = LocalClipboardManager.current
     
@@ -52,6 +54,10 @@ fun WritingAidScreen(
     val isProcessing by viewModel.isProcessing.collectAsState()
     val outputText by viewModel.outputText.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    
+    // TTS Service
+    val ttsService = remember { com.llmhub.llmhub.ui.components.TtsService(context) }
+    val isTtsSpeaking by ttsService.isSpeaking.collectAsState()
     
     // Scroll state for auto-scrolling
     val scrollState = rememberScrollState()
@@ -75,10 +81,11 @@ fun WritingAidScreen(
         }
     }
     
-    // Cleanup on dispose - unload model to free memory
+    // Cleanup on dispose - unload model to free memory and shutdown TTS
     DisposableEffect(Unit) {
         onDispose {
             viewModel.unloadModel()
+            ttsService.shutdown()
         }
     }
     
@@ -325,6 +332,24 @@ fun WritingAidScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.End
                         ) {
+                            // TTS button (Read aloud)
+                            IconButton(
+                                onClick = { 
+                                    if (isTtsSpeaking) {
+                                        ttsService.stop()
+                                    } else {
+                                        ttsService.speak(outputText)
+                                    }
+                                }
+                            ) {
+                                Icon(
+                                    if (isTtsSpeaking) Icons.Default.Stop else Icons.Default.VolumeUp,
+                                    contentDescription = if (isTtsSpeaking) "Stop reading" else "Read aloud",
+                                    tint = if (isTtsSpeaking) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            
+                            // Copy button
                             IconButton(
                                 onClick = { 
                                     clipboardManager.setText(AnnotatedString(outputText))

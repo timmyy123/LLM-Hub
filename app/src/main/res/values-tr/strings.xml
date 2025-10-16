@@ -296,6 +296,10 @@
     <string name="max_recording_reached">Maksimum kayıt süresine ulaşıldı (30 saniye)</string>
     <string name="remaining">kalan</string>
 
+    <!-- Text-to-Speech -->
+    <string name="auto_readout">Otomatik Okuma</string>
+    <string name="auto_readout_description">Mesaj gönderdikten sonra AI yanıtlarını otomatik olarak sesli oku</string>
+
     <!-- Image actions -->
     <string name="image_copied_clipboard">Görsel sohbetten kopyalandı</string>
     <string name="image_copied_to_clipboard">Görsel panoya kopyalandı</string>

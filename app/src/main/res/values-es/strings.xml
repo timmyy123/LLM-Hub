@@ -321,6 +321,11 @@
     <string name="tap_to_play">Tocar para reproducir</string>
     <string name="max_recording_reached">Duración máxima de grabación alcanzada (30 segundos)</string>
     <string name="remaining">restantes</string>
+    
+    <!-- Text-to-Speech -->
+    <string name="auto_readout">Lectura Automática</string>
+    <string name="auto_readout_description">Leer respuestas de IA en voz alta automáticamente después de enviar un mensaje</string>
+    
     <string name="translating_tap_to_cancel">Traduciendo (toca para cancelar)</string>
     <string name="transcribing_tap_to_cancel">Transcribiendo (toca para cancelar)</string>
     
