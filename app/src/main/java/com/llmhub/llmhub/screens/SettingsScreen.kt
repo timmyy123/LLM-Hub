@@ -67,6 +67,7 @@ fun SettingsScreen(
     val memoryEnabled by themeViewModel.memoryEnabled.collectAsState()
     val selectedEmbeddingModel by themeViewModel.selectedEmbeddingModel.collectAsState()
     val currentLanguage by themeViewModel.appLanguage.collectAsState()
+    val autoReadoutEnabled by themeViewModel.autoReadoutEnabled.collectAsState()
     
     Scaffold(
         topBar = {
@@ -245,6 +246,45 @@ fun SettingsScreen(
                                 }
                             },
                             enabled = embeddingEnabled && !selectedEmbeddingModel.isNullOrBlank()
+                        )
+                    }
+
+                    // Auto Readout toggle
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.VolumeUp,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(24.dp)
+                        )
+
+                        Spacer(modifier = Modifier.width(16.dp))
+
+                        Column(
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.auto_readout),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = stringResource(R.string.auto_readout_description),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        Switch(
+                            checked = autoReadoutEnabled,
+                            onCheckedChange = { enabled ->
+                                themeViewModel.setAutoReadoutEnabled(enabled)
+                            }
                         )
                     }
 

@@ -32,6 +32,9 @@ class ThemeViewModel(private val context: Context) : ViewModel() {
 
     private val _memoryEnabled = MutableStateFlow(false)
     val memoryEnabled: StateFlow<Boolean> = _memoryEnabled.asStateFlow()
+
+    private val _autoReadoutEnabled = MutableStateFlow(false)
+    val autoReadoutEnabled: StateFlow<Boolean> = _autoReadoutEnabled.asStateFlow()
     
     init {
         // Load the saved theme preference
@@ -75,6 +78,13 @@ class ThemeViewModel(private val context: Context) : ViewModel() {
                 _memoryEnabled.value = enabled
             }
         }
+
+        // Load the saved auto-readout preference
+        viewModelScope.launch {
+            themePreferences.autoReadoutEnabled.collect { enabled ->
+                _autoReadoutEnabled.value = enabled
+            }
+        }
     }
     
     fun setThemeMode(mode: ThemeMode) {
@@ -110,6 +120,13 @@ class ThemeViewModel(private val context: Context) : ViewModel() {
         viewModelScope.launch {
             themePreferences.setMemoryEnabled(enabled)
             _memoryEnabled.value = enabled
+        }
+    }
+
+    fun setAutoReadoutEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            themePreferences.setAutoReadoutEnabled(enabled)
+            _autoReadoutEnabled.value = enabled
         }
     }
     

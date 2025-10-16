@@ -33,6 +33,7 @@ import com.llmhub.llmhub.embedding.ContextChunk
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import androidx.lifecycle.ViewModelProvider
 import androidx.activity.ComponentActivity
+import com.llmhub.llmhub.ui.components.TtsService
 
 class ChatViewModel(
     private val inferenceService: InferenceService,
@@ -43,6 +44,8 @@ class ChatViewModel(
 
     private val themePreferences = ThemePreferences(context)
     private val ragServiceManager = com.llmhub.llmhub.embedding.RagServiceManager.getInstance(context)
+    // Expose TTS service so ChatScreen can observe its isSpeaking state
+    val ttsService = TtsService(context)
 
     companion object {
         private const val KEY_CURRENT_CHAT_ID = "current_chat_id"
@@ -91,6 +94,10 @@ class ChatViewModel(
     // Re-embedding in progress (when embedding model changes)
     private val _isReembedding = MutableStateFlow(false)
     val isReembedding: StateFlow<Boolean> = _isReembedding.asStateFlow()
+
+    // TTS state - tracks which message is currently being read aloud
+    private val _currentTtsMessageId = MutableStateFlow<String?>(null)
+    val currentTtsMessageId: StateFlow<String?> = _currentTtsMessageId.asStateFlow()
 
     // Vision disabled state (for GPU with vision disabled on low RAM)
     private var isVisionDisabled: Boolean = false
@@ -1340,6 +1347,23 @@ class ChatViewModel(
                                     var segmentEnded = false
                                     var segmentHasContent = false
                                     
+                                    // Check if auto-readout is enabled before starting generation
+                                    val autoReadoutEnabled = try {
+                                        themePreferences.autoReadoutEnabled.first()
+                                    } catch (e: Exception) {
+                                        false
+                                    }
+                                    
+                                    // Initialize TTS for streaming if auto-readout is enabled
+                                    if (autoReadoutEnabled) {
+                                        Log.d("ChatViewModel", "Auto-readout enabled, preparing TTS for streaming message: $placeholderId")
+                                        // Stop any previous TTS before starting new generation
+                                        ttsService.stop()
+                                        // Don't set language here - let TTS auto-detect from content
+                                        // Set the current TTS message ID so the UI can show stop icon
+                                        _currentTtsMessageId.value = placeholderId
+                                    }
+                                    
                                     responseStream.collect { piece ->
                         val nowTs = System.currentTimeMillis()
                         if (piece.isNotEmpty() && firstChunkAt == 0L) firstChunkAt = nowTs
@@ -1350,6 +1374,16 @@ class ChatViewModel(
                                         // Check if we're getting meaningful content
                                         if (piece.trim().isNotEmpty()) {
                                             segmentHasContent = true
+                                        }
+                                        
+                                        // Auto-readout: Stream text to TTS as it arrives
+                                        // Only stream if this message is still marked as the active TTS target
+                                        if (autoReadoutEnabled && _currentTtsMessageId.value == placeholderId && piece.isNotEmpty()) {
+                                            try {
+                                                ttsService.addStreamingText(piece, autoDetectLanguage = true)
+                                            } catch (e: Exception) {
+                                                Log.w("ChatViewModel", "Failed to add text to TTS stream: ${e.message}")
+                                            }
                                         }
                                         
                                         // Note: Repetition detection is handled at the InferenceService layer
@@ -1496,6 +1530,32 @@ class ChatViewModel(
             }
 
             Log.d("ChatViewModel", "Saving stats for message $placeholderId: $estimatedTokens tokens, ${String.format("%.1f", tokensPerSecond)} tok/sec")
+
+            // Auto-readout: Flush any remaining buffered text when generation completes
+            try {
+                val autoReadoutEnabled = themePreferences.autoReadoutEnabled.first()
+                if (autoReadoutEnabled && _currentTtsMessageId.value == placeholderId) {
+                    Log.d("ChatViewModel", "Auto-readout enabled, flushing TTS buffer for message: $placeholderId")
+                    // Flush any remaining text in the buffer
+                    ttsService.flushStreamingBuffer()
+                    
+                    // Observe TTS speaking state and clear message ID when it finishes
+                    viewModelScope.launch {
+                        // Wait for TTS to actually finish speaking
+                        ttsService.isSpeaking.collect { isSpeaking ->
+                            if (!isSpeaking && _currentTtsMessageId.value == placeholderId) {
+                                // TTS has stopped speaking for this message
+                                _currentTtsMessageId.value = null
+                                Log.d("ChatViewModel", "Cleared TTS message ID after speaking completed")
+                                // Cancel this observer job after clearing
+                                this.coroutineContext[Job]?.cancel()
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w("ChatViewModel", "Failed to flush TTS buffer: ${e.message}")
+            }
             repository.updateMessageStats(placeholderId, estimatedTokens, tokensPerSecond)
         } else {
             Log.d("ChatViewModel", "No stats to save for message $placeholderId - content is blank")
@@ -1637,8 +1697,16 @@ class ChatViewModel(
         _isLoading.value = false
         _isLoadingModel.value = false
         isGenerating = false
+        // Clear TTS message ID when generation is stopped
+        _currentTtsMessageId.value = null
+        ttsService.stop()
         // Note: Don't clear streaming contents here to preserve partial responses
         // _tokenStats.value = null // No longer needed
+    }
+    
+    /** Clear the current TTS message ID (called when manually stopping TTS) */
+    fun clearCurrentTtsMessage() {
+        _currentTtsMessageId.value = null
     }
 
     fun switchModel(newModel: LLMModel) {
@@ -2009,6 +2077,7 @@ class ChatViewModel(
             }
             inferenceService.onCleared()
             ragServiceManager.cleanup() // Clean up RAG service
+            ttsService.shutdown() // Clean up TTS service
         }
         super.onCleared()
     }
@@ -2860,11 +2929,37 @@ class ChatViewModel(
                         var lastUpdateTime = 0L
                         val updateIntervalMs = 50L
                         
+                        // Check if auto-readout is enabled before starting generation
+                        val autoReadoutEnabled = try {
+                            themePreferences.autoReadoutEnabled.first()
+                        } catch (e: Exception) {
+                            false
+                        }
+                        
+                        // Initialize TTS for streaming if auto-readout is enabled
+                        if (autoReadoutEnabled) {
+                            Log.d("ChatViewModel", "Auto-readout enabled for regeneration, preparing TTS for streaming message: $placeholderId")
+                            // Stop any previous TTS before starting new generation
+                            ttsService.stop()
+                            // Don't set language here - let TTS auto-detect from content
+                            // Set the current TTS message ID so the UI can show stop icon
+                            _currentTtsMessageId.value = placeholderId
+                        }
+                        
                         responseStream.collect { piece ->
                             val nowTs = System.currentTimeMillis()
                             if (piece.isNotEmpty() && firstChunkAt == 0L) firstChunkAt = nowTs
                             lastChunkAt = nowTs
                             totalContent += piece
+                            
+                            // Auto-readout: Stream text to TTS as it arrives (for regeneration)
+                            if (autoReadoutEnabled && _currentTtsMessageId.value == placeholderId && piece.isNotEmpty()) {
+                                try {
+                                    ttsService.addStreamingText(piece, autoDetectLanguage = true)
+                                } catch (e: Exception) {
+                                    Log.w("ChatViewModel", "Failed to add text to TTS stream during regeneration: ${e.message}")
+                                }
+                            }
                             
                             // Note: Repetition detection is handled at the InferenceService layer
                             // Note: No artificial length limit - let the model's natural token limit handle it

@@ -143,6 +143,15 @@ fun ChatScreen(
     // Embedding state
     val isEmbeddingEnabled by viewModel.isEmbeddingEnabled.collectAsState()
     
+    // TTS Service - use ViewModel's TTS service (same instance for auto-readout and manual)
+    val ttsService = viewModel.ttsService
+    val isTtsSpeaking by ttsService.isSpeaking.collectAsState()
+    // Track TTS message from ViewModel (for auto-readout) and local manual TTS
+    val viewModelTtsMessageId by viewModel.currentTtsMessageId.collectAsState()
+    var manualTtsMessageId by remember { mutableStateOf<String?>(null) }
+    // Combined: use ViewModel's ID if set (auto-readout), otherwise use manual ID
+    val currentTtsMessageId = viewModelTtsMessageId ?: manualTtsMessageId
+    
     var modelMenuExpanded by remember { mutableStateOf(false) }
     
     // Backend selection state
@@ -182,6 +191,7 @@ fun ChatScreen(
     }
     
     // Cleanup on dispose - unload model to free memory
+    // Note: TTS service is owned by ViewModel and will be cleaned up there
     DisposableEffect(Unit) {
         onDispose {
             viewModel.unloadModel()
@@ -582,7 +592,23 @@ fun ChatScreen(
                                     editedPromptText = message.content
                                     // Do not clear focus; MessageInput will request focus and open keyboard
                                 }
-                            } else null
+                            } else null,
+                            onTtsSpeak = if (!message.isFromUser && message.content.isNotBlank()) {
+                                { text ->
+                                    // Manual TTS button - use local manual ID
+                                    manualTtsMessageId = message.id
+                                    ttsService.speak(text)
+                                }
+                            } else null,
+                            onTtsStop = if (!message.isFromUser && message.content.isNotBlank()) {
+                                {
+                                    ttsService.stop()
+                                    // Clear both manual and auto-readout IDs
+                                    manualTtsMessageId = null
+                                    viewModel.clearCurrentTtsMessage()
+                                }
+                            } else null,
+                            isTtsSpeaking = isTtsSpeaking && currentTtsMessageId == message.id
                         )
                     }
                 }

@@ -297,6 +297,10 @@
     <string name="max_recording_reached">Durasi rekaman maksimum tercapai (30 detik)</string>
     <string name="remaining">tersisa</string>
 
+    <!-- Text-to-Speech -->
+    <string name="auto_readout">Pembacaan Otomatis</string>
+    <string name="auto_readout_description">Membaca respons AI dengan suara keras secara otomatis setelah mengirim pesan</string>
+
     <!-- Image actions -->
     <string name="image_copied_clipboard">Gambar disalin dari obrolan</string>
     <string name="image_copied_to_clipboard">Gambar disalin ke clipboard</string>

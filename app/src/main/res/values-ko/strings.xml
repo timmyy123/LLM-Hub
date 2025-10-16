@@ -297,6 +297,10 @@
     <string name="max_recording_reached">최대 녹음 시간 도달 (30초)</string>
     <string name="remaining">남음</string>
 
+    <!-- Text-to-Speech -->
+    <string name="auto_readout">자동 읽어주기</string>
+    <string name="auto_readout_description">메시지 전송 후 AI 응답을 자동으로 소리내어 읽어줍니다</string>
+
     <!-- Image actions -->
     <string name="image_copied_clipboard">채팅에서 이미지 복사됨</string>
     <string name="image_copied_to_clipboard">이미지가 클립보드에 복사됨</string>

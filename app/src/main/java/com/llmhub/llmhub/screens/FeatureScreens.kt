@@ -38,6 +38,7 @@ import com.llmhub.llmhub.ui.components.AudioInputService
 import com.llmhub.llmhub.viewmodels.TranslatorViewModel
 import com.llmhub.llmhub.viewmodels.TranscriberViewModel
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 // Language data class
 data class Language(val code: String, val nameResId: Int)
@@ -228,6 +229,10 @@ fun TranslatorScreen(
     // Clipboard manager
     val clipboardManager = LocalClipboardManager.current
     
+    // TTS Service
+    val ttsService = remember { com.llmhub.llmhub.ui.components.TtsService(context) }
+    val isTtsSpeaking by ttsService.isSpeaking.collectAsState()
+    
     // Parsed transcription and translation for audio mode
     var transcriptionText by remember { mutableStateOf("") }
     var translationText by remember { mutableStateOf("") }
@@ -278,6 +283,37 @@ fun TranslatorScreen(
     var sourceExpanded by remember { mutableStateOf(false) }
     var targetExpanded by remember { mutableStateOf(false) }
     var showSettingsSheet by remember { mutableStateOf(false) }
+
+    // If user changes languages or auto-detect setting, make sure any TTS state resets so icons don't stick
+    LaunchedEffect(sourceLanguageIndex, targetLanguageIndex, autoDetectSource) {
+        if (isTtsSpeaking) {
+            ttsService.stop()
+        }
+    }
+
+    // Helpers to choose appropriate TTS locale for source/target
+    fun codeToLocale(code: String): Locale =
+        Locale.forLanguageTag(code).let { tagLocale ->
+            if (tagLocale.language.isNullOrBlank()) Locale(code) else tagLocale
+        }
+
+    fun localeForTarget(): Locale = codeToLocale(persistedTargetCode.ifBlank { Locale.getDefault().toLanguageTag() })
+
+    fun localeForSource(): Locale {
+        val code = if (!autoDetectSource) {
+            persistedSourceCode
+        } else {
+            // Try detected language first when auto-detect is on; fallback to persisted code or device default
+            val detected = detectedLanguage?.trim().orEmpty()
+            val supportedCodes = supportedLanguages.map { it.code }.toSet()
+            when {
+                detected in supportedCodes -> detected
+                persistedSourceCode.isNotBlank() -> persistedSourceCode
+                else -> Locale.getDefault().toLanguageTag()
+            }
+        }
+        return codeToLocale(code)
+    }
 
     // Pickers
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -346,8 +382,9 @@ fun TranslatorScreen(
             // Release audio player
             audioPlayer?.release()
             audioPlayer = null
-            // Unload model to free memory
+            // Unload model to free memory and shutdown TTS
             viewModel.unloadModel()
+            ttsService.shutdown()
         }
     }
 
@@ -717,6 +754,27 @@ fun TranslatorScreen(
                                             )
                                         }
                                         
+                                        // TTS button for input text (source language)
+                                        if (inputText.isNotBlank()) {
+                                            IconButton(
+                                                onClick = { 
+                                                    if (isTtsSpeaking) {
+                                                        ttsService.stop()
+                                                    } else {
+                                                        // Set TTS to source language before speaking
+                                                        ttsService.setLanguage(localeForSource())
+                                                        ttsService.speak(inputText)
+                                                    }
+                                                }
+                                            ) {
+                                                Icon(
+                                                    if (isTtsSpeaking) Icons.Default.Stop else Icons.Default.VolumeUp,
+                                                    contentDescription = if (isTtsSpeaking) "Stop reading" else "Read aloud",
+                                                    tint = if (isTtsSpeaking) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+                                        
                                         Spacer(modifier = Modifier.weight(1f))
                                         
                                         // Image attachment (only show if vision is enabled)
@@ -997,6 +1055,26 @@ fun TranslatorScreen(
                                                     modifier = Modifier.weight(1f),
                                                     color = MaterialTheme.colorScheme.onSurface
                                                 )
+                                                // TTS button for source language (transcription)
+                                                IconButton(
+                                                    onClick = { 
+                                                        if (isTtsSpeaking) {
+                                                            ttsService.stop()
+                                                        } else {
+                                                            // Set TTS to source language before speaking
+                                                            ttsService.setLanguage(localeForSource())
+                                                            ttsService.speak(transcriptionText)
+                                                        }
+                                                    }
+                                                ) {
+                                                    Icon(
+                                                        if (isTtsSpeaking) Icons.Default.Stop else Icons.Default.VolumeUp,
+                                                        contentDescription = if (isTtsSpeaking) "Stop reading" else "Read aloud",
+                                                        tint = if (isTtsSpeaking) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
+                                                }
+                                                // Copy button
                                                 IconButton(
                                                     onClick = { 
                                                         clipboardManager.setText(AnnotatedString(transcriptionText))
@@ -1038,6 +1116,26 @@ fun TranslatorScreen(
                                         style = MaterialTheme.typography.bodyLarge,
                                         modifier = Modifier.weight(1f)
                                     )
+                                    // TTS button (target language)
+                                    IconButton(
+                                        onClick = { 
+                                            if (isTtsSpeaking) {
+                                                ttsService.stop()
+                                            } else {
+                                                // Set TTS to target language before speaking
+                                                ttsService.setLanguage(localeForTarget())
+                                                ttsService.speak(translationText)
+                                            }
+                                        }
+                                    ) {
+                                        Icon(
+                                            if (isTtsSpeaking) Icons.Default.Stop else Icons.Default.VolumeUp,
+                                            contentDescription = if (isTtsSpeaking) "Stop reading" else "Read aloud",
+                                            tint = if (isTtsSpeaking) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                    // Copy button
                                     IconButton(
                                         onClick = { 
                                             clipboardManager.setText(AnnotatedString(translationText))
@@ -1063,6 +1161,25 @@ fun TranslatorScreen(
                                         style = MaterialTheme.typography.bodyLarge,
                                         modifier = Modifier.weight(1f)
                                     )
+                                    // TTS button (target language)
+                                    IconButton(
+                                        onClick = { 
+                                            if (isTtsSpeaking) {
+                                                ttsService.stop()
+                                            } else {
+                                                // Set TTS to target language before speaking
+                                                ttsService.setLanguage(localeForTarget())
+                                                ttsService.speak(outputText)
+                                            }
+                                        }
+                                    ) {
+                                        Icon(
+                                            if (isTtsSpeaking) Icons.Default.Stop else Icons.Default.VolumeUp,
+                                            contentDescription = if (isTtsSpeaking) "Stop reading" else "Read aloud",
+                                            tint = if (isTtsSpeaking) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    // Copy button
                                     IconButton(
                                         onClick = { 
                                             clipboardManager.setText(AnnotatedString(outputText))
@@ -1612,6 +1729,10 @@ fun ScamDetectorScreen(
     // Settings sheet state
     var showSettingsSheet by remember { mutableStateOf(false) }
     
+    // TTS Service
+    val ttsService = remember { com.llmhub.llmhub.ui.components.TtsService(context) }
+    val isTtsSpeaking by ttsService.isSpeaking.collectAsState()
+    
     // Scroll state for auto-scrolling
     val scrollState = rememberScrollState()
     
@@ -1634,10 +1755,11 @@ fun ScamDetectorScreen(
         }
     }
     
-    // Cleanup on dispose - unload model to free memory
+    // Cleanup on dispose - unload model to free memory and shutdown TTS
     DisposableEffect(Unit) {
         onDispose {
             viewModel.unloadModel()
+            ttsService.shutdown()
         }
     }
     
@@ -1940,6 +2062,23 @@ fun ScamDetectorScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.End
                             ) {
+                                // TTS button
+                                IconButton(
+                                    onClick = {
+                                        if (isTtsSpeaking) {
+                                            ttsService.stop()
+                                        } else {
+                                            ttsService.speak(outputText)
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        if (isTtsSpeaking) Icons.Default.Stop else Icons.Default.VolumeUp,
+                                        contentDescription = if (isTtsSpeaking) "Stop reading" else "Read aloud",
+                                        tint = if (isTtsSpeaking) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                // Copy button
                                 IconButton(
                                     onClick = {
                                         clipboardManager.setText(AnnotatedString(outputText))

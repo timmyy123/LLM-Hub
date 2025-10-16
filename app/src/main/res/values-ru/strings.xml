@@ -325,6 +325,10 @@
     <string name="max_recording_reached">Достигнута максимальная длительность записи (30 секунд)</string>
     <string name="remaining">осталось</string>
     
+    <!-- Text-to-Speech -->
+    <string name="auto_readout">Автоматическое Озвучивание</string>
+    <string name="auto_readout_description">Автоматически озвучивать ответы ИИ после отправки сообщения</string>
+    
     <!-- Multimodal Support -->
     <string name="model_supports_multimodal">Зрение+Аудио+Текст</string>
     <string name="multimodal_format">%1$s+%2$s+Текст</string>
