@@ -30,6 +30,8 @@ class TtsService(private val context: Context) {
     private var utteranceId = 0
     // Track number of in-flight utterances so we can reliably set speaking=false
     private val inFlightUtterances = AtomicInteger(0)
+    // Track if language has been detected for current stream
+    private var languageDetectedForStream = false
     
     companion object {
         private const val TAG = "TtsService"
@@ -78,24 +80,64 @@ class TtsService(private val context: Context) {
                 latinChars > totalChars * 0.3 -> {
                     // For Latin scripts, check common words for specific languages
                     val lower = sample.lowercase()
+                    
+                    // Count matches for each language (longer, more specific words get priority)
+                    var deScore = 0
+                    var esScore = 0
+                    var frScore = 0
+                    var itScore = 0
+                    var ptScore = 0
+                    var plScore = 0
+                    var trScore = 0
+                    var idScore = 0
+                    
+                    // German - distinctive words
+                    if (lower.containsAny("und", "nicht", "ist", "der", "die", "das", "mit", "für", "auch", "aber", "oder", "wird", "wurden", "worden")) deScore += 3
+                    if (lower.containsAny("ich", "Sie", "sie", "wir", "ihm", "ihn", "vom", "zum", "zur")) deScore += 2
+                    
+                    // Spanish - distinctive words
+                    if (lower.containsAny("que", "está", "son", "están", "pero", "porque", "como", "muy", "donde", "cuando", "sobre", "entre")) esScore += 3
+                    if (lower.containsAny("el", "la", "los", "las", "del", "por", "para", "con", "sin", "ser", "estar")) esScore += 2
+                    
+                    // French - distinctive words
+                    if (lower.containsAny("est", "sont", "être", "avec", "dans", "pour", "qui", "que", "mais", "où", "aussi", "très", "plus", "tous", "toutes", "leurs", "votre", "notre")) frScore += 3
+                    if (lower.containsAny("le", "la", "les", "un", "une", "des", "du", "au", "aux", "ce", "cette", "ces", "vous", "nous", "elle", "ils", "elles")) frScore += 2
+                    
+                    // Italian - distinctive words  
+                    if (lower.containsAny("che", "sono", "è", "non", "essere", "anche", "più", "tutti", "quale", "dove", "quando", "quindi", "perché", "però", "ancora")) itScore += 3
+                    if (lower.containsAny("il", "lo", "la", "gli", "le", "del", "della", "dei", "delle", "con", "per", "questa", "questo", "questi")) itScore += 2
+                    
+                    // Portuguese - distinctive words
+                    if (lower.containsAny("que", "não", "são", "está", "estão", "também", "muito", "mais", "com", "ser", "onde", "quando", "porque", "mas", "ainda", "sobre")) ptScore += 3
+                    if (lower.containsAny("o", "os", "as", "um", "uma", "do", "da", "dos", "das", "para", "pelo", "pela", "pelos", "pelas", "você", "ele", "ela", "eles", "elas")) ptScore += 2
+                    
+                    // Polish - distinctive words
+                    if (lower.containsAny("jest", "nie", "się", "był", "była", "było", "były", "można", "który", "która", "które", "bardzo", "zawsze", "teraz", "tylko", "jeszcze", "przez")) plScore += 3
+                    if (lower.containsAny("i", "w", "z", "na", "do", "po", "dla", "od", "za", "jego", "jej", "ich", "tym", "tego")) plScore += 2
+                    
+                    // Turkish - distinctive words
+                    if (lower.containsAny("bir", "için", "değil", "olan", "olarak", "gibi", "çok", "daha", "ama", "şu", "bu", "ile", "kadar", "diye")) trScore += 3
+                    if (lower.containsAny("ve", "da", "de", "mi", "mı", "var", "yok", "ben", "sen", "biz", "onlar")) trScore += 2
+                    
+                    // Indonesian - distinctive words
+                    if (lower.containsAny("yang", "tidak", "adalah", "untuk", "dengan", "dari", "pada", "akan", "juga", "karena", "seperti", "atau", "sudah", "telah", "sebagai", "tersebut")) idScore += 3
+                    if (lower.containsAny("dan", "di", "ke", "ini", "itu", "ada", "oleh", "dalam", "dapat", "bisa", "saya", "kami", "mereka", "anda", "kita")) idScore += 2
+                    
+                    // Log detection scores for debugging
+                    Log.d(TAG, "Language scores - DE:$deScore ES:$esScore FR:$frScore IT:$itScore PT:$ptScore PL:$plScore TR:$trScore ID:$idScore")
+                    
+                    // Return language with highest score
+                    val maxScore = maxOf(deScore, esScore, frScore, itScore, ptScore, plScore, trScore, idScore)
                     when {
-                        // German
-                        lower.containsAny("der", "die", "das", "und", "ich", "ist", "nicht", "Sie", "mit", "für") -> Locale("de")
-                        // Spanish
-                        lower.containsAny("el", "la", "de", "que", "y", "en", "un", "ser", "se", "no", "está", "por", "para") -> Locale("es")
-                        // French
-                        lower.containsAny("le", "de", "un", "être", "et", "à", "il", "avoir", "ne", "je", "son", "que", "se", "qui", "ce", "dans", "en", "du", "elle", "au", "pour", "pas", "sur", "vous") -> Locale("fr")
-                        // Italian
-                        lower.containsAny("il", "di", "che", "è", "e", "la", "per", "un", "non", "in", "sono", "mi", "ho", "con", "si") -> Locale("it")
-                        // Portuguese
-                        lower.containsAny("o", "de", "que", "e", "do", "da", "em", "um", "para", "é", "com", "não", "uma", "os", "no", "se", "na", "por", "mais", "as", "dos", "como", "mas", "foi", "ao", "ele", "das", "tem", "à", "seu", "sua", "ou", "ser", "quando", "muito", "há", "nos", "já", "está", "eu", "também", "só", "pelo", "pela", "até", "isso", "ela", "entre", "era", "depois", "sem", "mesmo", "aos", "ter", "seus", "quem", "nas", "me", "esse", "eles", "estão", "você", "tinha", "foram", "essa", "num", "nem", "suas", "meu", "às", "minha", "têm", "numa", "pelos", "elas", "havia", "seja", "qual", "será", "nós", "tenho", "lhe", "deles", "essas", "esses", "pelas", "este", "fosse", "dele") -> Locale("pt")
-                        // Polish
-                        lower.containsAny("i", "w", "z", "na", "do", "nie", "się", "to", "jest", "że", "o", "co", "jak", "po", "z", "dla", "czy", "ale", "od", "za", "jego", "jej", "ich", "być", "który", "tym", "te", "są", "lub", "tylko", "przez", "może", "tego", "tak", "już", "pan", "bardzo", "może", "można", "nawet", "został", "został") -> Locale("pl")
-                        // Turkish
-                        lower.containsAny("bir", "ve", "bu", "da", "için", "ne", "ile", "mi", "daha", "var", "olan", "gibi", "çok", "ben", "sen", "biz", "ama", "şu", "olarak", "diye", "kadar", "değil", "yok", "mı", "ki") -> Locale("tr")
-                        // Indonesian
-                        lower.containsAny("yang", "dan", "di", "untuk", "dengan", "ini", "pada", "adalah", "dari", "ke", "tidak", "akan", "ada", "oleh", "saya", "sebagai", "atau", "sudah", "bisa", "itu", "seperti", "juga", "karena", "dalam", "dapat", "hal", "tersebut", "mereka", "kami", "telah", "tentang", "jika", "hanya", "sebuah", "ia", "lebih", "harus", "banyak", "anda", "bila", "kita", "semua", "bahwa") -> Locale("id")
-                        // Default to English for Latin script
+                        maxScore == 0 -> Locale("en") // No matches, default to English
+                        deScore == maxScore -> Locale("de")
+                        esScore == maxScore -> Locale("es")
+                        frScore == maxScore -> Locale("fr")
+                        itScore == maxScore -> Locale("it")
+                        ptScore == maxScore -> Locale("pt")
+                        plScore == maxScore -> Locale("pl")
+                        trScore == maxScore -> Locale("tr")
+                        idScore == maxScore -> Locale("id")
                         else -> Locale("en")
                     }
                 }
@@ -208,21 +250,22 @@ class TtsService(private val context: Context) {
     fun addStreamingText(partialText: String, autoDetectLanguage: Boolean = false) {
         if (!isInitialized || tts == null) return
         
-        val wasEmpty = textBuffer.isEmpty()
         textBuffer.append(partialText)
-        
-        // Auto-detect language from first chunk (once per stream)
-        if (wasEmpty && autoDetectLanguage && textBuffer.length >= 50) {
-            val detectedLocale = detectLanguage(textBuffer.toString())
-            Log.d(TAG, "Auto-detected language for streaming: ${detectedLocale.language}")
-            setLanguage(detectedLocale)
-        }
         
         // Check if we have a complete sentence
         val bufferedText = textBuffer.toString()
         val lastChar = bufferedText.lastOrNull()
         
         if (lastChar != null && lastChar in SENTENCE_DELIMITERS) {
+            // Auto-detect language from first sentence before speaking
+            if (autoDetectLanguage && !languageDetectedForStream && bufferedText.isNotBlank()) {
+                val detectedLocale = detectLanguage(bufferedText)
+                Log.d(TAG, "Auto-detected language from first sentence: ${detectedLocale.language}")
+                Log.d(TAG, "First sentence preview: ${bufferedText.take(100)}")
+                setLanguage(detectedLocale)
+                languageDetectedForStream = true
+            }
+            
             // Extract complete sentences
             val sentences = extractCompleteSentences(bufferedText)
             
@@ -254,6 +297,7 @@ class TtsService(private val context: Context) {
             tts?.speak(cleanText, TextToSpeech.QUEUE_ADD, null, id)
         }
         textBuffer.clear()
+        languageDetectedForStream = false
     }
     
     /**
@@ -263,6 +307,7 @@ class TtsService(private val context: Context) {
         tts?.stop()
         textBuffer.clear()
         inFlightUtterances.set(0)
+        languageDetectedForStream = false
         _isSpeaking.value = false
         _currentText.value = ""
     }
