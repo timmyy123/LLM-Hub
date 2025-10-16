@@ -2068,6 +2068,9 @@ fun ScamDetectorScreen(
                                         if (isTtsSpeaking) {
                                             ttsService.stop()
                                         } else {
+                                            // Set language to app locale before speaking
+                                            val appLocale = com.llmhub.llmhub.utils.LocaleHelper.getCurrentLocale(context)
+                                            ttsService.setLanguage(appLocale)
                                             ttsService.speak(outputText)
                                         }
                                     }

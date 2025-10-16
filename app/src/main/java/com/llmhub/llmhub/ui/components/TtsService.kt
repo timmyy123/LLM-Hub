@@ -30,8 +30,6 @@ class TtsService(private val context: Context) {
     private var utteranceId = 0
     // Track number of in-flight utterances so we can reliably set speaking=false
     private val inFlightUtterances = AtomicInteger(0)
-    // Track if language has been detected for current stream
-    private var languageDetectedForStream = false
     
     companion object {
         private const val TAG = "TtsService"
@@ -39,117 +37,122 @@ class TtsService(private val context: Context) {
         // Sentence delimiters for buffering
         private val SENTENCE_DELIMITERS = setOf('.', '!', '?', '。', '！', '？')
         
+        /*
         /**
          * Detect language from text using character-based heuristics.
          * Prioritizes the 14 supported app locales.
+         * 
+         * NOTE: Currently not used - TTS uses app language setting instead.
+         * Kept here for potential future use.
          */
-        fun detectLanguage(text: String): Locale {
-            if (text.isBlank()) return Locale.getDefault()
+        // fun detectLanguage(text: String): Locale {
+        //     if (text.isBlank()) return Locale.getDefault()
             
-            // Sample first 200 chars for detection
-            val sample = text.take(200)
+        //     // Sample first 200 chars for detection
+        //     val sample = text.take(200)
             
-            // Count character types
-            var arabicChars = 0
-            var cyrillicChars = 0
-            var greekChars = 0
-            var hangulChars = 0
-            var hiraganaKatakanaChars = 0
-            var latinChars = 0
+        //     // Count character types
+        //     var arabicChars = 0
+        //     var cyrillicChars = 0
+        //     var greekChars = 0
+        //     var hangulChars = 0
+        //     var hiraganaKatakanaChars = 0
+        //     var latinChars = 0
             
-            for (char in sample) {
-                when (char.code) {
-                    in 0x0600..0x06FF, in 0x0750..0x077F, in 0xFB50..0xFDFF, in 0xFE70..0xFEFF -> arabicChars++
-                    in 0x0400..0x04FF, in 0x0500..0x052F -> cyrillicChars++
-                    in 0x0370..0x03FF, in 0x1F00..0x1FFF -> greekChars++
-                    in 0xAC00..0xD7AF -> hangulChars++
-                    in 0x3040..0x309F, in 0x30A0..0x30FF -> hiraganaKatakanaChars++
-                    in 0x0041..0x005A, in 0x0061..0x007A, in 0x00C0..0x00FF, in 0x0100..0x017F -> latinChars++
-                }
-            }
+        //     for (char in sample) {
+        //         when (char.code) {
+        //             in 0x0600..0x06FF, in 0x0750..0x077F, in 0xFB50..0xFDFF, in 0xFE70..0xFEFF -> arabicChars++
+        //             in 0x0400..0x04FF, in 0x0500..0x052F -> cyrillicChars++
+        //             in 0x0370..0x03FF, in 0x1F00..0x1FFF -> greekChars++
+        //             in 0xAC00..0xD7AF -> hangulChars++
+        //             in 0x3040..0x309F, in 0x30A0..0x30FF -> hiraganaKatakanaChars++
+        //             in 0x0041..0x005A, in 0x0061..0x007A, in 0x00C0..0x00FF, in 0x0100..0x017F -> latinChars++
+        //         }
+        //     }
             
-            val totalChars = sample.length
+        //     val totalChars = sample.length
             
-            // Detect based on character percentages (threshold: 20%)
-            return when {
-                arabicChars > totalChars * 0.2 -> Locale("ar")
-                cyrillicChars > totalChars * 0.2 -> Locale("ru")
-                greekChars > totalChars * 0.2 -> Locale("el")
-                hangulChars > totalChars * 0.2 -> Locale("ko")
-                hiraganaKatakanaChars > totalChars * 0.2 -> Locale("ja")
-                latinChars > totalChars * 0.3 -> {
-                    // For Latin scripts, check common words for specific languages
-                    val lower = sample.lowercase()
+        //     // Detect based on character percentages (threshold: 20%)
+        //     return when {
+        //         arabicChars > totalChars * 0.2 -> Locale("ar")
+        //         cyrillicChars > totalChars * 0.2 -> Locale("ru")
+        //         greekChars > totalChars * 0.2 -> Locale("el")
+        //         hangulChars > totalChars * 0.2 -> Locale("ko")
+        //         hiraganaKatakanaChars > totalChars * 0.2 -> Locale("ja")
+        //         latinChars > totalChars * 0.3 -> {
+        //             // For Latin scripts, check common words for specific languages
+        //             val lower = sample.lowercase()
                     
-                    // Count matches for each language (longer, more specific words get priority)
-                    var deScore = 0
-                    var esScore = 0
-                    var frScore = 0
-                    var itScore = 0
-                    var ptScore = 0
-                    var plScore = 0
-                    var trScore = 0
-                    var idScore = 0
+        //             // Count matches for each language (longer, more specific words get priority)
+        //             var deScore = 0
+        //             var esScore = 0
+        //             var frScore = 0
+        //             var itScore = 0
+        //             var ptScore = 0
+        //             var plScore = 0
+        //             var trScore = 0
+        //             var idScore = 0
                     
-                    // German - distinctive words
-                    if (lower.containsAny("und", "nicht", "ist", "der", "die", "das", "mit", "für", "auch", "aber", "oder", "wird", "wurden", "worden")) deScore += 3
-                    if (lower.containsAny("ich", "Sie", "sie", "wir", "ihm", "ihn", "vom", "zum", "zur")) deScore += 2
+        //             // German - distinctive words
+        //             if (lower.containsAny("und", "nicht", "ist", "der", "die", "das", "mit", "für", "auch", "aber", "oder", "wird", "wurden", "worden")) deScore += 3
+        //             if (lower.containsAny("ich", "Sie", "sie", "wir", "ihm", "ihn", "vom", "zum", "zur")) deScore += 2
                     
-                    // Spanish - distinctive words
-                    if (lower.containsAny("que", "está", "son", "están", "pero", "porque", "como", "muy", "donde", "cuando", "sobre", "entre")) esScore += 3
-                    if (lower.containsAny("el", "la", "los", "las", "del", "por", "para", "con", "sin", "ser", "estar")) esScore += 2
+        //             // Spanish - distinctive words
+        //             if (lower.containsAny("que", "está", "son", "están", "pero", "porque", "como", "muy", "donde", "cuando", "sobre", "entre")) esScore += 3
+        //             if (lower.containsAny("el", "la", "los", "las", "del", "por", "para", "con", "sin", "ser", "estar")) esScore += 2
                     
-                    // French - distinctive words
-                    if (lower.containsAny("est", "sont", "être", "avec", "dans", "pour", "qui", "que", "mais", "où", "aussi", "très", "plus", "tous", "toutes", "leurs", "votre", "notre")) frScore += 3
-                    if (lower.containsAny("le", "la", "les", "un", "une", "des", "du", "au", "aux", "ce", "cette", "ces", "vous", "nous", "elle", "ils", "elles")) frScore += 2
+        //             // French - distinctive words
+        //             if (lower.containsAny("est", "sont", "être", "avec", "dans", "pour", "qui", "que", "mais", "où", "aussi", "très", "plus", "tous", "toutes", "leurs", "votre", "notre")) frScore += 3
+        //             if (lower.containsAny("le", "la", "les", "un", "une", "des", "du", "au", "aux", "ce", "cette", "ces", "vous", "nous", "elle", "ils", "elles")) frScore += 2
                     
-                    // Italian - distinctive words  
-                    if (lower.containsAny("che", "sono", "è", "non", "essere", "anche", "più", "tutti", "quale", "dove", "quando", "quindi", "perché", "però", "ancora")) itScore += 3
-                    if (lower.containsAny("il", "lo", "la", "gli", "le", "del", "della", "dei", "delle", "con", "per", "questa", "questo", "questi")) itScore += 2
+        //             // Italian - distinctive words  
+        //             if (lower.containsAny("che", "sono", "è", "non", "essere", "anche", "più", "tutti", "quale", "dove", "quando", "quindi", "perché", "però", "ancora")) itScore += 3
+        //             if (lower.containsAny("il", "lo", "la", "gli", "le", "del", "della", "dei", "delle", "con", "per", "questa", "questo", "questi")) itScore += 2
                     
-                    // Portuguese - distinctive words
-                    if (lower.containsAny("que", "não", "são", "está", "estão", "também", "muito", "mais", "com", "ser", "onde", "quando", "porque", "mas", "ainda", "sobre")) ptScore += 3
-                    if (lower.containsAny("o", "os", "as", "um", "uma", "do", "da", "dos", "das", "para", "pelo", "pela", "pelos", "pelas", "você", "ele", "ela", "eles", "elas")) ptScore += 2
+        //             // Portuguese - distinctive words
+        //             if (lower.containsAny("que", "não", "são", "está", "estão", "também", "muito", "mais", "com", "ser", "onde", "quando", "porque", "mas", "ainda", "sobre")) ptScore += 3
+        //             if (lower.containsAny("o", "os", "as", "um", "uma", "do", "da", "dos", "das", "para", "pelo", "pela", "pelos", "pelas", "você", "ele", "ela", "eles", "elas")) ptScore += 2
                     
-                    // Polish - distinctive words
-                    if (lower.containsAny("jest", "nie", "się", "był", "była", "było", "były", "można", "który", "która", "które", "bardzo", "zawsze", "teraz", "tylko", "jeszcze", "przez")) plScore += 3
-                    if (lower.containsAny("i", "w", "z", "na", "do", "po", "dla", "od", "za", "jego", "jej", "ich", "tym", "tego")) plScore += 2
+        //             // Polish - distinctive words
+        //             if (lower.containsAny("jest", "nie", "się", "był", "była", "było", "były", "można", "który", "która", "które", "bardzo", "zawsze", "teraz", "tylko", "jeszcze", "przez")) plScore += 3
+        //             if (lower.containsAny("i", "w", "z", "na", "do", "po", "dla", "od", "za", "jego", "jej", "ich", "tym", "tego")) plScore += 2
                     
-                    // Turkish - distinctive words
-                    if (lower.containsAny("bir", "için", "değil", "olan", "olarak", "gibi", "çok", "daha", "ama", "şu", "bu", "ile", "kadar", "diye")) trScore += 3
-                    if (lower.containsAny("ve", "da", "de", "mi", "mı", "var", "yok", "ben", "sen", "biz", "onlar")) trScore += 2
+        //             // Turkish - distinctive words
+        //             if (lower.containsAny("bir", "için", "değil", "olan", "olarak", "gibi", "çok", "daha", "ama", "şu", "bu", "ile", "kadar", "diye")) trScore += 3
+        //             if (lower.containsAny("ve", "da", "de", "mi", "mı", "var", "yok", "ben", "sen", "biz", "onlar")) trScore += 2
                     
-                    // Indonesian - distinctive words
-                    if (lower.containsAny("yang", "tidak", "adalah", "untuk", "dengan", "dari", "pada", "akan", "juga", "karena", "seperti", "atau", "sudah", "telah", "sebagai", "tersebut")) idScore += 3
-                    if (lower.containsAny("dan", "di", "ke", "ini", "itu", "ada", "oleh", "dalam", "dapat", "bisa", "saya", "kami", "mereka", "anda", "kita")) idScore += 2
+        //             // Indonesian - distinctive words
+        //             if (lower.containsAny("yang", "tidak", "adalah", "untuk", "dengan", "dari", "pada", "akan", "juga", "karena", "seperti", "atau", "sudah", "telah", "sebagai", "tersebut")) idScore += 3
+        //             if (lower.containsAny("dan", "di", "ke", "ini", "itu", "ada", "oleh", "dalam", "dapat", "bisa", "saya", "kami", "mereka", "anda", "kita")) idScore += 2
                     
-                    // Log detection scores for debugging
-                    Log.d(TAG, "Language scores - DE:$deScore ES:$esScore FR:$frScore IT:$itScore PT:$ptScore PL:$plScore TR:$trScore ID:$idScore")
+        //             // Log detection scores for debugging
+        //             Log.d(TAG, "Language scores - DE:$deScore ES:$esScore FR:$frScore IT:$itScore PT:$ptScore PL:$plScore TR:$trScore ID:$idScore")
                     
-                    // Return language with highest score
-                    val maxScore = maxOf(deScore, esScore, frScore, itScore, ptScore, plScore, trScore, idScore)
-                    when {
-                        maxScore == 0 -> Locale("en") // No matches, default to English
-                        deScore == maxScore -> Locale("de")
-                        esScore == maxScore -> Locale("es")
-                        frScore == maxScore -> Locale("fr")
-                        itScore == maxScore -> Locale("it")
-                        ptScore == maxScore -> Locale("pt")
-                        plScore == maxScore -> Locale("pl")
-                        trScore == maxScore -> Locale("tr")
-                        idScore == maxScore -> Locale("id")
-                        else -> Locale("en")
-                    }
-                }
-                // Fallback to device locale
-                else -> Locale.getDefault()
-            }
-        }
+        //             // Return language with highest score
+        //             val maxScore = maxOf(deScore, esScore, frScore, itScore, ptScore, plScore, trScore, idScore)
+        //             when {
+        //                 maxScore == 0 -> Locale("en") // No matches, default to English
+        //                 deScore == maxScore -> Locale("de")
+        //                 esScore == maxScore -> Locale("es")
+        //                 frScore == maxScore -> Locale("fr")
+        //                 itScore == maxScore -> Locale("it")
+        //                 ptScore == maxScore -> Locale("pt")
+        //                 plScore == maxScore -> Locale("pl")
+        //                 trScore == maxScore -> Locale("tr")
+        //                 idScore == maxScore -> Locale("id")
+        //                 else -> Locale("en")
+        //             }
+        //         }
+        //         // Fallback to device locale
+        //         else -> Locale.getDefault()
+        //     }
+        // }
         
         private fun String.containsAny(vararg words: String): Boolean {
             val text = " $this "
             return words.any { word -> text.contains(" $word ", ignoreCase = true) }
         }
+        */
     }
     
     init {
@@ -206,9 +209,8 @@ class TtsService(private val context: Context) {
      * Speak the given text immediately.
      * Stops any currently speaking text.
      * @param text The text to speak
-     * @param autoDetectLanguage If true, automatically detect and set language before speaking
      */
-    fun speak(text: String, autoDetectLanguage: Boolean = false) {
+    fun speak(text: String) {
         if (!isInitialized || tts == null) {
             Log.w(TAG, "TTS not initialized")
             return
@@ -217,13 +219,6 @@ class TtsService(private val context: Context) {
         if (text.isBlank()) {
             Log.w(TAG, "Cannot speak empty text")
             return
-        }
-        
-        // Auto-detect language if requested
-        if (autoDetectLanguage) {
-            val detectedLocale = detectLanguage(text)
-            Log.d(TAG, "Auto-detected language: ${detectedLocale.language} for text: ${text.take(50)}...")
-            setLanguage(detectedLocale)
         }
         
     stop() // Stop any current speech
@@ -247,7 +242,7 @@ class TtsService(private val context: Context) {
      * Add streaming text to buffer. Speaks complete sentences as they are formed.
      * This is for read-as-generating functionality.
      */
-    fun addStreamingText(partialText: String, autoDetectLanguage: Boolean = false) {
+    fun addStreamingText(partialText: String) {
         if (!isInitialized || tts == null) return
         
         textBuffer.append(partialText)
@@ -257,15 +252,6 @@ class TtsService(private val context: Context) {
         val lastChar = bufferedText.lastOrNull()
         
         if (lastChar != null && lastChar in SENTENCE_DELIMITERS) {
-            // Auto-detect language from first sentence before speaking
-            if (autoDetectLanguage && !languageDetectedForStream && bufferedText.isNotBlank()) {
-                val detectedLocale = detectLanguage(bufferedText)
-                Log.d(TAG, "Auto-detected language from first sentence: ${detectedLocale.language}")
-                Log.d(TAG, "First sentence preview: ${bufferedText.take(100)}")
-                setLanguage(detectedLocale)
-                languageDetectedForStream = true
-            }
-            
             // Extract complete sentences
             val sentences = extractCompleteSentences(bufferedText)
             
@@ -297,7 +283,6 @@ class TtsService(private val context: Context) {
             tts?.speak(cleanText, TextToSpeech.QUEUE_ADD, null, id)
         }
         textBuffer.clear()
-        languageDetectedForStream = false
     }
     
     /**
@@ -307,7 +292,6 @@ class TtsService(private val context: Context) {
         tts?.stop()
         textBuffer.clear()
         inFlightUtterances.set(0)
-        languageDetectedForStream = false
         _isSpeaking.value = false
         _currentText.value = ""
     }
@@ -344,11 +328,24 @@ class TtsService(private val context: Context) {
     
     /**
      * Set the language for TTS.
+     * Falls back to device default language if requested locale is not supported.
      */
     fun setLanguage(locale: Locale) {
         val result = tts?.setLanguage(locale)
         if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-            Log.w(TAG, "Language not supported: $locale")
+            Log.w(TAG, "Language not supported: $locale, trying device default")
+            // Fall back to device default locale
+            val defaultLocale = Locale.getDefault()
+            val fallbackResult = tts?.setLanguage(defaultLocale)
+            if (fallbackResult == TextToSpeech.LANG_MISSING_DATA || fallbackResult == TextToSpeech.LANG_NOT_SUPPORTED) {
+                Log.w(TAG, "Device default language also not supported: $defaultLocale, using English")
+                // Last resort: use English
+                tts?.setLanguage(Locale.ENGLISH)
+            } else {
+                Log.d(TAG, "Using device default language: ${defaultLocale.language}")
+            }
+        } else {
+            Log.d(TAG, "TTS language set to: ${locale.language}")
         }
     }
     

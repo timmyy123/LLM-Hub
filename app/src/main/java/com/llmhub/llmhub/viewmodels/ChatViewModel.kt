@@ -1360,7 +1360,9 @@ class ChatViewModel(
                                         Log.d("ChatViewModel", "Auto-readout enabled, preparing TTS for streaming message: $placeholderId")
                                         // Stop any previous TTS before starting new generation
                                         ttsService.stop()
-                                        // Don't set language here - let TTS auto-detect from content
+                                        // Set language to app's current locale
+                                        val appLocale = com.llmhub.llmhub.utils.LocaleHelper.getCurrentLocale(context)
+                                        ttsService.setLanguage(appLocale)
                                         // Set the current TTS message ID so the UI can show stop icon
                                         _currentTtsMessageId.value = placeholderId
                                     }
@@ -1381,7 +1383,7 @@ class ChatViewModel(
                                         // Only stream if this message is still marked as the active TTS target
                                         if (autoReadoutEnabled && _currentTtsMessageId.value == placeholderId && piece.isNotEmpty()) {
                                             try {
-                                                ttsService.addStreamingText(piece, autoDetectLanguage = true)
+                                                ttsService.addStreamingText(piece)
                                             } catch (e: Exception) {
                                                 Log.w("ChatViewModel", "Failed to add text to TTS stream: ${e.message}")
                                             }
@@ -2942,7 +2944,9 @@ class ChatViewModel(
                             Log.d("ChatViewModel", "Auto-readout enabled for regeneration, preparing TTS for streaming message: $placeholderId")
                             // Stop any previous TTS before starting new generation
                             ttsService.stop()
-                            // Don't set language here - let TTS auto-detect from content
+                            // Set language to app's current locale
+                            val appLocale = com.llmhub.llmhub.utils.LocaleHelper.getCurrentLocale(context)
+                            ttsService.setLanguage(appLocale)
                             // Set the current TTS message ID so the UI can show stop icon
                             _currentTtsMessageId.value = placeholderId
                         }
@@ -2956,7 +2960,7 @@ class ChatViewModel(
                             // Auto-readout: Stream text to TTS as it arrives (for regeneration)
                             if (autoReadoutEnabled && _currentTtsMessageId.value == placeholderId && piece.isNotEmpty()) {
                                 try {
-                                    ttsService.addStreamingText(piece, autoDetectLanguage = true)
+                                    ttsService.addStreamingText(piece)
                                 } catch (e: Exception) {
                                     Log.w("ChatViewModel", "Failed to add text to TTS stream during regeneration: ${e.message}")
                                 }
