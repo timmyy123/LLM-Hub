@@ -56,32 +56,32 @@ object ModelData {
             modelFormat = "task"
         ),
 
-        // LiteRT Community Models (pre-converted .task files)
+        // Llama-3.2 Models from vimal-yuvabe
         LLMModel(
-            name = "Llama-3.2 1B (INT8, 1.2k)",
-            description = "Meta's Llama 3.2 1B model optimized for on-device inference with INT8 quantization. Ready to download from HuggingFace (1.20GB)",
-            url = "https://huggingface.co/litert-community/Llama-3.2-1B-Instruct/resolve/main/Llama-3.2-1B-Instruct_multi-prefill-seq_q8_ekv1280.task?download=true",
+            name = "Llama-3.2 1B (INT8)",
+            description = "Meta's Llama 3.2 1B model with INT8 quantization. Optimized for on-device inference. Ready to download from HuggingFace (2.01GB)",
+            url = "https://huggingface.co/vimal-yuvabe/llama-3.2-1b-tflite/resolve/main/llama-3.2-1b-q8.task?download=true",
             category = "text",
-            sizeBytes = 1289661445L, // 1.20GB (actual size from HuggingFace)
-            source = "Meta via LiteRT Community",
+            sizeBytes = 2160086757L, // 2.01GB (actual size from HuggingFace)
+            source = "Meta via vimal-yuvabe",
             supportsVision = false,
             supportsGpu = false, // Llama models have GPU compatibility issues
             requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
-            contextWindowSize = 1280,
+            contextWindowSize = 4096,
             modelFormat = "task"
         ),
         
         LLMModel(
-            name = "Llama-3.2 3B (INT8, 1.2k)",
-            description = "Meta's Llama 3.2 3B model optimized for on-device inference with INT8 quantization. Ready to download from HuggingFace (3.08GB)",
-            url = "https://huggingface.co/litert-community/Llama-3.2-3B-Instruct/resolve/main/Llama-3.2-3B-Instruct_multi-prefill-seq_q8_ekv1280.task?download=true",
+            name = "Llama-3.2 3B (INT8)",
+            description = "Meta's Llama 3.2 3B model with INT8 quantization. Larger model for better performance. Ready to download from HuggingFace (5.11GB)",
+            url = "https://huggingface.co/vimal-yuvabe/llama-3.2-3b-tflite/resolve/main/llama-3.2-3B-q8.task?download=true",
             category = "text", 
-            sizeBytes = 3303118409L, // 3.08GB (actual size from HuggingFace)
-            source = "Meta via LiteRT Community",
+            sizeBytes = 5491473637L, // 5.11GB (actual size from HuggingFace)
+            source = "Meta via vimal-yuvabe",
             supportsVision = false,
-            supportsGpu = false, // Llama models have GPU compatibility issues
-            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
-            contextWindowSize = 1280,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 8),
+            contextWindowSize = 4096,
             modelFormat = "task"
         ),
 
@@ -314,8 +314,8 @@ object ModelData {
         • Gemma-3n E4B (Vision+Audio+Text, 4k context) - 4.33GB
         
         🔹 LLAMA-3.2 SERIES (Meta):
-        • Llama-3.2 1B (INT8, 1.2k context) - 1.20GB
-        • Llama-3.2 3B (INT8, 1.2k context) - 3.08GB
+        • Llama-3.2 1B (INT8) - 2.01GB
+        • Llama-3.2 3B (INT8) - 5.11GB
         
         🔹 PHI-4 SERIES (Microsoft):
         • Phi-4 Mini (INT8, 1.2k context) - 3.67GB
