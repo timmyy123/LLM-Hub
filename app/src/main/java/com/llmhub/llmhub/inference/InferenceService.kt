@@ -949,11 +949,27 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             
             val responseBuilder = StringBuilder()
             isGenerating = true
+            val isLlama = isLlamaModel(model)
+            
             currentSession.generateResponseAsync { partialResult, done ->
-                if (!isClosedForSend) {
-                    trySend(partialResult)
-                    responseBuilder.append(partialResult)
+                var processedResult = partialResult
+                var forceDone = done
+                
+                // For Llama models, check for stop tokens
+                if (isLlama && processedResult.isNotEmpty()) {
+                    val (cleaned, shouldStop) = processLlamaStopTokens(processedResult)
+                    processedResult = cleaned
+                    if (shouldStop) {
+                        forceDone = true
+                        Log.d(TAG, "Llama stop token detected for chat $chatId - ending generation")
+                    }
                 }
+                
+                if (!isClosedForSend && processedResult.isNotEmpty()) {
+                    trySend(processedResult)
+                    responseBuilder.append(processedResult)
+                }
+                
                 // Simple repetition detection: check recent window for repeated n-grams
                 val recent = responseBuilder.takeLast(600).toString()
                 if (recent.isNotEmpty() && hasRepetitionPattern(recent)) {
@@ -964,7 +980,8 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                     close()
                     return@generateResponseAsync
                 }
-                if (done) {
+                
+                if (forceDone) {
                     isGenerationComplete = true
                     isGenerating = false
                     // Update session token count with response tokens (using standardized 4 chars/token estimation)
@@ -995,6 +1012,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                     // Use the new session
                     val instance = modelInstance ?: throw IllegalStateException("No model loaded after reset")
                     val session = instance.session
+                    val isLlama = isLlamaModel(model)
                     
                     Log.d(TAG, "Created new session for recovery, attempting generation retry")
                     
@@ -1022,10 +1040,23 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                     }
                     
                     session.generateResponseAsync { partialResult, done ->
-                        if (!isClosedForSend) {
-                            trySend(partialResult)
+                        var processedResult = partialResult
+                        var forceDone = done
+                        
+                        // For Llama models, check for stop tokens
+                        if (isLlama && processedResult.isNotEmpty()) {
+                            val (cleaned, shouldStop) = processLlamaStopTokens(processedResult)
+                            processedResult = cleaned
+                            if (shouldStop) {
+                                forceDone = true
+                                Log.d(TAG, "Llama stop token detected in recovery for chat $chatId")
+                            }
                         }
-                        if (done) {
+                        
+                        if (!isClosedForSend && processedResult.isNotEmpty()) {
+                            trySend(processedResult)
+                        }
+                        if (forceDone) {
                             isGenerationComplete = true
                             close()
                         }
@@ -1041,6 +1072,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                         if (forceRecreateSession()) {
                             val instance = modelInstance ?: throw IllegalStateException("No model loaded after force recreate")
                             val session = instance.session
+                            val isLlama = isLlamaModel(model)
                             
                             Log.d(TAG, "Force recreated session, attempting generation retry")
                             
@@ -1068,10 +1100,23 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                             }
                             
                             session.generateResponseAsync { partialResult, done ->
-                                if (!isClosedForSend) {
-                                    trySend(partialResult)
+                                var processedResult = partialResult
+                                var forceDone = done
+                                
+                                // For Llama models, check for stop tokens
+                                if (isLlama && processedResult.isNotEmpty()) {
+                                    val (cleaned, shouldStop) = processLlamaStopTokens(processedResult)
+                                    processedResult = cleaned
+                                    if (shouldStop) {
+                                        forceDone = true
+                                        Log.d(TAG, "Llama stop token detected in force recovery for chat $chatId")
+                                    }
                                 }
-                                if (done) {
+                                
+                                if (!isClosedForSend && processedResult.isNotEmpty()) {
+                                    trySend(processedResult)
+                                }
+                                if (forceDone) {
                                     isGenerationComplete = true
                                     close()
                                 }
@@ -1128,6 +1173,49 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             counts[key] = c
         }
         return false
+    }
+    
+    /**
+     * Check if model is a Llama model based on name or source
+     */
+    private fun isLlamaModel(model: LLMModel): Boolean {
+        return model.name.contains("Llama", ignoreCase = true) || 
+               model.source.contains("Llama", ignoreCase = true)
+    }
+    
+    /**
+     * Clean Llama stop tokens from output and check if generation should stop
+     * Returns: Pair(cleanedText, shouldStop)
+     */
+    private fun processLlamaStopTokens(text: String): Pair<String, Boolean> {
+        // Llama 3.2 stop tokens
+        val stopTokens = listOf(
+            "<|eot_id|>",
+            "<|end_of_text|>",
+            "<|end|>",
+            "</s>"
+        )
+        
+        var cleaned = text
+        var shouldStop = false
+        
+        for (stopToken in stopTokens) {
+            if (cleaned.contains(stopToken)) {
+                shouldStop = true
+                // Remove the stop token and everything after it
+                val index = cleaned.indexOf(stopToken)
+                cleaned = cleaned.substring(0, index)
+                break
+            }
+        }
+        
+        // Also clean up any exposed role tokens
+        cleaned = cleaned.replace("<|start_header_id|>", "")
+                        .replace("<|end_header_id|>", "")
+                        .replace("assistant:", "")
+                        .replace("user:", "")
+        
+        return Pair(cleaned, shouldStop)
     }
 
     /**
