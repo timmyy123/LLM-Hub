@@ -1106,16 +1106,15 @@ fun TranslatorScreen(
                         ) {
                             // For audio mode, only show translation (transcription is above divider) - plain style (no Card)
                             if (inputMode == TranslatorViewModel.InputMode.AUDIO && translationText.isNotEmpty()) {
+                                Text(
+                                    text = translationText,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.Top
+                                    horizontalArrangement = Arrangement.End
                                 ) {
-                                    Text(
-                                        text = translationText,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        modifier = Modifier.weight(1f)
-                                    )
                                     // TTS button (target language)
                                     IconButton(
                                         onClick = { 
@@ -1151,16 +1150,15 @@ fun TranslatorScreen(
                                 }
                             } else if (inputMode != TranslatorViewModel.InputMode.AUDIO) {
                                 // Regular output for text/image modes
+                                Text(
+                                    text = outputText,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.Top
+                                    horizontalArrangement = Arrangement.End
                                 ) {
-                                    Text(
-                                        text = outputText,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        modifier = Modifier.weight(1f)
-                                    )
                                     // TTS button (target language)
                                     IconButton(
                                         onClick = { 
