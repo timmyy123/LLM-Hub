@@ -430,6 +430,8 @@
     <string name="feature_transcriber_desc">音声またはオーディオをオフラインでテキストに変換</string>
     <string name="feature_scam_detector">詐欺検出器</string>
     <string name="feature_scam_detector_desc">テキスト、画像、URLを分析して潜在的な詐欺を検出</string>
+    <string name="feature_github_repo">ソースコード</string>
+    <string name="feature_github_repo_desc">GitHubリポジトリ</string>
     
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">ライティング支援</string>

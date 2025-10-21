@@ -431,6 +431,8 @@
     <string name="feature_transcriber_desc">Transcribe voice or audio to text offline</string>
     <string name="feature_scam_detector">Scam Detector</string>
     <string name="feature_scam_detector_desc">Analyze text, images, or URLs for potential scams</string>
+    <string name="feature_github_repo">Source Code</string>
+    <string name="feature_github_repo_desc">GitHub Repository</string>
     
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">Writing Aid</string>

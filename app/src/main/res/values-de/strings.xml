@@ -410,6 +410,8 @@
     <string name="feature_transcriber_desc">Sprache oder Audio offline zu Text transkribieren</string>
     <string name="feature_scam_detector">Betrugsmelder</string>
     <string name="feature_scam_detector_desc">Analysiere Text, Bilder oder URLs auf mögliche Betrügereien</string>
+    <string name="feature_github_repo">Quellcode</string>
+    <string name="feature_github_repo_desc">GitHub-Repository</string>
     
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">Schreibhilfe</string>

@@ -430,6 +430,8 @@
     <string name="feature_transcriber_desc">Transkripsi suara atau audio ke teks secara offline</string>
     <string name="feature_scam_detector">Detektor Penipuan</string>
     <string name="feature_scam_detector_desc">Analisis teks, gambar, atau URL untuk penipuan potensial</string>
+    <string name="feature_github_repo">Kode Sumber</string>
+    <string name="feature_github_repo_desc">Repositori GitHub</string>
     
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">Bantuan Menulis</string>

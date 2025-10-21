@@ -431,6 +431,8 @@
     <string name="feature_transcriber_desc">Trascrivi voce o audio in testo offline</string>
     <string name="feature_scam_detector">Rilevatore di Truffe</string>
     <string name="feature_scam_detector_desc">Analizza testo, immagini o URL per possibili truffe</string>
+    <string name="feature_github_repo">Codice Sorgente</string>
+    <string name="feature_github_repo_desc">Repository GitHub</string>
     
     <!-- Writing Aid Screen -->
     

@@ -416,6 +416,24 @@
     <string name="litert_community_link">LiteRT Community sur Hugging Face</string>
     <string name="import_model_warning">⚠️ Important : Veuillez lire le README du modèle sur Hugging Face avant d\'importer. Entrez les bonnes capacités (vision, audio, GPU) et la taille de fenêtre de contexte comme spécifié dans la documentation du modèle. Des paramètres incorrects peuvent empêcher le modèle de fonctionner correctement.</string>
     
+    <!-- Home Screen -->
+    <string name="home_welcome">Bienvenue sur LLM Hub</string>
+    <string name="home_subtitle">Libérez la puissance de l\'IA dans votre poche — privé, rapide et hors ligne !</string>
+    
+    <!-- Feature Cards -->
+    <string name="feature_ai_chat">Chat IA</string>
+    <string name="feature_ai_chat_desc">Conversations multi-tours avec des modèles IA</string>
+    <string name="feature_writing_aid">Aide à l\'écriture</string>
+    <string name="feature_writing_aid_desc">Grammaire, style, paraphrase et ajustement du ton</string>
+    <string name="feature_translator">Traducteur</string>
+    <string name="feature_translator_desc">Traduire du texte de manière privée à l\'aide de modèles multimodaux</string>
+    <string name="feature_transcriber">Transcripteur</string>
+    <string name="feature_transcriber_desc">Transcrire voix ou audio en texte hors ligne</string>
+    <string name="feature_scam_detector">Détecteur d\'arnaques</string>
+    <string name="feature_scam_detector_desc">Analyser le texte, les images ou les URL pour détecter les arnaques potentielles</string>
+    <string name="feature_github_repo">Code Source</string>
+    <string name="feature_github_repo_desc">Dépôt GitHub</string>
+    
     <!-- Audio Features -->
     <string name="enable_audio_input">Activer l\'entrée audio</string>
     <string name="audio_input_enabled">Entrée audio activée</string>
@@ -442,22 +460,6 @@
     <string name="select_image">Sélectionner l\'image</string>
     <string name="change_image">Changer l\'image</string>
     <string name="transcription_result">Transcription</string>
-    
-    <!-- Home Screen -->
-    <string name="home_welcome">Bienvenue dans LLM Hub</string>
-    <string name="home_subtitle">Libérez la puissance de l\'IA dans votre poche — privée, rapide et hors ligne !</string>
-    
-    <!-- Feature Cards -->
-    <string name="feature_ai_chat">Chat IA</string>
-    <string name="feature_ai_chat_desc">Conversations multi-tours avec des modèles IA</string>
-    <string name="feature_writing_aid">Aide à la Rédaction</string>
-    <string name="feature_writing_aid_desc">Grammaire, style, paraphrase et ajustement du ton</string>
-    <string name="feature_translator">Traducteur</string>
-    <string name="feature_translator_desc">Traduire du texte en privé avec des modèles multimodaux</string>
-    <string name="feature_transcriber">Transcripteur</string>
-    <string name="feature_transcriber_desc">Transcrire la voix ou l\'audio en texte hors ligne</string>
-    <string name="feature_scam_detector">Détecteur d\'Arnaques</string>
-    <string name="feature_scam_detector_desc">Analyser le texte, les images ou les URL pour détecter les arnaques potentielles</string>
     
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">Aide à la Rédaction</string>

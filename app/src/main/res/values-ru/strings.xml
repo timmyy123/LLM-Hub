@@ -411,6 +411,8 @@
     <string name="feature_transcriber_desc">Транскрибируйте голос или аудио в текст офлайн</string>
     <string name="feature_scam_detector">Детектор Мошенничества</string>
     <string name="feature_scam_detector_desc">Анализируйте текст, изображения или URL на наличие возможных мошенничеств</string>
+    <string name="feature_github_repo">Исходный Код</string>
+    <string name="feature_github_repo_desc">Репозиторий GitHub</string>
     
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">Помощник в письме</string>
