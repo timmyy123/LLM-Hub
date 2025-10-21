@@ -410,6 +410,8 @@
     <string name="feature_transcriber_desc">Transcribe voz o audio a texto sin conexión</string>
     <string name="feature_scam_detector">Detector de Estafas</string>
     <string name="feature_scam_detector_desc">Analiza texto, imágenes o URLs en busca de posibles estafas</string>
+    <string name="feature_github_repo">Código Fuente</string>
+    <string name="feature_github_repo_desc">Repositorio GitHub</string>
     
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">Ayuda de Escritura</string>

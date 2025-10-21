@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalUriHandler
 import com.llmhub.llmhub.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -51,6 +52,7 @@ fun HomeScreen(
 ) {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
+    val uriHandler = LocalUriHandler.current
     
     // Feature cards data
     val features = remember {
@@ -89,6 +91,13 @@ fun HomeScreen(
                 icon = Icons.Filled.Security,
                 gradient = Pair(Color(0xFFfa709a), Color(0xFFfee140)),
                 route = "scam_detector"
+            ),
+            FeatureCard(
+                title = "feature_github_repo",
+                description = "feature_github_repo_desc",
+                icon = Icons.Outlined.Code,
+                gradient = Pair(Color(0xFF6a11cb), Color(0xFF2575fc)),
+                route = "github"
             )
         )
     }
@@ -179,7 +188,13 @@ fun HomeScreen(
                     AnimatedFeatureCard(
                         feature = feature,
                         index = index,
-                        onClick = { onNavigateToFeature(feature.route) }
+                        onClick = { 
+                            if (feature.route == "github") {
+                                uriHandler.openUri("https://github.com/timmyy123/LLM-Hub")
+                            } else {
+                                onNavigateToFeature(feature.route)
+                            }
+                        }
                     )
                 }
             }
@@ -385,6 +400,8 @@ private fun getStringResourceId(key: String): Int {
         "feature_transcriber_desc" -> R.string.feature_transcriber_desc
         "feature_scam_detector" -> R.string.feature_scam_detector
         "feature_scam_detector_desc" -> R.string.feature_scam_detector_desc
+        "feature_github_repo" -> R.string.feature_github_repo
+        "feature_github_repo_desc" -> R.string.feature_github_repo_desc
         else -> R.string.app_name
     }
 }

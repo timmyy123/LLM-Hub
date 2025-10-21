@@ -429,6 +429,8 @@
     <string name="feature_transcriber_desc">Sesi veya sesi çevrimdışı olarak metne dönüştürün</string>
     <string name="feature_scam_detector">Dolandırıcılık Dedektörü</string>
     <string name="feature_scam_detector_desc">Potansiyel dolandırıcılıklar için metin, görsel veya URL analiz edin</string>
+    <string name="feature_github_repo">Kaynak Kodu</string>
+    <string name="feature_github_repo_desc">GitHub Deposu</string>
     
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">Yazma Yardımcısı</string>

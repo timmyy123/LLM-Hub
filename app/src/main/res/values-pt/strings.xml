@@ -394,6 +394,8 @@
     <string name="feature_transcriber_desc">Transcrever voz ou áudio para texto offline</string>
     <string name="feature_scam_detector">Detector de Golpes</string>
     <string name="feature_scam_detector_desc">Analisar texto, imagens ou URLs em busca de possíveis golpes</string>
+    <string name="feature_github_repo">Código-fonte</string>
+    <string name="feature_github_repo_desc">Repositório GitHub</string>
     
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">Ajuda de Escrita</string>

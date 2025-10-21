@@ -429,6 +429,8 @@
     <string name="feature_transcriber_desc">تحويل الصوت أو التسجيل إلى نص دون اتصال</string>
     <string name="feature_scam_detector">كاشف الاحتيال</string>
     <string name="feature_scam_detector_desc">تحليل النصوص والصور أو الروابط لاكتشاف الاحتيال المحتمل</string>
+    <string name="feature_github_repo">الكود المصدري</string>
+    <string name="feature_github_repo_desc">مستودع GitHub</string>
 
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">مساعد الكتابة</string>

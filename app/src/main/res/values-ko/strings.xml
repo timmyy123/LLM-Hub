@@ -430,6 +430,8 @@
     <string name="feature_transcriber_desc">음성 또는 오디오를 오프라인으로 텍스트로 전사</string>
     <string name="feature_scam_detector">사기 탐지기</string>
     <string name="feature_scam_detector_desc">잠재적인 사기에 대한 텍스트, 이미지 또는 URL 분석</string>
+    <string name="feature_github_repo">소스 코드</string>
+    <string name="feature_github_repo_desc">GitHub 저장소</string>
     
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">글쓰기 도우미</string>
