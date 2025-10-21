@@ -14,7 +14,7 @@ Advanced AI runs completely on your phone - no internet required, no data shared
 ✨ FIVE POWERFUL AI TOOLS
 
 📝 SMART CHAT
-Multi-turn conversations with context awareness, RAG memory, optional web search, and support for text, images, and audio input.
+Multi-turn conversations with context awareness, RAG memory, optional web search, text-to-speech output with auto-readout, and support for text, images, and audio input.
 
 ✍️ WRITING AID
 Summarize documents, expand ideas, rewrite content, improve grammar, and generate code from natural language descriptions.
@@ -47,13 +47,14 @@ All models run 100% on-device using MediaPipe and LiteRT technology.
 
 ⚡ ADVANCED FEATURES
 
+• Text-to-Speech with auto-readout for hands-free listening
 • GPU acceleration for fast performance
 • Multimodal: text, images, and audio
 • RAG with global memory for enhanced responses
 • Import custom .task or .litertlm models
 • Direct downloads from HuggingFace
 • Beautiful Material Design UI
-• 7 language interfaces
+• 13 language interfaces
 
 📱 REQUIREMENTS
 
@@ -65,12 +66,13 @@ Recommended: 6GB+ RAM, 8GB+ for GPU acceleration
 1. Download AI models in-app (one-time)
 2. Choose your tool: Chat, Writing Aid, Translator, Transcriber, or Scam Detector
 3. Use AI completely offline with full privacy
-4. Optional: Enable web search or upload images/audio
+4. Optional: Enable web search, upload images/audio, or use text-to-speech
 
 🌟 PERFECT FOR
 
 • Privacy-conscious users valuing data security
 • Professionals needing offline AI assistance
+• Users wanting hands-free voice responses
 • Students working on writing and research
 • Travelers requiring offline translation
 • Anyone protecting against scams
@@ -86,4 +88,4 @@ Google MediaPipe & LiteRT, Gemma, Llama, Phi models, HuggingFace
 Experience the future of private, on-device AI assistance!
 
 ---
-CHARACTER COUNT: 3,393 / 3,400
+CHARACTER COUNT: 3,540 / 4,000 (Google Play allows up to 4,000)

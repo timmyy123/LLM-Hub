@@ -21,3 +21,4 @@ app/src/main/assets/text-embed/embeddinggemma-300M_seq2048_mixed-precision.tflit
 app/src/main/assets/text-embed/sentencepiece.model
 text-embed/embeddinggemma-300M_seq2048_mixed-precision.tflite
 text-embed/sentencepiece.model
+NPU_BACKEND_RESEARCH.md
