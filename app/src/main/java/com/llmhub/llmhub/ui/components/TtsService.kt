@@ -184,7 +184,13 @@ class TtsService(private val context: Context) {
                         // Decrement in-flight count and only mark not speaking when queue drains
                         val remaining = inFlightUtterances.decrementAndGet().coerceAtLeast(0)
                         if (remaining == 0) {
-                            _isSpeaking.value = false
+                            // Use a delayed check to ensure TTS queue is actually empty
+                            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                                // Double-check that TTS is actually not speaking
+                                if (tts?.isSpeaking != true) {
+                                    _isSpeaking.value = false
+                                }
+                            }, 300) // Delay to allow TTS engine to process remaining queue
                         }
                     }
                     
@@ -193,7 +199,12 @@ class TtsService(private val context: Context) {
                         // Treat errors as completion for the purpose of UI state
                         val remaining = inFlightUtterances.decrementAndGet().coerceAtLeast(0)
                         if (remaining == 0) {
-                            _isSpeaking.value = false
+                            // Use a delayed check to ensure TTS queue is actually empty
+                            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                                if (tts?.isSpeaking != true) {
+                                    _isSpeaking.value = false
+                                }
+                            }, 300)
                         }
                     }
                 })
@@ -247,14 +258,12 @@ class TtsService(private val context: Context) {
         
         textBuffer.append(partialText)
         
-        // Check if we have a complete sentence
+        // Process all complete sentences in the buffer
         val bufferedText = textBuffer.toString()
-        val lastChar = bufferedText.lastOrNull()
+        val sentences = extractCompleteSentences(bufferedText)
         
-        if (lastChar != null && lastChar in SENTENCE_DELIMITERS) {
-            // Extract complete sentences
-            val sentences = extractCompleteSentences(bufferedText)
-            
+        if (sentences.isNotEmpty()) {
+            // Speak all complete sentences
             sentences.forEach { sentence ->
                 if (sentence.isNotBlank()) {
                     val cleanText = cleanTextForTts(sentence)
@@ -263,8 +272,9 @@ class TtsService(private val context: Context) {
                 }
             }
             
-            // Keep only incomplete text in buffer
-            val remaining = bufferedText.substringAfterLast(lastChar, "")
+            // Remove all complete sentences from buffer, keep only the incomplete part
+            val totalProcessedLength = sentences.sumOf { it.length }
+            val remaining = bufferedText.substring(totalProcessedLength)
             textBuffer.clear()
             textBuffer.append(remaining)
         }
