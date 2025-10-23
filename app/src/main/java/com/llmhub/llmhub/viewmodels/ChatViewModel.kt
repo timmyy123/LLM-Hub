@@ -944,18 +944,18 @@ class ChatViewModel(
                 // No need to manually ensure or create sessions
                 Log.d("ChatViewModel", "Starting generation for chat $chatId")
                 
-                // Check if we should reset the session before generating to prevent token overflow
-                val shouldResetSession = shouldResetSessionBeforeMessage(messageText, chatId)
-                if (shouldResetSession) {
-                    Log.d("ChatViewModel", "Proactively resetting session for chat $chatId before generation")
-                    try {
-                        delay(100) // Small delay to ensure model is ready
-                        inferenceService.resetChatSession(chatId)
-                        lastSessionResetAt = System.currentTimeMillis() // Update the reset timestamp
-                        Log.d("ChatViewModel", "Successfully reset session for chat $chatId")
-                    } catch (e: Exception) {
-                        Log.w("ChatViewModel", "Error resetting session for chat $chatId: ${e.message}")
-                    }
+                // Pre-generation guard: if context + prompt + reserve exceeds effective window, REJECT (do not generate)
+                val shouldReject = shouldResetSessionBeforeMessage(messageText, chatId)
+                if (shouldReject) {
+                    Log.w("ChatViewModel", "Rejecting prompt for chat $chatId due to context window limits (pre-generation)")
+                    repository.addMessage(
+                        chatId,
+                        context.getString(R.string.no_response_produced),
+                        isFromUser = false
+                    )
+                    _isLoading.value = false
+                    isGenerating = false
+                    return@launch
                 }
                 
                 // Pass the conversation history to the model with context window management
@@ -1598,6 +1598,7 @@ class ChatViewModel(
                 Log.w("ChatViewModel", "Context window exceeded after response ($estimatedTokens > $tokenThreshold), resetting session for chat $chatId")
                 try {
                     inferenceService.resetChatSession(chatId)
+                    lastSessionResetAt = System.currentTimeMillis() // Update the reset timestamp
                     Log.d("ChatViewModel", "Successfully reset session after response for chat $chatId")
                 } catch (e: Exception) {
                     Log.w("ChatViewModel", "Error resetting session after response for chat $chatId: ${e.message}")
