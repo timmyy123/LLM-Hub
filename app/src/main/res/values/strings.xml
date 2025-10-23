@@ -634,5 +634,16 @@
     <string name="backend_selection_hint">If the app crashes or doesn\'t work properly with GPU, try the CPU backend</string>
     <string name="not_available">Not available</string>
     <string name="gpu_disabled_low_memory">GPU not available for this model on devices with %1$dGB RAM or less</string>
+    
+    <!-- Web Search Messages -->
+    <string name="web_searching">🔍 Searching the web...</string>
+    <string name="web_search_found_results">✅ Found %1$d results. Analyzing...</string>
+    <string name="web_search_no_results">❌ No current search results found. Providing response based on training data...</string>
+    <string name="web_search_failed">❌ Web search failed: %1$s. Providing response based on training data...</string>
+    
+    <!-- Model Error Messages -->
+    <string name="please_download_model">Please download a model to start chatting.</string>
+    <string name="model_not_loaded">Model not properly loaded. Please try switching to a different model or restart the app.</string>
+    <string name="no_response_produced">No response produced. (Possible: token limit or session reset). Tap Regenerate.</string>
 </resources>
 

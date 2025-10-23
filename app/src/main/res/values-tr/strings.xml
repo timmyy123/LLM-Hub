@@ -632,4 +632,15 @@
     <string name="backend_selection_hint">Uygulama GPU ile çökerse veya düzgün çalışmazsa, CPU arka ucunu deneyin</string>
     <string name="not_available">Mevcut değil</string>
     <string name="gpu_disabled_low_memory">%1$dGB veya daha az RAM\'e sahip cihazlarda bu model için GPU kullanılamaz</string>
+    
+    <!-- Web Search Messages -->
+    <string name="web_searching">🔍 Web\'de aranıyor...</string>
+    <string name="web_search_found_results">✅ %1$d sonuç bulundu. Analiz ediliyor...</string>
+    <string name="web_search_no_results">❌ Güncel arama sonucu bulunamadı. Eğitim verilerine dayalı yanıt sağlanıyor...</string>
+    <string name="web_search_failed">❌ Web araması başarısız: %1$s. Eğitim verilerine dayalı yanıt sağlanıyor...</string>
+    
+    <!-- Model Error Messages -->
+    <string name="please_download_model">Sohbete başlamak için lütfen bir model indirin.</string>
+    <string name="model_not_loaded">Model düzgün yüklenmedi. Lütfen farklı bir modele geçmeyi deneyin veya uygulamayı yeniden başlatın.</string>
+    <string name="no_response_produced">Yanıt üretilmedi. (Olası: token sınırı veya oturum sıfırlama). Yeniden Oluştur\'a dokunun.</string>
 </resources>

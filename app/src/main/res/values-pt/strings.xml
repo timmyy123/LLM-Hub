@@ -584,6 +584,17 @@
     <string name="translator_vision_description">Traduzir texto de imagens</string>
     <string name="translator_enable_audio">Ativar Áudio</string>
     <string name="translator_audio_description">Traduzir gravações de áudio</string>
+    
+    <!-- Web Search Messages -->
+    <string name="web_searching">🔍 Pesquisando na web...</string>
+    <string name="web_search_found_results">✅ Encontrados %1$d resultados. Analisando...</string>
+    <string name="web_search_no_results">❌ Nenhum resultado de pesquisa atual encontrado. Fornecendo resposta baseada em dados de treinamento...</string>
+    <string name="web_search_failed">❌ Pesquisa na web falhou: %1$s. Fornecendo resposta baseada em dados de treinamento...</string>
+    
+    <!-- Model Error Messages -->
+    <string name="please_download_model">Por favor, baixe um modelo para começar a conversar.</string>
+    <string name="model_not_loaded">Modelo não carregado corretamente. Tente trocar para um modelo diferente ou reinicie o aplicativo.</string>
+    <string name="no_response_produced">Nenhuma resposta produzida. (Possível: limite de tokens ou reset de sessão). Toque em Regenerar.</string>
 </resources>
 
 

@@ -27,6 +27,7 @@ import com.llmhub.llmhub.ui.components.TtsService
 
 class ScamDetectorViewModel(application: Application) : AndroidViewModel(application) {
     
+    private val appContext = application
     private val inferenceService = MediaPipeInferenceService(application)
     private val prefs = application.getSharedPreferences("scam_detector_prefs", android.content.Context.MODE_PRIVATE)
     val ttsService = TtsService(application)
@@ -325,7 +326,8 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
                     chatId = chatId,
                     images = images,
                     audioData = null,
-                    webSearchEnabled = false
+                    webSearchEnabled = false,
+                    context = appContext
                 )
                 
                 responseFlow.collect { token ->

@@ -600,6 +600,17 @@
     <string name="translator_vision_description">Text aus Bildern übersetzen</string>
     <string name="translator_enable_audio">Audio aktivieren</string>
     <string name="translator_audio_description">Audioaufnahmen übersetzen</string>
+    
+    <!-- Web Search Messages -->
+    <string name="web_searching">🔍 Suche im Web...</string>
+    <string name="web_search_found_results">✅ %1$d Ergebnisse gefunden. Analysiere...</string>
+    <string name="web_search_no_results">❌ Keine aktuellen Suchergebnisse gefunden. Antworte basierend auf Trainingsdaten...</string>
+    <string name="web_search_failed">❌ Web-Suche fehlgeschlagen: %1$s. Antworte basierend auf Trainingsdaten...</string>
+    
+    <!-- Model Error Messages -->
+    <string name="please_download_model">Bitte laden Sie ein Modell herunter, um zu chatten.</string>
+    <string name="model_not_loaded">Modell nicht ordnungsgemäß geladen. Bitte versuchen Sie, zu einem anderen Modell zu wechseln oder die App neu zu starten.</string>
+    <string name="no_response_produced">Keine Antwort erzeugt. (Möglich: Token-Limit oder Sitzungs-Reset). Tippen Sie auf Regenerieren.</string>
 </resources>
 
 

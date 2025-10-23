@@ -633,4 +633,15 @@
     <string name="backend_selection_hint">Jika aplikasi crash atau tidak bekerja dengan baik dengan GPU, coba backend CPU</string>
     <string name="not_available">Tidak tersedia</string>
     <string name="gpu_disabled_low_memory">GPU tidak tersedia untuk model ini pada perangkat dengan %1$dGB RAM atau kurang</string>
+    
+    <!-- Web Search Messages -->
+    <string name="web_searching">🔍 Mencari di web...</string>
+    <string name="web_search_found_results">✅ Ditemukan %1$d hasil. Menganalisis...</string>
+    <string name="web_search_no_results">❌ Tidak ditemukan hasil pencarian terkini. Memberikan respons berdasarkan data pelatihan...</string>
+    <string name="web_search_failed">❌ Pencarian web gagal: %1$s. Memberikan respons berdasarkan data pelatihan...</string>
+    
+    <!-- Model Error Messages -->
+    <string name="please_download_model">Silakan unduh model untuk mulai mengobrol.</string>
+    <string name="model_not_loaded">Model tidak dimuat dengan benar. Silakan coba beralih ke model yang berbeda atau restart aplikasi.</string>
+    <string name="no_response_produced">Tidak ada respons yang dihasilkan. (Kemungkinan: batas token atau reset sesi). Ketuk Regenerate.</string>
 </resources>

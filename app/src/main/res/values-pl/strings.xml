@@ -633,4 +633,15 @@
     <string name="backend_selection_hint">Jeśli aplikacja ulega awarii lub nie działa poprawnie z GPU, spróbuj backendu CPU</string>
     <string name="not_available">Niedostępne</string>
     <string name="gpu_disabled_low_memory">GPU niedostępne dla tego modelu na urządzeniach z %1$dGB RAM lub mniej</string>
+    
+    <!-- Web Search Messages -->
+    <string name="web_searching">🔍 Wyszukiwanie w sieci...</string>
+    <string name="web_search_found_results">✅ Znaleziono %1$d wyników. Analizowanie...</string>
+    <string name="web_search_no_results">❌ Nie znaleziono aktualnych wyników wyszukiwania. Dostarczanie odpowiedzi na podstawie danych treningowych...</string>
+    <string name="web_search_failed">❌ Wyszukiwanie w sieci nie powiodło się: %1$s. Dostarczanie odpowiedzi na podstawie danych treningowych...</string>
+    
+    <!-- Model Error Messages -->
+    <string name="please_download_model">Pobierz model, aby rozpocząć czatowanie.</string>
+    <string name="model_not_loaded">Model nie został poprawnie załadowany. Spróbuj przełączyć na inny model lub uruchom ponownie aplikację.</string>
+    <string name="no_response_produced">Nie wygenerowano odpowiedzi. (Możliwe: limit tokenów lub reset sesji). Dotknij Regeneruj.</string>
 </resources>

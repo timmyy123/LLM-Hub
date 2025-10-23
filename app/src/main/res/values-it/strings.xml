@@ -623,6 +623,17 @@
     <string name="translator_vision_description">Traduci testo dalle immagini</string>
     <string name="translator_enable_audio">Abilita Audio</string>
     <string name="translator_audio_description">Traduci registrazioni audio</string>
+    
+    <!-- Web Search Messages -->
+    <string name="web_searching">🔍 Cercando sul web...</string>
+    <string name="web_search_found_results">✅ Trovati %1$d risultati. Analizzando...</string>
+    <string name="web_search_no_results">❌ Nessun risultato di ricerca attuale trovato. Fornendo risposta basata sui dati di addestramento...</string>
+    <string name="web_search_failed">❌ Ricerca web fallita: %1$s. Fornendo risposta basata sui dati di addestramento...</string>
+    
+    <!-- Model Error Messages -->
+    <string name="please_download_model">Scarica un modello per iniziare a chattare.</string>
+    <string name="model_not_loaded">Modello non caricato correttamente. Prova a passare a un modello diverso o riavvia l\'applicazione.</string>
+    <string name="no_response_produced">Nessuna risposta prodotta. (Possibile: limite di token o reset della sessione). Tocca Rigenera.</string>
 </resources>
 
 

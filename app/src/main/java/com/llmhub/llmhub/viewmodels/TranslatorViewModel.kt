@@ -26,6 +26,7 @@ import com.llmhub.llmhub.ui.components.TtsService
 import android.util.Log
 
 class TranslatorViewModel(application: Application) : AndroidViewModel(application) {
+    private val appContext = application
     private val inferenceService = MediaPipeInferenceService(application)
     private val prefs = application.getSharedPreferences("translator_prefs", android.content.Context.MODE_PRIVATE)
     val ttsService = TtsService(application)
@@ -375,7 +376,8 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
                     chatId = chatId,
                     images = images,
                     audioData = audioData,
-                    webSearchEnabled = false
+                    webSearchEnabled = false,
+                    context = appContext
                 )
 
                 responseFlow.collect { token ->

@@ -633,4 +633,15 @@
     <string name="backend_selection_hint">GPUでアプリがクラッシュするか正しく動作しない場合は、CPUバックエンドを試してください</string>
     <string name="not_available">利用不可</string>
     <string name="gpu_disabled_low_memory">%1$dGB以下のRAMを搭載したデバイスでは、このモデルでGPUは利用できません</string>
+    
+    <!-- Web Search Messages -->
+    <string name="web_searching">🔍 ウェブを検索中...</string>
+    <string name="web_search_found_results">✅ %1$d件の結果が見つかりました。分析中...</string>
+    <string name="web_search_no_results">❌ 現在の検索結果が見つかりませんでした。トレーニングデータに基づいて回答を提供します...</string>
+    <string name="web_search_failed">❌ ウェブ検索が失敗しました: %1$s。トレーニングデータに基づいて回答を提供します...</string>
+    
+    <!-- Model Error Messages -->
+    <string name="please_download_model">チャットを開始するにはモデルをダウンロードしてください。</string>
+    <string name="model_not_loaded">モデルが正しく読み込まれていません。別のモデルに切り替えるか、アプリを再起動してください。</string>
+    <string name="no_response_produced">応答が生成されませんでした。（可能性：トークン制限またはセッションリセット）。再生成をタップしてください。</string>
 </resources>

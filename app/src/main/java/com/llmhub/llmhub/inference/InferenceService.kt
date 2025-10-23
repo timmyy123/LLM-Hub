@@ -3,6 +3,7 @@ package com.llmhub.llmhub.inference
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
+import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.websearch.WebSearchService
 import com.llmhub.llmhub.websearch.DuckDuckGoSearchService
@@ -45,7 +46,8 @@ interface InferenceService {
         chatId: String, 
         images: List<Bitmap> = emptyList(), 
         audioData: ByteArray? = null,
-        webSearchEnabled: Boolean = true
+        webSearchEnabled: Boolean = true,
+        context: Context? = null
     ): Flow<String>
     suspend fun resetChatSession(chatId: String)
     suspend fun onCleared()
@@ -660,7 +662,8 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         chatId: String, 
         images: List<Bitmap>, 
         audioData: ByteArray?,
-        webSearchEnabled: Boolean
+        webSearchEnabled: Boolean,
+        context: Context?
     ): Flow<String> = callbackFlow {
         ensureModelLoaded(model)
         
@@ -684,7 +687,8 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         try {
             if (needsWebSearch) {
                 Log.d(TAG, "Web search detected for chat $chatId. Current message: '$currentUserMessage'")
-                trySend("🔍 Searching the web...")
+                val currentContext = context ?: this@MediaPipeInferenceService.context
+                trySend(currentContext.getString(R.string.web_searching))
                 
                 try {
                     val searchQuery = SearchIntentDetector.extractSearchQuery(currentUserMessage)
@@ -694,7 +698,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                     
                     if (searchResults.isNotEmpty()) {
                         Log.d(TAG, "Found ${searchResults.size} search results")
-                        trySend("✅ Found ${searchResults.size} results. Analyzing...")
+                        trySend(currentContext.getString(R.string.web_search_found_results, searchResults.size))
                         
                         // Create enhanced prompt with search results
                         val resultsText = searchResults.joinToString("\n\n") { result ->
@@ -723,12 +727,12 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                         Log.d(TAG, "Search results preview: ${resultsText.take(200)}...")
                     } else {
                         Log.w(TAG, "No search results found for query: '$searchQuery'")
-                        trySend("❌ No current search results found. Providing response based on training data...\n\n")
+                        trySend(currentContext.getString(R.string.web_search_no_results) + "\n\n")
                         // Continue with original prompt
                     }
                 } catch (searchException: Exception) {
                     Log.e(TAG, "Web search failed for chat $chatId", searchException)
-                    trySend("❌ Web search failed: ${searchException.message}. Providing response based on training data...\n\n")
+                    trySend(currentContext.getString(R.string.web_search_failed, searchException.message ?: "Unknown error") + "\n\n")
                     // Continue with original prompt
                 }
             }

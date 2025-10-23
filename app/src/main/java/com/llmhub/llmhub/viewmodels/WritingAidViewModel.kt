@@ -22,6 +22,7 @@ import com.llmhub.llmhub.ui.components.TtsService
 
 class WritingAidViewModel(application: Application) : AndroidViewModel(application) {
     
+    private val appContext = application
     private val inferenceService = MediaPipeInferenceService(application)
     private val prefs = application.getSharedPreferences("writing_aid_prefs", Context.MODE_PRIVATE)
     val ttsService = TtsService(application)
@@ -241,7 +242,8 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
                     chatId = chatId,
                     images = emptyList(),
                     audioData = null,
-                    webSearchEnabled = false
+                    webSearchEnabled = false,
+                    context = appContext
                 )
                 
                 responseFlow.collect { token ->

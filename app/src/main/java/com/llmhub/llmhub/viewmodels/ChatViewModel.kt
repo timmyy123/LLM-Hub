@@ -656,9 +656,9 @@ class ChatViewModel(
             if (currentModel == null || !currentModel!!.isDownloaded) {
                 Log.e("ChatViewModel", "No valid model available for chat $chatId. CurrentModel: ${currentModel?.name}, isDownloaded: ${currentModel?.isDownloaded}, availableModels: ${_availableModels.value.size}")
                 val errorMessage = if (_availableModels.value.isEmpty()) {
-                    "Please download a model to start chatting."
+                    context.getString(R.string.please_download_model)
                 } else {
-                    "Model not properly loaded. Please try switching to a different model or restart the app."
+                    context.getString(R.string.model_not_loaded)
                 }
                 repository.addMessage(chatId, errorMessage, isFromUser = false)
                 _isLoading.value = false
@@ -1341,7 +1341,8 @@ class ChatViewModel(
                         chatId, 
                         images, 
                         audioData, // Pass audio data for Gemma-3n models
-                        webSearchEnabled
+                        webSearchEnabled,
+                        context
                     )
                     // Track precise generation window based on first and last streamed chunks
                                     var lastUpdateTime = 0L
@@ -1443,7 +1444,7 @@ class ChatViewModel(
                                 Log.d("ChatViewModel", "Generation completed successfully with ${continuationCount} continuations")
                                 Log.d("ChatViewModel", "Final content length: ${finalContent.length}")
                                 val safeFinal = if (finalContent.isBlank()) {
-                                    "No response produced. (Possible: token limit or session reset). Tap Regenerate."
+                                    context.getString(R.string.no_response_produced)
                                 } else finalContent
                                 repository.updateMessageContent(placeholderId, safeFinal.trimEnd())
                                 val time = System.currentTimeMillis() - generationStartTime
@@ -1489,7 +1490,7 @@ class ChatViewModel(
                         // ALWAYS save final content and call finalizeMessage (for both cancel and error) even if the parent Job is cancelled
                         withContext(kotlinx.coroutines.NonCancellable) {
                             val safeFinal = if (finalContent.isBlank()) {
-                                "No response produced. (Possible: token limit or session reset). Tap Regenerate."
+                                context.getString(R.string.no_response_produced)
                             } else sanitizeModelOutput(finalContent)
                             repository.updateMessageContent(placeholderId, safeFinal.trimEnd())
                             Log.d("ChatViewModel", "About to call finalizeMessage (NonCancellable)")
@@ -1508,7 +1509,7 @@ class ChatViewModel(
                     }
                 }
             } else {
-                repository.addMessage(chatId, "Please download a model to start chatting.", isFromUser = false)
+                repository.addMessage(chatId, context.getString(R.string.please_download_model), isFromUser = false)
                 _isLoading.value = false
                 isGenerating = false
             }
@@ -2846,7 +2847,7 @@ class ChatViewModel(
                 }
                 
                 // If the message was a "no response" sentinel, force a fresh context (forget history for this regen)
-                val forceFreshContext = messageToRegenerate.content.contains("No response produced.")
+                val forceFreshContext = messageToRegenerate.content.contains(context.getString(R.string.no_response_produced))
 
                 // Find the user message that prompted this response
                 val messageIndex = currentMessages.indexOf(messageToRegenerate)
@@ -3007,7 +3008,8 @@ class ChatViewModel(
                             chatId, 
                             images,
                             null, // No audio for regeneration - only used for new messages
-                            webSearchEnabled
+                            webSearchEnabled,
+                            context
                         )
                         
                         var lastUpdateTime = 0L
@@ -3205,7 +3207,8 @@ class ChatViewModel(
                         chatId,
                         images,
                         null,
-                        webSearchEnabled
+                        webSearchEnabled,
+                        context
                     )
 
                     responseStream.collect { chunk ->

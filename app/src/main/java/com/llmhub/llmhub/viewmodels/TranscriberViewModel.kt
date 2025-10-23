@@ -20,6 +20,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class TranscriberViewModel(application: Application) : AndroidViewModel(application) {
+    private val appContext = application
     private val inferenceService = MediaPipeInferenceService(application)
     private val prefs = application.getSharedPreferences("transcriber_prefs", android.content.Context.MODE_PRIVATE)
     
@@ -206,7 +207,8 @@ Do not add any commentary or explanations.""".trimIndent()
                     chatId = chatId,
                     images = emptyList(),
                     audioData = audioBytes,
-                    webSearchEnabled = false
+                    webSearchEnabled = false,
+                    context = appContext
                 )
 
                 responseFlow.collect { token ->
