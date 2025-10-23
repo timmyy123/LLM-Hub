@@ -58,6 +58,8 @@ interface InferenceService {
     fun isVisionCurrentlyDisabled(): Boolean
     fun isAudioCurrentlyDisabled(): Boolean
     fun isGpuBackendEnabled(): Boolean
+    // Get effective max tokens (considering overrides)
+    fun getEffectiveMaxTokens(): Int?
 }
 
 /**
@@ -1297,6 +1299,12 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
     
     override fun isGpuBackendEnabled(): Boolean {
         return currentBackend == LlmInference.Backend.GPU
+    }
+    
+    override fun getEffectiveMaxTokens(): Int? {
+        val model = currentModel ?: return null
+        val defaultMaxTokens = getMaxTokensForModel(model)
+        return overrideMaxTokens?.coerceAtMost(defaultMaxTokens) ?: defaultMaxTokens
     }
 
     /**

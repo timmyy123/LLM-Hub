@@ -951,6 +951,7 @@ class ChatViewModel(
                     try {
                         delay(100) // Small delay to ensure model is ready
                         inferenceService.resetChatSession(chatId)
+                        lastSessionResetAt = System.currentTimeMillis() // Update the reset timestamp
                         Log.d("ChatViewModel", "Successfully reset session for chat $chatId")
                     } catch (e: Exception) {
                         Log.w("ChatViewModel", "Error resetting session for chat $chatId: ${e.message}")
@@ -1563,6 +1564,47 @@ class ChatViewModel(
             repository.updateMessageStats(placeholderId, estimatedTokens, tokensPerSecond)
         } else {
             Log.d("ChatViewModel", "No stats to save for message $placeholderId - content is blank")
+        }
+        
+        // Check if we should reset session after response due to context window limits
+        checkAndResetSessionAfterResponse()
+    }
+
+    /**
+     * Check if session should be reset after response due to context window limits
+     */
+    private suspend fun checkAndResetSessionAfterResponse() {
+        val model = currentModel ?: return
+        val chatId = currentChatId ?: return
+        
+        try {
+            // Get current conversation history
+            val history = buildContextAwareHistory(_messages.value)
+            
+            // Rough estimate of token count (1 token ≈ 4 characters)
+            val estimatedTokens = history.length / 4
+            // Use the same token limits as InferenceService to ensure consistency
+            val defaultMaxTokens = minOf(model.contextWindowSize, extractCacheSizeFromUrl(model.url) ?: model.contextWindowSize)
+            val maxTokens = inferenceService.getEffectiveMaxTokens() ?: defaultMaxTokens
+            // Reserve ~1/3 of the context window for model response
+            val reserveForResponse = (maxTokens * 0.33).toInt().coerceAtLeast(128)
+            val tokenThreshold = (maxTokens - reserveForResponse).coerceAtLeast(1)
+            
+            Log.d("ChatViewModel", "Post-response token check for chat $chatId: ~$estimatedTokens tokens, threshold=$tokenThreshold (reserve=$reserveForResponse), max=$maxTokens")
+            
+            // If existing context + reserved response exceeds context window, reset session
+            if (estimatedTokens > tokenThreshold) {
+                Log.w("ChatViewModel", "Context window exceeded after response ($estimatedTokens > $tokenThreshold), resetting session for chat $chatId")
+                try {
+                    inferenceService.resetChatSession(chatId)
+                    Log.d("ChatViewModel", "Successfully reset session after response for chat $chatId")
+                } catch (e: Exception) {
+                    Log.w("ChatViewModel", "Error resetting session after response for chat $chatId: ${e.message}")
+                }
+            }
+            
+        } catch (e: Exception) {
+            Log.w("ChatViewModel", "Error checking post-response token usage for chat $chatId: ${e.message}")
         }
     }
 
@@ -2447,7 +2489,9 @@ class ChatViewModel(
             
             // Rough estimate of token count (1 token ≈ 4 characters)
             val estimatedTokens = fullPrompt.length / 4
-            val maxTokens = minOf(model.contextWindowSize, extractCacheSizeFromUrl(model.url) ?: model.contextWindowSize)
+            // Use the same token limits as InferenceService to ensure consistency
+            val defaultMaxTokens = minOf(model.contextWindowSize, extractCacheSizeFromUrl(model.url) ?: model.contextWindowSize)
+            val maxTokens = inferenceService.getEffectiveMaxTokens() ?: defaultMaxTokens
             // Reserve ~1/3 of the context window for model response. Reset when input >= (max - reserve)
             val reserveForResponse = (maxTokens * 0.33).toInt().coerceAtLeast(128)
             val tokenThreshold = (maxTokens - reserveForResponse).coerceAtLeast(1)
