@@ -595,17 +595,15 @@ fun ChatScreen(
                             } else null,
                             onTtsSpeak = if (!message.isFromUser && message.content.isNotBlank()) {
                                 { text ->
-                                    // Manual TTS button - use local manual ID
-                                    manualTtsMessageId = message.id
-                                    ttsService.speak(text)
+                                    // Enable manual TTS streaming for this message
+                                    val appLocale = com.llmhub.llmhub.utils.LocaleHelper.getCurrentLocale(context)
+                                    viewModel.enableManualTtsForMessage(message.id, appLocale)
                                 }
                             } else null,
                             onTtsStop = if (!message.isFromUser && message.content.isNotBlank()) {
                                 {
-                                    ttsService.stop()
-                                    // Clear both manual and auto-readout IDs
-                                    manualTtsMessageId = null
-                                    viewModel.clearCurrentTtsMessage()
+                                    // Stop TTS
+                                    viewModel.stopTts()
                                 }
                             } else null,
                             isTtsSpeaking = isTtsSpeaking && currentTtsMessageId == message.id

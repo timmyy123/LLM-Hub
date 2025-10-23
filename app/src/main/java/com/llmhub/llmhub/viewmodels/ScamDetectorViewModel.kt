@@ -23,11 +23,13 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import com.llmhub.llmhub.ui.components.TtsService
 
 class ScamDetectorViewModel(application: Application) : AndroidViewModel(application) {
     
     private val inferenceService = MediaPipeInferenceService(application)
     private val prefs = application.getSharedPreferences("scam_detector_prefs", android.content.Context.MODE_PRIVATE)
+    val ttsService = TtsService(application)
     
     companion object {
         private const val TAG = "ScamDetectorViewModel"
@@ -72,6 +74,10 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
     
     private val _outputText = MutableStateFlow("")
     val outputText: StateFlow<String> = _outputText.asStateFlow()
+    
+    // TTS streaming state - tracks if manual TTS is active during generation
+    private val _ttsStreamingEnabled = MutableStateFlow(false)
+    val ttsStreamingEnabled: StateFlow<Boolean> = _ttsStreamingEnabled.asStateFlow()
     
     private val _loadError = MutableStateFlow<String?>(null)
     val loadError: StateFlow<String?> = _loadError.asStateFlow()
@@ -322,8 +328,21 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
                 
                 responseFlow.collect { token ->
                     _outputText.value += token
+                    
+                    // Stream to TTS if manual TTS was clicked during generation
+                    if (_ttsStreamingEnabled.value) {
+                        try {
+                            ttsService.addStreamingText(token)
+                        } catch (e: Exception) {
+                            Log.w(TAG, "Failed to add text to TTS stream: ${e.message}")
+                        }
+                    }
                 }
                 
+                // Flush TTS buffer when analysis completes
+                if (_ttsStreamingEnabled.value) {
+                    ttsService.flushStreamingBuffer()
+                }
             } catch (e: CancellationException) {
                 Log.d(TAG, "Analysis cancelled")
                 // Don't show error for user cancellation
@@ -343,6 +362,31 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
                 analyzingJob = null
             }
         }
+    }
+    
+    // Enable TTS streaming when play button is clicked during generation
+    fun enableTtsStreaming(appLocale: java.util.Locale) {
+        if (_isAnalyzing.value) {
+            _ttsStreamingEnabled.value = true
+            ttsService.stop()
+            ttsService.setLanguage(appLocale)
+            // Speak what's already generated, then continue streaming
+            if (_outputText.value.isNotEmpty()) {
+                ttsService.speak(_outputText.value)
+            }
+        } else {
+            // Not generating, just speak normally
+            _ttsStreamingEnabled.value = false
+            ttsService.stop()
+            ttsService.setLanguage(appLocale)
+            ttsService.speak(_outputText.value)
+        }
+    }
+    
+    // Stop TTS and disable streaming
+    fun stopTts() {
+        ttsService.stop()
+        _ttsStreamingEnabled.value = false
     }
     
     private suspend fun fetchUrlContent(url: String): String {

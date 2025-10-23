@@ -55,8 +55,8 @@ fun WritingAidScreen(
     val outputText by viewModel.outputText.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     
-    // TTS Service
-    val ttsService = remember { com.llmhub.llmhub.ui.components.TtsService(context) }
+    // TTS Service - use ViewModel's TTS service for streaming support
+    val ttsService = viewModel.ttsService
     val isTtsSpeaking by ttsService.isSpeaking.collectAsState()
     
     // Scroll state for auto-scrolling
@@ -81,11 +81,10 @@ fun WritingAidScreen(
         }
     }
     
-    // Cleanup on dispose - unload model to free memory and shutdown TTS
+    // Cleanup on dispose - unload model to free memory (TTS cleanup handled by ViewModel)
     DisposableEffect(Unit) {
         onDispose {
             viewModel.unloadModel()
-            ttsService.shutdown()
         }
     }
     
@@ -336,12 +335,11 @@ fun WritingAidScreen(
                             IconButton(
                                 onClick = { 
                                     if (isTtsSpeaking) {
-                                        ttsService.stop()
+                                        viewModel.stopTts()
                                     } else {
-                                        // Set language to app locale before speaking
+                                        // Enable TTS streaming (will speak current + continue streaming if generating)
                                         val appLocale = com.llmhub.llmhub.utils.LocaleHelper.getCurrentLocale(context)
-                                        ttsService.setLanguage(appLocale)
-                                        ttsService.speak(outputText)
+                                        viewModel.enableTtsStreaming(appLocale)
                                     }
                                 }
                             ) {

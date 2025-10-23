@@ -229,8 +229,8 @@ fun TranslatorScreen(
     // Clipboard manager
     val clipboardManager = LocalClipboardManager.current
     
-    // TTS Service
-    val ttsService = remember { com.llmhub.llmhub.ui.components.TtsService(context) }
+    // TTS Service - use ViewModel's TTS service for streaming support
+    val ttsService = viewModel.ttsService
     val isTtsSpeaking by ttsService.isSpeaking.collectAsState()
     
     // Parsed transcription and translation for audio mode
@@ -287,7 +287,7 @@ fun TranslatorScreen(
     // If user changes languages or auto-detect setting, make sure any TTS state resets so icons don't stick
     LaunchedEffect(sourceLanguageIndex, targetLanguageIndex, autoDetectSource) {
         if (isTtsSpeaking) {
-            ttsService.stop()
+            viewModel.stopTts()
         }
     }
 
@@ -382,9 +382,8 @@ fun TranslatorScreen(
             // Release audio player
             audioPlayer?.release()
             audioPlayer = null
-            // Unload model to free memory and shutdown TTS
+            // Unload model to free memory (TTS cleanup handled by ViewModel)
             viewModel.unloadModel()
-            ttsService.shutdown()
         }
     }
 
@@ -1119,11 +1118,10 @@ fun TranslatorScreen(
                                     IconButton(
                                         onClick = { 
                                             if (isTtsSpeaking) {
-                                                ttsService.stop()
+                                                viewModel.stopTts()
                                             } else {
-                                                // Set TTS to target language before speaking
-                                                ttsService.setLanguage(localeForTarget())
-                                                ttsService.speak(translationText)
+                                                // Enable TTS streaming (will speak current + continue streaming if generating)
+                                                viewModel.enableTtsStreaming(localeForTarget())
                                             }
                                         }
                                     ) {
@@ -1163,11 +1161,10 @@ fun TranslatorScreen(
                                     IconButton(
                                         onClick = { 
                                             if (isTtsSpeaking) {
-                                                ttsService.stop()
+                                                viewModel.stopTts()
                                             } else {
-                                                // Set TTS to target language before speaking
-                                                ttsService.setLanguage(localeForTarget())
-                                                ttsService.speak(outputText)
+                                                // Enable TTS streaming (will speak current + continue streaming if generating)
+                                                viewModel.enableTtsStreaming(localeForTarget())
                                             }
                                         }
                                     ) {
@@ -1727,8 +1724,8 @@ fun ScamDetectorScreen(
     // Settings sheet state
     var showSettingsSheet by remember { mutableStateOf(false) }
     
-    // TTS Service
-    val ttsService = remember { com.llmhub.llmhub.ui.components.TtsService(context) }
+    // TTS Service - use ViewModel's TTS service for streaming support
+    val ttsService = viewModel.ttsService
     val isTtsSpeaking by ttsService.isSpeaking.collectAsState()
     
     // Scroll state for auto-scrolling
@@ -1753,11 +1750,10 @@ fun ScamDetectorScreen(
         }
     }
     
-    // Cleanup on dispose - unload model to free memory and shutdown TTS
+    // Cleanup on dispose - unload model to free memory (TTS cleanup handled by ViewModel)
     DisposableEffect(Unit) {
         onDispose {
             viewModel.unloadModel()
-            ttsService.shutdown()
         }
     }
     
@@ -2064,12 +2060,11 @@ fun ScamDetectorScreen(
                                 IconButton(
                                     onClick = {
                                         if (isTtsSpeaking) {
-                                            ttsService.stop()
+                                            viewModel.stopTts()
                                         } else {
-                                            // Set language to app locale before speaking
+                                            // Enable TTS streaming (will speak current + continue streaming if generating)
                                             val appLocale = com.llmhub.llmhub.utils.LocaleHelper.getCurrentLocale(context)
-                                            ttsService.setLanguage(appLocale)
-                                            ttsService.speak(outputText)
+                                            viewModel.enableTtsStreaming(appLocale)
                                         }
                                     }
                                 ) {

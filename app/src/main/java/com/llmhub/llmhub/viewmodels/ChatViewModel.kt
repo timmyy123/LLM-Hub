@@ -1379,9 +1379,10 @@ class ChatViewModel(
                                             segmentHasContent = true
                                         }
                                         
-                                        // Auto-readout: Stream text to TTS as it arrives
-                                        // Only stream if this message is still marked as the active TTS target
-                                        if (autoReadoutEnabled && _currentTtsMessageId.value == placeholderId && piece.isNotEmpty()) {
+                                        // Auto-readout or manual TTS: Stream text to TTS as it arrives
+                                        // Stream if auto-readout is enabled OR manual TTS was clicked for this message
+                                        if ((autoReadoutEnabled || _currentTtsMessageId.value == placeholderId) && 
+                                            _currentTtsMessageId.value == placeholderId && piece.isNotEmpty()) {
                                             try {
                                                 ttsService.addStreamingText(piece)
                                             } catch (e: Exception) {
@@ -2071,6 +2072,42 @@ class ChatViewModel(
         }
     }
 
+    // Enable manual TTS streaming for a specific message during generation
+    fun enableManualTtsForMessage(messageId: String, appLocale: java.util.Locale) {
+        val isCurrentlyGenerating = _streamingContents.value.containsKey(messageId)
+        
+        if (isCurrentlyGenerating) {
+            // Enable streaming mode for this message
+            _currentTtsMessageId.value = messageId
+            ttsService.stop()
+            ttsService.setLanguage(appLocale)
+            
+            // Speak what's already generated
+            val currentContent = _streamingContents.value[messageId] ?: ""
+            if (currentContent.isNotEmpty()) {
+                ttsService.speak(currentContent)
+            }
+            Log.d("ChatViewModel", "Manual TTS streaming enabled for message $messageId during generation")
+        } else {
+            // Not generating, just speak normally
+            val message = _messages.value.find { it.id == messageId }
+            if (message != null && message.content.isNotBlank()) {
+                _currentTtsMessageId.value = messageId
+                ttsService.stop()
+                ttsService.setLanguage(appLocale)
+                ttsService.speak(message.content)
+                Log.d("ChatViewModel", "Manual TTS speaking completed message $messageId")
+            }
+        }
+    }
+    
+    // Stop TTS and clear the current TTS message ID
+    fun stopTts() {
+        ttsService.stop()
+        _currentTtsMessageId.value = null
+        Log.d("ChatViewModel", "TTS stopped")
+    }
+    
     override fun onCleared() {
         viewModelScope.launch {
             // Clean up resources
@@ -2957,8 +2994,10 @@ class ChatViewModel(
                             lastChunkAt = nowTs
                             totalContent += piece
                             
-                            // Auto-readout: Stream text to TTS as it arrives (for regeneration)
-                            if (autoReadoutEnabled && _currentTtsMessageId.value == placeholderId && piece.isNotEmpty()) {
+                            // Auto-readout or manual TTS: Stream text to TTS as it arrives (for regeneration)
+                            // Stream if auto-readout is enabled OR manual TTS was clicked for this message
+                            if ((autoReadoutEnabled || _currentTtsMessageId.value == placeholderId) && 
+                                _currentTtsMessageId.value == placeholderId && piece.isNotEmpty()) {
                                 try {
                                     ttsService.addStreamingText(piece)
                                 } catch (e: Exception) {
