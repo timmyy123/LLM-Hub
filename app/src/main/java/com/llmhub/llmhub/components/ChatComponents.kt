@@ -477,7 +477,8 @@ fun MessageBubble(
                                             baseColor = MaterialTheme.colorScheme.onPrimary,
                                             linkColor = MaterialTheme.colorScheme.onPrimary,
                                             fontSize = MaterialTheme.typography.bodyLarge.fontSize,
-                                            modifier = Modifier.wrapContentWidth()
+                                            modifier = Modifier.wrapContentWidth(),
+                                            context = context
                                         )
                                     }
                 }
@@ -588,7 +589,8 @@ fun MessageBubble(
                         baseColor = MaterialTheme.colorScheme.onSurface,
                         linkColor = MaterialTheme.colorScheme.primary,
                         fontSize = MaterialTheme.typography.bodyLarge.fontSize,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        context = context
                     )
                 }
                 
@@ -878,7 +880,8 @@ fun RenderMessageSegments(
     baseColor: Color,
     linkColor: Color,
     fontSize: TextUnit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    context: Context? = null
 ) {
     val segments = remember(displayContent) { CodeBlockParser.parseSegments(displayContent) }
 
@@ -905,7 +908,7 @@ fun RenderMessageSegments(
                 }
                 is ParsedSegment.Code -> {
                     // Render code block with monospace and a subtle background
-                    SelectionContainer {
+                    Box {
                         val codeModifier = if (isUser) {
                             Modifier
                                 .wrapContentWidth()
@@ -919,13 +922,41 @@ fun RenderMessageSegments(
                                 .padding(12.dp)
                         }
 
-                        Text(
-                            text = seg.content.trimEnd('\n'),
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = (fontSize.value - 0).sp,
-                            color = baseColor,
-                            modifier = codeModifier
-                        )
+                        SelectionContainer {
+                            Text(
+                                text = seg.content.trimEnd('\n'),
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = (fontSize.value - 0).sp,
+                                color = baseColor,
+                                modifier = codeModifier
+                            )
+                        }
+                        
+                        // Copy icon for code blocks (only for assistant messages and when context is available)
+                        if (!isUser && context != null) {
+                            IconButton(
+                                onClick = {
+                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                    val clip = ClipData.newPlainText("Code", seg.content.trimEnd('\n'))
+                                    clipboard.setPrimaryClip(clip)
+                                },
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(8.dp)
+                                    .size(32.dp)
+                                    .background(
+                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                                        CircleShape
+                                    )
+                            ) {
+                                Icon(
+                                    Icons.Outlined.ContentCopy,
+                                    contentDescription = "Copy code",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
                     }
                 }
             }
