@@ -60,6 +60,8 @@ interface InferenceService {
     fun isGpuBackendEnabled(): Boolean
     // Get effective max tokens (considering overrides)
     fun getEffectiveMaxTokens(): Int?
+    // Get actual token count for a text using the model's tokenizer
+    fun getActualTokenCount(text: String): Int?
 }
 
 /**
@@ -793,7 +795,17 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             Log.d(TAG, "Using token limits - defaultMaxTokens=$defaultMaxTokens overrideMaxTokens=${overrideMaxTokens ?: "null"} effectiveMaxTokens=$maxTokens")
             // Reserve ~1/3 for model response; prevent sending input when it eats into reserve
             val currentUserInput = extractCurrentUserMessage(prompt)
-            val promptTokens = (currentUserInput.length / 3).coerceAtLeast(1)
+            val promptTokens = try {
+                // Try to get actual token count for the prompt
+                val actualPromptTokens = session.sizeInTokens(currentUserInput)
+                Log.d(TAG, "Actual prompt tokens: $actualPromptTokens")
+                actualPromptTokens
+            } catch (e: Exception) {
+                // Fallback to estimation if actual counting fails
+                val estimatedPromptTokens = (currentUserInput.length / 3).coerceAtLeast(1)
+                Log.w(TAG, "Failed to get actual prompt token count, using estimation: $estimatedPromptTokens")
+                estimatedPromptTokens
+            }
             val outputReserve = (maxTokens * 0.33).toInt().coerceAtLeast(128)
             var currentTokens = estimatedSessionTokens
             // If our estimate undercounts (e.g., after recovery) fall back to session.sizeInTokens(prompt) heuristic not available; keep estimate
@@ -846,7 +858,13 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 Log.d(TAG, "Adding text query to session for chat $chatId: '${enhancedPrompt.take(100)}...'")
                 try {
                     currentSession.addQueryChunk(enhancedPrompt)
-                    estimatedSessionTokens += promptTokens
+                    // Update session tokens with actual count for the full enhanced prompt
+                    val actualPromptTokens = try {
+                        session.sizeInTokens(enhancedPrompt)
+                    } catch (e: Exception) {
+                        promptTokens // Fallback to the prompt tokens we calculated earlier
+                    }
+                    estimatedSessionTokens += actualPromptTokens
                 } catch (e: Exception) {
                     val msg = e.message ?: ""
                     if (msg.contains("Previous invocation still processing", ignoreCase = true)) {
@@ -860,7 +878,13 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                         }
                         // single retry
                         currentSession.addQueryChunk(enhancedPrompt)
-                        estimatedSessionTokens += promptTokens
+                        // Update session tokens with actual count for the full enhanced prompt
+                        val actualPromptTokens = try {
+                            session.sizeInTokens(enhancedPrompt)
+                        } catch (e: Exception) {
+                            promptTokens // Fallback to the prompt tokens we calculated earlier
+                        }
+                        estimatedSessionTokens += actualPromptTokens
                     } else {
                         throw e
                     }
@@ -986,10 +1010,20 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 if (forceDone) {
                     isGenerationComplete = true
                     isGenerating = false
-                    // Update session token count with response tokens (using standardized 4 chars/token estimation)
+                    // Update session token count with actual response tokens from the model
                     try {
                         val fullResponse = responseBuilder.toString()
-                        val responseTokens = kotlin.math.ceil(fullResponse.length / 4.0).toInt().coerceAtLeast(1)
+                        val responseTokens = try {
+                            // Try to get actual token count from the model's tokenizer
+                            val actualTokens = session.sizeInTokens(fullResponse)
+                            Log.d(TAG, "Actual response tokens: $actualTokens")
+                            actualTokens
+                        } catch (e: Exception) {
+                            // Fallback to estimation if actual counting fails
+                            val estimatedTokens = kotlin.math.ceil(fullResponse.length / 4.0).toInt().coerceAtLeast(1)
+                            Log.w(TAG, "Failed to get actual token count, using estimation: $estimatedTokens")
+                            estimatedTokens
+                        }
                         estimatedSessionTokens += responseTokens
                         Log.d(TAG, "Updated session tokens: +$responseTokens = $estimatedSessionTokens")
                     } catch (e: Exception) {
@@ -1305,6 +1339,23 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         val model = currentModel ?: return null
         val defaultMaxTokens = getMaxTokensForModel(model)
         return overrideMaxTokens?.coerceAtMost(defaultMaxTokens) ?: defaultMaxTokens
+    }
+    
+    override fun getActualTokenCount(text: String): Int? {
+        return try {
+            val session = modelInstance?.session
+            if (session != null) {
+                val tokenCount = session.sizeInTokens(text)
+                Log.d(TAG, "Actual token count for text (${text.length} chars): $tokenCount tokens")
+                tokenCount
+            } else {
+                Log.w(TAG, "No active session available for token counting")
+                null
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to get actual token count: ${e.message}")
+            null
+        }
     }
 
     /**

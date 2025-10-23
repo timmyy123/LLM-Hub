@@ -1525,16 +1525,16 @@ class ChatViewModel(
 
         // Only compute token statistics if we have any content to analyse.
         if (finalContent.isNotBlank()) {
-            // Approximate tokenisation: empirical average ~4 characters per token across English text.
-            // This gives results closer to what web AI UIs display (OpenAI, Claude, etc.).
-            val estimatedTokens = kotlin.math.ceil(finalContent.length / 4.0).toInt().coerceAtLeast(1)
+            // Get actual token count from the model's tokenizer instead of estimating
+            val actualTokens = inferenceService.getActualTokenCount(finalContent)
+            val tokenCount = actualTokens ?: kotlin.math.ceil(finalContent.length / 4.0).toInt().coerceAtLeast(1)
             val tokensPerSecond = if (generationTimeMs > 0) {
-                (estimatedTokens * 1000.0) / generationTimeMs
+                (tokenCount * 1000.0) / generationTimeMs
             } else {
                 0.0
             }
 
-            Log.d("ChatViewModel", "Saving stats for message $placeholderId: $estimatedTokens tokens, ${String.format("%.1f", tokensPerSecond)} tok/sec")
+            Log.d("ChatViewModel", "Saving stats for message $placeholderId: $tokenCount tokens (${if (actualTokens != null) "actual" else "estimated"}), ${String.format("%.1f", tokensPerSecond)} tok/sec")
 
             // Auto-readout: Flush any remaining buffered text when generation completes
             try {
@@ -1561,7 +1561,7 @@ class ChatViewModel(
             } catch (e: Exception) {
                 Log.w("ChatViewModel", "Failed to flush TTS buffer: ${e.message}")
             }
-            repository.updateMessageStats(placeholderId, estimatedTokens, tokensPerSecond)
+            repository.updateMessageStats(placeholderId, tokenCount, tokensPerSecond)
         } else {
             Log.d("ChatViewModel", "No stats to save for message $placeholderId - content is blank")
         }
