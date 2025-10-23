@@ -409,6 +409,8 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
 
     fun cancelTranslation() {
         translationJob?.cancel()
+        // Stop TTS when cancelling translation
+        stopTts()
     }
     
     // Enable TTS streaming when play button is clicked during generation

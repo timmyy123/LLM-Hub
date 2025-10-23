@@ -258,6 +258,8 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
         analyzingJob = null
         _isAnalyzing.value = false
         _isFetchingUrl.value = false
+        // Stop TTS when cancelling analysis
+        stopTts()
     }
     
     fun analyze() {

@@ -288,6 +288,8 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
         processingJob?.cancel()
         processingJob = null
         _isProcessing.value = false
+        // Stop TTS when cancelling processing
+        stopTts()
     }
     
     // Enable TTS streaming when play button is clicked during generation
