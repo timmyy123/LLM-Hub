@@ -269,12 +269,14 @@ class ChatViewModel(
         }
 
     // Track when session was reset due to repetitive content to ensure clean next generation
-    private var lastSessionResetAt = 0L
+    private val lastSessionResetAt = mutableMapOf<String, Long>()
     // Force drop of history on the next prompt after any session reset
     private var dropHistoryOnce = false
     // When returning to an existing chat, prime the next prompt with only the last
     // user/assistant pair. Consumed once inside buildContextAwareHistory.
     private var primeWithLastPairOnce = false
+    // Track if we used the last conversation pair to prevent recent reset logic from overriding
+    private var usedLastPairForPriming = false
     
     private var currentChatId: String?
         get() = savedStateHandle.get<String>(KEY_CURRENT_CHAT_ID)
@@ -489,43 +491,22 @@ class ChatViewModel(
                 val foundModel = _availableModels.value.find { it.name == chat.modelName }
                     ?: ModelData.models.find { it.name == chat.modelName }
                 
-                if (foundModel != null && foundModel.isDownloaded) {
-                    // Use the model associated with this chat
-                    Log.d("ChatViewModel", "Chat requires model: ${foundModel.name}")
-                    currentModel = foundModel
-                    // Don't auto-load the model - let user manually load it if needed
-                    // Users can select the model from the dropdown if they want to load it
-                    Log.d("ChatViewModel", "Model not auto-loaded, user can select it manually")
-                } else if (previousModel != null && previousModel.isDownloaded) {
-                    // Fallback to the previously loaded model and assign it to this chat
-                    Log.d("ChatViewModel", "Using previous model for chat: ${previousModel.name}")
-                    currentModel = previousModel
-                    repository.updateChatModel(chatId, previousModel.name)
+                // Always use the currently loaded model, don't switch models
+                if (currentlyLoadedModel != null) {
+                    Log.d("ChatViewModel", "Using currently loaded model: ${currentlyLoadedModel.name}")
+                    currentModel = currentlyLoadedModel
+                    // Update the chat to use the current model
+                    repository.updateChatModel(chatId, currentlyLoadedModel.name)
                     _currentChat.value = repository.getChatById(chatId)
-                    // Don't auto-load previous model either - keep current state
-                    Log.d("ChatViewModel", "Previous model reference set but not loaded")
                 } else {
-                    // No valid model available
-                    Log.d("ChatViewModel", "No valid model available for chat")
+                    Log.d("ChatViewModel", "No model currently loaded")
                     currentModel = null
                 }
                 
-                // Always ensure we have a fresh session for the chat when switching
-                if (currentChatId != null && currentChatId != chatId) {
-                    // Reset session when switching to ensure clean state
-                    resetChatSession(chatId)
-                } else {
-                    // For the same chat, still do a reset to ensure clean state
-                    // This helps prevent session corruption issues when switching between chats
-                    viewModelScope.launch {
-                        try {
-                            resetChatSession(chatId)
-                            Log.d("ChatViewModel", "Reset session for current chat $chatId to ensure clean state")
-                        } catch (e: Exception) {
-                            Log.w("ChatViewModel", "Error resetting session for chat $chatId: ${e.message}")
-                        }
-                    }
-                }
+                // Reset session when switching chats to ensure clean state
+                // but build context with last conversation pair
+                Log.d("ChatViewModel", "Resetting session for chat switch but preserving last conversation pair")
+                resetChatSession(chatId)
                 
                 messageCollectionJob = launch {
                     repository.getMessagesForChat(chatId).collectLatest { messageList ->
@@ -964,7 +945,7 @@ class ChatViewModel(
             Log.w("ChatViewModel", "Context window full for chat $chatId - resetting session and retrying")
             try {
                 inferenceService.resetChatSession(chatId)
-                lastSessionResetAt = System.currentTimeMillis()
+                lastSessionResetAt[chatId] = System.currentTimeMillis()
                 Log.d("ChatViewModel", "Session reset successful, proceeding with generation")
             } catch (e: Exception) {
                 Log.e("ChatViewModel", "Failed to reset session: ${e.message}")
@@ -1050,7 +1031,8 @@ class ChatViewModel(
                                             val contextParts = mutableListOf<String>()
 
                                             val memoryEnabledPref = themePreferences.memoryEnabled.first()
-                                            val recentManualReset = System.currentTimeMillis() - lastSessionResetAt < 10000 // 10s
+                                            val resetTime = lastSessionResetAt[chatId] ?: 0L
+                                            val recentManualReset = resetTime > 0L && (System.currentTimeMillis() - resetTime) < 10000 // 10s
                                             val recentAutoReset = inferenceService.wasSessionRecentlyReset(chatId)
                                             val recentSessionReset = recentManualReset || recentAutoReset
 
@@ -1187,7 +1169,8 @@ class ChatViewModel(
                                         // Heuristic semantic/topic shift detection (low lexical overlap with recent user turns)
                                         val topicShift = historyIsLarge && isTopicShift(lastUserContent, _messages.value)
                                         // Check if session was recently reset (either manually or automatically)
-                                        val recentManualReset = System.currentTimeMillis() - lastSessionResetAt < 10000 // 10 seconds
+                                        val resetTime = lastSessionResetAt[chatId] ?: 0L
+                                        val recentManualReset = resetTime > 0L && (System.currentTimeMillis() - resetTime) < 10000 // 10 seconds
                                         val recentAutoReset = inferenceService.wasSessionRecentlyReset(chatId)
                                         val recentSessionReset = recentManualReset || recentAutoReset
                                         val forceMinimal = (tinyArithmetic || veryShort || explicitShift || topicShift || recentSessionReset) && historyIsLarge
@@ -1202,7 +1185,7 @@ class ChatViewModel(
                                             try {
                                                 Log.d("ChatViewModel", "Force minimal prompt path for tiny query '${lastUserContent}' (history ${history.length} chars) - resetting session & dropping history")
                                                 inferenceService.resetChatSession(chatId)
-                                                lastSessionResetAt = System.currentTimeMillis()
+                                                lastSessionResetAt[chatId] = System.currentTimeMillis()
                                             } catch (e: Exception) {
                                                 Log.w("ChatViewModel", "Failed to reset session for minimal prompt: ${e.message}")
                                             }
@@ -1570,7 +1553,7 @@ class ChatViewModel(
                 Log.w("ChatViewModel", "Context window exceeded after response ($estimatedTokens > $tokenThreshold), resetting session for chat $chatId")
                 try {
                     inferenceService.resetChatSession(chatId)
-                    lastSessionResetAt = System.currentTimeMillis() // Update the reset timestamp
+                    lastSessionResetAt[chatId] = System.currentTimeMillis() // Update the reset timestamp
                     Log.d("ChatViewModel", "Successfully reset session after response for chat $chatId")
                 } catch (e: Exception) {
                     Log.w("ChatViewModel", "Error resetting session after response for chat $chatId: ${e.message}")
@@ -2285,6 +2268,7 @@ class ChatViewModel(
         
         // One-time priming: when returning to a chat from history, include ONLY
         // the last user/assistant pair to quickly re-establish immediate context.
+        // This takes priority over recent reset logic
         if (primeWithLastPairOnce) {
             val chatMessages = messages.filter { it.chatId == currentChatId }
             // Find the last assistant message and its preceding user message
@@ -2315,11 +2299,14 @@ class ChatViewModel(
                 } else {
                     precedingUser!!.content
                 }
+                Log.d("ChatViewModel", "Using last conversation pair for context priming")
+                usedLastPairForPriming = true
                 return listOf(
                     "user: $userText",
                     if (lastAssistant!!.content.isNotEmpty()) "assistant: ${lastAssistant!!.content}" else "assistant:"
                 ).joinToString("\n\n")
             } else {
+                Log.d("ChatViewModel", "No complete conversation pair found, falling through to normal handling")
                 // If no complete pair, fall through to normal handling
             }
         }
@@ -2329,8 +2316,9 @@ class ChatViewModel(
     // cause the next tiny user prompt (e.g. "1+1") to appear unanswerable if the model
     // internally rejects overlong initial contexts. We keep only a small tail plus a
     // synthetic summary note in that case.
-    // Simple: if session was ever reset, treat as new chat - forget everything
-    val recentlyReset = lastSessionResetAt > 0L
+    // Check if session was recently reset for this specific chat (within last 5 minutes)
+    val resetTime = lastSessionResetAt[currentChatId] ?: 0L
+    val recentlyReset = resetTime > 0L && (System.currentTimeMillis() - resetTime) < 300_000L // 5 minutes
     if (dropHistoryOnce) {
         Log.d("ChatViewModel", "dropHistoryOnce flag set; returning empty history and clearing flag")
         dropHistoryOnce = false
@@ -2395,7 +2383,8 @@ class ChatViewModel(
         val fullHistory = pairStrings.joinToString(separator = "\n\n")
         
         // QUICK EXIT: If recent reset, drop all prior history. Start truly fresh.
-        if (recentlyReset) {
+        // But only if we haven't already used the last conversation pair for priming
+        if (recentlyReset && !usedLastPairForPriming) {
             Log.d("ChatViewModel", "Recent reset detected; returning empty history (fully fresh context)")
             return ""
         }
@@ -2449,6 +2438,9 @@ class ChatViewModel(
         // Debug: Log first 200 chars of context to verify it's correct
         val preview = result.take(200) + if (result.length > 200) "..." else ""
         Log.d("ChatViewModel", "Context preview for chat $currentChatId: $preview")
+        
+        // Reset the flag after processing
+        usedLastPairForPriming = false
         
         return result
     }
@@ -2729,7 +2721,7 @@ class ChatViewModel(
                 
                 // Use the reset method which handles MediaPipe session errors
                 inferenceService.resetChatSession(chatId)
-                lastSessionResetAt = System.currentTimeMillis()
+                lastSessionResetAt[chatId] = System.currentTimeMillis()
                 
                 // Give MediaPipe significantly more time to clean up properly
                 delay(600)
@@ -2970,7 +2962,7 @@ class ChatViewModel(
                     delay(300)
                     inferenceService.resetChatSession(chatId)
                     // Record the reset and force-drop history for the next prompt
-                    lastSessionResetAt = System.currentTimeMillis()
+                    lastSessionResetAt[chatId] = System.currentTimeMillis()
                     dropHistoryOnce = true
                     delay(200) // Additional time for session to stabilize
                     Log.d("ChatViewModel", "Reset session for regeneration")

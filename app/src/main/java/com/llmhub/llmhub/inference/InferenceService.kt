@@ -799,14 +799,16 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             Log.d(TAG, "Using token limits - defaultMaxTokens=$defaultMaxTokens overrideMaxTokens=${overrideMaxTokens ?: "null"} effectiveMaxTokens=$maxTokens")
             // Reserve ~1/3 for model response; prevent sending input when it eats into reserve
             val currentUserInput = extractCurrentUserMessage(prompt)
-            // Use more accurate estimation for the full prompt (including conversation history)
-            val promptTokens = (prompt.length / 4).toInt().coerceAtLeast(1)
-            Log.d(TAG, "Estimated full prompt tokens: $promptTokens")
+            // Calculate tokens for the NEW user input only, not the entire prompt with history
+            val newInputTokens = (currentUserInput.length / 4).toInt().coerceAtLeast(1)
+            // Calculate tokens for the full prompt (including history) for length checking
+            val fullPromptTokens = (prompt.length / 4).toInt().coerceAtLeast(1)
+            Log.d(TAG, "Estimated new input tokens: $newInputTokens, full prompt tokens: $fullPromptTokens")
             val outputReserve = (maxTokens * 0.33).toInt().coerceAtLeast(128)
             
-            // Check if prompt itself is too long (including reserve for response)
-            if (promptTokens + outputReserve > maxTokens) {
-                Log.w(TAG, "Prompt too long: $promptTokens + $outputReserve > $maxTokens")
+            // Check if full prompt is too long (including reserve for response)
+            if (fullPromptTokens + outputReserve > maxTokens) {
+                Log.w(TAG, "Prompt too long: $fullPromptTokens + $outputReserve > $maxTokens")
                 throw IllegalArgumentException("Prompt is too long. Please shorten your message and try again.")
             }
             
@@ -815,14 +817,14 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             
             Log.d(TAG, "Token usage for chat $chatId:")
             Log.d(TAG, "  - Current session tokens: $currentTokens")
-            Log.d(TAG, "  - Prompt tokens: $promptTokens")
+            Log.d(TAG, "  - New input tokens: $newInputTokens")
             Log.d(TAG, "  - Max tokens: $maxTokens")
             
-            // If adding the prompt would exceed ~80% of max tokens, reset the session
+            // If adding the new input would exceed ~80% of max tokens, reset the session
             // Use a lower threshold since we're using conservative estimation
             val tokenThreshold = (maxTokens - outputReserve).coerceAtLeast(1)
-            if (currentTokens + promptTokens >= tokenThreshold) {
-                Log.w(TAG, "Token count ($currentTokens + $promptTokens = ${currentTokens + promptTokens}) approaching limit ($maxTokens)")
+            if (currentTokens + newInputTokens >= tokenThreshold) {
+                Log.w(TAG, "Token count ($currentTokens + $newInputTokens = ${currentTokens + newInputTokens}) approaching limit ($maxTokens)")
                 Log.w(TAG, "Resetting session for chat $chatId to prevent OUT_OF_RANGE error")
                 
                 // Record the session reset
@@ -861,12 +863,8 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 Log.d(TAG, "Adding text query to session for chat $chatId: '${enhancedPrompt.take(100)}...'")
                 try {
                     currentSession.addQueryChunk(enhancedPrompt)
-                    // Update session tokens with actual count for the full enhanced prompt
-                    val actualPromptTokens = try {
-                        session.sizeInTokens(enhancedPrompt)
-                    } catch (e: Exception) {
-                        promptTokens // Fallback to the prompt tokens we calculated earlier
-                    }
+                    // Update session tokens with estimated count for the new input
+                    val actualPromptTokens = newInputTokens // Use the new input tokens we calculated earlier
                     estimatedSessionTokens += actualPromptTokens
                 } catch (e: Exception) {
                     val msg = e.message ?: ""
@@ -881,12 +879,8 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                         }
                         // single retry
                         currentSession.addQueryChunk(enhancedPrompt)
-                        // Update session tokens with actual count for the full enhanced prompt
-                        val actualPromptTokens = try {
-                            session.sizeInTokens(enhancedPrompt)
-                        } catch (e: Exception) {
-                            promptTokens // Fallback to the prompt tokens we calculated earlier
-                        }
+                        // Update session tokens with estimated count for the new input
+                        val actualPromptTokens = newInputTokens // Use the new input tokens we calculated earlier
                         estimatedSessionTokens += actualPromptTokens
                     } else {
                         throw e
@@ -1013,20 +1007,12 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 if (forceDone) {
                     isGenerationComplete = true
                     isGenerating = false
-                    // Update session token count with actual response tokens from the model
+                    // Update session token count with estimated response tokens
                     try {
                         val fullResponse = responseBuilder.toString()
-                        val responseTokens = try {
-                            // Try to get actual token count from the model's tokenizer
-                            val actualTokens = session.sizeInTokens(fullResponse)
-                            Log.d(TAG, "Actual response tokens: $actualTokens")
-                            actualTokens
-                        } catch (e: Exception) {
-                            // Fallback to estimation if actual counting fails
-                            val estimatedTokens = kotlin.math.ceil(fullResponse.length / 4.0).toInt().coerceAtLeast(1)
-                            Log.w(TAG, "Failed to get actual token count, using estimation: $estimatedTokens")
-                            estimatedTokens
-                        }
+                        // Use estimation to avoid SIGSEGV crashes on newly created sessions
+                        val responseTokens = (fullResponse.length / 4).toInt().coerceAtLeast(1)
+                        Log.d(TAG, "Estimated response tokens: $responseTokens")
                         estimatedSessionTokens += responseTokens
                         Log.d(TAG, "Updated session tokens: +$responseTokens = $estimatedSessionTokens")
                     } catch (e: Exception) {
@@ -1345,20 +1331,10 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
     }
     
     override fun getActualTokenCount(text: String): Int? {
-        return try {
-            val session = modelInstance?.session
-            if (session != null) {
-                val tokenCount = session.sizeInTokens(text)
-                Log.d(TAG, "Actual token count for text (${text.length} chars): $tokenCount tokens")
-                tokenCount
-            } else {
-                Log.w(TAG, "No active session available for token counting")
-                null
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to get actual token count: ${e.message}")
-            null
-        }
+        // Use estimation to avoid SIGSEGV crashes on newly created sessions
+        val estimatedTokens = (text.length / 4).toInt().coerceAtLeast(1)
+        Log.d(TAG, "Estimated token count for text (${text.length} chars): $estimatedTokens tokens")
+        return estimatedTokens
     }
 
     /**
