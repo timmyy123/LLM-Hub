@@ -632,4 +632,5 @@
     <string name="please_download_model">Veuillez télécharger un modèle pour commencer à discuter.</string>
     <string name="model_not_loaded">Modèle non chargé correctement. Veuillez essayer de passer à un modèle différent ou redémarrer l\'application.</string>
     <string name="no_response_produced">Aucune réponse produite. (Possible: limite de tokens ou réinitialisation de session). Appuyez sur Régénérer.</string>
+    <string name="prompt_too_long">Le message est trop long. Veuillez raccourcir votre message et réessayer.</string>
 </resources>

@@ -644,4 +644,5 @@
     <string name="please_download_model">チャットを開始するにはモデルをダウンロードしてください。</string>
     <string name="model_not_loaded">モデルが正しく読み込まれていません。別のモデルに切り替えるか、アプリを再起動してください。</string>
     <string name="no_response_produced">応答が生成されませんでした。（可能性：トークン制限またはセッションリセット）。再生成をタップしてください。</string>
+    <string name="prompt_too_long">メッセージが長すぎます。メッセージを短くして、もう一度お試しください。</string>
 </resources>

@@ -611,6 +611,7 @@
     <string name="please_download_model">Por favor descarga un modelo para comenzar a chatear.</string>
     <string name="model_not_loaded">Modelo no cargado correctamente. Por favor intenta cambiar a un modelo diferente o reinicia la aplicación.</string>
     <string name="no_response_produced">No se produjo respuesta. (Posible: límite de tokens o reinicio de sesión). Toca Regenerar.</string>
+    <string name="prompt_too_long">El mensaje es demasiado largo. Por favor, acorta tu mensaje e inténtalo de nuevo.</string>
 </resources>
 
 

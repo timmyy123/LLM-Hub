@@ -611,6 +611,7 @@
     <string name="please_download_model">Bitte laden Sie ein Modell herunter, um zu chatten.</string>
     <string name="model_not_loaded">Modell nicht ordnungsgemäß geladen. Bitte versuchen Sie, zu einem anderen Modell zu wechseln oder die App neu zu starten.</string>
     <string name="no_response_produced">Keine Antwort erzeugt. (Möglich: Token-Limit oder Sitzungs-Reset). Tippen Sie auf Regenerieren.</string>
+    <string name="prompt_too_long">Eingabe ist zu lang. Bitte kürzen Sie Ihre Nachricht und versuchen Sie es erneut.</string>
 </resources>
 
 

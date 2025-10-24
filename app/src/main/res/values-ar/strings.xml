@@ -643,4 +643,5 @@
     <string name="please_download_model">يرجى تنزيل نموذج لبدء الدردشة.</string>
     <string name="model_not_loaded">النموذج غير محمّل بشكل صحيح. يرجى محاولة التبديل إلى نموذج مختلف أو إعادة تشغيل التطبيق.</string>
     <string name="no_response_produced">لم يتم إنتاج أي رد. (ممكن: حد الرموز أو إعادة تعيين الجلسة). انقر على إعادة التوليد.</string>
+    <string name="prompt_too_long">الرسالة طويلة جدًا. يرجى تقصير رسالتك والمحاولة مرة أخرى.</string>
 </resources>

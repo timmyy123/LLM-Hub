@@ -643,4 +643,5 @@
     <string name="please_download_model">Sohbete başlamak için lütfen bir model indirin.</string>
     <string name="model_not_loaded">Model düzgün yüklenmedi. Lütfen farklı bir modele geçmeyi deneyin veya uygulamayı yeniden başlatın.</string>
     <string name="no_response_produced">Yanıt üretilmedi. (Olası: token sınırı veya oturum sıfırlama). Yeniden Oluştur\'a dokunun.</string>
+    <string name="prompt_too_long">Mesaj çok uzun. Lütfen mesajınızı kısaltın ve tekrar deneyin.</string>
 </resources>

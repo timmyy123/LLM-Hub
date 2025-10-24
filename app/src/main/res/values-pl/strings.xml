@@ -644,4 +644,5 @@
     <string name="please_download_model">Pobierz model, aby rozpocząć czatowanie.</string>
     <string name="model_not_loaded">Model nie został poprawnie załadowany. Spróbuj przełączyć na inny model lub uruchom ponownie aplikację.</string>
     <string name="no_response_produced">Nie wygenerowano odpowiedzi. (Możliwe: limit tokenów lub reset sesji). Dotknij Regeneruj.</string>
+    <string name="prompt_too_long">Wiadomość jest za długa. Skróć swoją wiadomość i spróbuj ponownie.</string>
 </resources>

@@ -799,18 +799,17 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             Log.d(TAG, "Using token limits - defaultMaxTokens=$defaultMaxTokens overrideMaxTokens=${overrideMaxTokens ?: "null"} effectiveMaxTokens=$maxTokens")
             // Reserve ~1/3 for model response; prevent sending input when it eats into reserve
             val currentUserInput = extractCurrentUserMessage(prompt)
-            val promptTokens = try {
-                // Try to get actual token count for the prompt
-                val actualPromptTokens = session.sizeInTokens(currentUserInput)
-                Log.d(TAG, "Actual prompt tokens: $actualPromptTokens")
-                actualPromptTokens
-            } catch (e: Exception) {
-                // Fallback to estimation if actual counting fails
-                val estimatedPromptTokens = (currentUserInput.length / 3).coerceAtLeast(1)
-                Log.w(TAG, "Failed to get actual prompt token count, using estimation: $estimatedPromptTokens")
-                estimatedPromptTokens
-            }
+            // Use more accurate estimation for the full prompt (including conversation history)
+            val promptTokens = (prompt.length / 4).toInt().coerceAtLeast(1)
+            Log.d(TAG, "Estimated full prompt tokens: $promptTokens")
             val outputReserve = (maxTokens * 0.33).toInt().coerceAtLeast(128)
+            
+            // Check if prompt itself is too long (including reserve for response)
+            if (promptTokens + outputReserve > maxTokens) {
+                Log.w(TAG, "Prompt too long: $promptTokens + $outputReserve > $maxTokens")
+                throw IllegalArgumentException("Prompt is too long. Please shorten your message and try again.")
+            }
+            
             var currentTokens = estimatedSessionTokens
             // If our estimate undercounts (e.g., after recovery) fall back to session.sizeInTokens(prompt) heuristic not available; keep estimate
             
@@ -1463,7 +1462,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         val resetTime = sessionResetTimes[chatId] ?: return false
         val timeSinceReset = System.currentTimeMillis() - resetTime
         // Extend window so downstream callers reliably detect a fresh reset
-        return timeSinceReset < 10_000 // 10 seconds
+        return timeSinceReset < 300_000 // 5 minutes - much longer window for reset detection
     }
     
     /**

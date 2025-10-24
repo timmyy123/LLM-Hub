@@ -644,4 +644,5 @@
     <string name="please_download_model">채팅을 시작하려면 모델을 다운로드하세요.</string>
     <string name="model_not_loaded">모델이 제대로 로드되지 않았습니다. 다른 모델로 전환하거나 앱을 다시 시작해보세요.</string>
     <string name="no_response_produced">응답이 생성되지 않았습니다. (가능성: 토큰 제한 또는 세션 재설정). 재생성을 탭하세요.</string>
+    <string name="prompt_too_long">메시지가 너무 깁니다. 메시지를 줄이고 다시 시도해 주세요.</string>
 </resources>

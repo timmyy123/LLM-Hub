@@ -645,5 +645,6 @@
     <string name="please_download_model">Please download a model to start chatting.</string>
     <string name="model_not_loaded">Model not properly loaded. Please try switching to a different model or restart the app.</string>
     <string name="no_response_produced">No response produced. (Possible: token limit or session reset). Tap Regenerate.</string>
+    <string name="prompt_too_long">Prompt is too long. Please shorten your message and try again.</string>
 </resources>
 

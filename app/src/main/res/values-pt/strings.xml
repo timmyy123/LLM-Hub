@@ -595,6 +595,7 @@
     <string name="please_download_model">Por favor, baixe um modelo para começar a conversar.</string>
     <string name="model_not_loaded">Modelo não carregado corretamente. Tente trocar para um modelo diferente ou reinicie o aplicativo.</string>
     <string name="no_response_produced">Nenhuma resposta produzida. (Possível: limite de tokens ou reset de sessão). Toque em Regenerar.</string>
+    <string name="prompt_too_long">A mensagem é muito longa. Por favor, encurte sua mensagem e tente novamente.</string>
 </resources>
 
 

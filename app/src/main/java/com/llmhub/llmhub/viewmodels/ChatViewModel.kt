@@ -944,19 +944,42 @@ class ChatViewModel(
                 // No need to manually ensure or create sessions
                 Log.d("ChatViewModel", "Starting generation for chat $chatId")
                 
-                // Pre-generation guard: if context + prompt + reserve exceeds effective window, REJECT (do not generate)
-                val shouldReject = shouldResetSessionBeforeMessage(messageText, chatId)
-                if (shouldReject) {
-                    Log.w("ChatViewModel", "Rejecting prompt for chat $chatId due to context window limits (pre-generation)")
+                // Check if prompt itself is too long (without any context)
+                val isPromptTooLong = isPromptTooLong(messageText)
+                if (isPromptTooLong) {
+                    Log.w("ChatViewModel", "Prompt too long for chat $chatId - rejecting")
                     repository.addMessage(
                         chatId,
-                        context.getString(R.string.no_response_produced),
+                        context.getString(R.string.prompt_too_long),
                         isFromUser = false
                     )
                     _isLoading.value = false
                     isGenerating = false
                     return@launch
                 }
+                
+        // Check if context + prompt + reserve exceeds effective window - if so, reset session and retry
+        val shouldReset = shouldResetSessionBeforeMessage(messageText, chatId)
+        if (shouldReset) {
+            Log.w("ChatViewModel", "Context window full for chat $chatId - resetting session and retrying")
+            try {
+                inferenceService.resetChatSession(chatId)
+                lastSessionResetAt = System.currentTimeMillis()
+                Log.d("ChatViewModel", "Session reset successful, proceeding with generation")
+            } catch (e: Exception) {
+                Log.e("ChatViewModel", "Failed to reset session: ${e.message}")
+                repository.addMessage(
+                    chatId,
+                    context.getString(R.string.no_response_produced),
+                    isFromUser = false
+                )
+                _isLoading.value = false
+                isGenerating = false
+                return@launch
+            }
+        }
+        
+        // Session reset logic is handled in InferenceService based on token limits
                 
                 // Pass the conversation history to the model with context window management
                 // Build history including the current user message
@@ -1225,9 +1248,14 @@ class ChatViewModel(
                                                 modifiedHistory
                                             } else {
                                                 // Text-only or text+audio: use history as-is
-                                                if (!history.endsWith("assistant:")) {
+                                                if (history.isEmpty()) {
+                                                    // If history is empty (after reset), start fresh with just the user message
+                                                    "user: $lastUserContent\nassistant:"
+                                                } else if (!history.endsWith("assistant:")) {
                                                     history + "\nassistant:"
-                                                } else history
+                                                } else {
+                                                    history
+                                                }
                                             }
 
                                             // Insert RAG context before the assistant response (assign the result)
@@ -1517,6 +1545,45 @@ class ChatViewModel(
     }
 
     /**
+     * Check if we should reset session after response due to context window limits
+     */
+    private suspend fun checkAndResetSessionAfterResponse() {
+        val model = currentModel ?: return
+        val chatId = currentChatId ?: return
+
+        Log.d("ChatViewModel", "=== POST-RESPONSE CHECK STARTED for chat $chatId ===")
+        try {
+            // Session reset logic is handled in InferenceService based on token limits
+            // Use conversation history length for token estimation
+            val history = buildContextAwareHistory(_messages.value)
+            val actualTokens = inferenceService.getActualTokenCount(history)
+            val estimatedTokens = actualTokens ?: (history.length / 4)
+            Log.d("ChatViewModel", "Using token count: $estimatedTokens (history length: ${history.length})")
+            val defaultMaxTokens = minOf(model.contextWindowSize, extractCacheSizeFromUrl(model.url) ?: model.contextWindowSize)
+            val maxTokens = inferenceService.getEffectiveMaxTokens() ?: defaultMaxTokens
+            val reserveForResponse = (maxTokens * 0.33).toInt().coerceAtLeast(128)
+            val tokenThreshold = (maxTokens - reserveForResponse).coerceAtLeast(1)
+
+            Log.d("ChatViewModel", "Post-response token check for chat $chatId: ~$estimatedTokens tokens, threshold=$tokenThreshold (reserve=$reserveForResponse), max=$maxTokens")
+
+            if (estimatedTokens > tokenThreshold) {
+                Log.w("ChatViewModel", "Context window exceeded after response ($estimatedTokens > $tokenThreshold), resetting session for chat $chatId")
+                try {
+                    inferenceService.resetChatSession(chatId)
+                    lastSessionResetAt = System.currentTimeMillis() // Update the reset timestamp
+                    Log.d("ChatViewModel", "Successfully reset session after response for chat $chatId")
+                } catch (e: Exception) {
+                    Log.w("ChatViewModel", "Error resetting session after response for chat $chatId: ${e.message}")
+                }
+            } else {
+                Log.d("ChatViewModel", "Context window OK after response ($estimatedTokens <= $tokenThreshold), no reset needed")
+            }
+        } catch (e: Exception) {
+            Log.w("ChatViewModel", "Error checking post-response token usage for chat $chatId: ${e.message}")
+        }
+    }
+
+    /**
      * Helper to save the final message content and its token stats.
      * This is called on successful completion or on cancellation.
      */
@@ -1568,47 +1635,13 @@ class ChatViewModel(
         }
         
         // Check if we should reset session after response due to context window limits
+        Log.d("ChatViewModel", "About to call checkAndResetSessionAfterResponse()")
         checkAndResetSessionAfterResponse()
     }
 
     /**
-     * Check if session should be reset after response due to context window limits
+     * Check if we should reset session before sending message due to context window limits
      */
-    private suspend fun checkAndResetSessionAfterResponse() {
-        val model = currentModel ?: return
-        val chatId = currentChatId ?: return
-        
-        try {
-            // Get current conversation history
-            val history = buildContextAwareHistory(_messages.value)
-            
-            // Rough estimate of token count (1 token ≈ 4 characters)
-            val estimatedTokens = history.length / 4
-            // Use the same token limits as InferenceService to ensure consistency
-            val defaultMaxTokens = minOf(model.contextWindowSize, extractCacheSizeFromUrl(model.url) ?: model.contextWindowSize)
-            val maxTokens = inferenceService.getEffectiveMaxTokens() ?: defaultMaxTokens
-            // Reserve ~1/3 of the context window for model response
-            val reserveForResponse = (maxTokens * 0.33).toInt().coerceAtLeast(128)
-            val tokenThreshold = (maxTokens - reserveForResponse).coerceAtLeast(1)
-            
-            Log.d("ChatViewModel", "Post-response token check for chat $chatId: ~$estimatedTokens tokens, threshold=$tokenThreshold (reserve=$reserveForResponse), max=$maxTokens")
-            
-            // If existing context + reserved response exceeds context window, reset session
-            if (estimatedTokens > tokenThreshold) {
-                Log.w("ChatViewModel", "Context window exceeded after response ($estimatedTokens > $tokenThreshold), resetting session for chat $chatId")
-                try {
-                    inferenceService.resetChatSession(chatId)
-                    lastSessionResetAt = System.currentTimeMillis() // Update the reset timestamp
-                    Log.d("ChatViewModel", "Successfully reset session after response for chat $chatId")
-                } catch (e: Exception) {
-                    Log.w("ChatViewModel", "Error resetting session after response for chat $chatId: ${e.message}")
-                }
-            }
-            
-        } catch (e: Exception) {
-            Log.w("ChatViewModel", "Error checking post-response token usage for chat $chatId: ${e.message}")
-        }
-    }
 
     // Basic disallowed content filter (client-side heuristic; not exhaustive)
     private fun isDisallowedPrompt(prompt: String): Boolean {
@@ -2296,12 +2329,8 @@ class ChatViewModel(
     // cause the next tiny user prompt (e.g. "1+1") to appear unanswerable if the model
     // internally rejects overlong initial contexts. We keep only a small tail plus a
     // synthetic summary note in that case.
-    val recentResetWindowMs = 5_000L
-    val now = System.currentTimeMillis()
-    // Consider both local and service-level reset markers
-    val recentlyResetLocal = (now - lastSessionResetAt) < recentResetWindowMs
-    val recentlyResetService = try { inferenceService.wasSessionRecentlyReset(currentChatId) } catch (_: Exception) { false }
-    val recentlyReset = recentlyResetLocal || recentlyResetService
+    // Simple: if session was ever reset, treat as new chat - forget everything
+    val recentlyReset = lastSessionResetAt > 0L
     if (dropHistoryOnce) {
         Log.d("ChatViewModel", "dropHistoryOnce flag set; returning empty history and clearing flag")
         dropHistoryOnce = false
@@ -2481,6 +2510,8 @@ class ChatViewModel(
         val model = currentModel ?: return false
         
         try {
+            // Session reset logic is handled in InferenceService based on token limits
+
             // Get the current conversation history that would be sent
             val history = buildContextAwareHistory(_messages.value)
             val fullPrompt = if (history.isNotEmpty()) {
@@ -2510,6 +2541,31 @@ class ChatViewModel(
         }
         
         return false
+    }
+    
+    /**
+     * Check if the prompt itself is too long (without any context)
+     */
+    private suspend fun isPromptTooLong(message: String): Boolean {
+        val model = currentModel ?: return false
+        
+        try {
+            val defaultMaxTokens = minOf(model.contextWindowSize, extractCacheSizeFromUrl(model.url) ?: model.contextWindowSize)
+            val maxTokens = inferenceService.getEffectiveMaxTokens() ?: defaultMaxTokens
+            val reserveForResponse = (maxTokens * 0.33).toInt().coerceAtLeast(128)
+            val availableTokens = maxTokens - reserveForResponse
+            
+            // Check if just the prompt itself (without any context) is too long
+            val promptOnlyTokens = message.length / 4
+            val isTooLong = promptOnlyTokens > availableTokens
+            
+            Log.d("ChatViewModel", "Prompt length check: $promptOnlyTokens tokens for prompt, $availableTokens available (max=$maxTokens, reserve=$reserveForResponse)")
+            
+            return isTooLong
+        } catch (e: Exception) {
+            Log.w("ChatViewModel", "Error checking prompt length: ${e.message}")
+            return false
+        }
     }
 
     /**
