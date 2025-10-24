@@ -806,11 +806,6 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             Log.d(TAG, "Estimated new input tokens: $newInputTokens, full prompt tokens: $fullPromptTokens")
             val outputReserve = (maxTokens * 0.33).toInt().coerceAtLeast(128)
             
-            // Check if full prompt is too long (including reserve for response)
-            if (fullPromptTokens + outputReserve > maxTokens) {
-                Log.w(TAG, "Prompt too long: $fullPromptTokens + $outputReserve > $maxTokens")
-                throw IllegalArgumentException("Prompt is too long. Please shorten your message and try again.")
-            }
             
             var currentTokens = estimatedSessionTokens
             // If our estimate undercounts (e.g., after recovery) fall back to session.sizeInTokens(prompt) heuristic not available; keep estimate
@@ -820,11 +815,10 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             Log.d(TAG, "  - New input tokens: $newInputTokens")
             Log.d(TAG, "  - Max tokens: $maxTokens")
             
-            // If adding the new input would exceed ~80% of max tokens, reset the session
             // Use a lower threshold since we're using conservative estimation
             val tokenThreshold = (maxTokens - outputReserve).coerceAtLeast(1)
-            if (currentTokens + newInputTokens >= tokenThreshold) {
-                Log.w(TAG, "Token count ($currentTokens + $newInputTokens = ${currentTokens + newInputTokens}) approaching limit ($maxTokens)")
+            if (currentTokens >= tokenThreshold) {
+                Log.w(TAG, "Session tokens ($currentTokens) approaching limit ($tokenThreshold)")
                 Log.w(TAG, "Resetting session for chat $chatId to prevent OUT_OF_RANGE error")
                 
                 // Record the session reset
@@ -843,7 +837,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                         estimatedSessionTokens = 0
                         
                         // Give MediaPipe time to clean up
-                        delay(500)
+                        delay(1000)
                         
                     } catch (resetException: Exception) {
                         Log.e(TAG, "Failed to reset session before token limit: ${resetException.message}")
@@ -857,12 +851,21 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
             // Update estimation after any reset
             currentTokens = estimatedSessionTokens
             
+            // Determine which prompt to use based on whether we reset the session
+            val promptToUse = if (estimatedSessionTokens == 0) {
+                // Session was reset, use fresh prompt
+                "user: $currentUserInput\nassistant:"
+            } else {
+                // Session has history, use full prompt
+                enhancedPrompt
+            }
+            
             // CRITICAL: For vision models, text query MUST be added before images
             // This is required by MediaPipe's vision implementation
-            if (enhancedPrompt.trim().isNotEmpty()) {
-                Log.d(TAG, "Adding text query to session for chat $chatId: '${enhancedPrompt.take(100)}...'")
+            if (promptToUse.trim().isNotEmpty()) {
+                Log.d(TAG, "Adding text query to session for chat $chatId: '${promptToUse.take(100)}...'")
                 try {
-                    currentSession.addQueryChunk(enhancedPrompt)
+                    currentSession.addQueryChunk(promptToUse)
                     // Update session tokens with estimated count for the new input
                     val actualPromptTokens = newInputTokens // Use the new input tokens we calculated earlier
                     estimatedSessionTokens += actualPromptTokens

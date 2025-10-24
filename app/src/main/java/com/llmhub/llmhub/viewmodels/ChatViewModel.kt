@@ -1349,15 +1349,19 @@ class ChatViewModel(
                         p
                     } catch (_: Exception) { currentPrompt }
 
-                    val responseStream = inferenceService.generateResponseStreamWithSession(
-                        finalPrompt,
-                        currentModel!!, 
-                        chatId, 
-                        images, 
-                        audioData, // Pass audio data for Gemma-3n models
-                        webSearchEnabled,
-                        context
-                    )
+        // Let InferenceService handle token checking and session reset internally
+        // This ensures the session is fully initialized before checking token counts
+        Log.d("ChatViewModel", "🔍 Sending prompt to InferenceService for token checking and generation")
+        
+        val responseStream = inferenceService.generateResponseStreamWithSession(
+            finalPrompt,
+            currentModel!!, 
+            chatId, 
+            images, 
+            audioData, // Pass audio data for Gemma-3n models
+            webSearchEnabled,
+            context
+        )
                     // Track precise generation window based on first and last streamed chunks
                                     var lastUpdateTime = 0L
                                     val updateIntervalMs = 50L // Update UI every 50ms instead of every token
@@ -2507,29 +2511,11 @@ class ChatViewModel(
         try {
             // Session reset logic is handled in InferenceService based on token limits
 
-            // Get the current conversation history that would be sent
-            val history = buildContextAwareHistory(_messages.value)
-            val fullPrompt = if (history.isNotEmpty()) {
-                "$history\n\nuser: $message\nassistant:"
-            } else {
-                "user: $message\nassistant:"
-            }
+            // Token checking is now handled in InferenceService
+            // No need to check tokens here since InferenceService handles it
             
-            // Rough estimate of token count (1 token ≈ 4 characters)
-            val estimatedTokens = fullPrompt.length / 4
-            // Use the same token limits as InferenceService to ensure consistency
-            val defaultMaxTokens = minOf(model.contextWindowSize, extractCacheSizeFromUrl(model.url) ?: model.contextWindowSize)
-            val maxTokens = inferenceService.getEffectiveMaxTokens() ?: defaultMaxTokens
-            // Reserve ~1/3 of the context window for model response. Reset when input >= (max - reserve)
-            val reserveForResponse = (maxTokens * 0.33).toInt().coerceAtLeast(128)
-            val tokenThreshold = (maxTokens - reserveForResponse).coerceAtLeast(1)
-            
-            Log.d("ChatViewModel", "Token check for chat $chatId: ~$estimatedTokens tokens, threshold=$tokenThreshold (reserve=$reserveForResponse), max=$maxTokens")
-            
-            if (estimatedTokens > tokenThreshold) {
-                Log.w("ChatViewModel", "Token usage approaching limit ($estimatedTokens > $tokenThreshold), recommending session reset")
-                return true
-            }
+            // Token checking is now handled in InferenceService
+            // Just return false to continue with normal flow
             
         } catch (e: Exception) {
             Log.w("ChatViewModel", "Error checking token usage for chat $chatId: ${e.message}")
