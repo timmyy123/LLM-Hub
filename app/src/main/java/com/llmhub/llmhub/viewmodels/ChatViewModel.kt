@@ -616,6 +616,9 @@ class ChatViewModel(
         // Set loading state immediately to provide responsive UI feedback
         _isLoading.value = true
         isGenerating = true
+        
+        // Stop any ongoing TTS when starting a new message
+        stopTts()
 
     viewModelScope.launch {
             // Small delay to allow keyboard dismissal animation to complete
@@ -2883,6 +2886,9 @@ class ChatViewModel(
      */
     fun regenerateResponse(context: Context, messageId: String) {
         val chatId = currentChatId ?: return
+        
+        // Stop any ongoing TTS when regenerating
+        stopTts()
         
         viewModelScope.launch {
             try {

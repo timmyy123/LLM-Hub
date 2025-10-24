@@ -490,7 +490,7 @@ Be thorough and specific in your analysis. If you detect a scam, clearly state i
             """
 You are a scam detection expert. Analyze the provided image for potential scams, fraud, phishing attempts, or suspicious activity.
 
-IMPORTANT: Respond in the same language as any text visible in the image. If the image contains Spanish text, respond in Spanish. If the image contains French text, respond in French. Match the language of the content in the image.
+IMPORTANT: Respond in the same language as any text visible in the image.  Match the language of the content in the image.
 
 **Instructions:**
 - Carefully examine the image for any suspicious elements, fake logos, misleading graphics, or scam indicators
@@ -511,7 +511,7 @@ Be thorough and specific in your analysis. If you detect a scam, clearly state i
             """
 You are a scam detection expert. Analyze the following content for potential scams, fraud, phishing attempts, or suspicious activity.
 
-IMPORTANT: Respond in the same language as the input content. If the content is in Spanish, respond in Spanish. If the content is in French, respond in French. Match the language of the input exactly.
+IMPORTANT: Respond in the same language as the input content. Match the language of the input exactly.
 
 Content to analyze:
 $content
