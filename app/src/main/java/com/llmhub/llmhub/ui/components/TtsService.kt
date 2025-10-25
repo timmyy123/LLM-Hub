@@ -237,6 +237,34 @@ class TtsService(private val context: Context) {
             tts?.speak(chunk, queueMode, null, id)
         }
     }
+
+    /**
+     * Speak the given text by appending to the existing TTS queue without flushing it.
+     * Used when enabling streaming so previously queued streaming utterances are not lost.
+     */
+    fun speakAppend(text: String) {
+        if (!isInitialized || tts == null) {
+            Log.w(TAG, "TTS not initialized")
+            return
+        }
+
+        if (text.isBlank()) {
+            Log.w(TAG, "Cannot speak empty text")
+            return
+        }
+
+        // Do not stop or clear buffer; just enqueue chunks
+        _currentText.value = text
+
+        val cleanText = cleanTextForTts(text)
+        val chunks = splitIntoChunks(cleanText)
+
+        chunks.forEach { chunk ->
+            val id = "utterance_${utteranceId++}"
+            // Always append to preserve existing queue
+            tts?.speak(chunk, TextToSpeech.QUEUE_ADD, null, id)
+        }
+    }
     
     /**
      * Add streaming text to buffer. Speaks complete sentences as they are formed.

@@ -1355,15 +1355,16 @@ class ChatViewModel(
                                         false
                                     }
                                     
-                                    // Initialize TTS for streaming if auto-readout is enabled
-                                    if (autoReadoutEnabled) {
-                                        Log.d("ChatViewModel", "Auto-readout enabled, preparing TTS for streaming message: $placeholderId")
+                                    // Initialize TTS for streaming if auto-readout is enabled or if the
+                                    // ViewModel's current TTS message ID was set (manual read trigger).
+                                    if (autoReadoutEnabled || _currentTtsMessageId.value == placeholderId) {
+                                        Log.d("ChatViewModel", "Preparing TTS for streaming message: $placeholderId (autoReadout=$autoReadoutEnabled, currentTts=${_currentTtsMessageId.value})")
                                         // Stop any previous TTS before starting new generation
                                         ttsService.stop()
                                         // Set language to app's current locale
                                         val appLocale = com.llmhub.llmhub.utils.LocaleHelper.getCurrentLocale(context)
                                         ttsService.setLanguage(appLocale)
-                                        // Set the current TTS message ID so the UI can show stop icon
+                                        // Ensure the current TTS message ID is set so streaming picks it up
                                         _currentTtsMessageId.value = placeholderId
                                     }
                                     
@@ -1379,9 +1380,9 @@ class ChatViewModel(
                                             segmentHasContent = true
                                         }
                                         
-                                        // Auto-readout: Stream text to TTS as it arrives
-                                        // Only stream if this message is still marked as the active TTS target
-                                        if (autoReadoutEnabled && _currentTtsMessageId.value == placeholderId && piece.isNotEmpty()) {
+                                        // Stream text to TTS as it arrives when this message is the
+                                        // active TTS target (either auto-readout or manual trigger).
+                                        if (_currentTtsMessageId.value == placeholderId && piece.isNotEmpty()) {
                                             try {
                                                 ttsService.addStreamingText(piece)
                                             } catch (e: Exception) {
@@ -1710,6 +1711,30 @@ class ChatViewModel(
     /** Clear the current TTS message ID (called when manually stopping TTS) */
     fun clearCurrentTtsMessage() {
         _currentTtsMessageId.value = null
+    }
+
+    /**
+     * Enable manual TTS for a specific message id. This will prepare the TTS engine,
+     * set the current TTS message id so streaming will be routed to the TTS service,
+     * and enqueue the already-generated content without flushing the streaming queue.
+     */
+    fun enableManualTtsForMessage(messageId: String, content: String) {
+        try {
+            // Stop any non-stream playback and prepare language
+            ttsService.stop()
+            val appLocale = com.llmhub.llmhub.utils.LocaleHelper.getCurrentLocale(context)
+            ttsService.setLanguage(appLocale)
+
+            // Mark this message as the active TTS target so generation will stream into TTS
+            _currentTtsMessageId.value = messageId
+
+            // Enqueue already-generated content without flushing queued streaming utterances
+            if (content.isNotBlank()) {
+                ttsService.speakAppend(content)
+            }
+        } catch (e: Exception) {
+            Log.w("ChatViewModel", "enableManualTtsForMessage failed: ${e.message}")
+        }
     }
 
     fun switchModel(newModel: LLMModel) {
