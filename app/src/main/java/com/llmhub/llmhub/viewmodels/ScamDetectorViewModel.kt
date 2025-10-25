@@ -424,6 +424,8 @@ $content
 - Look for inconsistencies between the image and text
 - Check if the image appears to be a screenshot of a phishing message, fake website, or fraudulent offer
 
+IMPORTANT: Respond in the same language as the input content.  Match the language of the content in the image.
+
 Please provide a comprehensive analysis covering:
 1. **Risk Level**: Low, Medium, High, or Critical
 2. **Red Flags in Image**: List any suspicious visual elements (fake logos, poor quality graphics, misleading layouts, etc.)
