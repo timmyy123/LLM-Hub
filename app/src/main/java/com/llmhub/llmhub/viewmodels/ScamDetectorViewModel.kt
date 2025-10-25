@@ -424,7 +424,7 @@ $content
 - Look for inconsistencies between the image and text
 - Check if the image appears to be a screenshot of a phishing message, fake website, or fraudulent offer
 
-IMPORTANT: Respond in the same language as the input content.  Match the language of the content in the image.
+
 
 Please provide a comprehensive analysis covering:
 1. **Risk Level**: Low, Medium, High, or Critical
@@ -460,6 +460,8 @@ Be thorough and specific in your analysis. If you detect a scam, clearly state i
             // Only text present
             """
 You are a scam detection expert. Analyze the following content for potential scams, fraud, phishing attempts, or suspicious activity.
+
+IMPORTANT: Respond in the same language as the input content.  Match the language of the content in the image.
 
 Content to analyze:
 $content
