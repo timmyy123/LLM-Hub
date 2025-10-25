@@ -905,7 +905,7 @@ fun RenderMessageSegments(
                 }
                 is ParsedSegment.Code -> {
                     // Render code block with monospace and a subtle background
-                    SelectionContainer {
+                    Box {
                         val codeModifier = if (isUser) {
                             Modifier
                                 .wrapContentWidth()
@@ -919,13 +919,38 @@ fun RenderMessageSegments(
                                 .padding(12.dp)
                         }
 
-                        Text(
-                            text = seg.content.trimEnd('\n'),
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = (fontSize.value - 0).sp,
-                            color = baseColor,
-                            modifier = codeModifier
-                        )
+                        SelectionContainer {
+                            Text(
+                                text = seg.content.trimEnd('\n'),
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = (fontSize.value - 0).sp,
+                                color = baseColor,
+                                modifier = codeModifier
+                            )
+                        }
+                        
+                        // Copy button for code blocks (only for assistant messages)
+                        if (!isUser) {
+                            val localContext = LocalContext.current
+                            IconButton(
+                                onClick = {
+                                    val clipboard = localContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                    val clip = ClipData.newPlainText("Code", seg.content.trimEnd('\n'))
+                                    clipboard.setPrimaryClip(clip)
+                                },
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(8.dp)
+                                    .size(32.dp)
+                            ) {
+                                Icon(
+                                    Icons.Outlined.ContentCopy,
+                                    contentDescription = "Copy code",
+                                    modifier = Modifier.size(18.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                     }
                 }
             }
