@@ -584,6 +584,22 @@
     <string name="translator_vision_description">Traduzir texto de imagens</string>
     <string name="translator_enable_audio">Ativar Áudio</string>
     <string name="translator_audio_description">Traduzir gravações de áudio</string>
+    
+    <!-- Web Search Messages -->
+    <string name="web_searching">🔍 Pesquisando na web...</string>
+    <string name="web_search_found_results">✅ Encontrados %1$d resultados. Analisando...</string>
+    <string name="web_search_no_results">❌ Nenhum resultado de pesquisa atual encontrado. Fornecendo resposta baseada em dados de treinamento...</string>
+    <string name="web_search_failed">❌ Pesquisa na web falhou: %1$s. Fornecendo resposta baseada em dados de treinamento...</string>
+    
+    <!-- Vision Model Error Messages -->
+    <string name="vision_chat_cannot_open">🚫 **Não é possível abrir este chat**\n\nEsta conversa contém imagens, mas você atualmente tem um **modelo apenas de texto** carregado:\n\n📱 **Modelo atual:** %1$s\n🖼️ **Este chat:** Contém imagens\n\n---\n\n## 🎯 Como corrigir:\n\n1. **📥 Baixar um modelo de visão**\n   - Vá para \"Baixar modelos\"\n   - Procure por modelos marcados com 🖼️ ou \"Visão+Texto\"\n   - Tente: **Gemma-3n E2B (Visão+Texto)**\n\n2. **🔄 Mudar para modelo de visão**\n   - Carregue o modelo de visão que você baixou\n   - Modelos de visão podem lidar com texto E imagens\n\n3. **✅ Voltar a este chat**\n   - Uma vez que um modelo de visão seja carregado, este chat funcionará perfeitamente!\n\n---\n\n💡 **Dica profissional:** Modelos de visão podem fazer tudo que modelos de texto fazem, mais lidar com imagens!</string>
+    <string name="vision_image_cannot_send">🖼️ **Não é possível enviar imagens**\n\nVocê está tentando enviar uma imagem, mas o modelo atual é **apenas texto**:\n\n📱 **Modelo atual:** %1$s\n\n---\n\n## 🎯 Para enviar imagens:\n\n1. **📥 Baixar um modelo de visão**\n   - Toque no menu → \"Baixar modelos\"\n   - Procure por modelos 🖼️ **Visão+Texto**\n   - Recomendado: **Gemma-3n E2B (Visão+Texto)**\n\n2. **🔄 Trocar modelos**\n   - Carregue o modelo de visão que você baixou\n   - Modelos de visão lidam com texto e imagens\n\n3. **✅ Tentar novamente**\n   - Uma vez carregado, você pode enviar imagens livremente!\n\n---\n\n💡 **Dica profissional:** Modelos de visão podem fazer tudo que modelos de texto fazem, mais entender imagens!</string>
+    
+    <!-- Model Error Messages -->
+    <string name="please_download_model">Por favor baixe um modelo para começar a conversar.</string>
+    <string name="model_not_loaded">Modelo não carregado corretamente. Tente trocar para um modelo diferente ou reiniciar o aplicativo.</string>
+    <string name="no_response_produced">Nenhuma resposta produzida. (Possível: limite de tokens ou reset de sessão). Toque em Regenerar.</string>
+    <string name="prompt_too_long">Mensagem muito longa. Encurte sua mensagem e tente novamente.</string>
 </resources>
 
 

@@ -632,4 +632,20 @@
     <string name="backend_selection_hint">Uygulama GPU ile çökerse veya düzgün çalışmazsa, CPU arka ucunu deneyin</string>
     <string name="not_available">Mevcut değil</string>
     <string name="gpu_disabled_low_memory">%1$dGB veya daha az RAM\'e sahip cihazlarda bu model için GPU kullanılamaz</string>
+    
+    <!-- Web Search Messages -->
+    <string name="web_searching">🔍 Web\'de aranıyor...</string>
+    <string name="web_search_found_results">✅ %1$d sonuç bulundu. Analiz ediliyor...</string>
+    <string name="web_search_no_results">❌ Güncel arama sonucu bulunamadı. Eğitim verilerine dayalı yanıt sağlanıyor...</string>
+    <string name="web_search_failed">❌ Web araması başarısız: %1$s. Eğitim verilerine dayalı yanıt sağlanıyor...</string>
+    
+    <!-- Vision Model Error Messages -->
+    <string name="vision_chat_cannot_open">🚫 **Bu sohbet açılamıyor**\n\nBu konuşma görüntüler içeriyor, ancak şu anda **sadece metin modeli** yüklü:\n\n📱 **Mevcut model:** %1$s\n🖼️ **Bu sohbet:** Görüntüler içeriyor\n\n---\n\n## 🎯 Nasıl düzeltilir:\n\n1. **📥 Görü modeli indir**\n   - \"Modelleri İndir\"e git\n   - 🖼️ veya \"Görü+Metin\" ile işaretlenmiş modelleri ara\n   - Dene: **Gemma-3n E2B (Görü+Metin)**\n\n2. **🔄 Görü modeline geç**\n   - İndirdiğin görü modelini yükle\n   - Görü modelleri hem metin hem de görüntüleri işleyebilir\n\n3. **✅ Bu sohbete dön**\n   - Görü modeli yüklendikten sonra bu sohbet mükemmel çalışacak!\n\n---\n\n💡 **Pro ipucu:** Görü modelleri metin modellerinin yapabileceği her şeyi yapabilir, artı görüntüleri işleyebilir!</string>
+    <string name="vision_image_cannot_send">🖼️ **Görüntüler gönderilemiyor**\n\nBir görüntü göndermeye çalışıyorsun, ancak mevcut model **sadece metin**:\n\n📱 **Mevcut model:** %1$s\n\n---\n\n## 🎯 Görüntü göndermek için:\n\n1. **📥 Görü modeli indir**\n   - Menüye dokun → \"Modelleri İndir\"\n   - 🖼️ **Görü+Metin** modellerini ara\n   - Önerilen: **Gemma-3n E2B (Görü+Metin)**\n\n2. **🔄 Modelleri değiştir**\n   - İndirdiğin görü modelini yükle\n   - Görü modelleri hem metin hem de görüntüleri işler\n\n3. **✅ Tekrar dene**\n   - Yüklendikten sonra görüntüleri özgürce gönderebilirsin!\n\n---\n\n💡 **Pro ipucu:** Görü modelleri metin modellerinin yapabileceği her şeyi yapabilir, artı görüntüleri anlayabilir!</string>
+    
+    <!-- Model Error Messages -->
+    <string name="please_download_model">Sohbet etmeye başlamak için lütfen bir model indirin.</string>
+    <string name="model_not_loaded">Model düzgün yüklenmedi. Lütfen farklı bir modele geçmeyi deneyin veya uygulamayı yeniden başlatın.</string>
+    <string name="no_response_produced">Yanıt üretilmedi. (Muhtemel: token sınırı veya oturum sıfırlama). Yeniden Oluştur\'a dokunun.</string>
+    <string name="prompt_too_long">Mesaj çok uzun. Lütfen mesajınızı kısaltın ve tekrar deneyin.</string>
 </resources>

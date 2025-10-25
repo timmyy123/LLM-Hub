@@ -623,6 +623,22 @@
     <string name="translator_vision_description">Traduci testo dalle immagini</string>
     <string name="translator_enable_audio">Abilita Audio</string>
     <string name="translator_audio_description">Traduci registrazioni audio</string>
+    
+    <!-- Web Search Messages -->
+    <string name="web_searching">🔍 Ricerca sul web...</string>
+    <string name="web_search_found_results">✅ Trovati %1$d risultati. Analisi in corso...</string>
+    <string name="web_search_no_results">❌ Nessun risultato di ricerca attuale trovato. Fornendo risposta basata sui dati di addestramento...</string>
+    <string name="web_search_failed">❌ Ricerca web fallita: %1$s. Fornendo risposta basata sui dati di addestramento...</string>
+    
+    <!-- Vision Model Error Messages -->
+    <string name="vision_chat_cannot_open">🚫 **Impossibile aprire questa chat**\n\nQuesta conversazione contiene immagini, ma hai attualmente un **modello solo testo** caricato:\n\n📱 **Modello attuale:** %1$s\n🖼️ **Questa chat:** Contiene immagini\n\n---\n\n## 🎯 Come risolvere:\n\n1. **📥 Scarica un modello di visione**\n   - Vai a \"Scarica modelli\"\n   - Cerca modelli contrassegnati con 🖼️ o \"Visione+Testo\"\n   - Prova: **Gemma-3n E2B (Visione+Testo)**\n\n2. **🔄 Passa al modello di visione**\n   - Carica il modello di visione che hai scaricato\n   - I modelli di visione possono gestire sia testo che immagini\n\n3. **✅ Torna a questa chat**\n   - Una volta caricato un modello di visione, questa chat funzionerà perfettamente!\n\n---\n\n💡 **Suggerimento pro:** I modelli di visione possono fare tutto quello che fanno i modelli di testo, più gestire le immagini!</string>
+    <string name="vision_image_cannot_send">🖼️ **Impossibile inviare immagini**\n\nStai cercando di inviare un\'immagine, ma il modello attuale è **solo testo**:\n\n📱 **Modello attuale:** %1$s\n\n---\n\n## 🎯 Per inviare immagini:\n\n1. **📥 Scarica un modello di visione**\n   - Tocca il menu → \"Scarica modelli\"\n   - Cerca modelli 🖼️ **Visione+Testo**\n   - Consigliato: **Gemma-3n E2B (Visione+Testo)**\n\n2. **🔄 Cambia modelli**\n   - Carica il modello di visione che hai scaricato\n   - I modelli di visione gestiscono sia testo che immagini\n\n3. **✅ Riprova**\n   - Una volta caricato, puoi inviare immagini liberamente!\n\n---\n\n💡 **Suggerimento pro:** I modelli di visione possono fare tutto quello che fanno i modelli di testo, più capire le immagini!</string>
+    
+    <!-- Model Error Messages -->
+    <string name="please_download_model">Scarica un modello per iniziare a chattare.</string>
+    <string name="model_not_loaded">Modello non caricato correttamente. Prova a passare a un modello diverso o riavvia l\'app.</string>
+    <string name="no_response_produced">Nessuna risposta prodotta. (Possibile: limite token o reset sessione). Tocca Rigenera.</string>
+    <string name="prompt_too_long">Il messaggio è troppo lungo. Accorcia il tuo messaggio e riprova.</string>
 </resources>
 
 

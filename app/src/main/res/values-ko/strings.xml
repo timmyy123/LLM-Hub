@@ -633,4 +633,20 @@
     <string name="backend_selection_hint">GPU로 앱이 충돌하거나 제대로 작동하지 않으면 CPU 백엔드를 시도하세요</string>
     <string name="not_available">사용 불가</string>
     <string name="gpu_disabled_low_memory">%1$dGB RAM 이하의 기기에서는 이 모델에 GPU를 사용할 수 없음</string>
+    
+    <!-- Web Search Messages -->
+    <string name="web_searching">🔍 웹 검색 중...</string>
+    <string name="web_search_found_results">✅ %1$d개 결과를 찾았습니다. 분석 중...</string>
+    <string name="web_search_no_results">❌ 현재 검색 결과를 찾을 수 없습니다. 훈련 데이터를 기반으로 응답을 제공합니다...</string>
+    <string name="web_search_failed">❌ 웹 검색 실패: %1$s. 훈련 데이터를 기반으로 응답을 제공합니다...</string>
+    
+    <!-- Vision Model Error Messages -->
+    <string name="vision_chat_cannot_open">🚫 **이 채팅을 열 수 없습니다**\n\n이 대화에는 이미지가 포함되어 있지만, 현재 **텍스트 전용 모델**이 로드되어 있습니다:\n\n📱 **현재 모델:** %1$s\n🖼️ **이 채팅:** 이미지 포함\n\n---\n\n## 🎯 해결 방법:\n\n1. **📥 비전 모델 다운로드**\n   - \"모델 다운로드\"로 이동\n   - 🖼️ 또는 \"비전+텍스트\"로 표시된 모델 찾기\n   - 시도해보세요: **Gemma-3n E2B (비전+텍스트)**\n\n2. **🔄 비전 모델로 전환**\n   - 다운로드한 비전 모델 로드\n   - 비전 모델은 텍스트와 이미지를 모두 처리할 수 있습니다\n\n3. **✅ 이 채팅으로 돌아가기**\n   - 비전 모델이 로드되면 이 채팅이 완벽하게 작동합니다!\n\n---\n\n💡 **프로 팁:** 비전 모델은 텍스트 모델이 할 수 있는 모든 것을 할 수 있을 뿐만 아니라 이미지도 처리할 수 있습니다!</string>
+    <string name="vision_image_cannot_send">🖼️ **이미지를 보낼 수 없습니다**\n\n이미지를 보내려고 하지만 현재 모델이 **텍스트 전용**입니다:\n\n📱 **현재 모델:** %1$s\n\n---\n\n## 🎯 이미지를 보내려면:\n\n1. **📥 비전 모델 다운로드**\n   - 메뉴 탭 → \"모델 다운로드\"\n   - 🖼️ **비전+텍스트** 모델 찾기\n   - 권장: **Gemma-3n E2B (비전+텍스트)**\n\n2. **🔄 모델 전환**\n   - 다운로드한 비전 모델 로드\n   - 비전 모델은 텍스트와 이미지를 모두 처리합니다\n\n3. **✅ 다시 시도**\n   - 로드되면 자유롭게 이미지를 보낼 수 있습니다!\n\n---\n\n💡 **프로 팁:** 비전 모델은 텍스트 모델이 할 수 있는 모든 것을 할 수 있을 뿐만 아니라 이미지도 이해할 수 있습니다!</string>
+    
+    <!-- Model Error Messages -->
+    <string name="please_download_model">채팅을 시작하려면 모델을 다운로드하세요.</string>
+    <string name="model_not_loaded">모델이 제대로 로드되지 않았습니다. 다른 모델로 전환하거나 앱을 다시 시작해보세요.</string>
+    <string name="no_response_produced">응답이 생성되지 않았습니다. (가능성: 토큰 제한 또는 세션 재설정). 재생성을 탭하세요.</string>
+    <string name="prompt_too_long">메시지가 너무 깁니다. 메시지를 줄이고 다시 시도해 주세요.</string>
 </resources>

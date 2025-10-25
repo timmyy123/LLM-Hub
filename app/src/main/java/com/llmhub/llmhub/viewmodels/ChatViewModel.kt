@@ -12,6 +12,7 @@ import com.llmhub.llmhub.data.*
 import com.llmhub.llmhub.inference.InferenceService
 import com.llmhub.llmhub.repository.ChatRepository
 import com.llmhub.llmhub.utils.FileUtils
+import com.llmhub.llmhub.R
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
@@ -27,7 +28,6 @@ import androidx.core.content.FileProvider
 import com.llmhub.llmhub.data.localFileName
 import com.llmhub.llmhub.data.isModelFileValid
 import com.llmhub.llmhub.data.ThemePreferences
-import com.llmhub.llmhub.R
 import com.llmhub.llmhub.embedding.RagServiceManager
 import com.llmhub.llmhub.embedding.ContextChunk
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
@@ -459,7 +459,7 @@ class ChatViewModel(
                         MessageEntity(
                             id = "error-${System.currentTimeMillis()}",
                             chatId = chatId,
-                            content = "🚫 **Cannot Open This Chat**\n\nThis conversation contains images, but you currently have a **text-only model** loaded:\n\n📱 **Current Model:** ${currentlyLoadedModel.name}\n🖼️ **This Chat:** Contains images\n\n---\n\n## 🎯 How to Fix This:\n\n1. **📥 Download a Vision Model**\n   - Go to \"Download Models\"\n   - Look for models marked with 🖼️ or \"Vision+Text\"\n   - Try: **Gemma-3n E2B (Vision+Text)**\n\n2. **🔄 Switch to Vision Model**\n   - Load the vision model you downloaded\n   - Vision models can handle both text AND images\n\n3. **✅ Return to This Chat**\n   - Once a vision model is loaded, this chat will work perfectly!\n\n---\n\n💡 **Pro Tip:** Vision models can do everything text models can do, plus handle images!",
+                            content = context.getString(R.string.vision_chat_cannot_open, currentlyLoadedModel.name),
                             isFromUser = false,
                             timestamp = System.currentTimeMillis()
                         )
@@ -656,9 +656,9 @@ class ChatViewModel(
             if (currentModel == null || !currentModel!!.isDownloaded) {
                 Log.e("ChatViewModel", "No valid model available for chat $chatId. CurrentModel: ${currentModel?.name}, isDownloaded: ${currentModel?.isDownloaded}, availableModels: ${_availableModels.value.size}")
                 val errorMessage = if (_availableModels.value.isEmpty()) {
-                    "Please download a model to start chatting."
+                    context.getString(R.string.please_download_model)
                 } else {
-                    "Model not properly loaded. Please try switching to a different model or restart the app."
+                    context.getString(R.string.model_not_loaded)
                 }
                 repository.addMessage(chatId, errorMessage, isFromUser = false)
                 _isLoading.value = false
@@ -729,7 +729,7 @@ class ChatViewModel(
                             // Check if current model supports vision before processing image
                             if (currentModel != null && !currentModel!!.supportsVision) {
                                 Log.w("ChatViewModel", "Cannot send image with text-only model: ${currentModel!!.name}")
-                                val errorMessage = "🖼️ **Cannot Send Images**\n\nYou're trying to send an image, but the current model is **text-only**:\n\n📱 **Current Model:** ${currentModel!!.name}\n\n---\n\n## 🎯 To Send Images:\n\n1. **📥 Download a Vision Model**\n   - Tap the menu → \"Download Models\"\n   - Look for 🖼️ **Vision+Text** models\n   - Recommended: **Gemma-3n E2B (Vision+Text)**\n\n2. **🔄 Switch Models**\n   - Load the vision model you downloaded\n   - Vision models handle both text AND images\n\n3. **✅ Try Again**\n   - Once loaded, you can send images freely!\n\n---\n\n💡 **Pro Tip:** Vision models can do everything text models can do, plus understand images!"
+                                val errorMessage = context.getString(R.string.vision_image_cannot_send, currentModel!!.name)
                                 repository.addMessage(chatId, errorMessage, isFromUser = false)
                                 _isLoading.value = false
                                 isGenerating = false
@@ -1442,7 +1442,7 @@ class ChatViewModel(
                                 Log.d("ChatViewModel", "Generation completed successfully with ${continuationCount} continuations")
                                 Log.d("ChatViewModel", "Final content length: ${finalContent.length}")
                                 val safeFinal = if (finalContent.isBlank()) {
-                                    "No response produced. (Possible: token limit or session reset). Tap Regenerate."
+                                    context.getString(R.string.no_response_produced)
                                 } else finalContent
                                 repository.updateMessageContent(placeholderId, safeFinal.trimEnd())
                                 val time = System.currentTimeMillis() - generationStartTime
@@ -1488,7 +1488,7 @@ class ChatViewModel(
                         // ALWAYS save final content and call finalizeMessage (for both cancel and error) even if the parent Job is cancelled
                         withContext(kotlinx.coroutines.NonCancellable) {
                             val safeFinal = if (finalContent.isBlank()) {
-                                "No response produced. (Possible: token limit or session reset). Tap Regenerate."
+                                context.getString(R.string.no_response_produced)
                             } else sanitizeModelOutput(finalContent)
                             repository.updateMessageContent(placeholderId, safeFinal.trimEnd())
                             Log.d("ChatViewModel", "About to call finalizeMessage (NonCancellable)")
@@ -1507,7 +1507,7 @@ class ChatViewModel(
                     }
                 }
             } else {
-                repository.addMessage(chatId, "Please download a model to start chatting.", isFromUser = false)
+                repository.addMessage(chatId, context.getString(R.string.please_download_model), isFromUser = false)
                 _isLoading.value = false
                 isGenerating = false
             }
@@ -1524,8 +1524,8 @@ class ChatViewModel(
 
         // Only compute token statistics if we have any content to analyse.
         if (finalContent.isNotBlank()) {
-            // Use MediaPipe's sizeInTokens function for accurate token count
-            val actualTokens = inferenceService.getActualTokenCount(finalContent) ?: kotlin.math.ceil(finalContent.length / 4.0).toInt().coerceAtLeast(1)
+
+            val actualTokens = kotlin.math.ceil(finalContent.length / 4.0).toInt().coerceAtLeast(1)
             val tokensPerSecond = if (generationTimeMs > 0) {
                 (actualTokens * 1000.0) / generationTimeMs
             } else {
