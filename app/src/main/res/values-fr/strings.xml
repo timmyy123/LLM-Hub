@@ -621,4 +621,20 @@
     <string name="translator_vision_description">Traduire le texte des images</string>
     <string name="translator_enable_audio">Activer l\'Audio</string>
     <string name="translator_audio_description">Traduire les enregistrements audio</string>
+    
+    <!-- Web Search Messages -->
+    <string name="web_searching">🔍 Recherche sur le web...</string>
+    <string name="web_search_found_results">✅ %1$d résultats trouvés. Analyse en cours...</string>
+    <string name="web_search_no_results">❌ Aucun résultat de recherche actuel trouvé. Fourniture d\'une réponse basée sur les données d\'entraînement...</string>
+    <string name="web_search_failed">❌ Recherche web échouée: %1$s. Fourniture d\'une réponse basée sur les données d\'entraînement...</string>
+    
+    <!-- Vision Model Error Messages -->
+    <string name="vision_chat_cannot_open">🚫 **Impossible d\'ouvrir ce chat**\n\nCette conversation contient des images, mais vous avez actuellement un **modèle texte uniquement** chargé:\n\n📱 **Modèle actuel:** %1$s\n🖼️ **Ce chat:** Contient des images\n\n---\n\n## 🎯 Comment résoudre ce problème:\n\n1. **📥 Télécharger un modèle de vision**\n   - Allez à \"Télécharger des modèles\"\n   - Cherchez des modèles marqués avec 🖼️ ou \"Vision+Texte\"\n   - Essayez: **Gemma-3n E2B (Vision+Texte)**\n\n2. **🔄 Passer au modèle de vision**\n   - Chargez le modèle de vision que vous avez téléchargé\n   - Les modèles de vision peuvent gérer à la fois le texte ET les images\n\n3. **✅ Revenir à ce chat**\n   - Une fois qu\'un modèle de vision est chargé, ce chat fonctionnera parfaitement!\n\n---\n\n💡 **Conseil pro:** Les modèles de vision peuvent faire tout ce que font les modèles de texte, plus gérer les images!</string>
+    <string name="vision_image_cannot_send">🖼️ **Impossible d\'envoyer des images**\n\nVous essayez d\'envoyer une image, mais le modèle actuel est **texte uniquement**:\n\n📱 **Modèle actuel:** %1$s\n\n---\n\n## 🎯 Pour envoyer des images:\n\n1. **📥 Télécharger un modèle de vision**\n   - Appuyez sur le menu → \"Télécharger des modèles\"\n   - Cherchez des modèles 🖼️ **Vision+Texte**\n   - Recommandé: **Gemma-3n E2B (Vision+Texte)**\n\n2. **🔄 Changer de modèles**\n   - Chargez le modèle de vision que vous avez téléchargé\n   - Les modèles de vision gèrent à la fois le texte et les images\n\n3. **✅ Réessayer**\n   - Une fois chargé, vous pouvez envoyer des images librement!\n\n---\n\n💡 **Conseil pro:** Les modèles de vision peuvent faire tout ce que font les modèles de texte, plus comprendre les images!</string>
+    
+    <!-- Model Error Messages -->
+    <string name="please_download_model">Veuillez télécharger un modèle pour commencer à discuter.</string>
+    <string name="model_not_loaded">Modèle non chargé correctement. Veuillez essayer de passer à un modèle différent ou redémarrer l\'application.</string>
+    <string name="no_response_produced">Aucune réponse produite. (Possible: limite de tokens ou réinitialisation de session). Appuyez sur Régénérer.</string>
+    <string name="prompt_too_long">Le message est trop long. Veuillez raccourcir votre message et réessayer.</string>
 </resources>

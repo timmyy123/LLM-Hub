@@ -633,4 +633,20 @@
     <string name="backend_selection_hint">Jika aplikasi crash atau tidak bekerja dengan baik dengan GPU, coba backend CPU</string>
     <string name="not_available">Tidak tersedia</string>
     <string name="gpu_disabled_low_memory">GPU tidak tersedia untuk model ini pada perangkat dengan %1$dGB RAM atau kurang</string>
+    
+    <!-- Web Search Messages -->
+    <string name="web_searching">🔍 Mencari di web...</string>
+    <string name="web_search_found_results">✅ Ditemukan %1$d hasil. Menganalisis...</string>
+    <string name="web_search_no_results">❌ Tidak ditemukan hasil pencarian terkini. Memberikan respons berdasarkan data pelatihan...</string>
+    <string name="web_search_failed">❌ Pencarian web gagal: %1$s. Memberikan respons berdasarkan data pelatihan...</string>
+    
+    <!-- Vision Model Error Messages -->
+    <string name="vision_chat_cannot_open">🚫 **Tidak Dapat Membuka Chat Ini**\n\nPercakapan ini berisi gambar, tetapi Anda saat ini memiliki **model teks saja** yang dimuat:\n\n📱 **Model Saat Ini:** %1$s\n🖼️ **Chat Ini:** Berisi gambar\n\n---\n\n## 🎯 Cara Memperbaikinya:\n\n1. **📥 Unduh Model Visi**\n   - Pergi ke \"Unduh Model\"\n   - Cari model yang ditandai dengan 🖼️ atau \"Visi+Teks\"\n   - Coba: **Gemma-3n E2B (Visi+Teks)**\n\n2. **🔄 Beralih ke Model Visi**\n   - Muat model visi yang Anda unduh\n   - Model visi dapat menangani teks DAN gambar\n\n3. **✅ Kembali ke Chat Ini**\n   - Setelah model visi dimuat, chat ini akan berfungsi dengan sempurna!\n\n---\n\n💡 **Tips Pro:** Model visi dapat melakukan semua yang dilakukan model teks, plus menangani gambar!</string>
+    <string name="vision_image_cannot_send">🖼️ **Tidak Dapat Mengirim Gambar**\n\nAnda mencoba mengirim gambar, tetapi model saat ini adalah **teks saja**:\n\n📱 **Model Saat Ini:** %1$s\n\n---\n\n## 🎯 Untuk Mengirim Gambar:\n\n1. **📥 Unduh Model Visi**\n   - Ketuk menu → \"Unduh Model\"\n   - Cari model 🖼️ **Visi+Teks**\n   - Direkomendasikan: **Gemma-3n E2B (Visi+Teks)**\n\n2. **🔄 Ganti Model**\n   - Muat model visi yang Anda unduh\n   - Model visi menangani teks dan gambar\n\n3. **✅ Coba Lagi**\n   - Setelah dimuat, Anda dapat mengirim gambar dengan bebas!\n\n---\n\n💡 **Tips Pro:** Model visi dapat melakukan semua yang dilakukan model teks, plus memahami gambar!</string>
+    
+    <!-- Model Error Messages -->
+    <string name="please_download_model">Silakan unduh model untuk mulai mengobrol.</string>
+    <string name="model_not_loaded">Model tidak dimuat dengan benar. Silakan coba beralih ke model yang berbeda atau restart aplikasi.</string>
+    <string name="no_response_produced">Tidak ada respons yang dihasilkan. (Kemungkinan: batas token atau reset sesi). Ketuk Regenerate.</string>
+    <string name="prompt_too_long">Pesan terlalu panjang. Silakan persingkat pesan Anda dan coba lagi.</string>
 </resources>

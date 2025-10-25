@@ -600,6 +600,22 @@
     <string name="translator_vision_description">Text aus Bildern übersetzen</string>
     <string name="translator_enable_audio">Audio aktivieren</string>
     <string name="translator_audio_description">Audioaufnahmen übersetzen</string>
+    
+    <!-- Web Search Messages -->
+    <string name="web_searching">🔍 Durchsuche das Web...</string>
+    <string name="web_search_found_results">✅ %1$d Ergebnisse gefunden. Analysiere...</string>
+    <string name="web_search_no_results">❌ Keine aktuellen Suchergebnisse gefunden. Antworte basierend auf Trainingsdaten...</string>
+    <string name="web_search_failed">❌ Websuche fehlgeschlagen: %1$s. Antworte basierend auf Trainingsdaten...</string>
+    
+    <!-- Vision Model Error Messages -->
+    <string name="vision_chat_cannot_open">🚫 **Chat kann nicht geöffnet werden**\n\nDiese Unterhaltung enthält Bilder, aber Sie haben derzeit ein **Nur-Text-Modell** geladen:\n\n📱 **Aktuelles Modell:** %1$s\n🖼️ **Dieser Chat:** Enthält Bilder\n\n---\n\n## 🎯 So beheben Sie das:\n\n1. **📥 Vision-Modell herunterladen**\n   - Gehen Sie zu \"Modelle herunterladen\"\n   - Suchen Sie nach Modellen mit 🖼️ oder \"Vision+Text\"\n   - Versuchen Sie: **Gemma-3n E2B (Vision+Text)**\n\n2. **🔄 Zu Vision-Modell wechseln**\n   - Laden Sie das heruntergeladene Vision-Modell\n   - Vision-Modelle können sowohl Text als auch Bilder verarbeiten\n\n3. **✅ Zu diesem Chat zurückkehren**\n   - Sobald ein Vision-Modell geladen ist, funktioniert dieser Chat perfekt!\n\n---\n\n💡 **Pro-Tipp:** Vision-Modelle können alles, was Text-Modelle können, plus Bilder verstehen!</string>
+    <string name="vision_image_cannot_send">🖼️ **Bilder können nicht gesendet werden**\n\nSie versuchen ein Bild zu senden, aber das aktuelle Modell ist **Nur-Text**:\n\n📱 **Aktuelles Modell:** %1$s\n\n---\n\n## 🎯 Um Bilder zu senden:\n\n1. **📥 Vision-Modell herunterladen**\n   - Tippen Sie auf das Menü → \"Modelle herunterladen\"\n   - Suchen Sie nach 🖼️ **Vision+Text** Modellen\n   - Empfohlen: **Gemma-3n E2B (Vision+Text)**\n\n2. **🔄 Modelle wechseln**\n   - Laden Sie das heruntergeladene Vision-Modell\n   - Vision-Modelle verarbeiten sowohl Text als auch Bilder\n\n3. **✅ Erneut versuchen**\n   - Sobald geladen, können Sie Bilder frei senden!\n\n---\n\n💡 **Pro-Tipp:** Vision-Modelle können alles, was Text-Modelle können, plus Bilder verstehen!</string>
+    
+    <!-- Model Error Messages -->
+    <string name="please_download_model">Bitte laden Sie ein Modell herunter, um zu chatten.</string>
+    <string name="model_not_loaded">Modell nicht korrekt geladen. Bitte versuchen Sie, zu einem anderen Modell zu wechseln oder die App neu zu starten.</string>
+    <string name="no_response_produced">Keine Antwort erzeugt. (Möglich: Token-Limit oder Session-Reset). Tippen Sie auf Regenerieren.</string>
+    <string name="prompt_too_long">Eingabe zu lang. Bitte kürzen Sie Ihre Nachricht und versuchen Sie es erneut.</string>
 </resources>
 
 

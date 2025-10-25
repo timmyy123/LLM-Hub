@@ -633,4 +633,20 @@
     <string name="backend_selection_hint">Jeśli aplikacja ulega awarii lub nie działa poprawnie z GPU, spróbuj backendu CPU</string>
     <string name="not_available">Niedostępne</string>
     <string name="gpu_disabled_low_memory">GPU niedostępne dla tego modelu na urządzeniach z %1$dGB RAM lub mniej</string>
+    
+    <!-- Web Search Messages -->
+    <string name="web_searching">🔍 Wyszukiwanie w sieci...</string>
+    <string name="web_search_found_results">✅ Znaleziono %1$d wyników. Analizowanie...</string>
+    <string name="web_search_no_results">❌ Nie znaleziono aktualnych wyników wyszukiwania. Dostarczanie odpowiedzi na podstawie danych treningowych...</string>
+    <string name="web_search_failed">❌ Wyszukiwanie w sieci nie powiodło się: %1$s. Dostarczanie odpowiedzi na podstawie danych treningowych...</string>
+    
+    <!-- Vision Model Error Messages -->
+    <string name="vision_chat_cannot_open">🚫 **Nie można otworzyć tego czatu**\n\nTa rozmowa zawiera obrazy, ale obecnie masz załadowany **model tylko tekstowy**:\n\n📱 **Aktualny model:** %1$s\n🖼️ **Ten czat:** Zawiera obrazy\n\n---\n\n## 🎯 Jak to naprawić:\n\n1. **📥 Pobierz model wizyjny**\n   - Przejdź do \"Pobierz modele\"\n   - Szukaj modeli oznaczonych 🖼️ lub \"Wizja+Tekst\"\n   - Spróbuj: **Gemma-3n E2B (Wizja+Tekst)**\n\n2. **🔄 Przełącz na model wizyjny**\n   - Załaduj pobrany model wizyjny\n   - Modele wizyjne mogą obsługiwać zarówno tekst, jak i obrazy\n\n3. **✅ Wróć do tego czatu**\n   - Po załadowaniu modelu wizyjnego ten czat będzie działał doskonale!\n\n---\n\n💡 **Wskazówka pro:** Modele wizyjne mogą robić wszystko, co modele tekstowe, plus obsługiwać obrazy!</string>
+    <string name="vision_image_cannot_send">🖼️ **Nie można wysłać obrazów**\n\nPróbujesz wysłać obraz, ale aktualny model to **tylko tekst**:\n\n📱 **Aktualny model:** %1$s\n\n---\n\n## 🎯 Aby wysłać obrazy:\n\n1. **📥 Pobierz model wizyjny**\n   - Dotknij menu → \"Pobierz modele\"\n   - Szukaj modeli 🖼️ **Wizja+Tekst**\n   - Zalecany: **Gemma-3n E2B (Wizja+Tekst)**\n\n2. **🔄 Zmień modele**\n   - Załaduj pobrany model wizyjny\n   - Modele wizyjne obsługują zarówno tekst, jak i obrazy\n\n3. **✅ Spróbuj ponownie**\n   - Po załadowaniu możesz swobodnie wysyłać obrazy!\n\n---\n\n💡 **Wskazówka pro:** Modele wizyjne mogą robić wszystko, co modele tekstowe, plus rozumieć obrazy!</string>
+    
+    <!-- Model Error Messages -->
+    <string name="please_download_model">Pobierz model, aby rozpocząć czatowanie.</string>
+    <string name="model_not_loaded">Model nie został poprawnie załadowany. Spróbuj przełączyć na inny model lub uruchom ponownie aplikację.</string>
+    <string name="no_response_produced">Nie wygenerowano odpowiedzi. (Możliwe: limit tokenów lub reset sesji). Dotknij Regeneruj.</string>
+    <string name="prompt_too_long">Wiadomość jest za długa. Skróć swoją wiadomość i spróbuj ponownie.</string>
 </resources>

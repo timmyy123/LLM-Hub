@@ -27,9 +27,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val app = application as LlmHubApplication
-        val inferenceService = app.inferenceService
         val chatRepository = app.chatRepository
-        val chatViewModelFactory = ChatViewModelFactory(inferenceService, chatRepository, this)
+        val chatViewModelFactory = ChatViewModelFactory(app, chatRepository, this)
 
         // Initialize ThemeViewModel
         themeViewModel = ThemeViewModel(this)

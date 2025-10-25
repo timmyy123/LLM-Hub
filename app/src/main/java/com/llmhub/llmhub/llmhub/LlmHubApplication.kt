@@ -18,9 +18,15 @@ import kotlinx.coroutines.runBlocking
 import android.util.Log
 
 class LlmHubApplication : Application() {
-    val inferenceService: InferenceService by lazy {
-        MediaPipeInferenceService(applicationContext)
-    }
+    private var _inferenceService: InferenceService? = null
+    
+    val inferenceService: InferenceService
+        get() {
+            if (_inferenceService == null) {
+                _inferenceService = MediaPipeInferenceService(this)
+            }
+            return _inferenceService!!
+        }
     
     val database by lazy { LlmHubDatabase.getDatabase(this) }
     val chatRepository by lazy { ChatRepository(database.chatDao(), database.messageDao()) }
@@ -93,10 +99,16 @@ class LlmHubApplication : Application() {
             runBlocking {
                 val savedLanguage = themePreferences.appLanguage.first()
                 LocaleHelper.applyLocale(this@LlmHubApplication, savedLanguage)
+                
+                // Recreate InferenceService with new locale
+                _inferenceService = null
             }
         } catch (e: Exception) {
             // Fallback to system locale if error occurs
             LocaleHelper.setLocale(this)
+            
+            // Recreate InferenceService with new locale
+            _inferenceService = null
         }
     }
 }

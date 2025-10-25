@@ -1,6 +1,7 @@
 package com.llmhub.llmhub.inference
 
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.net.Uri
 import com.llmhub.llmhub.data.LLMModel
@@ -18,6 +19,8 @@ import kotlinx.coroutines.flow.SharedFlow
 import androidx.annotation.Keep
 import java.io.File
 import com.llmhub.llmhub.data.localFileName
+import com.llmhub.llmhub.R
+import com.llmhub.llmhub.utils.LocaleHelper
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.google.mediapipe.tasks.genai.llminference.LlmInferenceSession
 import com.google.mediapipe.tasks.genai.llminference.AudioModelOptions
@@ -58,8 +61,6 @@ interface InferenceService {
     fun isVisionCurrentlyDisabled(): Boolean
     fun isAudioCurrentlyDisabled(): Boolean
     fun isGpuBackendEnabled(): Boolean
-    // Get actual token count for a text using the model's tokenizer
-    fun getActualTokenCount(text: String): Int?
 }
 
 /**
@@ -76,7 +77,22 @@ data class LlmModelInstance(val engine: LlmInference, var session: LlmInferenceS
  * - User preferences override automatic selection
  * - Simplified approach for better stability
  */
-class MediaPipeInferenceService(private val context: Context) : InferenceService {
+class MediaPipeInferenceService(private val applicationContext: Context) : InferenceService {
+    
+    // Get current locale-aware context
+    private fun getCurrentContext(): Context {
+        // Get the current locale from LocaleHelper
+        val currentLocale = LocaleHelper.getCurrentLocale(applicationContext)
+        Log.d(TAG, "getCurrentContext - current locale: $currentLocale")
+        
+        // Create a fresh context with the current locale
+        val configuration = Configuration(applicationContext.resources.configuration)
+        configuration.setLocale(currentLocale)
+        
+        val newContext = applicationContext.createConfigurationContext(configuration)
+        Log.d(TAG, "getCurrentContext - new context locale: ${newContext.resources.configuration.locales[0]}")
+        return newContext
+    }
     
     private var modelInstance: LlmModelInstance? = null
     private var currentModel: LLMModel? = null
@@ -366,13 +382,13 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 
                 // For imported models, we need to copy to local storage for MediaPipe
                 // MediaPipe requires a local file path, not a content URI
-                val targetFile = File(context.filesDir, "models/${model.localFileName()}")
+                val targetFile = File(applicationContext.filesDir, "models/${model.localFileName()}")
                 targetFile.parentFile?.mkdirs()
                 
                 // Only copy if file doesn't exist or is outdated
                 if (!targetFile.exists()) {
                     try {
-                        context.contentResolver.openInputStream(Uri.parse(model.url))?.use { inputStream ->
+                        applicationContext.contentResolver.openInputStream(Uri.parse(model.url))?.use { inputStream ->
                             targetFile.outputStream().use { outputStream ->
                                 inputStream.copyTo(outputStream)
                             }
@@ -403,14 +419,14 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                 
                 // Check if model exists in assets folder
                 modelFile = try {
-                    context.assets.open(modelAssetPath).use { 
+                    applicationContext.assets.open(modelAssetPath).use { 
                         // File exists in assets, copy to files directory
-                        val targetFile = File(context.filesDir, "models/${model.localFileName()}")
+                        val targetFile = File(applicationContext.filesDir, "models/${model.localFileName()}")
                         targetFile.parentFile?.mkdirs()
                         
                         if (!targetFile.exists()) {
                             targetFile.outputStream().use { outputStream ->
-                                context.assets.open(modelAssetPath).use { inputStream ->
+                                applicationContext.assets.open(modelAssetPath).use { inputStream ->
                                     inputStream.copyTo(outputStream)
                                 }
                             }
@@ -420,7 +436,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                     }
                 } catch (e: Exception) {
                     // Try to find model in files directory
-                    val modelFile = File(context.filesDir, modelAssetPath)
+                    val modelFile = File(applicationContext.filesDir, modelAssetPath)
                     if (modelFile.exists()) {
                         Log.d(TAG, "Model found in files directory: ${modelFile.absolutePath}")
                         modelFile
@@ -490,7 +506,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
 
             // Build final options and create a single inference engine
             val options = optionsBuilder.build()
-            llmInference = LlmInference.createFromOptions(context, options)
+            llmInference = LlmInference.createFromOptions(applicationContext, options)
             // === End simplified engine creation ===
             
             // Preserve the model's base capabilities. Use the original model object so supportsAudio
@@ -682,7 +698,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
         try {
             if (needsWebSearch) {
                 Log.d(TAG, "Web search detected for chat $chatId. Current message: '$currentUserMessage'")
-                trySend("🔍 Searching the web...")
+                trySend(getCurrentContext().getString(R.string.web_searching))
                 
                 try {
                     val searchQuery = SearchIntentDetector.extractSearchQuery(currentUserMessage)
@@ -692,7 +708,7 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                     
                     if (searchResults.isNotEmpty()) {
                         Log.d(TAG, "Found ${searchResults.size} search results")
-                        trySend("✅ Found ${searchResults.size} results. Analyzing...")
+                        trySend(getCurrentContext().getString(R.string.web_search_found_results, searchResults.size))
                         
                         // Create enhanced prompt with search results
                         val resultsText = searchResults.joinToString("\n\n") { result ->
@@ -721,12 +737,12 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
                         Log.d(TAG, "Search results preview: ${resultsText.take(200)}...")
                     } else {
                         Log.w(TAG, "No search results found for query: '$searchQuery'")
-                        trySend("❌ No current search results found. Providing response based on training data...\n\n")
+                        trySend(getCurrentContext().getString(R.string.web_search_no_results) + "\n\n")
                         // Continue with original prompt
                     }
                 } catch (searchException: Exception) {
                     Log.e(TAG, "Web search failed for chat $chatId", searchException)
-                    trySend("❌ Web search failed: ${searchException.message}. Providing response based on training data...\n\n")
+                    trySend(getCurrentContext().getString(R.string.web_search_failed, searchException.message ?: "Unknown error") + "\n\n")
                     // Continue with original prompt
                 }
             }
@@ -1411,27 +1427,5 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
     private fun recordSessionReset(chatId: String) {
         sessionResetTimes[chatId] = System.currentTimeMillis()
         Log.d(TAG, "Recorded session reset for chat $chatId")
-    }
-    
-    override fun getActualTokenCount(text: String): Int? {
-        // Use actual token count for frontend display, fall back to estimation if session is unstable
-        return try {
-            val instance = modelInstance
-            if (instance != null) {
-                val actualTokens = instance.session.sizeInTokens(text)
-                Log.d(TAG, "Actual token count for text (${text.length} chars): $actualTokens tokens")
-                actualTokens
-            } else {
-                // No session available, use estimation
-                val estimatedTokens = (text.length / 4).toInt().coerceAtLeast(1)
-                Log.d(TAG, "No session available, using estimation: $estimatedTokens tokens")
-                estimatedTokens
-            }
-        } catch (e: Exception) {
-            // Fallback to estimation if session.sizeInTokens() fails (e.g., on newly created sessions)
-            val estimatedTokens = (text.length / 4).toInt().coerceAtLeast(1)
-            Log.d(TAG, "Failed to get actual token count, using estimation: $estimatedTokens tokens")
-            estimatedTokens
-        }
     }
 }

@@ -634,5 +634,21 @@
     <string name="backend_selection_hint">If the app crashes or doesn\'t work properly with GPU, try the CPU backend</string>
     <string name="not_available">Not available</string>
     <string name="gpu_disabled_low_memory">GPU not available for this model on devices with %1$dGB RAM or less</string>
+    
+    <!-- Web Search Messages -->
+    <string name="web_searching">🔍 Searching the web...</string>
+    <string name="web_search_found_results">✅ Found %1$d results. Analyzing...</string>
+    <string name="web_search_no_results">❌ No current search results found. Providing response based on training data...</string>
+    <string name="web_search_failed">❌ Web search failed: %1$s. Providing response based on training data...</string>
+    
+    <!-- Vision Model Error Messages -->
+    <string name="vision_chat_cannot_open">🚫 **Cannot Open This Chat**\n\nThis conversation contains images, but you currently have a **text-only model** loaded:\n\n📱 **Current Model:** %1$s\n🖼️ **This Chat:** Contains images\n\n---\n\n## 🎯 How to Fix This:\n\n1. **📥 Download a Vision Model**\n   - Go to \"Download Models\"\n   - Look for models marked with 🖼️ or \"Vision+Text\"\n   - Try: **Gemma-3n E2B (Vision+Text)**\n\n2. **🔄 Switch to Vision Model**\n   - Load the vision model you downloaded\n   - Vision models can handle both text AND images\n\n3. **✅ Return to This Chat**\n   - Once a vision model is loaded, this chat will work perfectly!\n\n---\n\n💡 **Pro Tip:** Vision models can do everything text models can do, plus handle images!</string>
+    <string name="vision_image_cannot_send">🖼️ **Cannot Send Images**\n\nYou\'re trying to send an image, but the current model is **text-only**:\n\n📱 **Current Model:** %1$s\n\n---\n\n## 🎯 To Send Images:\n\n1. **📥 Download a Vision Model**\n   - Tap the menu → \"Download Models\"\n   - Look for 🖼️ **Vision+Text** models\n   - Recommended: **Gemma-3n E2B (Vision+Text)**\n\n2. **🔄 Switch Models**\n   - Load the vision model you downloaded\n   - Vision models handle both text AND images\n\n3. **✅ Try Again**\n   - Once loaded, you can send images freely!\n\n---\n\n💡 **Pro Tip:** Vision models can do everything text models can do, plus understand images!</string>
+    
+    <!-- Model Error Messages -->
+    <string name="please_download_model">Please download a model to start chatting.</string>
+    <string name="model_not_loaded">Model not properly loaded. Please try switching to a different model or restart the app.</string>
+    <string name="no_response_produced">No response produced. (Possible: token limit or session reset). Tap Regenerate.</string>
+    <string name="prompt_too_long">Prompt is too long. Please shorten your message and try again.</string>
 </resources>
 
