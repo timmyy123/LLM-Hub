@@ -595,9 +595,12 @@ fun ChatScreen(
                             } else null,
                             onTtsSpeak = if (!message.isFromUser && message.content.isNotBlank()) {
                                 { text ->
-                                    // Manual TTS button - use local manual ID
+                                    // Manual TTS button - use local manual ID and ask ViewModel
+                                    // to enable manual TTS streaming for this message so that
+                                    // future generated tokens are also routed to TTS.
                                     manualTtsMessageId = message.id
-                                    ttsService.speak(text)
+                                    val appLocale = com.llmhub.llmhub.utils.LocaleHelper.getCurrentLocale(context)
+                                    viewModel.enableManualTtsForMessage(message.id, text)
                                 }
                             } else null,
                             onTtsStop = if (!message.isFromUser && message.content.isNotBlank()) {
