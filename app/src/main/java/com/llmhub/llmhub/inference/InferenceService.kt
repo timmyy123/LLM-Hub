@@ -58,6 +58,8 @@ interface InferenceService {
     fun isVisionCurrentlyDisabled(): Boolean
     fun isAudioCurrentlyDisabled(): Boolean
     fun isGpuBackendEnabled(): Boolean
+    // Get actual token count for a text using the model's tokenizer
+    fun getActualTokenCount(text: String): Int?
 }
 
 /**
@@ -1409,5 +1411,27 @@ class MediaPipeInferenceService(private val context: Context) : InferenceService
     private fun recordSessionReset(chatId: String) {
         sessionResetTimes[chatId] = System.currentTimeMillis()
         Log.d(TAG, "Recorded session reset for chat $chatId")
+    }
+    
+    override fun getActualTokenCount(text: String): Int? {
+        // Use actual token count for frontend display, fall back to estimation if session is unstable
+        return try {
+            val instance = modelInstance
+            if (instance != null) {
+                val actualTokens = instance.session.sizeInTokens(text)
+                Log.d(TAG, "Actual token count for text (${text.length} chars): $actualTokens tokens")
+                actualTokens
+            } else {
+                // No session available, use estimation
+                val estimatedTokens = (text.length / 4).toInt().coerceAtLeast(1)
+                Log.d(TAG, "No session available, using estimation: $estimatedTokens tokens")
+                estimatedTokens
+            }
+        } catch (e: Exception) {
+            // Fallback to estimation if session.sizeInTokens() fails (e.g., on newly created sessions)
+            val estimatedTokens = (text.length / 4).toInt().coerceAtLeast(1)
+            Log.d(TAG, "Failed to get actual token count, using estimation: $estimatedTokens tokens")
+            estimatedTokens
+        }
     }
 }
