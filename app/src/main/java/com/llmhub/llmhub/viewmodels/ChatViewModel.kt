@@ -1525,7 +1525,7 @@ class ChatViewModel(
         // Only compute token statistics if we have any content to analyse.
         if (finalContent.isNotBlank()) {
 
-            val actualTokens = kotlin.math.ceil(finalContent.length / 4.0).toInt().coerceAtLeast(1)
+            val actualTokens = inferenceService.calculateTokenCount(finalContent)
             val tokensPerSecond = if (generationTimeMs > 0) {
                 (actualTokens * 1000.0) / generationTimeMs
             } else {
