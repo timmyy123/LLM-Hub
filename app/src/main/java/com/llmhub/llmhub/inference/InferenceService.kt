@@ -61,6 +61,8 @@ interface InferenceService {
     fun isVisionCurrentlyDisabled(): Boolean
     fun isAudioCurrentlyDisabled(): Boolean
     fun isGpuBackendEnabled(): Boolean
+    // Calculate accurate token count using sizeInTokens
+    suspend fun calculateTokenCount(text: String): Int
 }
 
 /**
@@ -1427,5 +1429,22 @@ class MediaPipeInferenceService(private val applicationContext: Context) : Infer
     private fun recordSessionReset(chatId: String) {
         sessionResetTimes[chatId] = System.currentTimeMillis()
         Log.d(TAG, "Recorded session reset for chat $chatId")
+    }
+    
+    override suspend fun calculateTokenCount(text: String): Int {
+        return try {
+            val instance = modelInstance
+            if (instance != null) {
+                // Use the session's sizeInTokens method for accurate token counting
+                instance.session.sizeInTokens(text)
+            } else {
+                // Fallback to approximation if no session is available
+                kotlin.math.ceil(text.length / 4.0).toInt().coerceAtLeast(1)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to calculate token count using sizeInTokens, falling back to approximation: ${e.message}")
+            // Fallback to approximation if sizeInTokens fails
+            kotlin.math.ceil(text.length / 4.0).toInt().coerceAtLeast(1)
+        }
     }
 }
