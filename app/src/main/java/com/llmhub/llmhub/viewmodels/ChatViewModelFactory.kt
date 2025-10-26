@@ -18,8 +18,10 @@ class ChatViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
         if (modelClass.isAssignableFrom(ChatViewModel::class.java)) {
             val savedStateHandle = extras.createSavedStateHandle()
-            // Create InferenceService with Activity context to ensure locale is current
-            val inferenceService = MediaPipeInferenceService(context)
+            // Use application-scoped InferenceService so model state persists across ViewModels
+            // (avoids creating a new MediaPipeInferenceService per ViewModel which would cause
+            // models to be unloaded when a ViewModel is cleared)
+            val inferenceService = (application as com.llmhub.llmhub.LlmHubApplication).inferenceService
             @Suppress("UNCHECKED_CAST")
             return ChatViewModel(inferenceService, repository, context, savedStateHandle) as T
         }
