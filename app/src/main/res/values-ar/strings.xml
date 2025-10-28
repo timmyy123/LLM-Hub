@@ -74,7 +74,7 @@
     <string name="acknowledgments">شكر وتقدير</string>
     <string name="acknowledgments_text">شكر خاص إلى Google وMeta وMicrosoft ومجتمع HuggingFace لتقديم نماذج LLM المذهلة التي تدعم هذا التطبيق. يعتمد هذا المشروع أيضًا على عمل مجتمع مطوري أندرويد ونظام المصادر المفتوحة الرائع.</string>
     <string name="ai_thinking">الذكاء الاصطناعي يفكر...</string>
-    <string name="version_number">الإصدار 3.2.3</string>
+    <string name="version_number">الإصدار 3.2.4</string>
     <string name="app_version">إصدار التطبيق</string>
 
     <!-- Terms of Service -->
