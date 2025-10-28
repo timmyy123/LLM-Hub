@@ -1441,15 +1441,30 @@ class ChatViewModel(
                                 val finalContent = sanitizeModelOutput(totalContent)
                                 Log.d("ChatViewModel", "Generation completed successfully with ${continuationCount} continuations")
                                 Log.d("ChatViewModel", "Final content length: ${finalContent.length}")
-                                val safeFinal = if (finalContent.isBlank()) {
-                                    context.getString(R.string.no_response_produced)
-                                } else finalContent
-                                repository.updateMessageContent(placeholderId, safeFinal.trimEnd())
-                                val time = System.currentTimeMillis() - generationStartTime
-                                val netTime = (time - ragSearchTimeMs).coerceAtLeast(1L)
-                                val streamDurationMs = ((if (lastChunkAt > 0) lastChunkAt else System.currentTimeMillis()) - (if (firstChunkAt > 0) firstChunkAt else generationStartTime)).coerceAtLeast(1L)
-                                Log.d("ChatViewModel", "About to call finalizeMessage for success (raw=${time}ms, rag=${ragSearchTimeMs}ms, net=${netTime}ms, stream=${streamDurationMs}ms)")
-                                finalizeMessage(placeholderId, safeFinal, streamDurationMs)
+                                if (finalContent.isBlank()) {
+                                    Log.w("ChatViewModel", "No response produced - auto-regenerating with fresh session and only latest prompt")
+                                    // Auto-regenerate: reset session and resend only the latest user prompt
+                                    try {
+                                        autoRegenerateAfterNoResponse(context, chatId, placeholderId)
+                                        // Early return since auto-regeneration will manage updates/finalization
+                                        return@launch
+                                    } catch (e: Exception) {
+                                        Log.w("ChatViewModel", "Auto-regenerate failed: ${e.message}")
+                                        val fallback = context.getString(R.string.no_response_produced)
+                                        repository.updateMessageContent(placeholderId, fallback.trimEnd())
+                                        val time = System.currentTimeMillis() - generationStartTime
+                                        val streamDurationMs = ((if (lastChunkAt > 0) lastChunkAt else System.currentTimeMillis()) - (if (firstChunkAt > 0) firstChunkAt else generationStartTime)).coerceAtLeast(1L)
+                                        finalizeMessage(placeholderId, fallback, streamDurationMs)
+                                    }
+                                } else {
+                                    val safeFinal = finalContent
+                                    repository.updateMessageContent(placeholderId, safeFinal.trimEnd())
+                                    val time = System.currentTimeMillis() - generationStartTime
+                                    val netTime = (time - ragSearchTimeMs).coerceAtLeast(1L)
+                                    val streamDurationMs = ((if (lastChunkAt > 0) lastChunkAt else System.currentTimeMillis()) - (if (firstChunkAt > 0) firstChunkAt else generationStartTime)).coerceAtLeast(1L)
+                                    Log.d("ChatViewModel", "About to call finalizeMessage for success (raw=${time}ms, rag=${ragSearchTimeMs}ms, net=${netTime}ms, stream=${streamDurationMs}ms)")
+                                    finalizeMessage(placeholderId, safeFinal, streamDurationMs)
+                                }
 
                     } catch (e: Exception) {
                         val finalContent = totalContent
@@ -1487,13 +1502,25 @@ class ChatViewModel(
                         
                         // ALWAYS save final content and call finalizeMessage (for both cancel and error) even if the parent Job is cancelled
                         withContext(kotlinx.coroutines.NonCancellable) {
-                            val safeFinal = if (finalContent.isBlank()) {
-                                context.getString(R.string.no_response_produced)
-                            } else sanitizeModelOutput(finalContent)
-                            repository.updateMessageContent(placeholderId, safeFinal.trimEnd())
-                            Log.d("ChatViewModel", "About to call finalizeMessage (NonCancellable)")
-                            val streamDurationMs = ((if (lastChunkAt > 0) lastChunkAt else System.currentTimeMillis()) - (if (firstChunkAt > 0) firstChunkAt else generationStartTime)).coerceAtLeast(1L)
-                            finalizeMessage(placeholderId, safeFinal, streamDurationMs)
+                            if (finalContent.isBlank()) {
+                                Log.w("ChatViewModel", "No response produced in error path - auto-regenerating")
+                                try {
+                                    autoRegenerateAfterNoResponse(context, chatId, placeholderId)
+                                    return@withContext
+                                } catch (e: Exception) {
+                                    Log.w("ChatViewModel", "Auto-regenerate (error path) failed: ${e.message}")
+                                    val fallback = context.getString(R.string.no_response_produced)
+                                    repository.updateMessageContent(placeholderId, fallback.trimEnd())
+                                    val streamDurationMs = ((if (lastChunkAt > 0) lastChunkAt else System.currentTimeMillis()) - (if (firstChunkAt > 0) firstChunkAt else generationStartTime)).coerceAtLeast(1L)
+                                    finalizeMessage(placeholderId, fallback, streamDurationMs)
+                                }
+                            } else {
+                                val safeFinal = sanitizeModelOutput(finalContent)
+                                repository.updateMessageContent(placeholderId, safeFinal.trimEnd())
+                                Log.d("ChatViewModel", "About to call finalizeMessage (NonCancellable)")
+                                val streamDurationMs = ((if (lastChunkAt > 0) lastChunkAt else System.currentTimeMillis()) - (if (firstChunkAt > 0) firstChunkAt else generationStartTime)).coerceAtLeast(1L)
+                                finalizeMessage(placeholderId, safeFinal, streamDurationMs)
+                            }
                         }
                     } finally {
                         _isLoading.value = false
@@ -1563,6 +1590,81 @@ class ChatViewModel(
         } else {
             Log.d("ChatViewModel", "No stats to save for message $placeholderId - content is blank")
         }
+    }
+
+    /**
+     * Auto-regenerate flow used when the model produces no output.
+     * Creates a fresh session and resends only the latest user prompt, clearing prior history for this send.
+     * Also rejects prompts that exceed the applied context window using characters/4 estimation.
+     */
+    private suspend fun autoRegenerateAfterNoResponse(context: Context, chatId: String, placeholderId: String) {
+        // Ensure we have a model and latest user message
+        val model = currentModel ?: throw IllegalStateException("No current model for auto-regenerate")
+        val currentMessages = _messages.value
+        val lastUser = currentMessages.lastOrNull { it.isFromUser }
+            ?: throw IllegalStateException("No user message to regenerate")
+
+        // Prompt-length validation using applied context window (not model max): use calculateTokenCount fallback (chars/4)
+        val promptText = lastUser.content.trim()
+        val effectiveMax = try { inferenceService.calculateTokenCount(" ") /* force session */; 
+            // Use model contextWindowSize; downstream will reserve output budget
+            model.contextWindowSize
+        } catch (_: Exception) { model.contextWindowSize }
+        val estimatedPromptTokens = kotlin.math.ceil(promptText.length / 4.0).toInt().coerceAtLeast(1)
+        val outputReserve = (effectiveMax * 0.33).toInt().coerceAtLeast(128)
+        val threshold = (effectiveMax - outputReserve).coerceAtLeast(1)
+        if (estimatedPromptTokens >= threshold) {
+            // Replace placeholder with localized too-long message
+            repository.updateMessageContent(placeholderId, context.getString(R.string.prompt_too_long))
+            finalizeMessage(placeholderId, context.getString(R.string.prompt_too_long), 1L)
+            return
+        }
+
+        // Reset session and drop history
+        try {
+            inferenceService.resetChatSession(chatId)
+        } catch (_: Exception) { /* best effort */ }
+        lastSessionResetAt = System.currentTimeMillis()
+        dropHistoryOnce = true
+
+        // Build prompt with only the latest user message
+        val fullHistory = "user: ${promptText}\nassistant:"
+
+        // Ensure model is loaded
+        inferenceService.loadModel(model)
+
+        // Start a new generation streaming into the same placeholder
+        val webSearchEnabled = try { themePreferences.webSearchEnabled.first() } catch (_: Exception) { false }
+        val images = if (model.supportsVision && lastUser.attachmentPath != null && lastUser.attachmentType == "image") {
+            try {
+                val bmp = loadImageFromUri(context, Uri.parse(lastUser.attachmentPath))
+                if (bmp != null) listOf(bmp) else emptyList()
+            } catch (_: Exception) { emptyList() }
+        } else emptyList()
+
+        var totalContent = ""
+        var firstChunkAt = 0L
+        var lastChunkAt = 0L
+
+        val responseStream = inferenceService.generateResponseStreamWithSession(
+            fullHistory, model, chatId, images, null, webSearchEnabled
+        )
+
+        responseStream.collect { piece ->
+            val nowTs = System.currentTimeMillis()
+            if (piece.isNotEmpty() && firstChunkAt == 0L) firstChunkAt = nowTs
+            lastChunkAt = nowTs
+            totalContent += piece
+            val updated = _streamingContents.value.toMutableMap()
+            updated[placeholderId] = totalContent
+            _streamingContents.value = updated
+            repository.updateMessageContent(placeholderId, totalContent.trimEnd())
+        }
+
+        // Finalize after auto-regeneration
+        repository.updateMessageContent(placeholderId, totalContent.trimEnd())
+        val streamDurationMs = ((if (lastChunkAt > 0) lastChunkAt else System.currentTimeMillis()) - (if (firstChunkAt > 0) firstChunkAt else System.currentTimeMillis())).coerceAtLeast(1L)
+        finalizeMessage(placeholderId, totalContent, streamDurationMs)
     }
 
     // Basic disallowed content filter (client-side heuristic; not exhaustive)
