@@ -990,15 +990,17 @@ class MediaPipeInferenceService(private val applicationContext: Context) : Infer
                     responseBuilder.append(processedResult)
                 }
                 
-                // Simple repetition detection: check recent window for repeated n-grams
-                val recent = responseBuilder.takeLast(600).toString()
-                if (recent.isNotEmpty() && hasRepetitionPattern(recent)) {
-                    Log.w(TAG, "Detected repetition pattern in output for chat $chatId - aborting stream and scheduling session reset")
-                    repetitionAbortFlags.add(chatId)
-                    isGenerating = false
-                    isGenerationComplete = true
-                    close()
-                    return@generateResponseAsync
+                // Simple repetition detection: check recent window for repeated n-grams (only for Gemma-3 1B models)
+                if (isGemma31BModel(model)) {
+                    val recent = responseBuilder.takeLast(600).toString()
+                    if (recent.isNotEmpty() && hasRepetitionPattern(recent)) {
+                        Log.w(TAG, "Detected repetition pattern in output for chat $chatId - aborting stream and scheduling session reset")
+                        repetitionAbortFlags.add(chatId)
+                        isGenerating = false
+                        isGenerationComplete = true
+                        close()
+                        return@generateResponseAsync
+                    }
                 }
                 
                 if (forceDone) {
@@ -1201,6 +1203,13 @@ class MediaPipeInferenceService(private val applicationContext: Context) : Infer
     private fun isLlamaModel(model: LLMModel): Boolean {
         return model.name.contains("Llama", ignoreCase = true) || 
                model.source.contains("Llama", ignoreCase = true)
+    }
+    
+    /**
+     * Check if model is a Gemma-3 1B model based on name
+     */
+    private fun isGemma31BModel(model: LLMModel): Boolean {
+        return model.name.contains("Gemma-3 1B", ignoreCase = true)
     }
     
     /**
