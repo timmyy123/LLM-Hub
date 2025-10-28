@@ -74,7 +74,7 @@
     <string name="acknowledgments">謝辞</string>
     <string name="acknowledgments_text">このアプリケーションを支える素晴らしいLLMモデルを提供してくれたGoogle、Meta、Microsoft、およびHuggingFaceコミュニティに特別な感謝を。このプロジェクトは、Android開発コミュニティとオープンソースエコシステムの素晴らしい仕事にも依存しています。</string>
     <string name="ai_thinking">AIが考え中...</string>
-    <string name="version_number">バージョン 3.2.3</string>
+    <string name="version_number">バージョン 3.2.4</string>
     <string name="app_version">アプリバージョン</string>
     
     <!-- Terms of Service -->
