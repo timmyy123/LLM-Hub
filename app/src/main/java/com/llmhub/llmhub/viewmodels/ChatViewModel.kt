@@ -982,6 +982,7 @@ class ChatViewModel(
                             var totalContent = ""
                             var firstChunkAt = 0L
                             var lastChunkAt = 0L
+                            var handedOffToAutoRegenerate = false
                             
                             try {
                                 // Pre-load model separately from generation timing
@@ -1445,6 +1446,7 @@ class ChatViewModel(
                                     Log.w("ChatViewModel", "No response produced - auto-regenerating with fresh session and only latest prompt")
                                     // Auto-regenerate: reset session and resend only the latest user prompt
                                     try {
+                                        handedOffToAutoRegenerate = true
                                         autoRegenerateAfterNoResponse(context, chatId, placeholderId)
                                         // Early return since auto-regeneration will manage updates/finalization
                                         return@launch
@@ -1505,6 +1507,7 @@ class ChatViewModel(
                             if (finalContent.isBlank()) {
                                 Log.w("ChatViewModel", "No response produced in error path - auto-regenerating")
                                 try {
+                                    handedOffToAutoRegenerate = true
                                     autoRegenerateAfterNoResponse(context, chatId, placeholderId)
                                     return@withContext
                                 } catch (e: Exception) {
@@ -1523,14 +1526,15 @@ class ChatViewModel(
                             }
                         }
                     } finally {
-                        _isLoading.value = false
-                        _isLoadingModel.value = false
-                        isGenerating = false
-                        
-                        // Clear streaming state for this message, regardless of outcome
-                        val updatedStreaming = _streamingContents.value.toMutableMap()
-                        updatedStreaming.remove(placeholderId)
-                        _streamingContents.value = updatedStreaming
+                        if (!handedOffToAutoRegenerate) {
+                            _isLoading.value = false
+                            _isLoadingModel.value = false
+                            isGenerating = false
+                            // Clear streaming state for this message, regardless of outcome
+                            val updatedStreaming = _streamingContents.value.toMutableMap()
+                            updatedStreaming.remove(placeholderId)
+                            _streamingContents.value = updatedStreaming
+                        }
                     }
                 }
             } else {
@@ -1630,10 +1634,13 @@ class ChatViewModel(
         // Build prompt with only the latest user message
         val fullHistory = "user: ${promptText}\nassistant:"
 
+        // Mark UI as generating so stop button stays visible for the entire auto-regenerate flow
+        _isLoading.value = true
+        isGenerating = true
         // Ensure model is loaded
         inferenceService.loadModel(model)
 
-        // Start a new generation streaming into the same placeholder
+        // Start a new generation streaming into the same placeholder with proper cancellation and TTS support
         val webSearchEnabled = try { themePreferences.webSearchEnabled.first() } catch (_: Exception) { false }
         val images = if (model.supportsVision && lastUser.attachmentPath != null && lastUser.attachmentType == "image") {
             try {
@@ -1642,29 +1649,90 @@ class ChatViewModel(
             } catch (_: Exception) { emptyList() }
         } else emptyList()
 
+        // Check if auto-readout is enabled before starting generation
+        val autoReadoutEnabled = try {
+            themePreferences.autoReadoutEnabled.first()
+        } catch (e: Exception) {
+            false
+        }
+
+        // Initialize TTS for streaming if auto-readout is enabled
+        if (autoReadoutEnabled) {
+            Log.d("ChatViewModel", "Auto-readout enabled for auto-regenerate, preparing TTS for streaming message: $placeholderId")
+            // Stop any previous TTS before starting new generation
+            ttsService.stop()
+            // Set language to app's current locale
+            val appLocale = com.llmhub.llmhub.utils.LocaleHelper.getCurrentLocale(context)
+            ttsService.setLanguage(appLocale)
+            // Set the current TTS message ID so the UI can show stop icon
+            _currentTtsMessageId.value = placeholderId
+        }
+
         var totalContent = ""
         var firstChunkAt = 0L
         var lastChunkAt = 0L
+        var lastUpdateTime = 0L
+        val updateIntervalMs = 50L
 
-        val responseStream = inferenceService.generateResponseStreamWithSession(
-            fullHistory, model, chatId, images, null, webSearchEnabled
-        )
+        // Create a new generation job that can be cancelled
+        generationJob = viewModelScope.launch {
+            try {
+                val responseStream = inferenceService.generateResponseStreamWithSession(
+                    fullHistory, model, chatId, images, null, webSearchEnabled
+                )
 
-        responseStream.collect { piece ->
-            val nowTs = System.currentTimeMillis()
-            if (piece.isNotEmpty() && firstChunkAt == 0L) firstChunkAt = nowTs
-            lastChunkAt = nowTs
-            totalContent += piece
-            val updated = _streamingContents.value.toMutableMap()
-            updated[placeholderId] = totalContent
-            _streamingContents.value = updated
-            repository.updateMessageContent(placeholderId, totalContent.trimEnd())
+                responseStream.collect { piece ->
+                    val nowTs = System.currentTimeMillis()
+                    if (piece.isNotEmpty() && firstChunkAt == 0L) firstChunkAt = nowTs
+                    lastChunkAt = nowTs
+                    totalContent += piece
+
+                    // Auto-readout: Stream text to TTS as it arrives
+                    if (autoReadoutEnabled && _currentTtsMessageId.value == placeholderId && piece.isNotEmpty()) {
+                        try {
+                            ttsService.addStreamingText(piece)
+                        } catch (e: Exception) {
+                            Log.w("ChatViewModel", "Failed to add text to TTS stream during auto-regenerate: ${e.message}")
+                        }
+                    }
+
+                    // Update UI
+                    val updated = _streamingContents.value.toMutableMap()
+                    updated[placeholderId] = totalContent
+                    _streamingContents.value = updated
+
+                    // Debounced database updates
+                    val currentTime = System.currentTimeMillis()
+                    if (currentTime - lastUpdateTime > updateIntervalMs) {
+                        repository.updateMessageContent(placeholderId, totalContent.trimEnd())
+                        lastUpdateTime = currentTime
+                    }
+                }
+
+                // Success - finalize the message
+                repository.updateMessageContent(placeholderId, totalContent.trimEnd())
+                val streamDurationMs = ((if (lastChunkAt > 0) lastChunkAt else System.currentTimeMillis()) - (if (firstChunkAt > 0) firstChunkAt else System.currentTimeMillis())).coerceAtLeast(1L)
+                finalizeMessage(placeholderId, totalContent, streamDurationMs)
+
+            } catch (e: Exception) {
+                Log.d("ChatViewModel", "Auto-regenerate exception: ${e.javaClass.simpleName}: ${e.message}")
+                
+                // Save partial content and finalize
+                withContext(kotlinx.coroutines.NonCancellable) {
+                    repository.updateMessageContent(placeholderId, totalContent.trimEnd())
+                    val streamDurationMs = ((if (lastChunkAt > 0) lastChunkAt else System.currentTimeMillis()) - (if (firstChunkAt > 0) firstChunkAt else System.currentTimeMillis())).coerceAtLeast(1L)
+                    finalizeMessage(placeholderId, totalContent, streamDurationMs)
+                }
+            } finally {
+                _isLoading.value = false
+                isGenerating = false
+                
+                // Clear streaming state
+                val updatedStreaming = _streamingContents.value.toMutableMap()
+                updatedStreaming.remove(placeholderId)
+                _streamingContents.value = updatedStreaming
+            }
         }
-
-        // Finalize after auto-regeneration
-        repository.updateMessageContent(placeholderId, totalContent.trimEnd())
-        val streamDurationMs = ((if (lastChunkAt > 0) lastChunkAt else System.currentTimeMillis()) - (if (firstChunkAt > 0) firstChunkAt else System.currentTimeMillis())).coerceAtLeast(1L)
-        finalizeMessage(placeholderId, totalContent, streamDurationMs)
     }
 
     // Basic disallowed content filter (client-side heuristic; not exhaustive)
