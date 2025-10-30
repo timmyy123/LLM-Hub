@@ -1556,7 +1556,7 @@ class ChatViewModel(
         // Only compute token statistics if we have any content to analyse.
         if (finalContent.isNotBlank()) {
 
-            val actualTokens = inferenceService.calculateTokenCount(finalContent)
+            val actualTokens = kotlin.math.ceil(finalContent.length / 4.0).toInt()
             val tokensPerSecond = if (generationTimeMs > 0) {
                 (actualTokens * 1000.0) / generationTimeMs
             } else {
@@ -1608,12 +1608,10 @@ class ChatViewModel(
         val lastUser = currentMessages.lastOrNull { it.isFromUser }
             ?: throw IllegalStateException("No user message to regenerate")
 
-        // Prompt-length validation using applied context window (not model max): use calculateTokenCount fallback (chars/4)
+        // Prompt-length validation using applied context window (not model max): use chars/4 approximation
         val promptText = lastUser.content.trim()
-        val effectiveMax = try { inferenceService.calculateTokenCount(" ") /* force session */; 
-            // Use model contextWindowSize; downstream will reserve output budget
-            model.contextWindowSize
-        } catch (_: Exception) { model.contextWindowSize }
+        // Use applied/effective context window (honors overrideMaxTokens from inference service)
+        val effectiveMax = inferenceService.getEffectiveMaxTokens(model)
         val estimatedPromptTokens = kotlin.math.ceil(promptText.length / 4.0).toInt().coerceAtLeast(1)
         val outputReserve = (effectiveMax * 0.33).toInt().coerceAtLeast(128)
         val threshold = (effectiveMax - outputReserve).coerceAtLeast(1)
