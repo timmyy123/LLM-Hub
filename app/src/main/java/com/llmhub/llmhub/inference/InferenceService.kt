@@ -61,8 +61,8 @@ interface InferenceService {
     fun isVisionCurrentlyDisabled(): Boolean
     fun isAudioCurrentlyDisabled(): Boolean
     fun isGpuBackendEnabled(): Boolean
-    // Calculate accurate token count using sizeInTokens
-    suspend fun calculateTokenCount(text: String): Int
+    // Return the applied/effective max tokens for a model (honors overrides)
+    fun getEffectiveMaxTokens(model: LLMModel): Int
 }
 
 /**
@@ -139,6 +139,11 @@ class MediaPipeInferenceService(private val applicationContext: Context) : Infer
     // Public accessor for UI code to fetch the cap without instantiating the service
     @JvmStatic
     fun getMaxTokensForModelStatic(model: LLMModel): Int = getMaxTokensForModel(model)
+    }
+
+    override fun getEffectiveMaxTokens(model: LLMModel): Int {
+        val defaultMaxTokens = getMaxTokensForModel(model)
+        return overrideMaxTokens?.coerceAtMost(defaultMaxTokens) ?: defaultMaxTokens
     }
 
     override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?): Boolean {
@@ -811,7 +816,7 @@ class MediaPipeInferenceService(private val applicationContext: Context) : Infer
             Log.d(TAG, "Using token limits - defaultMaxTokens=$defaultMaxTokens overrideMaxTokens=${overrideMaxTokens ?: "null"} effectiveMaxTokens=$maxTokens")
             // Reserve ~1/3 for model response; prevent sending input when it eats into reserve
             val currentUserInput = extractCurrentUserMessage(prompt)
-            val promptTokens = (currentUserInput.length / 3).coerceAtLeast(1)
+            val promptTokens = (currentUserInput.length / 4).coerceAtLeast(1)
             val outputReserve = (maxTokens * 0.33).toInt().coerceAtLeast(128)
             var currentTokens = estimatedSessionTokens
             // If our estimate undercounts (e.g., after recovery) fall back to session.sizeInTokens(prompt) heuristic not available; keep estimate
@@ -887,8 +892,9 @@ class MediaPipeInferenceService(private val applicationContext: Context) : Infer
                 // If we have images but no text, add a default query for vision models
                 Log.d(TAG, "Adding default vision query for images in chat $chatId")
                 try {
-                    currentSession.addQueryChunk("What do you see in this image?")
-                    estimatedSessionTokens += session.sizeInTokens("What do you see in this image?")
+                    val defaultQuery = "What do you see in this image?"
+                    currentSession.addQueryChunk(defaultQuery)
+                    estimatedSessionTokens += kotlin.math.ceil(defaultQuery.length / 4.0).toInt().coerceAtLeast(1)
                 } catch (e: Exception) {
                     val msg = e.message ?: ""
                     if (msg.contains("Previous invocation still processing", ignoreCase = true)) {
@@ -899,8 +905,9 @@ class MediaPipeInferenceService(private val applicationContext: Context) : Infer
                                 inst.session = createSession(inst.engine)
                             }
                         }
-                        currentSession.addQueryChunk("What do you see in this image?")
-                        estimatedSessionTokens += session.sizeInTokens("What do you see in this image?")
+                        val defaultQuery = "What do you see in this image?"
+                        currentSession.addQueryChunk(defaultQuery)
+                        estimatedSessionTokens += kotlin.math.ceil(defaultQuery.length / 4.0).toInt().coerceAtLeast(1)
                     } else {
                         throw e
                     }
@@ -1440,20 +1447,5 @@ class MediaPipeInferenceService(private val applicationContext: Context) : Infer
         Log.d(TAG, "Recorded session reset for chat $chatId")
     }
     
-    override suspend fun calculateTokenCount(text: String): Int {
-        return try {
-            val instance = modelInstance
-            if (instance != null) {
-                // Use the session's sizeInTokens method for accurate token counting
-                instance.session.sizeInTokens(text)
-            } else {
-                // Fallback to approximation if no session is available
-                kotlin.math.ceil(text.length / 4.0).toInt().coerceAtLeast(1)
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to calculate token count using sizeInTokens, falling back to approximation: ${e.message}")
-            // Fallback to approximation if sizeInTokens fails
-            kotlin.math.ceil(text.length / 4.0).toInt().coerceAtLeast(1)
-        }
-    }
+    // Removed calculateTokenCount from interface; rely on chars/4 approximation at call sites
 }

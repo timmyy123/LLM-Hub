@@ -126,7 +126,7 @@
     <string name="github_repository">GitHub Репозиторий</string>
     <string name="acknowledgments">Благодарности</string>
     <string name="acknowledgments_text">Особая благодарность Google, Meta, Microsoft, и сообществу HuggingFace за предоставление невероятных LLM-моделей, которые питают это приложение. Этот проект также опирается на удивительную работу сообщества разработчиков Android и экосистемы открытого исходного кода.</string>
-    <string name="version_number">Версия 3.2.4</string>
+    <string name="version_number">Версия 3.2.5</string>
     <string name="ai_thinking">ИИ думает...</string>
     <string name="app_version">Версия Приложения</string>
     
