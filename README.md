@@ -1,7 +1,9 @@
 # LLM Hub 🤖
 
 [![Android](https://img.shields.io/badge/Platform-Android-green.svg)](https://android.com)
+[![iOS](https://img.shields.io/badge/Platform-iOS-blue.svg)](https://www.apple.com/ios)
 [![Kotlin](https://img.shields.io/badge/Language-Kotlin-blue.svg)](https://kotlinlang.org)
+[![Swift](https://img.shields.io/badge/Language-Swift-orange.svg)](https://swift.org)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/Version-3.0-blue.svg)](https://github.com/timmyy123/LLM-Hub/releases)
 
@@ -30,7 +32,13 @@
 
 ---
 
-**LLM Hub** is an open-source Android application that brings the power of Large Language Models (LLMs) directly to your mobile device. Experience AI conversations with state-of-the-art models like Gemma, Llama, and Phi - all running locally on your phone for maximum privacy and offline accessibility.
+**LLM Hub** is an open-source mobile application that brings the power of Large Language Models (LLMs) directly to your device. Experience AI conversations with state-of-the-art models like Gemma, Llama, and Phi - all running locally on your phone for maximum privacy and offline accessibility.
+
+**Available for:**
+- 🤖 **Android** - Full-featured app available on Google Play Store ([download](https://play.google.com/store/apps/details?id=com.llmhub.llmhub))
+- 🍎 **iOS** - Native Swift version available in `ios/` directory ([details](ios/LLMHub/README.md))
+
+> **Note**: The iOS version is a native Swift implementation providing core LLM functionality. See [iOS_IMPLEMENTATION.md](iOS_IMPLEMENTATION.md) for details.
 
 ## 🚀 Features
 
@@ -177,15 +185,29 @@ Protect yourself from fraud and phishing:
 
 ## 🛠️ Technology Stack
 
+### Android Version
 - **Language**: Kotlin
 - **UI Framework**: Jetpack Compose
 - **AI Runtime**: MediaPipe & LiteRT (formerly TensorFlow Lite)
 - **Model Optimization**: INT4/INT8 quantization
 - **GPU Acceleration**: LiteRT XNNPACK delegate
+- **Database**: Room
 - **Model Source**: HuggingFace & Google repositories
+
+### iOS Version
+- **Language**: Swift
+- **UI Framework**: SwiftUI
+- **AI Runtime**: MediaPipe Tasks GenAI
+- **Model Optimization**: INT4/INT8 quantization (same models as Android)
+- **GPU Acceleration**: MediaPipe GPU delegate
+- **Architecture**: MVVM
+- **Model Source**: HuggingFace & Google repositories (same as Android)
+
+Both versions use the same `.task` model files and MediaPipe framework for on-device inference.
 
 ## 📋 Requirements
 
+### Android
 - **Android 8.0** (API level 26) or higher
 - **RAM**: 
   - Minimum 2GB for small models
@@ -193,15 +215,35 @@ Protect yourself from fraud and phishing:
 - **Storage**: 1GB - 5GB depending on selected models
 - **Internet**: Required only for model downloads
 
+### iOS
+- **iOS 15.0** or higher
+- **Xcode 15.0+** for building from source
+- **RAM**: 
+  - Minimum 2GB for small models
+  - 4GB+ recommended for better performance
+- **Storage**: 1GB - 5GB depending on selected models
+- **Internet**: Required only for model downloads
+
 ## 🚀 Getting Started
 
-### Installation
+### Android Installation
 
 1. **Download APK**: Get the latest release from [Releases](https://github.com/timmyy123/LLM-Hub/releases)
 2. **Install**: Enable "Unknown Sources" and install the APK
 3. **Download Models**: Use the in-app model downloader to get your desired models
 
-### Building from Source
+### iOS Installation
+
+See [iOS README](ios/LLMHub/README.md) for detailed installation and setup instructions.
+
+Quick start:
+```bash
+cd ios/LLMHub
+pod install
+open LLMHub.xcworkspace
+```
+
+### Building from Source (Android)
 
 ```bash
 # Clone the repository
@@ -216,6 +258,24 @@ cd LLM-Hub
 # Install on device
 ./gradlew installDebug
 ```
+
+### Building from Source (iOS)
+
+```bash
+# Clone the repository
+git clone https://github.com/timmyy123/LLM-Hub.git
+
+# Navigate to iOS project
+cd LLM-Hub/ios/LLMHub
+
+# Install dependencies
+pod install
+
+# Open in Xcode
+open LLMHub.xcworkspace
+```
+
+Then build and run from Xcode (⌘R)
 
 ### Usage
 
