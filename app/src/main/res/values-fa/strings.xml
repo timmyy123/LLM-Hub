@@ -1,0 +1,655 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Common -->
+    <string name="app_name">LLM Hub</string>
+    <string name="ok">باشه</string>
+    <string name="cancel">لغو</string>
+    <string name="close">بستن</string>
+    <string name="save">ذخیره</string>
+    <string name="delete">حذف</string>
+    <string name="send">ارسال</string>
+    <string name="copy">کپی</string>
+    <string name="loading">در حال بارگذاری</string>
+    <string name="error">خطا</string>
+    <string name="retry">تلاش دوباره</string>
+    <string name="download">دانلود</string>
+    <string name="vision">بینایی</string>
+
+    <!-- Chat -->
+    <string name="welcome_to_llm_hub">به LLM Hub خوش آمدید!</string>
+    <string name="no_models_downloaded">هنوز مدلی دانلود نشده است</string>
+    <string name="no_memories">هنوز حافظه‌ای وجود ندارد</string>
+    <string name="download_a_model">دانلود یک مدل</string>
+    <string name="ready_to_chat">آمادهٔ گفتگو! لطفاً یک مدل در بالا انتخاب کنید.</string>
+    <string name="start_chatting">با نوشتن یک پیام در پایین شروع به گفتگو کنید!</string>
+    <string name="type_a_message">نوشتن پیام…</string>
+    <string name="loading_model_format">در حال بارگذاری %1$s</string>
+    <string name="please_wait_model_initialize">لطفاً صبر کنید تا مدل آماده شود…</string>
+    <string name="initializing_neural_network">در حال راه‌اندازی شبکه عصبی…</string>
+    <string name="attached_image">تصویر پیوست‌شده</string>
+    <string name="shared_a_file">یک فایل به اشتراک گذاشته شد</string>
+    <string name="copy_message">کپی پیام</string>
+    <string name="regenerate_response">تولید دوباره پاسخ</string>
+    <string name="cancel_generation">لغو تولید</string>
+    <string name="image_attachment">پیوست تصویر</string>
+    <string name="save_image">ذخیره تصویر</string>
+    <string name="tap_image_toggle_controls">برای نمایش/عدم نمایش کنترل‌ها روی تصویر ضربه بزنید</string>
+    <string name="vision_enabled">ویژگی بینایی فعال شد</string>
+    <string name="message_copied">پیام کپی شد</string>
+    <string name="tokens_per_second_format">%1$d توکن • %2$.1f توکن/ثانیه</string>
+    <string name="context_multimodal_format">%1$dk زمینه • %2$s</string>
+    <string name="multimodal_format">%1$s چندوجهی</string>
+    <string name="multimodal">چندوجهی</string>
+    <string name="text_only">فقط متن</string>
+    <string name="currently_loaded">در حال حاضر بارگذاری شده</string>
+    <string name="select_model">انتخاب مدل</string>
+    <string name="unload_model">خالی کردن مدل</string>
+    <string name="reload_model">بارگذاری مجدد مدل</string>
+
+    <!-- About Screen -->
+    <string name="about_llm_hub">درباره LLM Hub</string>
+    <string name="about_description">LLM Hub یک اپلیکیشن اندروید متن‌باز است که قدرت مدل‌های زبانی بزرگ را مستقیماً به دستگاه همراه شما می‌آورد. گفتگوهای هوش مصنوعی با مدل‌های به‌روز مانند Gemma، Llama و Phi را تجربه کنید — همه به صورت محلی روی گوشی شما برای حداکثر حریم خصوصی و دسترسی آفلاین اجرا می‌شوند.</string>
+    <string name="key_features">ویژگی‌های کلیدی</string>
+    <string name="feature_multiple_models">🤖 چندین مدل LLM: Gemma-3، Llama-3.2، Phi-4 و Gemma-3n</string>
+    <string name="feature_on_device">📱 پردازش روی دستگاه: حریم خصوصی کامل، بدون نیاز به اینترنت</string>
+    <string name="feature_vision_support">🖼️ پشتیبانی بینایی: مدل‌های چندوجهی که تصاویر را می‌فهمند</string>
+    <string name="feature_gpu_acceleration">⚡ شتاب GPU: عملکرد بهینه روی دستگاه‌های پشتیبانی‌شده</string>
+    <string name="feature_offline_usage">💾 استفاده آفلاین: گفتگو بدون اتصال اینترنت</string>
+    <string name="feature_privacy_first">🔒 حریم خصوصی در اولویت: گفتگوهای شما هرگز دستگاه را ترک نمی‌کنند</string>
+    <string name="feature_modern_ui">🎨 رابط کاربری مدرن: طراحی تمیز و شهودی متریال دیزاین</string>
+    <string name="developer_info">اطلاعات توسعه‌دهنده</string>
+    <string name="about_developer_info">این پروژه توسط یک علاقه‌مند که مشتاق دسترس‌پذیرتر کردن فناوری هوش مصنوعی برای همه است توسعه داده می‌شود. بازخورد و مشارکت‌های شما همیشه پذیرفته است!</string>
+    <string name="tech_stack">پشته فناوری</string>
+    <string name="about_tech_stack">LLM Hub با استفاده از فناوری‌های مدرن توسعه اندروید ساخته شده است: Kotlin، Jetpack Compose، Material Design 3 و کتابخانه llama.cpp برای استنتاج کارآمد روی دستگاه.</string>
+    <string name="tech_kotlin_compose">🏗️ ساخته‌شده با Kotlin و Jetpack Compose</string>
+    <string name="tech_mediapipe_litert">🧠 قدرت‌گرفته از MediaPipe و LiteRT</string>
+    <string name="tech_quantization">🚀 بهینه‌شده با کمّی‌سازی INT4/INT8</string>
+    <string name="tech_gpu_acceleration">⚡ شتاب GPU از طریق LiteRT XNNPACK</string>
+    <string name="tech_models_source">🔗 مدل‌ها از HuggingFace و Google</string>
+    <string name="contact_support">تماس و پشتیبانی</string>
+    <string name="contact_email">ایمیل تماس:</string>
+    <string name="source_code">کد منبع:</string>
+    <string name="github_repository">مخزن GitHub</string>
+    <string name="acknowledgments">قدردانی</string>
+    <string name="acknowledgments_text">از Google، Meta، Microsoft و جامعه HuggingFace برای ارائه مدل‌های شگفت‌انگیز LLM که این برنامه را قدرت می‌بخشند، به‌طور ویژه قدردانی می‌شود. این پروژه همچنین بر کار فوق‌العاده جامعه توسعه‌دهندگان اندروید و اکوسیستم متن‌باز تکیه دارد.</string>
+    <string name="ai_thinking">هوش مصنوعی در حال فکر کردن…</string>
+    <string name="version_number">نسخه 3.2.6</string>
+    <string name="app_version">نسخه برنامه</string>
+
+    <!-- Terms of Service (Short titles translated; body kept concise translation) -->
+    <string name="terms_of_service">شرایط خدمات</string>
+    <string name="tos_last_updated">آخرین بروزرسانی: 16 ژوئیه 2025</string>
+    <string name="tos_welcome_text">به LLM Hub خوش آمدید. با استفاده از برنامه، شما با شرایط خدمات موافقت می‌کنید. لطفاً آن‌ها را با دقت بخوانید.</string>
+    <string name="tos_welcome">به LLM Hub خوش آمدید. با استفاده از برنامه، شما با شرایط خدمات موافقت می‌کنید. لطفاً آن‌ها را با دقت بخوانید.</string>
+    <string name="tos_acceptance_title">1. پذیرش شرایط</string>
+    <string name="tos_acceptance_text">با دانلود، نصب یا استفاده از LLM Hub، تأیید می‌کنید که شرایط خدمات را خوانده، درک کرده و با آن موافقید. در صورت عدم موافقت، لطفاً از برنامه استفاده نکنید.</string>
+    <string name="tos_app_description_title">2. توضیحات برنامه</string>
+    <string name="tos_app_description_text">LLM Hub دسترسی به مدل‌های زبانی بزرگ (LLM) را برای گفتگوهای هوش مصنوعی روی دستگاه فراهم می‌کند. پردازش داده‌ها به صورت محلی انجام می‌شود و اطلاعات شخصی به سرورها ارسال نمی‌گردد.</string>
+    <string name="tos_user_responsibilities_title">3. مسئولیت‌های کاربر</string>
+    <string name="tos_user_responsibilities_text">شما متعهد می‌شوید برنامه را مسئولانه و مطابق قوانین استفاده کنید و حقوق مالکیت فکری دیگران را رعایت نمایید.</string>
+    <string name="tos_privacy_data_title">4. حریم خصوصی و داده‌ها</string>
+    <string name="tos_privacy_data_text">گفتگوها و پردازش‌ها به‌طور محلی روی دستگاه شما انجام می‌شود. تاریخچه گفتگو محلی ذخیره می‌شود و قابل حذف است. برنامه هیچ داده تحلیلی جمع‌آوری نمی‌کند.</string>
+    <string name="tos_disclaimer_title">5. سلب مسئولیت</string>
+    <string name="tos_disclaimer_text">LLM Hub «همان‌گونه که هست» بدون هرگونه ضمانت ارائه می‌شود. دقت یا دسترسی تضمین نمی‌شود و نتایج مدل‌ها ممکن است غیرقابل پیش‌بینی باشند.</string>
+    <string name="tos_limitation_liability_title">6. محدودیت مسئولیت</string>
+    <string name="tos_limitation_liability_text">توسعه‌دهندگان در قبال خسارات غیرمستقیم یا تبعی ناشی از استفاده از LLM Hub مسئول نیستند.</string>
+    <string name="tos_model_usage_title">7. استفاده و مجوز مدل</string>
+    <string name="tos_model_usage_text">مدل‌ها تابع مجوزهای مربوطه هستند. کاربران موظف به رعایت شرایط مجوز هر مدل می‌باشند.</string>
+    <string name="tos_open_source_title">8. مجوز متن‌باز</string>
+    <string name="tos_open_source_text">LLM Hub متن‌باز است و تحت مجوز MIT در دسترس است. کتابخانه‌ها و مدل‌های ثالث ممکن است شرایط متفاوتی داشته باشند.</string>
+    <string name="tos_changes_title">9. تغییرات شرایط</string>
+    <string name="tos_changes_text">ممکن است شرایط به‌روزرسانی شود. ادامه استفاده به منزله پذیرش شرایط جدید است.</string>
+    <string name="tos_contact_title">10. اطلاعات تماس</string>
+    <string name="tos_contact_text">برای سؤالات درباره این شرایط با نشانی timmyboy0623@gmail.com تماس بگیرید.</string>
+
+    <!-- Navigation -->
+    <string name="chat">گفتگو</string>
+    <string name="models">مدل‌ها</string>
+    <string name="settings">تنظیمات</string>
+    <string name="about">درباره</string>
+
+    <!-- Settings -->
+    <string name="appearance">ظاهر</string>
+    <string name="features">امکانات</string>
+    <string name="information">اطلاعات</string>
+    <string name="source_code_section">کد منبع</string>
+    <string name="download_models">دانلود مدل‌ها</string>
+    <string name="browse_download_models">مرور و دانلود مدل‌های LLM</string>
+    <string name="embedding_model">مدل امبدینگ</string>
+    <string name="select_embedding_model">انتخاب مدل امبدینگ</string>
+    <string name="no_embedding_model_selected">هیچ مدل امبدینگی انتخاب نشده است</string>
+    <string name="disable_embeddings">غیرفعال کردن امبدینگ</string>
+    <string name="embedding_settings_changed_title">تنظیمات امبدینگ تغییر کرد</string>
+    <string name="embedding_settings_changed_message">برای اعمال تغییرات امبدینگ، لطفاً مدل‌ها را خالی کرده و دوباره بارگذاری کنید.</string>
+    <string name="reload_models">بارگذاری مجدد مدل‌ها</string>
+    <string name="dismiss">بستن</string>
+    <string name="reload_models_notice">برای اعمال تغییرات باید مدل‌ها دوباره بارگذاری شوند</string>
+    <string name="embedding_enabled">امبدینگ فعال شد</string>
+    <string name="embedding_disabled">امبدینگ غیرفعال شد</string>
+    <string name="embedding_status_enabled">وضعیت امبدینگ: فعال</string>
+    <string name="embedding_status_disabled">وضعیت امبدینگ: غیرفعال</string>
+    <string name="rag_enabled">RAG فعال است</string>
+    <string name="web_search">جستجوی وب</string>
+    <string name="web_search_enabled">دریافت اطلاعات روز از وب</string>
+    <string name="web_search_disabled">فقط از دانش آفلاین استفاده شود</string>
+    <string name="web_search_description_enabled">دریافت اطلاعات روز از وب</string>
+    <string name="web_search_description_disabled">فقط از دانش آفلاین استفاده شود</string>
+    <string name="theme">تم</string>
+    <string name="language">زبان</string>
+    <string name="light_theme">روشن</string>
+    <string name="dark_theme">تیره</string>
+    <string name="system_default_theme">پیش‌فرض سیستم</string>
+    <string name="theme_light">روشن</string>
+    <string name="theme_dark">تیره</string>
+    <string name="theme_system">پیش‌فرض سیستم</string>
+    <string name="system_default_language">پیش‌فرض سیستم</string>
+    <string name="system_default">پیش‌فرض سیستم</string>
+    <string name="choose_theme">انتخاب تم</string>
+    <string name="choose_language">انتخاب زبان</string>
+    <string name="select_language">انتخاب زبان</string>
+    <string name="app_information_contact">اطلاعات برنامه و تماس</string>
+    <string name="app_info_contact">اطلاعات برنامه و تماس</string>
+    <string name="legal_terms_conditions">شرایط و ضوابط حقوقی</string>
+    <string name="github_repository_desc">مشاهده کد منبع و مشارکت</string>
+    <string name="view_source_contribute">مشاهده کد منبع و مشارکت</string>
+    <string name="back">بازگشت</string>
+
+    <!-- Language Names -->
+    <string name="language_english">English</string>
+    <string name="language_spanish">Español</string>
+    <string name="language_portuguese">Português</string>
+    <string name="language_german">Deutsch</string>
+    <string name="language_french">Français</string>
+    <string name="language_russian">Русский</string>
+    <string name="language_italian">Italiano</string>
+    <string name="language_turkish">Türkçe</string>
+    <string name="language_polish">Polski</string>
+    <string name="language_arabic">العربية</string>
+    <string name="language_japanese">日本語</string>
+    <string name="language_indonesian">Indonesia</string>
+    <string name="language_korean">한국어</string>
+    <string name="language_persian">فارسی</string>
+    <string name="language_ukrainian">Українська</string>
+    <string name="language_hebrew">עברית</string>
+
+    <!-- Errors and Messages -->
+    <string name="failed_to_load_image">بارگذاری تصویر ناموفق بود</string>
+    <string name="model_loading_error">خطا در بارگذاری مدل</string>
+    <string name="message_send_error">خطا در ارسال پیام</string>
+    <string name="file_save_error">خطا در ذخیره فایل</string>
+    <string name="file_save_success">فایل با موفقیت ذخیره شد</string>
+
+    <!-- Accessibility -->
+    <string name="content_description_ai_bot">ربات هوش مصنوعی</string>
+    <string name="content_description_smart_toy">Smart Toy</string>
+    <string name="content_description_email">ایمیل</string>
+    <string name="content_description_code">کد منبع</string>
+    <string name="content_description_image">تصویر</string>
+    <string name="content_description_download">دانلود</string>
+    <string name="content_description_stop">توقف</string>
+    <string name="content_description_refresh">نوسازی</string>
+    <string name="content_description_copy">کپی</string>
+    <string name="content_description_speed">سرعت</string>
+    <string name="content_description_check">تأیید</string>
+    <string name="content_description_eye">بینایی فعال است</string>
+    <string name="content_description_attach_image">پیوست تصویر</string>
+    <string name="content_description_back">بازگشت</string>
+
+    <!-- Model Information -->
+    <string name="no_model_selected">هیچ مدلی انتخاب نشده است</string>
+    <string name="no_model_downloaded">هیچ مدلی دانلود نشده است</string>
+    <string name="model_supports_vision">پشتیبانی از بینایی</string>
+    <string name="model_supports_multimodal">پشتیبانی از چندوجهی</string>
+    <string name="model_text_only">فقط متن</string>
+
+    <!-- Chat Drawer -->
+    <string name="drawer_title">LLM Hub</string>
+    <string name="drawer_new_chat">گفتگوی جدید</string>
+    <string name="drawer_recent_chats">گفتگوهای اخیر</string>
+    <string name="drawer_no_chats">هنوز گفتگویی وجود ندارد</string>
+    <string name="drawer_download_models">دانلود مدل‌ها</string>
+    <string name="drawer_clear_all_chats">حذف همه گفتگوها</string>
+    <string name="drawer_settings">تنظیمات</string>
+
+    <!-- Chat Management -->
+    <string name="dialog_delete_all_chats_title">حذف همه چت‌ها؟</string>
+    <string name="dialog_delete_all_chats_message">این کار تمام تاریخچه گفتگو را به طور دائم حذف می‌کند و قابل بازگشت نیست.</string>
+    <string name="dialog_delete_chat_title">حذف چت؟</string>
+    <string name="dialog_delete_chat_message">گفتگوی «%1$s» حذف شود؟</string>
+    <string name="action_delete_all">حذف همه</string>
+    <string name="action_delete">حذف</string>
+    <string name="action_cancel">لغو</string>
+    <string name="content_description_delete_chat">حذف چت</string>
+
+    <!-- Time Formatting -->
+    <string name="time_yesterday">دیروز</string>
+    <string name="time_hours_ago">%1$d ساعت پیش</string>
+    <string name="time_minutes_ago">%1$d دقیقه پیش</string>
+    <string name="time_just_now">همین حالا</string>
+
+    <!-- Model Download Screen -->
+    <string name="ai_models">مدل‌های هوش مصنوعی</string>
+    <string name="download_ai_models">دانلود مدل‌های هوش مصنوعی</string>
+    <string name="choose_text_multimodal_models">از مدل‌های فقط متن یا چندوجهی انتخاب کنید</string>
+    <string name="text_models">مدل‌های متنی</string>
+    <string name="text_models_description">مدل‌های بهینه برای تولید متن و گفتگو</string>
+    <string name="vision_models">مدل‌های بینایی</string>
+    <string name="vision_models_description">مدل‌هایی که متن و تصویر را می‌فهمند</string>
+    <string name="embedding_models">مدل‌های امبدینگ</string>
+    <string name="embedding_models_description">مدل‌های امبدینگ متن و جستجوی معنایی</string>
+    <string name="gpu">GPU</string>
+    <string name="variant">گونه</string>
+    <string name="variants">گونه‌ها</string>
+    <string name="expand">گسترش</string>
+    <string name="collapse">جمع کردن</string>
+    <string name="downloaded">دانلود شده</string>
+    <string name="downloading">در حال دانلود…</string>
+    <string name="not_downloaded">دانلود نشده</string>
+    <string name="partial">ناقص</string>
+    <string name="paused">مکث</string>
+    <string name="paused_downloaded_format">مکث: %1$s دانلود شده</string>
+    <string name="continue_download">ادامه</string>
+    <string name="pause_download">مکث</string>
+    <string name="resume_download">از سرگیری</string>
+    <string name="clear">پاک کردن</string>
+    <string name="ram_requirement_format">%1$d گیگابایت RAM</string>
+
+    <!-- File Attachments -->
+    <string name="attach_file">پیوست فایل</string>
+    <string name="attach_image">پیوست تصویر</string>
+    <string name="attach_document">پیوست سند</string>
+    <string name="attach_text_file">پیوست فایل متنی</string>
+    <string name="file_attachment">پیوست فایل</string>
+    <string name="file_too_large">فایل خیلی بزرگ است</string>
+    <string name="unsupported_file_type">نوع فایل پشتیبانی نمی‌شود</string>
+    <string name="file_processing_error">خطا در پردازش فایل</string>
+    <string name="could_not_read_file">امکان خواندن فایل نبود</string>
+    <string name="file_preview">پیش‌نمایش فایل</string>
+    <string name="remove_attachment">حذف</string>
+    <string name="keep_attachment">نگه داشتن</string>
+    <string name="preview_not_available">پیش‌نمایش در دسترس نیست</string>
+
+    <!-- File Type Categories -->
+    <string name="images">تصاویر</string>
+    <string name="documents">سندها</string>
+    <string name="text_files">فایل‌های متنی</string>
+    <string name="images_description">JPG، PNG، GIF، WebP</string>
+    <string name="documents_description">PDF، Word، Excel، PowerPoint</string>
+    <string name="text_files_description">TXT، MD، JSON، XML، CSV</string>
+    <string name="text_file">فایل متنی</string>
+    <string name="tap_to_preview">برای پیش‌نمایش ضربه بزنید</string>
+    <string name="text_file_tap_to_preview">فایل متنی • برای پیش‌نمایش ضربه بزنید</string>
+    <string name="read_this">این را بخوان</string>
+
+    <!-- Audio Input -->
+    <string name="audio_recording">ضبط صدا</string>
+    <string name="audio_description">ضبط پیام صوتی</string>
+    <string name="record_voice_message">ضبط پیام صوتی</string>
+    <string name="recording">در حال ضبط…</string>
+    <string name="audio_recorded">صدا ضبط شد</string>
+    <string name="ready_to_send">آماده ارسال</string>
+    <string name="tap_to_stop">برای توقف ضربه بزنید</string>
+    <string name="stop_recording">توقف ضبط</string>
+    <string name="remove_audio">حذف صدا</string>
+    <string name="audio_enabled">صدا فعال شد</string>
+    <string name="audio">صدا</string>
+    <string name="audio_file">فایل صوتی</string>
+    <string name="tap_to_play">برای پخش ضربه بزنید</string>
+    <string name="max_recording_reached">حداکثر مدت ضبط (30 ثانیه) رسیده است</string>
+    <string name="remaining">مانده</string>
+
+    <!-- Image actions -->
+    <string name="image_copied_clipboard">تصویر از چت کپی شد</string>
+    <string name="image_copied_to_clipboard">تصویر در کلیپ‌بورد کپی شد</string>
+    <string name="failed_to_copy_image">کپی تصویر ناموفق بود</string>
+    <string name="failed_to_copy_image_with_error">کپی تصویر ناموفق بود: %1$s</string>
+    <string name="image_saved_to_gallery">تصویر در گالری ذخیره شد</string>
+    <string name="failed_to_save_image">ذخیره تصویر ناموفق بود</string>
+    <string name="failed_to_save_image_with_error">ذخیره تصویر ناموفق بود: %1$s</string>
+
+    <!-- RAG (Document Chat) -->
+    <string name="searching_documents">در حال جستجوی اسناد…</string>
+    <string name="using_document_context_format">استفاده از زمینه %1$d بخش سند</string>
+    <string name="documents_available_format">%1$d سند موجود است</string>
+    <string name="ai_can_reference_documents">هوش مصنوعی می‌تواند در پاسخ‌ها به اسناد شما ارجاع دهد</string>
+    <string name="document_chat_enabled">گفتگوی اسناد فعال شد</string>
+    <string name="semantic_search_active">جستجوی معنایی فعال است</string>
+    <string name="memory">حافظه (زمینه سراسری)</string>
+    <string name="memory_description_enabled">به هوش مصنوعی اجازه دهید حافظهٔ سراسری آپلودشدهٔ شما را از طریق RAG ارجاع دهد</string>
+    <string name="memory_requires_rag">نیازمند فعال بودن RAG/امبدینگ است</string>
+    <string name="manage_memory">مدیریت حافظه</string>
+    <string name="manage_memory_subtitle">اسناد را به حافظه سراسری آپلود یا جای‌گذاری کنید</string>
+    <string name="paste_or_upload_to_memory">برای افزودن به حافظه سراسری، متن را جای‌گذاری یا سندی آپلود کنید.</string>
+    <string name="paste_memory_placeholder">یادداشت‌ها، اسناد یا دانسته‌های خود را اینجا جای‌گذاری کنید…</string>
+    <string name="upload_file">آپلود</string>
+    <string name="save_to_memory">ذخیره</string>
+    <string name="import_chat_history">وارد کردن تاریخچه چت</string>
+    <string name="select_chats_to_import">گفتگوها را برای وارد کردن به حافظه انتخاب کنید</string>
+    <string name="import_selected_chats">وارد کردن انتخاب‌شده‌ها</string>
+    <string name="chat_imported_to_memory">تاریخچه چت به حافظه وارد شد</string>
+    <string name="no_chats_selected">هیچ گفتگویی انتخاب نشده است</string>
+    <string name="edit_memory">ویرایش حافظه</string>
+    <string name="memory_content">محتوای حافظه</string>
+    <string name="save_changes">ذخیره تغییرات</string>
+    <string name="done">انجام شد</string>
+    <string name="global_memory_uploaded_by">در حافظه سراسری آپلود شد</string>
+    <string name="global_memory_pasted_by">در حافظه سراسری جای‌گذاری شد</string>
+    <string name="memory_upload_success">فایل در حافظه سراسری ذخیره شد</string>
+    <string name="memory_upload_failed">ذخیره فایل در حافظه ناموفق بود (ممکن است RAG غیرفعال باشد)</string>
+    <string name="memory_upload_unsupported_type">نوع فایل برای حافظه پشتیبانی نمی‌شود. فقط اسناد متنی (PDF، DOC، TXT و غیره) قابل افزودن هستند.</string>
+    <string name="memory_save_success">متن در حافظه سراسری ذخیره شد</string>
+    <string name="memory_save_failed">ذخیره متن در حافظه ناموفق بود (ممکن است RAG غیرفعال باشد)</string>
+    <string name="saved_memories">حافظه‌های ذخیره‌شده</string>
+    <string name="clear_all">پاک‌سازی همه</string>
+
+    <!-- Text-to-Speech -->
+    <string name="auto_readout">خواندن خودکار</string>
+    <string name="auto_readout_description">پس از ارسال درخواست، پاسخ‌های هوش مصنوعی را خودکار بخوان</string>
+    <string name="memory_cleared">همه حافظه‌ها پاک شدند</string>
+    <string name="confirm_replace_memory_title">حافظه موجود جایگزین شود؟</string>
+    <string name="confirm_replace_memory_message">شما یک حافظه سراسری دارید. جایگزینی آن حافظه و امبدینگ‌های موجود را حذف می‌کند. ادامه می‌دهید؟</string>
+    <string name="confirm_replace_action">جایگزینی</string>
+    <string name="memory_processing">در حال پردازش حافظه…</string>
+    <string name="reembedding_memory_in_progress">در حال باز-امبد کردن حافظه سراسری برای مدل امبدینگ جدید…</string>
+    <string name="reembedding_memory_done">حافظه سراسری دوباره امبد شد</string>
+
+    <!-- Gemma-3n specific GPU requirements -->
+    <string name="gemma3n_e2b_gpu_requires_6gb">حداقل 6 گیگابایت RAM برای GPU لازم است</string>
+    <string name="gemma3n_e4b_gpu_requires_8gb">دستگاه‌های با 8 گیگابایت یا کمتر RAM نمی‌توانند این مدل را با GPU بارگذاری کنند</string>
+    <string name="audio_support">پشتیبانی صوت</string>
+    <string name="vision_audio_text">بینایی+صوت+متن</string>
+    <string name="vision_text">بینایی+متن</string>
+    <string name="audio_text">صوت+متن</string>
+    <string name="shared_file">یک فایل به اشتراک گذاشته شد</string>
+    <string name="audio_message">پیام صوتی</string>
+    <string name="image_message">پیام تصویری</string>
+    <string name="model_configs_title">پیکربندی‌های مدل</string>
+    <string name="reset_to_defaults">بازنشانی</string>
+    <string name="max_tokens">حداکثر توکن‌ها</string>
+    <string name="top_k">TopK</string>
+    <string name="top_p">TopP</string>
+    <string name="temperature">Temperature</string>
+    <string name="choose_accelerator">انتخاب شتاب‌دهنده</string>
+    <string name="max">حداکثر</string>
+
+    <!-- GPU with Vision+Audio Disabled for Gemma-3n E4B -->
+    <string name="gpu_vision_disabled_title">GPU با بینایی+صوت غیرفعال</string>
+    <string name="gpu_vision_disabled_description">به دلیل محدودیت RAM، برای فعال‌سازی شتاب GPU، ویژگی‌های بینایی و صوت غیرفعال می‌شوند</string>
+    <string name="gpu_with_vision_disabled">GPU (بینایی+صوت غیرفعال)</string>
+    <string name="gemma3n_e4b_gpu_vision_warning">برای دستگاه‌های با RAM 7–8GB، شتاب GPU نیازمند غیرفعال‌سازی بینایی و صوت است. پیوست تصویر و ورودی صوتی در دسترس نخواهد بود.</string>
+    <string name="vision_disabled_for_gpu">بینایی و صوت برای شتاب GPU غیرفعال شدند</string>
+    <string name="vision_disabled_no_images">برای این پیکربندی مدل، بینایی و صوت غیرفعال هستند. پیوست تصویر و ورودی صوتی در دسترس نیست.</string>
+    <string name="ram_limit_gpu_vision_disabled">به دلیل محدودیت RAM (%.1fGB)، برای استفاده از GPU باید بینایی و صوت غیرفعال شوند</string>
+
+    <!-- GPU with Audio Only Disabled for Gemma-3n E4B on 8GB devices -->
+    <string name="gpu_with_audio_disabled">GPU (صوت غیرفعال)</string>
+    <string name="gemma3n_e4b_gpu_audio_warning">برای دستگاه‌های با RAM 7–8GB، شتاب GPU نیازمند غیرفعال‌سازی صوت است. ورودی صوتی در دسترس نخواهد بود، اما پیوست تصویر پشتیبانی می‌شود.</string>
+    <string name="audio_disabled_for_gpu">صوت برای GPU غیرفعال شد</string>
+    <string name="audio_disabled_no_audio">برای این پیکربندی مدل، ویژگی‌های صوتی غیرفعال هستند. ورودی صوتی در دسترس نیست، اما پیوست تصویر پشتیبانی می‌شود.</string>
+
+    <!-- Separate modality toggles -->
+    <string name="modality_options">گزینه‌های حالت</string>
+    <string name="enable_vision">فعال‌سازی بینایی (پشتیبانی تصویر)</string>
+    <string name="enable_audio">فعال‌سازی صوت (ورودی صوتی)</string>
+    <string name="gemma3n_e4b_modality_suggestion">💡 برای عملکرد پایدار در دستگاه‌های 7–8GB، غیرفعال کردن صوت به صرفه‌جویی در حافظه GPU کمک می‌کند. بینایی معمولاً پایدارتر است.</string>
+
+    <!-- General performance tip for all devices -->
+    <string name="gemma3n_performance_tip">💡 اگر به دلیل محدودیت RAM با کرش یا عملکرد پایین مواجه شدید، به CPU سوئیچ کنید یا بینایی/صوت را غیرفعال کنید.</string>
+
+    <!-- External Model Import -->
+    <string name="import_external_model">وارد کردن مدل خارجی</string>
+    <string name="model_name">نام مدل</string>
+    <string name="select_model_file">انتخاب فایل مدل</string>
+    <string name="supports_vision">پشتیبانی از بینایی</string>
+    <string name="supports_audio">پشتیبانی از صوت</string>
+    <string name="supports_gpu">پشتیبانی از GPU</string>
+    <string name="model_format">قالب مدل</string>
+    <string name="context_window_size">اندازه پنجره زمینه</string>
+    <string name="import_model">وارد کردن مدل</string>
+    <string name="model_name_required">نام مدل الزامی است</string>
+    <string name="context_window_size_invalid">لطفاً یک اندازه معتبر برای پنجره زمینه وارد کنید</string>
+    <string name="please_fix_errors">لطفاً خطاهای بالا را برطرف کنید</string>
+    <string name="remove">حذف</string>
+    <string name="ready_to_use">آماده استفاده</string>
+    <string name="unsupported_file_format">فرمت فایل پشتیبانی نمی‌شود. لطفاً یک فایل ‎.task یا ‎.litertlm انتخاب کنید.</string>
+    <string name="download_models_from_litert_community">می‌توانید مدل‌های سازگار را از اینجا دانلود کنید:</string>
+    <string name="litert_community_link">LiteRT Community در Hugging Face</string>
+    <string name="import_model_warning">⚠️ مهم: لطفاً README مدل در Hugging Face را قبل از وارد کردن بخوانید. قابلیت‌ها (بینایی، صوت، GPU) و اندازه پنجره زمینه را مطابق مستندات مدل وارد کنید. تنظیمات نادرست ممکن است باعث اختلال در عملکرد مدل شود.</string>
+
+    <!-- Home Screen -->
+    <string name="home_welcome">به LLM Hub خوش آمدید</string>
+    <string name="home_subtitle">قدرت هوش مصنوعی در جیب شما — خصوصی، سریع و آفلاین!</string>
+
+    <!-- Feature Cards -->
+    <string name="feature_ai_chat">گفتگوی هوش مصنوعی</string>
+    <string name="feature_ai_chat_desc">گفتگوهای چندمرحله‌ای با مدل‌های هوش مصنوعی</string>
+    <string name="feature_writing_aid">یار نوشتن</string>
+    <string name="feature_writing_aid_desc">دستور زبان، سبک، پارافرایز و تنظیم لحن</string>
+    <string name="feature_translator">مترجم</string>
+    <string name="feature_translator_desc">ترجمه خصوصی متن با استفاده از مدل‌های چندوجهی</string>
+    <string name="feature_transcriber">رونویس‌گر</string>
+    <string name="feature_transcriber_desc">رونویسی صدا به متن به صورت آفلاین</string>
+    <string name="feature_scam_detector">کشف کلاهبرداری</string>
+    <string name="feature_scam_detector_desc">تحلیل متن، تصاویر یا URLها برای احتمال کلاهبرداری</string>
+    <string name="feature_github_repo">کد منبع</string>
+    <string name="feature_github_repo_desc">مخزن GitHub</string>
+
+    <!-- Writing Aid Screen -->
+    <string name="writing_aid_title">یار نوشتن</string>
+    <string name="writing_aid_input_label">متن خود را وارد کنید</string>
+    <string name="writing_aid_input_hint">متنی را که می‌خواهید بهبود یابد تایپ یا جای‌گذاری کنید…</string>
+    <string name="writing_aid_input_hint_no_model">برای شروع یک مدل بارگذاری کنید</string>
+    <string name="writing_aid_mode_grammar">بررسی دستور زبان</string>
+    <string name="writing_aid_mode_paraphrase">پارافرایز</string>
+    <string name="writing_aid_mode_tone">تنظیم لحن</string>
+    <string name="writing_aid_mode_email">پاسخ ایمیل</string>
+    <string name="writing_aid_mode_sms">پاسخ SMS</string>
+    <string name="writing_aid_tone_friendly">دوستانه</string>
+    <string name="writing_aid_tone_professional">حرفه‌ای</string>
+    <string name="writing_aid_tone_concise">مختصر</string>
+    <string name="writing_aid_select_mode">انتخاب لحن</string>
+    <string name="writing_aid_process">پردازش</string>
+    <string name="processing_tap_to_cancel">در حال پردازش (برای لغو ضربه بزنید)</string>
+    <string name="writing_aid_result">نتیجه</string>
+    <string name="writing_aid_no_model">هیچ مدلی بارگذاری نشده است. لطفاً ابتدا یک مدل دانلود و انتخاب کنید.</string>
+
+    <!-- Translator Screen -->
+    <string name="translator_title">مترجم آفلاین</string>
+    <string name="translator_input_label">متن برای ترجمه</string>
+    <string name="translator_input_hint">متن را برای ترجمه وارد کنید…</string>
+    <string name="load_model_to_start">برای شروع یک مدل بارگذاری کنید</string>
+    <string name="translator_source_lang">زبان مبدا</string>
+    <string name="translator_target_lang">زبان مقصد</string>
+    <string name="translator_auto_detect">تشخیص خودکار</string>
+    <string name="translator_translate">ترجمه</string>
+    <string name="translator_result">ترجمه</string>
+    <string name="translator_requires_gemma3n">این ویژگی به یک مدل Gemma-3n نیاز دارد. لطفاً یکی را از صفحه مدل‌ها دانلود کنید.</string>
+
+    <!-- Transcriber Screen -->
+    <string name="transcriber_title">رونویس‌گر آفلاین</string>
+    <string name="transcriber_record">ضبط صدا</string>
+    <string name="transcriber_upload">آپلود صدا</string>
+    <string name="transcriber_transcribe">رونویسی</string>
+    <string name="transcriber_result">رونویس</string>
+    <string name="transcriber_recording">در حال ضبط…</string>
+    <string name="transcriber_stop">توقف ضبط</string>
+    <string name="transcriber_requires_gemma3n">این ویژگی به مدل Gemma-3n با پشتیبانی صوت نیاز دارد. لطفاً یکی را از صفحه مدل‌ها دانلود کنید.</string>
+
+    <!-- Scam Detector Screen -->
+    <string name="scam_detector_title">کشف کلاهبرداری</string>
+    <string name="scam_detector_input_label">محتوای مورد بررسی را وارد کنید</string>
+    <string name="scam_detector_input_hint">متن را جای‌گذاری کنید، تصویر آپلود کنید یا URL وارد کنید تا برای کلاهبرداری تحلیل شود…</string>
+    <string name="scam_detector_url_hint">URL را وارد کنید</string>
+    <string name="scam_detector_analyze">تحلیل</string>
+    <string name="scam_detector_analyzing">در حال تحلیل (برای لغو ضربه بزنید)</string>
+    <string name="scam_detector_result">نتیجه تحلیل</string>
+    <string name="scam_detector_no_model">هیچ مدلی بارگذاری نشده است. لطفاً ابتدا یک مدل دانلود و انتخاب کنید.</string>
+    <string name="scam_detector_load_model">بارگذاری مدل</string>
+    <string name="scam_detector_load_model_desc">برای شروع تحلیل، یک مدل بارگذاری کنید</string>
+    <string name="scam_detector_enable_vision">فعال‌سازی بینایی</string>
+    <string name="scam_detector_vision_desc">تحلیل تصاویر برای کلاهبرداری</string>
+    <string name="scam_detector_fetching_url">در حال واکشی محتوای URL…</string>
+
+    <!-- Common Feature Strings -->
+    <string name="feature_no_model_title">هیچ مدلی در دسترس نیست</string>
+    <string name="feature_download_model">دانلود مدل‌ها</string>
+    <string name="feature_processing">در حال پردازش…</string>
+    <string name="feature_error">خطایی رخ داد</string>
+    <string name="feature_copy_result">کپی نتیجه</string>
+    <string name="feature_share_result">اشتراک نتیجه</string>
+    <string name="feature_clear">پاک کردن</string>
+
+    <!-- Language Names for Translator (Gemma-3n Supported Languages) - Alphabetically Ordered -->
+    <string name="lang_english">English</string>
+    <string name="lang_afrikaans">Afrikaans</string>
+    <string name="lang_amharic">Amharic</string>
+    <string name="lang_arabic">Arabic</string>
+    <string name="lang_armenian">Armenian</string>
+    <string name="lang_azerbaijani">Azerbaijani</string>
+    <string name="lang_basque">Basque</string>
+    <string name="lang_bengali">Bengali</string>
+    <string name="lang_bulgarian">Bulgarian</string>
+    <string name="lang_burmese">Burmese</string>
+    <string name="lang_catalan">Catalan</string>
+    <string name="lang_chinese">Chinese (Simplified)</string>
+    <string name="lang_chinese_traditional">Chinese (Traditional)</string>
+    <string name="lang_croatian">Croatian</string>
+    <string name="lang_czech">Czech</string>
+    <string name="lang_danish">Danish</string>
+    <string name="lang_dutch">Dutch</string>
+    <string name="lang_estonian">Estonian</string>
+    <string name="lang_filipino">Filipino (Tagalog)</string>
+    <string name="lang_finnish">Finnish</string>
+    <string name="lang_french">French</string>
+    <string name="lang_galician">Galician</string>
+    <string name="lang_georgian">Georgian</string>
+    <string name="lang_german">German</string>
+    <string name="lang_greek">Greek</string>
+    <string name="lang_gujarati">Gujarati</string>
+    <string name="lang_hausa">Hausa</string>
+    <string name="lang_hebrew">Hebrew</string>
+    <string name="lang_hindi">Hindi</string>
+    <string name="lang_hungarian">Hungarian</string>
+    <string name="lang_icelandic">Icelandic</string>
+    <string name="lang_igbo">Igbo</string>
+    <string name="lang_indonesian">Indonesian</string>
+    <string name="lang_italian">Italian</string>
+    <string name="lang_japanese">Japanese</string>
+    <string name="lang_kannada">Kannada</string>
+    <string name="lang_kazakh">Kazakh</string>
+    <string name="lang_khmer">Khmer</string>
+    <string name="lang_korean">Korean</string>
+    <string name="lang_lao">Lao</string>
+    <string name="lang_latvian">Latvian</string>
+    <string name="lang_lithuanian">Lithuanian</string>
+    <string name="lang_malay">Malay</string>
+    <string name="lang_malayalam">Malayalam</string>
+    <string name="lang_marathi">Marathi</string>
+    <string name="lang_nepali">Nepali</string>
+    <string name="lang_norwegian">Norwegian</string>
+    <string name="lang_pashto">Pashto</string>
+    <string name="lang_persian">Persian (Farsi)</string>
+    <string name="lang_polish">Polish</string>
+    <string name="lang_portuguese">Portuguese</string>
+    <string name="lang_punjabi">Punjabi</string>
+    <string name="lang_romanian">Romanian</string>
+    <string name="lang_russian">Russian</string>
+    <string name="lang_serbian">Serbian</string>
+    <string name="lang_sindhi">Sindhi</string>
+    <string name="lang_sinhala">Sinhala</string>
+    <string name="lang_slovak">Slovak</string>
+    <string name="lang_slovenian">Slovenian</string>
+    <string name="lang_somali">Somali</string>
+    <string name="lang_spanish">Spanish</string>
+    <string name="lang_swahili">Swahili</string>
+    <string name="lang_swedish">Swedish</string>
+    <string name="lang_tamil">Tamil</string>
+    <string name="lang_telugu">Telugu</string>
+    <string name="lang_thai">Thai</string>
+    <string name="lang_turkish">Turkish</string>
+    <string name="lang_ukrainian">Ukrainian</string>
+    <string name="lang_urdu">Urdu</string>
+    <string name="lang_uzbek">Uzbek</string>
+    <string name="lang_vietnamese">Vietnamese</string>
+    <string name="lang_yoruba">Yoruba</string>
+    <string name="lang_zulu">Zulu</string>
+
+    <!-- Model Selection -->
+    <string name="feature_settings_title">تنظیمات</string>
+    <string name="select_model_title">انتخاب مدل</string>
+    <string name="no_models_available">هیچ مدلی در دسترس نیست</string>
+    <string name="download_models_first">ابتدا مدل‌ها را دانلود کنید</string>
+    <string name="select_backend">انتخاب بک‌اند</string>
+    <string name="backend_cpu">CPU</string>
+    <string name="backend_gpu">GPU</string>
+    <string name="gpu_not_supported">GPU توسط این مدل پشتیبانی نمی‌شود</string>
+    <string name="load_model">بارگذاری مدل</string>
+    <string name="model_loaded">مدل با موفقیت بارگذاری شد</string>
+    <string name="model_loading">در حال بارگذاری مدل…</string>
+    <string name="model_load_failed">بارگذاری مدل ناموفق بود</string>
+    <string name="multimodal_models_only">فقط مدل‌های چندوجهی (Gemma-3n) پشتیبانی می‌شوند</string>
+    <string name="text_models_only">فقط مدل‌های متنی پشتیبانی می‌شوند</string>
+
+    <!-- Audio Features -->
+    <string name="enable_audio_input">فعال‌سازی ورودی صوتی</string>
+    <string name="audio_input_enabled">ورودی صوتی فعال شد</string>
+    <string name="audio_input_disabled">ورودی صوتی غیرفعال شد</string>
+    <string name="record_audio">ضبط صدا</string>
+
+    <!-- Auto-detect Language -->
+    <string name="lang_auto_detect">تشخیص خودکار</string>
+    <string name="auto_detecting_language">در حال تشخیص زبان…</string>
+    <string name="language_detected">زبان شناسایی شد: %1$s</string>
+
+    <!-- Feature-specific Processing -->
+    <string name="processing">در حال پردازش…</string>
+    <string name="translating">در حال ترجمه…</string>
+    <string name="translating_tap_to_cancel">در حال ترجمه (برای لغو ضربه بزنید)</string>
+    <string name="transcribing">در حال رونویسی…</string>
+    <string name="transcribing_tap_to_cancel">در حال رونویسی (برای لغو ضربه بزنید)</string>
+    <string name="analyzing_code">در حال تحلیل کد…</string>
+    <string name="processing_text">در حال پردازش متن…</string>
+
+    <!-- Vision Features -->
+    <string name="input_options">گزینه‌های ورودی</string>
+    <string name="enable_vision_input">فعال‌سازی ورودی تصویری</string>
+    <string name="translate_from_image">ترجمه متن از تصویر</string>
+    <string name="speak_to_translate">با صحبت کردن ترجمه کن</string>
+    <string name="select_image">انتخاب تصویر</string>
+    <string name="change_image">تغییر تصویر</string>
+    <string name="transcription_result">رونویس</string>
+
+    <!-- Translator Settings -->
+    <string name="translator_enable_vision">فعال‌سازی بینایی</string>
+    <string name="translator_vision_description">ترجمه متن از تصاویر</string>
+    <string name="translator_enable_audio">فعال‌سازی صوت</string>
+    <string name="translator_audio_description">ترجمه ضبط‌های صوتی</string>
+
+    <!-- Backend Selection -->
+    <string name="choose_backend_for_gemma">انتخاب بک‌اند پردازش برای مدل Gemma</string>
+    <string name="gpu_backend">GPU (توصیه‌شده)</string>
+    <string name="cpu_backend">CPU (جایگزین)</string>
+    <string name="gpu_backend_description">پردازش سریع‌تر با استفاده از GPU دستگاه</string>
+    <string name="cpu_backend_description">پردازش کندتر اما پایدارتر</string>
+    <string name="backend_selection_hint">اگر برنامه با GPU دچار مشکل شد، بک‌اند CPU را امتحان کنید</string>
+    <string name="not_available">در دسترس نیست</string>
+    <string name="gpu_disabled_low_memory">GPU برای این مدل در دستگاه‌های با %1$dGB RAM یا کمتر در دسترس نیست</string>
+
+    <!-- Web Search Messages -->
+    <string name="web_searching">🔍 در حال جستجو در وب…</string>
+    <string name="web_search_found_results">✅ %1$d نتیجه یافت شد. در حال تحلیل…</string>
+    <string name="web_search_no_results">❌ هیچ نتیجهٔ به‌روزی یافت نشد. پاسخ بر اساس دانش آفلاین ارائه می‌شود…</string>
+    <string name="web_search_failed">❌ جستجوی وب ناموفق بود: %1$s. پاسخ بر اساس دانش آفلاین ارائه می‌شود…</string>
+
+    <!-- Vision Model Error Messages -->
+    <string name="vision_chat_cannot_open">🚫 **امکان باز کردن این چت نیست**\n\nاین گفتگو شامل تصاویر است، اما شما در حال حاضر یک **مدل فقط-متن** بارگذاری کرده‌اید:\n\n📱 **مدل فعلی:** %1$s\n🖼️ **این چت:** شامل تصاویر است\n\n---\n\n## 🎯 چگونه رفع کنیم:\n\n1. **📥 یک مدل بینایی دانلود کنید**\n   - به «دانلود مدل‌ها» بروید\n   - به دنبال مدل‌های علامت‌خورده با 🖼️ یا «Vision+Text» بگردید\n   - امتحان کنید: **Gemma-3n E2B (Vision+Text)**\n\n2. **🔄 به مدل بینایی سوئیچ کنید**\n   - مدل بینایی دانلودشده را بارگذاری کنید\n   - مدل‌های بینایی هم متن و هم تصویر را پردازش می‌کنند\n\n3. **✅ به این چت برگردید**\n   - پس از بارگذاری مدل بینایی، این چت به‌خوبی کار خواهد کرد!\n\n---\n\n💡 **نکته:** مدل‌های بینایی هر کاری که مدل‌های متنی انجام می‌دهند را انجام می‌دهند و علاوه بر آن تصاویر را نیز می‌فهمند!</string>
+    <string name="vision_image_cannot_send">🖼️ **ارسال تصویر ممکن نیست**\n\nدر حال تلاش برای ارسال تصویر هستید، اما مدل فعلی **فقط-متن** است:\n\n📱 **مدل فعلی:** %1$s\n\n---\n\n## 🎯 برای ارسال تصویر:\n\n1. **📥 یک مدل بینایی دانلود کنید**\n   - منو → «دانلود مدل‌ها»\n   - به دنبال 🖼️ **Vision+Text** بگردید\n   - پیشنهاد: **Gemma-3n E2B (Vision+Text)**\n\n2. **🔄 تغییر مدل**\n   - مدل بینایی دانلودشده را بارگذاری کنید\n   - مدل‌های بینایی هم متن و هم تصویر را پردازش می‌کنند\n\n3. **✅ دوباره امتحان کنید**\n   - پس از بارگذاری، می‌توانید آزادانه تصویر ارسال کنید!\n\n---\n\n💡 **نکته:** مدل‌های بینایی می‌توانند تصاویر را نیز بفهمند!</string>
+
+    <!-- Model Error Messages -->
+    <string name="please_download_model">برای شروع گفتگو لطفاً یک مدل دانلود کنید.</string>
+    <string name="model_not_loaded">مدل به‌درستی بارگذاری نشده است. لطفاً به مدل دیگری سوئیچ کنید یا برنامه را از نو راه‌اندازی کنید.</string>
+    <string name="no_response_produced">هیچ پاسخی تولید نشد. (ممکن: محدودیت توکن یا بازنشانی جلسه). روی تولید دوباره ضربه بزنید.</string>
+    <string name="prompt_too_long">درخواست خیلی طولانی است. لطفاً متن را کوتاه‌تر کنید و دوباره امتحان کنید.</string>
+</resources>
+
+

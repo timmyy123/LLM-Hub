@@ -23,8 +23,8 @@ android {
         applicationId = "com.llmhub.llmhub"
         minSdk = 26
         targetSdk = 35
-        versionCode = 44
-        versionName = "3.2.5"
+        versionCode = 45
+        versionName = "3.2.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         val hfToken: String = localProperties.getProperty("HF_TOKEN", "")
@@ -32,7 +32,7 @@ android {
         
         // Specify supported locales to ensure proper resource loading
         // Note: Indonesian uses both "id" (modern) and "in" (legacy) for maximum compatibility
-        resourceConfigurations += listOf("en", "es", "pt", "de", "fr", "ru", "it", "tr", "pl", "ar", "ja", "id", "in", "ko")
+        resourceConfigurations += listOf("en", "es", "pt", "de", "fr", "ru", "it", "tr", "pl", "ar", "ja", "id", "in", "ko", "fa", "he", "iw", "uk")
         
         // NDK ABI filters and native library configuration for 16KB alignment
         ndk {
