@@ -25,7 +25,11 @@ object LocaleHelper {
         "ja", // Japanese
         "id", // Indonesian (modern ISO 639-1 code)
         "in", // Indonesian (legacy Android code for compatibility)
-        "ko"  // Korean
+        "ko",  // Korean
+        "fa", // Persian (Farsi)
+        "he", // Hebrew (modern code)
+        "iw", // Hebrew (legacy Android code for compatibility)
+        "uk"  // Ukrainian
     )
     
     /**
@@ -59,11 +63,12 @@ object LocaleHelper {
         val locales = if (languageCode.isNullOrEmpty()) {
             LocaleListCompat.getEmptyLocaleList()
         } else {
-            // Handle Indonesian language code properly
-            // Android resources use "id" but Locale internally uses "in" for legacy reasons
-            // We need to use "in" for AppCompat locale setting for proper resource resolution
+            // Normalize for platform quirks
+            // - Indonesian uses legacy "in"
+            // - Hebrew historically used legacy "iw" in Android resources
             val normalizedCode = when (languageCode) {
-                "id" -> "in" // Indonesian: use legacy "in" for AppCompat
+                "id" -> "in"
+                "he" -> "iw"
                 else -> languageCode
             }
             LocaleListCompat.forLanguageTags(normalizedCode)
@@ -79,7 +84,11 @@ object LocaleHelper {
         return when {
             // Use explicit language code if provided and supported
             !languageCode.isNullOrEmpty() && supportedLocales.contains(languageCode) -> {
-                Locale(languageCode)
+                val platformCode = when (languageCode) {
+                    "he" -> "iw" // Use legacy code for broader resource resolution
+                    else -> languageCode
+                }
+                Locale(platformCode)
             }
             // Try to use system locale if supported
             else -> {
@@ -87,7 +96,11 @@ object LocaleHelper {
                 val systemLanguage = systemLocale.language
                 
                 if (supportedLocales.contains(systemLanguage)) {
-                    Locale(systemLanguage)
+                    val platformCode = when (systemLanguage) {
+                        "he" -> "iw"
+                        else -> systemLanguage
+                    }
+                    Locale(platformCode)
                 } else {
                     // Fall back to English
                     Locale("en")
@@ -183,7 +196,7 @@ object LocaleHelper {
      */
     fun getSupportedLanguages(context: Context): List<Pair<String, String>> {
         return supportedLocales
-            .filter { it != "in" } // Filter out legacy "in" code to avoid duplicate Indonesian entry
+            .filter { it != "in" && it != "iw" } // Hide legacy codes from the UI
             .map { code ->
                 val locale = Locale(code)
                 val displayName = locale.getDisplayLanguage(locale).replaceFirstChar { 
@@ -200,6 +213,7 @@ object LocaleHelper {
     fun normalizeLanguageCode(languageCode: String): String {
         return when (languageCode) {
             "in" -> "id" // Normalize legacy Indonesian code to modern code
+            "iw" -> "he" // Normalize legacy Hebrew code to modern code
             else -> languageCode
         }
     }

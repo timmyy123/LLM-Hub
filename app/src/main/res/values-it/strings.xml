@@ -75,7 +75,7 @@
     <string name="acknowledgments">Ringraziamenti</string>
     <string name="acknowledgments_text">Un ringraziamento speciale a Google, Meta, Microsoft e alla community di HuggingFace per aver fornito gli incredibili modelli LLM che alimentano questa applicazione. Questo progetto si basa anche sul fantastico lavoro della community di sviluppo Android e dell\'ecosistema open-source.</string>
     <string name="ai_thinking">L\'IA sta pensando...</string>
-    <string name="version_number">Versione 3.2.5</string>
+    <string name="version_number">Versione 3.2.6</string>
     <string name="app_version">Versione App</string>
     
     <!-- Terms of Service -->
@@ -639,6 +639,9 @@
     <string name="model_not_loaded">Modello non caricato correttamente. Prova a passare a un modello diverso o riavvia l\'app.</string>
     <string name="no_response_produced">Nessuna risposta prodotta. (Possibile: limite token o reset sessione). Tocca Rigenera.</string>
     <string name="prompt_too_long">Il messaggio è troppo lungo. Accorcia il tuo messaggio e riprova.</string>
+    <string name="language_persian">فارسی</string>
+    <string name="language_ukrainian">Українська</string>
+    <string name="language_hebrew">עברית</string>
 </resources>
 
 

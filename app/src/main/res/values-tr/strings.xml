@@ -74,7 +74,7 @@
     <string name="acknowledgments">Teşekkürler</string>
     <string name="acknowledgments_text">Bu uygulamayı destekleyen inanılmaz LLM modellerini sağladıkları için Google, Meta, Microsoft ve HuggingFace topluluğuna özel teşekkürler. Bu proje ayrıca Android geliştirme topluluğunun ve açık kaynak ekosisteminin harika çalışmalarına dayanmaktadır.</string>
     <string name="ai_thinking">Yapay zeka düşünüyor...</string>
-    <string name="version_number">Sürüm 3.2.5</string>
+    <string name="version_number">Sürüm 3.2.6</string>
     <string name="app_version">Uygulama Sürümü</string>
     
     <!-- Terms of Service -->
@@ -648,4 +648,7 @@
     <string name="model_not_loaded">Model düzgün yüklenmedi. Lütfen farklı bir modele geçmeyi deneyin veya uygulamayı yeniden başlatın.</string>
     <string name="no_response_produced">Yanıt üretilmedi. (Muhtemel: token sınırı veya oturum sıfırlama). Yeniden Oluştur\'a dokunun.</string>
     <string name="prompt_too_long">Mesaj çok uzun. Lütfen mesajınızı kısaltın ve tekrar deneyin.</string>
+    <string name="language_persian">فارسی</string>
+    <string name="language_ukrainian">Українська</string>
+    <string name="language_hebrew">עברית</string>
 </resources>

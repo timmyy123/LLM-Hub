@@ -1,0 +1,655 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Common -->
+    <string name="app_name">LLM Hub</string>
+    <string name="ok">אישור</string>
+    <string name="cancel">ביטול</string>
+    <string name="close">סגור</string>
+    <string name="save">שמור</string>
+    <string name="delete">מחק</string>
+    <string name="send">שלח</string>
+    <string name="copy">העתקה</string>
+    <string name="loading">טוען</string>
+    <string name="error">שגיאה</string>
+    <string name="retry">נסה שוב</string>
+    <string name="download">הורדה</string>
+    <string name="vision">ראייה</string>
+
+    <!-- Chat -->
+    <string name="welcome_to_llm_hub">ברוך הבא ל-LLM Hub!</string>
+    <string name="no_models_downloaded">אין מודלים שהורדו עדיין</string>
+    <string name="no_memories">אין זיכרונות עדיין</string>
+    <string name="download_a_model">הורד מודל</string>
+    <string name="ready_to_chat">מוכן לצ\'אט! אנא בחר מודל למעלה.</string>
+    <string name="start_chatting">התחל צ\'אט על ידי הקלדת הודעה למטה!</string>
+    <string name="type_a_message">הקלד הודעה…</string>
+    <string name="loading_model_format">טוען %1$s</string>
+    <string name="please_wait_model_initialize">אנא המתן לאתחול המודל…</string>
+    <string name="initializing_neural_network">מאתחל רשת עצבית…</string>
+    <string name="attached_image">תמונה מצורפת</string>
+    <string name="shared_a_file">שיתף קובץ</string>
+    <string name="copy_message">העתק הודעה</string>
+    <string name="regenerate_response">צור תגובה מחדש</string>
+    <string name="cancel_generation">בטל יצירה</string>
+    <string name="image_attachment">קובץ תמונה</string>
+    <string name="save_image">שמור תמונה</string>
+    <string name="tap_image_toggle_controls">הקש על התמונה כדי להציג/להסתיר פקדים</string>
+    <string name="vision_enabled">ראייה הופעלה</string>
+    <string name="message_copied">ההודעה הועתקה</string>
+    <string name="tokens_per_second_format">%1$d טוקנים • %2$.1f טוקנים/ש׳</string>
+    <string name="context_multimodal_format">%1$dk הקשר • %2$s</string>
+    <string name="multimodal_format">%1$s מולטימודלי</string>
+    <string name="multimodal">מולטימודלי</string>
+    <string name="text_only">טקסט בלבד</string>
+    <string name="currently_loaded">נטען כעת</string>
+    <string name="select_model">בחר מודל</string>
+    <string name="unload_model">פרוק מודל</string>
+    <string name="reload_model">טען מודל מחדש</string>
+
+    <!-- About Screen -->
+    <string name="about_llm_hub">על LLM Hub</string>
+    <string name="about_description">LLM Hub היא אפליקציית אנדרואיד בקוד פתוח שמביאה את כוחם של מודלי שפה גדולים ישירות למכשיר הנייד שלך. חווה שיחות AI עם מודלים מתקדמים כמו Gemma, ‏Llama ו-Phi — כולם רצים מקומית על הטלפון שלך לפרטיות מירבית ונגישות לא מקוונת.</string>
+    <string name="key_features">תכונות עיקריות</string>
+    <string name="feature_multiple_models">🤖 מספר מודלי LLM: ‏Gemma-3, ‏Llama-3.2, ‏Phi-4 ו-Gemma-3n</string>
+    <string name="feature_on_device">📱 עיבוד על המכשיר: פרטיות מלאה, ללא צורך באינטרנט</string>
+    <string name="feature_vision_support">🖼️ תמיכת ראייה: מודלים מולטימודליים שמבינים תמונות</string>
+    <string name="feature_gpu_acceleration">⚡ האצת GPU: ביצועים מיטביים במכשירים נתמכים</string>
+    <string name="feature_offline_usage">💾 שימוש לא מקוון: צ\'אט ללא חיבור אינטרנט</string>
+    <string name="feature_privacy_first">🔒 פרטיות תחילה: השיחות שלך לא עוזבות את המכשיר</string>
+    <string name="feature_modern_ui">🎨 ממשק מודרני: ממשק Material נקי ואינטואיטיבי</string>
+    <string name="developer_info">מידע למפתח</string>
+    <string name="about_developer_info">הפרויקט מפותח על ידי חובב נלהב ששם למטרה להנגיש את טכנולוגיית ה-AI לכולם. משוב ותרומות תמיד יתקבלו בברכה!</string>
+    <string name="tech_stack">מחסנית טכנולוגית</string>
+    <string name="about_tech_stack">LLM Hub נבנתה בטכנולוגיות אנדרואיד מודרניות: ‏Kotlin, ‏Jetpack Compose, ‏Material Design 3 וספריית llama.cpp לעיבוד יעיל על המכשיר.</string>
+    <string name="tech_kotlin_compose">🏗️ נבנה עם Kotlin ו-Jetpack Compose</string>
+    <string name="tech_mediapipe_litert">🧠 מופעל על ידי MediaPipe ו-LiteRT</string>
+    <string name="tech_quantization">🚀 אופטימיזציה עם קוונטיזציה ‏INT4/INT8</string>
+    <string name="tech_gpu_acceleration">⚡ האצת GPU באמצעות LiteRT XNNPACK</string>
+    <string name="tech_models_source">🔗 מודלים מ-HuggingFace ו-Google</string>
+    <string name="contact_support">יצירת קשר ותמיכה</string>
+    <string name="contact_email">דוא"ל ליצירת קשר:</string>
+    <string name="source_code">קוד מקור:</string>
+    <string name="github_repository">מאגר GitHub</string>
+    <string name="acknowledgments">תודות</string>
+    <string name="acknowledgments_text">תודה מיוחדת ל-Google, ‏Meta, ‏Microsoft וקהילת HuggingFace על המודלים המדהימים שמפעילים את האפליקציה הזו. הפרויקט נשען גם על עבודת קהילת המפתחים לאנדרואיד ועל קוד פתוח.</string>
+    <string name="ai_thinking">ה-AI חושב…</string>
+    <string name="version_number">גרסה 3.2.6</string>
+    <string name="app_version">גרסת אפליקציה</string>
+
+    <!-- Terms of Service -->
+    <string name="terms_of_service">תנאי שימוש</string>
+    <string name="tos_last_updated">עודכן לאחרונה: 16 ביולי 2025</string>
+    <string name="tos_welcome_text">ברוך הבא ל-LLM Hub. בשימוש באפליקציה אתה מסכים לתנאי השימוש. קרא אותם בעיון.</string>
+    <string name="tos_welcome">ברוך הבא ל-LLM Hub. בשימוש באפליקציה אתה מסכים לתנאי השימוש. קרא אותם בעיון.</string>
+    <string name="tos_acceptance_title">1. קבלת התנאים</string>
+    <string name="tos_acceptance_text">בהורדה, התקנה או שימוש ב-LLM Hub אתה מאשר שקראת, הבנת והסכמת לתנאי השימוש. אם אינך מסכים, אנא אל תשתמש באפליקציה.</string>
+    <string name="tos_app_description_title">2. תיאור האפליקציה</string>
+    <string name="tos_app_description_text">LLM Hub מספקת גישה למודלי שפה גדולים (LLMs) לשיחות AI על המכשיר. העיבוד מתבצע מקומית והמידע האישי אינו נשלח לשרתים.</string>
+    <string name="tos_user_responsibilities_title">3. אחריות המשתמש</string>
+    <string name="tos_user_responsibilities_text">השתמש באפליקציה באחריות ובהתאם לחוק, כבד זכויות יוצרים של צדדים שלישיים וודא שמכשירך עומד בדרישות.</string>
+    <string name="tos_privacy_data_title">4. פרטיות ונתונים</string>
+    <string name="tos_privacy_data_text">שיחות ועיבוד נתונים מתבצעים מקומית במכשירך; היסטוריית צ\'אט נשמרת מקומית וניתן למחוק אותה; אין איסוף אנליטיקות.</string>
+    <string name="tos_disclaimer_title">5. כתב ויתור</string>
+    <string name="tos_disclaimer_text">LLM Hub מסופקת "כפי שהיא" ללא אחריות מכל סוג. אין הבטחה לדיוק, אמינות או זמינות, ותוצאות המודלים עשויות להיות בלתי צפויות.</string>
+    <string name="tos_limitation_liability_title">6. הגבלת אחריות</string>
+    <string name="tos_limitation_liability_text">המפתחים לא יהיו אחראים לנזקים עקיפים או תוצאתיים הנגרמים מהשימוש.</string>
+    <string name="tos_model_usage_title">7. שימוש ורישוי של מודלים</string>
+    <string name="tos_model_usage_text">המודלים כפופים לרישיונותיהם. המשתמשים אחראים לעמידה בתנאי הרישוי.</string>
+    <string name="tos_open_source_title">8. קוד פתוח</string>
+    <string name="tos_open_source_text">LLM Hub היא בקוד פתוח תחת רישיון MIT. לספריות ולמודלים של צד ג\' עשויים להיות תנאים שונים.</string>
+    <string name="tos_changes_title">9. שינוי תנאים</string>
+    <string name="tos_changes_text">ייתכנו עדכונים מעת לעת; שימוש מתמשך מהווה הסכמה לתנאים החדשים.</string>
+    <string name="tos_contact_title">10. פרטי קשר</string>
+    <string name="tos_contact_text">לשאלות לגבי תנאי השימוש: timmyboy0623@gmail.com</string>
+
+    <!-- Navigation -->
+    <string name="chat">צ\'אט</string>
+    <string name="models">מודלים</string>
+    <string name="settings">הגדרות</string>
+    <string name="about">אודות</string>
+
+    <!-- Settings -->
+    <string name="appearance">מראה</string>
+    <string name="features">תכונות</string>
+    <string name="information">מידע</string>
+    <string name="source_code_section">קוד מקור</string>
+    <string name="download_models">הורד מודלים</string>
+    <string name="browse_download_models">עיין והורד מודלי LLM</string>
+    <string name="embedding_model">מודל אימבדינג</string>
+    <string name="select_embedding_model">בחר מודל אימבדינג</string>
+    <string name="no_embedding_model_selected">לא נבחר מודל אימבדינג</string>
+    <string name="disable_embeddings">השבת אימבדינג</string>
+    <string name="embedding_settings_changed_title">הגדרות האימבדינג עודכנו</string>
+    <string name="embedding_settings_changed_message">לצורך החלת השינויים, פרק וטען מחדש את המודלים.</string>
+    <string name="reload_models">טען מודלים מחדש</string>
+    <string name="dismiss">סגור</string>
+    <string name="reload_models_notice">נדרש לטעון מודלים כדי להחיל</string>
+    <string name="embedding_enabled">אימבדינג הופעל</string>
+    <string name="embedding_disabled">אימבדינג הושבת</string>
+    <string name="embedding_status_enabled">מצב אימבדינג: מופעל</string>
+    <string name="embedding_status_disabled">מצב אימבדינג: מושבת</string>
+    <string name="rag_enabled">RAG מופעל</string>
+    <string name="web_search">חיפוש ברשת</string>
+    <string name="web_search_enabled">קבלת מידע עדכני מהרשת</string>
+    <string name="web_search_disabled">שימוש בידע לא מקוון בלבד</string>
+    <string name="web_search_description_enabled">קבלת מידע עדכני מהרשת</string>
+    <string name="web_search_description_disabled">שימוש בידע לא מקוון בלבד</string>
+    <string name="theme">ערכת נושא</string>
+    <string name="language">שפה</string>
+    <string name="light_theme">בהיר</string>
+    <string name="dark_theme">כהה</string>
+    <string name="system_default_theme">ברירת מחדל של המערכת</string>
+    <string name="theme_light">בהיר</string>
+    <string name="theme_dark">כהה</string>
+    <string name="theme_system">ברירת מחדל של המערכת</string>
+    <string name="system_default_language">ברירת מחדל של המערכת</string>
+    <string name="system_default">ברירת מחדל של המערכת</string>
+    <string name="choose_theme">בחר ערכת נושא</string>
+    <string name="choose_language">בחר שפה</string>
+    <string name="select_language">בחר שפה</string>
+    <string name="app_information_contact">מידע על האפליקציה ויצירת קשר</string>
+    <string name="app_info_contact">מידע על האפליקציה ויצירת קשר</string>
+    <string name="legal_terms_conditions">תנאים משפטיים</string>
+    <string name="github_repository_desc">צפה בקוד המקור ותרום</string>
+    <string name="view_source_contribute">צפה בקוד המקור ותרום</string>
+    <string name="back">חזרה</string>
+
+    <!-- Language Names -->
+    <string name="language_english">English</string>
+    <string name="language_spanish">Español</string>
+    <string name="language_portuguese">Português</string>
+    <string name="language_german">Deutsch</string>
+    <string name="language_french">Français</string>
+    <string name="language_russian">Русский</string>
+    <string name="language_italian">Italiano</string>
+    <string name="language_turkish">Türkçe</string>
+    <string name="language_polish">Polski</string>
+    <string name="language_arabic">العربية</string>
+    <string name="language_japanese">日本語</string>
+    <string name="language_indonesian">Indonesia</string>
+    <string name="language_korean">한국어</string>
+    <string name="language_persian">فارسی</string>
+    <string name="language_ukrainian">Українська</string>
+    <string name="language_hebrew">עברית</string>
+
+    <!-- Errors and Messages -->
+    <string name="failed_to_load_image">טעינת התמונה נכשלה</string>
+    <string name="model_loading_error">שגיאה בטעינת המודל</string>
+    <string name="message_send_error">שגיאה בשליחת ההודעה</string>
+    <string name="file_save_error">שגיאה בשמירת הקובץ</string>
+    <string name="file_save_success">הקובץ נשמר בהצלחה</string>
+
+    <!-- Accessibility -->
+    <string name="content_description_ai_bot">בוט AI</string>
+    <string name="content_description_smart_toy">צעצוע חכם</string>
+    <string name="content_description_email">דוא"ל</string>
+    <string name="content_description_code">קוד מקור</string>
+    <string name="content_description_image">תמונה</string>
+    <string name="content_description_download">הורדה</string>
+    <string name="content_description_stop">עצור</string>
+    <string name="content_description_refresh">רענון</string>
+    <string name="content_description_copy">העתקה</string>
+    <string name="content_description_speed">מהירות</string>
+    <string name="content_description_check">סמן</string>
+    <string name="content_description_eye">ראייה הופעלה</string>
+    <string name="content_description_attach_image">צרף תמונה</string>
+    <string name="content_description_back">חזרה</string>
+
+    <!-- Model Information -->
+    <string name="no_model_selected">לא נבחר מודל</string>
+    <string name="no_model_downloaded">לא הורד מודל</string>
+    <string name="model_supports_vision">תומך בראייה</string>
+    <string name="model_supports_multimodal">תומך במולטימודלי</string>
+    <string name="model_text_only">טקסט בלבד</string>
+
+    <!-- Chat Drawer -->
+    <string name="drawer_title">LLM Hub</string>
+    <string name="drawer_new_chat">צ\'אט חדש</string>
+    <string name="drawer_recent_chats">צ\'אטים אחרונים</string>
+    <string name="drawer_no_chats">אין צ\'אטים עדיין</string>
+    <string name="drawer_download_models">הורד מודלים</string>
+    <string name="drawer_clear_all_chats">נקה את כל הצ\'אטים</string>
+    <string name="drawer_settings">הגדרות</string>
+
+    <!-- Chat Management -->
+    <string name="dialog_delete_all_chats_title">למחוק את כל הצ\'אטים?</string>
+    <string name="dialog_delete_all_chats_message">פעולה זו תמחק לצמיתות את כל היסטוריית השיחות. לא ניתן לבטל.</string>
+    <string name="dialog_delete_chat_title">למחוק צ\'אט?</string>
+    <string name="dialog_delete_chat_message">למחוק את השיחה "%1$s"?</string>
+    <string name="action_delete_all">מחק הכול</string>
+    <string name="action_delete">מחק</string>
+    <string name="action_cancel">ביטול</string>
+    <string name="content_description_delete_chat">מחק צ\'אט</string>
+
+    <!-- Time Formatting -->
+    <string name="time_yesterday">אתמול</string>
+    <string name="time_hours_ago">לפני %1$d שעות</string>
+    <string name="time_minutes_ago">לפני %1$d דקות</string>
+    <string name="time_just_now">הרגע</string>
+
+    <!-- Model Download Screen -->
+    <string name="ai_models">מודלי AI</string>
+    <string name="download_ai_models">הורד מודלי AI</string>
+    <string name="choose_text_multimodal_models">בחר מודלים של טקסט בלבד או מולטימודליים</string>
+    <string name="text_models">מודלי טקסט</string>
+    <string name="text_models_description">מודלים המותאמים ליצירת טקסט ושיחה</string>
+    <string name="vision_models">מודלי ראייה</string>
+    <string name="vision_models_description">מודלים שמבינים טקסט ותמונות</string>
+    <string name="embedding_models">מודלי אימבדינג</string>
+    <string name="embedding_models_description">מודלים לאימבדינג טקסט וחיפוש סמנטי</string>
+    <string name="gpu">GPU</string>
+    <string name="variant">וריאנט</string>
+    <string name="variants">וריאנטים</string>
+    <string name="expand">הרחב</string>
+    <string name="collapse">כווץ</string>
+    <string name="downloaded">הורד</string>
+    <string name="downloading">מוריד…</string>
+    <string name="not_downloaded">לא הורד</string>
+    <string name="partial">חלקי</string>
+    <string name="paused">מושהה</string>
+    <string name="paused_downloaded_format">מושהה: %1$s הורד</string>
+    <string name="continue_download">המשך</string>
+    <string name="pause_download">השהה</string>
+    <string name="resume_download">המשך הורדה</string>
+    <string name="clear">נקה</string>
+    <string name="ram_requirement_format">‏%1$dGB RAM</string>
+
+    <!-- File Attachments -->
+    <string name="attach_file">צרף קובץ</string>
+    <string name="attach_image">צרף תמונה</string>
+    <string name="attach_document">צרף מסמך</string>
+    <string name="attach_text_file">צרף קובץ טקסט</string>
+    <string name="file_attachment">קובץ מצורף</string>
+    <string name="file_too_large">הקובץ גדול מדי</string>
+    <string name="unsupported_file_type">סוג קובץ לא נתמך</string>
+    <string name="file_processing_error">שגיאה בעיבוד הקובץ</string>
+    <string name="could_not_read_file">לא ניתן לקרוא את הקובץ</string>
+    <string name="file_preview">תצוגה מקדימה</string>
+    <string name="remove_attachment">הסר</string>
+    <string name="keep_attachment">השאר</string>
+    <string name="preview_not_available">תצוגה מקדימה אינה זמינה</string>
+
+    <!-- File Type Categories -->
+    <string name="images">תמונות</string>
+    <string name="documents">מסמכים</string>
+    <string name="text_files">קבצי טקסט</string>
+    <string name="images_description">‏JPG, ‏PNG, ‏GIF, ‏WebP</string>
+    <string name="documents_description">‏PDF, ‏Word, ‏Excel, ‏PowerPoint</string>
+    <string name="text_files_description">‏TXT, ‏MD, ‏JSON, ‏XML, ‏CSV</string>
+    <string name="text_file">קובץ טקסט</string>
+    <string name="tap_to_preview">הקש לתצוגה מקדימה</string>
+    <string name="text_file_tap_to_preview">קובץ טקסט • הקש לתצוגה מקדימה</string>
+    <string name="read_this">קרא זאת</string>
+
+    <!-- Audio Input -->
+    <string name="audio_recording">הקלטת אודיו</string>
+    <string name="audio_description">הקלט הודעת קול</string>
+    <string name="record_voice_message">הקלט הודעת קול</string>
+    <string name="recording">מקליט…</string>
+    <string name="audio_recorded">האודיו הוקלט</string>
+    <string name="ready_to_send">מוכן לשליחה</string>
+    <string name="tap_to_stop">הקש להפסקה</string>
+    <string name="stop_recording">עצור הקלטה</string>
+    <string name="remove_audio">הסר אודיו</string>
+    <string name="audio_enabled">אודיו הופעל</string>
+    <string name="audio">אודיו</string>
+    <string name="audio_file">קובץ אודיו</string>
+    <string name="tap_to_play">הקש להפעלה</string>
+    <string name="max_recording_reached">הושג משך ההקלטה המרבי (30 שניות)</string>
+    <string name="remaining">נותר</string>
+
+    <!-- Image actions -->
+    <string name="image_copied_clipboard">התמונה הועתקה מהצ\'אט</string>
+    <string name="image_copied_to_clipboard">התמונה הועתקה ללוח</string>
+    <string name="failed_to_copy_image">העתקת התמונה נכשלה</string>
+    <string name="failed_to_copy_image_with_error">העתקת התמונה נכשלה: %1$s</string>
+    <string name="image_saved_to_gallery">התמונה נשמרה לגלריה</string>
+    <string name="failed_to_save_image">שמירת התמונה נכשלה</string>
+    <string name="failed_to_save_image_with_error">שמירת התמונה נכשלה: %1$s</string>
+
+    <!-- RAG (Document Chat) -->
+    <string name="searching_documents">מחפש מסמכים…</string>
+    <string name="using_document_context_format">משתמש בהקשר מתוך %1$d מקטעי מסמך</string>
+    <string name="documents_available_format">‏%1$d מסמכים זמינים</string>
+    <string name="ai_can_reference_documents">ה-AI יכול להסתמך על המסמכים שלך בתשובות</string>
+    <string name="document_chat_enabled">צ\'אט מסמכים הופעל</string>
+    <string name="semantic_search_active">חיפוש סמנטי פעיל</string>
+    <string name="memory">זיכרון (הקשר גלובלי)</string>
+    <string name="memory_description_enabled">אפשר ל-AI להסתמך על הזיכרון הגלובלי שהעלית באמצעות RAG</string>
+    <string name="memory_requires_rag">דורש RAG/אימבדינג פעילים</string>
+    <string name="manage_memory">ניהול זיכרון</string>
+    <string name="manage_memory_subtitle">העלה או הדבק מסמכים לזיכרון הגלובלי</string>
+    <string name="paste_or_upload_to_memory">הדבק טקסט או העלה מסמך כדי להוסיף לזיכרון הגלובלי.</string>
+    <string name="paste_memory_placeholder">הדבק כאן את ההערות, המסמכים או הידע שלך…</string>
+    <string name="upload_file">העלה</string>
+    <string name="save_to_memory">שמור</string>
+    <string name="import_chat_history">ייבוא היסטוריית צ\'אט</string>
+    <string name="select_chats_to_import">בחר צ\'אטים לייבוא לזיכרון</string>
+    <string name="import_selected_chats">ייבא נבחרים</string>
+    <string name="chat_imported_to_memory">היסטוריית הצ\'אט יובאה לזיכרון</string>
+    <string name="no_chats_selected">לא נבחרו צ\'אטים</string>
+    <string name="edit_memory">ערוך זיכרון</string>
+    <string name="memory_content">תוכן הזיכרון</string>
+    <string name="save_changes">שמור שינויים</string>
+    <string name="done">בוצע</string>
+    <string name="global_memory_uploaded_by">הועלה לזיכרון הגלובלי</string>
+    <string name="global_memory_pasted_by">הודבק לזיכרון הגלובלי</string>
+    <string name="memory_upload_success">הקובץ נשמר בזיכרון הגלובלי</string>
+    <string name="memory_upload_failed">שמירת הקובץ לזיכרון נכשלה (ייתכן ש-RAG מושבת)</string>
+    <string name="memory_upload_unsupported_type">סוג קובץ לא נתמך לזיכרון. ניתן להוסיף רק מסמכים טקסטואליים (PDF, DOC, TXT וכו\').</string>
+    <string name="memory_save_success">הטקסט נשמר בזיכרון הגלובלי</string>
+    <string name="memory_save_failed">שמירת הטקסט לזיכרון נכשלה (ייתכן ש-RAG מושבת)</string>
+    <string name="saved_memories">זיכרונות שמורים</string>
+    <string name="clear_all">נקה הכל</string>
+
+    <!-- Text-to-Speech -->
+    <string name="auto_readout">קריאה אוטומטית</string>
+    <string name="auto_readout_description">קרא בקול את תגובות ה-AI לאחר שליחת בקשה</string>
+    <string name="memory_cleared">כל הזיכרונות נוקו</string>
+    <string name="confirm_replace_memory_title">להחליף זיכרון קיים?</string>
+    <string name="confirm_replace_memory_message">כבר קיים זיכרון גלובלי. החלפתו תמחק את הזיכרון ואת האימבדינגים. להמשיך?</string>
+    <string name="confirm_replace_action">החלף</string>
+    <string name="memory_processing">מעבד זיכרון…</string>
+    <string name="reembedding_memory_in_progress">אימבדינג מחדש של הזיכרון הגלובלי עבור מודל האימבדינג החדש…</string>
+    <string name="reembedding_memory_done">בוצע אימבדינג מחדש לזיכרון הגלובלי</string>
+
+    <!-- Gemma-3n specific GPU requirements -->
+    <string name="gemma3n_e2b_gpu_requires_6gb">נדרשים לפחות 6GB RAM עבור GPU</string>
+    <string name="gemma3n_e4b_gpu_requires_8gb">במכשירים עם 8GB RAM או פחות לא ניתן לטעון מודל זה עם GPU</string>
+    <string name="audio_support">תמיכת אודיו</string>
+    <string name="vision_audio_text">ראייה+אודיו+טקסט</string>
+    <string name="vision_text">ראייה+טקסט</string>
+    <string name="audio_text">אודיו+טקסט</string>
+    <string name="shared_file">שיתף קובץ</string>
+    <string name="audio_message">הודעת אודיו</string>
+    <string name="image_message">הודעת תמונה</string>
+    <string name="model_configs_title">תצורות מודל</string>
+    <string name="reset_to_defaults">איפוס</string>
+    <string name="max_tokens">מקסימום טוקנים</string>
+    <string name="top_k">TopK</string>
+    <string name="top_p">TopP</string>
+    <string name="temperature">Temperature</string>
+    <string name="choose_accelerator">בחר מאיץ</string>
+    <string name="max">מקס</string>
+
+    <!-- GPU with Vision+Audio Disabled for Gemma-3n E4B -->
+    <string name="gpu_vision_disabled_title">GPU עם ראייה+אודיו מושבתים</string>
+    <string name="gpu_vision_disabled_description">עקב מגבלת RAM, תכונות הראייה והאודיו יושבתו כדי לאפשר האצת GPU</string>
+    <string name="gpu_with_vision_disabled">GPU (ראייה+אודיו מושבתים)</string>
+    <string name="gemma3n_e4b_gpu_vision_warning">במכשירים עם 7–8GB RAM, האצת GPU דורשת השבתת ראייה ואודיו. צירוף תמונה וקלט אודיו לא יהיו זמינים.</string>
+    <string name="vision_disabled_for_gpu">ראייה ואודיו הושבתו עבור האצת GPU</string>
+    <string name="vision_disabled_no_images">לתצורת מודל זו הראייה והאודיו מושבתים. צירוף תמונה וקלט אודיו אינם זמינים.</string>
+    <string name="ram_limit_gpu_vision_disabled">עקב מגבלת RAM ‏(%.1fGB), יש להשבית ראייה ואודיו כדי להשתמש ב-GPU</string>
+
+    <!-- GPU with Audio Only Disabled for Gemma-3n E4B on 8GB devices -->
+    <string name="gpu_with_audio_disabled">GPU (אודיו מושבת)</string>
+    <string name="gemma3n_e4b_gpu_audio_warning">במכשירים עם 7–8GB RAM, האצת GPU דורשת השבתת אודיו. קלט אודיו לא יהיה זמין, אך צירוף תמונה נתמך.</string>
+    <string name="audio_disabled_for_gpu">האודיו הושבת עבור GPU</string>
+    <string name="audio_disabled_no_audio">לתצורת מודל זו, תכונות אודיו מושבתות. קלט אודיו לא זמין, אך צירוף תמונה נתמך.</string>
+
+    <!-- Separate modality toggles -->
+    <string name="modality_options">אפשרויות מודליות</string>
+    <string name="enable_vision">אפשר ראייה (תמונות)</string>
+    <string name="enable_audio">אפשר אודיו (קול)</string>
+    <string name="gemma3n_e4b_modality_suggestion">💡 לביצועים יציבים במכשירי 7–8GB, שקול להשבית אודיו כדי לחסוך בזיכרון GPU. ראייה יציבה יותר בדרך כלל.</string>
+
+    <!-- General performance tip for all devices -->
+    <string name="gemma3n_performance_tip">💡 אם אתה חווה קריסות או ביצועים נמוכים עקב מגבלות RAM, עבור ל-CPU או השבת תכונות ראייה/אודיו.</string>
+
+    <!-- External Model Import -->
+    <string name="import_external_model">ייבוא מודל חיצוני</string>
+    <string name="model_name">שם המודל</string>
+    <string name="select_model_file">בחר קובץ מודל</string>
+    <string name="supports_vision">תומך בראייה</string>
+    <string name="supports_audio">תומך באודיו</string>
+    <string name="supports_gpu">תומך ב-GPU</string>
+    <string name="model_format">פורמט המודל</string>
+    <string name="context_window_size">גודל חלון ההקשר</string>
+    <string name="import_model">ייבא מודל</string>
+    <string name="model_name_required">נדרש שם מודל</string>
+    <string name="context_window_size_invalid">הזן גודל חלון הקשר חוקי</string>
+    <string name="please_fix_errors">אנא תקן את השגיאות למעלה</string>
+    <string name="remove">הסר</string>
+    <string name="ready_to_use">מוכן לשימוש</string>
+    <string name="unsupported_file_format">פורמט קובץ לא נתמך. בחר קובץ ‎.task או ‎.litertlm.</string>
+    <string name="download_models_from_litert_community">ניתן להוריד מודלים תואמים מ-:</string>
+    <string name="litert_community_link">LiteRT Community ב-Hugging Face</string>
+    <string name="import_model_warning">⚠️ חשוב: קרא את README של המודל ב-Hugging Face לפני הייבוא. הזן יכולות נכונות (ראייה, אודיו, GPU) וגודל חלון הקשר כמצוין בתיעוד המודל.</string>
+
+    <!-- Home Screen -->
+    <string name="home_welcome">ברוך הבא ל-LLM Hub</string>
+    <string name="home_subtitle">פתח את כוח ה-AI בכיסך — פרטי, מהיר ולא מקוון!</string>
+
+    <!-- Feature Cards -->
+    <string name="feature_ai_chat">צ\'אט AI</string>
+    <string name="feature_ai_chat_desc">שיחות מרובות שלבים עם מודלי AI</string>
+    <string name="feature_writing_aid">עוזר כתיבה</string>
+    <string name="feature_writing_aid_desc">דקדוק, סגנון, ניסוח וליטוש טון</string>
+    <string name="feature_translator">מתרגם</string>
+    <string name="feature_translator_desc">תרגם טקסט בפרטיות באמצעות מודלים מולטימודליים</string>
+    <string name="feature_transcriber">מתמלל</string>
+    <string name="feature_transcriber_desc">תמלול קול או אודיו לטקסט לא מקוון</string>
+    <string name="feature_scam_detector">מזהה הונאות</string>
+    <string name="feature_scam_detector_desc">נתח טקסט, תמונות או URLים לאיתור הונאות אפשריות</string>
+    <string name="feature_github_repo">קוד מקור</string>
+    <string name="feature_github_repo_desc">מאגר GitHub</string>
+
+    <!-- Writing Aid Screen -->
+    <string name="writing_aid_title">עוזר כתיבה</string>
+    <string name="writing_aid_input_label">הזן את הטקסט שלך</string>
+    <string name="writing_aid_input_hint">הקלד או הדבק את הטקסט שברצונך לשפר…</string>
+    <string name="writing_aid_input_hint_no_model">טען מודל כדי להתחיל</string>
+    <string name="writing_aid_mode_grammar">בדיקת דקדוק</string>
+    <string name="writing_aid_mode_paraphrase">ניסוח מחדש</string>
+    <string name="writing_aid_mode_tone">כוונון טון</string>
+    <string name="writing_aid_mode_email">תגובה לאימייל</string>
+    <string name="writing_aid_mode_sms">תגובה ל-SMS</string>
+    <string name="writing_aid_tone_friendly">ידידותי</string>
+    <string name="writing_aid_tone_professional">מקצועי</string>
+    <string name="writing_aid_tone_concise">תמציתי</string>
+    <string name="writing_aid_select_mode">בחר טון</string>
+    <string name="writing_aid_process">עבד</string>
+    <string name="processing_tap_to_cancel">מעבד (הקש לביטול)</string>
+    <string name="writing_aid_result">תוצאה</string>
+    <string name="writing_aid_no_model">לא נטען מודל. הורד ובחר מודל תחילה.</string>
+
+    <!-- Translator Screen -->
+    <string name="translator_title">מתרגם לא מקוון</string>
+    <string name="translator_input_label">טקסט לתרגום</string>
+    <string name="translator_input_hint">הזן טקסט לתרגום…</string>
+    <string name="load_model_to_start">טען מודל כדי להתחיל</string>
+    <string name="translator_source_lang">שפת מקור</string>
+    <string name="translator_target_lang">שפת יעד</string>
+    <string name="translator_auto_detect">זיהוי אוטומטי</string>
+    <string name="translator_translate">תרגם</string>
+    <string name="translator_result">תרגום</string>
+    <string name="translator_requires_gemma3n">תכונה זו דורשת מודל Gemma-3n. הורד אחד ממסך המודלים.</string>
+
+    <!-- Transcriber Screen -->
+    <string name="transcriber_title">מתמלל לא מקוון</string>
+    <string name="transcriber_record">הקלט אודיו</string>
+    <string name="transcriber_upload">העלה אודיו</string>
+    <string name="transcriber_transcribe">תמלל</string>
+    <string name="transcriber_result">תמלול</string>
+    <string name="transcriber_recording">מקליט…</string>
+    <string name="transcriber_stop">עצור הקלטה</string>
+    <string name="transcriber_requires_gemma3n">תכונה זו דורשת מודל Gemma-3n עם תמיכת אודיו. הורד אחד ממסך המודלים.</string>
+
+    <!-- Scam Detector Screen -->
+    <string name="scam_detector_title">מזהה הונאות</string>
+    <string name="scam_detector_input_label">הזן תוכן לניתוח</string>
+    <string name="scam_detector_input_hint">הדבק טקסט, העלה תמונה או הזן URL כדי לאתר הונאות…</string>
+    <string name="scam_detector_url_hint">הזן URL לניתוח</string>
+    <string name="scam_detector_analyze">נתח</string>
+    <string name="scam_detector_analyzing">מנתח (הקש לביטול)</string>
+    <string name="scam_detector_result">תוצאת ניתוח</string>
+    <string name="scam_detector_no_model">לא נטען מודל. הורד ובחר מודל תחילה.</string>
+    <string name="scam_detector_load_model">טען מודל</string>
+    <string name="scam_detector_load_model_desc">טען מודל כדי להתחיל לנתח תוכן</string>
+    <string name="scam_detector_enable_vision">אפשר ראייה</string>
+    <string name="scam_detector_vision_desc">נתח תמונות להונאות</string>
+    <string name="scam_detector_fetching_url">מאחזר תוכן URL…</string>
+
+    <!-- Common Feature Strings -->
+    <string name="feature_no_model_title">אין מודל זמין</string>
+    <string name="feature_download_model">הורד מודלים</string>
+    <string name="feature_processing">מעבד…</string>
+    <string name="feature_error">אירעה שגיאה</string>
+    <string name="feature_copy_result">העתק תוצאה</string>
+    <string name="feature_share_result">שתף תוצאה</string>
+    <string name="feature_clear">נקה</string>
+
+    <!-- Language Names for Translator (Gemma-3n Supported Languages) - Alphabetically Ordered -->
+    <string name="lang_english">English</string>
+    <string name="lang_afrikaans">Afrikaans</string>
+    <string name="lang_amharic">Amharic</string>
+    <string name="lang_arabic">Arabic</string>
+    <string name="lang_armenian">Armenian</string>
+    <string name="lang_azerbaijani">Azerbaijani</string>
+    <string name="lang_basque">Basque</string>
+    <string name="lang_bengali">Bengali</string>
+    <string name="lang_bulgarian">Bulgarian</string>
+    <string name="lang_burmese">Burmese</string>
+    <string name="lang_catalan">Catalan</string>
+    <string name="lang_chinese">Chinese (Simplified)</string>
+    <string name="lang_chinese_traditional">Chinese (Traditional)</string>
+    <string name="lang_croatian">Croatian</string>
+    <string name="lang_czech">Czech</string>
+    <string name="lang_danish">Danish</string>
+    <string name="lang_dutch">Dutch</string>
+    <string name="lang_estonian">Estonian</string>
+    <string name="lang_filipino">Filipino (Tagalog)</string>
+    <string name="lang_finnish">Finnish</string>
+    <string name="lang_french">French</string>
+    <string name="lang_galician">Galician</string>
+    <string name="lang_georgian">Georgian</string>
+    <string name="lang_german">German</string>
+    <string name="lang_greek">Greek</string>
+    <string name="lang_gujarati">Gujarati</string>
+    <string name="lang_hausa">Hausa</string>
+    <string name="lang_hebrew">Hebrew</string>
+    <string name="lang_hindi">Hindi</string>
+    <string name="lang_hungarian">Hungarian</string>
+    <string name="lang_icelandic">Icelandic</string>
+    <string name="lang_igbo">Igbo</string>
+    <string name="lang_indonesian">Indonesian</string>
+    <string name="lang_italian">Italian</string>
+    <string name="lang_japanese">Japanese</string>
+    <string name="lang_kannada">Kannada</string>
+    <string name="lang_kazakh">Kazakh</string>
+    <string name="lang_khmer">Khmer</string>
+    <string name="lang_korean">Korean</string>
+    <string name="lang_lao">Lao</string>
+    <string name="lang_latvian">Latvian</string>
+    <string name="lang_lithuanian">Lithuanian</string>
+    <string name="lang_malay">Malay</string>
+    <string name="lang_malayalam">Malayalam</string>
+    <string name="lang_marathi">Marathi</string>
+    <string name="lang_nepali">Nepali</string>
+    <string name="lang_norwegian">Norwegian</string>
+    <string name="lang_pashto">Pashto</string>
+    <string name="lang_persian">Persian (Farsi)</string>
+    <string name="lang_polish">Polish</string>
+    <string name="lang_portuguese">Portuguese</string>
+    <string name="lang_punjabi">Punjabi</string>
+    <string name="lang_romanian">Romanian</string>
+    <string name="lang_russian">Russian</string>
+    <string name="lang_serbian">Serbian</string>
+    <string name="lang_sindhi">Sindhi</string>
+    <string name="lang_sinhala">Sinhala</string>
+    <string name="lang_slovak">Slovak</string>
+    <string name="lang_slovenian">Slovenian</string>
+    <string name="lang_somali">Somali</string>
+    <string name="lang_spanish">Spanish</string>
+    <string name="lang_swahili">Swahili</string>
+    <string name="lang_swedish">Swedish</string>
+    <string name="lang_tamil">Tamil</string>
+    <string name="lang_telugu">Telugu</string>
+    <string name="lang_thai">Thai</string>
+    <string name="lang_turkish">Turkish</string>
+    <string name="lang_ukrainian">Ukrainian</string>
+    <string name="lang_urdu">Urdu</string>
+    <string name="lang_uzbek">Uzbek</string>
+    <string name="lang_vietnamese">Vietnamese</string>
+    <string name="lang_yoruba">Yoruba</string>
+    <string name="lang_zulu">Zulu</string>
+
+    <!-- Model Selection -->
+    <string name="feature_settings_title">הגדרות</string>
+    <string name="select_model_title">בחר מודל</string>
+    <string name="no_models_available">אין מודלים זמינים</string>
+    <string name="download_models_first">אנא הורד מודלים תחילה</string>
+    <string name="select_backend">בחר Backend</string>
+    <string name="backend_cpu">CPU</string>
+    <string name="backend_gpu">GPU</string>
+    <string name="gpu_not_supported">GPU אינו נתמך על ידי מודל זה</string>
+    <string name="load_model">טען מודל</string>
+    <string name="model_loaded">המודל נטען בהצלחה</string>
+    <string name="model_loading">טוען מודל…</string>
+    <string name="model_load_failed">טעינת המודל נכשלה</string>
+    <string name="multimodal_models_only">תומך רק במודלים מולטימודליים (Gemma-3n)</string>
+    <string name="text_models_only">תומך רק במודלי טקסט</string>
+
+    <!-- Audio Features -->
+    <string name="enable_audio_input">אפשר קלט אודיו</string>
+    <string name="audio_input_enabled">קלט אודיו הופעל</string>
+    <string name="audio_input_disabled">קלט אודיו הושבת</string>
+    <string name="record_audio">הקלט אודיו</string>
+
+    <!-- Auto-detect Language -->
+    <string name="lang_auto_detect">זיהוי אוטומטי</string>
+    <string name="auto_detecting_language">מזהה שפה…</string>
+    <string name="language_detected">שפה זוהתה: %1$s</string>
+
+    <!-- Feature-specific Processing -->
+    <string name="processing">מעבד…</string>
+    <string name="translating">מתרגם…</string>
+    <string name="translating_tap_to_cancel">מתרגם (הקש לביטול)</string>
+    <string name="transcribing">מתמלל…</string>
+    <string name="transcribing_tap_to_cancel">מתמלל (הקש לביטול)</string>
+    <string name="analyzing_code">מנתח קוד…</string>
+    <string name="processing_text">מעבד טקסט…</string>
+
+    <!-- Vision Features -->
+    <string name="input_options">אפשרויות קלט</string>
+    <string name="enable_vision_input">אפשר קלט ראייה</string>
+    <string name="translate_from_image">תרגם טקסט מתמונה</string>
+    <string name="speak_to_translate">דבר כדי לתרגם</string>
+    <string name="select_image">בחר תמונה</string>
+    <string name="change_image">שנה תמונה</string>
+    <string name="transcription_result">תמלול</string>
+
+    <!-- Translator Settings -->
+    <string name="translator_enable_vision">אפשר ראייה</string>
+    <string name="translator_vision_description">תרגם טקסט מתמונות</string>
+    <string name="translator_enable_audio">אפשר אודיו</string>
+    <string name="translator_audio_description">תרגם הקלטות אודיו</string>
+
+    <!-- Backend Selection -->
+    <string name="choose_backend_for_gemma">בחר Backend עיבוד עבור Gemma</string>
+    <string name="gpu_backend">GPU (מומלץ)</string>
+    <string name="cpu_backend">CPU (חלופי)</string>
+    <string name="gpu_backend_description">עיבוד מהיר יותר באמצעות GPU המכשיר</string>
+    <string name="cpu_backend_description">איטי יותר אך יציב יותר</string>
+    <string name="backend_selection_hint">אם יש בעיות עם GPU, נסה את Backend ה-CPU</string>
+    <string name="not_available">לא זמין</string>
+    <string name="gpu_disabled_low_memory">GPU לא זמין למודל זה במכשירים עם ‏%1$dGB RAM או פחות</string>
+
+    <!-- Web Search Messages -->
+    <string name="web_searching">🔍 מחפש ברשת…</string>
+    <string name="web_search_found_results">✅ נמצאו %1$d תוצאות. מנתח…</string>
+    <string name="web_search_no_results">❌ לא נמצאו תוצאות עדכניות. מספק תשובה לפי ידע לא מקוון…</string>
+    <string name="web_search_failed">❌ חיפוש ברשת נכשל: %1$s. מספק תשובה לפי ידע לא מקוון…</string>
+
+    <!-- Vision Model Error Messages -->
+    <string name="vision_chat_cannot_open">🚫 **לא ניתן לפתוח את הצ\'אט הזה**\n\nבשיחה זו יש תמונות, אך כרגע נטען **מודל טקסט בלבד**:\n\n📱 **מודל נוכחי:** %1$s\n🖼️ **צ\'אט זה:** כולל תמונות\n\n---\n\n## 🎯 כך פותרים:\n\n1. **📥 הורד מודל ראייה**\n   - עבור ל"הורדת מודלים"\n   - חפש מודלים עם 🖼️ או "Vision+Text"\n   - נסה: **Gemma-3n E2B (Vision+Text)**\n\n2. **🔄 עבור למודל ראייה**\n   - טען את מודל הראייה שהורדת\n   - מודלי ראייה תומכים בטקסט ובתמונות\n\n3. **✅ חזור לצ\'אט זה**\n   - לאחר טעינת מודל ראייה, הצ\'אט יעבוד כראוי!\n\n---\n\n💡 **טיפ:** מודלי ראייה יכולים לעשות הכול כמו מודלי טקסט, וגם להבין תמונות!</string>
+    <string name="vision_image_cannot_send">🖼️ **לא ניתן לשלוח תמונות**\n\nאתה מנסה לשלוח תמונה, אך המודל הנוכחי הוא **טקסט בלבד**:\n\n📱 **מודל נוכחי:** %1$s\n\n---\n\n## 🎯 כדי לשלוח תמונות:\n\n1. **📥 הורד מודל ראייה**\n   - תפריט → "הורדת מודלים"\n   - חפש 🖼️ **Vision+Text**\n   - מומלץ: **Gemma-3n E2B (Vision+Text)**\n\n2. **🔄 החלף מודל**\n   - טען את מודל הראייה שהורדת\n   - מודלי ראייה מטפלים גם בטקסט וגם בתמונות\n\n3. **✅ נסה שוב**\n   - לאחר הטעינה, תוכל לשלוח תמונות בחופשיות!\n\n---\n\n💡 **טיפ:** מודלי ראייה מבינים תמונות בנוסף לטקסט!</string>
+
+    <!-- Model Error Messages -->
+    <string name="please_download_model">אנא הורד מודל כדי להתחיל בצ\'אט.</string>
+    <string name="model_not_loaded">המודל לא נטען כראוי. נסה לעבור למודל אחר או הפעל מחדש.</string>
+    <string name="no_response_produced">לא הופקה תגובה. (ייתכן: מגבלת טוקנים או איפוס מושב). הקש על צור מחדש.</string>
+    <string name="prompt_too_long">הבקשה ארוכה מדי. קיצר את ההודעה ונסה שוב.</string>
+</resources>
+
+

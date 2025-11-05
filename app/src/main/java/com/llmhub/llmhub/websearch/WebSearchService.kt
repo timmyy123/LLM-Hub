@@ -685,6 +685,15 @@ object SearchIntentDetector {
         // Korean
         "검색", "검색해줘", "찾아줘", "정보 찾아", "웹 검색", "인터넷 검색", "알아봐줘", "찾아봐",
         
+        // Persian (Farsi)
+        "جستجو", "جستجو کن", "دنبال", "برای من پیدا کن", "پیدا کن", "اطلاعات درباره", "جستجوی وب", "جستجو در وب",
+        
+        // Ukrainian
+        "пошук", "знайди", "знайти", "пошукай", "знайди інформацію про", "пошук в інтернеті", "веб-пошук",
+        
+        // Hebrew
+        "חפש", "חיפוש", "חפש עבור", "מצא", "מצא מידע על", "חיפוש ברשת", "חיפוש באינטרנט",
+        
         // Current/recent information requests
         "what's the latest", "latest news", "recent", "current", "today", "this week",
         "what happened", "news about", "recent news", "latest update",
@@ -713,6 +722,15 @@ object SearchIntentDetector {
         // Korean
         "최신", "최신 뉴스", "최근", "현재", "오늘", "이번 주", "무슨 일이", "뉴스", "업데이트", "새소식",
         
+        // Persian (Farsi)
+        "آخرین", "جدیدترین", "خبر", "اخبار", "به‌روز", "به روز", "امروز", "این هفته", "الان", "در حال حاضر", "اعلامیه",
+        
+        // Ukrainian
+        "останні", "найновіші", "новини", "сьогодні", "цього тижня", "оновлення", "оголошення", "зараз", "поточні",
+        
+        // Hebrew
+        "האחרונות", "החדשות", "עדכני", "עדכון", "היום", "עכשיו", "השבוע", "הכרזה",
+        
         // Question words that often need current info
         "what is happening", "what's happening", "what's new", "what are the latest",
         // German
@@ -739,6 +757,12 @@ object SearchIntentDetector {
         "apa yang terjadi", "apa yang baru",
         // Korean
         "무슨 일이야", "뭐가 새로워", "무슨 일이 일어나고 있어",
+        // Persian (Farsi)
+        "چه خبر", "چه اتفاقی می‌افتد", "چه اتفاقی افتاده", "چه چیزی جدید است",
+        // Ukrainian
+        "що відбувається", "що нового",
+        // Hebrew
+        "מה קורה", "מה חדש",
         
         // Time-sensitive queries
         "now", "currently", "at the moment", "right now", "today's",
@@ -766,6 +790,12 @@ object SearchIntentDetector {
         "sekarang", "saat ini", "pada saat ini", "hari ini",
         // Korean
         "지금", "현재", "지금 당장", "오늘의", "현재의",
+        // Persian (Farsi)
+        "اکنون", "در حال حاضر", "همین الان", "امروز",
+        // Ukrainian
+        "зараз", "нині", "прямо зараз", "сьогоднішній",
+        // Hebrew
+        "עכשיו", "כרגע", "ברגע זה", "של היום",
         
         // Stock/price/weather queries
         "stock price", "weather", "temperature", "forecast", "price of",
@@ -793,6 +823,12 @@ object SearchIntentDetector {
         "harga saham", "cuaca", "suhu", "ramalan", "harga",
         // Korean
         "주식 가격", "날씨", "기온", "예보", "가격", "시세",
+        // Persian (Farsi)
+        "قیمت سهام", "هوا", "آب و هوا", "دما", "پیش‌بینی", "قیمت",
+        // Ukrainian
+        "ціна акцій", "погода", "температура", "прогноз", "ціна",
+        // Hebrew
+        "מחיר מניה", "מזג האוויר", "טמפרטורה", "תחזית", "מחיר",
         
         // Events and schedules
         "when is", "schedule", "events", "concerts", "movies",
@@ -820,6 +856,12 @@ object SearchIntentDetector {
         "kapan", "jadwal", "acara", "konser", "film",
         // Korean
         "언제", "일정", "이벤트", "행사", "콘서트", "영화",
+        // Persian (Farsi)
+        "کی هست", "برنامه", "رویدادها", "کنسرت‌ها", "فیلم‌ها",
+        // Ukrainian
+        "коли", "розклад", "події", "концерти", "фільми",
+        // Hebrew
+        "מתי", "לוח זמנים", "אירועים", "קונצרטים", "סרטים",
         
         // Technology and product info
         "release date", "specs", "reviews", "latest version",
@@ -846,7 +888,13 @@ object SearchIntentDetector {
         // Indonesian
         "tanggal rilis", "spesifikasi", "ulasan", "versi terbaru",
         // Korean
-        "출시일", "출시 날짜", "사양", "스펙", "리뷰", "후기", "최신 버전"
+        "출시일", "출시 날짜", "사양", "스펙", "리뷰", "후기", "최신 버전",
+        // Persian (Farsi)
+        "تاریخ انتشار", "مشخصات", "بررسی‌ها", "آخرین نسخه",
+        // Ukrainian
+        "дата релізу", "специфікації", "огляди", "остання версія",
+        // Hebrew
+        "תאריך יציאה", "מפרט", "ביקורות", "גרסה אחרונה"
     )
     
     private val weatherKeywords = listOf(
@@ -875,7 +923,16 @@ object SearchIntentDetector {
         // Indonesian
         "cuaca", "suhu", "ramalan", "hujan", "salju", "cerah", "berawan", "panas", "dingin", "hangat", "sejuk", "lembab", "angin", "badai", "iklim",
         // Korean
-        "날씨", "기온", "온도", "예보", "비", "눈", "맑음", "흐림", "더움", "추움", "따뜻함", "시원함", "습함", "바람", "폭풍", "기후"
+        "날씨", "기온", "온도", "예보", "비", "눈", "맑음", "흐림", "더움", "추움", "따뜻함", "시원함", "습함", "바람", "폭풍", "기후",
+        
+        // Persian (Farsi)
+        "هوا", "آب و هوا", "دما", "درجه حرارت", "پیش‌بینی", "پیش بینی", "باران", "برف", "آفتابی", "ابری", "باد", "طوفان", "اقلیم",
+        
+        // Ukrainian
+        "погода", "температура", "прогноз", "дощ", "сніг", "сонячно", "хмарно", "вітер", "шторм", "клімат",
+        
+        // Hebrew
+        "מזג האוויר", "טמפרטורה", "תחזית", "גשם", "שלג", "שמשי", "מעונן", "רוח", "סערה", "אקלים"
     )
     
     private val locationKeywords = listOf(
@@ -893,6 +950,25 @@ object SearchIntentDetector {
         "na minha cidade", "minha cidade", "minha localização", "aqui", "localização atual", "onde estou", "perto", "perto de mim", "nas proximidades", "ao meu redor", "localmente",
         // Russian
         "в моем городе", "мой город", "мое местоположение", "здесь", "текущее местоположение", "где я", "рядом", "поблизости", "вокруг меня", "локально"
+        ,
+        // Turkish
+        "şehrimde", "benim şehrim", "konumum", "burada", "mevcut konum", "neredeyim", "yerel", "yakınlarda", "yakınımda", "etrafımda",
+        // Polish
+        "w moim mieście", "moje miasto", "moja lokalizacja", "tutaj", "bieżąca lokalizacja", "gdzie jestem", "lokalnie", "w pobliżu", "blisko mnie", "wokół mnie",
+        // Arabic
+        "في مدينتي", "مدينتي", "موقعي", "هنا", "الموقع الحالي", "أين أنا", "محليًا", "بالقرب", "بالقرب مني", "حولي",
+        // Japanese
+        "私の街で", "私の街", "自分の位置", "ここ", "現在地", "自分がいる場所", "ローカルで", "近く", "近辺で", "私の周り",
+        // Indonesian
+        "di kota saya", "kota saya", "lokasi saya", "di sini", "lokasi saat ini", "di mana saya", "secara lokal", "dekat", "di dekat saya", "di sekitar saya",
+        // Korean
+        "내 도시", "내 위치", "여기", "현재 위치", "내가 있는 곳", "지역", "근처", "내 주변", "주변에서",
+        // Persian (Farsi)
+        "در شهر من", "شهر من", "مکان من", "اینجا", "موقعیت فعلی", "جایی که هستم", "نزدیک", "نزدیک من", "اطراف من", "محلی",
+        // Ukrainian
+        "у моєму місті", "моє місто", "моє місцезнаходження", "тут", "поточне місцезнаходження", "де я", "поруч", "поблизу", "навколо мене", "локально",
+        // Hebrew
+        "בעיר שלי", "העיר שלי", "המיקום שלי", "כאן", "מיקום נוכחי", "איפה שאני", "ליד", "בסביבה", "מסביבי", "מקומי"
     )
     
     private val currentInfoKeywords = listOf(
@@ -910,7 +986,26 @@ object SearchIntentDetector {
         // Portuguese
         "últimas", "recente", "atual", "hoje", "agora", "esta semana", "notícias", "atualização", "anúncio",
         // Russian
-        "последние", "актуальные", "сегодня", "сейчас", "на этой неделе", "новости", "обновление", "объявление"
+        "последние", "актуальные", "сегодня", "сейчас", "на этой неделе", "новости", "обновление", "объявление",
+        // Turkish
+        "en son", "güncel", "bugün", "şimdi", "bu hafta", "haber", "güncelleme",
+        // Polish
+        "ostatnie", "aktualne", "dzisiaj", "teraz", "w tym tygodniu", "wiadomości", "aktualizacja",
+        // Arabic
+        "الأحدث", "حديث", "اليوم", "الآن", "هذا الأسبوع", "أخبار", "تحديث",
+        // Japanese
+        "最新", "最近", "今日", "今", "今週", "ニュース", "更新",
+        // Indonesian
+        "terbaru", "terkini", "hari ini", "sekarang", "minggu ini", "berita", "pembaruan",
+        // Korean
+        "최신", "최근", "오늘", "지금", "이번 주", "뉴스", "업데이트",
+        
+        // Persian (Farsi)
+        "آخرین", "جدیدترین", "امروز", "الان", "در حال حاضر", "این هفته", "اخبار", "به‌روز", "اعلان",
+        // Ukrainian
+        "останні", "сьогодні", "зараз", "цього тижня", "новини", "оновлення",
+        // Hebrew
+        "האחרונות", "היום", "עכשיו", "השבוע", "חדשות", "עדכון"
     )
     
     fun needsWebSearch(query: String): Boolean {

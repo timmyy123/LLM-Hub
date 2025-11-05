@@ -74,7 +74,7 @@
     <string name="acknowledgments">شكر وتقدير</string>
     <string name="acknowledgments_text">شكر خاص إلى Google وMeta وMicrosoft ومجتمع HuggingFace لتقديم نماذج LLM المذهلة التي تدعم هذا التطبيق. يعتمد هذا المشروع أيضًا على عمل مجتمع مطوري أندرويد ونظام المصادر المفتوحة الرائع.</string>
     <string name="ai_thinking">الذكاء الاصطناعي يفكر...</string>
-    <string name="version_number">الإصدار 3.2.5</string>
+    <string name="version_number">الإصدار 3.2.6</string>
     <string name="app_version">إصدار التطبيق</string>
 
     <!-- Terms of Service -->
@@ -648,4 +648,7 @@
     <string name="model_not_loaded">لم يتم تحميل النموذج بشكل صحيح. يرجى محاولة التبديل إلى نموذج مختلف أو إعادة تشغيل التطبيق.</string>
     <string name="no_response_produced">لم يتم إنتاج أي رد. (محتمل: حد الرموز أو إعادة تعيين الجلسة). انقر على إعادة التوليد.</string>
     <string name="prompt_too_long">الرسالة طويلة جدًا. يرجى تقصير رسالتك والمحاولة مرة أخرى.</string>
+    <string name="language_persian">فارسی</string>
+    <string name="language_ukrainian">Українська</string>
+    <string name="language_hebrew">עברית</string>
 </resources>
