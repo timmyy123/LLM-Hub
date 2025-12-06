@@ -104,7 +104,7 @@ object ModelData {
         LLMModel(
             name = "Gemma-3n E2B",
             description = "Google Gemma-3n E2B with multimodal capabilities (text, vision, and audio). Effective 2B parameters with selective parameter activation. Supports 4k context window and multimodal input including text, images, and audio. Ready to download from HuggingFace (3.1.15GB)",
-            url = "https://huggingface.co/google/gemma-3n-E2B-it-litert-lm/resolve/main/gemma-3n-E2B-it-int4.litertlm?download=true",
+            url = "https://huggingface.co/google/gemma-3n-E2B-it-litert-lm/resolve/73b019b63436d346f68dd9c1dbfd117eb264d888/gemma-3n-E2B-it-int4.litertlm?download=true",
             category = "multimodal",
             sizeBytes = 3388604416L, // 3.1.15GB (actual downloaded size)
             source = "Google (LiteRT LM)",
@@ -118,7 +118,7 @@ object ModelData {
         LLMModel(
             name = "Gemma-3n E4B",
             description = "Google Gemma-3n E4B with multimodal capabilities (text, vision, and audio). Effective 4B parameters with selective parameter activation. Supports 4k context window and multimodal input including text, images, and audio. Ready to download from HuggingFace (4.33GB)",
-            url = "https://huggingface.co/google/gemma-3n-E4B-it-litert-lm/resolve/main/gemma-3n-E4B-it-int4.litertlm?download=true",
+            url = "https://huggingface.co/google/gemma-3n-E4B-it-litert-lm/resolve/3d0179a0648381585ab337e170b7517aae8e0ce4/gemma-3n-E4B-it-int4.litertlm?download=true",
             category = "multimodal",
             sizeBytes = 4652318720L, // 4.33GB (actual downloaded size)
             source = "Google (LiteRT LM)",
@@ -310,8 +310,8 @@ object ModelData {
         • Gemma-3 1B (INT8, 4k context) - 1005MB
         
         🔹 GEMMA-3N SERIES (Google - Multimodal):
-        • Gemma-3n E2B (Vision+Audio+Text, 4k context) - 3.1.15GB
-        • Gemma-3n E4B (Vision+Audio+Text, 4k context) - 4.33GB
+        • Gemma-3n E2B (Vision+Audio+Text, 4k context) - 3.41GB
+        • Gemma-3n E4B (Vision+Audio+Text, 4k context) - 4.58GB
         
         🔹 LLAMA-3.2 SERIES (Meta):
         • Llama-3.2 1B (INT8) - 2.01GB
