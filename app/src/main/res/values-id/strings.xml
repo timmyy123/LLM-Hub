@@ -242,6 +242,7 @@
     <string name="collapse">Ciutkan</string>
     <string name="downloaded">Diunduh</string>
     <string name="downloading">Mengunduh...</string>
+    <string name="extracting_model">Mengekstrak model...</string>
     <string name="not_downloaded">Belum diunduh</string>
     <string name="partial">Sebagian</string>
     <string name="paused">Dijeda</string>
@@ -430,8 +431,8 @@
     <string name="feature_transcriber_desc">Transkripsi suara atau audio ke teks secara offline</string>
     <string name="feature_scam_detector">Detektor Penipuan</string>
     <string name="feature_scam_detector_desc">Analisis teks, gambar, atau URL untuk penipuan potensial</string>
-    <string name="feature_github_repo">Kode Sumber</string>
-    <string name="feature_github_repo_desc">Repositori GitHub</string>
+    <string name="feature_image_generator">Generator Gambar</string>
+    <string name="feature_image_generator_desc">Hasilkan gambar dari deskripsi teks dengan AI</string>
     
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">Bantuan Menulis</string>
@@ -488,7 +489,38 @@
     <string name="scam_detector_enable_vision">Aktifkan Visi</string>
     <string name="scam_detector_vision_desc">Analisis gambar untuk penipuan</string>
     <string name="scam_detector_fetching_url">Mengambil konten URL...</string>
-    
+
+    <!-- Image Generator Screen -->
+    <string name="image_generator_title">Generator Gambar</string>
+    <string name="image_generator_subtitle">Hasilkan gambar dari deskripsi teks menggunakan AI</string>
+    <string name="image_generator_prompt_label">Deskripsi Gambar</string>
+    <string name="image_generator_prompt_hint">Deskripsikan gambar yang ingin Anda hasilkan...</string>
+    <string name="image_generator_generate">Hasilkan Gambar</string>
+    <string name="image_generator_generating">Menghasilkan gambar...</string>
+    <string name="image_generator_iterations">Iterasi</string>
+    <string name="image_generator_seed">Seed</string>
+    <string name="image_generator_random_seed">Seed Acak</string>
+    <string name="image_generator_save">Simpan Gambar</string>
+    <string name="image_generator_download_model">Unduh Model Terlebih Dahulu</string>
+    <string name="image_generator_download_model_desc">Unduh model pembuatan gambar untuk mulai membuat gambar</string>
+    <string name="image_generator_model_not_available">Model pembuatan gambar tidak tersedia</string>
+    <string name="image_generator_error">Gagal menghasilkan gambar</string>
+    <string name="image_generator_success">Gambar berhasil dihasilkan</string>
+    <string name="image_generator_saved">Gambar disimpan ke galeri</string>
+    <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
+    <string name="image_generation_model">Model Pembuatan Gambar</string>
+    <string name="image_generation_models">Model Pembuatan Gambar</string>
+    <string name="image_generation_models_description">Model AI untuk menghasilkan gambar dari teks</string>
+    <string name="image_generator_load_model_title">Muat Model untuk Memulai</string>
+    <string name="image_generator_load_model_desc">Silakan muat model Stable Diffusion untuk mulai menghasilkan gambar.</string>
+    <string name="image_generator_no_models">Tidak ada model tersedia</string>
+    <string name="image_generator_load_model">Muat Model</string>
+    <string name="image_generator_loading_model">Memuat...</string>
+    <string name="image_generator_failed_load">Gagal memuat model</string>
+    <string name="image_generator_variation">Menghasilkan variasi %1$d...</string>
+    <string name="image_generator_swipe_more">Geser di sini untuk menghasilkan lebih banyak</string>
+    <string name="image_generator_info">Pembuatan gambar menggunakan model Stable Diffusion v1.5 yang berjalan di perangkat. Pembuatan mungkin memakan waktu 1-2 menit tergantung perangkat Anda.</string>
+
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">Tidak Ada Model Tersedia</string>
     <string name="feature_download_model">Unduh Model</string>

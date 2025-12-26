@@ -30,14 +30,16 @@ android {
         val hfToken: String = localProperties.getProperty("HF_TOKEN", "")
         buildConfigField("String", "HF_TOKEN", "\"$hfToken\"")
         
-        // Specify supported locales to ensure proper resource loading
-        // Note: Indonesian uses both "id" (modern) and "in" (legacy) for maximum compatibility
-        resourceConfigurations += listOf("en", "es", "pt", "de", "fr", "ru", "it", "tr", "pl", "ar", "ja", "id", "in", "ko", "fa", "he", "iw", "uk")
-        
-        // NDK ABI filters and native library configuration for 16KB alignment
+        // NDK ABI filters - only arm64-v8a for SD backend native library
         ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+            abiFilters += listOf("arm64-v8a")
         }
+    }
+    
+    // Specify supported locales to ensure proper resource loading
+    // Note: Indonesian uses both "id" (modern) and "in" (legacy) for maximum compatibility
+    androidResources {
+        localeFilters += listOf("en", "es", "pt", "de", "fr", "ru", "it", "tr", "pl", "ar", "ja", "id", "in", "ko", "fa", "he", "iw", "uk")
     }
 
     buildTypes {
@@ -78,29 +80,31 @@ android {
             excludes += "META-INF/LICENSE.txt"
             // Avoid duplicate Kotlin module descriptors
             excludes += "META-INF/*.kotlin_module"
+            // Exclude duplicate protobuf .proto files
+            excludes += "google/protobuf/*.proto"
         }
-        // Configure JNI libraries packaging for 16 KB page size compatibility
+        // Configure JNI libraries packaging
+        // useLegacyPackaging = true is REQUIRED because SDBackendService uses ProcessBuilder
+        // to execute libstable_diffusion_core.so as a standalone process, which needs the
+        // library extracted to disk (not compressed in APK)
         jniLibs {
-            useLegacyPackaging = false
+            useLegacyPackaging = true
             // Pick only the architecture we need to reduce size and alignment issues
+            // Prevent duplicate .so files from different MediaPipe tasks modules
             pickFirsts += setOf("**/libmediapipe_tasks_text_jni.so")
         }
     }
     
-    // NDK configuration for 16 KB page size compatibility
-    ndkVersion = "26.1.10909125"
-    
-    // Add build features for better native library handling
-    buildFeatures {
-        compose = true
-        buildConfig = true
-        // Disable unused features to reduce build complexity
-        aidl = false
-        renderScript = false
-        shaders = false
-    }
-    
     // Removed externalNativeBuild - now using MediaPipe instead of native llama.cpp
+}
+
+// The Image Generator requires full protobuf-java, not the lite version
+configurations.all {
+    resolutionStrategy {
+        force("com.google.protobuf:protobuf-java:3.25.1")
+    }
+    // Exclude protobuf-javalite from all dependencies to prevent duplicate classes
+    exclude(group = "com.google.protobuf", module = "protobuf-javalite")
 }
 
 // Prevent Play Store from removing unused language resources when generating app bundles.
@@ -177,14 +181,20 @@ dependencies {
     implementation("io.ktor:ktor-client-android:2.3.6")
     implementation("io.ktor:ktor-client-content-negotiation:2.3.6")
     implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.6")
+    
+    // OkHttp for SD backend communication
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     // MediaPipe Tasks (updated to latest as of Oct 2025)
     // NOTE: Version 0.10.29 has slower initial load for multimodal models due to eager
     // vision/audio component initialization. Disable vision/audio when not needed for faster loading.
-    // tasks-genai latest: 0.10.29; tasks-vision latest: 0.10.29; tasks-text latest: 0.10.29
+    // tasks-genai latest: 0.10.29; tasks-text latest: 0.10.29
     implementation("com.google.mediapipe:tasks-genai:0.10.29")
     implementation("com.google.mediapipe:tasks-vision:0.10.29")
     implementation("com.google.mediapipe:tasks-text:0.10.29")
+    
+    // Protobuf - required for MediaPipe
+    implementation("com.google.protobuf:protobuf-java:3.25.1")
     
     // AI Edge RAG SDK for proper Gecko embedding support
     implementation("com.google.ai.edge.localagents:localagents-rag:0.3.0")

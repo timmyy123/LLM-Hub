@@ -277,6 +277,7 @@
     <string name="collapse">Свернуть</string>
     <string name="downloaded">Скачано</string>
     <string name="downloading">Скачивание...</string>
+    <string name="extracting_model">Извлечение модели...</string>
     <string name="not_downloaded">Не скачано</string>
     <string name="partial">Частично</string>
     <string name="paused">Приостановлено</string>
@@ -411,8 +412,8 @@
     <string name="feature_transcriber_desc">Транскрибируйте голос или аудио в текст офлайн</string>
     <string name="feature_scam_detector">Детектор Мошенничества</string>
     <string name="feature_scam_detector_desc">Анализируйте текст, изображения или URL на наличие возможных мошенничеств</string>
-    <string name="feature_github_repo">Исходный Код</string>
-    <string name="feature_github_repo_desc">Репозиторий GitHub</string>
+    <string name="feature_image_generator">Генератор Изображений</string>
+    <string name="feature_image_generator_desc">Создавайте изображения из текстовых описаний с помощью ИИ</string>
     
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">Помощник в письме</string>
@@ -469,7 +470,38 @@
     <string name="scam_detector_enable_vision">Включить Зрение</string>
     <string name="scam_detector_vision_desc">Анализировать изображения на мошенничество</string>
     <string name="scam_detector_fetching_url">Получение содержимого URL...</string>
-    
+
+    <!-- Image Generator Screen -->
+    <string name="image_generator_title">Генератор Изображений</string>
+    <string name="image_generator_subtitle">Создавайте изображения из текстовых описаний с помощью ИИ</string>
+    <string name="image_generator_prompt_label">Описание Изображения</string>
+    <string name="image_generator_prompt_hint">Опишите изображение, которое хотите создать...</string>
+    <string name="image_generator_generate">Создать Изображение</string>
+    <string name="image_generator_generating">Создание изображения...</string>
+    <string name="image_generator_iterations">Итерации</string>
+    <string name="image_generator_seed">Начальное значение</string>
+    <string name="image_generator_random_seed">Случайное Значение</string>
+    <string name="image_generator_save">Сохранить Изображение</string>
+    <string name="image_generator_download_model">Сначала Загрузите Модель</string>
+    <string name="image_generator_download_model_desc">Загрузите модель генерации изображений, чтобы начать создание изображений</string>
+    <string name="image_generator_model_not_available">Модель генерации изображений недоступна</string>
+    <string name="image_generator_error">Не удалось создать изображение</string>
+    <string name="image_generator_success">Изображение успешно создано</string>
+    <string name="image_generator_saved">Изображение сохранено в галерее</string>
+    <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
+    <string name="image_generation_model">Модель Генерации Изображений</string>
+    <string name="image_generation_models">Модели Генерации Изображений</string>
+    <string name="image_generation_models_description">ИИ-модели для генерации изображений из текста</string>
+    <string name="image_generator_load_model_title">Загрузите модель для начала</string>
+    <string name="image_generator_load_model_desc">Пожалуйста, загрузите модель Stable Diffusion, чтобы начать генерацию изображений.</string>
+    <string name="image_generator_no_models">Нет доступных моделей</string>
+    <string name="image_generator_load_model">Загрузить модель</string>
+    <string name="image_generator_loading_model">Загрузка...</string>
+    <string name="image_generator_failed_load">Не удалось загрузить модель</string>
+    <string name="image_generator_variation">Генерация варианта %1$d...</string>
+    <string name="image_generator_swipe_more">Проведите здесь, чтобы создать ещё</string>
+    <string name="image_generator_info">Генерация изображений использует модель Stable Diffusion v1.5, работающую на устройстве. Генерация может занять 1-2 минуты в зависимости от вашего устройства.</string>
+
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">Модель недоступна</string>
     <string name="feature_download_model">Загрузить модели</string>

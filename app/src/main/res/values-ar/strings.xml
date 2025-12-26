@@ -242,6 +242,7 @@
     <string name="collapse">طيّ</string>
     <string name="downloaded">تم التنزيل</string>
     <string name="downloading">جارٍ التنزيل...</string>
+    <string name="extracting_model">جارٍ استخراج النموذج...</string>
     <string name="not_downloaded">غير مُنزّل</string>
     <string name="partial">جزئي</string>
     <string name="paused">متوقّف مؤقتًا</string>
@@ -429,8 +430,8 @@
     <string name="feature_transcriber_desc">تحويل الصوت أو التسجيل إلى نص دون اتصال</string>
     <string name="feature_scam_detector">كاشف الاحتيال</string>
     <string name="feature_scam_detector_desc">تحليل النصوص والصور أو الروابط لاكتشاف الاحتيال المحتمل</string>
-    <string name="feature_github_repo">الكود المصدري</string>
-    <string name="feature_github_repo_desc">مستودع GitHub</string>
+    <string name="feature_image_generator">مولد الصور</string>
+    <string name="feature_image_generator_desc">إنشاء صور من وصف نصي باستخدام الذكاء الاصطناعي</string>
 
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">مساعد الكتابة</string>
@@ -487,6 +488,37 @@
     <string name="scam_detector_enable_vision">تفعيل الرؤية</string>
     <string name="scam_detector_vision_desc">حلّل الصور لاكتشاف الاحتيال</string>
     <string name="scam_detector_fetching_url">جارٍ جلب محتوى الرابط...</string>
+
+    <!-- Image Generator Screen -->
+    <string name="image_generator_title">مولد الصور</string>
+    <string name="image_generator_subtitle">أنشئ صورًا من التعليمات النصية باستخدام الذكاء الاصطناعي</string>
+    <string name="image_generator_prompt_label">وصف الصورة</string>
+    <string name="image_generator_prompt_hint">صف الصورة التي تريد إنشاءها...</string>
+    <string name="image_generator_generate">إنشاء صورة</string>
+    <string name="image_generator_generating">جارٍ إنشاء الصورة...</string>
+    <string name="image_generator_iterations">التكرارات</string>
+    <string name="image_generator_seed">البذرة</string>
+    <string name="image_generator_random_seed">بذرة عشوائية</string>
+    <string name="image_generator_save">حفظ الصورة</string>
+    <string name="image_generator_download_model">قم بتنزيل النموذج أولاً</string>
+    <string name="image_generator_download_model_desc">قم بتنزيل نموذج توليد الصور لبدء إنشاء الصور</string>
+    <string name="image_generator_model_not_available">نموذج توليد الصور غير متاح</string>
+    <string name="image_generator_error">فشل إنشاء الصورة</string>
+    <string name="image_generator_success">تم إنشاء الصورة بنجاح</string>
+    <string name="image_generator_saved">تم حفظ الصورة في المعرض</string>
+    <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
+    <string name="image_generation_model">نموذج توليد الصور</string>
+    <string name="image_generation_models">نماذج توليد الصور</string>
+    <string name="image_generation_models_description">نماذج الذكاء الاصطناعي لتوليد الصور من النص</string>
+    <string name="image_generator_load_model_title">حمّل النموذج للبدء</string>
+    <string name="image_generator_load_model_desc">يرجى تحميل نموذج Stable Diffusion لبدء توليد الصور.</string>
+    <string name="image_generator_no_models">لا توجد نماذج متاحة</string>
+    <string name="image_generator_load_model">تحميل النموذج</string>
+    <string name="image_generator_loading_model">جارٍ التحميل...</string>
+    <string name="image_generator_failed_load">فشل تحميل النموذج</string>
+    <string name="image_generator_variation">جارٍ توليد التباين %1$d...</string>
+    <string name="image_generator_swipe_more">اسحب هنا لتوليد المزيد</string>
+    <string name="image_generator_info">يستخدم توليد الصور نموذج Stable Diffusion v1.5 الذي يعمل على الجهاز. قد يستغرق التوليد 1-2 دقيقة حسب جهازك.</string>
 
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">لا يوجد نموذج متاح</string>

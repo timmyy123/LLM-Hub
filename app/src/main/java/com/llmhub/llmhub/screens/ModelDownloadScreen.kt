@@ -78,9 +78,11 @@ fun ModelDownloadScreen(
     val textModels = models.filter { it.category == "text" }
     val multimodalModels = models.filter { it.category == "multimodal" }
     val embeddingModels = models.filter { it.category == "embedding" }
+    val imageGenerationModels = models.filter { it.category == "image_generation" }
     val textGrouped = textModels.groupBy { it.name.substringBefore("(").trim() }
     val multimodalGrouped = multimodalModels.groupBy { it.name.substringBefore("(").trim() }
     val embeddingGrouped = embeddingModels.groupBy { it.name.substringBefore("(").trim() }
+    val imageGenGrouped = imageGenerationModels.groupBy { it.name.substringBefore("(").trim() }
 
     var showImportDialog by remember { mutableStateOf(false) }
 
@@ -183,6 +185,28 @@ fun ModelDownloadScreen(
                 }
                 
                 embeddingGrouped.forEach { (family, variants) ->
+                    item {
+                        ModelFamilyCard(
+                            family = family,
+                            variants = variants,
+                            context = context,
+                            viewModel = downloadViewModel,
+                            isMultimodal = false
+                        )
+                    }
+                }
+            }
+            
+            // Image Generation Models Section
+            if (imageGenGrouped.isNotEmpty()) {
+                item {
+                    SectionHeader(
+                        title = stringResource(R.string.image_generation_models),
+                        subtitle = stringResource(R.string.image_generation_models_description)
+                    )
+                }
+                
+                imageGenGrouped.forEach { (family, variants) ->
                     item {
                         ModelFamilyCard(
                             family = family,
@@ -437,7 +461,14 @@ private fun ModelVariantItem(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     val totalDisplayBytes = model.totalBytes ?: model.sizeBytes
-                    if (totalDisplayBytes > 0) {
+                    if (model.isExtracting) {
+                        // Show extracting status
+                        Text(
+                            text = stringResource(R.string.extracting_model),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    } else if (totalDisplayBytes > 0) {
                         Text(
                             text = "${formatFileSize(model.downloadedBytes)} / ${formatFileSize(totalDisplayBytes)}",
                             style = MaterialTheme.typography.bodySmall,
@@ -451,11 +482,13 @@ private fun ModelVariantItem(
                         )
                     }
 
-                    Text(
-                        text = formatSpeed(model.downloadSpeedBytesPerSec ?: 0),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    if (!model.isExtracting) {
+                        Text(
+                            text = formatSpeed(model.downloadSpeedBytesPerSec ?: 0),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             } else if (model.downloadProgress > 0f && !model.isDownloading && !model.isDownloaded) {
                 // Paused download - only show for incomplete models

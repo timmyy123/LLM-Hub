@@ -244,6 +244,7 @@
     <string name="collapse">جمع کردن</string>
     <string name="downloaded">دانلود شده</string>
     <string name="downloading">در حال دانلود…</string>
+    <string name="extracting_model">در حال استخراج مدل...</string>
     <string name="not_downloaded">دانلود نشده</string>
     <string name="partial">ناقص</string>
     <string name="paused">مکث</string>
@@ -431,8 +432,8 @@
     <string name="feature_transcriber_desc">رونویسی صدا به متن به صورت آفلاین</string>
     <string name="feature_scam_detector">کشف کلاهبرداری</string>
     <string name="feature_scam_detector_desc">تحلیل متن، تصاویر یا URLها برای احتمال کلاهبرداری</string>
-    <string name="feature_github_repo">کد منبع</string>
-    <string name="feature_github_repo_desc">مخزن GitHub</string>
+    <string name="feature_image_generator">تولید تصویر</string>
+    <string name="feature_image_generator_desc">تولید تصاویر از توضیحات متنی با هوش مصنوعی</string>
 
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">یار نوشتن</string>
@@ -489,7 +490,36 @@
     <string name="scam_detector_enable_vision">فعال‌سازی بینایی</string>
     <string name="scam_detector_vision_desc">تحلیل تصاویر برای کلاهبرداری</string>
     <string name="scam_detector_fetching_url">در حال واکشی محتوای URL…</string>
-
+    <!-- Image Generator Screen -->
+    <string name="image_generator_title">تولید تصویر</string>
+    <string name="image_generator_subtitle">تولید تصاویر از توضیحات متنی با استفاده از هوش مصنوعی</string>
+    <string name="image_generator_prompt_label">توضیحات تصویر</string>
+    <string name="image_generator_prompt_hint">تصویری که می‌خواهید تولید کنید را توصیف کنید...</string>
+    <string name="image_generator_generate">تولید تصویر</string>
+    <string name="image_generator_generating">در حال تولید تصویر...</string>
+    <string name="image_generator_iterations">تکرارها</string>
+    <string name="image_generator_seed">بذر</string>
+    <string name="image_generator_random_seed">بذر تصادفی</string>
+    <string name="image_generator_save">ذخیره تصویر</string>
+    <string name="image_generator_download_model">ابتدا مدل را دانلود کنید</string>
+    <string name="image_generator_download_model_desc">مدل تولید تصویر را دانلود کنید تا شروع به ایجاد تصاویر کنید</string>
+    <string name="image_generator_model_not_available">مدل تولید تصویر در دسترس نیست</string>
+    <string name="image_generator_error">تولید تصویر ناموفق بود</string>
+    <string name="image_generator_success">تصویر با موفقیت تولید شد</string>
+    <string name="image_generator_saved">تصویر در گالری ذخیره شد</string>
+    <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
+    <string name="image_generation_model">مدل تولید تصویر</string>
+    <string name="image_generation_models">مدل‌های تولید تصویر</string>
+    <string name="image_generation_models_description">مدل‌های هوش مصنوعی برای تولید تصویر از متن</string>
+    <string name="image_generator_load_model_title">بارگذاری مدل برای شروع</string>
+    <string name="image_generator_load_model_desc">لطفاً یک مدل Stable Diffusion بارگذاری کنید تا تولید تصویر آغاز شود.</string>
+    <string name="image_generator_no_models">هیچ مدلی در دسترس نیست</string>
+    <string name="image_generator_load_model">بارگذاری مدل</string>
+    <string name="image_generator_loading_model">در حال بارگذاری...</string>
+    <string name="image_generator_failed_load">بارگذاری مدل ناموفق بود</string>
+    <string name="image_generator_variation">در حال تولید تنوع %1$d...</string>
+    <string name="image_generator_swipe_more">برای تولید بیشتر اینجا بکشید</string>
+    <string name="image_generator_info">تولید تصویر از مدل Stable Diffusion v1.5 که روی دستگاه اجرا می‌شود استفاده می‌کند. تولید ممکن است بسته به دستگاه شما 1-2 دقیقه طول بکشد.</string>
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">هیچ مدلی در دسترس نیست</string>
     <string name="feature_download_model">دانلود مدل‌ها</string>

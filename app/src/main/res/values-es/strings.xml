@@ -274,6 +274,7 @@
     <string name="collapse">Contraer</string>
     <string name="downloaded">Descargado</string>
     <string name="downloading">Descargando...</string>
+    <string name="extracting_model">Extrayendo modelo...</string>
     <string name="not_downloaded">No descargado</string>
     <string name="partial">Parcial</string>
     <string name="paused">Pausado</string>
@@ -410,8 +411,8 @@
     <string name="feature_transcriber_desc">Transcribe voz o audio a texto sin conexión</string>
     <string name="feature_scam_detector">Detector de Estafas</string>
     <string name="feature_scam_detector_desc">Analiza texto, imágenes o URLs en busca de posibles estafas</string>
-    <string name="feature_github_repo">Código Fuente</string>
-    <string name="feature_github_repo_desc">Repositorio GitHub</string>
+    <string name="feature_image_generator">Generador de Imágenes</string>
+    <string name="feature_image_generator_desc">Genera imágenes a partir de descripciones de texto con IA</string>
     
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">Ayuda de Escritura</string>
@@ -468,6 +469,37 @@
     <string name="scam_detector_enable_vision">Habilitar Visión</string>
     <string name="scam_detector_vision_desc">Analizar imágenes en busca de estafas</string>
     <string name="scam_detector_fetching_url">Obteniendo contenido de la URL...</string>
+    
+    <!-- Image Generator Screen -->
+    <string name="image_generator_title">Generador de Imágenes</string>
+    <string name="image_generator_subtitle">Genera imágenes a partir de descripciones de texto usando IA</string>
+    <string name="image_generator_prompt_label">Descripción de la Imagen</string>
+    <string name="image_generator_prompt_hint">Describe la imagen que quieres generar...</string>
+    <string name="image_generator_generate">Generar Imagen</string>
+    <string name="image_generator_generating">Generando imagen...</string>
+    <string name="image_generator_iterations">Iteraciones</string>
+    <string name="image_generator_seed">Semilla</string>
+    <string name="image_generator_random_seed">Semilla Aleatoria</string>
+    <string name="image_generator_save">Guardar Imagen</string>
+    <string name="image_generator_download_model">Descargar Modelo Primero</string>
+    <string name="image_generator_download_model_desc">Descarga el modelo de generación de imágenes para comenzar a crear imágenes</string>
+    <string name="image_generator_model_not_available">Modelo de generación de imágenes no disponible</string>
+    <string name="image_generator_error">Error al generar la imagen</string>
+    <string name="image_generator_success">Imagen generada exitosamente</string>
+    <string name="image_generator_saved">Imagen guardada en la galería</string>
+    <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
+    <string name="image_generation_model">Modelo de Generación de Imágenes</string>
+    <string name="image_generation_models">Modelos de Generación de Imágenes</string>
+    <string name="image_generation_models_description">Modelos de IA para generar imágenes a partir de texto</string>
+    <string name="image_generator_load_model_title">Cargar Modelo para Comenzar</string>
+    <string name="image_generator_load_model_desc">Por favor, carga un modelo Stable Diffusion para comenzar a generar imágenes.</string>
+    <string name="image_generator_no_models">No hay modelos disponibles</string>
+    <string name="image_generator_load_model">Cargar Modelo</string>
+    <string name="image_generator_loading_model">Cargando...</string>
+    <string name="image_generator_failed_load">Error al cargar el modelo</string>
+    <string name="image_generator_variation">Generando variación %1$d...</string>
+    <string name="image_generator_swipe_more">Desliza aquí para generar más</string>
+    <string name="image_generator_info">La generación de imágenes utiliza el modelo Stable Diffusion v1.5 ejecutándose en el dispositivo. La generación puede tomar 1-2 minutos dependiendo de tu dispositivo.</string>
     
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">No Hay Modelo Disponible</string>
