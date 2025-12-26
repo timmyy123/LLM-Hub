@@ -8,6 +8,14 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- add twinstef 26/12/2025 -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
+    <!-- end -->
+
     <application
         android:name=".LlmHubApplication"
         android:enableOnBackInvokedCallback="true"
