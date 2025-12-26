@@ -245,6 +245,7 @@
     <string name="collapse">Collapse</string>
     <string name="downloaded">Downloaded</string>
     <string name="downloading">Downloading...</string>
+    <string name="extracting_model">Extracting model...</string>
     <string name="not_downloaded">Not downloaded</string>
     <string name="partial">Partial</string>
     <string name="paused">Paused</string>
@@ -434,8 +435,8 @@
     <string name="feature_transcriber_desc">Transcribe voice or audio to text offline</string>
     <string name="feature_scam_detector">Scam Detector</string>
     <string name="feature_scam_detector_desc">Analyze text, images, or URLs for potential scams</string>
-    <string name="feature_github_repo">Source Code</string>
-    <string name="feature_github_repo_desc">GitHub Repository</string>
+    <string name="feature_image_generator">Image Generator</string>
+    <string name="feature_image_generator_desc">Generate images from text prompts with AI</string>
     
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">Writing Aid</string>
@@ -492,6 +493,37 @@
     <string name="scam_detector_enable_vision">Enable Vision</string>
     <string name="scam_detector_vision_desc">Analyze images for scams</string>
     <string name="scam_detector_fetching_url">Fetching URL content...</string>
+    
+    <!-- Image Generator Screen -->
+    <string name="image_generator_title">Image Generator</string>
+    <string name="image_generator_subtitle">Generate images from text prompts using Absolute Reality SD1.5</string>
+    <string name="image_generator_prompt_label">Image Description</string>
+    <string name="image_generator_prompt_hint">Describe the image you want to generate...</string>
+    <string name="image_generator_generate">Generate Image</string>
+    <string name="image_generator_generating">Generating image...</string>
+    <string name="image_generator_iterations">Steps</string>
+    <string name="image_generator_seed">Seed</string>
+    <string name="image_generator_random_seed">Random Seed</string>
+    <string name="image_generator_save">Save Image</string>
+    <string name="image_generator_download_model">Download Model First</string>
+    <string name="image_generator_download_model_desc">Download Absolute Reality (NPU or CPU) model from the Models screen to start creating images</string>
+    <string name="image_generator_model_not_available">Image generation model not available</string>
+    <string name="image_generator_error">Failed to generate image</string>
+    <string name="image_generation_models">Image Generation Models</string>
+    <string name="image_generation_models_description">Stable Diffusion models for text-to-image generation</string>
+    <string name="image_generator_success">Image generated successfully</string>
+    <string name="image_generator_saved">Image saved to gallery</string>
+    <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
+    <string name="image_generation_model">Image Generation Model</string>
+    <string name="image_generator_load_model_title">Load Model to Start</string>
+    <string name="image_generator_load_model_desc">Please load a Stable Diffusion model to start generating images.</string>
+    <string name="image_generator_no_models">No models available</string>
+    <string name="image_generator_load_model">Load Model</string>
+    <string name="image_generator_loading_model">Loading...</string>
+    <string name="image_generator_failed_load">Failed to load model</string>
+    <string name="image_generator_variation">Generating variation %1$d...</string>
+    <string name="image_generator_swipe_more">Swipe here to generate more</string>
+    <string name="image_generator_info">Image generation uses the Stable Diffusion v1.5 model running on-device. Generation may take 1-2 minutes depending on your device.</string>
     
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">No Model Available</string>

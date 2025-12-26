@@ -244,6 +244,7 @@
     <string name="collapse">Згорнути</string>
     <string name="downloaded">Завантажено</string>
     <string name="downloading">Завантаження…</string>
+    <string name="extracting_model">Розпаковка моделі...</string>
     <string name="not_downloaded">Не завантажено</string>
     <string name="partial">Частково</string>
     <string name="paused">Призупинено</string>
@@ -431,8 +432,8 @@
     <string name="feature_transcriber_desc">Офлайн транскрибування голосу чи аудіо в текст</string>
     <string name="feature_scam_detector">Виявлення шахрайства</string>
     <string name="feature_scam_detector_desc">Аналіз тексту, зображень або URL на можливе шахрайство</string>
-    <string name="feature_github_repo">Вихідний код</string>
-    <string name="feature_github_repo_desc">Репозиторій GitHub</string>
+    <string name="feature_image_generator">Генератор Зображень</string>
+    <string name="feature_image_generator_desc">Створюйте зображення з текстових описів за допомогою ШІ</string>
 
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">Помічник письма</string>
@@ -489,7 +490,36 @@
     <string name="scam_detector_enable_vision">Увімкнути зір</string>
     <string name="scam_detector_vision_desc">Аналізувати зображення на шахрайство</string>
     <string name="scam_detector_fetching_url">Отримання вмісту URL…</string>
-
+    <!-- Image Generator Screen -->
+    <string name="image_generator_title">Генератор Зображень</string>
+    <string name="image_generator_subtitle">Створюйте зображення з текстових описів за допомогою ШІ</string>
+    <string name="image_generator_prompt_label">Опис Зображення</string>
+    <string name="image_generator_prompt_hint">Опишіть зображення, яке хочете створити...</string>
+    <string name="image_generator_generate">Створити Зображення</string>
+    <string name="image_generator_generating">Створення зображення...</string>
+    <string name="image_generator_iterations">Ітерації</string>
+    <string name="image_generator_seed">Початкове значення</string>
+    <string name="image_generator_random_seed">Випадкове Значення</string>
+    <string name="image_generator_save">Зберегти Зображення</string>
+    <string name="image_generator_download_model">Спочатку Завантажте Модель</string>
+    <string name="image_generator_download_model_desc">Завантажте модель генерації зображень, щоб почати створення зображень</string>
+    <string name="image_generator_model_not_available">Модель генерації зображень недоступна</string>
+    <string name="image_generator_error">Не вдалося створити зображення</string>
+    <string name="image_generator_success">Зображення успішно створено</string>
+    <string name="image_generator_saved">Зображення збережено в галереї</string>
+    <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
+    <string name="image_generation_model">Модель Генерації Зображень</string>
+    <string name="image_generation_models">Моделі Генерації Зображень</string>
+    <string name="image_generation_models_description">ШІ-моделі для генерації зображень з тексту</string>
+    <string name="image_generator_load_model_title">Завантажте модель для початку</string>
+    <string name="image_generator_load_model_desc">Будь ласка, завантажте модель Stable Diffusion, щоб почати генерувати зображення.</string>
+    <string name="image_generator_no_models">Немає доступних моделей</string>
+    <string name="image_generator_load_model">Завантажити модель</string>
+    <string name="image_generator_loading_model">Завантаження…</string>
+    <string name="image_generator_failed_load">Не вдалося завантажити модель</string>
+    <string name="image_generator_variation">Генерація варіанту %1$d…</string>
+    <string name="image_generator_swipe_more">Проведіть тут, щоб створити більше</string>
+    <string name="image_generator_info">Генерація зображень використовує модель Stable Diffusion v1.5, що працює на пристрої. Генерація може зайняти 1-2 хвилини залежно від вашого пристрою.</string>
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">Немає доступної моделі</string>
     <string name="feature_download_model">Завантажити моделі</string>

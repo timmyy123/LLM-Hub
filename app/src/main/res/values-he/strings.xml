@@ -244,6 +244,7 @@
     <string name="collapse">כווץ</string>
     <string name="downloaded">הורד</string>
     <string name="downloading">מוריד…</string>
+    <string name="extracting_model">מחלץ את המודל...</string>
     <string name="not_downloaded">לא הורד</string>
     <string name="partial">חלקי</string>
     <string name="paused">מושהה</string>
@@ -431,8 +432,8 @@
     <string name="feature_transcriber_desc">תמלול קול או אודיו לטקסט לא מקוון</string>
     <string name="feature_scam_detector">מזהה הונאות</string>
     <string name="feature_scam_detector_desc">נתח טקסט, תמונות או URLים לאיתור הונאות אפשריות</string>
-    <string name="feature_github_repo">קוד מקור</string>
-    <string name="feature_github_repo_desc">מאגר GitHub</string>
+    <string name="feature_image_generator">מחולל תמונות</string>
+    <string name="feature_image_generator_desc">צור תמונות מתיאורי טקסט באמצעות AI</string>
 
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">עוזר כתיבה</string>
@@ -489,7 +490,36 @@
     <string name="scam_detector_enable_vision">אפשר ראייה</string>
     <string name="scam_detector_vision_desc">נתח תמונות להונאות</string>
     <string name="scam_detector_fetching_url">מאחזר תוכן URL…</string>
-
+    <!-- Image Generator Screen -->
+    <string name="image_generator_title">מחולל תמונות</string>
+    <string name="image_generator_subtitle">צור תמונות מתיאורי טקסט באמצעות AI</string>
+    <string name="image_generator_prompt_label">תיאור התמונה</string>
+    <string name="image_generator_prompt_hint">תאר את התמונה שאתה רוצה ליצור...</string>
+    <string name="image_generator_generate">צור תמונה</string>
+    <string name="image_generator_generating">יוצר תמונה...</string>
+    <string name="image_generator_iterations">איטרציות</string>
+    <string name="image_generator_seed">זרע</string>
+    <string name="image_generator_random_seed">זרע אקראי</string>
+    <string name="image_generator_save">שמור תמונה</string>
+    <string name="image_generator_download_model">הורד מודל תחילה</string>
+    <string name="image_generator_download_model_desc">הורד את מודל יצירת התמונות כדי להתחיל ליצור תמונות</string>
+    <string name="image_generator_model_not_available">מודל יצירת תמונות לא זמין</string>
+    <string name="image_generator_error">נכשל ביצירת התמונה</string>
+    <string name="image_generator_success">התמונה נוצרה בהצלחה</string>
+    <string name="image_generator_saved">התמונה נשמרה בגלריה</string>
+    <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
+    <string name="image_generation_model">מודל יצירת תמונות</string>
+    <string name="image_generation_models">מודלים ליצירת תמונות</string>
+    <string name="image_generation_models_description">מודלי AI ליצירת תמונות מטקסט</string>
+    <string name="image_generator_load_model_title">טען מודל כדי להתחיל</string>
+    <string name="image_generator_load_model_desc">אנא טען מודל Stable Diffusion כדי להתחיל ליצור תמונות.</string>
+    <string name="image_generator_no_models">אין מודלים זמינים</string>
+    <string name="image_generator_load_model">טען מודל</string>
+    <string name="image_generator_loading_model">טוען…</string>
+    <string name="image_generator_failed_load">טעינת המודל נכשלה</string>
+    <string name="image_generator_variation">יוצר וריאציה %1$d…</string>
+    <string name="image_generator_swipe_more">החלק כאן ליצירת עוד</string>
+    <string name="image_generator_info">יצירת תמונות משתמשת במודל Stable Diffusion v1.5 הפועל על המכשיר. היצירה עשויה להימשך 1-2 דקות בהתאם למכשיר שלך.</string>
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">אין מודל זמין</string>
     <string name="feature_download_model">הורד מודלים</string>

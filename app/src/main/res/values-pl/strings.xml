@@ -242,6 +242,7 @@
     <string name="collapse">Zwiń</string>
     <string name="downloaded">Pobrano</string>
     <string name="downloading">Pobieranie...</string>
+    <string name="extracting_model">Rozpakowywanie modelu...</string>
     <string name="not_downloaded">Nie pobrano</string>
     <string name="partial">Częściowy</string>
     <string name="paused">Wstrzymano</string>
@@ -430,8 +431,8 @@
     <string name="feature_transcriber_desc">Transkrybuj głos lub dźwięk na tekst offline</string>
     <string name="feature_scam_detector">Detektor Oszustw</string>
     <string name="feature_scam_detector_desc">Analizuj tekst, obrazy lub adresy URL pod kątem potencjalnych oszustw</string>
-    <string name="feature_github_repo">Kod Źródłowy</string>
-    <string name="feature_github_repo_desc">Repozytorium GitHub</string>
+    <string name="feature_image_generator">Generator Obrazów</string>
+    <string name="feature_image_generator_desc">Generuj obrazy z opisów tekstowych za pomocą AI</string>
     
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">Pomoc w Pisaniu</string>
@@ -488,6 +489,37 @@
     <string name="scam_detector_enable_vision">Włącz Wizję</string>
     <string name="scam_detector_vision_desc">Analizuj obrazy pod kątem oszustw</string>
     <string name="scam_detector_fetching_url">Pobieranie treści URL...</string>
+    
+    <!-- Image Generator Screen -->
+    <string name="image_generator_title">Generator Obrazów</string>
+    <string name="image_generator_subtitle">Generuj obrazy z opisów tekstowych za pomocą AI</string>
+    <string name="image_generator_prompt_label">Opis Obrazu</string>
+    <string name="image_generator_prompt_hint">Opisz obraz, który chcesz wygenerować...</string>
+    <string name="image_generator_generate">Generuj Obraz</string>
+    <string name="image_generator_generating">Generowanie obrazu...</string>
+    <string name="image_generator_iterations">Iteracje</string>
+    <string name="image_generator_seed">Ziarno</string>
+    <string name="image_generator_random_seed">Losowe Ziarno</string>
+    <string name="image_generator_save">Zapisz Obraz</string>
+    <string name="image_generator_download_model">Najpierw Pobierz Model</string>
+    <string name="image_generator_download_model_desc">Pobierz model generowania obrazów, aby rozpocząć tworzenie obrazów</string>
+    <string name="image_generator_model_not_available">Model generowania obrazów niedostępny</string>
+    <string name="image_generator_error">Nie udało się wygenerować obrazu</string>
+    <string name="image_generator_success">Obraz wygenerowany pomyślnie</string>
+    <string name="image_generator_saved">Obraz zapisany w galerii</string>
+    <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
+    <string name="image_generation_model">Model Generowania Obrazów</string>
+    <string name="image_generation_models">Modele Generowania Obrazów</string>
+    <string name="image_generation_models_description">Modele AI do generowania obrazów z tekstu</string>
+    <string name="image_generator_load_model_title">Załaduj model, aby rozpocząć</string>
+    <string name="image_generator_load_model_desc">Załaduj model Stable Diffusion, aby rozpocząć generowanie obrazów.</string>
+    <string name="image_generator_no_models">Brak dostępnych modeli</string>
+    <string name="image_generator_load_model">Załaduj model</string>
+    <string name="image_generator_loading_model">Ładowanie...</string>
+    <string name="image_generator_failed_load">Nie udało się załadować modelu</string>
+    <string name="image_generator_variation">Generowanie wariantu %1$d...</string>
+    <string name="image_generator_swipe_more">Przesuń tutaj, aby wygenerować więcej</string>
+    <string name="image_generator_info">Generowanie obrazów wykorzystuje model Stable Diffusion v1.5 działający na urządzeniu. Generowanie może zająć 1-2 minuty w zależności od urządzenia.</string>
     
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">Brak Dostępnego Modelu</string>

@@ -93,11 +93,11 @@ fun HomeScreen(
                 route = "scam_detector"
             ),
             FeatureCard(
-                title = "feature_github_repo",
-                description = "feature_github_repo_desc",
-                icon = Icons.Outlined.Code,
+                title = "feature_image_generator",
+                description = "feature_image_generator_desc",
+                icon = Icons.Filled.Palette,
                 gradient = Pair(Color(0xFF6a11cb), Color(0xFF2575fc)),
-                route = "github"
+                route = "image_generator"
             )
         )
     }
@@ -189,11 +189,7 @@ fun HomeScreen(
                         feature = feature,
                         index = index,
                         onClick = { 
-                            if (feature.route == "github") {
-                                uriHandler.openUri("https://github.com/timmyy123/LLM-Hub")
-                            } else {
-                                onNavigateToFeature(feature.route)
-                            }
+                            onNavigateToFeature(feature.route)
                         }
                     )
                 }
@@ -400,8 +396,8 @@ private fun getStringResourceId(key: String): Int {
         "feature_transcriber_desc" -> R.string.feature_transcriber_desc
         "feature_scam_detector" -> R.string.feature_scam_detector
         "feature_scam_detector_desc" -> R.string.feature_scam_detector_desc
-        "feature_github_repo" -> R.string.feature_github_repo
-        "feature_github_repo_desc" -> R.string.feature_github_repo_desc
+        "feature_image_generator" -> R.string.feature_image_generator
+        "feature_image_generator_desc" -> R.string.feature_image_generator_desc
         else -> R.string.app_name
     }
 }

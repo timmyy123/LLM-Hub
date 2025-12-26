@@ -242,6 +242,7 @@
     <string name="collapse">Daralt</string>
     <string name="downloaded">İndirildi</string>
     <string name="downloading">İndiriliyor...</string>
+    <string name="extracting_model">Model çıkarılıyor...</string>
     <string name="not_downloaded">İndirilmedi</string>
     <string name="partial">Kısmi</string>
     <string name="paused">Duraklatıldı</string>
@@ -429,8 +430,8 @@
     <string name="feature_transcriber_desc">Sesi veya sesi çevrimdışı olarak metne dönüştürün</string>
     <string name="feature_scam_detector">Dolandırıcılık Dedektörü</string>
     <string name="feature_scam_detector_desc">Potansiyel dolandırıcılıklar için metin, görsel veya URL analiz edin</string>
-    <string name="feature_github_repo">Kaynak Kodu</string>
-    <string name="feature_github_repo_desc">GitHub Deposu</string>
+    <string name="feature_image_generator">Görsel Oluşturucu</string>
+    <string name="feature_image_generator_desc">AI ile metin açıklamalarından görseller oluşturun</string>
     
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">Yazma Yardımcısı</string>
@@ -487,6 +488,37 @@
     <string name="scam_detector_enable_vision">Görseli Etkinleştir</string>
     <string name="scam_detector_vision_desc">Dolandırıcılıklar için görselleri analiz edin</string>
     <string name="scam_detector_fetching_url">URL içeriği getiriliyor...</string>
+    
+    <!-- Image Generator Screen -->
+    <string name="image_generator_title">Görsel Oluşturucu</string>
+    <string name="image_generator_subtitle">AI kullanarak metin açıklamalarından görseller oluşturun</string>
+    <string name="image_generator_prompt_label">Görsel Açıklaması</string>
+    <string name="image_generator_prompt_hint">Oluşturmak istediğiniz görseli açıklayın...</string>
+    <string name="image_generator_generate">Görsel Oluştur</string>
+    <string name="image_generator_generating">Görsel oluşturuluyor...</string>
+    <string name="image_generator_iterations">Yinelemeler</string>
+    <string name="image_generator_seed">Tohum</string>
+    <string name="image_generator_random_seed">Rastgele Tohum</string>
+    <string name="image_generator_save">Görseli Kaydet</string>
+    <string name="image_generator_download_model">Önce Model İndirin</string>
+    <string name="image_generator_download_model_desc">Görsel oluşturmaya başlamak için görsel oluşturma modelini indirin</string>
+    <string name="image_generator_model_not_available">Görsel oluşturma modeli mevcut değil</string>
+    <string name="image_generator_error">Görsel oluşturulamadı</string>
+    <string name="image_generator_success">Görsel başarıyla oluşturuldu</string>
+    <string name="image_generator_saved">Görsel galeriye kaydedildi</string>
+    <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
+    <string name="image_generation_model">Görsel Oluşturma Modeli</string>
+    <string name="image_generation_models">Görsel Oluşturma Modelleri</string>
+    <string name="image_generation_models_description">Metinden görsel oluşturmak için AI modelleri</string>
+    <string name="image_generator_load_model_title">Başlamak için Model Yükle</string>
+    <string name="image_generator_load_model_desc">Görsel oluşturmaya başlamak için lütfen bir Stable Diffusion modeli yükleyin.</string>
+    <string name="image_generator_no_models">Kullanılabilir model yok</string>
+    <string name="image_generator_load_model">Model Yükle</string>
+    <string name="image_generator_loading_model">Yükleniyor...</string>
+    <string name="image_generator_failed_load">Model yüklenemedi</string>
+    <string name="image_generator_variation">Varyasyon %1$d oluşturuluyor...</string>
+    <string name="image_generator_swipe_more">Daha fazla oluşturmak için buraya kaydırın</string>
+    <string name="image_generator_info">Görsel oluşturma, cihazda çalışan Stable Diffusion v1.5 modelini kullanır. Oluşturma, cihazınıza bağlı olarak 1-2 dakika sürebilir.</string>
     
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">Model Yok</string>

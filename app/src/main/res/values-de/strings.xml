@@ -274,6 +274,7 @@
     <string name="collapse">Einklappen</string>
     <string name="downloaded">Heruntergeladen</string>
     <string name="downloading">Lädt herunter...</string>
+    <string name="extracting_model">Modell wird extrahiert...</string>
     <string name="not_downloaded">Nicht heruntergeladen</string>
     <string name="partial">Teilweise</string>
     <string name="paused">Pausiert</string>
@@ -410,8 +411,8 @@
     <string name="feature_transcriber_desc">Sprache oder Audio offline zu Text transkribieren</string>
     <string name="feature_scam_detector">Betrugsmelder</string>
     <string name="feature_scam_detector_desc">Analysiere Text, Bilder oder URLs auf mögliche Betrügereien</string>
-    <string name="feature_github_repo">Quellcode</string>
-    <string name="feature_github_repo_desc">GitHub-Repository</string>
+    <string name="feature_image_generator">Bildgenerator</string>
+    <string name="feature_image_generator_desc">Bilder aus Textbeschreibungen mit KI generieren</string>
     
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">Schreibhilfe</string>
@@ -468,6 +469,37 @@
     <string name="scam_detector_enable_vision">Vision Aktivieren</string>
     <string name="scam_detector_vision_desc">Bilder auf Betrug analysieren</string>
     <string name="scam_detector_fetching_url">URL-Inhalt wird abgerufen...</string>
+    
+    <!-- Image Generator Screen -->
+    <string name="image_generator_title">Bildgenerator</string>
+    <string name="image_generator_subtitle">Bilder aus Textbeschreibungen mit KI generieren</string>
+    <string name="image_generator_prompt_label">Bildbeschreibung</string>
+    <string name="image_generator_prompt_hint">Beschreiben Sie das Bild, das Sie generieren möchten...</string>
+    <string name="image_generator_generate">Bild Generieren</string>
+    <string name="image_generator_generating">Bild wird generiert...</string>
+    <string name="image_generator_iterations">Iterationen</string>
+    <string name="image_generator_seed">Seed</string>
+    <string name="image_generator_random_seed">Zufälliger Seed</string>
+    <string name="image_generator_save">Bild Speichern</string>
+    <string name="image_generator_download_model">Modell zuerst herunterladen</string>
+    <string name="image_generator_download_model_desc">Laden Sie das Bildgenerierungsmodell herunter, um mit der Erstellung von Bildern zu beginnen</string>
+    <string name="image_generator_model_not_available">Bildgenerierungsmodell nicht verfügbar</string>
+    <string name="image_generator_error">Fehler beim Generieren des Bildes</string>
+    <string name="image_generator_success">Bild erfolgreich generiert</string>
+    <string name="image_generator_saved">Bild in Galerie gespeichert</string>
+    <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
+    <string name="image_generation_model">Bildgenerierungsmodell</string>
+    <string name="image_generation_models">Bildgenerierungsmodelle</string>
+    <string name="image_generation_models_description">KI-Modelle zum Generieren von Bildern aus Text</string>
+    <string name="image_generator_load_model_title">Modell laden zum Starten</string>
+    <string name="image_generator_load_model_desc">Bitte laden Sie ein Stable Diffusion-Modell, um mit der Bildgenerierung zu beginnen.</string>
+    <string name="image_generator_no_models">Keine Modelle verfügbar</string>
+    <string name="image_generator_load_model">Modell laden</string>
+    <string name="image_generator_loading_model">Lädt...</string>
+    <string name="image_generator_failed_load">Modell konnte nicht geladen werden</string>
+    <string name="image_generator_variation">Variante %1$d wird generiert...</string>
+    <string name="image_generator_swipe_more">Hier wischen für mehr</string>
+    <string name="image_generator_info">Die Bildgenerierung verwendet das Stable Diffusion v1.5-Modell, das auf dem Gerät läuft. Die Generierung kann je nach Gerät 1-2 Minuten dauern.</string>
     
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">Kein Modell verfügbar</string>

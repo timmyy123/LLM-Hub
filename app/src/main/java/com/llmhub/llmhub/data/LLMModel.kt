@@ -20,6 +20,7 @@ data class LLMModel(
     val modelFormat: String = "task", // "task", or "litertlm" (MediaPipe formats)
     var isDownloaded: Boolean = false,
     var isDownloading: Boolean = false, // New: whether a download is currently in progress for this model
+    var isExtracting: Boolean = false, // Whether ZIP extraction is in progress
     var isPaused: Boolean = false, // Whether download is paused
     var downloadProgress: Float = 0f,
     var downloadedBytes: Long = 0L,

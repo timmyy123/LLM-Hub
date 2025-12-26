@@ -231,6 +231,7 @@
     <string name="collapse">Réduire</string>
     <string name="downloaded">Téléchargé</string>
     <string name="downloading">Téléchargement...</string>
+    <string name="extracting_model">Extraction du modèle...</string>
     <string name="not_downloaded">Non téléchargé</string>
     <string name="partial">Partiel</string>
     <string name="paused">Pausé</string>
@@ -431,8 +432,8 @@
     <string name="feature_transcriber_desc">Transcrire voix ou audio en texte hors ligne</string>
     <string name="feature_scam_detector">Détecteur d\'arnaques</string>
     <string name="feature_scam_detector_desc">Analyser le texte, les images ou les URL pour détecter les arnaques potentielles</string>
-    <string name="feature_github_repo">Code Source</string>
-    <string name="feature_github_repo_desc">Dépôt GitHub</string>
+    <string name="feature_image_generator">Générateur d\'images</string>
+    <string name="feature_image_generator_desc">Générer des images à partir de descriptions textuelles avec l\'IA</string>
     
     <!-- Audio Features -->
     <string name="enable_audio_input">Activer l\'entrée audio</string>
@@ -516,7 +517,38 @@
     <string name="scam_detector_enable_vision">Activer la Vision</string>
     <string name="scam_detector_vision_desc">Analyser les images pour détecter les arnaques</string>
     <string name="scam_detector_fetching_url">Récupération du contenu de l\'URL...</string>
-    
+
+    <!-- Image Generator Screen -->
+    <string name="image_generator_title">Générateur d\'Images</string>
+    <string name="image_generator_subtitle">Générer des images à partir de descriptions textuelles avec l\'IA</string>
+    <string name="image_generator_prompt_label">Description de l\'Image</string>
+    <string name="image_generator_prompt_hint">Décrivez l\'image que vous souhaitez générer...</string>
+    <string name="image_generator_generate">Générer l\'Image</string>
+    <string name="image_generator_generating">Génération de l\'image...</string>
+    <string name="image_generator_iterations">Itérations</string>
+    <string name="image_generator_seed">Graine</string>
+    <string name="image_generator_random_seed">Graine Aléatoire</string>
+    <string name="image_generator_save">Enregistrer l\'Image</string>
+    <string name="image_generator_download_model">Télécharger le Modèle d\'Abord</string>
+    <string name="image_generator_download_model_desc">Téléchargez le modèle de génération d\'images pour commencer à créer des images</string>
+    <string name="image_generator_model_not_available">Modèle de génération d\'images non disponible</string>
+    <string name="image_generator_error">Échec de la génération de l\'image</string>
+    <string name="image_generator_success">Image générée avec succès</string>
+    <string name="image_generator_saved">Image enregistrée dans la galerie</string>
+    <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
+    <string name="image_generation_model">Modèle de Génération d\'Images</string>
+    <string name="image_generation_models">Modèles de Génération d\'Images</string>
+    <string name="image_generation_models_description">Modèles d\'IA pour générer des images à partir de texte</string>
+    <string name="image_generator_load_model_title">Charger le modèle pour commencer</string>
+    <string name="image_generator_load_model_desc">Veuillez charger un modèle Stable Diffusion pour commencer à générer des images.</string>
+    <string name="image_generator_no_models">Aucun modèle disponible</string>
+    <string name="image_generator_load_model">Charger le modèle</string>
+    <string name="image_generator_loading_model">Chargement...</string>
+    <string name="image_generator_failed_load">Échec du chargement du modèle</string>
+    <string name="image_generator_variation">Génération de la variation %1$d...</string>
+    <string name="image_generator_swipe_more">Balayez ici pour en générer plus</string>
+    <string name="image_generator_info">La génération d\'images utilise le modèle Stable Diffusion v1.5 exécuté sur l\'appareil. La génération peut prendre 1 à 2 minutes selon votre appareil.</string>
+
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">Aucun Modèle Disponible</string>
     <string name="feature_download_model">Télécharger des Modèles</string>

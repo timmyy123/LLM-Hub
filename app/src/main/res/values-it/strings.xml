@@ -243,6 +243,7 @@
     <string name="collapse">Comprimi</string>
     <string name="downloaded">Scaricato</string>
     <string name="downloading">Download...</string>
+    <string name="extracting_model">Estrazione del modello...</string>
     <string name="not_downloaded">Non scaricato</string>
     <string name="partial">Parziale</string>
     <string name="paused">In pausa</string>
@@ -431,8 +432,8 @@
     <string name="feature_transcriber_desc">Trascrivi voce o audio in testo offline</string>
     <string name="feature_scam_detector">Rilevatore di Truffe</string>
     <string name="feature_scam_detector_desc">Analizza testo, immagini o URL per possibili truffe</string>
-    <string name="feature_github_repo">Codice Sorgente</string>
-    <string name="feature_github_repo_desc">Repository GitHub</string>
+    <string name="feature_image_generator">Generatore di immagini</string>
+    <string name="feature_image_generator_desc">Genera immagini da descrizioni testuali con l\'IA</string>
     
     <!-- Writing Aid Screen -->
     
@@ -491,7 +492,38 @@
     <string name="scam_detector_enable_vision">Abilita Visione</string>
     <string name="scam_detector_vision_desc">Analizza le immagini per truffe</string>
     <string name="scam_detector_fetching_url">Recupero del contenuto dell\'URL...</string>
-    
+
+    <!-- Image Generator Screen -->
+    <string name="image_generator_title">Generatore di Immagini</string>
+    <string name="image_generator_subtitle">Genera immagini da descrizioni testuali usando l\'IA</string>
+    <string name="image_generator_prompt_label">Descrizione dell\'Immagine</string>
+    <string name="image_generator_prompt_hint">Descrivi l\'immagine che vuoi generare...</string>
+    <string name="image_generator_generate">Genera Immagine</string>
+    <string name="image_generator_generating">Generazione immagine...</string>
+    <string name="image_generator_iterations">Iterazioni</string>
+    <string name="image_generator_seed">Seed</string>
+    <string name="image_generator_random_seed">Seed Casuale</string>
+    <string name="image_generator_save">Salva Immagine</string>
+    <string name="image_generator_download_model">Scarica Prima il Modello</string>
+    <string name="image_generator_download_model_desc">Scarica il modello di generazione immagini per iniziare a creare immagini</string>
+    <string name="image_generator_model_not_available">Modello di generazione immagini non disponibile</string>
+    <string name="image_generator_error">Impossibile generare l\'immagine</string>
+    <string name="image_generator_success">Immagine generata con successo</string>
+    <string name="image_generator_saved">Immagine salvata nella galleria</string>
+    <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
+    <string name="image_generation_model">Modello di Generazione Immagini</string>
+    <string name="image_generation_models">Modelli di Generazione Immagini</string>
+    <string name="image_generation_models_description">Modelli IA per generare immagini dal testo</string>
+    <string name="image_generator_load_model_title">Carica modello per iniziare</string>
+    <string name="image_generator_load_model_desc">Carica un modello Stable Diffusion per iniziare a generare immagini.</string>
+    <string name="image_generator_no_models">Nessun modello disponibile</string>
+    <string name="image_generator_load_model">Carica modello</string>
+    <string name="image_generator_loading_model">Caricamento...</string>
+    <string name="image_generator_failed_load">Impossibile caricare il modello</string>
+    <string name="image_generator_variation">Generazione variante %1$d...</string>
+    <string name="image_generator_swipe_more">Scorri qui per generarne altre</string>
+    <string name="image_generator_info">La generazione di immagini utilizza il modello Stable Diffusion v1.5 eseguito sul dispositivo. La generazione potrebbe richiedere 1-2 minuti a seconda del dispositivo.</string>
+
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">Nessun modello disponibile</string>
     <string name="feature_download_model">Scarica modelli</string>

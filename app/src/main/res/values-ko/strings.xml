@@ -242,6 +242,7 @@
     <string name="collapse">접기</string>
     <string name="downloaded">다운로드됨</string>
     <string name="downloading">다운로드 중...</string>
+    <string name="extracting_model">모델 추출 중...</string>
     <string name="not_downloaded">다운로드되지 않음</string>
     <string name="partial">부분적</string>
     <string name="paused">일시정지됨</string>
@@ -430,8 +431,8 @@
     <string name="feature_transcriber_desc">음성 또는 오디오를 오프라인으로 텍스트로 전사</string>
     <string name="feature_scam_detector">사기 탐지기</string>
     <string name="feature_scam_detector_desc">잠재적인 사기에 대한 텍스트, 이미지 또는 URL 분석</string>
-    <string name="feature_github_repo">소스 코드</string>
-    <string name="feature_github_repo_desc">GitHub 저장소</string>
+    <string name="feature_image_generator">이미지 생성기</string>
+    <string name="feature_image_generator_desc">AI로 텍스트 설명에서 이미지 생성</string>
     
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">글쓰기 도우미</string>
@@ -488,7 +489,38 @@
     <string name="scam_detector_enable_vision">비전 활성화</string>
     <string name="scam_detector_vision_desc">사기에 대한 이미지 분석</string>
     <string name="scam_detector_fetching_url">URL 콘텐츠 가져오는 중...</string>
-    
+
+    <!-- Image Generator Screen -->
+    <string name="image_generator_title">이미지 생성기</string>
+    <string name="image_generator_subtitle">AI를 사용하여 텍스트 설명에서 이미지 생성</string>
+    <string name="image_generator_prompt_label">이미지 설명</string>
+    <string name="image_generator_prompt_hint">생성하려는 이미지를 설명하세요...</string>
+    <string name="image_generator_generate">이미지 생성</string>
+    <string name="image_generator_generating">이미지 생성 중...</string>
+    <string name="image_generator_iterations">반복 횟수</string>
+    <string name="image_generator_seed">시드</string>
+    <string name="image_generator_random_seed">랜덤 시드</string>
+    <string name="image_generator_save">이미지 저장</string>
+    <string name="image_generator_download_model">먼저 모델 다운로드</string>
+    <string name="image_generator_download_model_desc">이미지 생성 모델을 다운로드하여 이미지 생성을 시작하세요</string>
+    <string name="image_generator_model_not_available">이미지 생성 모델을 사용할 수 없습니다</string>
+    <string name="image_generator_error">이미지 생성 실패</string>
+    <string name="image_generator_success">이미지가 성공적으로 생성되었습니다</string>
+    <string name="image_generator_saved">이미지가 갤러리에 저장되었습니다</string>
+    <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
+    <string name="image_generation_model">이미지 생성 모델</string>
+    <string name="image_generation_models">이미지 생성 모델</string>
+    <string name="image_generation_models_description">텍스트에서 이미지를 생성하는 AI 모델</string>
+    <string name="image_generator_load_model_title">시작하려면 모델 로드</string>
+    <string name="image_generator_load_model_desc">이미지 생성을 시작하려면 Stable Diffusion 모델을 로드하세요.</string>
+    <string name="image_generator_no_models">사용 가능한 모델 없음</string>
+    <string name="image_generator_load_model">모델 로드</string>
+    <string name="image_generator_loading_model">로딩 중...</string>
+    <string name="image_generator_failed_load">모델 로드 실패</string>
+    <string name="image_generator_variation">변형 %1$d 생성 중...</string>
+    <string name="image_generator_swipe_more">여기를 스와이프하여 더 생성</string>
+    <string name="image_generator_info">이미지 생성은 기기에서 실행되는 Stable Diffusion v1.5 모델을 사용합니다. 기기에 따라 생성에 1-2분이 소요될 수 있습니다.</string>
+
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">사용 가능한 모델 없음</string>
     <string name="feature_download_model">모델 다운로드</string>

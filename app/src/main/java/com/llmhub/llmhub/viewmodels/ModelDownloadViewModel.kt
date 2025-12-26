@@ -74,39 +74,132 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
 
         // Prepare list with real downloaded/partial state
         val baseModels = ModelData.models.map { model ->
-            val primaryFile = File(modelsDir, model.localFileName())
-            val legacyFile = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
-
-            if (!primaryFile.exists() && legacyFile.exists()) {
-                legacyFile.renameTo(primaryFile)
-            }
-
-            val file = primaryFile
-            if (file.exists()) {
-                val sizeKnown = model.sizeBytes > 0
-                val completeEnough = sizeKnown && file.length() >= (model.sizeBytes * 0.98).toLong()
-                val valid = isModelFileValid(file, model.modelFormat)
-
-                if (completeEnough && valid) {
+            // Handle Stable Diffusion NPU models (QNN format)
+            if (model.modelFormat == "qnn_npu") {
+                val sdModelsDir = File(context.filesDir, "sd_models")
+                val isDownloaded = checkSdModelExists(sdModelsDir, "qnn")
+                if (isDownloaded) {
                     model.copy(
                         isDownloaded = true,
                         isDownloading = false,
-                        sizeBytes = file.length(),
                         downloadProgress = 1f,
-                        downloadedBytes = file.length(),
-                        totalBytes = file.length()
+                        downloadedBytes = model.sizeBytes,
+                        totalBytes = model.sizeBytes
                     )
                 } else {
-                    val progress = if (sizeKnown) (file.length().toFloat() / model.sizeBytes).coerceIn(0f, 1f) else -1f
-                    model.copy(
-                        isDownloaded = false,
-                        isDownloading = false,
-                        downloadProgress = progress,
-                        downloadedBytes = file.length(),
-                        totalBytes = if (sizeKnown) model.sizeBytes else null
-                    )
+                    model.copy(isDownloaded = false, isDownloading = false, downloadProgress = 0f, downloadedBytes = 0, totalBytes = model.sizeBytes)
                 }
-            } else model
+            }
+            // Handle Stable Diffusion CPU models (MNN format)
+            else if (model.modelFormat == "mnn_cpu") {
+                val sdModelsDir = File(context.filesDir, "sd_models")
+                val isDownloaded = checkSdModelExists(sdModelsDir, "mnn")
+                if (isDownloaded) {
+                    model.copy(
+                        isDownloaded = true,
+                        isDownloading = false,
+                        downloadProgress = 1f,
+                        downloadedBytes = model.sizeBytes,
+                        totalBytes = model.sizeBytes
+                    )
+                } else {
+                    model.copy(isDownloaded = false, isDownloading = false, downloadProgress = 0f, downloadedBytes = 0, totalBytes = model.sizeBytes)
+                }
+            }
+            // Handle image_generator models specially (multi-file format)
+            else if (model.modelFormat == "image_generator") {
+                val imageGenDir = File(context.filesDir, "image_generator/bins")
+                if (imageGenDir.exists() && imageGenDir.isDirectory) {
+                    val files = imageGenDir.listFiles() ?: emptyArray()
+                    val fileCount = files.filter { it.length() > 0 }.size
+                    val totalDownloaded = files.sumOf { it.length() }
+                    
+                    // Try to get expected file count from manifest
+                    val expectedFileCount = try {
+                        val url = java.net.URL(model.url)
+                        val conn = url.openConnection() as java.net.HttpURLConnection
+                        conn.connectTimeout = 3000
+                        conn.readTimeout = 3000
+                        val json = conn.inputStream.bufferedReader().use { it.readText() }
+                        conn.disconnect()
+                        val manifestObj = org.json.JSONObject(json)
+                        manifestObj.getJSONArray("files").length()
+                    } catch (e: Exception) {
+                        -1 // Unknown, fall back to size check
+                    }
+                    
+                    if (fileCount > 0) {
+                        val completeEnough = if (expectedFileCount > 0) {
+                            fileCount >= expectedFileCount
+                        } else {
+                            model.sizeBytes > 0 && totalDownloaded >= (model.sizeBytes * 0.95).toLong()
+                        }
+                        
+                        if (completeEnough) {
+                            model.copy(
+                                isDownloaded = true,
+                                isDownloading = false,
+                                downloadProgress = 1f,
+                                downloadedBytes = totalDownloaded,
+                                totalBytes = totalDownloaded
+                            )
+                        } else {
+                            // Partial download
+                            val progress = if (model.sizeBytes > 0) {
+                                (totalDownloaded.toFloat() / model.sizeBytes).coerceIn(0f, 0.999f)
+                            } else -1f
+                            model.copy(
+                                isDownloaded = false,
+                                isDownloading = false,
+                                downloadProgress = progress,
+                                downloadedBytes = totalDownloaded,
+                                totalBytes = if (model.sizeBytes > 0) model.sizeBytes else null
+                            )
+                        }
+                    } else {
+                        model.copy(isDownloaded = false, isDownloading = false, downloadProgress = 0f, downloadedBytes = 0, totalBytes = model.sizeBytes)
+                    }
+                } else {
+                    model.copy(isDownloaded = false, isDownloading = false, downloadProgress = 0f, downloadedBytes = 0, totalBytes = model.sizeBytes)
+                }
+            } else {
+                // Regular single-file models
+                val primaryFile = File(modelsDir, model.localFileName())
+                val legacyFile = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
+
+                if (!primaryFile.exists() && legacyFile.exists()) {
+                    legacyFile.renameTo(primaryFile)
+                }
+
+                val file = primaryFile
+                if (file.exists()) {
+                    val sizeKnown = model.sizeBytes > 0
+                    val completeEnough = sizeKnown && file.length() >= (model.sizeBytes * 0.98).toLong()
+                    val valid = isModelFileValid(file, model.modelFormat)
+
+                    if (completeEnough && valid) {
+                        model.copy(
+                            isDownloaded = true,
+                            isDownloading = false,
+                            sizeBytes = file.length(),
+                            downloadProgress = 1f,
+                            downloadedBytes = file.length(),
+                            totalBytes = file.length()
+                        )
+                    } else {
+                        val progress = if (sizeKnown) (file.length().toFloat() / model.sizeBytes).coerceIn(0f, 1f) else -1f
+                        model.copy(
+                            isDownloaded = false,
+                            isDownloading = false,
+                            downloadProgress = progress,
+                            downloadedBytes = file.length(),
+                            totalBytes = if (sizeKnown) model.sizeBytes else null
+                        )
+                    }
+                } else {
+                    model.copy(isDownloaded = false, isDownloading = false, downloadProgress = 0f, downloadedBytes = 0, totalBytes = model.sizeBytes)
+                }
+            }
         }.toMutableList()
 
         _models.value = baseModels
@@ -174,6 +267,32 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
             }
         }
     }
+    
+    /**
+     * Check if SD model exists in the given directory or subdirectories
+     * @param baseDir The base directory to search (e.g., sd_models)
+     * @param modelType "qnn" for QNN models (unet.bin) or "mnn" for MNN models (unet.mnn)
+     */
+    private fun checkSdModelExists(baseDir: File, modelType: String): Boolean {
+        if (!baseDir.exists() || !baseDir.isDirectory) return false
+        
+        val targetFile = if (modelType == "qnn") "unet.bin" else "unet.mnn"
+        
+        // Check base directory
+        if (File(baseDir, targetFile).exists()) return true
+        
+        // Check subdirectories (up to 2 levels deep)
+        fun searchDir(dir: File, depth: Int): Boolean {
+            if (depth > 2 || !dir.exists() || !dir.isDirectory) return false
+            if (File(dir, targetFile).exists()) return true
+            dir.listFiles()?.forEach { subDir ->
+                if (subDir.isDirectory && searchDir(subDir, depth + 1)) return true
+            }
+            return false
+        }
+        
+        return searchDir(baseDir, 0)
+    }
 
     fun downloadModel(model: LLMModel) {
         val modelsDir = File(context.filesDir, "models")
@@ -211,6 +330,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                     updateModel(model.name) { 
                         it.copy(
                             isDownloading = false,
+                            isExtracting = false,
                             downloadProgress = 0f,
                             downloadedBytes = 0L,
                             totalBytes = null,
@@ -219,6 +339,84 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                     }
                 }
                 .onCompletion { cause ->
+                    // Handle Stable Diffusion models (qnn_npu or mnn_cpu format)
+                    if (model.modelFormat == "qnn_npu" || model.modelFormat == "mnn_cpu") {
+                        val sdModelsDir = File(context.filesDir, "sd_models")
+                        val modelType = if (model.modelFormat == "qnn_npu") "qnn" else "mnn"
+                        val isComplete = checkSdModelExists(sdModelsDir, modelType)
+                        
+                        if (isComplete && cause == null) {
+                            android.util.Log.i("ModelDownloadViewModel", "SD model download completed: ${model.name}")
+                            updateModel(model.name) { 
+                                it.copy(
+                                    isDownloaded = true, 
+                                    isDownloading = false,
+                                    isExtracting = false,
+                                    downloadProgress = 1f, 
+                                    downloadedBytes = model.sizeBytes, 
+                                    totalBytes = model.sizeBytes
+                                ) 
+                            }
+                        } else {
+                            android.util.Log.w("ModelDownloadViewModel", "SD model download incomplete: ${model.name}")
+                            updateModel(model.name) {
+                                it.copy(
+                                    isDownloaded = false,
+                                    isDownloading = false,
+                                    isExtracting = false,
+                                    downloadProgress = 0f
+                                )
+                            }
+                        }
+                        return@onCompletion
+                    }
+                    
+                    // Handle image_generator models specially (multi-file format)
+                    if (model.modelFormat == "image_generator") {
+                        val imageGenDir = File(context.filesDir, "image_generator/bins")
+                        
+                        if (imageGenDir.exists() && imageGenDir.isDirectory) {
+                            val files = imageGenDir.listFiles() ?: emptyArray()
+                            val fileCount = files.filter { it.length() > 0 }.size
+                            val totalDownloaded = files.sumOf { it.length() }
+                            
+                            // Check if download completed successfully by checking if downloadedBytes == totalBytes in latest status
+                            // This means all files from manifest were processed
+                            val completed = latestStatus?.let { 
+                                it.downloadedBytes == it.totalBytes && it.totalBytes > 0 
+                            } ?: false
+                            
+                            if (completed && cause == null) {
+                                android.util.Log.i("ModelDownloadViewModel", "Image generator download completed: ${model.name}, files: $fileCount, size: $totalDownloaded")
+                                updateModel(model.name) { 
+                                    it.copy(
+                                        isDownloaded = true, 
+                                        isDownloading = false, 
+                                        downloadProgress = 1f, 
+                                        downloadedBytes = totalDownloaded, 
+                                        totalBytes = totalDownloaded
+                                    ) 
+                                }
+                            } else {
+                                android.util.Log.w("ModelDownloadViewModel", "Image generator download incomplete: ${model.name}, files: $fileCount, downloaded: $totalDownloaded, latestStatus: ${latestStatus?.downloadedBytes}/${latestStatus?.totalBytes}")
+                                updateModel(model.name) {
+                                    val progress = if (model.sizeBytes > 0) (totalDownloaded.toFloat() / model.sizeBytes).coerceIn(0f, 0.999f) else 0f
+                                    it.copy(
+                                        isDownloaded = false,
+                                        isDownloading = false,
+                                        downloadProgress = progress,
+                                        downloadedBytes = totalDownloaded,
+                                        totalBytes = model.sizeBytes
+                                    )
+                                }
+                            }
+                        } else {
+                            updateModel(model.name) { it.copy(isDownloaded = false, isDownloading = false, downloadProgress = 0f) }
+                        }
+                        return@onCompletion
+                    }
+                    
+                    // Regular single-file models
                     val modelsDir = File(context.filesDir, "models")
                     val primaryFile = File(modelsDir, model.localFileName())
                     val legacyFile  = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
@@ -270,6 +468,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                         }
                         it.copy(
                             isDownloading = true,
+                            isExtracting = status.isExtracting,
                             sizeBytes = if (status.totalBytes > it.sizeBytes) status.totalBytes else it.sizeBytes,
                             downloadProgress = progress,
                             downloadedBytes = status.downloadedBytes,
@@ -296,6 +495,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         updateModel(model.name) {
             it.copy(
                 isDownloading = false,
+                isExtracting = false,
                 downloadProgress = 0f,
                 downloadedBytes = 0L,
                 totalBytes = null,
@@ -312,6 +512,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         updateModel(model.name) {
             it.copy(
                 isDownloading = false,
+                isExtracting = false,
                 isPaused = true,
                 // Keep download progress and bytes for resume capability
                 downloadSpeedBytesPerSec = null

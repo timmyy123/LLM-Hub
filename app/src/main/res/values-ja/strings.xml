@@ -242,6 +242,7 @@
     <string name="collapse">折りたたむ</string>
     <string name="downloaded">ダウンロード済み</string>
     <string name="downloading">ダウンロード中...</string>
+    <string name="extracting_model">モデルを展開中...</string>
     <string name="not_downloaded">未ダウンロード</string>
     <string name="partial">部分的</string>
     <string name="paused">一時停止</string>
@@ -430,8 +431,8 @@
     <string name="feature_transcriber_desc">音声またはオーディオをオフラインでテキストに変換</string>
     <string name="feature_scam_detector">詐欺検出器</string>
     <string name="feature_scam_detector_desc">テキスト、画像、URLを分析して潜在的な詐欺を検出</string>
-    <string name="feature_github_repo">ソースコード</string>
-    <string name="feature_github_repo_desc">GitHubリポジトリ</string>
+    <string name="feature_image_generator">画像生成</string>
+    <string name="feature_image_generator_desc">AIを使用してテキストから画像を生成</string>
     
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">ライティング支援</string>
@@ -488,7 +489,38 @@
     <string name="scam_detector_enable_vision">ビジョンを有効化</string>
     <string name="scam_detector_vision_desc">詐欺の画像を分析</string>
     <string name="scam_detector_fetching_url">URLコンテンツを取得中...</string>
-    
+
+    <!-- Image Generator Screen -->
+    <string name="image_generator_title">画像生成</string>
+    <string name="image_generator_subtitle">AIを使用してテキストから画像を生成</string>
+    <string name="image_generator_prompt_label">画像の説明</string>
+    <string name="image_generator_prompt_hint">生成したい画像を説明してください...</string>
+    <string name="image_generator_generate">画像を生成</string>
+    <string name="image_generator_generating">画像を生成中...</string>
+    <string name="image_generator_iterations">反復回数</string>
+    <string name="image_generator_seed">シード</string>
+    <string name="image_generator_random_seed">ランダムシード</string>
+    <string name="image_generator_save">画像を保存</string>
+    <string name="image_generator_download_model">最初にモデルをダウンロード</string>
+    <string name="image_generator_download_model_desc">画像生成モデルをダウンロードして、画像の作成を開始します</string>
+    <string name="image_generator_model_not_available">画像生成モデルは利用できません</string>
+    <string name="image_generator_error">画像の生成に失敗しました</string>
+    <string name="image_generator_success">画像が正常に生成されました</string>
+    <string name="image_generator_saved">画像がギャラリーに保存されました</string>
+    <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
+    <string name="image_generation_model">画像生成モデル</string>
+    <string name="image_generation_models">画像生成モデル</string>
+    <string name="image_generation_models_description">テキストから画像を生成するAIモデル</string>
+    <string name="image_generator_load_model_title">モデルをロードして開始</string>
+    <string name="image_generator_load_model_desc">画像生成を開始するにはStable Diffusionモデルをロードしてください。</string>
+    <string name="image_generator_no_models">利用可能なモデルがありません</string>
+    <string name="image_generator_load_model">モデルをロード</string>
+    <string name="image_generator_loading_model">読み込み中...</string>
+    <string name="image_generator_failed_load">モデルの読み込みに失敗しました</string>
+    <string name="image_generator_variation">バリエーション%1$dを生成中...</string>
+    <string name="image_generator_swipe_more">ここをスワイプしてさらに生成</string>
+    <string name="image_generator_info">画像生成はデバイス上で動作するStable Diffusion v1.5モデルを使用します。生成にはデバイスにより1〜2分かかる場合があります。</string>
+
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">利用可能なモデルがありません</string>
     <string name="feature_download_model">モデルをダウンロード</string>

@@ -1,0 +1,736 @@
+package com.llmhub.llmhub.screens
+
+import android.graphics.Bitmap
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import com.llmhub.llmhub.R
+import com.llmhub.llmhub.imagegen.ImageGeneratorHelper
+import com.llmhub.llmhub.imagegen.ModelInfo
+import com.llmhub.llmhub.imagegen.StableDiffusionHelper
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ImageGeneratorScreen(
+    onNavigateBack: () -> Unit,
+    onNavigateToModels: () -> Unit
+) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val scrollState = rememberScrollState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    
+    // SharedPreferences for remembering settings
+    val prefs = remember { context.getSharedPreferences("image_generator_prefs", android.content.Context.MODE_PRIVATE) }
+    
+    // UI State - load from preferences
+    var promptText by remember { mutableStateOf("") }
+    var iterations by remember { mutableIntStateOf(prefs.getInt("iterations", 20)) }
+    var seed by remember { mutableIntStateOf(prefs.getInt("seed", (0..999999).random())) }
+    val generatedImages = remember { mutableStateListOf<Bitmap>() }
+    var isGenerating by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var currentGenerationIndex by remember { mutableIntStateOf(0) }
+    
+    // Model availability state
+    var availableModels by remember { mutableStateOf<List<ModelInfo>>(emptyList()) }
+    var selectedModel by remember { mutableStateOf<ModelInfo?>(null) }
+    var isModelLoaded by remember { mutableStateOf(false) }
+    var isModelLoading by remember { mutableStateOf(false) }
+    var showModelSheet by remember { mutableStateOf(false) }
+    
+    // Remember last used model
+    val lastModelPath = remember { prefs.getString("last_model_path", null) }
+    
+    // Image generator helper
+    val imageGeneratorHelper = remember { ImageGeneratorHelper(context) }
+    val sdHelper = remember { StableDiffusionHelper(context) }
+    
+    // Check if image generation model is available
+    LaunchedEffect(Unit) {
+        val models = sdHelper.listModels()
+        availableModels = models
+        if (models.isNotEmpty()) {
+            // Try to select last used model, otherwise first
+            selectedModel = models.find { it.path == lastModelPath } ?: models.first()
+        }
+    }
+    
+    // Save settings when they change
+    LaunchedEffect(iterations, seed, selectedModel) {
+        prefs.edit()
+            .putInt("iterations", iterations)
+            .putInt("seed", seed)
+            .putString("last_model_path", selectedModel?.path)
+            .apply()
+    }
+    
+    // Clean up on dispose
+    DisposableEffect(Unit) {
+        onDispose {
+            imageGeneratorHelper.close()
+        }
+    }
+    
+    // Show error snackbar
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            errorMessage = null
+        }
+    }
+    
+    if (showModelSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showModelSheet = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.feature_settings_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                // Model Selector Card Style
+                Card(
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.select_model),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        
+                        if (availableModels.isEmpty()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.Warning,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                                Column {
+                                    Text(
+                                        text = stringResource(R.string.image_generator_no_models),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.download_models_first),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                            Button(
+                                onClick = { 
+                                    showModelSheet = false
+                                    onNavigateToModels() 
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(stringResource(R.string.download_models))
+                            }
+                        } else {
+                            var expanded by remember { mutableStateOf(false) }
+                            ExposedDropdownMenuBox(
+                                expanded = expanded,
+                                onExpandedChange = { expanded = !expanded }
+                            ) {
+                                OutlinedTextField(
+                                    value = selectedModel?.name ?: stringResource(R.string.select_model),
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .menuAnchor(),
+                                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                                    shape = RoundedCornerShape(16.dp)
+                                )
+                                ExposedDropdownMenu(
+                                    expanded = expanded,
+                                    onDismissRequest = { expanded = false }
+                                ) {
+                                    availableModels.forEach { model ->
+                                        DropdownMenuItem(
+                                            text = { 
+                                                Column {
+                                                    Text(model.name)
+                                                    Text(
+                                                        text = model.type.toString(),
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
+                                            },
+                                            onClick = {
+                                                selectedModel = model
+                                                expanded = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            Button(
+                                onClick = {
+                                    selectedModel?.let { model ->
+                                        isModelLoading = true
+                                        coroutineScope.launch {
+                                            val success = imageGeneratorHelper.initialize(model.path)
+                                            isModelLoaded = success
+                                            isModelLoading = false
+                                            if (!success) {
+                                                errorMessage = context.getString(R.string.image_generator_failed_load)
+                                            }
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = selectedModel != null && !isModelLoading
+                            ) {
+                                if (isModelLoading) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        color = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(stringResource(R.string.image_generator_loading_model))
+                                } else {
+                                    Text(stringResource(R.string.image_generator_load_model))
+                                }
+                            }
+                            
+                            if (isModelLoaded) {
+                                OutlinedButton(
+                                    onClick = {
+                                        imageGeneratorHelper.close()
+                                        isModelLoaded = false
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = MaterialTheme.colorScheme.error
+                                    ),
+                                    border = ButtonDefaults.outlinedButtonBorder.copy(
+                                        brush = Brush.linearGradient(
+                                            colors = listOf(MaterialTheme.colorScheme.error, MaterialTheme.colorScheme.error)
+                                        )
+                                    )
+                                ) {
+                                    Icon(Icons.Default.Close, contentDescription = null)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(stringResource(R.string.unload_model))
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Generation Settings Card (Iterations and Seed)
+                Card(
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        // Iterations slider
+                        Column {
+                            Text(
+                                text = "${stringResource(R.string.image_generator_iterations)}: $iterations",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Slider(
+                                value = iterations.toFloat(),
+                                onValueChange = { iterations = it.toInt() },
+                                valueRange = 10f..50f,
+                                steps = 7,
+                                enabled = !isGenerating
+                            )
+                        }
+                        
+                        // Seed input with random button
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            OutlinedTextField(
+                                value = seed.toString(),
+                                onValueChange = { 
+                                    it.toIntOrNull()?.let { newSeed -> 
+                                        seed = newSeed 
+                                    }
+                                },
+                                label = { Text(stringResource(R.string.image_generator_seed)) },
+                                modifier = Modifier.weight(1f),
+                                enabled = !isGenerating,
+                                singleLine = true,
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            IconButton(
+                                onClick = { seed = (0..999999).random() },
+                                enabled = !isGenerating
+                            ) {
+                                Icon(
+                                    Icons.Default.Refresh,
+                                    contentDescription = stringResource(R.string.image_generator_random_seed)
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(32.dp))
+            }
+        }
+    }
+    
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { 
+                    Text(
+                        stringResource(R.string.image_generator_title),
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                actions = {
+                    IconButton(onClick = { showModelSheet = true }) {
+                        Icon(Icons.Default.Tune, contentDescription = "Settings")
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            Icons.Default.ArrowBack, 
+                            contentDescription = stringResource(R.string.back)
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                )
+            )
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { paddingValues ->
+        
+        // Show "Download Model First" screen if model not available
+        if (availableModels.isEmpty()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(32.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Palette,
+                    contentDescription = null,
+                    modifier = Modifier.size(80.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(
+                    text = stringResource(R.string.image_generator_download_model),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = stringResource(R.string.image_generator_download_model_desc),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(32.dp))
+                FilledTonalButton(
+                    onClick = onNavigateToModels,
+                    modifier = Modifier.fillMaxWidth(0.6f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.GetApp,
+                        contentDescription = null
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.download_models))
+                }
+            }
+        } else if (!isModelLoaded) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(paddingValues)
+                    .padding(32.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ModelTraining,
+                    contentDescription = null,
+                    modifier = Modifier.size(80.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(
+                    text = stringResource(R.string.image_generator_load_model_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = stringResource(R.string.image_generator_load_model_desc),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(32.dp))
+                FilledTonalButton(
+                    onClick = { showModelSheet = true },
+                    modifier = Modifier.fillMaxWidth(0.6f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Tune,
+                        contentDescription = null
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.feature_settings_title))
+                }
+            }
+        } else {
+            // Main content
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .verticalScroll(scrollState)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Subtitle
+                Text(
+                    text = stringResource(R.string.image_generator_subtitle),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                
+                // Prompt input
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = stringResource(R.string.image_generator_prompt_label),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = promptText,
+                            onValueChange = { promptText = it },
+                            placeholder = { 
+                                Text(stringResource(R.string.image_generator_prompt_hint))
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            minLines = 3,
+                            maxLines = 5,
+                            enabled = !isGenerating && isModelLoaded
+                        )
+                    }
+                }
+                
+                // Generate button
+                Button(
+                    onClick = {
+                        if (promptText.isNotBlank()) {
+                            isGenerating = true
+                            // Clear previous images when starting new generation
+                            generatedImages.clear()
+                            currentGenerationIndex = 0
+                            coroutineScope.launch {
+                                try {
+                                    // Generate first image
+                                    val bitmap = imageGeneratorHelper.generateImage(
+                                        prompt = promptText,
+                                        iterations = iterations,
+                                        seed = seed
+                                    )
+                                    if (bitmap != null) {
+                                        generatedImages.add(bitmap)
+                                    } else {
+                                        errorMessage = context.getString(R.string.image_generator_error)
+                                    }
+                                } catch (e: Exception) {
+                                    errorMessage = e.message ?: context.getString(R.string.image_generator_error)
+                                } finally {
+                                    isGenerating = false
+                                }
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isGenerating && isModelLoaded && promptText.isNotBlank()
+                ) {
+                    if (isGenerating) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.image_generator_generating))
+                    } else {
+                        Icon(Icons.Default.AutoAwesome, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.image_generator_generate))
+                    }
+                }
+                
+                // Generated images carousel (Apple Intelligence style)
+                if (generatedImages.isNotEmpty()) {
+                    val pagerState = rememberPagerState(
+                        initialPage = 0,
+                        pageCount = { generatedImages.size + 1 } // +1 for "generate more" placeholder
+                    )
+                    
+                    // Prefetch next image: always generate one ahead while viewing current
+                    // Use collect instead of collectLatest to avoid cancellation when swiping back
+                    LaunchedEffect(pagerState, generatedImages.size) {
+                        snapshotFlow { pagerState.currentPage }
+                            .collect { currentPage ->
+                                // Start generating next image when viewing any image (not the placeholder)
+                                // and we don't already have a next image ready
+                                val shouldPrefetch = currentPage < generatedImages.size && 
+                                    currentPage == generatedImages.size - 1 && 
+                                    !isGenerating
+                                val swipedToPlaceholder = currentPage == generatedImages.size && !isGenerating
+                                
+                                if (shouldPrefetch || swipedToPlaceholder) {
+                                    // Launch in separate scope so it won't be cancelled when user swipes away
+                                    coroutineScope.launch {
+                                        if (isGenerating) return@launch // Double check to prevent race
+                                        isGenerating = true
+                                        currentGenerationIndex = generatedImages.size
+                                        try {
+                                            val newSeed = (0..999999).random()
+                                            val bitmap = imageGeneratorHelper.generateImage(
+                                                prompt = promptText,
+                                                iterations = iterations,
+                                                seed = newSeed
+                                            )
+                                            if (bitmap != null) {
+                                                generatedImages.add(bitmap)
+                                            }
+                                        } catch (e: Exception) {
+                                            errorMessage = e.message
+                                        } finally {
+                                            isGenerating = false
+                                        }
+                                    }
+                                }
+                            }
+                    }
+                    
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.image_generator_success),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "${minOf(pagerState.currentPage + 1, generatedImages.size)}/${generatedImages.size}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            
+                            // Horizontal pager for images
+                            HorizontalPager(
+                                state = pagerState,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(1f)
+                            ) { page ->
+                                if (page < generatedImages.size) {
+                                    // Show generated image
+                                    Image(
+                                        bitmap = generatedImages[page].asImageBitmap(),
+                                        contentDescription = "$promptText - variation ${page + 1}",
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .clip(RoundedCornerShape(12.dp))
+                                    )
+                                } else {
+                                    // "Generate more" placeholder
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        if (isGenerating) {
+                                            Column(
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                                            ) {
+                                                CircularProgressIndicator()
+                                                Text(
+                                                    text = stringResource(R.string.image_generator_variation, generatedImages.size + 1),
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        } else {
+                                            Column(
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Add,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(48.dp),
+                                                    tint = MaterialTheme.colorScheme.primary
+                                                )
+                                                Text(
+                                                    text = stringResource(R.string.image_generator_swipe_more),
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    textAlign = TextAlign.Center
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // Page indicators
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                repeat(generatedImages.size) { index ->
+                                    Box(
+                                        modifier = Modifier
+                                            .padding(horizontal = 4.dp)
+                                            .size(8.dp)
+                                            .clip(CircleShape)
+                                            .background(
+                                                if (pagerState.currentPage == index)
+                                                    MaterialTheme.colorScheme.primary
+                                                else
+                                                    MaterialTheme.colorScheme.outlineVariant
+                                            )
+                                    )
+                                }
+                                // Plus indicator for "generate more"
+                                Box(
+                                    modifier = Modifier
+                                        .padding(horizontal = 4.dp)
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            if (pagerState.currentPage == generatedImages.size)
+                                                MaterialTheme.colorScheme.primary
+                                            else
+                                                MaterialTheme.colorScheme.outlineVariant
+                                        )
+                                )
+                            }
+                            
+                            // Save current image button
+                            if (pagerState.currentPage < generatedImages.size) {
+                                Button(
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            val currentBitmap = generatedImages[pagerState.currentPage]
+                                            val uri = imageGeneratorHelper.saveImageToGallery(currentBitmap, "Generated Image")
+                                            if (uri != null) {
+                                                snackbarHostState.showSnackbar(context.getString(R.string.image_generator_saved))
+                                            } else {
+                                                errorMessage = context.getString(R.string.image_generator_error)
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(Icons.Default.Save, contentDescription = null)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(stringResource(R.string.image_generator_save))
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(32.dp))
+            }
+        }
+    }
+}

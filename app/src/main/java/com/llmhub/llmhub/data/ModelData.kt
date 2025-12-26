@@ -1,5 +1,46 @@
 package com.llmhub.llmhub.data
 
+import android.os.Build
+
+/**
+ * Device SOC detection for optimal model selection
+ */
+object DeviceInfo {
+    fun getDeviceSoc(): String {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            Build.SOC_MODEL
+        } else {
+            "UNKNOWN"
+        }
+    }
+    
+    private val chipsetModelSuffixes = mapOf(
+        "SM8475" to "8gen1",  // 8+ Gen 1
+        "SM8450" to "8gen1",  // 8 Gen 1
+        "SM8550" to "8gen2",  // 8 Gen 2
+        "SM8550P" to "8gen2",
+        "QCS8550" to "8gen2",
+        "QCM8550" to "8gen2",
+        "SM8650" to "8gen2",  // 8 Gen 3
+        "SM8650P" to "8gen2",
+        "SM8750" to "8gen2",  // 8 Elite
+        "SM8750P" to "8gen2",
+        "SM8850" to "8gen2",
+        "SM8850P" to "8gen2",
+        "SM8735" to "8gen2",
+        "SM8845" to "8gen2"
+    )
+    
+    fun getChipsetSuffix(): String? {
+        val soc = getDeviceSoc()
+        return chipsetModelSuffixes[soc] ?: if (soc.startsWith("SM")) "min" else null
+    }
+    
+    fun isQualcommNpuSupported(): Boolean {
+        return getChipsetSuffix() != null
+    }
+}
+
 object ModelData {
     val models = listOf(
         // Gemma-3 1B Models
@@ -288,6 +329,40 @@ object ModelData {
             requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
             contextWindowSize = 2048,
             modelFormat = "tflite"
+        ),
+        
+        // Image Generation Models - Absolute Reality (Stable Diffusion 1.5)
+        LLMModel(
+            name = "Absolute Reality (NPU - ${DeviceInfo.getChipsetSuffix() ?: "Not Supported"})",
+            description = "Absolute Reality SD1.5 model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation at 512x512 resolution. Requires Snapdragon 8 Gen 1 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~1.06 GB download from HuggingFace.",
+            url = "https://huggingface.co/xororz/sd-qnn/resolve/main/AbsoluteReality_qnn2.28_${DeviceInfo.getChipsetSuffix() ?: "min"}.zip",
+            category = "image_generation",
+            sizeBytes = when(DeviceInfo.getChipsetSuffix()) {
+                "8gen1" -> 1138900992L    // 1.06 GB
+                "8gen2" -> 1128267776L    // 1.05 GB  
+                else -> 1041235968L       // 993 MB (min)
+            },
+            source = "Stable Diffusion 1.5 (QNN SDK via xororz)",
+            supportsVision = false,
+            supportsAudio = false,
+            supportsGpu = false, // Uses NPU, not GPU
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 0,
+            modelFormat = "qnn_npu" // QNN SDK format for NPU acceleration
+        ),
+        LLMModel(
+            name = "Absolute Reality (CPU)",
+            description = "Absolute Reality SD1.5 model for CPU inference using MNN framework. Works on all Android devices without NPU requirements. Supports txt2img generation with flexible resolutions (128x128 to 512x512). Slower than NPU but compatible with all devices. ~1.2 GB download from HuggingFace.",
+            url = "https://huggingface.co/xororz/sd-mnn/resolve/main/AbsoluteReality.zip",
+            category = "image_generation",
+            sizeBytes = 1288490188L, // ~1.2 GB
+            source = "Stable Diffusion 1.5 (MNN via xororz)",
+            supportsVision = false,
+            supportsAudio = false,
+            supportsGpu = false, // CPU only
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 4),
+            contextWindowSize = 0,
+            modelFormat = "mnn_cpu" // MNN framework for CPU inference
         )
         // Note: Gecko tokenizer removed - Gecko models have built-in tokenizers
     )

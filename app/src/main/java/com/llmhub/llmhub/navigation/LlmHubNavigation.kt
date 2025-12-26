@@ -22,6 +22,7 @@ sealed class Screen(val route: String) {
     object Translator : Screen("translator")
     object Transcriber : Screen("transcriber")
     object ScamDetector : Screen("scam_detector")
+    object ImageGenerator : Screen("image_generator")
     object Settings : Screen("settings")
     object Models : Screen("models")
     object About : Screen("about")
@@ -51,6 +52,7 @@ fun LlmHubNavigation(
                         "translator" -> navController.navigate(Screen.Translator.route)
                         "transcriber" -> navController.navigate(Screen.Transcriber.route)
                         "scam_detector" -> navController.navigate(Screen.ScamDetector.route)
+                        "image_generator" -> navController.navigate(Screen.ImageGenerator.route)
                     }
                 },
                 onNavigateToSettings = {
@@ -131,6 +133,13 @@ fun LlmHubNavigation(
         
         composable(Screen.ScamDetector.route) {
             ScamDetectorScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToModels = { navController.navigate(Screen.Models.route) }
+            )
+        }
+        
+        composable(Screen.ImageGenerator.route) {
+            ImageGeneratorScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToModels = { navController.navigate(Screen.Models.route) }
             )
