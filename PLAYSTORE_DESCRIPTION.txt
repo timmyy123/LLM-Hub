@@ -11,7 +11,7 @@ Private AI Chat with Voice & Translation
 
 Advanced AI runs completely on your phone - no internet required, no data shared, complete privacy guaranteed. State-of-the-art Large Language Models in your pocket!
 
-✨ FIVE POWERFUL AI TOOLS
+✨ SIX POWERFUL AI TOOLS
 
 📝 SMART CHAT
 Multi-turn conversations with context awareness, RAG memory, optional web search, text-to-speech output with auto-readout, and support for text, images, and audio input.
@@ -19,11 +19,14 @@ Multi-turn conversations with context awareness, RAG memory, optional web search
 ✍️ WRITING AID
 Summarize documents, expand ideas, rewrite content, improve grammar, and generate code from natural language descriptions.
 
+🎨 IMAGE GENERATOR
+Create stunning images from text prompts using Stable Diffusion 1.5. Generate multiple variations with swipe-through gallery. All processing happens on-device.
+
 🌍 TRANSLATOR (50+ Languages)
 Translate text, images (OCR), and audio in real-time. Works completely offline with bidirectional support.
 
 🎙️ TRANSCRIBER
-Convert audio to text with high accuracy. Supports WAV, MP3, and other formats. All processing on-device.
+Convert audio to text with high accuracy. Supports WAV. All processing on-device.
 
 🛡️ SCAM DETECTOR
 Analyze suspicious messages and images for phishing attempts. Get clear risk assessments and detailed explanations.
@@ -34,37 +37,37 @@ Analyze suspicious messages and images for phishing attempts. Get clear risk ass
 • Gemma-3n E2B/E4B (Google) - Multimodal: text, vision, audio
 • Llama-3.2 1B/3B (Meta) - Powerful open-source
 • Phi-4 Mini (Microsoft) - Optimized for mobile
+• Stable Diffusion 1.5 - On-device image generation
 
-All models run 100% on-device using MediaPipe and LiteRT technology.
+All models run 100% on-device using MediaPipe, LiteRT, and MNN technology.
 
 🔐 PRIVACY & SECURITY
 
-• Zero data collection - conversations stay on your device
+• Zero data collection - everything stays on your device
 • No internet required for AI inference
 • No accounts, no tracking, no cloud uploads
 • Open-source and transparent
-• Complete offline functionality
 
 ⚡ ADVANCED FEATURES
 
 • Text-to-Speech with auto-readout for hands-free listening
-• GPU acceleration for fast performance
+• GPU/NPU acceleration for fast performance
 • Multimodal: text, images, and audio
 • RAG with global memory for enhanced responses
-• Import custom .task or .litertlm models
+• Import custom models (.task, .litertlm, .mnn)
 • Direct downloads from HuggingFace
 • Beautiful Material Design UI
-• 13 language interfaces
+• 16 language interfaces
 
 📱 REQUIREMENTS
 
 Minimum: Android 8.0+, 2GB RAM, 1-5GB storage
-Recommended: 6GB+ RAM, 8GB+ for GPU acceleration
+Recommended: 6GB+ RAM for best performance
 
 💡 HOW IT WORKS
 
 1. Download AI models in-app (one-time)
-2. Choose your tool: Chat, Writing Aid, Translator, Transcriber, or Scam Detector
+2. Choose your tool: Chat, Writing Aid, Image Generator, Translator, Transcriber, or Scam Detector
 3. Use AI completely offline with full privacy
 4. Optional: Enable web search, upload images/audio, or use text-to-speech
 
@@ -72,20 +75,19 @@ Recommended: 6GB+ RAM, 8GB+ for GPU acceleration
 
 • Privacy-conscious users valuing data security
 • Professionals needing offline AI assistance
+• Artists and creators generating AI images
 • Users wanting hands-free voice responses
 • Students working on writing and research
 • Travelers requiring offline translation
 • Anyone protecting against scams
-• Developers experimenting with on-device AI
-• Content creators and writers
 
 📖 OPEN SOURCE (MIT License)
 github.com/timmyy123/LLM-Hub
 
 🏆 POWERED BY
-Google MediaPipe & LiteRT, Gemma, Llama, Phi models, HuggingFace
+Google MediaPipe & LiteRT, MNN, Stable Diffusion, Gemma, Llama, Phi, HuggingFace
 
-Experience the future of private, on-device AI assistance!
+Experience the future of private, on-device AI!
 
 ---
-CHARACTER COUNT: 3,540 / 4,000 (Google Play allows up to 4,000)
+CHARACTER COUNT: ~2,400 / 4,000 (Google Play allows up to 4,000)
