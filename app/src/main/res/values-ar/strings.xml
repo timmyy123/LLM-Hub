@@ -242,6 +242,7 @@
     <string name="collapse">طيّ</string>
     <string name="downloaded">تم التنزيل</string>
     <string name="downloading">جارٍ التنزيل...</string>
+    <string name="extracting">جارٍ الاستخراج...</string>
     <string name="extracting_model">جارٍ استخراج النموذج...</string>
     <string name="not_downloaded">غير مُنزّل</string>
     <string name="partial">جزئي</string>

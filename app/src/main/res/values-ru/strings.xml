@@ -277,6 +277,7 @@
     <string name="collapse">Свернуть</string>
     <string name="downloaded">Скачано</string>
     <string name="downloading">Скачивание...</string>
+    <string name="extracting">Извлечение...</string>
     <string name="extracting_model">Извлечение модели...</string>
     <string name="not_downloaded">Не скачано</string>
     <string name="partial">Частично</string>

@@ -257,6 +257,7 @@
     <string name="collapse">Recolher</string>
     <string name="downloaded">Baixado</string>
     <string name="downloading">Baixando...</string>
+    <string name="extracting">Extraindo...</string>
     <string name="extracting_model">Extraindo modelo...</string>
     <string name="not_downloaded">Não baixado</string>
     <string name="partial">Parcial</string>

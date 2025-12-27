@@ -242,6 +242,7 @@
     <string name="collapse">접기</string>
     <string name="downloaded">다운로드됨</string>
     <string name="downloading">다운로드 중...</string>
+    <string name="extracting">추출 중...</string>
     <string name="extracting_model">모델 추출 중...</string>
     <string name="not_downloaded">다운로드되지 않음</string>
     <string name="partial">부분적</string>

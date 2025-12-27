@@ -242,6 +242,7 @@
     <string name="collapse">Zwiń</string>
     <string name="downloaded">Pobrano</string>
     <string name="downloading">Pobieranie...</string>
+    <string name="extracting">Rozpakowywanie...</string>
     <string name="extracting_model">Rozpakowywanie modelu...</string>
     <string name="not_downloaded">Nie pobrano</string>
     <string name="partial">Częściowy</string>

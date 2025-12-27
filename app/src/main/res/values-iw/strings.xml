@@ -244,6 +244,7 @@
     <string name="collapse">כווץ</string>
     <string name="downloaded">הורד</string>
     <string name="downloading">מוריד…</string>
+    <string name="extracting">מחלץ...</string>
     <string name="extracting_model">מחלץ את המודל...</string>
     <string name="not_downloaded">לא הורד</string>
     <string name="partial">חלקי</string>
