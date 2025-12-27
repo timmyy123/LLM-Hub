@@ -1,6 +1,7 @@
 package com.llmhub.llmhub.screens
 
 import android.graphics.Bitmap
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -17,7 +18,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -68,13 +68,33 @@ fun ImageGeneratorScreen(
     val imageGeneratorHelper = remember { ImageGeneratorHelper(context) }
     val sdHelper = remember { StableDiffusionHelper(context) }
     
-    // Check if image generation model is available
-    LaunchedEffect(Unit) {
+    // Refresh trigger - incremented when we need to refresh model list
+    var refreshTrigger by remember { mutableIntStateOf(0) }
+    
+    // Check if image generation model is available - refresh on trigger change
+    LaunchedEffect(refreshTrigger) {
         val models = sdHelper.listModels()
         availableModels = models
         if (models.isNotEmpty()) {
             // Try to select last used model, otherwise first
             selectedModel = models.find { it.path == lastModelPath } ?: models.first()
+        } else {
+            selectedModel = null
+            isModelLoaded = false
+        }
+    }
+    
+    // Refresh model list when screen becomes visible (e.g., after navigating back from downloads)
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                refreshTrigger++
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
     
@@ -110,17 +130,17 @@ fun ImageGeneratorScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .padding(16.dp)
                     .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
                     text = stringResource(R.string.feature_settings_title),
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 16.dp)
                 )
                 
-                // Model Selector Card Style
+                // Model Selector Card - matching ModelSelectorCard style
                 Card(
                     shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(
@@ -132,14 +152,16 @@ fun ImageGeneratorScreen(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+                        // Title
                         Text(
-                            text = stringResource(R.string.select_model),
+                            text = stringResource(R.string.select_model_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                         
                         if (availableModels.isEmpty()) {
+                            // No models available
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -152,7 +174,7 @@ fun ImageGeneratorScreen(
                                 )
                                 Column {
                                     Text(
-                                        text = stringResource(R.string.image_generator_no_models),
+                                        text = stringResource(R.string.no_models_available),
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Medium
                                     )
@@ -163,16 +185,8 @@ fun ImageGeneratorScreen(
                                     )
                                 }
                             }
-                            Button(
-                                onClick = { 
-                                    showModelSheet = false
-                                    onNavigateToModels() 
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(stringResource(R.string.download_models))
-                            }
                         } else {
+                            // Model Dropdown - matching ModelSelectorCard style
                             var expanded by remember { mutableStateOf(false) }
                             ExposedDropdownMenuBox(
                                 expanded = expanded,
@@ -182,7 +196,11 @@ fun ImageGeneratorScreen(
                                     value = selectedModel?.name ?: stringResource(R.string.select_model),
                                     onValueChange = {},
                                     readOnly = true,
+                                    label = { Text(stringResource(R.string.select_model)) },
                                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.Memory, contentDescription = null)
+                                    },
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .menuAnchor(),
@@ -196,24 +214,31 @@ fun ImageGeneratorScreen(
                                     availableModels.forEach { model ->
                                         DropdownMenuItem(
                                             text = { 
-                                                Column {
-                                                    Text(model.name)
-                                                    Text(
-                                                        text = model.type.toString(),
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                    )
-                                                }
+                                                Text(
+                                                    text = model.name,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.Medium
+                                                )
                                             },
                                             onClick = {
                                                 selectedModel = model
                                                 expanded = false
+                                            },
+                                            leadingIcon = {
+                                                if (selectedModel?.name == model.name) {
+                                                    Icon(
+                                                        Icons.Default.CheckCircle,
+                                                        contentDescription = null,
+                                                        tint = MaterialTheme.colorScheme.primary
+                                                    )
+                                                }
                                             }
                                         )
                                     }
                                 }
                             }
                             
+                            // Load/Reload Model Button
                             Button(
                                 onClick = {
                                     selectedModel?.let { model ->
@@ -229,20 +254,31 @@ fun ImageGeneratorScreen(
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
-                                enabled = selectedModel != null && !isModelLoading
+                                enabled = selectedModel != null && !isModelLoading,
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary
+                                )
                             ) {
                                 if (isModelLoading) {
                                     CircularProgressIndicator(
-                                        modifier = Modifier.size(24.dp),
+                                        modifier = Modifier.size(20.dp),
                                         color = MaterialTheme.colorScheme.onPrimary
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text(stringResource(R.string.image_generator_loading_model))
+                                    Text(stringResource(R.string.model_loading), fontWeight = FontWeight.Bold)
                                 } else {
-                                    Text(stringResource(R.string.image_generator_load_model))
+                                    Text(
+                                        text = stringResource(
+                                            if (isModelLoaded) R.string.reload_model 
+                                            else R.string.load_model
+                                        ), 
+                                        fontWeight = FontWeight.Bold
+                                    )
                                 }
                             }
                             
+                            // Unload Model Button (only show when model is loaded)
                             if (isModelLoaded) {
                                 OutlinedButton(
                                     onClick = {
@@ -250,25 +286,26 @@ fun ImageGeneratorScreen(
                                         isModelLoaded = false
                                     },
                                     modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
                                     colors = ButtonDefaults.outlinedButtonColors(
                                         contentColor = MaterialTheme.colorScheme.error
                                     ),
-                                    border = ButtonDefaults.outlinedButtonBorder.copy(
-                                        brush = Brush.linearGradient(
-                                            colors = listOf(MaterialTheme.colorScheme.error, MaterialTheme.colorScheme.error)
-                                        )
-                                    )
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
                                 ) {
-                                    Icon(Icons.Default.Close, contentDescription = null)
+                                    Icon(
+                                        Icons.Default.PowerOff,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text(stringResource(R.string.unload_model))
+                                    Text(stringResource(R.string.unload_model), fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
                     }
                 }
                 
-                // Generation Settings Card (Iterations and Seed)
+                Spacer(modifier = Modifier.height(16.dp))
                 Card(
                     shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(

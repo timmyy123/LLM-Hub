@@ -540,35 +540,46 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         }
         
         viewModelScope.launch(Dispatchers.IO) {
-            // Physically remove the file from the app's private storage so that
-            // the model will no longer be detected as «downloaded» next time we
-            // build the list (e.g. after an app restart).
-            val modelsDir = File(context.filesDir, "models")
-            val primaryFile = File(modelsDir, model.localFileName())
-            val legacyFile = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
-            
-            var deletedPrimary = false
-            var deletedLegacy = false
-            
-            if (primaryFile.exists()) {
-                deletedPrimary = primaryFile.delete()
-                android.util.Log.d("ModelDownloadViewModel", "[deleteModel] Deleted primary file: $deletedPrimary, path: ${primaryFile.absolutePath}")
+            // Handle Stable Diffusion models (stored in sd_models directory)
+            if (model.modelFormat == "qnn_npu" || model.modelFormat == "mnn_cpu") {
+                val sdModelsDir = File(context.filesDir, "sd_models")
+                if (sdModelsDir.exists() && sdModelsDir.isDirectory) {
+                    // Delete all files and subdirectories recursively
+                    sdModelsDir.deleteRecursively()
+                    android.util.Log.d("ModelDownloadViewModel", "[deleteModel] Deleted SD models directory: ${sdModelsDir.absolutePath}")
+                }
+            } else {
+                // Physically remove the file from the app's private storage so that
+                // the model will no longer be detected as «downloaded» next time we
+                // build the list (e.g. after an app restart).
+                val modelsDir = File(context.filesDir, "models")
+                val primaryFile = File(modelsDir, model.localFileName())
+                val legacyFile = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
+                
+                var deletedPrimary = false
+                var deletedLegacy = false
+                
+                if (primaryFile.exists()) {
+                    deletedPrimary = primaryFile.delete()
+                    android.util.Log.d("ModelDownloadViewModel", "[deleteModel] Deleted primary file: $deletedPrimary, path: ${primaryFile.absolutePath}")
+                }
+                if (legacyFile.exists()) {
+                    deletedLegacy = legacyFile.delete()
+                    android.util.Log.d("ModelDownloadViewModel", "[deleteModel] Deleted legacy file: $deletedLegacy, path: ${legacyFile.absolutePath}")
+                }
+                
+                // Verify files are actually gone
+                val primaryExists = primaryFile.exists()
+                val legacyExists = legacyFile.exists()
+                android.util.Log.d("ModelDownloadViewModel", "[deleteModel] Post-deletion check - Primary exists: $primaryExists, Legacy exists: $legacyExists")
             }
-            if (legacyFile.exists()) {
-                deletedLegacy = legacyFile.delete()
-                android.util.Log.d("ModelDownloadViewModel", "[deleteModel] Deleted legacy file: $deletedLegacy, path: ${legacyFile.absolutePath}")
-            }
-            
-            // Verify files are actually gone
-            val primaryExists = primaryFile.exists()
-            val legacyExists = legacyFile.exists()
-            android.util.Log.d("ModelDownloadViewModel", "[deleteModel] Post-deletion check - Primary exists: $primaryExists, Legacy exists: $legacyExists")
         }
 
         updateModel(model.name) {
             it.copy(
                 isDownloaded = false,
                 isDownloading = false,
+                isExtracting = false,
                 isPaused = false, // Reset paused state when deleting
                 // reset the other transient download fields so the UI shows the
                 // correct state immediately after we press the button
