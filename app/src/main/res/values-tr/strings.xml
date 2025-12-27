@@ -242,6 +242,7 @@
     <string name="collapse">Daralt</string>
     <string name="downloaded">İndirildi</string>
     <string name="downloading">İndiriliyor...</string>
+    <string name="extracting">Çıkarılıyor...</string>
     <string name="extracting_model">Model çıkarılıyor...</string>
     <string name="not_downloaded">İndirilmedi</string>
     <string name="partial">Kısmi</string>

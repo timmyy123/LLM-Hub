@@ -242,6 +242,7 @@
     <string name="collapse">Ciutkan</string>
     <string name="downloaded">Diunduh</string>
     <string name="downloading">Mengunduh...</string>
+    <string name="extracting">Mengekstrak...</string>
     <string name="extracting_model">Mengekstrak model...</string>
     <string name="not_downloaded">Belum diunduh</string>
     <string name="partial">Sebagian</string>

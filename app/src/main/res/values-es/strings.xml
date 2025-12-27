@@ -274,6 +274,7 @@
     <string name="collapse">Contraer</string>
     <string name="downloaded">Descargado</string>
     <string name="downloading">Descargando...</string>
+    <string name="extracting">Extrayendo...</string>
     <string name="extracting_model">Extrayendo modelo...</string>
     <string name="not_downloaded">No descargado</string>
     <string name="partial">Parcial</string>

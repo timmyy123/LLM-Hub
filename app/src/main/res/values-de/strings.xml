@@ -274,6 +274,7 @@
     <string name="collapse">Einklappen</string>
     <string name="downloaded">Heruntergeladen</string>
     <string name="downloading">Lädt herunter...</string>
+    <string name="extracting">Extrahiert...</string>
     <string name="extracting_model">Modell wird extrahiert...</string>
     <string name="not_downloaded">Nicht heruntergeladen</string>
     <string name="partial">Teilweise</string>

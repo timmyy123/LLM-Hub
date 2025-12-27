@@ -351,8 +351,9 @@ class ModelDownloader(
             return@flow
         }
         
-        // Download ZIP to temp location
-        val tempDir = File(context.cacheDir, "sd_downloads")
+        // Download ZIP to a persistent temp location so it survives process death and
+        // the user can resume after killing/restarting the app.
+        val tempDir = File(context.filesDir, "sd_downloads")
         if (!tempDir.exists()) {
             tempDir.mkdirs()
         }
@@ -363,6 +364,9 @@ class ModelDownloader(
             Log.d(TAG, "Downloading ZIP from: ${model.url}")
             
             val url = URL(model.url)
+            // Support resume: if a partial zip exists, request Range header and append to file
+            val existingBytes = if (zipFile.exists()) zipFile.length() else 0L
+
             val connection = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
                 connectTimeout = 15_000
@@ -372,30 +376,46 @@ class ModelDownloader(
                 if (!hfToken.isNullOrBlank()) {
                     setRequestProperty("Authorization", "Bearer $hfToken")
                 }
+                if (existingBytes > 0L) {
+                    // Ask server to send remaining bytes
+                    setRequestProperty("Range", "bytes=$existingBytes-")
+                    Log.d(TAG, "Requesting Range: bytes=$existingBytes-")
+                }
             }
-            
+
             val responseCode = connection.responseCode
-            if (responseCode !in 200..299) {
+            val acceptRanges = connection.getHeaderField("Accept-Ranges")
+            val contentRangeHeader = connection.getHeaderField("Content-Range")
+            val contentLengthHeader = connection.getHeaderField("Content-Length")
+            Log.d(TAG, "ZIP download HTTP response: $responseCode, Accept-Ranges=$acceptRanges, Content-Range=$contentRangeHeader, Content-Length=$contentLengthHeader, localZipSize=$existingBytes")
+            if (responseCode !in 200..299 && responseCode != 206) {
                 connection.disconnect()
                 throw RuntimeException("Download failed with HTTP $responseCode")
             }
-            
-            val totalBytes = connection.contentLengthLong.takeIf { it > 0 } ?: model.sizeBytes
-            var downloadedBytes = 0L
+
+            // Compute total bytes: if server returned 206 with Content-Range/Content-Length, account for existing
+            val totalBytes = when {
+                responseCode == 206 && contentLengthHeader != null -> existingBytes + (contentLengthHeader.toLongOrNull() ?: 0L)
+                connection.contentLengthLong > 0L -> connection.contentLengthLong
+                else -> model.sizeBytes
+            }
+
+            var downloadedBytes = existingBytes
             var lastEmitTime = System.currentTimeMillis()
             var bytesSinceLastEmit = 0L
-            
+
             try {
                 connection.inputStream.use { input ->
-                    zipFile.outputStream().buffered().use { output ->
+                    // Use RandomAccessFile to append to existing partial file when resuming
+                    RandomAccessFile(zipFile, "rw").use { raf ->
+                        raf.seek(existingBytes)
                         val buffer = ByteArray(8192)
                         var bytesRead: Int
-                        
                         while (input.read(buffer).also { bytesRead = it } != -1) {
-                            output.write(buffer, 0, bytesRead)
+                            raf.write(buffer, 0, bytesRead)
                             downloadedBytes += bytesRead
                             bytesSinceLastEmit += bytesRead
-                            
+
                             val currentTime = System.currentTimeMillis()
                             val elapsed = currentTime - lastEmitTime
                             if (elapsed > 1000) {
@@ -410,6 +430,7 @@ class ModelDownloader(
                     }
                 }
                 Log.i(TAG, "Downloaded ZIP: ${zipFile.length()} bytes")
+                Log.d(TAG, "Post-download zip size: ${zipFile.length()} bytes (path=${zipFile.absolutePath})")
             } catch (e: Exception) {
                 Log.e(TAG, "Download error: ${e.message}", e)
                 throw e

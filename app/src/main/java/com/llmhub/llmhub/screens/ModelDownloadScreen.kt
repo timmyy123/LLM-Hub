@@ -393,6 +393,11 @@ private fun ModelVariantItem(
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                         contentColor = MaterialTheme.colorScheme.onTertiaryContainer
                     )
+                    model.isDownloading && model.isExtracting -> StatusChip(
+                        text = stringResource(R.string.extracting),
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
                     model.isDownloading -> StatusChip(
                         text = stringResource(R.string.downloading),
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
@@ -566,8 +571,10 @@ private fun ModelVariantItem(
                                 Text(stringResource(R.string.cancel))
                             }
                             
+                            // Disable pause button during extraction (can't pause/resume extraction)
                             Button(
                                 onClick = { onPause(model) },
+                                enabled = !model.isExtracting,
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.secondary
                                 )

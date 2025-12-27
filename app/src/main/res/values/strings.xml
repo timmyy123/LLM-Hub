@@ -245,6 +245,7 @@
     <string name="collapse">Collapse</string>
     <string name="downloaded">Downloaded</string>
     <string name="downloading">Downloading...</string>
+    <string name="extracting">Extracting...</string>
     <string name="extracting_model">Extracting model...</string>
     <string name="not_downloaded">Not downloaded</string>
     <string name="partial">Partial</string>

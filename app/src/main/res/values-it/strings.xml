@@ -243,6 +243,7 @@
     <string name="collapse">Comprimi</string>
     <string name="downloaded">Scaricato</string>
     <string name="downloading">Download...</string>
+    <string name="extracting">Estrazione...</string>
     <string name="extracting_model">Estrazione del modello...</string>
     <string name="not_downloaded">Non scaricato</string>
     <string name="partial">Parziale</string>

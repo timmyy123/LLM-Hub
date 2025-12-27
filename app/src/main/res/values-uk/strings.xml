@@ -244,6 +244,7 @@
     <string name="collapse">Згорнути</string>
     <string name="downloaded">Завантажено</string>
     <string name="downloading">Завантаження…</string>
+    <string name="extracting">Розпаковка...</string>
     <string name="extracting_model">Розпаковка моделі...</string>
     <string name="not_downloaded">Не завантажено</string>
     <string name="partial">Частково</string>

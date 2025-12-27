@@ -87,7 +87,20 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                         totalBytes = model.sizeBytes
                     )
                 } else {
-                    model.copy(isDownloaded = false, isDownloading = false, downloadProgress = 0f, downloadedBytes = 0, totalBytes = model.sizeBytes)
+                    // Detect partial ZIPs stored in files/sd_downloads to allow resume after kill
+                    val sdTempFiles = File(context.filesDir, "sd_downloads")
+                    var partialBytes = 0L
+                    if (sdTempFiles.exists() && sdTempFiles.isDirectory) {
+                        val base = model.name.replace(" ", "_")
+                        val found = sdTempFiles.listFiles()?.firstOrNull { it.name.startsWith(base) && it.name.endsWith(".zip") }
+                        if (found != null) partialBytes = found.length()
+                    }
+
+                    val progress = if (model.sizeBytes > 0 && partialBytes > 0) {
+                        (partialBytes.toFloat() / model.sizeBytes).coerceIn(0f, 0.999f)
+                    } else 0f
+
+                    model.copy(isDownloaded = false, isDownloading = false, downloadProgress = progress, downloadedBytes = partialBytes, totalBytes = model.sizeBytes)
                 }
             }
             // Handle Stable Diffusion CPU models (MNN format)
@@ -103,17 +116,30 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                         totalBytes = model.sizeBytes
                     )
                 } else {
-                    model.copy(isDownloaded = false, isDownloading = false, downloadProgress = 0f, downloadedBytes = 0, totalBytes = model.sizeBytes)
+                    // Detect partial ZIPs stored in files/sd_downloads to allow resume after kill
+                    val sdTempFiles = File(context.filesDir, "sd_downloads")
+                    var partialBytes = 0L
+                    if (sdTempFiles.exists() && sdTempFiles.isDirectory) {
+                        val base = model.name.replace(" ", "_")
+                        val found = sdTempFiles.listFiles()?.firstOrNull { it.name.startsWith(base) && it.name.endsWith(".zip") }
+                        if (found != null) partialBytes = found.length()
+                    }
+
+                    val progress = if (model.sizeBytes > 0 && partialBytes > 0) {
+                        (partialBytes.toFloat() / model.sizeBytes).coerceIn(0f, 0.999f)
+                    } else 0f
+
+                    model.copy(isDownloaded = false, isDownloading = false, downloadProgress = progress, downloadedBytes = partialBytes, totalBytes = model.sizeBytes)
                 }
             }
             // Handle image_generator models specially (multi-file format)
             else if (model.modelFormat == "image_generator") {
                 val imageGenDir = File(context.filesDir, "image_generator/bins")
-                if (imageGenDir.exists() && imageGenDir.isDirectory) {
+                    if (imageGenDir.exists() && imageGenDir.isDirectory) {
                     val files = imageGenDir.listFiles() ?: emptyArray()
                     val fileCount = files.filter { it.length() > 0 }.size
                     val totalDownloaded = files.sumOf { it.length() }
-                    
+
                     // Try to get expected file count from manifest
                     val expectedFileCount = try {
                         val url = java.net.URL(model.url)
@@ -127,14 +153,15 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                     } catch (e: Exception) {
                         -1 // Unknown, fall back to size check
                     }
-                    
+
                     if (fileCount > 0) {
+                        android.util.Log.d("ModelDownloadViewModel", "[loadModels:image_gen] dir=${imageGenDir.absolutePath} fileCount=$fileCount totalDownloaded=$totalDownloaded model.sizeBytes=${model.sizeBytes} expectedFileCount=$expectedFileCount")
                         val completeEnough = if (expectedFileCount > 0) {
                             fileCount >= expectedFileCount
                         } else {
                             model.sizeBytes > 0 && totalDownloaded >= (model.sizeBytes * 0.95).toLong()
                         }
-                        
+
                         if (completeEnough) {
                             model.copy(
                                 isDownloaded = true,
@@ -144,10 +171,12 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                                 totalBytes = totalDownloaded
                             )
                         } else {
-                            // Partial download
+                            // Partial download: if total size unknown, set a small positive
+                            // progress so the UI treats this as a resumable partial instead
+                            // of showing the full "Download" button.
                             val progress = if (model.sizeBytes > 0) {
                                 (totalDownloaded.toFloat() / model.sizeBytes).coerceIn(0f, 0.999f)
-                            } else -1f
+                            } else 0.0001f
                             model.copy(
                                 isDownloaded = false,
                                 isDownloading = false,
@@ -171,7 +200,17 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                     legacyFile.renameTo(primaryFile)
                 }
 
-                val file = primaryFile
+                // Prefer the canonical primary file, but also detect partial/temp files that
+                // may have different extensions (e.g., .part, .tmp) by searching for files
+                // that start with the base name. This helps detect partial downloads after
+                // the app was killed and allow resume.
+                var file: File = primaryFile
+                if (!file.exists()) {
+                    val baseName = model.localFileName().substringBeforeLast('.')
+                    val found = modelsDir.listFiles()?.firstOrNull { it.name.startsWith(baseName) }
+                    if (found != null) file = found
+                }
+
                 if (file.exists()) {
                     val sizeKnown = model.sizeBytes > 0
                     val completeEnough = sizeKnown && file.length() >= (model.sizeBytes * 0.98).toLong()
@@ -485,17 +524,68 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
     fun cancelDownload(model: LLMModel) {
         downloadJobs[model.name]?.cancel()
         downloadJobs.remove(model.name)
+        // Also notify any foreground service handling downloads to cancel
+        try {
+            val cancelIntent = android.content.Intent(context, com.llmhub.llmhub.service.ModelDownloadService::class.java).apply {
+                action = com.llmhub.llmhub.service.ModelDownloadService.ACTION_CANCEL_DOWNLOAD
+                putExtra(com.llmhub.llmhub.service.ModelDownloadService.EXTRA_MODEL_NAME, model.name)
+            }
+            context.startService(cancelIntent)
+        } catch (e: Exception) {
+            android.util.Log.w("ModelDownloadViewModel", "Failed to notify ModelDownloadService to cancel: ${e.message}")
+        }
 
-        // Delete partial file if exists
+        // Delete any partial files that may exist under models/ (supporting multiple filename variants)
         val modelsDir = File(context.filesDir, "models")
-        val file = File(modelsDir, model.localFileName())
-        if (file.exists()) file.delete()
+        if (modelsDir.exists() && modelsDir.isDirectory) {
+            try {
+                // Primary expected filename
+                val primary = File(modelsDir, model.localFileName())
+                if (primary.exists()) primary.delete()
 
-        // Reset UI state
+                // Legacy .gguf name
+                val legacy = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
+                if (legacy.exists()) legacy.delete()
+
+                // Also remove any files that start with the URL-derived base name (handles .part, .tmp, etc.)
+                val base = model.localFileName().substringBeforeLast('.')
+                modelsDir.listFiles()?.forEach { f ->
+                    if (f.name.startsWith(base) && f.name != model.localFileName()) {
+                        try { f.delete() } catch (_: Exception) { }
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.w("ModelDownloadViewModel", "Error cleaning partial files: ${e.message}")
+            }
+        }
+
+        // Also remove any temp SD zip downloads for Stable Diffusion models (check both cache and files dirs)
+        try {
+            val sdTempCache = File(context.cacheDir, "sd_downloads")
+            if (sdTempCache.exists() && sdTempCache.isDirectory) {
+                sdTempCache.listFiles()?.forEach { f ->
+                    if (f.name.contains(model.name.replace(" ", "_")).or(f.name.endsWith(".zip"))) {
+                        try { f.delete() } catch (_: Exception) { }
+                    }
+                }
+            }
+
+            val sdTempFiles = File(context.filesDir, "sd_downloads")
+            if (sdTempFiles.exists() && sdTempFiles.isDirectory) {
+                sdTempFiles.listFiles()?.forEach { f ->
+                    if (f.name.contains(model.name.replace(" ", "_")).or(f.name.endsWith(".zip"))) {
+                        try { f.delete() } catch (_: Exception) { }
+                    }
+                }
+            }
+        } catch (_: Exception) { }
+
+        // Reset UI state (including isPaused so clear works from paused state)
         updateModel(model.name) {
             it.copy(
                 isDownloading = false,
                 isExtracting = false,
+                isPaused = false,
                 downloadProgress = 0f,
                 downloadedBytes = 0L,
                 totalBytes = null,

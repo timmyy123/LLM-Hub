@@ -244,6 +244,7 @@
     <string name="collapse">جمع کردن</string>
     <string name="downloaded">دانلود شده</string>
     <string name="downloading">در حال دانلود…</string>
+    <string name="extracting">در حال استخراج...</string>
     <string name="extracting_model">در حال استخراج مدل...</string>
     <string name="not_downloaded">دانلود نشده</string>
     <string name="partial">ناقص</string>

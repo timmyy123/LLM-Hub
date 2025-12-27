@@ -242,6 +242,7 @@
     <string name="collapse">折りたたむ</string>
     <string name="downloaded">ダウンロード済み</string>
     <string name="downloading">ダウンロード中...</string>
+    <string name="extracting">展開中...</string>
     <string name="extracting_model">モデルを展開中...</string>
     <string name="not_downloaded">未ダウンロード</string>
     <string name="partial">部分的</string>
