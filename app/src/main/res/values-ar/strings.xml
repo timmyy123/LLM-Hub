@@ -231,8 +231,8 @@
     <string name="choose_text_multimodal_models">اختر من نماذج النص فقط أو متعددة الوسائط</string>
     <string name="text_models">نماذج نصية</string>
     <string name="text_models_description">نماذج مُحسّنة لتوليد النصوص والمحادثة</string>
-    <string name="vision_models">نماذج رؤية</string>
-    <string name="vision_models_description">نماذج تفهم النصوص والصور معًا</string>
+    <string name="vision_models">نماذج متعددة الوسائط</string>
+    <string name="vision_models_description">نماذج يمكنها فهم النص والصور والصوت</string>
     <string name="embedding_models">نماذج التضمين</string>
     <string name="embedding_models_description">نماذج لتضمين النص والبحث الدلالي</string>
     <string name="gpu">GPU</string>

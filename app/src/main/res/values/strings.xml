@@ -234,8 +234,8 @@
     <string name="choose_text_multimodal_models">Choose from text-only or multimodal models</string>
     <string name="text_models">Text Models</string>
     <string name="text_models_description">Models optimized for text generation and conversation</string>
-    <string name="vision_models">Vision Models</string>
-    <string name="vision_models_description">Models that can understand both text and images</string>
+    <string name="vision_models">Multimodal Models</string>
+    <string name="vision_models_description">Models that can understand text, images, and audio</string>
     <string name="embedding_models">Embedding Models</string>
     <string name="embedding_models_description">Models for text embeddings and semantic search</string>
     <string name="gpu">GPU</string>

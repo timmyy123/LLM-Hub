@@ -231,8 +231,8 @@
     <string name="choose_text_multimodal_models">テキストのみまたはマルチモーダルモデルから選択</string>
     <string name="text_models">テキストモデル</string>
     <string name="text_models_description">テキスト生成と会話に最適化されたモデル</string>
-    <string name="vision_models">ビジョンモデル</string>
-    <string name="vision_models_description">テキストと画像の両方を理解できるモデル</string>
+    <string name="vision_models">マルチモーダルモデル</string>
+    <string name="vision_models_description">テキスト、画像、音声を理解できるモデル</string>
     <string name="embedding_models">埋め込みモデル</string>
     <string name="embedding_models_description">テキスト埋め込みとセマンティック検索用のモデル</string>
     <string name="gpu">GPU</string>

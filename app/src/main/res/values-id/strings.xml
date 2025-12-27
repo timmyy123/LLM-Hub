@@ -231,8 +231,8 @@
     <string name="choose_text_multimodal_models">Pilih dari model khusus teks atau multimodal</string>
     <string name="text_models">Model Teks</string>
     <string name="text_models_description">Model yang dioptimalkan untuk generasi teks dan percakapan</string>
-    <string name="vision_models">Model Visi</string>
-    <string name="vision_models_description">Model yang dapat memahami teks dan gambar</string>
+    <string name="vision_models">Model Multimodal</string>
+    <string name="vision_models_description">Model yang dapat memahami teks, gambar, dan audio</string>
     <string name="embedding_models">Model Penyematan</string>
     <string name="embedding_models_description">Model untuk penyematan teks dan pencarian semantik</string>
     <string name="gpu">GPU</string>

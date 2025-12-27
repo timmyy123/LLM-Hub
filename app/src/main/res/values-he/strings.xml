@@ -233,8 +233,8 @@
     <string name="choose_text_multimodal_models">בחר מודלים של טקסט בלבד או מולטימודליים</string>
     <string name="text_models">מודלי טקסט</string>
     <string name="text_models_description">מודלים המותאמים ליצירת טקסט ושיחה</string>
-    <string name="vision_models">מודלי ראייה</string>
-    <string name="vision_models_description">מודלים שמבינים טקסט ותמונות</string>
+    <string name="vision_models">מודלים רב-אופניים</string>
+    <string name="vision_models_description">מודלים שמבינים טקסט, תמונות ושמע</string>
     <string name="embedding_models">מודלי אימבדינג</string>
     <string name="embedding_models_description">מודלים לאימבדינג טקסט וחיפוש סמנטי</string>
     <string name="gpu">GPU</string>

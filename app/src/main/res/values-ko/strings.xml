@@ -231,8 +231,8 @@
     <string name="choose_text_multimodal_models">텍스트 전용 또는 멀티모달 모델 선택</string>
     <string name="text_models">텍스트 모델</string>
     <string name="text_models_description">텍스트 생성 및 대화에 최적화된 모델</string>
-    <string name="vision_models">비전 모델</string>
-    <string name="vision_models_description">텍스트와 이미지를 모두 이해하는 모델</string>
+    <string name="vision_models">멀티모달 모델</string>
+    <string name="vision_models_description">텍스트, 이미지 및 오디오를 이해할 수 있는 모델</string>
     <string name="embedding_models">임베딩 모델</string>
     <string name="embedding_models_description">텍스트 임베딩 및 의미론적 검색을 위한 모델</string>
     <string name="gpu">GPU</string>
