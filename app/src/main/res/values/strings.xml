@@ -251,6 +251,7 @@
     <string name="partial">Partial</string>
     <string name="paused">Paused</string>
     <string name="paused_downloaded_format">Paused: %1$s downloaded</string>
+    <string name="partial_downloaded_format">Partial: %1$s downloaded</string>
     <string name="continue_download">Continue</string>
     <string name="pause_download">Pause</string>
     <string name="resume_download">Resume</string>

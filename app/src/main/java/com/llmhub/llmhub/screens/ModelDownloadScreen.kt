@@ -495,15 +495,23 @@ private fun ModelVariantItem(
                         )
                     }
                 }
-            } else if (model.downloadProgress > 0f && !model.isDownloading && !model.isDownloaded) {
-                // Paused download - only show for incomplete models
+            } else if ((model.isPaused || model.downloadProgress > 0f || model.downloadedBytes > 0L) && !model.isDownloading && !model.isDownloaded) {
+                // Paused or partial download - show progress even when paused or when only downloadedBytes is set
                 ModernProgressIndicator(
-                    progress = model.downloadProgress.coerceIn(0f, 0.99f),
+                    progress = (if (model.downloadProgress > 0f) model.downloadProgress else if (model.totalBytes != null && model.totalBytes!! > 0) {
+                        (model.downloadedBytes.toFloat() / model.totalBytes!!.toFloat()).coerceIn(0f, 0.99f)
+                    } else 0.0001f).coerceIn(0f, 0.99f),
                     modifier = Modifier.padding(top = 8.dp)
                 )
-                
+
                 Text(
-                    text = context.getString(R.string.paused_downloaded_format, formatFileSize(model.downloadedBytes)),
+                    text = if (model.isPaused) {
+                        context.getString(R.string.paused_downloaded_format, formatFileSize(model.downloadedBytes))
+                    } else if (model.downloadedBytes > 0L) {
+                        context.getString(R.string.partial_downloaded_format, formatFileSize(model.downloadedBytes))
+                    } else {
+                        context.getString(R.string.partial)
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
