@@ -494,13 +494,6 @@ fun ImageGeneratorScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Subtitle
-                Text(
-                    text = stringResource(R.string.image_generator_subtitle),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                
                 // Prompt input
                 Card(
                     colors = CardDefaults.cardColors(
@@ -740,28 +733,28 @@ fun ImageGeneratorScreen(
                                         )
                                 )
                             }
-                            
-                            // Save current image button
-                            if (pagerState.currentPage < generatedImages.size) {
-                                Button(
-                                    onClick = {
-                                        coroutineScope.launch {
-                                            val currentBitmap = generatedImages[pagerState.currentPage]
-                                            val uri = imageGeneratorHelper.saveImageToGallery(currentBitmap, "Generated Image")
-                                            if (uri != null) {
-                                                snackbarHostState.showSnackbar(context.getString(R.string.image_generator_saved))
-                                            } else {
-                                                errorMessage = context.getString(R.string.image_generator_error)
-                                            }
-                                        }
-                                    },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Icon(Icons.Default.Save, contentDescription = null)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(stringResource(R.string.image_generator_save))
+                        }
+                    }
+                    
+                    // Save current image button (outside Card for equal width with Generate button)
+                    if (pagerState.currentPage < generatedImages.size) {
+                        Button(
+                            onClick = {
+                                coroutineScope.launch {
+                                    val currentBitmap = generatedImages[pagerState.currentPage]
+                                    val uri = imageGeneratorHelper.saveImageToGallery(currentBitmap, "Generated Image")
+                                    if (uri != null) {
+                                        snackbarHostState.showSnackbar(context.getString(R.string.image_generator_saved))
+                                    } else {
+                                        errorMessage = context.getString(R.string.image_generator_error)
+                                    }
                                 }
-                            }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.Save, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.image_generator_save))
                         }
                     }
                 }
