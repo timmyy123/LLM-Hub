@@ -314,23 +314,29 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
      */
     private fun checkSdModelExists(baseDir: File, modelType: String): Boolean {
         if (!baseDir.exists() || !baseDir.isDirectory) return false
-        
-        val targetFile = if (modelType == "qnn") "unet.bin" else "unet.mnn"
-        
-        // Check base directory
-        if (File(baseDir, targetFile).exists()) return true
-        
-        // Check subdirectories (up to 2 levels deep)
-        fun searchDir(dir: File, depth: Int): Boolean {
-            if (depth > 2 || !dir.exists() || !dir.isDirectory) return false
-            if (File(dir, targetFile).exists()) return true
-            dir.listFiles()?.forEach { subDir ->
-                if (subDir.isDirectory && searchDir(subDir, depth + 1)) return true
+
+        // Accept variants like "unet_qnn.bin" or "unet-qnn.bin" by searching
+        // recursively for any file that starts with "unet" and ends with the
+        // expected extension. This is more robust across ZIPs that contain a
+        // top-level folder or slightly different filenames.
+        val expectedExt = if (modelType == "qnn") ".bin" else ".mnn"
+
+        fun search(dir: File, depth: Int): Boolean {
+            if (depth > 4 || !dir.exists() || !dir.isDirectory) return false
+            dir.listFiles()?.forEach { f ->
+                try {
+                    if (f.isFile) {
+                        val name = f.name.lowercase()
+                        if (name.startsWith("unet") && name.endsWith(expectedExt)) return true
+                    } else if (f.isDirectory) {
+                        if (search(f, depth + 1)) return true
+                    }
+                } catch (_: Exception) { /* ignore permission issues */ }
             }
             return false
         }
-        
-        return searchDir(baseDir, 0)
+
+        return search(baseDir, 0)
     }
 
     fun downloadModel(model: LLMModel) {

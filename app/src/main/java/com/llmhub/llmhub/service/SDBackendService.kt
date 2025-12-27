@@ -263,9 +263,26 @@ class SDBackendService : Service() {
      */
     private fun detectModelType(modelDir: File): String {
         val actualDir = findActualModelDir(modelDir)
+
+        // Be more flexible when detecting model files; allow variants such as
+        // unet_qnn.bin, unet-qnn.bin, or placement inside subdirectories.
+        fun hasUnetWithExt(dir: File, ext: String): Boolean {
+            dir.listFiles()?.forEach { f ->
+                try {
+                    if (f.isFile) {
+                        val n = f.name.lowercase()
+                        if (n.startsWith("unet") && n.endsWith(ext)) return true
+                    } else if (f.isDirectory) {
+                        if (hasUnetWithExt(f, ext)) return true
+                    }
+                } catch (_: Exception) { }
+            }
+            return false
+        }
+
         return when {
-            File(actualDir, "unet.bin").exists() -> "qnn"
-            File(actualDir, "unet.mnn").exists() -> "mnn"
+            hasUnetWithExt(actualDir, ".bin") -> "qnn"
+            hasUnetWithExt(actualDir, ".mnn") -> "mnn"
             else -> "unknown"
         }
     }
@@ -275,30 +292,38 @@ class SDBackendService : Service() {
      * Some ZIPs extract to a subdirectory, so we need to search recursively
      */
     private fun findActualModelDir(baseDir: File): File {
-        // Check if model files are in root directory
-        if (File(baseDir, "unet.bin").exists() || File(baseDir, "unet.mnn").exists()) {
-            return baseDir
+        // If unet exists directly in base, return it
+        baseDir.listFiles()?.forEach { f ->
+            if (f.isFile) {
+                val n = f.name.lowercase()
+                if ((n.startsWith("unet") && (n.endsWith(".bin") || n.endsWith(".mnn")))) return baseDir
+            }
         }
-        
-        // Search subdirectories recursively (up to 2 levels deep)
+
+        // Search subdirectories recursively (up to 4 levels) for a directory that
+        // contains unet.*.bin or unet.*.mnn
         fun searchDir(dir: File, depth: Int): File? {
-            if (depth > 2) return null
-            
+            if (depth > 4) return null
             dir.listFiles()?.forEach { subDir ->
                 if (subDir.isDirectory) {
-                    // Check for QNN (.bin) or MNN (.mnn) model files
-                    if (File(subDir, "unet.bin").exists() || File(subDir, "unet.mnn").exists()) {
-                        Log.i(TAG, "Found model files in subdirectory: ${subDir.absolutePath}")
-                        return subDir
+                    // Check files in this subdirectory
+                    subDir.listFiles()?.forEach { f ->
+                        if (f.isFile) {
+                            val n = f.name.lowercase()
+                            if (n.startsWith("unet") && (n.endsWith(".bin") || n.endsWith(".mnn"))) {
+                                Log.i(TAG, "Found model files in subdirectory: ${subDir.absolutePath}")
+                                return subDir
+                            }
+                        }
                     }
-                    // Recurse into subdirectories
+
+                    // Recurse
                     searchDir(subDir, depth + 1)?.let { return it }
                 }
             }
             return null
         }
-        
-        // Search and return found directory, or base directory as fallback
+
         return searchDir(baseDir, 0) ?: baseDir
     }
     
