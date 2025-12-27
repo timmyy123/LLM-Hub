@@ -231,8 +231,8 @@
     <string name="choose_text_multimodal_models">Yalnızca metin veya çoklu ortam modellerinden seçin</string>
     <string name="text_models">Metin Modelleri</string>
     <string name="text_models_description">Metin oluşturma ve konuşma için optimize edilmiş modeller</string>
-    <string name="vision_models">Görsel Modeller</string>
-    <string name="vision_models_description">Hem metni hem de görselleri anlayabilen modeller</string>
+    <string name="vision_models">Çok Modlu Modeller</string>
+    <string name="vision_models_description">Metin, görsel ve sesi anlayabilen modeller</string>
     <string name="embedding_models">Gömme Modelleri</string>
     <string name="embedding_models_description">Metin gömmeleri ve anlamsal arama için modeller</string>
     <string name="gpu">GPU</string>

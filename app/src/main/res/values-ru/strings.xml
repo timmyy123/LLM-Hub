@@ -6,7 +6,7 @@
     <string name="select_model">Выбрать модель</string>
     <string name="unload_model">Выгрузить модель</string>
     <string name="reload_model">Перезагрузить модель</string>
-    <string name="vision_models_description">Модели, которые могут понимать текст и изображения</string>
+    <string name="vision_models_description">Модели, понимающие текст, изображения и аудио</string>
     <string name="embedding_models">Модели Эмбеддингов</string>
     <string name="embedding_models_description">Модели для текстовых эмбеддингов и семантического поиска</string>
     <string name="embedding_model">Модель Эмбеддингов</string>
@@ -269,7 +269,7 @@
     <string name="choose_text_multimodal_models">Выберите между текстовыми или мультимодальными моделями</string>
     <string name="text_models">Текстовые Модели</string>
     <string name="text_models_description">Модели оптимизированные для генерации текста и разговора</string>
-    <string name="vision_models">Модели Зрения</string>
+    <string name="vision_models">Мультимодальные Модели</string>
     <string name="gpu">ГПУ</string>
     <string name="variant">вариант</string>
     <string name="variants">варианты</string>

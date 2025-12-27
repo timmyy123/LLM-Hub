@@ -233,8 +233,8 @@
     <string name="choose_text_multimodal_models">از مدل‌های فقط متن یا چندوجهی انتخاب کنید</string>
     <string name="text_models">مدل‌های متنی</string>
     <string name="text_models_description">مدل‌های بهینه برای تولید متن و گفتگو</string>
-    <string name="vision_models">مدل‌های بینایی</string>
-    <string name="vision_models_description">مدل‌هایی که متن و تصویر را می‌فهمند</string>
+    <string name="vision_models">مدل‌های چندوجهی</string>
+    <string name="vision_models_description">مدل‌هایی که می‌توانند متن، تصاویر و صوت را درک کنند</string>
     <string name="embedding_models">مدل‌های امبدینگ</string>
     <string name="embedding_models_description">مدل‌های امبدینگ متن و جستجوی معنایی</string>
     <string name="gpu">GPU</string>

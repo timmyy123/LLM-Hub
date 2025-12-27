@@ -231,8 +231,8 @@
     <string name="choose_text_multimodal_models">Wybierz spośród modeli tekstowych lub multimodalnych</string>
     <string name="text_models">Modele Tekstowe</string>
     <string name="text_models_description">Modele zoptymalizowane do generowania tekstu i konwersacji</string>
-    <string name="vision_models">Modele Wizyjne</string>
-    <string name="vision_models_description">Modele rozumiejące zarówno tekst, jak i obrazy</string>
+    <string name="vision_models">Modele Multimodalne</string>
+    <string name="vision_models_description">Modele rozumiejące tekst, obrazy i dźwięk</string>
     <string name="embedding_models">Modele Osadzania</string>
     <string name="embedding_models_description">Modele do osadzania tekstu i wyszukiwania semantycznego</string>
     <string name="gpu">GPU</string>

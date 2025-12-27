@@ -233,8 +233,8 @@
     <string name="choose_text_multimodal_models">Обирайте між текстовими та мультимодальними моделями</string>
     <string name="text_models">Текстові моделі</string>
     <string name="text_models_description">Моделі, оптимізовані для генерації тексту та розмов</string>
-    <string name="vision_models">Моделі зору</string>
-    <string name="vision_models_description">Моделі, що розуміють і текст, і зображення</string>
+    <string name="vision_models">Мультимодальні Моделі</string>
+    <string name="vision_models_description">Моделі, що розуміють текст, зображення та аудіо</string>
     <string name="embedding_models">Embedding-моделі</string>
     <string name="embedding_models_description">Моделі для embedding-ів тексту та семантичного пошуку</string>
     <string name="gpu">GPU</string>
