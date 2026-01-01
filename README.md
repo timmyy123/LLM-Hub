@@ -51,7 +51,7 @@
 - RAG with global memory for enhanced responses
 - Import custom models (.task, .litertlm, .mnn)
 - Direct downloads from HuggingFace
-- 18 language interfaces
+- 16 language interfaces
 
 ## 📱 Supported Models
 
