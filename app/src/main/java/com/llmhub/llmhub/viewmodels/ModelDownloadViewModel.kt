@@ -22,6 +22,7 @@ import android.content.Context
 import com.llmhub.llmhub.BuildConfig
 import com.llmhub.llmhub.data.isModelFileValid
 import com.google.gson.Gson
+import android.net.Uri
 
 class ModelDownloadViewModel(application: Application) : AndroidViewModel(application) {
     private val _models = MutableStateFlow<List<LLMModel>>(emptyList())
@@ -77,7 +78,9 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
             // Handle Stable Diffusion NPU models (QNN format)
             if (model.modelFormat == "qnn_npu") {
                 val sdModelsDir = File(context.filesDir, "sd_models")
-                val isDownloaded = checkSdModelExists(sdModelsDir, "qnn")
+                // Check in model-specific folder
+                val modelTargetDir = File(sdModelsDir, model.name.replace(" ", "_"))
+                val isDownloaded = checkSdModelExists(modelTargetDir, "qnn")
                 if (isDownloaded) {
                     model.copy(
                         isDownloaded = true,
@@ -106,7 +109,9 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
             // Handle Stable Diffusion CPU models (MNN format)
             else if (model.modelFormat == "mnn_cpu") {
                 val sdModelsDir = File(context.filesDir, "sd_models")
-                val isDownloaded = checkSdModelExists(sdModelsDir, "mnn")
+                // Check in model-specific folder
+                val modelTargetDir = File(sdModelsDir, model.name.replace(" ", "_"))
+                val isDownloaded = checkSdModelExists(modelTargetDir, "mnn")
                 if (isDownloaded) {
                     model.copy(
                         isDownloaded = true,
@@ -387,8 +392,10 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                     // Handle Stable Diffusion models (qnn_npu or mnn_cpu format)
                     if (model.modelFormat == "qnn_npu" || model.modelFormat == "mnn_cpu") {
                         val sdModelsDir = File(context.filesDir, "sd_models")
+                        // Check in model-specific folder
+                        val modelTargetDir = File(sdModelsDir, model.name.replace(" ", "_"))
                         val modelType = if (model.modelFormat == "qnn_npu") "qnn" else "mnn"
-                        val isComplete = checkSdModelExists(sdModelsDir, modelType)
+                        val isComplete = checkSdModelExists(modelTargetDir, modelType)
                         
                         if (isComplete && cause == null) {
                             android.util.Log.i("ModelDownloadViewModel", "SD model download completed: ${model.name}")
@@ -687,13 +694,13 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
-    fun addExternalModel(externalModel: LLMModel) {
+    fun addExternalModel(externalModel: LLMModel): Boolean {
         val currentModels = _models.value.toMutableList()
         
         // Check if model with same name already exists
         if (currentModels.any { it.name == externalModel.name }) {
             android.util.Log.w("ModelDownloadViewModel", "Model with name '${externalModel.name}' already exists")
-            return
+            return false
         }
         
         // Add the external model to the list
@@ -701,7 +708,91 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         _models.value = currentModels
         
         android.util.Log.d("ModelDownloadViewModel", "Added external model: ${externalModel.name}")
-        saveImportedModels()
+        
+        // If it's an image model (ZIP file), extract it
+        if ((externalModel.category == "qnn_npu" || externalModel.category == "mnn_cpu") && externalModel.isExtracting) {
+            viewModelScope.launch(Dispatchers.IO) {
+                try {
+                    android.util.Log.d("ModelDownloadViewModel", "Extracting imported image model: ${externalModel.name}")
+
+                    // Ensure UI shows this as an active operation
+                    updateModel(externalModel.name) {
+                        it.copy(isDownloading = true)
+                    }
+                    
+                    // Get the ZIP file from URI
+                    val uri = Uri.parse(externalModel.url)
+                    val tempFile = File(context.cacheDir, "imported_${System.currentTimeMillis()}.zip")
+                    
+                    // Copy URI content to temp file
+                    context.contentResolver.openInputStream(uri)?.use { input ->
+                        tempFile.outputStream().use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    
+                    // Extract to sd_models/<modelName> directory so the folder is named after user's chosen name
+                    val sdModelsDir = File(context.filesDir, "sd_models")
+                    if (!sdModelsDir.exists()) {
+                        sdModelsDir.mkdirs()
+                    }
+                    
+                    // Create a folder specifically for this model using the user-provided name
+                    val modelTargetDir = File(sdModelsDir, externalModel.name.replace(" ", "_"))
+                    if (modelTargetDir.exists()) {
+                        // Clean up previous failed extraction
+                        modelTargetDir.deleteRecursively()
+                    }
+                    modelTargetDir.mkdirs()
+                    
+                    // Extract the ZIP into the model-specific folder
+                    val extractSuccess = com.llmhub.llmhub.utils.ZipExtractor.extractZip(
+                        zipFile = tempFile,
+                        targetDir = modelTargetDir,
+                        onProgress = { progress ->
+                            // Update progress
+                            updateModel(externalModel.name) {
+                                it.copy(downloadProgress = progress)
+                            }
+                        }
+                    )
+                    
+                    // Clean up temp file
+                    tempFile.delete()
+                    
+                    if (extractSuccess) {
+                        // Mark as downloaded
+                        updateModel(externalModel.name) {
+                            it.copy(
+                                isDownloaded = true,
+                                isDownloading = false,
+                                isExtracting = false,
+                                downloadProgress = 1.0f
+                            )
+                        }
+                        android.util.Log.d("ModelDownloadViewModel", "Successfully extracted imported image model")
+                        // Save to SharedPreferences
+                        saveImportedModels()
+                    } else {
+                        // Extraction failed - remove from list
+                        val updatedModels = _models.value.toMutableList()
+                        updatedModels.removeAll { it.name == externalModel.name }
+                        _models.value = updatedModels
+                        android.util.Log.e("ModelDownloadViewModel", "Failed to extract imported image model")
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("ModelDownloadViewModel", "Error extracting imported image model: ${e.message}")
+                    // Remove from list on error
+                    val updatedModels = _models.value.toMutableList()
+                    updatedModels.removeAll { it.name == externalModel.name }
+                    _models.value = updatedModels
+                }
+            }
+        } else {
+            saveImportedModels()
+        }
+        
+        return true
     }
     
     fun getImportedModels(): List<LLMModel> {

@@ -2,6 +2,9 @@ package com.llmhub.llmhub.data
 
 import io.ktor.client.* // kept for potential future use but NOT used for large downloads
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -338,15 +341,35 @@ class ModelDownloader(
             Log.d(TAG, "Created directory: ${sdModelsDir.absolutePath}")
         }
         
-        // Check if model already extracted
+        // Model-specific folder for this model
+        val modelTargetDir = File(sdModelsDir, model.name.replace(" ", "_"))
+        
+        // Check if model already extracted by searching recursively for unet files
         val modelType = if (model.name.contains("NPU", ignoreCase = true) || 
                             model.modelFormat.contains("qnn", ignoreCase = true)) "qnn" else "mnn"
-        val unetFile = File(sdModelsDir, if (modelType == "qnn") "unet.bin" else "unet.mnn")
         
-        Log.i(TAG, "Model type detected: $modelType, checking for: ${unetFile.name}")
+        fun findUnetFile(dir: File, depth: Int = 0): Boolean {
+            if (depth > 6 || !dir.exists() || !dir.isDirectory) return false
+            val files = dir.listFiles() ?: return false
+            for (f in files) {
+                if (f.isFile) {
+                    val name = f.name.lowercase()
+                    if ((modelType == "qnn" && name.contains("unet") && name.endsWith(".bin")) ||
+                        (modelType == "mnn" && name.contains("unet") && name.endsWith(".mnn"))) {
+                        return true
+                    }
+                } else if (f.isDirectory && findUnetFile(f, depth + 1)) {
+                    return true
+                }
+            }
+            return false
+        }
         
-        if (unetFile.exists()) {
-            Log.i(TAG, "Model already extracted at ${sdModelsDir.absolutePath}")
+        val modelAlreadyExtracted = modelTargetDir.exists() && findUnetFile(modelTargetDir)
+        Log.i(TAG, "Model type detected: $modelType, checking in: ${modelTargetDir.absolutePath}, exists: $modelAlreadyExtracted")
+        
+        if (modelAlreadyExtracted) {
+            Log.i(TAG, "Model already extracted at ${modelTargetDir.absolutePath}")
             emit(DownloadStatus(model.sizeBytes, model.sizeBytes, 0))
             return@flow
         }
@@ -441,15 +464,43 @@ class ModelDownloader(
             Log.i(TAG, "Using existing ZIP file: ${zipFile.absolutePath}")
         }
         
-        // Extract the ZIP
-        Log.i(TAG, "Extracting model files...")
-        emit(DownloadStatus((model.sizeBytes * 0.9).toLong(), model.sizeBytes, 0, isExtracting = true))
+        // Clean up model folder if it exists (from a previous failed extraction)
+        if (modelTargetDir.exists()) {
+            modelTargetDir.deleteRecursively()
+        }
+        modelTargetDir.mkdirs()
         
-        val extractSuccess = com.llmhub.llmhub.utils.ZipExtractor.extractZip(
-            zipFile = zipFile,
-            targetDir = sdModelsDir,
-            onProgress = null  // Don't emit progress during extraction to avoid threading issues
-        )
+        // Extract the ZIP with progress updates
+        // Reset progress to 0 for extraction phase (separate from download progress)
+        Log.i(TAG, "Extracting model files to ${modelTargetDir.absolutePath}...")
+        emit(DownloadStatus(0, model.sizeBytes, 0, isExtracting = true))
+        
+        // Use atomic reference to track progress from callback
+        val extractProgress = java.util.concurrent.atomic.AtomicReference(0f)
+        var extractSuccess = false
+        
+        // Run extraction in a separate coroutine so we can poll progress
+        coroutineScope {
+            val extractJob = async(Dispatchers.IO) {
+                com.llmhub.llmhub.utils.ZipExtractor.extractZip(
+                    zipFile = zipFile,
+                    targetDir = modelTargetDir,
+                    onProgress = { progress ->
+                        extractProgress.set(progress)
+                    }
+                )
+            }
+            
+            // Poll and emit progress while extraction is running
+            while (!extractJob.isCompleted) {
+                val progress = extractProgress.get()
+                val progressBytes = (progress * model.sizeBytes).toLong()
+                emit(DownloadStatus(progressBytes, model.sizeBytes, 0, isExtracting = true))
+                delay(100)
+            }
+            
+            extractSuccess = extractJob.await()
+        }
         
         if (!extractSuccess) {
             throw RuntimeException("Failed to extract model ZIP")

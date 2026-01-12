@@ -73,6 +73,7 @@
     <string name="github_repository">Repositori GitHub</string>
     <string name="acknowledgments">Ucapan Terima Kasih</string>
     <string name="acknowledgments_text">Terima kasih khusus kepada Google, Meta, Microsoft, dan komunitas HuggingFace karena menyediakan model LLM luar biasa yang mendukung aplikasi ini. Proyek ini juga bergantung pada karya luar biasa dari komunitas pengembangan Android dan ekosistem sumber terbuka.</string>
+    <string name="sd_models_credit">Model generasi gambar didukung oleh implementasi Stable Diffusion xororz menggunakan backend Qualcomm QNN (NPU) dan Alibaba MNN (CPU).</string>
     <string name="ai_thinking">AI sedang berpikir...</string>
     <string name="version_number">Versi 3.2.6</string>
     <string name="app_version">Versi Aplikasi</string>
@@ -408,13 +409,17 @@
     <string name="context_window_size">Ukuran Jendela Konteks</string>
     <string name="import_model">Impor Model</string>
     <string name="model_name_required">Nama model diperlukan</string>
+    <string name="model_name_already_exists">Model bernama \"%1$s\" sudah ada. Silakan gunakan nama lain atau hapus model yang ada terlebih dahulu.</string>
     <string name="context_window_size_invalid">Harap masukkan ukuran jendela konteks yang valid</string>
     <string name="please_fix_errors">Harap perbaiki kesalahan di atas</string>
     <string name="remove">Hapus</string>
     <string name="ready_to_use">Siap digunakan</string>
-    <string name="unsupported_file_format">Format file tidak didukung. Harap pilih file .task atau .litertlm.</string>
-    <string name="download_models_from_litert_community">Anda dapat mengunduh model yang kompatibel dari:</string>
+    <string name="unsupported_file_format">Format file tidak didukung. Pilih file .task, .litertlm, atau .zip.</string>
+    <string name="download_models_from_litert_community">Anda dapat mengunduh model LLM yang kompatibel dari:</string>
     <string name="litert_community_link">Komunitas LiteRT di Hugging Face</string>
+    <string name="download_image_models_from">Anda dapat mengunduh model gambar yang kompatibel dari:</string>
+    <string name="sd_models_link">Model Stable Diffusion di Hugging Face</string>
+    <string name="supports_npu">Mendukung NPU</string>
     <string name="import_model_warning">⚠️ Penting: Harap baca README model di Hugging Face sebelum mengimpor. Masukkan kemampuan yang benar (visi, audio, GPU) dan ukuran jendela konteks seperti yang ditentukan dalam dokumentasi model. Pengaturan yang salah dapat menyebabkan model tidak berfungsi dengan benar.</string>
     
     <!-- Home Screen -->

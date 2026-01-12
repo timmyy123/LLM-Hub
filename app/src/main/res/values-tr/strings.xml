@@ -73,6 +73,7 @@
     <string name="github_repository">GitHub Deposu</string>
     <string name="acknowledgments">Teşekkürler</string>
     <string name="acknowledgments_text">Bu uygulamayı destekleyen inanılmaz LLM modellerini sağladıkları için Google, Meta, Microsoft ve HuggingFace topluluğuna özel teşekkürler. Bu proje ayrıca Android geliştirme topluluğunun ve açık kaynak ekosisteminin harika çalışmalarına dayanmaktadır.</string>
+    <string name="sd_models_credit">Görüntü oluşturma modelleri, Qualcomm QNN (NPU) ve Alibaba MNN (CPU) arka uçlarını kullanan xororz\'un Stable Diffusion uygulamaları tarafından desteklenmektedir.</string>
     <string name="ai_thinking">Yapay zeka düşünüyor...</string>
     <string name="version_number">Sürüm 3.2.6</string>
     <string name="app_version">Uygulama Sürümü</string>
@@ -406,14 +407,16 @@
     <string name="model_format">Model Formatı</string>
     <string name="context_window_size">Bağlam Penceresi Boyutu</string>
     <string name="import_model">Modeli İçe Aktar</string>
-    <string name="model_name_required">Model adı gereklidir</string>
-    <string name="context_window_size_invalid">Lütfen geçerli bir bağlam penceresi boyutu girin</string>
+    <string name="model_name_required">Model adı gereklidir</string>    <string name="model_name_already_exists">\"%1$s\" adlı bir model zaten mevcut. Lütfen farklı bir isim kullanın veya önce mevcut modeli silin.</string>    <string name="context_window_size_invalid">Lütfen geçerli bir bağlam penceresi boyutu girin</string>
     <string name="please_fix_errors">Lütfen yukarıdaki hataları düzeltin</string>
     <string name="remove">Kaldır</string>
     <string name="ready_to_use">Kullanıma hazır</string>
-    <string name="unsupported_file_format">Desteklenmeyen dosya formatı. Lütfen bir .task veya .litertlm dosyası seçin.</string>
-    <string name="download_models_from_litert_community">Uyumlu modelleri şuradan indirebilirsiniz:</string>
+    <string name="unsupported_file_format">Desteklenmeyen dosya formatı. Lütfen .task, .litertlm veya .zip dosyası seçin.</string>
+    <string name="download_models_from_litert_community">Uyumlu LLM modellerini şuradan indirebilirsiniz:</string>
     <string name="litert_community_link">Hugging Face\'te LiteRT Topluluğu</string>
+    <string name="download_image_models_from">Uyumlu görüntü modellerini şuradan indirebilirsiniz:</string>
+    <string name="sd_models_link">Hugging Face\'te Stable Diffusion modelleri</string>
+    <string name="supports_npu">NPU\'yu Destekler</string>
     <string name="import_model_warning">⚠️ Önemli: İçe aktarmadan önce lütfen modelin README\'sini Hugging Face\'te okuyun. Doğru yetenekleri (görsel, ses, GPU) ve model belgelerinde belirtildiği şekilde bağlam penceresi boyutunu girin. Yanlış ayarlar modelin düzgün çalışmamasına neden olabilir.</string>
     
     <!-- Home Screen -->

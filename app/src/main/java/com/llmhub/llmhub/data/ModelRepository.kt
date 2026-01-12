@@ -103,6 +103,10 @@ object ModelRepository {
         return try {
             val imported = Gson().fromJson(importedJson, Array<LLMModel>::class.java)?.toList().orEmpty()
             imported.filter { model ->
+                // Filter out image generation models (qnn_npu, mnn_cpu) - those are for Image Generator only
+                if (model.category == "qnn_npu" || model.category == "mnn_cpu") {
+                    return@filter false
+                }
                 // Ensure the backing file still exists and is valid
                 val modelsDir = File(context.filesDir, "models")
                 val file = File(modelsDir, model.localFileName())

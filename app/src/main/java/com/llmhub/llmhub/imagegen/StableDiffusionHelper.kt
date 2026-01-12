@@ -25,6 +25,38 @@ import java.util.concurrent.TimeUnit
 class StableDiffusionHelper(private val context: Context) {
     private val TAG = "StableDiffusionHelper"
     private val BASE_URL = "http://127.0.0.1:8081"
+
+    private val MAX_MODEL_SEARCH_DEPTH = 6
+
+    private fun detectModelTypeInDir(dir: File): ModelType? {
+        val files = dir.listFiles()?.filter { it.isFile } ?: return null
+
+        val hasQnnModels = files.any {
+            it.name.equals("unet.bin", ignoreCase = true) ||
+                (it.name.startsWith("unet", ignoreCase = true) && it.name.endsWith(".bin", ignoreCase = true))
+        }
+        val hasMnnModels = files.any {
+            it.name.equals("unet.mnn", ignoreCase = true) ||
+                (it.name.contains("unet", ignoreCase = true) && it.name.endsWith(".mnn", ignoreCase = true))
+        }
+
+        return when {
+            hasQnnModels -> ModelType.QNN_NPU
+            hasMnnModels -> ModelType.MNN_CPU
+            else -> null
+        }
+    }
+
+    private fun findModelRoot(foundDir: File, baseDir: File): File {
+        var current = foundDir
+
+        // Walk up until we reach the first-level directory under baseDir.
+        while (current != baseDir && current.parentFile != null && current.parentFile != baseDir) {
+            current = current.parentFile!!
+        }
+
+        return current
+    }
     
     private val client = OkHttpClient.Builder()
         .connectTimeout(5, TimeUnit.SECONDS)
@@ -65,29 +97,28 @@ class StableDiffusionHelper(private val context: Context) {
         if (!modelDir.exists()) return emptyList()
         
         val models = mutableListOf<ModelInfo>()
+        val seenPaths = HashSet<String>()
         
         // Recursive search for model files
         fun searchModels(dir: File, depth: Int) {
-            if (depth > 2 || !dir.exists() || !dir.isDirectory) return
+            if (depth > MAX_MODEL_SEARCH_DEPTH || !dir.exists() || !dir.isDirectory) return
             
-            // Check current directory
-            val hasQnnModels = File(dir, "unet.bin").exists()
-            val hasMnnModels = File(dir, "unet.mnn").exists()
-            
-            if (hasQnnModels) {
-                models.add(ModelInfo(
-                    name = dir.name,
-                    type = ModelType.QNN_NPU,
-                    path = dir.absolutePath,
-                    isReady = true
-                ))
-            } else if (hasMnnModels) {
-                models.add(ModelInfo(
-                    name = dir.name,
-                    type = ModelType.MNN_CPU,
-                    path = dir.absolutePath,
-                    isReady = true
-                ))
+            // Detect model files in this directory. If present in a nested folder
+            // (e.g. sd_models/anything/unet/unet.bin), treat the top-level folder
+            // under sd_models as the model root.
+            detectModelTypeInDir(dir)?.let { detectedType ->
+                val root = findModelRoot(dir, modelDir)
+                val rootPath = root.absolutePath
+                if (seenPaths.add(rootPath)) {
+                    models.add(
+                        ModelInfo(
+                            name = root.name,
+                            type = detectedType,
+                            path = rootPath,
+                            isReady = true
+                        )
+                    )
+                }
             }
             
             // Check subdirectories
@@ -111,21 +142,12 @@ class StableDiffusionHelper(private val context: Context) {
         
         // Recursive search for model files
         fun findModelFiles(dir: File, depth: Int): Pair<File?, String>? {
-            if (depth > 2 || !dir.exists() || !dir.isDirectory) return null
+            if (depth > MAX_MODEL_SEARCH_DEPTH || !dir.exists() || !dir.isDirectory) return null
             
-            // Check current directory
-            val hasQnnModels = File(dir, "unet.bin").exists()
-            val hasMnnModels = File(dir, "unet.mnn").exists()
-            
-            when {
-                hasQnnModels -> {
-                    Log.i(TAG, "Found QNN model in: ${dir.absolutePath}")
-                    return Pair(dir, "QNN")
-                }
-                hasMnnModels -> {
-                    Log.i(TAG, "Found MNN model in: ${dir.absolutePath}")
-                    return Pair(dir, "MNN")
-                }
+            detectModelTypeInDir(dir)?.let { detectedType ->
+                val root = findModelRoot(dir, modelDir)
+                Log.i(TAG, "Found ${detectedType.name} model in: ${root.absolutePath}")
+                return Pair(root, detectedType.name)
             }
             
             // Check subdirectories

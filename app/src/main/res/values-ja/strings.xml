@@ -72,8 +72,7 @@
     <string name="source_code">ソースコード：</string>
     <string name="github_repository">GitHubリポジトリ</string>
     <string name="acknowledgments">謝辞</string>
-    <string name="acknowledgments_text">このアプリケーションを支える素晴らしいLLMモデルを提供してくれたGoogle、Meta、Microsoft、およびHuggingFaceコミュニティに特別な感謝を。このプロジェクトは、Android開発コミュニティとオープンソースエコシステムの素晴らしい仕事にも依存しています。</string>
-    <string name="ai_thinking">AIが考え中...</string>
+    <string name="acknowledgments_text">このアプリケーションを支える素晴らしいLLMモデルを提供してくれたGoogle、Meta、Microsoft、およびHuggingFaceコミュニティに特別な感謝を。このプロジェクトは、Android開発コミュニティとオープンソースエコシステムの素晴らしい仕事にも依存しています。</string>    <string name="sd_models_credit">画像生成モデルは、Qualcomm QNN（NPU）とAlibaba MNN（CPU）バックエンドを使用したxororzのStable Diffusion実装により提供されています。</string>    <string name="ai_thinking">AIが考え中...</string>
     <string name="version_number">バージョン 3.2.6</string>
     <string name="app_version">アプリバージョン</string>
     
@@ -407,14 +406,16 @@
     <string name="model_format">モデルフォーマット</string>
     <string name="context_window_size">コンテキストウィンドウサイズ</string>
     <string name="import_model">モデルをインポート</string>
-    <string name="model_name_required">モデル名は必須です</string>
-    <string name="context_window_size_invalid">有効なコンテキストウィンドウサイズを入力してください</string>
+    <string name="model_name_required">モデル名は必須です</string>    <string name="model_name_already_exists">\"%1$s\"という名前のモデルは既に存在します。別の名前を使用するか、既存のモデルを先に削除してください。</string>    <string name="context_window_size_invalid">有効なコンテキストウィンドウサイズを入力してください</string>
     <string name="please_fix_errors">上記のエラーを修正してください</string>
     <string name="remove">削除</string>
     <string name="ready_to_use">使用準備完了</string>
-    <string name="unsupported_file_format">サポートされていないファイル形式です。.taskまたは.litertlmファイルを選択してください。</string>
-    <string name="download_models_from_litert_community">互換性のあるモデルは以下からダウンロードできます：</string>
+    <string name="unsupported_file_format">サポートされていないファイル形式です。.task、.litertlm、または.zipファイルを選択してください。</string>
+    <string name="download_models_from_litert_community">互換性のあるLLMモデルは以下からダウンロードできます：</string>
     <string name="litert_community_link">Hugging FaceのLiteRTコミュニティ</string>
+    <string name="download_image_models_from">互換性のある画像モデルは以下からダウンロードできます：</string>
+    <string name="sd_models_link">Hugging Face上のStable Diffusionモデル</string>
+    <string name="supports_npu">NPUをサポート</string>
     <string name="import_model_warning">⚠️ 重要：インポート前にHugging FaceでモデルのREADMEをお読みください。モデルドキュメントで指定されている正しい機能（ビジョン、音声、GPU）とコンテキストウィンドウサイズを入力してください。不正な設定はモデルが正しく動作しない原因となります。</string>
     
     <!-- Home Screen -->

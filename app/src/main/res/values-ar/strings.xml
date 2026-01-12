@@ -73,6 +73,7 @@
     <string name="github_repository">مستودع GitHub</string>
     <string name="acknowledgments">شكر وتقدير</string>
     <string name="acknowledgments_text">شكر خاص إلى Google وMeta وMicrosoft ومجتمع HuggingFace لتقديم نماذج LLM المذهلة التي تدعم هذا التطبيق. يعتمد هذا المشروع أيضًا على عمل مجتمع مطوري أندرويد ونظام المصادر المفتوحة الرائع.</string>
+    <string name="sd_models_credit">تعمل نماذج إنشاء الصور بواسطة تطبيقات Stable Diffusion من xororz باستخدام واجهات Qualcomm QNN (NPU) وAlibaba MNN (CPU).</string>
     <string name="ai_thinking">الذكاء الاصطناعي يفكر...</string>
     <string name="version_number">الإصدار 3.2.6</string>
     <string name="app_version">إصدار التطبيق</string>
@@ -406,14 +407,16 @@
     <string name="model_format">صيغة النموذج</string>
     <string name="context_window_size">حجم نافذة السياق</string>
     <string name="import_model">استيراد النموذج</string>
-    <string name="model_name_required">اسم النموذج مطلوب</string>
-    <string name="context_window_size_invalid">يرجى إدخال حجم نافذة سياق صالح</string>
+    <string name="model_name_required">اسم النموذج مطلوب</string>    <string name="model_name_already_exists">يوجد بالفعل نموذج باسم \"%1$s\". يرجى استخدام اسم مختلف أو حذف النموذج الموجود أولاً.</string>    <string name="context_window_size_invalid">يرجى إدخال حجم نافذة سياق صالح</string>
     <string name="please_fix_errors">يرجى تصحيح الأخطاء أعلاه</string>
     <string name="remove">إزالة</string>
     <string name="ready_to_use">جاهز للاستخدام</string>
-    <string name="unsupported_file_format">صيغة ملف غير مدعومة. يرجى اختيار ملف ‎.task أو ‎.litertlm.</string>
-    <string name="download_models_from_litert_community">يمكنك تنزيل نماذج متوافقة من:</string>
+    <string name="unsupported_file_format">تنسيق ملف غير مدعوم. يرجى تحديد ملف .task أو .litertlm أو .zip.</string>
+    <string name="download_models_from_litert_community">يمكنك تنزيل نماذج LLM متوافقة من:</string>
     <string name="litert_community_link">مجتمع LiteRT على Hugging Face</string>
+    <string name="download_image_models_from">يمكنك تنزيل نماذج الصور المتوافقة من:</string>
+    <string name="sd_models_link">نماذج Stable Diffusion على Hugging Face</string>
+    <string name="supports_npu">يدعم NPU</string>
     <string name="import_model_warning">⚠️ مهم: يرجى قراءة ملف README للنموذج على Hugging Face قبل الاستيراد. أدخل القدرات الصحيحة (الرؤية، الصوت، GPU) وحجم نافذة السياق كما هو مذكور في توثيق النموذج. قد تؤدي الإعدادات غير الصحيحة إلى عدم عمل النموذج كما ينبغي.</string>
 
     <!-- Home Screen -->

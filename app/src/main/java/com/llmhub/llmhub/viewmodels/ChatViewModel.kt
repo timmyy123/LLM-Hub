@@ -666,7 +666,10 @@ class ChatViewModel(
                 context as androidx.activity.ComponentActivity,
                 androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.getInstance(context.application)
             )[ModelDownloadViewModel::class.java]
-            modelDownloadViewModel.getImportedModels()
+            // Filter out image generation models (qnn_npu, mnn_cpu) - those are for Image Generator, not AI Chat
+            modelDownloadViewModel.getImportedModels().filter { 
+                it.category != "qnn_npu" && it.category != "mnn_cpu" 
+            }
         } catch (e: Exception) {
             Log.w("ChatViewModel", "Could not get imported models: ${e.message}")
             emptyList()
