@@ -37,14 +37,12 @@ import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.components.ChatDrawer
 import com.llmhub.llmhub.components.MessageBubble
 import com.llmhub.llmhub.components.MessageInput
-import com.llmhub.llmhub.components.ModelConfigsDialog
+import com.llmhub.llmhub.components.ChatSettingsSheet
 import com.llmhub.llmhub.ui.components.ModernCard
 import com.llmhub.llmhub.ui.components.StatusChip
 import com.llmhub.llmhub.ui.components.SectionHeader
 import com.llmhub.llmhub.viewmodels.ChatViewModel
 import com.llmhub.llmhub.viewmodels.ChatViewModelFactory
-import com.google.mediapipe.tasks.genai.llminference.LlmInference
-import com.llmhub.llmhub.inference.MediaPipeInferenceService
 import kotlinx.coroutines.launch
 import android.util.Log
 
@@ -125,6 +123,7 @@ fun ChatScreen(
     val isLoadingModel by viewModel.isLoadingModel.collectAsState()
     val currentlyLoadedModel by viewModel.currentlyLoadedModel.collectAsState()
     val selectedModel by viewModel.selectedModel.collectAsState()
+    val selectedBackend by viewModel.selectedBackend.collectAsState()
     
     // RAG state
     val isRagReady by viewModel.isRagReady.collectAsState()
@@ -143,11 +142,8 @@ fun ChatScreen(
     // Combined: use ViewModel's ID if set (auto-readout), otherwise use manual ID
     val currentTtsMessageId = viewModelTtsMessageId ?: manualTtsMessageId
     
-    var modelMenuExpanded by remember { mutableStateOf(false) }
-    
-    // Backend selection state
-    var showBackendDialog by remember { mutableStateOf(false) }
-    var pendingModelForBackendSelection by remember { mutableStateOf<LLMModel?>(null) }
+    // Settings bottom sheet state
+    var showSettingsSheet by remember { mutableStateOf(false) }
     
     val listState = rememberLazyListState()
     val focusManager = LocalFocusManager.current
@@ -335,179 +331,15 @@ fun ChatScreen(
                         }
                     },
                     actions = {
-                        // Model selector
-                        Box {
-                            IconButton(
-                                onClick = { modelMenuExpanded = !modelMenuExpanded },
-                                enabled = availableModels.isNotEmpty()
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Tune,
-                                    contentDescription = stringResource(R.string.select_model),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                            
-                            DropdownMenu(
-                                expanded = modelMenuExpanded,
-                                onDismissRequest = { modelMenuExpanded = false },
-                                modifier = Modifier
-                                    .widthIn(min = 250.dp, max = 320.dp)
-                                    .background(
-                                        color = MaterialTheme.colorScheme.surfaceContainer,
-                                        shape = MaterialTheme.shapes.medium
-                                    )
-                            ) {
-                                // Add unload model option if a model is currently loaded
-                                if (currentlyLoadedModel != null) {
-                                    DropdownMenuItem(
-                                        text = { 
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.PowerOff,
-                                                    contentDescription = stringResource(R.string.unload_model),
-                                                    tint = MaterialTheme.colorScheme.error,
-                                                    modifier = Modifier.size(18.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(12.dp))
-                                                Text(
-                                                    text = stringResource(R.string.unload_model),
-                                                    style = MaterialTheme.typography.bodyMedium,
-                                                    fontWeight = FontWeight.Medium,
-                                                    color = MaterialTheme.colorScheme.error
-                                                )
-                                            }
-                                        },
-                                        onClick = {
-                                            viewModel.unloadModel()
-                                            modelMenuExpanded = false
-                                        }
-                                    )
-                                    
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(vertical = 4.dp),
-                                        color = MaterialTheme.colorScheme.outlineVariant
-                                    )
-                                }
-                                
-                                availableModels.forEach { model ->
-                                    DropdownMenuItem(
-                                        text = { 
-                                            Column(
-                                                modifier = Modifier.fillMaxWidth()
-                                            ) {
-                                                Row(
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                                    modifier = Modifier.fillMaxWidth()
-                                                ) {
-                                                    Text(
-                                                        text = getLocalizedModelName(model),
-                                                        style = MaterialTheme.typography.bodyMedium,
-                                                        fontWeight = FontWeight.Medium,
-                                                        color = MaterialTheme.colorScheme.onSurface,
-                                                        modifier = Modifier.weight(1f)
-                                                    )
-                                                    
-                                                    // Show vision indicator with better styling
-                                                    // Vision support badge
-                                                    if (model.supportsVision) {
-                                                        Surface(
-                                                            shape = RoundedCornerShape(12.dp),
-                                                            color = MaterialTheme.colorScheme.tertiary,
-                                                            modifier = Modifier.padding(start = 8.dp)
-                                                        ) {
-                                                            Row(
-                                                                verticalAlignment = Alignment.CenterVertically,
-                                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                                            ) {
-                                                                Icon(
-                                                                    Icons.Default.RemoveRedEye,
-                                                                    contentDescription = stringResource(R.string.vision_enabled),
-                                                                    modifier = Modifier.size(14.dp),
-                                                                    tint = MaterialTheme.colorScheme.onTertiary
-                                                                )
-                                                                Spacer(modifier = Modifier.width(4.dp))
-                                                                Text(
-                                                                    text = stringResource(R.string.vision),
-                                                                    style = MaterialTheme.typography.labelSmall,
-                                                                    fontWeight = FontWeight.SemiBold,
-                                                                    color = MaterialTheme.colorScheme.onTertiary
-                                                                )
-                                                            }
-                                                        }
-                                                    }
-                                                    
-                                                    // Audio support badge
-                                                    if (model.supportsAudio) {
-                                                        Surface(
-                                                            shape = RoundedCornerShape(12.dp),
-                                                            color = MaterialTheme.colorScheme.secondary,
-                                                            modifier = Modifier.padding(start = 4.dp)
-                                                        ) {
-                                                            Row(
-                                                                verticalAlignment = Alignment.CenterVertically,
-                                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                                            ) {
-                                                                Icon(
-                                                                    Icons.Default.Mic,
-                                                                    contentDescription = stringResource(R.string.audio_enabled),
-                                                                    modifier = Modifier.size(14.dp),
-                                                                    tint = MaterialTheme.colorScheme.onSecondary
-                                                                )
-                                                                Spacer(modifier = Modifier.width(4.dp))
-                                                                Text(
-                                                                    text = stringResource(R.string.audio),
-                                                                    style = MaterialTheme.typography.labelSmall,
-                                                                    fontWeight = FontWeight.SemiBold,
-                                                                    color = MaterialTheme.colorScheme.onSecondary
-                                                                )
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                                
-                                                // Add model details subtitle
-                                                if (model.contextWindowSize > 0) {
-                                                    Text(
-                                                        text = stringResource(
-                                                            R.string.context_multimodal_format,
-                                                            model.contextWindowSize / 1024,
-                                                            when {
-                                                                model.supportsVision && model.supportsAudio -> stringResource(R.string.vision_audio_text)
-                                                                model.supportsVision -> stringResource(R.string.multimodal)
-                                                                model.supportsAudio -> stringResource(R.string.audio_text)
-                                                                else -> stringResource(R.string.text_only)
-                                                            }
-                                                        ),
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                        modifier = Modifier.padding(top = 2.dp)
-                                                    )
-                                                }
-                                            }
-                                        },
-                                        trailingIcon = if (model.name == currentlyLoadedModel?.name) {
-                                            {
-                                                Icon(
-                                                    imageVector = Icons.Default.Check,
-                                                    contentDescription = stringResource(R.string.currently_loaded),
-                                                    tint = MaterialTheme.colorScheme.primary,
-                                                    modifier = Modifier.size(18.dp)
-                                                )
-                                            }
-                                        } else null,
-                                                onClick = {
-                                                    // Always show model configs dialog before loading any model
-                                                    pendingModelForBackendSelection = model
-                                                    showBackendDialog = true
-                                                    modelMenuExpanded = false
-                                                }
-                                    )
-                                }
-                            }
+                        // Settings button - opens bottom sheet for model selection and config
+                        IconButton(
+                            onClick = { showSettingsSheet = true }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Tune,
+                                contentDescription = stringResource(R.string.feature_settings_title),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
                 )
@@ -646,32 +478,41 @@ fun ChatScreen(
         }
     }
     
-    // Model Configs Dialog (replaces backend dialog for Gemma models)
-    if (showBackendDialog) {
-        pendingModelForBackendSelection?.let { model ->
-            val initialMax = MediaPipeInferenceService.getMaxTokensForModelStatic(model)
-            ModelConfigsDialog(
-                model = model,
-                initialMaxTokens = initialMax,
-                onConfirm = { maxTokens, topK, topP, temperature, backend, disableVision, disableAudio ->
-                    // Apply chosen backend only for Gemma models; other models ignore backend here
-                    Log.d("ChatScreen", "Model configs confirmed: maxTokens=$maxTokens topK=$topK topP=$topP temperature=$temperature backend=$backend disableVision=$disableVision disableAudio=$disableAudio for model ${model.name}")
-
-                    // Push generation parameters to inference service via ViewModel
-                    viewModel.setGenerationParameters(maxTokens, topK, topP, temperature)
-
-                    if (backend != null) {
-                        viewModel.switchModelWithBackend(model, backend, disableVision, disableAudio)
-                    } else {
-                        viewModel.switchModel(model)
-                    }
-                },
-                onDismiss = {
-                    showBackendDialog = false
-                    pendingModelForBackendSelection = null
+    // Settings Bottom Sheet for model selection and configuration
+    if (showSettingsSheet) {
+        ChatSettingsSheet(
+            availableModels = availableModels,
+            initialSelectedModel = selectedModel,
+            initialSelectedBackend = selectedBackend,
+            currentlyLoadedModel = currentlyLoadedModel,
+            isLoadingModel = isLoadingModel,
+            onModelSelected = { model ->
+                viewModel.selectModel(model)
+            },
+            onBackendSelected = { backend ->
+                viewModel.selectBackend(backend)
+            },
+            onLoadModel = { model, maxTokens, topK, topP, temperature, backend, disableVision, disableAudio ->
+                Log.d("ChatScreen", "Model configs confirmed: maxTokens=$maxTokens topK=$topK topP=$topP temperature=$temperature backend=$backend disableVision=$disableVision disableAudio=$disableAudio for model ${model.name}")
+                
+                // Push generation parameters to inference service via ViewModel
+                viewModel.setGenerationParameters(maxTokens, topK, topP, temperature)
+                
+                if (backend != null) {
+                    viewModel.switchModelWithBackend(model, backend, disableVision, disableAudio)
+                } else {
+                    viewModel.switchModel(model)
                 }
-            )
-        }
+                
+                showSettingsSheet = false
+            },
+            onUnloadModel = {
+                viewModel.unloadModel()
+            },
+            onDismiss = {
+                showSettingsSheet = false
+            }
+        )
     }
 }
     

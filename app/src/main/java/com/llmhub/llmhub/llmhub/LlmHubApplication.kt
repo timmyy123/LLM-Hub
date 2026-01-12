@@ -89,8 +89,11 @@ class LlmHubApplication : Application() {
     
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        // Handle configuration changes (like language changes)
-        applySavedLanguage()
+        // Note: Do NOT call applySavedLanguage() here as it destroys the InferenceService
+        // and unloads any loaded model. The InferenceService already handles locale changes
+        // internally, and destroying it on every configuration change (rotation, keyboard, etc.)
+        // causes the model to be unnecessarily unloaded.
+        // Language changes are applied in onCreate() and attachBaseContext() which is sufficient.
     }
     
     private fun applySavedLanguage() {
@@ -100,15 +103,13 @@ class LlmHubApplication : Application() {
                 val savedLanguage = themePreferences.appLanguage.first()
                 LocaleHelper.applyLocale(this@LlmHubApplication, savedLanguage)
                 
-                // Recreate InferenceService with new locale
-                _inferenceService = null
+                // Note: Do NOT destroy InferenceService here. The MediaPipeInferenceService
+                // has its own getCurrentContext() method that properly handles locale changes.
+                // Destroying it here causes loaded models to be unloaded on config changes.
             }
         } catch (e: Exception) {
             // Fallback to system locale if error occurs
             LocaleHelper.setLocale(this)
-            
-            // Recreate InferenceService with new locale
-            _inferenceService = null
         }
     }
 }
