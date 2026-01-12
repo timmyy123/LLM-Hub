@@ -28,6 +28,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalUriHandler
 import com.llmhub.llmhub.R
@@ -166,13 +167,36 @@ fun HomeScreen(
             )
         }
     ) { paddingValues ->
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            // Use BoxWithConstraints sizes for robust orientation and rotation handling
+            val isLandscapeLocal = maxWidth > maxHeight
+
+            // Columns: landscape -> 3, portrait -> 2 (both phone & tablet portrait keep 2 columns)
+            val columns = if (isLandscapeLocal) 3 else 2
+
+            // Decide how many rows to fit on screen: landscape 2 rows (3x2), tablet portrait 3 rows (2x3)
+            val headerEstimatedHeight = if (isLandscapeLocal) 120.dp else 160.dp
+            val rowsWanted: Int? = when {
+                isLandscapeLocal -> 2 // Show 3x2 in landscape
+                !isLandscapeLocal && maxWidth >= 600.dp -> 3 // Tablet portrait: 2x3
+                else -> null // Phone portrait: keep original scroll behavior
+            }
+
+            // Calculate card height so all rows fit on screen when rowsWanted is set
+            val cardHeight: Dp? = rowsWanted?.let { rows ->
+                val contentPaddingVertical = 32.dp // PaddingValues(16.dp) -> top+bottom
+                val verticalSpacing = 16.dp * (rows - 1)
+                val totalSpacing = contentPaddingVertical + headerEstimatedHeight + verticalSpacing
+                val calc = (maxHeight - totalSpacing) / rows
+                if (calc < 120.dp) 120.dp else calc
+            }
+
             LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
+                columns = GridCells.Fixed(columns),
                 contentPadding = PaddingValues(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -182,13 +206,14 @@ fun HomeScreen(
                 item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
                     AnimatedWelcomeHeader()
                 }
-                
+
                 // Feature Cards
                 itemsIndexed(features) { index, feature ->
                     AnimatedFeatureCard(
                         feature = feature,
                         index = index,
-                        onClick = { 
+                        cardHeight = cardHeight,
+                        onClick = {
                             onNavigateToFeature(feature.route)
                         }
                     )
@@ -268,6 +293,7 @@ fun AnimatedWelcomeHeader() {
 fun AnimatedFeatureCard(
     feature: FeatureCard,
     index: Int,
+    cardHeight: Dp? = null,
     onClick: () -> Unit
 ) {
     var visible by remember { mutableStateOf(false) }
@@ -298,16 +324,18 @@ fun AnimatedFeatureCard(
         )
     ) {
         Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f)
-                .scale(scale)
-                .clickable(
+            modifier = run {
+                var m: Modifier = Modifier.fillMaxWidth()
+                m = if (cardHeight != null) m.height(cardHeight) else m.aspectRatio(1f)
+                m = m.scale(scale)
+                m = m.clickable(
                     interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
                     indication = null
                 ) {
                     onClick()
-                },
+                }
+                m
+            },
             shape = RoundedCornerShape(24.dp),
             elevation = CardDefaults.cardElevation(
                 defaultElevation = 4.dp,
