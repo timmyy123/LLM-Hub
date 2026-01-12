@@ -521,6 +521,13 @@
     <string name="image_generator_variation">Генерація варіанту %1$d…</string>
     <string name="image_generator_swipe_more">Проведіть тут, щоб створити більше</string>
     <string name="image_generator_info">Генерація зображень використовує модель Stable Diffusion v1.5, що працює на пристрої. Генерація може зайняти 1-2 хвилини залежно від вашого пристрою.</string>
+    <string name="image_generator_img2img">Зображення в Зображення</string>
+    <string name="image_generator_img2img_desc">Трансформувати існуюче зображення</string>
+    <string name="image_generator_select_image">Вибрати Вхідне Зображення</string>
+    <string name="image_generator_change_image">Змінити Вхідне Зображення</string>
+    <string name="image_generator_denoise_strength">Сила Шумозаглушення: %.2f</string>
+    <string name="image_generator_denoise_strength_desc">Вище = більше змін у вхідному зображенні</string>
+    <string name="image_generator_input_image">Вхідне зображення</string>
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">Немає доступної моделі</string>
     <string name="feature_download_model">Завантажити моделі</string>

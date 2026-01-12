@@ -521,6 +521,13 @@
     <string name="image_generator_variation">Generowanie wariantu %1$d...</string>
     <string name="image_generator_swipe_more">Przesuń tutaj, aby wygenerować więcej</string>
     <string name="image_generator_info">Generowanie obrazów wykorzystuje model Stable Diffusion v1.5 działający na urządzeniu. Generowanie może zająć 1-2 minuty w zależności od urządzenia.</string>
+    <string name="image_generator_img2img">Obraz na Obraz</string>
+    <string name="image_generator_img2img_desc">Przekształć istniejący obraz</string>
+    <string name="image_generator_select_image">Wybierz Obraz Wejściowy</string>
+    <string name="image_generator_change_image">Zmień Obraz Wejściowy</string>
+    <string name="image_generator_denoise_strength">Siła Odszumiania: %.2f</string>
+    <string name="image_generator_denoise_strength_desc">Wyższe = więcej zmian w obrazie wejściowym</string>
+    <string name="image_generator_input_image">Obraz wejściowy</string>
     
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">Brak Dostępnego Modelu</string>

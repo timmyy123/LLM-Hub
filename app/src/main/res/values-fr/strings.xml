@@ -548,8 +548,13 @@
     <string name="image_generator_failed_load">Échec du chargement du modèle</string>
     <string name="image_generator_variation">Génération de la variation %1$d...</string>
     <string name="image_generator_swipe_more">Balayez ici pour en générer plus</string>
-    <string name="image_generator_info">La génération d\'images utilise le modèle Stable Diffusion v1.5 exécuté sur l\'appareil. La génération peut prendre 1 à 2 minutes selon votre appareil.</string>
-
+    <string name="image_generator_info">La génération d\'images utilise le modèle Stable Diffusion v1.5 exécuté sur l\'appareil. La génération peut prendre 1 à 2 minutes selon votre appareil.</string>    <string name="image_generator_img2img">Image vers Image</string>
+    <string name="image_generator_img2img_desc">Transformer une image existante</string>
+    <string name="image_generator_select_image">Sélectionner l\'Image d\'Entrée</string>
+    <string name="image_generator_change_image">Changer l\'Image d\'Entrée</string>
+    <string name="image_generator_denoise_strength">Force de Débruitage: %.2f</string>
+    <string name="image_generator_denoise_strength_desc">Plus élevé = plus de changements à l\'image d\'entrée</string>
+    <string name="image_generator_input_image">Image d\'entrée</string>
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">Aucun Modèle Disponible</string>
     <string name="feature_download_model">Télécharger des Modèles</string>

@@ -31,6 +31,12 @@ import com.llmhub.llmhub.imagegen.ModelInfo
 import com.llmhub.llmhub.imagegen.StableDiffusionHelper
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,6 +60,33 @@ fun ImageGeneratorScreen(
     var isGenerating by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var currentGenerationIndex by remember { mutableIntStateOf(0) }
+    
+    // Img2img state
+    var denoiseStrength by remember { mutableStateOf(prefs.getFloat("denoise_strength", 0.7f)) }
+    var inputImageUri by remember { mutableStateOf<Uri?>(null) }
+    var inputImageBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    
+    // Image picker launcher
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        inputImageUri = uri
+        uri?.let {
+            try {
+                inputImageBitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    val source = android.graphics.ImageDecoder.createSource(context.contentResolver, it)
+                    android.graphics.ImageDecoder.decodeBitmap(source)
+                } else {
+                    @Suppress("DEPRECATION")
+                    MediaStore.Images.Media.getBitmap(context.contentResolver, it)
+                }
+            } catch (e: Exception) {
+                errorMessage = "Failed to load image: ${e.message}"
+                inputImageUri = null
+                inputImageBitmap = null
+            }
+        }
+    }
     
     // Model availability state
     var availableModels by remember { mutableStateOf<List<ModelInfo>>(emptyList()) }
@@ -100,11 +133,12 @@ fun ImageGeneratorScreen(
     }
     
     // Save settings when they change
-    LaunchedEffect(iterations, seed, selectedModel) {
+    LaunchedEffect(iterations, seed, selectedModel, denoiseStrength) {
         prefs.edit()
             .putInt("iterations", iterations)
             .putInt("seed", seed)
             .putString("last_model_path", selectedModel?.path)
+            .putFloat("denoise_strength", denoiseStrength)
             .apply()
     }
     
@@ -501,7 +535,7 @@ fun ImageGeneratorScreen(
                             contentAlignment = Alignment.TopCenter
                         ) {
                             Column(
-                                modifier = Modifier.fillMaxWidth(0.5f),
+                                modifier = Modifier.fillMaxWidth(0.5f).verticalScroll(rememberScrollState()),
                                 verticalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
                                 // Prompt input
@@ -531,6 +565,82 @@ fun ImageGeneratorScreen(
                                     }
                                 }
                                 
+                                // Img2img section
+                                Card(
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                                    )
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(16.dp),
+                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        Text(
+                                            text = stringResource(R.string.image_generator_img2img),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            OutlinedButton(
+                                                onClick = { imagePickerLauncher.launch("image/*") },
+                                                enabled = !isGenerating,
+                                                shape = RoundedCornerShape(12.dp),
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                Icon(Icons.Default.Image, contentDescription = null)
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(
+                                                    stringResource(
+                                                        if (inputImageBitmap != null) R.string.image_generator_change_image
+                                                        else R.string.image_generator_select_image
+                                                    )
+                                                )
+                                            }
+                                            
+                                            inputImageBitmap?.let { bitmap ->
+                                                Card(
+                                                    modifier = Modifier
+                                                        .size(64.dp)
+                                                        .clickable { imagePickerLauncher.launch("image/*") },
+                                                    shape = RoundedCornerShape(8.dp)
+                                                ) {
+                                                    Image(
+                                                        bitmap = bitmap.asImageBitmap(),
+                                                        contentDescription = stringResource(R.string.image_generator_input_image),
+                                                        modifier = Modifier.fillMaxSize()
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        
+                                        if (inputImageBitmap != null) {
+                                            Column {
+                                                Text(
+                                                    text = stringResource(R.string.image_generator_denoise_strength, denoiseStrength),
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                                Text(
+                                                    text = stringResource(R.string.image_generator_denoise_strength_desc),
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                Slider(
+                                                    value = denoiseStrength,
+                                                    onValueChange = { denoiseStrength = it },
+                                                    valueRange = 0.1f..1.0f,
+                                                    enabled = !isGenerating
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                
                                 // Generate button
                                 Button(
                     onClick = {
@@ -545,7 +655,9 @@ fun ImageGeneratorScreen(
                                     val bitmap = imageGeneratorHelper.generateImage(
                                         prompt = promptText,
                                         iterations = iterations,
-                                        seed = seed
+                                        seed = seed,
+                                        inputImage = inputImageBitmap,
+                                        denoiseStrength = denoiseStrength
                                     )
                                     if (bitmap != null) {
                                         generatedImages.add(bitmap)
@@ -628,6 +740,82 @@ fun ImageGeneratorScreen(
                                     }
                                 }
                                 
+                                // Img2img section
+                                Card(
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                                    )
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(16.dp),
+                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        Text(
+                                            text = stringResource(R.string.image_generator_img2img),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            OutlinedButton(
+                                                onClick = { imagePickerLauncher.launch("image/*") },
+                                                enabled = !isGenerating,
+                                                shape = RoundedCornerShape(12.dp),
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                Icon(Icons.Default.Image, contentDescription = null)
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(
+                                                    stringResource(
+                                                        if (inputImageBitmap != null) R.string.image_generator_change_image
+                                                        else R.string.image_generator_select_image
+                                                    )
+                                                )
+                                            }
+                                            
+                                            inputImageBitmap?.let { bitmap ->
+                                                Card(
+                                                    modifier = Modifier
+                                                        .size(64.dp)
+                                                        .clickable { imagePickerLauncher.launch("image/*") },
+                                                    shape = RoundedCornerShape(8.dp)
+                                                ) {
+                                                    Image(
+                                                        bitmap = bitmap.asImageBitmap(),
+                                                        contentDescription = stringResource(R.string.image_generator_input_image),
+                                                        modifier = Modifier.fillMaxSize()
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        
+                                        if (inputImageBitmap != null) {
+                                            Column {
+                                                Text(
+                                                    text = stringResource(R.string.image_generator_denoise_strength, denoiseStrength),
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                                Text(
+                                                    text = stringResource(R.string.image_generator_denoise_strength_desc),
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                Slider(
+                                                    value = denoiseStrength,
+                                                    onValueChange = { denoiseStrength = it },
+                                                    valueRange = 0.1f..1.0f,
+                                                    enabled = !isGenerating
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                
                                 // Generate button
                                 Button(
                                     onClick = {
@@ -642,7 +830,9 @@ fun ImageGeneratorScreen(
                                                     val bitmap = imageGeneratorHelper.generateImage(
                                                         prompt = promptText,
                                                         iterations = iterations,
-                                                        seed = seed
+                                                        seed = seed,
+                                                        inputImage = inputImageBitmap,
+                                                        denoiseStrength = denoiseStrength
                                                     )
                                                     if (bitmap != null) {
                                                         generatedImages.add(bitmap)
@@ -905,6 +1095,82 @@ fun ImageGeneratorScreen(
                             }
                         }
                         
+                        // Img2img section
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.image_generator_img2img),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    OutlinedButton(
+                                        onClick = { imagePickerLauncher.launch("image/*") },
+                                        enabled = !isGenerating,
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(Icons.Default.Image, contentDescription = null)
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            stringResource(
+                                                if (inputImageBitmap != null) R.string.image_generator_change_image
+                                                else R.string.image_generator_select_image
+                                            )
+                                        )
+                                    }
+                                    
+                                    inputImageBitmap?.let { bitmap ->
+                                        Card(
+                                            modifier = Modifier
+                                                .size(64.dp)
+                                                .clickable { imagePickerLauncher.launch("image/*") },
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Image(
+                                                bitmap = bitmap.asImageBitmap(),
+                                                contentDescription = stringResource(R.string.image_generator_input_image),
+                                                modifier = Modifier.fillMaxSize()
+                                            )
+                                        }
+                                    }
+                                }
+                                
+                                if (inputImageBitmap != null) {
+                                    Column {
+                                        Text(
+                                            text = stringResource(R.string.image_generator_denoise_strength, denoiseStrength),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        Text(
+                                            text = stringResource(R.string.image_generator_denoise_strength_desc),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Slider(
+                                            value = denoiseStrength,
+                                            onValueChange = { denoiseStrength = it },
+                                            valueRange = 0.1f..1.0f,
+                                            enabled = !isGenerating
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        
                         // Generate button
                         Button(
                             onClick = {
@@ -919,7 +1185,9 @@ fun ImageGeneratorScreen(
                                             val bitmap = imageGeneratorHelper.generateImage(
                                                 prompt = promptText,
                                                 iterations = iterations,
-                                                seed = seed
+                                                seed = seed,
+                                                inputImage = inputImageBitmap,
+                                                denoiseStrength = denoiseStrength
                                             )
                                             if (bitmap != null) {
                                                 generatedImages.add(bitmap)
@@ -982,7 +1250,9 @@ fun ImageGeneratorScreen(
                                                     val bitmap = imageGeneratorHelper.generateImage(
                                                         prompt = promptText,
                                                         iterations = iterations,
-                                                        seed = newSeed
+                                                        seed = newSeed,
+                                                        inputImage = inputImageBitmap,
+                                                        denoiseStrength = denoiseStrength
                                                     )
                                                     if (bitmap != null) {
                                                         generatedImages.add(bitmap)

@@ -520,8 +520,13 @@
     <string name="image_generator_failed_load">모델 로드 실패</string>
     <string name="image_generator_variation">변형 %1$d 생성 중...</string>
     <string name="image_generator_swipe_more">여기를 스와이프하여 더 생성</string>
-    <string name="image_generator_info">이미지 생성은 기기에서 실행되는 Stable Diffusion v1.5 모델을 사용합니다. 기기에 따라 생성에 1-2분이 소요될 수 있습니다.</string>
-
+    <string name="image_generator_info">이미지 생성은 기기에서 실행되는 Stable Diffusion v1.5 모델을 사용합니다. 기기에 따라 생성에 1-2분이 소요될 수 있습니다.</string>    <string name="image_generator_img2img">이미지 투 이미지</string>
+    <string name="image_generator_img2img_desc">기존 이미지 변환</string>
+    <string name="image_generator_select_image">입력 이미지 선택</string>
+    <string name="image_generator_change_image">입력 이미지 변경</string>
+    <string name="image_generator_denoise_strength">디노이즈 강도: %.2f</string>
+    <string name="image_generator_denoise_strength_desc">높을수록 = 입력 이미지에 더 많은 변화</string>
+    <string name="image_generator_input_image">입력 이미지</string>
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">사용 가능한 모델 없음</string>
     <string name="feature_download_model">모델 다운로드</string>

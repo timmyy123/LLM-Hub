@@ -520,6 +520,13 @@
     <string name="image_generator_variation">جارٍ توليد التباين %1$d...</string>
     <string name="image_generator_swipe_more">اسحب هنا لتوليد المزيد</string>
     <string name="image_generator_info">يستخدم توليد الصور نموذج Stable Diffusion v1.5 الذي يعمل على الجهاز. قد يستغرق التوليد 1-2 دقيقة حسب جهازك.</string>
+    <string name="image_generator_img2img">صورة إلى صورة</string>
+    <string name="image_generator_img2img_desc">تحويل صورة موجودة</string>
+    <string name="image_generator_select_image">اختر صورة الإدخال</string>
+    <string name="image_generator_change_image">تغيير صورة الإدخال</string>
+    <string name="image_generator_denoise_strength">قوة إزالة التشويش: %.2f</string>
+    <string name="image_generator_denoise_strength_desc">أعلى = المزيد من التغييرات على صورة الإدخال</string>
+    <string name="image_generator_input_image">صورة الإدخال</string>
 
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">لا يوجد نموذج متاح</string>

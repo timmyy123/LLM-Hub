@@ -216,6 +216,14 @@ class SDBackendService : Service() {
                 "--text_embedding_size", "768"
             )
             
+            // Always include VAE encoder if available (for img2img support)
+            val vaeEncoderFile = File(actualDir, "vae_encoder.bin")
+            if (vaeEncoderFile.exists()) {
+                command.add("--vae_encoder")
+                command.add(vaeEncoderFile.absolutePath)
+                Log.i(TAG, "VAE encoder included (img2img support enabled)")
+            }
+            
             // Add --use_cpu_clip flag for hybrid mode (MNN CLIP + QNN UNet/VAE)
             // The backend will auto-load token_emb.bin and pos_emb.bin when it detects clip_v2.mnn
             if (isClipMnn) {
@@ -226,7 +234,7 @@ class SDBackendService : Service() {
             command
         } else {
             // CPU backend with MNN
-            listOf(
+            val command = mutableListOf(
                 executable.absolutePath,
                 "--clip", clipFile.absolutePath,
                 "--unet", File(actualDir, "unet.mnn").absolutePath,
@@ -236,6 +244,16 @@ class SDBackendService : Service() {
                 "--text_embedding_size", "768",
                 "--cpu"
             )
+            
+            // Always include VAE encoder if available (for img2img support)
+            val vaeEncoderFile = File(actualDir, "vae_encoder.mnn")
+            if (vaeEncoderFile.exists()) {
+                command.add("--vae_encoder")
+                command.add(vaeEncoderFile.absolutePath)
+                Log.i(TAG, "VAE encoder included (img2img support enabled)")
+            }
+            
+            command
         }
     }
     
