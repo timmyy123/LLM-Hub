@@ -73,6 +73,7 @@
     <string name="github_repository">Repositório GitHub</string>
     <string name="acknowledgments">Agradecimentos</string>
     <string name="acknowledgments_text">Agradecimentos especiais ao Google, Meta, Microsoft, e à comunidade HuggingFace por fornecerem os incríveis modelos LLM que alimentam esta aplicação. Este projeto também depende do trabalho incrível da comunidade de desenvolvimento Android e do ecossistema de código aberto.</string>
+    <string name="sd_models_credit">Os modelos de geração de imagens são alimentados pelas implementações Stable Diffusion de xororz usando backends Qualcomm QNN (NPU) e Alibaba MNN (CPU).</string>
     <string name="ai_thinking">A IA está pensando...</string>
     <string name="version_number">Versão 3.2.6</string>
     <string name="app_version">Versão do App</string>
@@ -372,13 +373,17 @@
     <string name="context_window_size">Tamanho da Janela de Contexto</string>
     <string name="import_model">Importar Modelo</string>
     <string name="model_name_required">Nome do modelo é obrigatório</string>
+    <string name="model_name_already_exists">Já existe um modelo chamado \"%1$s\". Por favor, use um nome diferente ou exclua o modelo existente primeiro.</string>
     <string name="context_window_size_invalid">Digite um tamanho válido da janela de contexto</string>
     <string name="please_fix_errors">Corrija os erros acima</string>
     <string name="remove">Remover</string>
     <string name="ready_to_use">Pronto para usar</string>
-    <string name="unsupported_file_format">Formato de arquivo não suportado. Selecione um arquivo .task ou .litertlm.</string>
-    <string name="download_models_from_litert_community">Você pode baixar modelos compatíveis de:</string>
+    <string name="unsupported_file_format">Formato de arquivo não suportado. Selecione um arquivo .task, .litertlm ou .zip.</string>
+    <string name="download_models_from_litert_community">Você pode baixar modelos LLM compatíveis de:</string>
     <string name="litert_community_link">LiteRT Community no Hugging Face</string>
+    <string name="download_image_models_from">Você pode baixar modelos de imagem compatíveis de:</string>
+    <string name="sd_models_link">Modelos Stable Diffusion no Hugging Face</string>
+    <string name="supports_npu">Suporta NPU</string>
     <string name="import_model_warning">⚠️ Importante: Por favor leia o README do modelo no Hugging Face antes de importar. Digite as capacidades corretas (visão, áudio, GPU) e o tamanho da janela de contexto conforme especificado na documentação do modelo. Configurações incorretas podem fazer com que o modelo não funcione corretamente.</string>
     
     <!-- Home Screen -->

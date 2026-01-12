@@ -77,7 +77,8 @@ object ModelAvailabilityProvider {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val json = prefs.getString(IMPORTED_MODELS_KEY, null) ?: return emptyList()
             val imported = gson.fromJson(json, Array<LLMModel>::class.java)?.toList().orEmpty()
-            imported.filter { it.isDownloaded }
+            // Filter out image generation models (qnn_npu, mnn_cpu) - those are for Image Generator only
+            imported.filter { it.isDownloaded && it.category != "qnn_npu" && it.category != "mnn_cpu" }
         } catch (e: Exception) {
             Log.w("ModelAvailability", "Failed to load imported models: ${e.message}")
             emptyList()

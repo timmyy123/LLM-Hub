@@ -48,7 +48,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import android.net.Uri
 
 enum class ModelFormat {
-    TASK, LITERTLM
+    TASK, LITERTLM, QNN_NPU, MNN_CPU
 }
 
 /**
@@ -78,7 +78,9 @@ fun ModelDownloadScreen(
     val textModels = models.filter { it.category == "text" }
     val multimodalModels = models.filter { it.category == "multimodal" }
     val embeddingModels = models.filter { it.category == "embedding" }
-    val imageGenerationModels = models.filter { it.category == "image_generation" }
+    val imageGenerationModels = models.filter {
+        it.category == "image_generation" || it.category == "qnn_npu" || it.category == "mnn_cpu"
+    }
     val textGrouped = textModels.groupBy { it.name.substringBefore("(").trim() }
     val multimodalGrouped = multimodalModels.groupBy { it.name.substringBefore("(").trim() }
     val embeddingGrouped = embeddingModels.groupBy { it.name.substringBefore("(").trim() }
@@ -229,8 +231,11 @@ fun ModelDownloadScreen(
             ImportExternalModelDialog(
                 onDismiss = { showImportDialog = false },
                 onImport = { externalModel ->
-                    downloadViewModel.addExternalModel(externalModel)
-                    showImportDialog = false
+                    val success = downloadViewModel.addExternalModel(externalModel)
+                    if (success) {
+                        showImportDialog = false
+                    }
+                    success
                 }
             )
         }
@@ -393,7 +398,7 @@ private fun ModelVariantItem(
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                         contentColor = MaterialTheme.colorScheme.onTertiaryContainer
                     )
-                    model.isDownloading && model.isExtracting -> StatusChip(
+                    model.isExtracting -> StatusChip(
                         text = stringResource(R.string.extracting),
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -454,7 +459,7 @@ private fun ModelVariantItem(
             }
             
             // Progress indicator for downloading models
-            if (model.isDownloading && model.downloadProgress > 0f) {
+            if ((model.isDownloading || model.isExtracting) && model.downloadProgress > 0f) {
                 ModernProgressIndicator(
                     progress = model.downloadProgress,
                     modifier = Modifier.padding(top = 8.dp)
@@ -717,7 +722,7 @@ private fun getModelDisplayName(model: LLMModel, context: Context): String {
 @Composable
 private fun ImportExternalModelDialog(
     onDismiss: () -> Unit,
-    onImport: (LLMModel) -> Unit
+    onImport: (LLMModel) -> Boolean
 ) {
     val context = LocalContext.current
     var modelName by remember { mutableStateOf("") }
@@ -756,7 +761,7 @@ private fun ImportExternalModelDialog(
             Log.d("ModelImport", "Derived fileExtension: $fileExtension")
             
             // Validate file format
-            if (fileExtension != "task" && fileExtension != "litertlm") {
+            if (fileExtension != "task" && fileExtension != "litertlm" && fileExtension != "zip") {
                 showError = true
                 errorMessage = context.getString(R.string.unsupported_file_format)
                 return@let
@@ -862,6 +867,31 @@ private fun ImportExternalModelDialog(
                     
                     item {
                         Text(
+                            text = stringResource(R.string.download_image_models_from),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    
+                    item {
+                        val context = LocalContext.current
+                        ClickableText(
+                            text = AnnotatedString(stringResource(R.string.sd_models_link)),
+                            style = TextStyle(
+                                color = MaterialTheme.colorScheme.primary,
+                                textDecoration = TextDecoration.Underline
+                            ),
+                            onClick = { offset ->
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://huggingface.co/xororz/sd-qnn/tree/main"))
+                                context.startActivity(intent)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    
+                    item {
+                        Text(
                             text = stringResource(R.string.import_model_warning),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
@@ -870,54 +900,57 @@ private fun ImportExternalModelDialog(
                     }
                 
                 
-                item {
-                    Row(
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = stringResource(R.string.supports_vision),
-                            modifier = Modifier.clickable { supportsVision = !supportsVision }
-                        )
-                        RadioButton(
-                            selected = supportsVision,
-                            onClick = { supportsVision = !supportsVision }
-                        )
+                // Show Vision/Audio/GPU options only for text models
+                if (modelFormat != ModelFormat.QNN_NPU && modelFormat != ModelFormat.MNN_CPU) {
+                    item {
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = stringResource(R.string.supports_vision),
+                                modifier = Modifier.clickable { supportsVision = !supportsVision }
+                            )
+                            RadioButton(
+                                selected = supportsVision,
+                                onClick = { supportsVision = !supportsVision }
+                            )
+                        }
                     }
-                }
-                
-                item {
-                    Row(
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = stringResource(R.string.supports_audio),
-                            modifier = Modifier.clickable { supportsAudio = !supportsAudio }
-                        )
-                        RadioButton(
-                            selected = supportsAudio,
-                            onClick = { supportsAudio = !supportsAudio }
-                        )
+                    
+                    item {
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = stringResource(R.string.supports_audio),
+                                modifier = Modifier.clickable { supportsAudio = !supportsAudio }
+                            )
+                            RadioButton(
+                                selected = supportsAudio,
+                                onClick = { supportsAudio = !supportsAudio }
+                            )
+                        }
                     }
-                }
-                
-                item {
-                    Row(
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = stringResource(R.string.supports_gpu),
-                            modifier = Modifier.clickable { supportsGpu = !supportsGpu }
-                        )
-                        RadioButton(
-                            selected = supportsGpu,
-                            onClick = { supportsGpu = !supportsGpu }
-                        )
+                    
+                    item {
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = stringResource(R.string.supports_gpu),
+                                modifier = Modifier.clickable { supportsGpu = !supportsGpu }
+                            )
+                            RadioButton(
+                                selected = supportsGpu,
+                                onClick = { supportsGpu = !supportsGpu }
+                            )
+                        }
                     }
                 }
                 
@@ -967,19 +1000,22 @@ private fun ImportExternalModelDialog(
                             }
                         }
                         
-                        val contextWindowError = contextWindowSize.toIntOrNull() == null || contextWindowSize.toIntOrNull()!! <= 0
-                        val contextWindowErrorText = stringResource(R.string.context_window_size_invalid)
-                        
-                        OutlinedTextField(
-                            value = contextWindowSize,
-                            onValueChange = { contextWindowSize = it },
-                            label = { Text(stringResource(R.string.context_window_size)) },
-                            isError = contextWindowError,
-                            supportingText = if (contextWindowError) {
-                                { Text(contextWindowErrorText) }
-                            } else null,
-                            modifier = Modifier.weight(1f)
-                        )
+                        // Only show context window for text models (TASK, LITERTLM)
+                        if (modelFormat == ModelFormat.TASK || modelFormat == ModelFormat.LITERTLM) {
+                            val contextWindowError = contextWindowSize.toIntOrNull() == null || contextWindowSize.toIntOrNull()!! <= 0
+                            val contextWindowErrorText = stringResource(R.string.context_window_size_invalid)
+                            
+                            OutlinedTextField(
+                                value = contextWindowSize,
+                                onValueChange = { contextWindowSize = it },
+                                label = { Text(stringResource(R.string.context_window_size)) },
+                                isError = contextWindowError,
+                                supportingText = if (contextWindowError) {
+                                    { Text(contextWindowErrorText) }
+                                } else null,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
                 }
                 
@@ -991,7 +1027,12 @@ private fun ImportExternalModelDialog(
                     // Validate inputs
                     val nameValid = modelName.isNotBlank()
                     val fileValid = selectedFileUri != null
-                    val contextValid = contextWindowSize.toIntOrNull() != null && contextWindowSize.toIntOrNull()!! > 0
+                    // Context window only required for text models (TASK, LITERTLM)
+                    val contextValid = if (modelFormat == ModelFormat.TASK || modelFormat == ModelFormat.LITERTLM) {
+                        contextWindowSize.toIntOrNull() != null && contextWindowSize.toIntOrNull()!! > 0
+                    } else {
+                        true // Image models don't need context window
+                    }
                     
                     if (!nameValid || !fileValid || !contextValid) {
                         showError = true
@@ -1014,28 +1055,67 @@ private fun ImportExternalModelDialog(
                         }
                     } ?: 0L
                     
-                    val externalModel = LLMModel(
-                        name = modelName,
-                        description = "Custom model: $modelName",
-                        url = selectedFileUri.toString(), // Store original URI
-                        category = if (supportsVision || supportsAudio) "multimodal" else "text",
-                        sizeBytes = fileSize, // Use actual file size
-                        source = "Custom",
-                        supportsVision = supportsVision,
-                        supportsAudio = supportsAudio,
-                        supportsGpu = supportsGpu,
-                        requirements = ModelRequirements(
-                            minRamGB = 4,
-                            recommendedRamGB = 8
-                        ),
-                        contextWindowSize = contextWindowSize.toInt(),
-                        modelFormat = modelFormat.name.lowercase(),
-                        isDownloaded = true, // Imported models are ready to use
-                        isDownloading = false,
-                        downloadProgress = 1.0f // 100% ready
-                    )
-
-                    onImport(externalModel)
+                    // For image models (QNN_NPU or MNN_CPU), we need to extract the ZIP first
+                    if (modelFormat == ModelFormat.QNN_NPU || modelFormat == ModelFormat.MNN_CPU) {
+                        // Mark as extracting
+                        val externalModel = LLMModel(
+                            name = modelName,
+                            description = "Custom image generation model: $modelName",
+                            url = selectedFileUri.toString(),
+                            category = modelFormat.name.lowercase(),
+                            sizeBytes = fileSize,
+                            source = "Custom",
+                            supportsVision = false,
+                            supportsAudio = false,
+                            supportsGpu = false,
+                            requirements = ModelRequirements(
+                                minRamGB = 2,
+                                recommendedRamGB = 4
+                            ),
+                            contextWindowSize = 0,
+                            modelFormat = modelFormat.name.lowercase(),
+                            isDownloaded = false,
+                            isDownloading = false,
+                            isExtracting = true,
+                            downloadProgress = 0.0f
+                        )
+                        val success = onImport(externalModel)
+                        if (!success) {
+                            showError = true
+                            errorMessage = context.getString(R.string.model_name_already_exists, modelName)
+                            return@Button
+                        }
+                    } else {
+                        // For text models (TASK, LITERTLM)
+                        // Determine category based on capabilities - use "multimodal" if vision/audio, else "text"
+                        val modelCategory = if (supportsVision || supportsAudio) "multimodal" else "text"
+                        val externalModel = LLMModel(
+                            name = modelName,
+                            description = "Custom LLM model: $modelName",
+                            url = selectedFileUri.toString(),
+                            category = modelCategory,
+                            sizeBytes = fileSize,
+                            source = "Custom",
+                            supportsVision = supportsVision,
+                            supportsAudio = supportsAudio,
+                            supportsGpu = supportsGpu,
+                            requirements = ModelRequirements(
+                                minRamGB = 4,
+                                recommendedRamGB = 8
+                            ),
+                            contextWindowSize = contextWindowSize.toInt(),
+                            modelFormat = modelFormat.name.lowercase(),
+                            isDownloaded = true,
+                            isDownloading = false,
+                            downloadProgress = 1.0f
+                        )
+                        val success = onImport(externalModel)
+                        if (!success) {
+                            showError = true
+                            errorMessage = context.getString(R.string.model_name_already_exists, modelName)
+                            return@Button
+                        }
+                    }
                 },
                 enabled = modelName.isNotBlank() && selectedFileUri != null
             ) {

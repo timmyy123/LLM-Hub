@@ -72,8 +72,7 @@
     <string name="source_code">Quellcode:</string>
     <string name="github_repository">GitHub-Repository</string>
     <string name="acknowledgments">Danksagungen</string>
-    <string name="acknowledgments_text">Besonderen Dank an Google, Meta, Microsoft und die HuggingFace-Community für die Bereitstellung der unglaublichen LLM-Modelle, die diese Anwendung antreiben. Dieses Projekt stützt sich auch auf die erstaunliche Arbeit der Android-Entwicklergemeinschaft und des Open-Source-Ökosystems.</string>
-    <string name="ai_thinking">KI denkt nach...</string>
+    <string name="acknowledgments_text">Besonderen Dank an Google, Meta, Microsoft und die HuggingFace-Community für die Bereitstellung der unglaublichen LLM-Modelle, die diese Anwendung antreiben. Dieses Projekt stützt sich auch auf die erstaunliche Arbeit der Android-Entwicklergemeinschaft und des Open-Source-Ökosystems.</string>    <string name="sd_models_credit">Bildgenerierungsmodelle werden von xororz\'s Stable Diffusion-Implementierungen mit Qualcomm QNN (NPU) und Alibaba MNN (CPU) Backends betrieben.</string>    <string name="ai_thinking">KI denkt nach...</string>
     <string name="version_number">Version 3.2.6</string>
     <string name="app_version">App-Version</string>
     
@@ -387,14 +386,16 @@
     <string name="model_format">Modellformat</string>
     <string name="context_window_size">Kontextfenster-Größe</string>
     <string name="import_model">Modell Importieren</string>
-    <string name="model_name_required">Modellname ist erforderlich</string>
-    <string name="context_window_size_invalid">Geben Sie eine gültige Kontextfenster-Größe ein</string>
+    <string name="model_name_required">Modellname ist erforderlich</string>    <string name="model_name_already_exists">Ein Modell namens \"%1$s\" existiert bereits. Bitte verwenden Sie einen anderen Namen oder löschen Sie zuerst das vorhandene Modell.</string>    <string name="context_window_size_invalid">Geben Sie eine gültige Kontextfenster-Größe ein</string>
     <string name="please_fix_errors">Bitte korrigieren Sie die Fehler oben</string>
     <string name="remove">Entfernen</string>
     <string name="ready_to_use">Bereit zur Verwendung</string>
-    <string name="unsupported_file_format">Nicht unterstütztes Dateiformat. Bitte wählen Sie eine .task oder .litertlm Datei aus.</string>
-    <string name="download_models_from_litert_community">Sie können kompatible Modelle von hier herunterladen:</string>
+    <string name="unsupported_file_format">Nicht unterstütztes Dateiformat. Bitte wählen Sie eine .task-, .litertlm- oder .zip-Datei.</string>
+    <string name="download_models_from_litert_community">Sie können kompatible LLM-Modelle von hier herunterladen:</string>
     <string name="litert_community_link">LiteRT Community auf Hugging Face</string>
+    <string name="download_image_models_from">Sie können kompatible Bildmodelle herunterladen von:</string>
+    <string name="sd_models_link">Stable Diffusion Modelle auf Hugging Face</string>
+    <string name="supports_npu">Unterstützt NPU</string>
     <string name="import_model_warning">⚠️ Wichtig: Bitte lesen Sie die README des Modells auf Hugging Face vor dem Importieren. Geben Sie die korrekten Fähigkeiten (Vision, Audio, GPU) und Kontextfenstergröße wie in der Modelldokumentation angegeben ein. Falsche Einstellungen können dazu führen, dass das Modell nicht ordnungsgemäß funktioniert.</string>
     
     <!-- Home Screen -->

@@ -73,6 +73,7 @@
     <string name="github_repository">Repozytorium GitHub</string>
     <string name="acknowledgments">Podziękowania</string>
     <string name="acknowledgments_text">Specjalne podziękowania dla Google, Meta, Microsoft i społeczności HuggingFace za dostarczenie niesamowitych modeli LLM, które napędzają tę aplikację. Ten projekt również opiera się na niesamowitej pracy społeczności deweloperskiej Android i ekosystemu open source.</string>
+    <string name="sd_models_credit">Modele generowania obrazów są zasilane przez implementacje Stable Diffusion xororz przy użyciu backendów Qualcomm QNN (NPU) i Alibaba MNN (CPU).</string>
     <string name="ai_thinking">AI myśli...</string>
     <string name="version_number">Wersja 3.2.6</string>
     <string name="app_version">Wersja Aplikacji</string>
@@ -408,13 +409,17 @@
     <string name="context_window_size">Rozmiar Okna Kontekstowego</string>
     <string name="import_model">Importuj Model</string>
     <string name="model_name_required">Nazwa modelu jest wymagana</string>
+    <string name="model_name_already_exists">Model o nazwie \"%1$s\" już istnieje. Użyj innej nazwy lub najpierw usuń istniejący model.</string>
     <string name="context_window_size_invalid">Proszę wprowadzić prawidłowy rozmiar okna kontekstowego</string>
     <string name="please_fix_errors">Proszę naprawić powyższe błędy</string>
     <string name="remove">Usuń</string>
     <string name="ready_to_use">Gotowy do użycia</string>
-    <string name="unsupported_file_format">Nieobsługiwany format pliku. Proszę wybrać plik .task lub .litertlm.</string>
-    <string name="download_models_from_litert_community">Możesz pobrać kompatybilne modele z:</string>
+    <string name="unsupported_file_format">Nieobsługiwany format pliku. Wybierz plik .task, .litertlm lub .zip.</string>
+    <string name="download_models_from_litert_community">Możesz pobrać kompatybilne modele LLM z:</string>
     <string name="litert_community_link">Społeczność LiteRT na Hugging Face</string>
+    <string name="download_image_models_from">Możesz pobrać kompatybilne modele obrazów z:</string>
+    <string name="sd_models_link">Modele Stable Diffusion na Hugging Face</string>
+    <string name="supports_npu">Obsługuje NPU</string>
     <string name="import_model_warning">⚠️ Ważne: Proszę przeczytać README modelu na Hugging Face przed importem. Wprowadź poprawne możliwości (wizja, dźwięk, GPU) i rozmiar okna kontekstowego określone w dokumentacji modelu. Nieprawidłowe ustawienia mogą spowodować, że model nie będzie działał poprawnie.</string>
     
     <!-- Home Screen -->

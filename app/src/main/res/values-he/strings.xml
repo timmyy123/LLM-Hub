@@ -72,6 +72,7 @@
     <string name="github_repository">מאגר GitHub</string>
     <string name="acknowledgments">תודות</string>
     <string name="acknowledgments_text">תודה מיוחדת ל-Google, ‏Meta, ‏Microsoft וקהילת HuggingFace על המודלים המדהימים שמפעילים את האפליקציה הזו. הפרויקט נשען גם על עבודת קהילת המפתחים לאנדרואיד ועל קוד פתוח.</string>
+    <string name="sd_models_credit">מודלים ליצירת תמונות מופעלים על ידי מימושי Stable Diffusion של xororz באמצעות backends של Qualcomm QNN (NPU) ו-Alibaba MNN (CPU).</string>
     <string name="ai_thinking">ה-AI חושב…</string>
     <string name="version_number">גרסה 3.2.6</string>
     <string name="app_version">גרסת אפליקציה</string>
@@ -409,13 +410,17 @@
     <string name="context_window_size">גודל חלון ההקשר</string>
     <string name="import_model">ייבא מודל</string>
     <string name="model_name_required">נדרש שם מודל</string>
+    <string name="model_name_already_exists">מודל בשם \"%1$s\" כבר קיים. אנא השתמש בשם אחר או מחק תחילה את המודל הקיים.</string>
     <string name="context_window_size_invalid">הזן גודל חלון הקשר חוקי</string>
     <string name="please_fix_errors">אנא תקן את השגיאות למעלה</string>
     <string name="remove">הסר</string>
     <string name="ready_to_use">מוכן לשימוש</string>
-    <string name="unsupported_file_format">פורמט קובץ לא נתמך. בחר קובץ ‎.task או ‎.litertlm.</string>
-    <string name="download_models_from_litert_community">ניתן להוריד מודלים תואמים מ-:</string>
+    <string name="unsupported_file_format">פורמט קובץ לא נתמך. אנא בחר קובץ .task, .litertlm או .zip.</string>
+    <string name="download_models_from_litert_community">ניתן להוריד מודלי LLM תואמים מ-:</string>
     <string name="litert_community_link">LiteRT Community ב-Hugging Face</string>
+    <string name="download_image_models_from">ניתן להוריד מודלים תואמים של תמונות מ:</string>
+    <string name="sd_models_link">מודלי Stable Diffusion ב-Hugging Face</string>
+    <string name="supports_npu">תומך ב-NPU</string>
     <string name="import_model_warning">⚠️ חשוב: קרא את README של המודל ב-Hugging Face לפני הייבוא. הזן יכולות נכונות (ראייה, אודיו, GPU) וגודל חלון ההקשר כמצוין בתיעוד המודל.</string>
 
     <!-- Home Screen -->
