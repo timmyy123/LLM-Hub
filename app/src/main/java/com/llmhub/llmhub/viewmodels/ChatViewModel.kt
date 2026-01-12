@@ -46,6 +46,9 @@ class ChatViewModel(
     private val ragServiceManager = com.llmhub.llmhub.embedding.RagServiceManager.getInstance(context)
     // Expose TTS service so ChatScreen can observe its isSpeaking state
     val ttsService = TtsService(context)
+    
+    // SharedPreferences for persisting chat settings
+    private val prefs = context.getSharedPreferences("chat_prefs", Context.MODE_PRIVATE)
 
     companion object {
         private const val KEY_CURRENT_CHAT_ID = "current_chat_id"
@@ -77,6 +80,10 @@ class ChatViewModel(
     // Model the user has selected (may be in the process of loading). Use this for immediate UI feedback.
     private val _selectedModel = MutableStateFlow<LLMModel?>(null)
     val selectedModel: StateFlow<LLMModel?> = _selectedModel.asStateFlow()
+    
+    // Selected backend for model loading
+    private val _selectedBackend = MutableStateFlow<LlmInference.Backend?>(null)
+    val selectedBackend: StateFlow<LlmInference.Backend?> = _selectedBackend.asStateFlow()
 
     // RAG status state
     private val _isRagReady = MutableStateFlow(false)
@@ -109,6 +116,9 @@ class ChatViewModel(
     // to avoid hardcoding English phrases.
 
     init {
+        // Load saved settings first
+        loadSavedSettings()
+        
         // Initialize RAG service in the background and track status
         viewModelScope.launch {
             _ragStatus.value = "Initializing document chat..."
@@ -260,6 +270,65 @@ class ChatViewModel(
 
     var currentModel: LLMModel? = null
         private set
+    
+    // Load saved settings from SharedPreferences
+    private fun loadSavedSettings() {
+        // Restore backend
+        val savedBackendName = prefs.getString("selected_backend", LlmInference.Backend.GPU.name)
+        _selectedBackend.value = try {
+            LlmInference.Backend.valueOf(savedBackendName ?: LlmInference.Backend.GPU.name)
+        } catch (_: IllegalArgumentException) {
+            LlmInference.Backend.GPU
+        }
+        
+        // Restore modality settings
+        isVisionDisabled = prefs.getBoolean("vision_disabled", false)
+        isAudioDisabled = prefs.getBoolean("audio_disabled", false)
+        
+        // Restore selected model by name (after available models are loaded)
+        val savedModelName = prefs.getString("selected_model_name", null)
+        if (savedModelName != null) {
+            viewModelScope.launch {
+                // Wait a bit for available models to be loaded
+                delay(200)
+                val model = _availableModels.value.find { it.name == savedModelName }
+                if (model != null) {
+                    _selectedModel.value = model
+                }
+            }
+        }
+    }
+    
+    // Save settings to SharedPreferences
+    private fun saveChatSettings() {
+        prefs.edit().apply {
+            putString("selected_model_name", _selectedModel.value?.name)
+            putString("selected_backend", _selectedBackend.value?.name)
+            putBoolean("vision_disabled", isVisionDisabled)
+            putBoolean("audio_disabled", isAudioDisabled)
+            apply()
+        }
+    }
+    
+    // Public method to select model and persist
+    fun selectModel(model: LLMModel) {
+        _selectedModel.value = model
+        // Auto-select backend if not set
+        if (_selectedBackend.value == null) {
+            _selectedBackend.value = if (model.supportsGpu) {
+                LlmInference.Backend.GPU
+            } else {
+                LlmInference.Backend.CPU
+            }
+        }
+        saveChatSettings()
+    }
+    
+    // Public method to select backend and persist
+    fun selectBackend(backend: LlmInference.Backend) {
+        _selectedBackend.value = backend
+        saveChatSettings()
+    }
 
     private var isGenerating = false
         get() = savedStateHandle.get<Boolean>(KEY_IS_GENERATING) ?: false
@@ -2124,6 +2193,11 @@ class ChatViewModel(
             isAudioDisabled = disableAudio
             // Immediately reflect the user's choice in UI
             _selectedModel.value = newModel
+            _selectedBackend.value = backend
+            
+            // Persist settings
+            saveChatSettings()
+            
             // Ensure ongoing generation is fully cancelled before switching models to avoid
             // MediaPipe graph errors (e.g., DetokenizerCalculator id >= 0) that can happen
             // when a new session starts while the previous one is still cleaning up.
