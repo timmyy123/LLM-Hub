@@ -822,6 +822,7 @@ private fun ModelLoadingIndicator(modelName: String) {
     ) {
         Surface(
             modifier = Modifier
+                .widthIn(max = 600.dp)
                 .fillMaxWidth()
                 .graphicsLayer {
                     scaleX = scale
