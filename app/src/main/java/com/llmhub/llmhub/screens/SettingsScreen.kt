@@ -844,16 +844,12 @@ fun SettingsScreen(
     
     // Language Selection Dialog
     if (showLanguageDialog) {
-        val configurationLang = LocalConfiguration.current
-        val isLandscapeLang = configurationLang.screenWidthDp > configurationLang.screenHeightDp
         AlertDialog(
             onDismissRequest = { showLanguageDialog = false },
             title = { Text(stringResource(R.string.select_language)) },
             text = {
                 Column(
-                    modifier = Modifier
-                        .verticalScroll(rememberScrollState())
-                        .heightIn(max = if (isLandscapeLang) (configurationLang.screenHeightDp.dp * 0.6f) else Dp.Unspecified)
+                    modifier = Modifier.verticalScroll(rememberScrollState())
                 ) {
                     // System Default option
                     Row(
