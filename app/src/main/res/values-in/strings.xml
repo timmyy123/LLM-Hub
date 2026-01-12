@@ -520,8 +520,13 @@
     <string name="image_generator_failed_load">Gagal memuat model</string>
     <string name="image_generator_variation">Menghasilkan variasi %1$d...</string>
     <string name="image_generator_swipe_more">Geser di sini untuk menghasilkan lebih banyak</string>
-    <string name="image_generator_info">Pembuatan gambar menggunakan model Stable Diffusion v1.5 yang berjalan di perangkat. Pembuatan mungkin memakan waktu 1-2 menit tergantung perangkat Anda.</string>
-
+    <string name="image_generator_info">Pembuatan gambar menggunakan model Stable Diffusion v1.5 yang berjalan di perangkat. Pembuatan mungkin memakan waktu 1-2 menit tergantung perangkat Anda.</string>    <string name="image_generator_img2img">Gambar ke Gambar</string>
+    <string name="image_generator_img2img_desc">Transformasi gambar yang ada</string>
+    <string name="image_generator_select_image">Pilih Gambar Input</string>
+    <string name="image_generator_change_image">Ubah Gambar Input</string>
+    <string name="image_generator_denoise_strength">Kekuatan Denoise: %.2f</string>
+    <string name="image_generator_denoise_strength_desc">Lebih tinggi = lebih banyak perubahan pada gambar input</string>
+    <string name="image_generator_input_image">Gambar input</string>
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">Tidak Ada Model Tersedia</string>
     <string name="feature_download_model">Unduh Model</string>

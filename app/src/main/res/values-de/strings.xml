@@ -501,6 +501,13 @@
     <string name="image_generator_variation">Variante %1$d wird generiert...</string>
     <string name="image_generator_swipe_more">Hier wischen für mehr</string>
     <string name="image_generator_info">Die Bildgenerierung verwendet das Stable Diffusion v1.5-Modell, das auf dem Gerät läuft. Die Generierung kann je nach Gerät 1-2 Minuten dauern.</string>
+    <string name="image_generator_img2img">Bild zu Bild</string>
+    <string name="image_generator_img2img_desc">Ein bestehendes Bild transformieren</string>
+    <string name="image_generator_select_image">Eingabebild auswählen</string>
+    <string name="image_generator_change_image">Eingabebild ändern</string>
+    <string name="image_generator_denoise_strength">Entrauschungsstärke: %.2f</string>
+    <string name="image_generator_denoise_strength_desc">Höher = mehr Änderungen am Eingabebild</string>
+    <string name="image_generator_input_image">Eingabebild</string>
     
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">Kein Modell verfügbar</string>

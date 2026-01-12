@@ -83,15 +83,20 @@ class ImageGeneratorHelper(private val context: Context) {
     suspend fun generateImage(
         prompt: String,
         iterations: Int = 28,  // Renamed from 'steps' for API compatibility
-        seed: Int = 0
+        seed: Int = 0,
+        inputImage: Bitmap? = null,
+        denoiseStrength: Float = 0.7f
     ): Bitmap? = withContext(Dispatchers.IO) {
         try {
-            Log.i(TAG, "Generating image: prompt='$prompt', steps=$iterations, seed=$seed")
+            val img2imgInfo = if (inputImage != null) " [img2img, denoise: $denoiseStrength]" else ""
+            Log.i(TAG, "Generating image: prompt='$prompt', steps=$iterations, seed=$seed$img2imgInfo")
             
             val bitmap = sdHelper.generateImage(
                 prompt = prompt,
                 steps = iterations,
                 seed = if (seed == 0) null else seed.toLong(),
+                inputImage = inputImage,
+                denoiseStrength = denoiseStrength,
                 onProgress = { current, total ->
                     Log.d(TAG, "Generation progress: $current/$total")
                 }

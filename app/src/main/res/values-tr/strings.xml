@@ -519,8 +519,13 @@
     <string name="image_generator_failed_load">Model yüklenemedi</string>
     <string name="image_generator_variation">Varyasyon %1$d oluşturuluyor...</string>
     <string name="image_generator_swipe_more">Daha fazla oluşturmak için buraya kaydırın</string>
-    <string name="image_generator_info">Görsel oluşturma, cihazda çalışan Stable Diffusion v1.5 modelini kullanır. Oluşturma, cihazınıza bağlı olarak 1-2 dakika sürebilir.</string>
-    
+    <string name="image_generator_info">Görsel oluşturma, cihazda çalışan Stable Diffusion v1.5 modelini kullanır. Oluşturma, cihazınıza bağlı olarak 1-2 dakika sürebilir.</string>    <string name="image_generator_img2img">Görüntüden Görüntüye</string>
+    <string name="image_generator_img2img_desc">Mevcut bir görüntüyü dönüştür</string>
+    <string name="image_generator_select_image">Giriş Görüntüsü Seç</string>
+    <string name="image_generator_change_image">Giriş Görüntüsünü Değiştir</string>
+    <string name="image_generator_denoise_strength">Gürültü Azaltma Gücü: %.2f</string>
+    <string name="image_generator_denoise_strength_desc">Daha yüksek = giriş görüntüsünde daha fazla değişiklik</string>
+    <string name="image_generator_input_image">Giriş görüntüsü</string>    
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">Model Yok</string>
     <string name="feature_download_model">Modelleri İndir</string>

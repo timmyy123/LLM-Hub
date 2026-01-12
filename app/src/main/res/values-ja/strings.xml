@@ -520,8 +520,13 @@
     <string name="image_generator_failed_load">モデルの読み込みに失敗しました</string>
     <string name="image_generator_variation">バリエーション%1$dを生成中...</string>
     <string name="image_generator_swipe_more">ここをスワイプしてさらに生成</string>
-    <string name="image_generator_info">画像生成はデバイス上で動作するStable Diffusion v1.5モデルを使用します。生成にはデバイスにより1〜2分かかる場合があります。</string>
-
+    <string name="image_generator_info">画像生成はデバイス上で動作するStable Diffusion v1.5モデルを使用します。生成にはデバイスにより1〜2分かかる場合があります。</string>    <string name="image_generator_img2img">画像to画像</string>
+    <string name="image_generator_img2img_desc">既存の画像を変換</string>
+    <string name="image_generator_select_image">入力画像を選択</string>
+    <string name="image_generator_change_image">入力画像を変更</string>
+    <string name="image_generator_denoise_strength">ノイズ除去強度: %.2f</string>
+    <string name="image_generator_denoise_strength_desc">高 = 入力画像への変更が大</string>
+    <string name="image_generator_input_image">入力画像</string>
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">利用可能なモデルがありません</string>
     <string name="feature_download_model">モデルをダウンロード</string>

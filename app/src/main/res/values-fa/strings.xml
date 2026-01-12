@@ -521,6 +521,13 @@
     <string name="image_generator_variation">در حال تولید تنوع %1$d...</string>
     <string name="image_generator_swipe_more">برای تولید بیشتر اینجا بکشید</string>
     <string name="image_generator_info">تولید تصویر از مدل Stable Diffusion v1.5 که روی دستگاه اجرا می‌شود استفاده می‌کند. تولید ممکن است بسته به دستگاه شما 1-2 دقیقه طول بکشد.</string>
+    <string name="image_generator_img2img">تصویر به تصویر</string>
+    <string name="image_generator_img2img_desc">تبدیل یک تصویر موجود</string>
+    <string name="image_generator_select_image">انتخاب تصویر ورودی</string>
+    <string name="image_generator_change_image">تغییر تصویر ورودی</string>
+    <string name="image_generator_denoise_strength">قدرت حذف نویز: %.2f</string>
+    <string name="image_generator_denoise_strength_desc">بالاتر = تغییرات بیشتر در تصویر ورودی</string>
+    <string name="image_generator_input_image">تصویر ورودی</string>
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">هیچ مدلی در دسترس نیست</string>
     <string name="feature_download_model">دانلود مدل‌ها</string>

@@ -524,6 +524,13 @@
     <string name="image_generator_variation">Generazione variante %1$d...</string>
     <string name="image_generator_swipe_more">Scorri qui per generarne altre</string>
     <string name="image_generator_info">La generazione di immagini utilizza il modello Stable Diffusion v1.5 eseguito sul dispositivo. La generazione potrebbe richiedere 1-2 minuti a seconda del dispositivo.</string>
+    <string name="image_generator_img2img">Da Immagine a Immagine</string>
+    <string name="image_generator_img2img_desc">Trasforma un\'immagine esistente</string>
+    <string name="image_generator_select_image">Seleziona Immagine di Input</string>
+    <string name="image_generator_change_image">Cambia Immagine di Input</string>
+    <string name="image_generator_denoise_strength">Forza di Denoising: %.2f</string>
+    <string name="image_generator_denoise_strength_desc">Più alto = più modifiche all\'immagine di input</string>
+    <string name="image_generator_input_image">Immagine di input</string>
 
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">Nessun modello disponibile</string>

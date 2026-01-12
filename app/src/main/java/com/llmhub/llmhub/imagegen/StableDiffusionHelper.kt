@@ -160,7 +160,7 @@ class StableDiffusionHelper(private val context: Context) {
     }
     
     /**
-     * Generate image from text prompt
+     * Generate image from text prompt with optional image-to-image support
      * 
      * @param prompt Text description of the image
      * @param negativePrompt Things to avoid in the image
@@ -169,6 +169,8 @@ class StableDiffusionHelper(private val context: Context) {
      * @param seed Random seed (null for random)
      * @param width Image width (default: 512)
      * @param height Image height (default: 512)
+     * @param inputImage Optional input image for image-to-image generation
+     * @param denoiseStrength How much to modify the input image (0.0-1.0, default: 0.7)
      * @param onProgress Callback for generation progress
      */
     suspend fun generateImage(
@@ -179,6 +181,8 @@ class StableDiffusionHelper(private val context: Context) {
         seed: Long? = null,
         width: Int = 512,
         height: Int = 512,
+        inputImage: Bitmap? = null,
+        denoiseStrength: Float = 0.7f,
         onProgress: ((Int, Int) -> Unit)? = null
     ): Bitmap? = withContext(Dispatchers.IO) {
         try {
@@ -202,9 +206,23 @@ class StableDiffusionHelper(private val context: Context) {
                 put("scheduler", "dpm") // DPM++ 2M Karras scheduler
                 put("use_opencl", false) // CPU mode for compatibility
                 put("stream", false) // Disable streaming to get a single JSON response
+                
+                // Add img2img support
+                if (inputImage != null) {
+                    put("denoise_strength", denoiseStrength.toDouble())
+                    
+                    // Encode input image to base64
+                    val resizedImage = Bitmap.createScaledBitmap(inputImage, width, height, true)
+                    val outputStream = java.io.ByteArrayOutputStream()
+                    resizedImage.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+                    val imageBytes = outputStream.toByteArray()
+                    val imageBase64 = Base64.encodeToString(imageBytes, Base64.NO_WRAP)
+                    put("image", imageBase64)
+                }
             }
             
-            Log.i(TAG, "Generating image: $prompt (${width}x${height}, $steps steps)")
+            Log.i(TAG, "Generating image: $prompt (${width}x${height}, $steps steps)" + 
+                if (inputImage != null) " [img2img, denoise: $denoiseStrength]" else "")
             
             val requestBody = json.toString()
                 .toRequestBody("application/json; charset=utf-8".toMediaType())
