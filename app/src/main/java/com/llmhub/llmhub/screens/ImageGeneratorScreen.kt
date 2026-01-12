@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -391,10 +392,7 @@ fun ImageGeneratorScreen(
                             contentDescription = stringResource(R.string.back)
                         )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                )
+                }
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -485,44 +483,56 @@ fun ImageGeneratorScreen(
                 }
             }
         } else {
-            // Main content
-            Column(
+            // Main content - use BoxWithConstraints for landscape detection
+            BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .verticalScroll(scrollState)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Prompt input
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                    )
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = stringResource(R.string.image_generator_prompt_label),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = promptText,
-                            onValueChange = { promptText = it },
-                            placeholder = { 
-                                Text(stringResource(R.string.image_generator_prompt_hint))
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            minLines = 3,
-                            maxLines = 5,
-                            enabled = !isGenerating && isModelLoaded
-                        )
-                    }
-                }
+                val isLandscape = maxWidth > maxHeight
+                val configuration = LocalConfiguration.current
                 
-                // Generate button
-                Button(
+                if (isLandscape) {
+                    // Landscape layout: Prompt on left, Images on right
+                    if (generatedImages.isEmpty()) {
+                        // Horizontally center the prompt column when no images generated yet
+                        Box(
+                            modifier = Modifier.fillMaxSize().padding(16.dp),
+                            contentAlignment = Alignment.TopCenter
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(0.5f),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                // Prompt input
+                                Card(
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                                    )
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Text(
+                                            text = stringResource(R.string.image_generator_prompt_label),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        OutlinedTextField(
+                                            value = promptText,
+                                            onValueChange = { promptText = it },
+                                            placeholder = { 
+                                                Text(stringResource(R.string.image_generator_prompt_hint))
+                                            },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            minLines = 5,
+                                            maxLines = 10,
+                                            enabled = !isGenerating && isModelLoaded
+                                        )
+                                    }
+                                }
+                                
+                                // Generate button
+                                Button(
                     onClick = {
                         if (promptText.isNotBlank()) {
                             isGenerating = true
@@ -567,14 +577,135 @@ fun ImageGeneratorScreen(
                         Text(stringResource(R.string.image_generator_generate))
                     }
                 }
-                
-                // Generated images carousel (Apple Intelligence style)
-                if (generatedImages.isNotEmpty()) {
-                    val pagerState = rememberPagerState(
-                        initialPage = 0,
-                        pageCount = { generatedImages.size + 1 } // +1 for "generate more" placeholder
-                    )
-                    
+                            }
+                        }
+                    } else {
+                        // Show side-by-side when images exist
+                        // Declare pagerState outside so both columns can access it
+                        val pagerState = rememberPagerState(
+                            initialPage = 0,
+                            pageCount = { generatedImages.size + 1 } // +1 for "generate more" placeholder
+                        )
+                        
+                        Row(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            // Left side: Prompt and Generate button
+                            Column(
+                                modifier = Modifier
+                                    .weight(0.5f)
+                                    .fillMaxHeight()
+                                    .verticalScroll(rememberScrollState()),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                // Prompt input
+                                Card(
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                                    )
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Text(
+                                            text = stringResource(R.string.image_generator_prompt_label),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        OutlinedTextField(
+                                            value = promptText,
+                                            onValueChange = { promptText = it },
+                                            placeholder = { 
+                                                Text(stringResource(R.string.image_generator_prompt_hint))
+                                            },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            minLines = 5,
+                                            maxLines = 10,
+                                            enabled = !isGenerating && isModelLoaded
+                                        )
+                                    }
+                                }
+                                
+                                // Generate button
+                                Button(
+                                    onClick = {
+                                        if (promptText.isNotBlank()) {
+                                            isGenerating = true
+                                            // Clear previous images when starting new generation
+                                            generatedImages.clear()
+                                            currentGenerationIndex = 0
+                                            coroutineScope.launch {
+                                                try {
+                                                    // Generate first image
+                                                    val bitmap = imageGeneratorHelper.generateImage(
+                                                        prompt = promptText,
+                                                        iterations = iterations,
+                                                        seed = seed
+                                                    )
+                                                    if (bitmap != null) {
+                                                        generatedImages.add(bitmap)
+                                                    } else {
+                                                        errorMessage = context.getString(R.string.image_generator_error)
+                                                    }
+                                                } catch (e: Exception) {
+                                                    errorMessage = e.message ?: context.getString(R.string.image_generator_error)
+                                                } finally {
+                                                    isGenerating = false
+                                                }
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    enabled = !isGenerating && isModelLoaded && promptText.isNotBlank()
+                                ) {
+                                    if (isGenerating) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(20.dp),
+                                            strokeWidth = 2.dp,
+                                            color = MaterialTheme.colorScheme.onPrimary
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(stringResource(R.string.image_generator_generating))
+                                    } else {
+                                        Icon(Icons.Default.AutoAwesome, contentDescription = null)
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(stringResource(R.string.image_generator_generate))
+                                    }
+                                }
+                                
+                                // Save current image button (in landscape mode)
+                                if (pagerState.currentPage < generatedImages.size) {
+                                    Button(
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                val currentBitmap = generatedImages[pagerState.currentPage]
+                                                val uri = imageGeneratorHelper.saveImageToGallery(currentBitmap, "Generated Image")
+                                                if (uri != null) {
+                                                    snackbarHostState.showSnackbar(context.getString(R.string.image_generator_saved))
+                                                } else {
+                                                    errorMessage = context.getString(R.string.image_generator_error)
+                                                }
+                                            }
+                                        },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Icon(Icons.Default.Save, contentDescription = null)
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(stringResource(R.string.image_generator_save))
+                                    }
+                                }
+                            }
+                            
+                            // Right side: Generated Images
+                            Column(
+                                modifier = Modifier
+                                    .weight(0.5f)
+                                    .fillMaxHeight()
+                                    .verticalScroll(rememberScrollState()),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
                     // Prefetch next image: always generate one ahead while viewing current
                     // Use collect instead of collectLatest to avoid cancellation when swiping back
                     LaunchedEffect(pagerState, generatedImages.size) {
@@ -735,31 +866,286 @@ fun ImageGeneratorScreen(
                             }
                         }
                     }
-                    
-                    // Save current image button (outside Card for equal width with Generate button)
-                    if (pagerState.currentPage < generatedImages.size) {
+                            }
+                        }
+                    }
+                } else {
+                    // Portrait layout: Original vertical layout
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(scrollState)
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        // Prompt input
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                            )
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = stringResource(R.string.image_generator_prompt_label),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                OutlinedTextField(
+                                    value = promptText,
+                                    onValueChange = { promptText = it },
+                                    placeholder = { 
+                                        Text(stringResource(R.string.image_generator_prompt_hint))
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    minLines = 3,
+                                    maxLines = 5,
+                                    enabled = !isGenerating && isModelLoaded
+                                )
+                            }
+                        }
+                        
+                        // Generate button
                         Button(
                             onClick = {
-                                coroutineScope.launch {
-                                    val currentBitmap = generatedImages[pagerState.currentPage]
-                                    val uri = imageGeneratorHelper.saveImageToGallery(currentBitmap, "Generated Image")
-                                    if (uri != null) {
-                                        snackbarHostState.showSnackbar(context.getString(R.string.image_generator_saved))
-                                    } else {
-                                        errorMessage = context.getString(R.string.image_generator_error)
+                                if (promptText.isNotBlank()) {
+                                    isGenerating = true
+                                    // Clear previous images when starting new generation
+                                    generatedImages.clear()
+                                    currentGenerationIndex = 0
+                                    coroutineScope.launch {
+                                        try {
+                                            // Generate first image
+                                            val bitmap = imageGeneratorHelper.generateImage(
+                                                prompt = promptText,
+                                                iterations = iterations,
+                                                seed = seed
+                                            )
+                                            if (bitmap != null) {
+                                                generatedImages.add(bitmap)
+                                            } else {
+                                                errorMessage = context.getString(R.string.image_generator_error)
+                                            }
+                                        } catch (e: Exception) {
+                                            errorMessage = e.message ?: context.getString(R.string.image_generator_error)
+                                        } finally {
+                                            isGenerating = false
+                                        }
                                     }
                                 }
                             },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !isGenerating && isModelLoaded && promptText.isNotBlank()
                         ) {
-                            Icon(Icons.Default.Save, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.image_generator_save))
+                            if (isGenerating) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.image_generator_generating))
+                            } else {
+                                Icon(Icons.Default.AutoAwesome, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.image_generator_generate))
+                            }
                         }
+                        
+                        // Generated images carousel (Apple Intelligence style)
+                        if (generatedImages.isNotEmpty()) {
+                            val pagerState = rememberPagerState(
+                                initialPage = 0,
+                                pageCount = { generatedImages.size + 1 } // +1 for "generate more" placeholder
+                            )
+                            
+                            // Prefetch next image: always generate one ahead while viewing current
+                            // Use collect instead of collectLatest to avoid cancellation when swiping back
+                            LaunchedEffect(pagerState, generatedImages.size) {
+                                snapshotFlow { pagerState.currentPage }
+                                    .collect { currentPage ->
+                                        // Start generating next image when viewing any image (not the placeholder)
+                                        // and we don't already have a next image ready
+                                        val shouldPrefetch = currentPage < generatedImages.size && 
+                                            currentPage == generatedImages.size - 1 && 
+                                            !isGenerating
+                                        val swipedToPlaceholder = currentPage == generatedImages.size && !isGenerating
+                                        
+                                        if (shouldPrefetch || swipedToPlaceholder) {
+                                            // Launch in separate scope so it won't be cancelled when user swipes away
+                                            coroutineScope.launch {
+                                                if (isGenerating) return@launch // Double check to prevent race
+                                                isGenerating = true
+                                                currentGenerationIndex = generatedImages.size
+                                                try {
+                                                    val newSeed = (0..999999).random()
+                                                    val bitmap = imageGeneratorHelper.generateImage(
+                                                        prompt = promptText,
+                                                        iterations = iterations,
+                                                        seed = newSeed
+                                                    )
+                                                    if (bitmap != null) {
+                                                        generatedImages.add(bitmap)
+                                                    }
+                                                } catch (e: Exception) {
+                                                    errorMessage = e.message
+                                                } finally {
+                                                    isGenerating = false
+                                                }
+                                            }
+                                        }
+                                    }
+                            }
+                            
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                                )
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = stringResource(R.string.image_generator_success),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = "${minOf(pagerState.currentPage + 1, generatedImages.size)}/${generatedImages.size}",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    
+                                    // Horizontal pager for images
+                                    HorizontalPager(
+                                        state = pagerState,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .aspectRatio(1f)
+                                    ) { page ->
+                                        if (page < generatedImages.size) {
+                                            // Show generated image
+                                            Image(
+                                                bitmap = generatedImages[page].asImageBitmap(),
+                                                contentDescription = "$promptText - variation ${page + 1}",
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .clip(RoundedCornerShape(12.dp))
+                                            )
+                                        } else {
+                                            // "Generate more" placeholder
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .clip(RoundedCornerShape(12.dp))
+                                                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                if (isGenerating) {
+                                                    Column(
+                                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                                                    ) {
+                                                        CircularProgressIndicator()
+                                                        Text(
+                                                            text = stringResource(R.string.image_generator_variation, generatedImages.size + 1),
+                                                            style = MaterialTheme.typography.bodyMedium,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+                                                    }
+                                                } else {
+                                                    Column(
+                                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                                    ) {
+                                                        Icon(
+                                                            Icons.Default.Add,
+                                                            contentDescription = null,
+                                                            modifier = Modifier.size(48.dp),
+                                                            tint = MaterialTheme.colorScheme.primary
+                                                        )
+                                                        Text(
+                                                            text = stringResource(R.string.image_generator_swipe_more),
+                                                            style = MaterialTheme.typography.bodyMedium,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                            textAlign = TextAlign.Center
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Page indicators
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        repeat(generatedImages.size) { index ->
+                                            Box(
+                                                modifier = Modifier
+                                                    .padding(horizontal = 4.dp)
+                                                    .size(8.dp)
+                                                    .clip(CircleShape)
+                                                    .background(
+                                                        if (pagerState.currentPage == index)
+                                                            MaterialTheme.colorScheme.primary
+                                                        else
+                                                            MaterialTheme.colorScheme.outlineVariant
+                                                    )
+                                            )
+                                        }
+                                        // Plus indicator for "generate more"
+                                        Box(
+                                            modifier = Modifier
+                                                .padding(horizontal = 4.dp)
+                                                .size(8.dp)
+                                                .clip(CircleShape)
+                                                .background(
+                                                    if (pagerState.currentPage == generatedImages.size)
+                                                        MaterialTheme.colorScheme.primary
+                                                    else
+                                                        MaterialTheme.colorScheme.outlineVariant
+                                                )
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            // Save current image button (outside Card for equal width with Generate button)
+                            if (pagerState.currentPage < generatedImages.size) {
+                                Button(
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            val currentBitmap = generatedImages[pagerState.currentPage]
+                                            val uri = imageGeneratorHelper.saveImageToGallery(currentBitmap, "Generated Image")
+                                            if (uri != null) {
+                                                snackbarHostState.showSnackbar(context.getString(R.string.image_generator_saved))
+                                            } else {
+                                                errorMessage = context.getString(R.string.image_generator_error)
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(Icons.Default.Save, contentDescription = null)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(stringResource(R.string.image_generator_save))
+                                }
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(32.dp))
                     }
                 }
-                
-                Spacer(modifier = Modifier.height(32.dp))
             }
         }
     }

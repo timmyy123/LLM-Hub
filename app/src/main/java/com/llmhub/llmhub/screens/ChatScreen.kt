@@ -94,18 +94,9 @@ fun ChatScreen(
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
 
-    // Ensure modal drawer is closed when switching to landscape to avoid auto-opening
-    LaunchedEffect(isLandscape) {
-        if (isLandscape) {
-            coroutineScope.launch {
-                try {
-                    drawerState.close()
-                } catch (_: Exception) {
-                    // ignore
-                }
-            }
-        }
-    }
+    // Note: drawer state is now persisted via rememberSaveable in navigation,
+    // so we no longer need to force-close on rotation. The drawer stays closed
+    // if it was closed before rotation.
 
     // Instrument drawer state for debugging: log transitions so we can see when it opens
     var previousDrawerValue by remember { mutableStateOf(drawerState.currentValue) }

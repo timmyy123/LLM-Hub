@@ -2,7 +2,8 @@ package com.llmhub.llmhub.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import kotlinx.coroutines.launch
 import androidx.navigation.NavHostController
@@ -36,7 +37,10 @@ fun LlmHubNavigation(
     themeViewModel: ThemeViewModel,
     startDestination: String = Screen.Home.route
 ) {
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    // Use rememberSaveable to persist drawer closed state across rotation/configuration changes
+    val drawerState = rememberSaveable(saver = DrawerState.Saver(confirmStateChange = { true })) {
+        DrawerState(DrawerValue.Closed)
+    }
 
     NavHost(
         navController = navController,
