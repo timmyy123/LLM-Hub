@@ -405,7 +405,7 @@ class SDBackendService : Service() {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Image Generation")
             .setContentText(contentText)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_notification)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
             .build()
