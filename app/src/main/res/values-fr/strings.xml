@@ -75,7 +75,7 @@
     <string name="acknowledgments_text">Remerciements spéciaux à Google, Meta, Microsoft, et à la communauté HuggingFace.</string>
     <string name="sd_models_credit">Les modèles de génération d\'images sont alimentés par les implémentations Stable Diffusion de xororz utilisant les backends Qualcomm QNN (NPU) et Alibaba MNN (CPU).</string>
     <string name="ai_thinking">L\'IA réfléchit...</string>
-    <string name="version_number">Version 3.2.6</string>
+    <string name="version_number">Version 3.4</string>
     <string name="app_version">Version de l\'App</string>
     
     <!-- Terms of Service -->
