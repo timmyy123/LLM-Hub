@@ -53,8 +53,10 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalView
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -67,6 +69,7 @@ import coil.request.ImageRequest
 import com.llmhub.llmhub.data.MessageEntity
 import dev.jeziellago.compose.markdowntext.MarkdownText
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.window.DialogWindowProvider
 import com.llmhub.llmhub.utils.FileUtils
 import com.example.llmhub.utils.CodeBlockParser
 import com.example.llmhub.utils.CodeBlockParser.ParsedSegment
@@ -94,6 +97,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.TextRange
+import android.view.ViewGroup
 
 /**
  * Custom selectable markdown text component that supports both markdown rendering and text selection.
@@ -703,34 +707,56 @@ fun FullScreenImageViewer(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var showControls by remember { mutableStateOf(true) }
+    val configuration = LocalConfiguration.current
     
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false,
-            decorFitsSystemWindows = false
-        )
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black)
-                .systemBarsPadding()
-                .clickable { showControls = !showControls }
-        ) {
-            // Full-screen image
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(imageUri)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = "Full screen image",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Fit,
-                onError = { 
-                    android.util.Log.w("FullScreenImageViewer", "Failed to load image: $imageUri")
-                }
+    // Key forces full recomposition on orientation change
+    key(configuration.orientation) {
+        // Preserve showControls state across orientation changes
+        DisposableEffect(Unit) {
+            onDispose { }
+        }
+        
+        Dialog(
+            onDismissRequest = onDismiss,
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false,
+                decorFitsSystemWindows = false
             )
+        ) {
+            val view = LocalView.current
+            val window = (view.parent as? DialogWindowProvider)?.window
+            
+            LaunchedEffect(configuration.orientation) {
+                window?.let { win ->
+                    win.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+                    win.setFlags(
+                        android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                        android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+                    )
+                }
+            }
+            
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black)
+                    .systemBarsPadding()
+                    .clickable { showControls = !showControls },
+                contentAlignment = Alignment.Center
+            ) {
+                // Full-screen image
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(imageUri)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Full screen image",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit,
+                    onError = { 
+                        android.util.Log.w("FullScreenImageViewer", "Failed to load image: $imageUri")
+                    }
+                )
             
             // Controls overlay (shows/hides on tap)
             if (showControls) {
@@ -867,6 +893,7 @@ fun FullScreenImageViewer(
                     )
                 }
             }
+        }
         }
     }
 }
