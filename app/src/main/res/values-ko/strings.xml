@@ -530,6 +530,8 @@
     <string name="image_generator_denoise_strength">디노이즈 강도: %.2f</string>
     <string name="image_generator_denoise_strength_desc">높을수록 = 입력 이미지에 더 많은 변화</string>
     <string name="image_generator_input_image">입력 이미지</string>
+    <string name="image_generator_use_gpu">GPU 가속 사용</string>
+    <string name="image_generator_use_gpu_desc">더 빠른 생성 (OpenCL 지원 필요)</string>
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">사용 가능한 모델 없음</string>
     <string name="feature_download_model">모델 다운로드</string>

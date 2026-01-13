@@ -496,6 +496,8 @@
     <string name="image_generator_denoise_strength">Força de Denoise: %.2f</string>
     <string name="image_generator_denoise_strength_desc">Maior = mais mudanças na imagem de entrada</string>
     <string name="image_generator_input_image">Imagem de entrada</string>
+    <string name="image_generator_use_gpu">Usar aceleração GPU</string>
+    <string name="image_generator_use_gpu_desc">Geração mais rápida (requer suporte OpenCL)</string>
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">Nenhum Modelo Disponível</string>
     <string name="feature_download_model">Baixar Modelos</string>

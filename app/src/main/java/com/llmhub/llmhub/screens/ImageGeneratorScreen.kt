@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.imagegen.ImageGeneratorHelper
 import com.llmhub.llmhub.imagegen.ModelInfo
+import com.llmhub.llmhub.imagegen.ModelType
 import com.llmhub.llmhub.imagegen.StableDiffusionHelper
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -94,9 +95,13 @@ fun ImageGeneratorScreen(
     var isModelLoaded by remember { mutableStateOf(false) }
     var isModelLoading by remember { mutableStateOf(false) }
     var showModelSheet by remember { mutableStateOf(false) }
+    var useGpu by remember { mutableStateOf(false) }
     
-    // Remember last used model
+    // Remember last used model and settings
     val lastModelPath = remember { prefs.getString("last_model_path", null) }
+    LaunchedEffect(Unit) {
+        useGpu = prefs.getBoolean("use_gpu", false)
+    }
     
     // Image generator helper
     val imageGeneratorHelper = remember { ImageGeneratorHelper(context) }
@@ -133,12 +138,13 @@ fun ImageGeneratorScreen(
     }
     
     // Save settings when they change
-    LaunchedEffect(iterations, seed, selectedModel, denoiseStrength) {
+    LaunchedEffect(iterations, seed, selectedModel, denoiseStrength, useGpu) {
         prefs.edit()
             .putInt("iterations", iterations)
             .putInt("seed", seed)
             .putString("last_model_path", selectedModel?.path)
             .putFloat("denoise_strength", denoiseStrength)
+            .putBoolean("use_gpu", useGpu)
             .apply()
     }
     
@@ -273,13 +279,52 @@ fun ImageGeneratorScreen(
                                 }
                             }
                             
+                            // GPU Toggle (MNN models only)
+                            if (selectedModel?.type == ModelType.MNN_CPU) {
+                                Row(
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { useGpu = !useGpu }
+                                        .padding(vertical = 8.dp)
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Speed,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                        Column {
+                                            Text(
+                                                text = stringResource(R.string.image_generator_use_gpu),
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            Text(
+                                                text = stringResource(R.string.image_generator_use_gpu_desc),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                    Switch(
+                                        checked = useGpu,
+                                        onCheckedChange = { useGpu = it }
+                                    )
+                                }
+                            }
+                            
                             // Load/Reload Model Button
                             Button(
                                 onClick = {
                                     selectedModel?.let { model ->
                                         isModelLoading = true
                                         coroutineScope.launch {
-                                            val success = imageGeneratorHelper.initialize(model.path)
+                                            val success = imageGeneratorHelper.initialize(model.path, useGpu)
                                             isModelLoaded = success
                                             isModelLoading = false
                                             if (!success) {
@@ -657,7 +702,8 @@ fun ImageGeneratorScreen(
                                         iterations = iterations,
                                         seed = seed,
                                         inputImage = inputImageBitmap,
-                                        denoiseStrength = denoiseStrength
+                                        denoiseStrength = denoiseStrength,
+                                        useGpu = useGpu
                                     )
                                     if (bitmap != null) {
                                         generatedImages.add(bitmap)
@@ -832,7 +878,8 @@ fun ImageGeneratorScreen(
                                                         iterations = iterations,
                                                         seed = seed,
                                                         inputImage = inputImageBitmap,
-                                                        denoiseStrength = denoiseStrength
+                                                        denoiseStrength = denoiseStrength,
+                                                        useGpu = useGpu
                                                     )
                                                     if (bitmap != null) {
                                                         generatedImages.add(bitmap)
@@ -919,7 +966,8 @@ fun ImageGeneratorScreen(
                                             val bitmap = imageGeneratorHelper.generateImage(
                                                 prompt = promptText,
                                                 iterations = iterations,
-                                                seed = newSeed
+                                                seed = newSeed,
+                                                useGpu = useGpu
                                             )
                                             if (bitmap != null) {
                                                 generatedImages.add(bitmap)
@@ -1187,7 +1235,8 @@ fun ImageGeneratorScreen(
                                                 iterations = iterations,
                                                 seed = seed,
                                                 inputImage = inputImageBitmap,
-                                                denoiseStrength = denoiseStrength
+                                                denoiseStrength = denoiseStrength,
+                                                useGpu = useGpu
                                             )
                                             if (bitmap != null) {
                                                 generatedImages.add(bitmap)
@@ -1252,7 +1301,8 @@ fun ImageGeneratorScreen(
                                                         iterations = iterations,
                                                         seed = newSeed,
                                                         inputImage = inputImageBitmap,
-                                                        denoiseStrength = denoiseStrength
+                                                        denoiseStrength = denoiseStrength,
+                                                        useGpu = useGpu
                                                     )
                                                     if (bitmap != null) {
                                                         generatedImages.add(bitmap)

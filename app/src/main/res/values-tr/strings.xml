@@ -529,6 +529,8 @@
     <string name="image_generator_denoise_strength">Gürültü Azaltma Gücü: %.2f</string>
     <string name="image_generator_denoise_strength_desc">Daha yüksek = giriş görüntüsünde daha fazla değişiklik</string>
     <string name="image_generator_input_image">Giriş görüntüsü</string>    
+    <string name="image_generator_use_gpu">GPU Hızlandırma Kullan</string>
+    <string name="image_generator_use_gpu_desc">Daha hızlı oluşturma (OpenCL desteği gerektirir)</string>
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">Model Yok</string>
     <string name="feature_download_model">Modelleri İndir</string>

@@ -205,6 +205,7 @@ class StableDiffusionHelper(private val context: Context) {
         height: Int = 512,
         inputImage: Bitmap? = null,
         denoiseStrength: Float = 0.7f,
+        useOpenCL: Boolean = false,
         onProgress: ((Int, Int) -> Unit)? = null
     ): Bitmap? = withContext(Dispatchers.IO) {
         try {
@@ -226,7 +227,7 @@ class StableDiffusionHelper(private val context: Context) {
                 put("width", width)
                 put("height", height)
                 put("scheduler", "dpm") // DPM++ 2M Karras scheduler
-                put("use_opencl", false) // CPU mode for compatibility
+                put("use_opencl", useOpenCL) // GPU acceleration (OpenCL/Vulkan) vs CPU
                 put("stream", false) // Disable streaming to get a single JSON response
                 
                 // Add img2img support

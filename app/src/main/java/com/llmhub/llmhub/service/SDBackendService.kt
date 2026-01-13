@@ -33,6 +33,7 @@ class SDBackendService : Service() {
     private var backendProcess: Process? = null
     private lateinit var runtimeDir: File
     private var selectedModelPath: String? = null
+    private var useGpu: Boolean = false
     
     override fun onCreate() {
         super.onCreate()
@@ -49,6 +50,7 @@ class SDBackendService : Service() {
         when (intent?.action) {
             ACTION_START -> {
                 selectedModelPath = intent.getStringExtra(EXTRA_MODEL_PATH)
+                useGpu = intent.getBooleanExtra("USE_GPU", false)
                 if (startBackend()) {
                     updateNotification("Backend Running")
                 } else {
@@ -233,7 +235,7 @@ class SDBackendService : Service() {
             
             command
         } else {
-            // CPU backend with MNN
+            // MNN backend - GPU selection is done via JSON request parameter, not command line
             val command = mutableListOf(
                 executable.absolutePath,
                 "--clip", clipFile.absolutePath,
@@ -242,8 +244,14 @@ class SDBackendService : Service() {
                 "--tokenizer", File(actualDir, "tokenizer.json").absolutePath,
                 "--port", "8081",
                 "--text_embedding_size", "768",
-                "--cpu"
+                "--cpu" // Flag to indicate MNN mode (vs QNN mode)
             )
+            
+            if (useGpu) {
+                Log.i(TAG, "MNN backend: GPU acceleration will be requested via API (use_opencl)")
+            } else {
+                Log.i(TAG, "MNN backend: CPU mode will be used")
+            }
             
             // Always include VAE encoder if available (for img2img support)
             val vaeEncoderFile = File(actualDir, "vae_encoder.mnn")
@@ -440,12 +448,13 @@ class SDBackendService : Service() {
         const val ACTION_STOP = "com.llmhub.llmhub.SD_BACKEND_STOP"
         const val EXTRA_MODEL_PATH = "model_path"
         
-        fun start(context: Context, modelPath: String? = null) {
+        fun start(context: Context, modelPath: String? = null, useGpu: Boolean = false) {
             val intent = Intent(context, SDBackendService::class.java).apply {
                 action = ACTION_START
                 if (modelPath != null) {
                     putExtra(EXTRA_MODEL_PATH, modelPath)
                 }
+                putExtra("USE_GPU", useGpu)
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)

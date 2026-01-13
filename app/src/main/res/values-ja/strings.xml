@@ -528,6 +528,8 @@
     <string name="image_generator_denoise_strength">ノイズ除去強度: %.2f</string>
     <string name="image_generator_denoise_strength_desc">高 = 入力画像への変更が大</string>
     <string name="image_generator_input_image">入力画像</string>
+    <string name="image_generator_use_gpu">GPUアクセラレーションを使用</string>
+    <string name="image_generator_use_gpu_desc">高速生成（OpenCLサポートが必要）</string>
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">利用可能なモデルがありません</string>
     <string name="feature_download_model">モデルをダウンロード</string>

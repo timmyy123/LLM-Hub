@@ -533,6 +533,8 @@
     <string name="image_generator_denoise_strength">قدرت حذف نویز: %.2f</string>
     <string name="image_generator_denoise_strength_desc">بالاتر = تغییرات بیشتر در تصویر ورودی</string>
     <string name="image_generator_input_image">تصویر ورودی</string>
+    <string name="image_generator_use_gpu">استفاده از شتاب‌دهنده GPU</string>
+    <string name="image_generator_use_gpu_desc">تولید سریع‌تر (نیاز به پشتیبانی OpenCL دارد)</string>
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">هیچ مدلی در دسترس نیست</string>
     <string name="feature_download_model">دانلود مدل‌ها</string>
