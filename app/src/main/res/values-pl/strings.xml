@@ -533,6 +533,8 @@
     <string name="image_generator_denoise_strength">Siła Odszumiania: %.2f</string>
     <string name="image_generator_denoise_strength_desc">Wyższe = więcej zmian w obrazie wejściowym</string>
     <string name="image_generator_input_image">Obraz wejściowy</string>
+    <string name="image_generator_use_gpu">Użyj akceleracji GPU</string>
+    <string name="image_generator_use_gpu_desc">Szybsze generowanie (wymaga obsługi OpenCL)</string>
     
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">Brak Dostępnego Modelu</string>

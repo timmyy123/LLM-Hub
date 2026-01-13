@@ -558,6 +558,8 @@
     <string name="image_generator_denoise_strength">Force de Débruitage: %.2f</string>
     <string name="image_generator_denoise_strength_desc">Plus élevé = plus de changements à l\'image d\'entrée</string>
     <string name="image_generator_input_image">Image d\'entrée</string>
+    <string name="image_generator_use_gpu">Utiliser l\'accélération GPU</string>
+    <string name="image_generator_use_gpu_desc">Génération plus rapide (nécessite le support OpenCL)</string>
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">Aucun Modèle Disponible</string>
     <string name="feature_download_model">Télécharger des Modèles</string>

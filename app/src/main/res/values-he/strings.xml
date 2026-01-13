@@ -533,6 +533,8 @@
     <string name="image_generator_denoise_strength">עוצמת הפחתת רעש: %.2f</string>
     <string name="image_generator_denoise_strength_desc">גבוה יותר = יותר שינויים בתמונת הקלט</string>
     <string name="image_generator_input_image">תמונת קלט</string>
+    <string name="image_generator_use_gpu">השתמש בהאצת GPU</string>
+    <string name="image_generator_use_gpu_desc">יצירה מהירה יותר (דורש תמיכה ב-OpenCL)</string>
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">אין מודל זמין</string>
     <string name="feature_download_model">הורד מודלים</string>

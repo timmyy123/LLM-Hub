@@ -509,7 +509,9 @@
     <string name="image_generator_denoise_strength">Entrauschungsstärke: %.2f</string>
     <string name="image_generator_denoise_strength_desc">Höher = mehr Änderungen am Eingabebild</string>
     <string name="image_generator_input_image">Eingabebild</string>
-    
+    <string name="image_generator_use_gpu">GPU-Beschleunigung verwenden</string>
+    <string name="image_generator_use_gpu_desc">Schnellere Generierung (erfordert OpenCL-Unterstützung)</string>
+
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">Kein Modell verfügbar</string>
     <string name="feature_download_model">Modelle herunterladen</string>

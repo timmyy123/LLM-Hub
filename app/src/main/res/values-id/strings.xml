@@ -532,6 +532,8 @@
     <string name="image_generator_denoise_strength">Kekuatan Denoise: %.2f</string>
     <string name="image_generator_denoise_strength_desc">Lebih tinggi = lebih banyak perubahan pada gambar input</string>
     <string name="image_generator_input_image">Gambar input</string>
+    <string name="image_generator_use_gpu">Gunakan Akselerasi GPU</string>
+    <string name="image_generator_use_gpu_desc">Generasi lebih cepat (memerlukan dukungan OpenCL)</string>
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">Tidak Ada Model Tersedia</string>
     <string name="feature_download_model">Unduh Model</string>

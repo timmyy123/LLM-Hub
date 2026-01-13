@@ -24,7 +24,7 @@ class ImageGeneratorHelper(private val context: Context) {
     private val TAG = "ImageGeneratorHelper"
     private val sdHelper = StableDiffusionHelper(context)
     
-    suspend fun initialize(modelPath: String? = null): Boolean = withContext(Dispatchers.IO) {
+    suspend fun initialize(modelPath: String? = null, useGpu: Boolean = false): Boolean = withContext(Dispatchers.IO) {
         try {
             // Check if model is available
             val modelInfo = if (modelPath != null) {
@@ -47,7 +47,7 @@ class ImageGeneratorHelper(private val context: Context) {
             Log.i(TAG, "Found model: ${modelInfo.name} (${modelInfo.type})")
             
             // Start backend service
-            SDBackendService.start(context, modelInfo.path)
+            SDBackendService.start(context, modelInfo.path, useGpu)
             
             // Poll for service health (up to 30 seconds)
             var attempts = 0
@@ -85,7 +85,8 @@ class ImageGeneratorHelper(private val context: Context) {
         iterations: Int = 28,  // Renamed from 'steps' for API compatibility
         seed: Int = 0,
         inputImage: Bitmap? = null,
-        denoiseStrength: Float = 0.7f
+        denoiseStrength: Float = 0.7f,
+        useGpu: Boolean = false
     ): Bitmap? = withContext(Dispatchers.IO) {
         try {
             val img2imgInfo = if (inputImage != null) " [img2img, denoise: $denoiseStrength]" else ""
@@ -97,6 +98,7 @@ class ImageGeneratorHelper(private val context: Context) {
                 seed = if (seed == 0) null else seed.toLong(),
                 inputImage = inputImage,
                 denoiseStrength = denoiseStrength,
+                useOpenCL = useGpu,
                 onProgress = { current, total ->
                     Log.d(TAG, "Generation progress: $current/$total")
                 }

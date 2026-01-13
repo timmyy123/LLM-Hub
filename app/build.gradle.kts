@@ -17,23 +17,22 @@ plugins {
 
 android {
     namespace = "com.llmhub.llmhub"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.llmhub.llmhub"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 52
-        versionName = "3.3"
+        targetSdk = 36
+        versionCode = 54
+        versionName = "3.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         val hfToken: String = localProperties.getProperty("HF_TOKEN", "")
         buildConfigField("String", "HF_TOKEN", "\"$hfToken\"")
         
-        // NDK ABI filters - only arm64-v8a for SD backend native library
-        ndk {
-            abiFilters += listOf("arm64-v8a")
-        }
+        // Note: SD backend native library only works on arm64-v8a, but we don't filter ABIs
+        // so the app can be installed on more devices. Image generation will only work on
+        // arm64-v8a devices; other features (AI Chat, Writing Aid, etc.) work on all devices.
     }
     
     // Specify supported locales to ensure proper resource loading

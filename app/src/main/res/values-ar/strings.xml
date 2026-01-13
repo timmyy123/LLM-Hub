@@ -529,8 +529,8 @@
     <string name="image_generator_change_image">تغيير صورة الإدخال</string>
     <string name="image_generator_denoise_strength">قوة إزالة التشويش: %.2f</string>
     <string name="image_generator_denoise_strength_desc">أعلى = المزيد من التغييرات على صورة الإدخال</string>
-    <string name="image_generator_input_image">صورة الإدخال</string>
-
+    <string name="image_generator_input_image">صورة الإدخال</string>    <string name="image_generator_use_gpu">استخدام تسريع GPU</string>
+    <string name="image_generator_use_gpu_desc">إنشاء أسرع (يتطلب دعم OpenCL)</string>
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">لا يوجد نموذج متاح</string>
     <string name="feature_download_model">تنزيل النماذج</string>
