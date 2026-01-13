@@ -1,4 +1,4 @@
-package com.llmhub.llmhub.screens
+﻿package com.llmhub.llmhub.screens
 
 import android.graphics.Bitmap
 import androidx.compose.foundation.BorderStroke
@@ -35,9 +35,12 @@ import kotlinx.coroutines.launch
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
+import android.view.ViewGroup
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.window.DialogWindowProvider
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,6 +69,7 @@ fun ImageGeneratorScreen(
     var denoiseStrength by remember { mutableStateOf(prefs.getFloat("denoise_strength", 0.7f)) }
     var inputImageUri by remember { mutableStateOf<Uri?>(null) }
     var inputImageBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var showInputImageFullscreen by remember { mutableStateOf(false) }
     
     // Image picker launcher
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -651,7 +655,7 @@ fun ImageGeneratorScreen(
                                                 Card(
                                                     modifier = Modifier
                                                         .size(64.dp)
-                                                        .clickable { imagePickerLauncher.launch("image/*") },
+                                                        .clickable { showInputImageFullscreen = true },
                                                     shape = RoundedCornerShape(8.dp)
                                                 ) {
                                                     Image(
@@ -827,7 +831,7 @@ fun ImageGeneratorScreen(
                                                 Card(
                                                     modifier = Modifier
                                                         .size(64.dp)
-                                                        .clickable { imagePickerLauncher.launch("image/*") },
+                                                        .clickable { showInputImageFullscreen = true },
                                                     shape = RoundedCornerShape(8.dp)
                                                 ) {
                                                     Image(
@@ -1184,7 +1188,7 @@ fun ImageGeneratorScreen(
                                         Card(
                                             modifier = Modifier
                                                 .size(64.dp)
-                                                .clickable { imagePickerLauncher.launch("image/*") },
+                                                .clickable { showInputImageFullscreen = true },
                                             shape = RoundedCornerShape(8.dp)
                                         ) {
                                             Image(
@@ -1464,6 +1468,72 @@ fun ImageGeneratorScreen(
                         }
                         
                         Spacer(modifier = Modifier.height(32.dp))
+                    }
+                }
+            }
+        }
+    }
+    
+    // Fullscreen input image viewer
+    if (showInputImageFullscreen && inputImageBitmap != null) {
+        val configuration = LocalConfiguration.current
+        // Key forces full recomposition on orientation change
+        key(configuration.orientation) {
+            androidx.compose.ui.window.Dialog(
+                onDismissRequest = { showInputImageFullscreen = false },
+                properties = androidx.compose.ui.window.DialogProperties(
+                    usePlatformDefaultWidth = false,
+                    decorFitsSystemWindows = false
+                )
+            ) {
+                val view = LocalView.current
+                val window = (view.parent as? DialogWindowProvider)?.window
+                
+                LaunchedEffect(configuration.orientation) {
+                    window?.let { win ->
+                        win.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+                        win.setFlags(
+                            android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                            android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+                        )
+                    }
+                }
+                
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(androidx.compose.ui.graphics.Color.Black)
+                        .clickable { showInputImageFullscreen = false },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        bitmap = inputImageBitmap!!.asImageBitmap(),
+                        contentDescription = stringResource(R.string.image_generator_input_image),
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                    )
+                    
+                    // Close button
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .statusBarsPadding()
+                            .padding(16.dp)
+                            .size(48.dp),
+                        shape = CircleShape,
+                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.6f)
+                    ) {
+                        IconButton(
+                            onClick = { showInputImageFullscreen = false },
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = stringResource(R.string.close),
+                                tint = androidx.compose.ui.graphics.Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
                     }
                 }
             }
