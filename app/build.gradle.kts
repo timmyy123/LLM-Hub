@@ -188,9 +188,9 @@ dependencies {
     // NOTE: Version 0.10.29 has slower initial load for multimodal models due to eager
     // vision/audio component initialization. Disable vision/audio when not needed for faster loading.
     // tasks-genai latest: 0.10.29; tasks-text latest: 0.10.29
-    implementation("com.google.mediapipe:tasks-genai:0.10.29")
-    implementation("com.google.mediapipe:tasks-vision:0.10.29")
-    implementation("com.google.mediapipe:tasks-text:0.10.29")
+    implementation("com.google.mediapipe:tasks-genai:0.10.32")
+    implementation("com.google.mediapipe:tasks-vision:0.10.32")
+    implementation("com.google.mediapipe:tasks-text:0.10.32")
     
     // Protobuf - required for MediaPipe
     implementation("com.google.protobuf:protobuf-java:3.25.1")
