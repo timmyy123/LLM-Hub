@@ -646,10 +646,12 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
             // Handle Stable Diffusion models (stored in sd_models directory)
             if (model.modelFormat == "qnn_npu" || model.modelFormat == "mnn_cpu") {
                 val sdModelsDir = File(context.filesDir, "sd_models")
-                if (sdModelsDir.exists() && sdModelsDir.isDirectory) {
-                    // Delete all files and subdirectories recursively
-                    sdModelsDir.deleteRecursively()
-                    android.util.Log.d("ModelDownloadViewModel", "[deleteModel] Deleted SD models directory: ${sdModelsDir.absolutePath}")
+                val modelTargetDir = File(sdModelsDir, model.name.replace(" ", "_"))
+                
+                if (modelTargetDir.exists() && modelTargetDir.isDirectory) {
+                    // Delete all files and subdirectories recursively for this model only
+                    modelTargetDir.deleteRecursively()
+                    android.util.Log.d("ModelDownloadViewModel", "[deleteModel] Deleted SD model directory: ${modelTargetDir.absolutePath}")
                 }
             } else {
                 // Physically remove the file from the app's private storage so that
