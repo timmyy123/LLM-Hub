@@ -1,14 +1,22 @@
 package com.llmhub.llmhub.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
+import androidx.navigation.compose.currentBackStackEntryAsState
 import kotlinx.coroutines.launch
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.llmhub.llmhub.LlmHubApplication
 import com.llmhub.llmhub.screens.*
 import com.llmhub.llmhub.viewmodels.ChatViewModelFactory
 import com.llmhub.llmhub.viewmodels.ThemeViewModel
@@ -37,9 +45,21 @@ fun LlmHubNavigation(
     themeViewModel: ThemeViewModel,
     startDestination: String = Screen.Home.route
 ) {
-    // Use rememberSaveable to persist drawer closed state across rotation/configuration changes
     val drawerState = rememberSaveable(saver = DrawerState.Saver(confirmStateChange = { true })) {
         DrawerState(DrawerValue.Closed)
+    }
+
+    // Unload chat model only when leaving Chat route (e.g. to Home). Don't unload when switching chat/123 -> chat/new.
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    val isOnChatRoute = currentRoute == Screen.Chat.route
+    var wasOnChatRoute by remember { mutableStateOf(isOnChatRoute) }
+    val context = LocalContext.current
+    LaunchedEffect(isOnChatRoute) {
+        if (wasOnChatRoute && !isOnChatRoute) {
+            (context.applicationContext as? LlmHubApplication)?.inferenceService?.unloadModel()
+        }
+        wasOnChatRoute = isOnChatRoute
     }
 
     NavHost(

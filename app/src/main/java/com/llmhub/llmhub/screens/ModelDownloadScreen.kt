@@ -268,13 +268,13 @@ private fun ModelFamilyCard(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 
-                // First row: Multimodal capabilities
-                if (isMultimodal) {
+                // First row: Capabilities (vision, audio, thinking)
+                val hasThinking = variants.any { it.name.contains("Thinking", ignoreCase = true) }
+                if (isMultimodal || hasThinking) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.padding(top = 8.dp)
                     ) {
-                        // Check for specific vision support
                         if (variants.any { it.supportsVision }) {
                             IconWithLabel(
                                 icon = Icons.Default.RemoveRedEye,
@@ -282,12 +282,17 @@ private fun ModelFamilyCard(
                                 tint = MaterialTheme.colorScheme.tertiary
                             )
                         }
-                        
-                        // Check for specific audio support  
                         if (variants.any { it.supportsAudio }) {
                             IconWithLabel(
                                 icon = Icons.Default.Mic,
                                 label = stringResource(R.string.audio_support),
+                                tint = MaterialTheme.colorScheme.tertiary
+                            )
+                        }
+                        if (hasThinking) {
+                            IconWithLabel(
+                                icon = Icons.Default.Psychology,
+                                label = stringResource(R.string.thinking_label),
                                 tint = MaterialTheme.colorScheme.tertiary
                             )
                         }
@@ -297,7 +302,7 @@ private fun ModelFamilyCard(
                 // Second row: GPU support and variant count
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.padding(top = if (isMultimodal) 4.dp else 8.dp)
+                    modifier = Modifier.padding(top = if (isMultimodal || hasThinking) 4.dp else 8.dp)
                 ) {
                     // Show a GPU badge for the family header when any variant declares GPU support.
                     // Per-variant GPU availability (device checks) is still handled in the variant row.

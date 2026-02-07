@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit
 
 class ScamDetectorViewModel(application: Application) : AndroidViewModel(application) {
     
-    private val inferenceService = MediaPipeInferenceService(application)
+    private val inferenceService = (application as com.llmhub.llmhub.LlmHubApplication).inferenceService
     private val prefs = application.getSharedPreferences("scam_detector_prefs", android.content.Context.MODE_PRIVATE)
     
     companion object {
@@ -118,6 +118,9 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
                 val savedModel = available.find { it.name == savedModelName }
                 if (savedModel != null) {
                     _selectedModel.value = savedModel
+                    if (!savedModel.supportsGpu && _selectedBackend.value == LlmInference.Backend.GPU) {
+                        _selectedBackend.value = LlmInference.Backend.CPU
+                    }
                 }
             }
             
@@ -141,13 +144,11 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
             _visionEnabled.value = false
         }
         
-        // Only auto-select backend if none is selected yet
-        if (_selectedBackend.value == null) {
-            _selectedBackend.value = if (model.supportsGpu) {
-                LlmInference.Backend.GPU
-            } else {
-                LlmInference.Backend.CPU
-            }
+        // Force CPU when model doesn't support GPU (e.g. ONNX); otherwise keep or set backend
+        _selectedBackend.value = if (model.supportsGpu) {
+            _selectedBackend.value ?: LlmInference.Backend.GPU
+        } else {
+            LlmInference.Backend.CPU
         }
         
         saveSettings()

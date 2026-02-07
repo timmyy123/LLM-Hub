@@ -76,6 +76,8 @@
     <string name="acknowledgments_text">Un ringraziamento speciale a Google, Meta, Microsoft e alla community di HuggingFace per aver fornito gli incredibili modelli LLM che alimentano questa applicazione. Questo progetto si basa anche sul fantastico lavoro della community di sviluppo Android e dell\'ecosistema open-source.</string>
     <string name="sd_models_credit">I modelli di generazione di immagini sono alimentati dalle implementazioni Stable Diffusion di xororz utilizzando backend Qualcomm QNN (NPU) e Alibaba MNN (CPU).</string>
     <string name="ai_thinking">L\'IA sta pensando...</string>
+    <string name="thinking_label">Pensiero</string>
+    <string name="thinking_tokens">Pensiero (%1$d token)</string>
     <string name="version_number">Versione 3.4</string>
     <string name="app_version">Versione App</string>
     

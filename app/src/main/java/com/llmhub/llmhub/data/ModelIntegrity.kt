@@ -22,11 +22,17 @@ fun isModelFileValid(file: File, modelFormat: String): Boolean {
         android.util.Log.d("ModelIntegrity", "File too small: ${file.length()} bytes")
         return false
     }
+
+    // Perform format-specific validation
+    val valid = when (modelFormat) {
+        "task", "litertlm" -> isTaskLikelyValid(file)
+        "gguf", "bin" -> isGgufValid(file) // 'bin' might be raw but often GGUF in this context? Or maybe just size check.
+        "onnx" -> true // ONNX validation is complex (protobuf), we rely on size check in caller or basic existence
+        else -> true // Fallback for unknown formats
+    }
     
-    // For now, just accept any file that exists and has reasonable size
-    // This avoids false negatives from complex format validation
-    android.util.Log.d("ModelIntegrity", "File validation passed: ${file.length()} bytes")
-    return true
+    android.util.Log.d("ModelIntegrity", "File validation result: $valid for ${file.name}")
+    return valid
 }
 
 private fun isTaskLikelyValid(file: File): Boolean {

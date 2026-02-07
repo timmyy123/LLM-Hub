@@ -19,7 +19,8 @@ fun LLMModel.localFileName(): String {
         "tflite" -> ".tflite"
         "model" -> ".model"
         "bin" -> ".bin"
-        "gguf" -> ".gguf" 
+        "gguf" -> ".gguf"
+        "onnx" -> ".onnx"
         else -> ".gguf" // Default fallback
     }
     

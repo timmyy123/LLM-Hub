@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">LLM Hub</string>
     
@@ -75,6 +75,8 @@
     <string name="acknowledgments_text">Remerciements spéciaux à Google, Meta, Microsoft, et à la communauté HuggingFace.</string>
     <string name="sd_models_credit">Les modèles de génération d\'images sont alimentés par les implémentations Stable Diffusion de xororz utilisant les backends Qualcomm QNN (NPU) et Alibaba MNN (CPU).</string>
     <string name="ai_thinking">L\'IA réfléchit...</string>
+    <string name="thinking_label">Réflexion</string>
+    <string name="thinking_tokens">Réflexion (%1$d jetons)</string>
     <string name="version_number">Version 3.4</string>
     <string name="app_version">Version de l\'App</string>
     

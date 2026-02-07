@@ -196,6 +196,53 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                 } else {
                     model.copy(isDownloaded = false, isDownloading = false, downloadProgress = 0f, downloadedBytes = 0, totalBytes = model.sizeBytes)
                 }
+            } else if (model.modelFormat == "onnx" && model.additionalFiles.isNotEmpty()) {
+                // ONNX models with additional files (tokenizer, data files, etc.)
+                val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
+                val onnxModelDir = File(modelsDir, modelDirName)
+                
+                if (onnxModelDir.exists() && onnxModelDir.isDirectory) {
+                    val files = onnxModelDir.listFiles() ?: emptyArray()
+                    val fileCount = files.filter { it.length() > 0 }.size
+                    val totalDownloaded = files.sumOf { it.length() }
+                    
+                    // Expected file count = 1 main file + additionalFiles count
+                    val expectedFileCount = 1 + model.additionalFiles.size
+                    
+                    if (fileCount > 0) {
+                        android.util.Log.d("ModelDownloadViewModel", "[loadModels:onnx] dir=${onnxModelDir.absolutePath} fileCount=$fileCount totalDownloaded=$totalDownloaded expectedFileCount=$expectedFileCount")
+                        
+                        // Check if we have all expected files
+                        val completeEnough = fileCount >= expectedFileCount
+                        
+                        if (completeEnough) {
+                            model.copy(
+                                isDownloaded = true,
+                                isDownloading = false,
+                                downloadProgress = 1f,
+                                downloadedBytes = totalDownloaded,
+                                totalBytes = totalDownloaded,
+                                sizeBytes = totalDownloaded
+                            )
+                        } else {
+                            // Partial download
+                            val progress = if (model.sizeBytes > 0) {
+                                (totalDownloaded.toFloat() / model.sizeBytes).coerceIn(0f, 0.999f)
+                            } else 0.0001f
+                            model.copy(
+                                isDownloaded = false,
+                                isDownloading = false,
+                                downloadProgress = progress,
+                                downloadedBytes = totalDownloaded,
+                                totalBytes = if (model.sizeBytes > 0) model.sizeBytes else null
+                            )
+                        }
+                    } else {
+                        model.copy(isDownloaded = false, isDownloading = false, downloadProgress = 0f, downloadedBytes = 0, totalBytes = model.sizeBytes)
+                    }
+                } else {
+                    model.copy(isDownloaded = false, isDownloading = false, downloadProgress = 0f, downloadedBytes = 0, totalBytes = model.sizeBytes)
+                }
             } else {
                 // Regular single-file models
                 val primaryFile = File(modelsDir, model.localFileName())
@@ -459,6 +506,50 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                                         downloadProgress = progress,
                                         downloadedBytes = totalDownloaded,
                                         totalBytes = model.sizeBytes
+                                    )
+                                }
+                            }
+                        } else {
+                            updateModel(model.name) { it.copy(isDownloaded = false, isDownloading = false, downloadProgress = 0f) }
+                        }
+                        return@onCompletion
+                    }
+                    
+                    // ONNX models with additional files (decoder + embed + tokenizer etc.) - files live in a subdir
+                    if (model.modelFormat == "onnx" && model.additionalFiles.isNotEmpty()) {
+                        val modelsDir = File(context.filesDir, "models")
+                        val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
+                        val onnxModelDir = File(modelsDir, modelDirName)
+                        if (onnxModelDir.exists() && onnxModelDir.isDirectory) {
+                            val files = onnxModelDir.listFiles()?.filter { it.length() > 0 } ?: emptyList()
+                            val fileCount = files.size
+                            val totalDownloaded = files.sumOf { it.length() }
+                            val expectedFileCount = 1 + model.additionalFiles.size
+                            val completeEnough = fileCount >= expectedFileCount
+                            if (completeEnough && cause == null) {
+                                android.util.Log.i("ModelDownloadViewModel", "ONNX model download completed: ${model.name}, files: $fileCount/$expectedFileCount, size: $totalDownloaded")
+                                updateModel(model.name) {
+                                    it.copy(
+                                        isDownloaded = true,
+                                        isDownloading = false,
+                                        isExtracting = false,
+                                        downloadProgress = 1f,
+                                        downloadedBytes = totalDownloaded,
+                                        totalBytes = totalDownloaded,
+                                        sizeBytes = totalDownloaded
+                                    )
+                                }
+                            } else {
+                                android.util.Log.d("ModelDownloadViewModel", "ONNX model incomplete: ${model.name}, files: $fileCount/$expectedFileCount")
+                                updateModel(model.name) {
+                                    val progress = if (model.sizeBytes > 0) (totalDownloaded.toFloat() / model.sizeBytes).coerceIn(0f, 0.999f) else 0.0001f
+                                    it.copy(
+                                        isDownloaded = false,
+                                        isDownloading = false,
+                                        isExtracting = false,
+                                        downloadProgress = progress,
+                                        downloadedBytes = totalDownloaded,
+                                        totalBytes = if (model.sizeBytes > 0) model.sizeBytes else null
                                     )
                                 }
                             }

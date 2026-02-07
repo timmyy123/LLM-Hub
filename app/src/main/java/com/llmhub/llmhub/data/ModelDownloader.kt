@@ -35,6 +35,12 @@ class ModelDownloader(
     fun downloadModel(model: LLMModel): Flow<DownloadStatus> = flow {
         Log.i(TAG, "Preparing to download model: ${model.name} from ${model.url}")
         
+        // Handle ONNX models with additional files (tokenizer, data files)
+        if (model.modelFormat == "onnx" && model.additionalFiles.isNotEmpty()) {
+            downloadOnnxModel(model).collect { emit(it) }
+            return@flow
+        }
+        
         // Handle image_generator models specially (multi-file format)
         if (model.modelFormat == "image_generator") {
             downloadImageGeneratorModel(model).collect { emit(it) }
@@ -108,6 +114,15 @@ class ModelDownloader(
         }
 
         val responseCode = connection.responseCode
+        
+        // HTTP 416 = "Range Not Satisfiable" - file is already complete
+        if (responseCode == 416) {
+            connection.disconnect()
+            Log.i(TAG, "HTTP 416: File already complete at $downloadedBytes bytes")
+            emit(DownloadStatus(downloadedBytes, downloadedBytes, 0))
+            return@flow
+        }
+        
         if (responseCode !in 200..299 && responseCode != 206) {
             connection.disconnect()
             throw RuntimeException("Download failed with HTTP $responseCode at final URL ${connection.url}")
@@ -517,5 +532,138 @@ class ModelDownloader(
         // Final emit
         emit(DownloadStatus(model.sizeBytes, model.sizeBytes, 0))
         Log.i(TAG, "Completed downloading and extracting ${model.name}")
+    }.flowOn(Dispatchers.IO)
+    
+    /**
+     * Downloads ONNX models with additional files (tokenizer.json, data files, etc.)
+     * All files are downloaded to the same directory as the main model file.
+     */
+    private fun downloadOnnxModel(model: LLMModel): Flow<DownloadStatus> = flow {
+        Log.i(TAG, "Downloading ONNX model: ${model.name} with ${model.additionalFiles.size} additional files")
+        
+        val modelsDir = File(context.filesDir, "models")
+        if (!modelsDir.exists()) {
+            modelsDir.mkdirs()
+        }
+        
+        // Create model-specific subdirectory for ONNX models using sanitized model name
+        val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
+        val modelDir = File(modelsDir, modelDirName)
+        if (!modelDir.exists()) {
+            modelDir.mkdirs()
+            Log.d(TAG, "Created ONNX model directory: ${modelDir.absolutePath}")
+        }
+        
+        // Helper to extract clean filename from URL (strip query params)
+        fun extractFileName(url: String): String {
+            return url.substringAfterLast("/").substringBefore("?")
+        }
+        
+        // Build list of all files to download: main model + additional files
+        val baseUrl = model.url.substringBefore("?").substringBeforeLast("/") + "/"
+        val allFiles = mutableListOf<Pair<String, String>>() // (url, localFileName)
+        
+        // Add main model file
+        val mainFileName = extractFileName(model.url)
+        allFiles.add(model.url to mainFileName)
+        
+        // Add additional files (they use the same base URL)
+        for (additionalFile in model.additionalFiles) {
+            val fileName = extractFileName(additionalFile)
+            val fileUrl = if (additionalFile.startsWith("http")) additionalFile else baseUrl + additionalFile
+            allFiles.add(fileUrl to fileName)
+        }
+        
+        Log.i(TAG, "Total files to download: ${allFiles.size}")
+        
+        // Check which files already exist
+        var totalDownloaded = 0L
+        var filesComplete = 0
+        for ((_, fileName) in allFiles) {
+            val file = File(modelDir, fileName)
+            if (file.exists() && file.length() > 0) {
+                totalDownloaded += file.length()
+                filesComplete++
+            }
+        }
+        
+        // If all files exist, we're done
+        if (filesComplete == allFiles.size) {
+            Log.i(TAG, "All ${allFiles.size} ONNX files already downloaded! Total size: $totalDownloaded bytes")
+            emit(DownloadStatus(totalDownloaded, totalDownloaded, 0))
+            return@flow
+        }
+        
+        Log.i(TAG, "Found $filesComplete/${allFiles.size} existing files, downloading remaining...")
+        
+        val totalSize = model.sizeBytes
+        var lastEmitTime = System.currentTimeMillis()
+        var bytesSinceLastEmit = 0L
+        var currentFileIndex = 0
+        
+        for ((fileUrl, fileName) in allFiles) {
+            currentFileIndex++
+            val targetFile = File(modelDir, fileName)
+            
+            // Skip if file already exists
+            if (targetFile.exists() && targetFile.length() > 0) {
+                Log.d(TAG, "Skipping existing file ($currentFileIndex/${allFiles.size}): $fileName")
+                continue
+            }
+            
+            Log.d(TAG, "Downloading ($currentFileIndex/${allFiles.size}): $fileName from $fileUrl")
+            
+            val url = URL(fileUrl)
+            val connection = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                connectTimeout = 15_000
+                readTimeout = 60_000
+                instanceFollowRedirects = true
+                setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                if (!hfToken.isNullOrBlank()) {
+                    setRequestProperty("Authorization", "Bearer $hfToken")
+                }
+            }
+            
+            val responseCode = connection.responseCode
+            if (responseCode !in 200..299) {
+                connection.disconnect()
+                throw RuntimeException("Download failed for $fileName with HTTP $responseCode")
+            }
+            
+            try {
+                connection.inputStream.use { input ->
+                    targetFile.outputStream().use { output ->
+                        val buffer = ByteArray(8192)
+                        var bytesRead: Int
+                        while (input.read(buffer).also { bytesRead = it } != -1) {
+                            output.write(buffer, 0, bytesRead)
+                            totalDownloaded += bytesRead
+                            bytesSinceLastEmit += bytesRead
+                            
+                            // Emit progress every 500ms
+                            val currentTime = System.currentTimeMillis()
+                            val elapsed = currentTime - lastEmitTime
+                            if (elapsed > 500) {
+                                val speed = if (elapsed > 0) (bytesSinceLastEmit * 1000 / elapsed) else 0L
+                                emit(DownloadStatus(totalDownloaded, totalSize, speed))
+                                lastEmitTime = currentTime
+                                bytesSinceLastEmit = 0L
+                            }
+                        }
+                    }
+                }
+                Log.d(TAG, "Downloaded ($currentFileIndex/${allFiles.size}): $fileName (${targetFile.length()} bytes)")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to download $fileName: ${e.message}")
+                throw e
+            } finally {
+                connection.disconnect()
+            }
+        }
+        
+        // Final emit
+        emit(DownloadStatus(totalDownloaded, totalDownloaded, 0))
+        Log.i(TAG, "Completed downloading all ${allFiles.size} files for ONNX model ${model.name}")
     }.flowOn(Dispatchers.IO)
 }
