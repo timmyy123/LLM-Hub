@@ -629,28 +629,53 @@ class ChatViewModel(
             } catch (e: Exception) {
                 // Model not in assets, check files directory
                 val modelsDir = File(context.filesDir, "models")
-                val primaryFile = File(modelsDir, model.localFileName())
-                val legacyFile = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
+                
+                // Check for ONNX models with additional files first
+                if (model.modelFormat == "onnx" && model.additionalFiles.isNotEmpty()) {
+                    val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
+                    val onnxModelDir = File(modelsDir, modelDirName)
+                    
+                    if (onnxModelDir.exists() && onnxModelDir.isDirectory) {
+                        val files = onnxModelDir.listFiles() ?: emptyArray()
+                        val fileCount = files.filter { it.length() > 0 }.size
+                        val expectedFileCount = 1 + model.additionalFiles.size
+                        val totalSize = files.sumOf { it.length() }
+                        
+                        if (fileCount >= expectedFileCount) {
+                            isAvailable = true
+                            actualSize = totalSize
+                            Log.d("ChatViewModel", "Found ONNX model in ${onnxModelDir.absolutePath} with $fileCount files (${totalSize / (1024*1024)} MB)")
+                        } else {
+                            Log.d("ChatViewModel", "ONNX model incomplete: only $fileCount/$expectedFileCount files in ${onnxModelDir.absolutePath}")
+                        }
+                    }
+                } else {
+                    // Regular single-file models
+                    val primaryFile = File(modelsDir, model.localFileName())
+                    val legacyFile = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
 
-                // Migrate legacy file if needed
-                if (!primaryFile.exists() && legacyFile.exists()) {
-                    legacyFile.renameTo(primaryFile)
-                }
+                    // Migrate legacy file if needed
+                    if (!primaryFile.exists() && legacyFile.exists()) {
+                        legacyFile.renameTo(primaryFile)
+                    }
 
-                if (primaryFile.exists()) {
-                    // Only treat as available if passes integrity checks and size is close to expected when known
-                    val sizeKnown = model.sizeBytes > 0
-                    val sizeOk = if (sizeKnown) primaryFile.length() >= (model.sizeBytes * 0.98).toLong() else primaryFile.length() >= 10L * 1024 * 1024
-                    val valid = isModelFileValid(primaryFile, model.modelFormat)
-                    if (sizeOk && valid) {
-                        isAvailable = true
-                        actualSize = primaryFile.length()
-                        Log.d("ChatViewModel", "Found VALID model in files: ${primaryFile.absolutePath} (${actualSize / (1024*1024)} MB)")
-                    } else {
-                        Log.d("ChatViewModel", "Ignoring incomplete/invalid model file: ${primaryFile.absolutePath} sizeOk=$sizeOk valid=$valid")
+                    if (primaryFile.exists()) {
+                        // Only treat as available if passes integrity checks
+                        // We rely on isModelFileValid for format checking (GGUF magic, ZIP structure)
+                        // Relaxing strict size check to avoid issues where hardcoded metadata size slightly differs from actual file
+                        val sizeOk = primaryFile.length() >= 10L * 1024 * 1024 // At least 10MB
+                        val valid = isModelFileValid(primaryFile, model.modelFormat)
+                        if (sizeOk && valid) {
+                            isAvailable = true
+                            actualSize = primaryFile.length()
+                            Log.d("ChatViewModel", "Found VALID model in files: ${primaryFile.absolutePath} (${actualSize / (1024*1024)} MB)")
+                        } else {
+                            Log.d("ChatViewModel", "Ignoring incomplete/invalid model file: ${primaryFile.absolutePath} sizeOk=$sizeOk valid=$valid")
+                        }
+                        }
                     }
                 }
-            }
+
 
             if (isAvailable) {
                 model.copy(isDownloaded = true, sizeBytes = actualSize)
@@ -998,7 +1023,7 @@ class ChatViewModel(
                 // Ensure the model is loaded in the inference service before generating
                 try {
                     _isLoadingModel.value = true
-                    inferenceService.loadModel(currentModel!!)
+                    inferenceService.loadModel(currentModel!!, _selectedBackend.value)
                     // Sync the currently loaded model state
                     syncCurrentlyLoadedModel()
                     _isLoadingModel.value = false
@@ -1061,7 +1086,7 @@ class ChatViewModel(
                                 _isLoadingModel.value = true
                                 
                                 // Ensure model is loaded first
-                                inferenceService.loadModel(currentModel!!)
+                                inferenceService.loadModel(currentModel!!, _selectedBackend.value)
                                 
                                 _isLoadingModel.value = false
                                 
@@ -1569,8 +1594,8 @@ class ChatViewModel(
                             Log.d("ChatViewModel", "Generation was cancelled by user.")
                             Log.d("ChatViewModel", "About to call finalizeMessage for cancellation (raw=${time}ms, rag=${ragSearchTimeMs}ms, net=${netTime}ms)")
                         } else {
-                            // ERROR: MediaPipe or other error
-                            Log.e("ChatViewModel", "MediaPipe generation error: ${e.message}", e)
+                            // ERROR: Model generation error (MediaPipe, ONNX, etc.)
+                            Log.e("ChatViewModel", "Model generation error: ${e.message}", e)
                             Log.d("ChatViewModel", "About to call finalizeMessage for error")
                         }
                         
@@ -1582,8 +1607,8 @@ class ChatViewModel(
                                     handedOffToAutoRegenerate = true
                                     autoRegenerateAfterNoResponse(context, chatId, placeholderId)
                                     return@withContext
-                                } catch (e: Exception) {
-                                    Log.w("ChatViewModel", "Auto-regenerate (error path) failed: ${e.message}")
+                                } catch (e2: Exception) {
+                                    Log.w("ChatViewModel", "Auto-regenerate (error path) failed: ${e2.message}")
                                     val fallback = context.getString(R.string.no_response_produced)
                                     repository.updateMessageContent(placeholderId, fallback.trimEnd())
                                     val streamDurationMs = ((if (lastChunkAt > 0) lastChunkAt else System.currentTimeMillis()) - (if (firstChunkAt > 0) firstChunkAt else generationStartTime)).coerceAtLeast(1L)
@@ -1708,7 +1733,7 @@ class ChatViewModel(
         _isLoading.value = true
         isGenerating = true
         // Ensure model is loaded
-        inferenceService.loadModel(model)
+        inferenceService.loadModel(model, _selectedBackend.value)
 
         // Start a new generation streaming into the same placeholder with proper cancellation and TTS support
         val webSearchEnabled = try { themePreferences.webSearchEnabled.first() } catch (_: Exception) { false }
@@ -2019,7 +2044,7 @@ class ChatViewModel(
             // Pre-load the model when switching
             try {
                 // Trigger model loading without generating content
-                inferenceService.loadModel(newModel)
+                inferenceService.loadModel(newModel, _selectedBackend.value)
                 // Sync the currently loaded model state
                 syncCurrentlyLoadedModel()
                 // Set the first-generation guard
@@ -2049,7 +2074,7 @@ class ChatViewModel(
                                 delay(300)
                                 inferenceService.onCleared()
                                 delay(300)
-                                inferenceService.loadModel(newModel)
+                                inferenceService.loadModel(newModel, _selectedBackend.value)
                                 Log.d("ChatViewModel", "Force recreated session after reset failure")
                             } catch (recreateException: Exception) {
                                 Log.w("ChatViewModel", "Force recreation also failed: ${recreateException.message}")
@@ -2340,14 +2365,36 @@ class ChatViewModel(
         }
     }
 
+    /**
+     * Unloads the model from the inference engine only, without clearing the selected model.
+     * Used when leaving the chat screen so memory is freed but the user's model selection is kept.
+     * When the user returns and sends a message, the model will be loaded again.
+     */
+    fun unloadModelFromInferenceOnly() {
+        viewModelScope.launch {
+            try {
+                generationJob?.let { job ->
+                    job.cancel()
+                    try {
+                        job.join()
+                    } catch (_: CancellationException) { }
+                    generationJob = null
+                }
+                inferenceService.unloadModel()
+                _currentlyLoadedModel.value = null
+                Log.d("ChatViewModel", "Model unloaded from inference (selection kept)")
+            } catch (e: Exception) {
+                Log.w("ChatViewModel", "Failed to unload model from inference: ${e.message}")
+            }
+        }
+    }
+
     override fun onCleared() {
         viewModelScope.launch {
-            // Clean up resources
-            currentChatId?.let { chatId ->
-                // Session cleanup is now handled by the inference service
-                Log.d("ChatViewModel", "Chat session cleanup delegated to inference service")
-            }
-            inferenceService.onCleared()
+            // Clean up RAG and TTS only. Do NOT call inferenceService.onCleared() here:
+            // the inference service is app-scoped and the ViewModel is keyed by chatId,
+            // so onCleared() runs when switching chats (new ViewModel for new chat).
+            // Unloading here would force ONNX (and other backends) to reload on every new chat.
             ragServiceManager.cleanup() // Clean up RAG service
             ttsService.shutdown() // Clean up TTS service
         }
@@ -3083,7 +3130,7 @@ class ChatViewModel(
                 
                 // Ensure the model is loaded
                 try {
-                    inferenceService.loadModel(currentModel!!)
+                    inferenceService.loadModel(currentModel!!, _selectedBackend.value)
                     // Sync the currently loaded model state
                     syncCurrentlyLoadedModel()
                 } catch (e: Exception) {
@@ -3111,7 +3158,7 @@ class ChatViewModel(
                         delay(200)
                         inferenceService.onCleared()
                         delay(500)
-                        inferenceService.loadModel(currentModel!!)
+                        inferenceService.loadModel(currentModel!!, _selectedBackend.value)
                         delay(200)
                         Log.d("ChatViewModel", "Force recreated session for regeneration after reset failure")
                     } catch (recreateException: Exception) {
@@ -3183,7 +3230,7 @@ class ChatViewModel(
                         
                         // Ensure the model is freshly loaded before regeneration
                         _isLoadingModel.value = true
-                        inferenceService.loadModel(currentModel!!)
+                        inferenceService.loadModel(currentModel!!, _selectedBackend.value)
                         _isLoadingModel.value = false
                         
                         // Get web search preference
@@ -3326,7 +3373,7 @@ class ChatViewModel(
 
             // Ensure model is ready
             try {
-                inferenceService.loadModel(currentModel!!)
+                inferenceService.loadModel(currentModel!!, _selectedBackend.value)
                 syncCurrentlyLoadedModel()
             } catch (e: Exception) {
                 Log.w("ChatViewModel", "Failed to ensure model is loaded for edit+resend: ${e.message}")
@@ -3345,7 +3392,7 @@ class ChatViewModel(
                     delay(200)
                     inferenceService.onCleared()
                     delay(500)
-                    inferenceService.loadModel(currentModel!!)
+                    inferenceService.loadModel(currentModel!!, _selectedBackend.value)
                     delay(200)
                 } catch (re: Exception) {
                     repository.addMessage(chatId, "Failed to prepare session. Try switching models.", isFromUser = false)
@@ -3378,7 +3425,7 @@ class ChatViewModel(
                     }
 
                     _isLoadingModel.value = true
-                    inferenceService.loadModel(currentModel!!)
+                    inferenceService.loadModel(currentModel!!, _selectedBackend.value)
                     _isLoadingModel.value = false
 
                     val webSearchEnabled = runBlocking { themePreferences.webSearchEnabled.first() }

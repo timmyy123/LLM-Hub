@@ -26,7 +26,6 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -88,33 +87,7 @@ fun ChatScreen(
     )
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    var userTriggeredOpen by remember { mutableStateOf(false) }
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
 
-    // Note: drawer state is now persisted via rememberSaveable in navigation,
-    // so we no longer need to force-close on rotation. The drawer stays closed
-    // if it was closed before rotation.
-
-    // Instrument drawer state for debugging: log transitions so we can see when it opens
-    var previousDrawerValue by remember { mutableStateOf(drawerState.currentValue) }
-    LaunchedEffect(drawerState) {
-        snapshotFlow { drawerState.currentValue }
-            .collect { value ->
-                if (value != previousDrawerValue) {
-                    Log.d("ChatScreen", "Drawer state changed: $previousDrawerValue -> $value; isLandscape=$isLandscape userTriggered=$userTriggeredOpen")
-                    // If the drawer opened but there was no user trigger recently, close it immediately
-                    if (value == androidx.compose.material3.DrawerValue.Open && !userTriggeredOpen) {
-                        Log.d("ChatScreen", "Auto-closing drawer because open wasn't user-triggered")
-                        coroutineScope.launch {
-                            try { drawerState.close() } catch (_: Exception) { }
-                        }
-                    }
-                    previousDrawerValue = value
-                }
-            }
-    }
-    
     val messages by viewModel.messages.collectAsState()
     val currentChat by viewModel.currentChat.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -177,14 +150,10 @@ fun ChatScreen(
         viewModel.syncCurrentlyLoadedModel()
     }
     
-    // Cleanup on dispose - unload model to free memory
-    // Note: TTS service is owned by ViewModel and will be cleaned up there
-    DisposableEffect(Unit) {
-        onDispose {
-            viewModel.unloadModel()
-        }
-    }
-    
+    // Unload model when leaving the chat screen to free memory. Selection is kept so
+    // when the user returns, the same model can be loaded again on next send.
+    // Unload when leaving Chat is handled in LlmHubNavigation (route observer); no unload on dispose so new chat doesn't reload.
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -246,7 +215,8 @@ fun ChatScreen(
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis
                             )
-                            (selectedModel ?: currentlyLoadedModel)?.let { model ->
+                            // Show model in header only when one is actually loaded (not just selected).
+                            currentlyLoadedModel?.let { model ->
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
@@ -273,6 +243,15 @@ fun ChatScreen(
                                         Icon(
                                             Icons.Default.Mic,
                                             contentDescription = "Audio enabled",
+                                            modifier = Modifier.size(12.dp),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                    if (currentModel?.name?.contains("Thinking", ignoreCase = true) == true) {
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Icon(
+                                            Icons.Default.Psychology,
+                                            contentDescription = stringResource(R.string.thinking_label),
                                             modifier = Modifier.size(12.dp),
                                             tint = MaterialTheme.colorScheme.primary
                                         )
@@ -313,16 +292,7 @@ fun ChatScreen(
                     },
                     navigationIcon = {
                         IconButton(onClick = {
-                            coroutineScope.launch {
-                                userTriggeredOpen = true
-                                try {
-                                    drawerState.open()
-                                } finally {
-                                    // keep the flag true briefly so the open handler can observe it
-                                    kotlinx.coroutines.delay(800)
-                                    userTriggeredOpen = false
-                                }
-                            }
+                            coroutineScope.launch { drawerState.open() }
                         }) {
                             Icon(
                                 imageVector = Icons.Default.Menu,
@@ -595,7 +565,7 @@ private fun WelcomeMessage(
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                         StatusChip(
                             text = currentModel,
-                            icon = Icons.Default.Psychology,
+                            icon = Icons.Default.Link,
                             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                             contentColor = MaterialTheme.colorScheme.onTertiaryContainer
                         )

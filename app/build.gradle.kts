@@ -205,6 +205,9 @@ dependencies {
     // Markdown parser for extracting code blocks
     implementation("com.vladsch.flexmark:flexmark-all:0.64.8")
 
+    // ONNX Runtime for Android - supports ONNX model inference
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.24.1")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

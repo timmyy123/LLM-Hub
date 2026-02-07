@@ -53,6 +53,8 @@ interface InferenceService {
     suspend fun resetChatSession(chatId: String)
     suspend fun onCleared()
     fun getCurrentlyLoadedModel(): LLMModel?
+    /** Backend the current session was created with (GPU/CPU); null if unknown or not applicable. */
+    fun getCurrentlyLoadedBackend(): LlmInference.Backend?
     fun getMemoryWarningForImages(images: List<Bitmap>): String?
     fun wasSessionRecentlyReset(chatId: String): Boolean
     // Allow runtime update of generation parameters (from UI dialog)
@@ -1321,6 +1323,10 @@ class MediaPipeInferenceService(private val applicationContext: Context) : Infer
 
     override fun getCurrentlyLoadedModel(): LLMModel? {
         return currentModel
+    }
+
+    override fun getCurrentlyLoadedBackend(): LlmInference.Backend? {
+        return currentBackend
     }
     
     override fun isVisionCurrentlyDisabled(): Boolean {

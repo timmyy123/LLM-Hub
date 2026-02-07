@@ -75,6 +75,8 @@
     <string name="acknowledgments_text">شكر خاص إلى Google وMeta وMicrosoft ومجتمع HuggingFace لتقديم نماذج LLM المذهلة التي تدعم هذا التطبيق. يعتمد هذا المشروع أيضًا على عمل مجتمع مطوري أندرويد ونظام المصادر المفتوحة الرائع.</string>
     <string name="sd_models_credit">تعمل نماذج إنشاء الصور بواسطة تطبيقات Stable Diffusion من xororz باستخدام واجهات Qualcomm QNN (NPU) وAlibaba MNN (CPU).</string>
     <string name="ai_thinking">الذكاء الاصطناعي يفكر...</string>
+    <string name="thinking_label">التفكير</string>
+    <string name="thinking_tokens">التفكير (%1$d رموز)</string>
     <string name="version_number">الإصدار 3.4</string>
     <string name="app_version">إصدار التطبيق</string>
 

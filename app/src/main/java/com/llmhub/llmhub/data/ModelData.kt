@@ -141,6 +141,131 @@ object ModelData {
             modelFormat = "litertlm"
         ),
 
+        // LFM-2.5 1.2B Instruct Models (ONNX) - Q4 and Q8 variants (sizeBytes = sum of all downloaded files from HF)
+        LLMModel(
+            name = "LFM-2.5 1.2B Instruct (ONNX Q4)",
+            description = "LiquidAI's 1.2B instruction model in ONNX format. Q4 quantization for balanced quality and size. 128k context. Requires downloading 2 files.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/onnx/model_q4.onnx?download=true",
+            category = "text",
+            sizeBytes = 1224116481L, // main + onnx_data + tokenizer.json + tokenizer_config.json (HF API)
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 4),
+            contextWindowSize = 128000,
+            modelFormat = "onnx",
+            additionalFiles = listOf(
+                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/onnx/model_q4.onnx_data?download=true",
+                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/tokenizer.json?download=true",
+                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/tokenizer_config.json?download=true"
+            )
+        ),
+        LLMModel(
+            name = "LFM-2.5 1.2B Instruct (ONNX Q8)",
+            description = "LiquidAI's 1.2B instruction model in ONNX format. Q8 quantization for higher quality. 128k context. Requires downloading 2 files.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/onnx/model_q8.onnx?download=true",
+            category = "text",
+            sizeBytes = 1772844567L, // main + onnx_data + tokenizer (HF API)
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 5),
+            contextWindowSize = 128000,
+            modelFormat = "onnx",
+            additionalFiles = listOf(
+                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/onnx/model_q8.onnx_data?download=true",
+                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/tokenizer.json?download=true",
+                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/tokenizer_config.json?download=true"
+            )
+        ),
+
+        // LFM-2.5 1.2B Thinking Models (ONNX) - Q4 and Q8 variants (sizeBytes = sum of all downloaded files from HF)
+        LLMModel(
+            name = "LFM-2.5 1.2B Thinking (ONNX Q4)",
+            description = "LiquidAI's 1.2B reasoning model in ONNX format. Q4 quantization for balanced quality and size. 128k context. Requires downloading 2 files.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/onnx/model_q4.onnx?download=true",
+            category = "text",
+            sizeBytes = 1224116481L, // main + onnx_data + tokenizer (HF API; Thinking repo same layout)
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 4),
+            contextWindowSize = 128000,
+            modelFormat = "onnx",
+            additionalFiles = listOf(
+                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/onnx/model_q4.onnx_data?download=true",
+                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/tokenizer.json?download=true",
+                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/tokenizer_config.json?download=true"
+            )
+        ),
+        LLMModel(
+            name = "LFM-2.5 1.2B Thinking (ONNX Q8)",
+            description = "LiquidAI's 1.2B reasoning model in ONNX format. Q8 quantization for higher quality. 128k context. Requires downloading 2 files.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/onnx/model_q8.onnx?download=true",
+            category = "text",
+            sizeBytes = 1772844567L, // main + onnx_data + tokenizer (HF API)
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 5),
+            contextWindowSize = 128000,
+            modelFormat = "onnx",
+            additionalFiles = listOf(
+                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/onnx/model_q8.onnx_data?download=true",
+                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/tokenizer.json?download=true",
+                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/tokenizer_config.json?download=true"
+            )
+        ),
+
+        // Ministral-3 3B Instruct Models (ONNX) - Q4/Q4F16 (sizeBytes = sum of all downloaded files from HF)
+        LLMModel(
+            name = "Ministral-3 3B Instruct (ONNX Q4)",
+            description = "MistralAI's 3B instruction model in ONNX format. Q4 quantization - recommended for mobile. 32k context. Supports vision. Requires downloading multiple files.",
+            url = "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-ONNX/resolve/main/onnx/decoder_model_merged_q4.onnx?download=true",
+            category = "multimodal",
+            sizeBytes = 3367933870L, // decoder_q4 + decoder_data x2 + embed_fp16 + vision_q4 + config + tokenizer (HF API)
+            source = "MistralAI",
+            supportsVision = true,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 32768,
+            modelFormat = "onnx",
+            additionalFiles = listOf(
+                "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-ONNX/resolve/main/onnx/decoder_model_merged_q4.onnx_data?download=true",
+                "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-ONNX/resolve/main/onnx/decoder_model_merged_q4.onnx_data_1?download=true",
+                "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-ONNX/resolve/main/onnx/embed_tokens_fp16.onnx?download=true",
+                "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-ONNX/resolve/main/onnx/embed_tokens_fp16.onnx_data?download=true",
+                "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-ONNX/resolve/main/onnx/vision_encoder_q4.onnx?download=true",
+                "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-ONNX/resolve/main/onnx/vision_encoder_q4.onnx_data?download=true",
+                "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-ONNX/resolve/main/config.json?download=true",
+                "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-ONNX/resolve/main/tokenizer.json?download=true",
+                "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-ONNX/resolve/main/tokenizer_config.json?download=true"
+            )
+        ),
+        LLMModel(
+            name = "Ministral-3 3B Instruct (ONNX Q4F16)",
+            description = "MistralAI's 3B instruction model in ONNX format. Q4F16 mixed precision - best quality/size balance. 32k context. Supports vision.",
+            url = "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-ONNX/resolve/main/onnx/decoder_model_merged_q4f16.onnx?download=true",
+            category = "multimodal",
+            sizeBytes = 3007199181L, // decoder_q4f16 + decoder_data + embed_fp16 + vision_q4 + config + tokenizer (HF API)
+            source = "MistralAI",
+            supportsVision = true,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 32768,
+            modelFormat = "onnx",
+            additionalFiles = listOf(
+                "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-ONNX/resolve/main/onnx/decoder_model_merged_q4f16.onnx_data?download=true",
+                "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-ONNX/resolve/main/onnx/embed_tokens_fp16.onnx?download=true",
+                "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-ONNX/resolve/main/onnx/embed_tokens_fp16.onnx_data?download=true",
+                "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-ONNX/resolve/main/onnx/vision_encoder_q4.onnx?download=true",
+                "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-ONNX/resolve/main/onnx/vision_encoder_q4.onnx_data?download=true",
+                "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-ONNX/resolve/main/config.json?download=true",
+                "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-ONNX/resolve/main/tokenizer.json?download=true",
+                "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-ONNX/resolve/main/tokenizer_config.json?download=true"
+            )
+        ),
+
         // Gemma-3n Models (Multimodal - Text + Vision + Audio)
         LLMModel(
             name = "Gemma-3n E2B",
