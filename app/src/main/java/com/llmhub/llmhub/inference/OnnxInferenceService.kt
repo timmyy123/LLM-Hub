@@ -27,6 +27,10 @@ import ai.onnxruntime.providers.NNAPIFlags
 import javax.inject.Singleton
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.llmhub.llmhub.websearch.WebSearchService
+import com.llmhub.llmhub.websearch.DuckDuckGoSearchService
+import com.llmhub.llmhub.websearch.SearchIntentDetector
+import com.llmhub.llmhub.R
 
 @Singleton
 class OnnxInferenceService @Inject constructor(
@@ -52,6 +56,9 @@ class OnnxInferenceService @Inject constructor(
     private var overrideTopP: Float? = 0.95f
     private var overrideTemperature: Float? = 0.7f
     
+    // Web search service for enhanced responses
+    private val webSearchService: WebSearchService = DuckDuckGoSearchService()
+
     @Volatile
     private var shouldStop = false
     private val mutex = Mutex()
@@ -321,7 +328,29 @@ class OnnxInferenceService @Inject constructor(
                     val instBody = if (lastUser.isNotEmpty()) lastUser else prompt.trim()
                     "[INST]\n$instBody\n[/INST]\n"
                 } else {
-                    "<|startoftext|><|im_start|>user\n$prompt<|im_end|>\n<|im_start|>assistant\n"
+                    // ChatML formatting. If prompt uses app's internal transcript format, convert to proper ChatML turns.
+                    // This prevents models from getting confused by "user:"/"assistant:" markers inside a single user turn.
+                    if (prompt.contains("user: ") && (prompt.contains("\nassistant:") || prompt.endsWith("assistant:"))) {
+                        var p = prompt
+                        // 1. Start interaction (First User Turn)
+                        if (p.startsWith("user: ")) {
+                            p = p.replaceFirst("user: ", "<|im_start|>user\n")
+                        }
+                        // 2. Middle Interactions (User Turn starts after Assistant Turn ends)
+                        // The \n\n separator from ChatViewModel indicates the end of the previous assistant response.
+                        // We close the previous Assistant turn and open the new User turn.
+                        p = p.replace("\n\nuser: ", "<|im_end|>\n<|im_start|>user\n")
+                        
+                        // 3. Assistant Turns (and closing of User Turns)
+                        // Matches "\nassistant: " (with space) or "\nassistant:" (no space/end of prompt)
+                        // We close the current User turn and open the new Assistant turn.
+                        p = p.replace(Regex("\nassistant: ?"), "<|im_end|>\n<|im_start|>assistant\n")
+                        
+                        "<|startoftext|>" + p
+                    } else {
+                        // Fallback: Wrap entire prompt in a single user turn (old behavior)
+                        "<|startoftext|><|im_start|>user\n$prompt<|im_end|>\n<|im_start|>assistant\n"
+                    }
                 }
                 
                 // CRITICAL: Check if tokenizer loaded. If not, ONNX models cannot work properly
@@ -653,28 +682,116 @@ class OnnxInferenceService @Inject constructor(
     override suspend fun generateResponseStreamWithSession(
         prompt: String, model: LLMModel, chatId: String,
         images: List<Bitmap>, audioData: ByteArray?, webSearchEnabled: Boolean
-    ): Flow<String> {
-        if (images.isEmpty() || ortVisionSession == null || imageTokenIndex == null ||
-            !model.name.contains("Ministral", ignoreCase = true) && !model.name.contains("Mistral", ignoreCase = true)) {
-            return generateResponseStream(prompt, model)
-        }
+    ): Flow<String> = callbackFlow {
         ensureModelLoaded(model)
-        shouldStop = false
-        return callbackFlow {
-            val generatorJob = launch(Dispatchers.IO) {
-                try {
-                    runGenerationWithVision(prompt, model, images, this@callbackFlow::trySend)
-                    close()
-                } catch (e: Exception) {
-                    Log.e(TAG, "Vision generation error", e)
-                    close(e)
+        
+        // Extract the current user message from the prompt for web search detection
+        val currentUserMessage = extractCurrentUserMessage(prompt)
+        val needsWebSearch = webSearchEnabled && SearchIntentDetector.needsWebSearch(currentUserMessage)
+        var enhancedPrompt = prompt
+        
+        if (needsWebSearch) {
+            Log.d(TAG, "Web search detected for chat $chatId. Current message: '$currentUserMessage'")
+            trySend(context.getString(R.string.web_searching))
+            
+            try {
+                val searchQuery = SearchIntentDetector.extractSearchQuery(currentUserMessage)
+                Log.d(TAG, "Extracted search query: '$searchQuery'")
+                
+                val searchResults = webSearchService.search(searchQuery, maxResults = 5)
+                
+                if (searchResults.isNotEmpty()) {
+                    Log.d(TAG, "Found ${searchResults.size} search results")
+                    trySend(context.getString(R.string.web_search_found_results, searchResults.size))
+                    
+                    // Create enhanced prompt with search results
+                    val resultsText = searchResults.joinToString("\n\n") { result ->
+                        "SOURCE: ${result.source}\nTITLE: ${result.title}\nCONTENT: ${result.snippet}\n---"
+                    }
+                    
+                    // Extract just the current user question for better clarity
+                    enhancedPrompt = """
+                        CURRENT WEB SEARCH RESULTS:
+                        $resultsText
+                        
+                        Based on the above current web search results, please answer the user's question: "$currentUserMessage"
+                        
+                        IMPORTANT INSTRUCTIONS:
+                        - Use ONLY the information from the web search results above
+                        - If the search results contain the answer, provide a clear and specific response
+                        - If the search results don't contain enough information, say so clearly
+                        - For dates and events, be specific based on what you find in the results
+                        - Do not make up information not found in the search results
+                        
+                        Answer the question directly and clearly:
+                    """.trimIndent()
+                    
+                    Log.d(TAG, "Enhanced prompt created with ${searchResults.size} search results")
+                } else {
+                    Log.w(TAG, "No search results found for query: '$searchQuery'")
+                    trySend(context.getString(R.string.web_search_no_results) + "\n\n")
+                    // Continue with original prompt
                 }
+            } catch (searchException: Exception) {
+                Log.e(TAG, "Web search failed for chat $chatId", searchException)
+                trySend(context.getString(R.string.web_search_failed, searchException.message ?: "Unknown error") + "\n\n")
+                // Continue with original prompt
             }
-            awaitClose {
-                shouldStop = true
-                generatorJob.cancel()
+        }
+        
+        // Determine if we should use vision or standard text generation
+        // Vision pipeline is used if:
+        // 1. Any images are provided
+        // 2. Vision session is loaded (means model supports vision and it initialized correctly)
+        val useVision = images.isNotEmpty() && ortVisionSession != null
+        
+        val generatorJob = launch(Dispatchers.IO) {
+            try {
+                if (useVision) {
+                    runGenerationWithVision(enhancedPrompt, model, images, this@callbackFlow::trySend)
+                } else {
+                    // Collect form the standard flow logic which yields tokens
+                    generateResponseStream(enhancedPrompt, model).collect { token ->
+                        trySend(token)
+                    }
+                }
+                close()
+            } catch (e: Exception) {
+                Log.e(TAG, "Generation error", e)
+                close(e)
             }
-        }.flowOn(Dispatchers.IO)
+        }
+        
+        awaitClose {
+            shouldStop = true
+            generatorJob.cancel()
+        }
+    }.flowOn(Dispatchers.IO)
+
+    private fun extractCurrentUserMessage(prompt: String): String {
+        val lines = prompt.trim().split('\n')
+        
+        // Look for the last user message in the conversation
+        for (i in lines.lastIndex downTo 0) {
+            val line = lines[i].trim()
+            if (line.startsWith("user:")) {
+                return line.removePrefix("user:").trim()
+            }
+        }
+        
+        // If no "user:" prefix found, check if the entire prompt is just a user message
+        if (!prompt.contains("assistant:") && !prompt.contains("user:")) {
+            return prompt.trim()
+        }
+        
+        // Fallback: return the last non-empty line that doesn't start with "assistant:"
+        for (i in lines.lastIndex downTo 0) {
+            val line = lines[i].trim()
+            if (line.isNotEmpty() && !line.startsWith("assistant:")) {
+                return line
+            }
+        }
+        return prompt.trim()
     }
 
     /**
@@ -890,7 +1007,7 @@ class OnnxInferenceService @Inject constructor(
     override fun isVisionCurrentlyDisabled(): Boolean = (ortVisionSession == null)
     override fun isAudioCurrentlyDisabled(): Boolean = true
     override fun isGpuBackendEnabled(): Boolean = currentPreferredBackend == LlmInference.Backend.GPU
-    override fun getEffectiveMaxTokens(model: LLMModel): Int = overrideMaxTokens ?: model.contextWindowSize.coerceAtMost(4096)
+    override fun getEffectiveMaxTokens(model: LLMModel): Int = overrideMaxTokens ?: model.contextWindowSize
 }
 
 class OnnxTokenizer(tokenizerFile: File) {

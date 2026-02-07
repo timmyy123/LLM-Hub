@@ -2550,7 +2550,15 @@ class ChatViewModel(
     // system overhead. Use the remaining ~2/3 for history + current user prompt.
     // If we just reset, be stricter to guarantee fast recovery.
     val historyFraction = if (recentlyReset) 0.30 else 0.66
-    val maxContextTokens = (model.contextWindowSize * historyFraction).toInt().coerceAtLeast(256)
+        
+        // Use effective max tokens for ONNX (respects user slider), but stick to model defaults for Task/MediaPipe 
+        // to avoid unintended context truncation when slider is low (Task models treat slider as generation limit only)
+        val limitBase = if (model.modelFormat.equals("onnx", ignoreCase = true)) {
+            inferenceService.getEffectiveMaxTokens(model)
+        } else {
+            model.contextWindowSize
+        }
+        val maxContextTokens = (limitBase * historyFraction).toInt().coerceAtLeast(256)
         val maxContextChars = maxContextTokens * 4 // Rough character limit (1 token ≈ 4 characters)
         
         Log.d("ChatViewModel", "Context window: Model ${model.name} has ${model.contextWindowSize} tokens, using ${maxContextTokens} tokens (${maxContextChars} chars) for chat $currentChatId with ${chatMessages.size} messages")
@@ -2617,7 +2625,7 @@ class ChatViewModel(
         var currentLength = 0
         
     // Always keep at least a small recent window (minimum viable context)
-    val minimumPairs = 3
+    val minimumPairs = 1
         
     // Hard upper bound safeguard: never include more than maxPairsHistory pairs to avoid pathological large messages.
     val maxPairsHistory = 18
@@ -2641,14 +2649,9 @@ class ChatViewModel(
             }
         }
         
-        // If we had to truncate, add context summary and ensure sliding window semantics are clear
+        // Return truncated history without meta-commentary (which confuses models)
+        val result = recentPairs.joinToString("\n\n")
         val truncatedCount = cappedPairStrings.size - recentPairs.size
-        val result = if (truncatedCount > 0) {
-            val contextSummary = "[Previous conversation context: ${truncatedCount} earlier exchanges were truncated to fit context window]"
-            listOf(contextSummary, recentPairs.joinToString("\n\n")).joinToString("\n\n")
-        } else {
-            recentPairs.joinToString("\n\n")
-        }
         
         Log.d("ChatViewModel", "Context window management: Original ${fullHistory.length} chars (${pairStrings.size} pairs), trimmed to ${result.length} chars (${recentPairs.size} pairs, ${truncatedCount} truncated)")
         
