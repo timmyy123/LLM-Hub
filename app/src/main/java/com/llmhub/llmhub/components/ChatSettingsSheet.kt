@@ -58,9 +58,11 @@ fun ChatSettingsSheet(
     }
     
     // Model-specific configurations
-    val maxTokensCap = remember(selectedModel) { 
+    val baseMaxTokensCap = remember(selectedModel) { 
         selectedModel?.let { MediaPipeInferenceService.getMaxTokensForModelStatic(it) } ?: 2048 
     }
+
+
     
     // Gemma-3n detection (used for modality toggles)
     val isGemma3nModel = remember(selectedModel) {
@@ -82,8 +84,8 @@ fun ChatSettingsSheet(
     }
     
     // Config state
-    var maxTokensValue by remember { mutableStateOf(maxTokensCap) }
-    var maxTokensText by remember { mutableStateOf(maxTokensCap.toString()) }
+    var maxTokensValue by remember { mutableStateOf(baseMaxTokensCap) }
+    var maxTokensText by remember { mutableStateOf(baseMaxTokensCap.toString()) }
     var topK by remember { mutableStateOf(64) }
     var topP by remember { mutableStateOf(0.95f) }
     var temperature by remember { mutableStateOf(1.0f) }
@@ -99,11 +101,18 @@ fun ChatSettingsSheet(
     }
     var disableVision by remember { mutableStateOf(isGemma3nModel) }
     var disableAudio by remember { mutableStateOf(isGemma3nModel) }
+
+    // Effective cap depends on whether vision is enabled for the selected model
+    val effectiveMaxTokensCap by remember(selectedModel, baseMaxTokensCap, disableVision) {
+        derivedStateOf {
+            if (selectedModel?.supportsVision == true && !disableVision) minOf(baseMaxTokensCap, 8192) else baseMaxTokensCap
+        }
+    }
     
     // Load saved config when model changes
     LaunchedEffect(selectedModel?.name) {
         selectedModel?.let { model ->
-            val newMaxTokensCap = MediaPipeInferenceService.getMaxTokensForModelStatic(model)
+            val newBaseCap = MediaPipeInferenceService.getMaxTokensForModelStatic(model)
             val newIsGemma3n = model.name.contains("Gemma-3n", ignoreCase = true)
             val newIsPhi4Mini = model.name.contains("Phi-4 Mini", ignoreCase = true)
             val newDefaultUseGpu = if (newIsPhi4Mini) false else model.supportsGpu
@@ -111,7 +120,8 @@ fun ChatSettingsSheet(
             try {
                 val saved = modelPrefs.getModelConfig(model.name)
                 if (saved != null) {
-                    maxTokensValue = saved.maxTokens.coerceIn(1, newMaxTokensCap)
+                    // Clamp saved value to the effective cap
+                    maxTokensValue = saved.maxTokens.coerceIn(1, minOf(newBaseCap, if (model.supportsVision && !saved.disableVision) 8192 else newBaseCap))
                     maxTokensText = maxTokensValue.toString()
                     topK = saved.topK
                     topP = saved.topP
@@ -125,8 +135,9 @@ fun ChatSettingsSheet(
                     disableAudio = saved.disableAudio
                 } else {
                     // Reset to defaults for new model
-                    maxTokensValue = newMaxTokensCap
-                    maxTokensText = newMaxTokensCap.toString()
+                    val effCap = if (model.supportsVision && !newIsGemma3n) minOf(newBaseCap, 8192) else newBaseCap
+                    maxTokensValue = effCap
+                    maxTokensText = effCap.toString()
                     topK = 64
                     topP = 0.95f
                     temperature = 1.0f
@@ -136,8 +147,9 @@ fun ChatSettingsSheet(
                 }
             } catch (e: Exception) {
                 // Reset to defaults on error
-                maxTokensValue = newMaxTokensCap
-                maxTokensText = newMaxTokensCap.toString()
+                val effCap = if (model.supportsVision) minOf(newBaseCap, 8192) else newBaseCap
+                maxTokensValue = effCap
+                maxTokensText = effCap.toString()
                 topK = 64
                 topP = 0.95f
                 temperature = 1.0f
@@ -401,7 +413,8 @@ fun ChatSettingsSheet(
                             Button(
                                 onClick = {
                                     selectedModel?.let { model ->
-                                        val finalMax = maxTokensValue.coerceIn(1, maxTokensCap)
+                                        // Ensure finalMax respects the effective cap when vision is enabled
+                                        val finalMax = maxTokensValue.coerceIn(1, if (selectedModel?.supportsVision == true && !disableVision) minOf(baseMaxTokensCap, 8192) else baseMaxTokensCap)
                                         val backend = if (canSelectAccelerator) {
                                             if (useGpu) LlmInference.Backend.GPU else LlmInference.Backend.CPU
                                         } else null
@@ -476,7 +489,7 @@ fun ChatSettingsSheet(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "$maxTokensCap ${stringResource(R.string.max)}",
+                                text = "${effectiveMaxTokensCap} ${stringResource(R.string.max)}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -488,11 +501,12 @@ fun ChatSettingsSheet(
                             Slider(
                                 value = maxTokensValue.toFloat(),
                                 onValueChange = {
-                                    val intVal = it.toInt().coerceIn(1, maxTokensCap)
+                                    val cap = if (selectedModel?.supportsVision == true && !disableVision) minOf(baseMaxTokensCap, 8192) else baseMaxTokensCap
+                                    val intVal = it.toInt().coerceIn(1, cap)
                                     maxTokensValue = intVal
                                     maxTokensText = intVal.toString()
                                 },
-                                valueRange = 1f..maxTokensCap.toFloat(),
+                                valueRange = 1f..effectiveMaxTokensCap.toFloat(),
                                 modifier = Modifier.weight(1f).height(36.dp),
                                 thumb = {
                                     SliderDefaults.Thumb(
@@ -507,7 +521,8 @@ fun ChatSettingsSheet(
                                 onValueChange = { input ->
                                     val numeric = input.filter { it.isDigit() }
                                     val intVal = numeric.toIntOrNull() ?: 0
-                                    val clamped = intVal.coerceIn(1, maxTokensCap)
+                                    val cap = if (selectedModel?.supportsVision == true && !disableVision) minOf(baseMaxTokensCap, 8192) else baseMaxTokensCap
+                                    val clamped = intVal.coerceIn(1, cap)
                                     maxTokensText = clamped.toString()
                                     maxTokensValue = clamped
                                 },

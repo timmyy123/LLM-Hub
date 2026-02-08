@@ -299,7 +299,9 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
                 
                 // Collect images if provided and vision is enabled (convert URI to Bitmap)
                 val images = if (inputImageUri != null && _visionEnabled.value) {
-                    loadBitmapFromUri(inputImageUri)?.let { listOf(it) } ?: emptyList()
+                    val app = getApplication<Application>()
+                    val stableUri = copyImageToInternalStorage(app, inputImageUri)
+                    loadImageFromUri(app, stableUri)?.let { listOf(it) } ?: emptyList()
                 } else {
                     emptyList()
                 }
@@ -479,14 +481,64 @@ Be thorough and specific in your analysis. If you detect a scam, clearly state i
         }
     }
     
-    private suspend fun loadBitmapFromUri(uri: Uri): Bitmap? {
-        val app = getApplication<Application>()
+    private suspend fun copyImageToInternalStorage(context: android.content.Context, sourceUri: Uri): Uri {
         return withContext(Dispatchers.IO) {
             try {
-                app.contentResolver.openInputStream(uri)?.use { stream ->
-                    BitmapFactory.decodeStream(stream)
+                val contentResolver = context.contentResolver
+                val inputStream = contentResolver.openInputStream(sourceUri)
+
+                if (inputStream != null) {
+                    val timestamp = System.currentTimeMillis()
+                    val fileName = "scam_image_${timestamp}.jpg"
+
+                    val imagesDir = java.io.File(context.filesDir, "images")
+                    if (!imagesDir.exists()) {
+                        imagesDir.mkdirs()
+                    }
+
+                    val outputFile = java.io.File(imagesDir, fileName)
+
+                    inputStream.use { input ->
+                        outputFile.outputStream().use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+
+                    Log.d(TAG, "Copied image to: ${outputFile.absolutePath}")
+                    Uri.fromFile(outputFile)
+                } else {
+                    Log.w(TAG, "Failed to open input stream for URI: $sourceUri")
+                    sourceUri
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to copy image to internal storage", e)
+                sourceUri
+            }
+        }
+    }
+
+    private suspend fun loadImageFromUri(context: android.content.Context, uri: Uri): Bitmap? {
+        return withContext(Dispatchers.IO) {
+            try {
+                Log.d(TAG, "Opening input stream for URI: $uri")
+                val inputStream = context.contentResolver.openInputStream(uri)
+                if (inputStream != null) {
+                    inputStream.use { stream ->
+                        val bitmap = BitmapFactory.decodeStream(stream)
+                        if (bitmap != null) {
+                            Log.d(TAG, "Bitmap decoded successfully: ${bitmap.width}x${bitmap.height}")
+                            bitmap
+                        } else {
+                            Log.w(TAG, "BitmapFactory.decodeStream returned null")
+                            null
+                        }
+                    }
+                } else {
+                    Log.w(TAG, "Failed to open input stream for URI: $uri")
+                    null
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to load image from URI: $uri", e)
                 null
             }
         }
