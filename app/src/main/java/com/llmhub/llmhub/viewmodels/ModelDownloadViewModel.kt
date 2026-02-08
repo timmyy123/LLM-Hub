@@ -243,6 +243,55 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                 } else {
                     model.copy(isDownloaded = false, isDownloading = false, downloadProgress = 0f, downloadedBytes = 0, totalBytes = model.sizeBytes)
                 }
+            } else if (model.modelFormat == "gguf" && model.additionalFiles.isNotEmpty()) {
+                // GGUF models with additional files (e.g., mmproj vision projector)
+                val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
+                val modelDir = File(modelsDir, modelDirName)
+                if (!modelDir.exists()) modelDir.mkdirs()
+                val primaryFile = File(modelDir, model.localFileName())
+
+                // Calculate total size of all files found on disk (within model dir)
+                var totalFoundBytes = if (primaryFile.exists()) primaryFile.length() else 0L
+                var allFilesFound = primaryFile.exists()
+
+                // Check additional files
+                val baseUrl = model.url.substringBefore("?").substringBeforeLast("/") + "/"
+                for (fileUrlOrPath in model.additionalFiles) {
+                    val fileUrl = if (fileUrlOrPath.startsWith("http")) fileUrlOrPath else baseUrl + fileUrlOrPath
+                    val fileName = fileUrl.substringAfterLast("/").substringBefore("?")
+                    val file = File(modelDir, fileName)
+                    if (file.exists()) {
+                        totalFoundBytes += file.length()
+                        android.util.Log.d("ModelDownloadViewModel", "Found additional file in model dir: ${fileName} (${file.length()} bytes)")
+                    } else {
+                        android.util.Log.d("ModelDownloadViewModel", "Missing additional file in model dir: ${fileName}")
+                        allFilesFound = false
+                    }
+                }
+
+                val sizeKnown = model.sizeBytes > 0
+                // 98% threshold to account for minor size differences or overhead
+                val completeEnough = sizeKnown && totalFoundBytes >= (model.sizeBytes * 0.98).toLong()
+
+                if (completeEnough) {
+                    model.copy(
+                        isDownloaded = true,
+                        isDownloading = false,
+                        sizeBytes = totalFoundBytes, // Use actual size
+                        downloadProgress = 1f,
+                        downloadedBytes = totalFoundBytes,
+                        totalBytes = totalFoundBytes
+                    )
+                } else {
+                    val progress = if (sizeKnown) (totalFoundBytes.toFloat() / model.sizeBytes).coerceIn(0f, 1f) else -1f
+                    model.copy(
+                        isDownloaded = false,
+                        isDownloading = false,
+                        downloadProgress = progress,
+                        downloadedBytes = totalFoundBytes,
+                        totalBytes = if (sizeKnown) model.sizeBytes else null
+                    )
+                }
             } else {
                 // Regular single-file models
                 val primaryFile = File(modelsDir, model.localFileName())
@@ -559,6 +608,68 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                         return@onCompletion
                     }
                     
+                    // GGUF models with additional files (like mmproj)
+                    if (model.modelFormat == "gguf" && model.additionalFiles.isNotEmpty()) {
+                        val modelsDir = File(context.filesDir, "models")
+                        val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
+                        val modelDir = File(modelsDir, modelDirName)
+                        val primaryFile = File(modelDir, model.localFileName())
+
+                        var totalDownloadedOnDisk = if (primaryFile.exists()) primaryFile.length() else 0L
+                        val baseUrl = model.url.substringBefore("?").substringBeforeLast("/") + "/"
+
+                        for (fileUrlOrPath in model.additionalFiles) {
+                            val fileUrl = if (fileUrlOrPath.startsWith("http")) fileUrlOrPath else baseUrl + fileUrlOrPath
+                            val fileName = fileUrl.substringAfterLast("/").substringBefore("?")
+                            val file = File(modelDir, fileName)
+                            if (file.exists()) {
+                                totalDownloadedOnDisk += file.length()
+                                android.util.Log.d("ModelDownloadViewModel", "Found additional file in model dir on completion: ${fileName} (${file.length()} bytes)")
+                            } else {
+                                android.util.Log.d("ModelDownloadViewModel", "Missing additional file in model dir on completion: ${fileName}")
+                            }
+                        }
+
+                        // Prefer authoritative total from latestStatus (downloader), otherwise use model.sizeBytes
+                        val expectedTotal = if (latestStatus != null && latestStatus!!.totalBytes > 0) latestStatus!!.totalBytes else model.sizeBytes
+
+                        // If expectedTotal is zero or unknown, fall back to comparing against actual bytes (exact equality)
+                        val completeEnough = if (expectedTotal > 0) {
+                            totalDownloadedOnDisk >= (expectedTotal * 0.995).toLong()
+                        } else {
+                            // If downloader reported nothing, require the files to be non-empty and at least 90% of previously known size
+                            totalDownloadedOnDisk > 0 && (model.sizeBytes <= 0 || totalDownloadedOnDisk >= (model.sizeBytes * 0.95).toLong())
+                        }
+
+                        if (completeEnough && cause == null) {
+                            android.util.Log.i("ModelDownloadViewModel", "GGUF model download completed for ${model.name}: size=$totalDownloadedOnDisk, expected=$expectedTotal")
+                            updateModel(model.name) {
+                                it.copy(
+                                    isDownloaded = true,
+                                    isDownloading = false,
+                                    downloadProgress = 1f,
+                                    sizeBytes = totalDownloadedOnDisk,
+                                    downloadedBytes = totalDownloadedOnDisk,
+                                    totalBytes = totalDownloadedOnDisk
+                                )
+                            }
+                        } else {
+                            android.util.Log.w("ModelDownloadViewModel", "GGUF model download incomplete for ${model.name}: found=$totalDownloadedOnDisk expected=$expectedTotal")
+                            // Partial
+                            updateModel(model.name) {
+                                val progress = if (expectedTotal > 0) (totalDownloadedOnDisk.toFloat() / expectedTotal).coerceIn(0f, 1f) else -1f
+                                it.copy(
+                                    isDownloaded = false,
+                                    isDownloading = false,
+                                    downloadProgress = progress,
+                                    downloadedBytes = totalDownloadedOnDisk,
+                                    totalBytes = if (expectedTotal > 0) expectedTotal else null
+                                )
+                            }
+                        }
+                        return@onCompletion
+                    }
+
                     // Regular single-file models
                     val modelsDir = File(context.filesDir, "models")
                     val primaryFile = File(modelsDir, model.localFileName())

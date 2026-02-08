@@ -15,16 +15,17 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
 
     private val mediaPipeService = MediaPipeInferenceService(context)
     private val onnxService = OnnxInferenceService(context)
+    private val nexaService = NexaInferenceService(context)
     
     private var currentService: InferenceService = mediaPipeService
     private var currentModel: LLMModel? = null
 
     override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?): Boolean {
         // Determine which service to use
-        val newService = if (model.modelFormat == "onnx") {
-            onnxService
-        } else {
-            mediaPipeService
+        val newService = when (model.modelFormat) {
+            "onnx" -> onnxService
+            "gguf" -> nexaService
+            else -> mediaPipeService
         }
 
         // Same service and same model already loaded with same backend: skip reload (honor user's CPU/GPU choice on next load)
@@ -54,10 +55,10 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         disableVision: Boolean, 
         disableAudio: Boolean
     ): Boolean {
-         val newService = if (model.modelFormat == "onnx") {
-            onnxService
-        } else {
-            mediaPipeService
+         val newService = when (model.modelFormat) {
+            "onnx" -> onnxService
+            "gguf" -> nexaService
+            else -> mediaPipeService
         }
 
         // Same service and same model already loaded with same backend: skip reload (honor user's CPU/GPU choice on next load)
@@ -112,6 +113,7 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
     override suspend fun onCleared() {
         mediaPipeService.onCleared()
         onnxService.onCleared()
+        nexaService.onCleared()
     }
 
     override fun getCurrentlyLoadedModel(): LLMModel? {
@@ -133,6 +135,7 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
     override fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?) {
         mediaPipeService.setGenerationParameters(maxTokens, topK, topP, temperature)
         onnxService.setGenerationParameters(maxTokens, topK, topP, temperature)
+        nexaService.setGenerationParameters(maxTokens, topK, topP, temperature)
     }
 
     override fun isVisionCurrentlyDisabled(): Boolean {
@@ -148,10 +151,10 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
     }
 
     override fun getEffectiveMaxTokens(model: LLMModel): Int {
-        return if (model.modelFormat == "onnx") {
-            onnxService.getEffectiveMaxTokens(model)
-        } else {
-            mediaPipeService.getEffectiveMaxTokens(model)
+        return when (model.modelFormat) {
+            "onnx" -> onnxService.getEffectiveMaxTokens(model)
+            "gguf" -> nexaService.getEffectiveMaxTokens(model)
+            else -> mediaPipeService.getEffectiveMaxTokens(model)
         }
     }
 }

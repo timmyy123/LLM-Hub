@@ -21,14 +21,14 @@ object DeviceInfo {
         "SM8550P" to "8gen2",
         "QCS8550" to "8gen2",
         "QCM8550" to "8gen2",
-        "SM8650" to "8gen2",  // 8 Gen 3
-        "SM8650P" to "8gen2",
-        "SM8750" to "8gen2",  // 8 Elite
-        "SM8750P" to "8gen2",
-        "SM8850" to "8gen2",
-        "SM8850P" to "8gen2",
-        "SM8735" to "8gen2",
-        "SM8845" to "8gen2"
+        "SM8650" to "8gen3",  // 8 Gen 3 (updated)
+        "SM8650P" to "8gen3",
+        "SM8750" to "8gen4",  // 8 Elite / Gen 4 (updated)
+        "SM8750P" to "8gen4",
+        "SM8850" to "8gen4",  // Hypothetical future
+        "SM8850P" to "8gen4",
+        "SM8735" to "8gen3",  // 8s Gen 3
+        "SM8845" to "8gen4"
     )
     
     fun getChipsetSuffix(): String? {
@@ -37,7 +37,9 @@ object DeviceInfo {
     }
     
     fun isQualcommNpuSupported(): Boolean {
-        return getChipsetSuffix() != null
+        // NPU supported on 8 Gen 2+ typically, definitely on Gen 3/4
+        val suffix = getChipsetSuffix()
+        return suffix == "8gen2" || suffix == "8gen3" || suffix == "8gen4"
     }
 }
 
@@ -141,80 +143,86 @@ object ModelData {
             modelFormat = "litertlm"
         ),
 
-        // LFM-2.5 1.2B Instruct Models (ONNX) - Q4 and Q8 variants (sizeBytes = sum of all downloaded files from HF)
+        // LFM-2.5 1.2B Instruct Models (LiquidAI GGUF)
         LLMModel(
-            name = "LFM-2.5 1.2B Instruct (ONNX Q4)",
-            description = "LiquidAI's 1.2B instruction model in ONNX format. Q4 quantization for balanced quality and size. 128k context. Requires downloading 2 files.",
-            url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/onnx/model_q4.onnx?download=true",
+            name = "LFM-2.5 1.2B Instruct (Q4_0)",
+            description = "LiquidAI's 1.2B instruct model. Q4_0 quantization. 128k context.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF/resolve/main/LFM2.5-1.2B-Instruct-Q4_0.gguf?download=true",
             category = "text",
-            sizeBytes = 1224116481L, // main + onnx_data + tokenizer.json + tokenizer_config.json (HF API)
+            sizeBytes = 729808896L, // ~696 MB
             source = "LiquidAI",
             supportsVision = false,
-            supportsGpu = false,
-            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 4),
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
             contextWindowSize = 128000,
-            modelFormat = "onnx",
-            additionalFiles = listOf(
-                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/onnx/model_q4.onnx_data?download=true",
-                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/tokenizer.json?download=true",
-                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/tokenizer_config.json?download=true"
-            )
+            modelFormat = "gguf"
         ),
         LLMModel(
-            name = "LFM-2.5 1.2B Instruct (ONNX Q8)",
-            description = "LiquidAI's 1.2B instruction model in ONNX format. Q8 quantization for higher quality. 128k context. Requires downloading 2 files.",
-            url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/onnx/model_q8.onnx?download=true",
+            name = "LFM-2.5 1.2B Instruct (Q4_K_M)",
+            description = "LiquidAI's 1.2B instruct model. Q4_K_M quantization. 128k context.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF/resolve/main/LFM2.5-1.2B-Instruct-Q4_K_M.gguf?download=true",
             category = "text",
-            sizeBytes = 1772844567L, // main + onnx_data + tokenizer (HF API)
+            sizeBytes = 730895168L, // ~731 MB
             source = "LiquidAI",
             supportsVision = false,
-            supportsGpu = false,
-            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 5),
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
             contextWindowSize = 128000,
-            modelFormat = "onnx",
-            additionalFiles = listOf(
-                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/onnx/model_q8.onnx_data?download=true",
-                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/tokenizer.json?download=true",
-                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/tokenizer_config.json?download=true"
-            )
-        ),
-
-        // LFM-2.5 1.2B Thinking Models (ONNX) - Q4 and Q8 variants (sizeBytes = sum of all downloaded files from HF)
-        LLMModel(
-            name = "LFM-2.5 1.2B Thinking (ONNX Q4)",
-            description = "LiquidAI's 1.2B reasoning model in ONNX format. Q4 quantization for balanced quality and size. 128k context. Requires downloading 2 files.",
-            url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/onnx/model_q4.onnx?download=true",
-            category = "text",
-            sizeBytes = 1224116481L, // main + onnx_data + tokenizer (HF API; Thinking repo same layout)
-            source = "LiquidAI",
-            supportsVision = false,
-            supportsGpu = false,
-            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 4),
-            contextWindowSize = 128000,
-            modelFormat = "onnx",
-            additionalFiles = listOf(
-                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/onnx/model_q4.onnx_data?download=true",
-                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/tokenizer.json?download=true",
-                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/tokenizer_config.json?download=true"
-            )
+            modelFormat = "gguf"
         ),
         LLMModel(
-            name = "LFM-2.5 1.2B Thinking (ONNX Q8)",
-            description = "LiquidAI's 1.2B reasoning model in ONNX format. Q8 quantization for higher quality. 128k context. Requires downloading 2 files.",
-            url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/onnx/model_q8.onnx?download=true",
+            name = "LFM-2.5 1.2B Instruct (Q8_0)",
+            description = "LiquidAI's 1.2B instruct model. Q8_0 quantization. 128k context.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF/resolve/main/LFM2.5-1.2B-Instruct-Q8_0.gguf?download=true",
             category = "text",
-            sizeBytes = 1772844567L, // main + onnx_data + tokenizer (HF API)
+            sizeBytes = 1287103296L, // 1.29 GB
             source = "LiquidAI",
             supportsVision = false,
-            supportsGpu = false,
-            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 5),
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
             contextWindowSize = 128000,
-            modelFormat = "onnx",
-            additionalFiles = listOf(
-                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/onnx/model_q8.onnx_data?download=true",
-                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/tokenizer.json?download=true",
-                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/tokenizer_config.json?download=true"
-            )
+            modelFormat = "gguf"
+        ),
+        
+        // LFM-2.5 1.2B Thinking Models (LiquidAI GGUF)
+        LLMModel(
+            name = "LFM-2.5 1.2B Thinking (Q4_0)",
+            description = "LiquidAI's 1.2B thinking model. Q4_0 quantization. 128k context. Supports 'thinking' mode.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-GGUF/resolve/main/LFM2.5-1.2B-Thinking-Q4_0.gguf?download=true",
+            category = "text",
+            sizeBytes = 729808896L, // ~696 MB
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            contextWindowSize = 128000,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM-2.5 1.2B Thinking (Q4_K_M)",
+            description = "LiquidAI's 1.2B thinking model. Q4_K_M quantization. 128k context. Supports 'thinking' mode.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-GGUF/resolve/main/LFM2.5-1.2B-Thinking-Q4_K_M.gguf?download=true",
+            category = "text",
+            sizeBytes = 730895360L, // ~731 MB
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            contextWindowSize = 128000,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM-2.5 1.2B Thinking (Q8_0)",
+            description = "LiquidAI's 1.2B thinking model. Q8_0 quantization. 128k context. Supports 'thinking' mode.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-GGUF/resolve/main/LFM2.5-1.2B-Thinking-Q8_0.gguf?download=true",
+            category = "text",
+            sizeBytes = 1287103488L, // 1.29 GB
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 128000,
+            modelFormat = "gguf"
         ),
 
         // Ministral-3 3B Instruct Models (ONNX) - Q4/Q4F16 (sizeBytes = sum of all downloaded files from HF)
@@ -499,36 +507,35 @@ object ModelData {
         return """
         🎯 ON-DEVICE AI MODELS FOR ANDROID
         
-        📱 READY FOR DIRECT DOWNLOAD (MediaPipe .task/.litertlm format):
+        📱 READY FOR DIRECT DOWNLOAD:
         
-        ✅ TEXT MODELS:
+        ✅ MULTIMODAL MODELS (Text + Vision + Audio):
         
-        🔹 GEMMA-3 SERIES (Google):
-        • Gemma-3 1B (INT4, 2k context) - 529MB
-        • Gemma-3 1B (INT8, 1.2k context) - 1005MB
-        • Gemma-3 1B (INT8, 2k context) - 1024MB
-        • Gemma-3 1B (INT8, 4k context) - 1005MB
-        
-        🔹 GEMMA-3N SERIES (Google - Multimodal):
+        🔹 GEMMA-3N SERIES (Google):
         • Gemma-3n E2B (Vision+Audio+Text, 4k context) - 3.41GB
         • Gemma-3n E4B (Vision+Audio+Text, 4k context) - 4.58GB
         
-        🔹 LLAMA-3.2 SERIES (Meta):
-        • Llama-3.2 1B (INT8) - 2.01GB
-        • Llama-3.2 3B (INT8) - 5.11GB
+        🔹 MINSTRAL-3 SERIES (MistralAI - Multimodal GGUF):
+        • Ministral-3 3B Instruct (Vision enabled, 32k context)
+        • Ministral-3 3B Reasoning (Thinking + Vision, 32k context)
+        * Note: Vision support modules are now downloaded automatically with these models.
         
-        🔹 PHI-4 SERIES (Microsoft):
-        • Phi-4 Mini (INT8, 1.2k context) - 3.67GB
+        ✅ TEXT MODELS:
         
-        🖼️ VISION MODELS:
-        Models with vision support allow you to upload images and ask questions about them!
+        🔹 LFM-2.5 SERIES (LiquidAI - GGUF):
+        • LFM-2.5 1.2B Instruct (128k context)
+        • LFM-2.5 1.2B Thinking (128k context, Optimized for reasoning)
         
-        📥 HOW TO DOWNLOAD:
-        Your app's download feature now works with direct HuggingFace URLs!
-        Just tap the download button next to any model.
+        🔹 GEMMA-3 SERIES (Google):
+        • Gemma-3 1B (INT4/INT8, 2k-4k context)
         
-        📱 STATUS: Your Android app is ready to download and use all these models!
-        The MediaPipe integration should work smoothly now.
+        � LLAMA-3.2 SERIES (Meta):
+        • Llama-3.2 1B/3B (INT8, 4k context)
+        
+        � PHI-4 SERIES (Microsoft):
+        • Phi-4 Mini (INT8, 4k context) 
+        
+        � DOWNLOAD STATUS: Your app is ready for global model downloads via Nexa SDK integration!
         """.trimIndent()
     }
 }

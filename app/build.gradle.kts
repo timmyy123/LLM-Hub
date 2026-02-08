@@ -1,5 +1,8 @@
 import java.util.Properties
 import java.io.FileInputStream
+import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
+import java.util.zip.ZipEntry
 
 // Load local.properties at the top-level so it's available everywhere
 val localProperties = Properties()
@@ -21,7 +24,7 @@ android {
 
     defaultConfig {
         applicationId = "com.llmhub.llmhub"
-        minSdk = 26
+        minSdk = 27
         targetSdk = 36
         versionCode = 56
         versionName = "3.4"
@@ -29,6 +32,14 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         val hfToken: String = localProperties.getProperty("HF_TOKEN", "")
         buildConfigField("String", "HF_TOKEN", "\"$hfToken\"")
+        
+        // Enable 16KB page size support for Android 15+ compatibility
+        // Required for Google Play Store submission starting Nov 1st, 2025
+        ndk {
+            // This helps with alignment but ultimate fix requires library maintainers
+            // to rebuild native libraries with 16KB alignment
+            debugSymbolLevel = "FULL"
+        }
         
         // Note: SD backend native library only works on arm64-v8a, but we don't filter ABIs
         // so the app can be installed on more devices. Image generation will only work on
@@ -91,6 +102,11 @@ android {
             // Pick only the architecture we need to reduce size and alignment issues
             // Prevent duplicate .so files from different MediaPipe tasks modules
             pickFirsts += setOf("**/libmediapipe_tasks_text_jni.so")
+            // Safety fallback — the stripOnnxFromNexa task removes Nexa's copy from the AAR,
+            // but if it hasn't run yet this prevents the build from failing on duplicate.
+            pickFirsts += setOf("**/libonnxruntime.so")
+            // Exclude DeepSeek OCR library to avoid 16KB page alignment issues
+            excludes += setOf("**/libdeepseek-ocr.so")
         }
     }
     
@@ -101,6 +117,8 @@ android {
 configurations.all {
     resolutionStrategy {
         force("com.google.protobuf:protobuf-java:3.25.1")
+        // Force Microsoft's ONNX Runtime version to win over any version Nexa SDK pulls in
+        force("com.microsoft.onnxruntime:onnxruntime-android:1.24.1")
     }
     // Exclude protobuf-javalite from all dependencies to prevent duplicate classes
     exclude(group = "com.google.protobuf", module = "protobuf-javalite")
@@ -208,6 +226,14 @@ dependencies {
     // ONNX Runtime for Android - supports ONNX model inference
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.24.1")
 
+    // Nexa SDK for GGUF model support
+    // Nexa bundles libonnxruntime.so directly in its AAR (6.5MB) which conflicts with
+    // Microsoft's ORT JNI bridge. The task below strips it from the cached AAR so only
+    // Microsoft's version ends up in the APK.
+    implementation("ai.nexa:core:0.0.20") {
+        exclude(group = "com.microsoft.onnxruntime")
+    }
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -215,4 +241,86 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+}
+
+// ── Strip libonnxruntime.so from the Nexa SDK AAR ──────────────────────────────
+// Nexa SDK bundles its own libonnxruntime.so (an incompatible build) inside
+// jni/arm64-v8a/libonnxruntime.so.  When merged with Microsoft's
+// onnxruntime-android, pickFirsts randomly picks one — and if Nexa's wins the
+// JNI bridge crashes with "cannot locate symbol OrtGetApiBase".
+// This task physically strips the .so from the cached AAR so that only
+// Microsoft's copy ends up in the APK.
+fun stripNexaOnnxFromCache() {
+    val cacheDir = file("${System.getProperty("user.home")}/.gradle/caches/modules-2/files-2.1/ai.nexa/core/0.0.20")
+    if (!cacheDir.exists()) {
+        logger.warn("Nexa AAR cache dir not found – skipping libonnxruntime.so strip")
+        return
+    }
+    cacheDir.walkTopDown().filter { it.extension == "aar" }.forEach { aar ->
+        val marker = File(aar.parentFile, ".onnx_stripped")
+        if (marker.exists()) return@forEach          // already processed
+
+        logger.lifecycle("Stripping libonnxruntime.so from ${aar.name}")
+        val tmp = File(aar.absolutePath + ".tmp")
+        aar.inputStream().buffered().use { fis ->
+            ZipInputStream(fis).use { zis ->
+                tmp.outputStream().buffered().use { fos ->
+                    ZipOutputStream(fos).use { zos ->
+                        var entry = zis.nextEntry
+                        while (entry != null) {
+                            if (entry.name.endsWith("libonnxruntime.so")) {
+                                logger.lifecycle("  removed: ${entry.name}")
+                            } else {
+                                zos.putNextEntry(ZipEntry(entry.name))
+                                zis.copyTo(zos)
+                                zos.closeEntry()
+                            }
+                            entry = zis.nextEntry
+                        }
+                    }
+                }
+            }
+        }
+        aar.delete()
+        tmp.renameTo(aar)
+        marker.createNewFile()
+    }
+
+    // Also strip any transformed cache copies (AGP transforms) that still include libonnxruntime.so
+    val transformsDir = file("${System.getProperty("user.home")}/.gradle/caches")
+    if (transformsDir.exists()) {
+        transformsDir.walkTopDown()
+            .filter { it.name == "libonnxruntime.so" && it.path.contains("/transformed/core-0.0.20/") }
+            .forEach { lib ->
+                logger.lifecycle("Removing transformed libonnxruntime.so: ${lib.path}")
+                try { lib.delete() } catch (_: Exception) { }
+            }
+    }
+}
+
+tasks.register("stripOnnxFromNexa") {
+    doLast {
+        stripNexaOnnxFromCache()
+    }
+}
+
+// Run the strip task before any merge/packaging happens
+tasks.configureEach {
+    val isMergeTask = name.contains("merge", ignoreCase = true)
+    val isNativeTask = name.contains("JniLibFolders", ignoreCase = true) || name.contains("NativeLibs", ignoreCase = true)
+    if (isMergeTask && isNativeTask) {
+        dependsOn("stripOnnxFromNexa")
+    }
+}
+
+// Safety: ensure strip runs before any build variant
+tasks.matching { it.name.equals("preBuild", ignoreCase = true) }.configureEach {
+    dependsOn("stripOnnxFromNexa")
+}
+
+// Ensure the strip runs before dependency resolution too (covers IDE sync/build paths)
+configurations.configureEach {
+    incoming.beforeResolve {
+        stripNexaOnnxFromCache()
+    }
 }
