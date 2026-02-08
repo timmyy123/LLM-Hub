@@ -149,7 +149,7 @@ object ModelData {
             description = "LiquidAI's 1.2B instruct model. Q4_0 quantization. 128k context.",
             url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF/resolve/main/LFM2.5-1.2B-Instruct-Q4_0.gguf?download=true",
             category = "text",
-            sizeBytes = 729808896L, // ~696 MB
+            sizeBytes = 696000000L, // 696 MB (actual HF file size)
             source = "LiquidAI",
             supportsVision = false,
             supportsGpu = true,
@@ -162,7 +162,7 @@ object ModelData {
             description = "LiquidAI's 1.2B instruct model. Q4_K_M quantization. 128k context.",
             url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF/resolve/main/LFM2.5-1.2B-Instruct-Q4_K_M.gguf?download=true",
             category = "text",
-            sizeBytes = 730895168L, // ~731 MB
+            sizeBytes = 731000000L, // 731 MB (actual HF file size)
             source = "LiquidAI",
             supportsVision = false,
             supportsGpu = true,
@@ -175,7 +175,7 @@ object ModelData {
             description = "LiquidAI's 1.2B instruct model. Q8_0 quantization. 128k context.",
             url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF/resolve/main/LFM2.5-1.2B-Instruct-Q8_0.gguf?download=true",
             category = "text",
-            sizeBytes = 1287103296L, // 1.29 GB
+            sizeBytes = 1250000000L, // 1.25 GB (actual HF file size)
             source = "LiquidAI",
             supportsVision = false,
             supportsGpu = true,
@@ -190,7 +190,7 @@ object ModelData {
             description = "LiquidAI's 1.2B thinking model. Q4_0 quantization. 128k context. Supports 'thinking' mode.",
             url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-GGUF/resolve/main/LFM2.5-1.2B-Thinking-Q4_0.gguf?download=true",
             category = "text",
-            sizeBytes = 729808896L, // ~696 MB
+            sizeBytes = 696000000L, // 696 MB (actual HF file size)
             source = "LiquidAI",
             supportsVision = false,
             supportsGpu = true,
@@ -203,7 +203,7 @@ object ModelData {
             description = "LiquidAI's 1.2B thinking model. Q4_K_M quantization. 128k context. Supports 'thinking' mode.",
             url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-GGUF/resolve/main/LFM2.5-1.2B-Thinking-Q4_K_M.gguf?download=true",
             category = "text",
-            sizeBytes = 730895360L, // ~731 MB
+            sizeBytes = 731000000L, // 731 MB (actual HF file size)
             source = "LiquidAI",
             supportsVision = false,
             supportsGpu = true,
@@ -216,12 +216,270 @@ object ModelData {
             description = "LiquidAI's 1.2B thinking model. Q8_0 quantization. 128k context. Supports 'thinking' mode.",
             url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-GGUF/resolve/main/LFM2.5-1.2B-Thinking-Q8_0.gguf?download=true",
             category = "text",
-            sizeBytes = 1287103488L, // 1.29 GB
+            sizeBytes = 1250000000L, // 1.25 GB (actual HF file size)
             source = "LiquidAI",
             supportsVision = false,
             supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
             contextWindowSize = 128000,
+            modelFormat = "gguf"
+        ),
+
+        // LFM-2.5 1.2B Instruct Models (ONNX) - Q4 and Q8 variants (sizeBytes = sum of all downloaded files from HF)
+        LLMModel(
+            name = "LFM-2.5 1.2B Instruct (ONNX Q4)",
+            description = "LiquidAI's 1.2B instruction model in ONNX format. Q4 quantization for balanced quality and size. 128k context. Requires downloading 2 files.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/onnx/model_q4.onnx?download=true",
+            category = "text",
+            sizeBytes = 1224116481L, // main + onnx_data + tokenizer.json + tokenizer_config.json (HF API)
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 4),
+            contextWindowSize = 128000,
+            modelFormat = "onnx",
+            additionalFiles = listOf(
+                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/onnx/model_q4.onnx_data?download=true",
+                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/tokenizer.json?download=true",
+                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/tokenizer_config.json?download=true"
+            )
+        ),
+        LLMModel(
+            name = "LFM-2.5 1.2B Instruct (ONNX Q8)",
+            description = "LiquidAI's 1.2B instruction model in ONNX format. Q8 quantization for higher quality. 128k context. Requires downloading 2 files.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/onnx/model_q8.onnx?download=true",
+            category = "text",
+            sizeBytes = 1772844567L, // main + onnx_data + tokenizer (HF API)
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 5),
+            contextWindowSize = 128000,
+            modelFormat = "onnx",
+            additionalFiles = listOf(
+                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/onnx/model_q8.onnx_data?download=true",
+                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/tokenizer.json?download=true",
+                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/tokenizer_config.json?download=true"
+            )
+        ),
+
+        // LFM-2.5 1.2B Thinking Models (ONNX) - Q4 and Q8 variants (sizeBytes = sum of all downloaded files from HF)
+        LLMModel(
+            name = "LFM-2.5 1.2B Thinking (ONNX Q4)",
+            description = "LiquidAI's 1.2B reasoning model in ONNX format. Q4 quantization for balanced quality and size. 128k context. Requires downloading 2 files.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/onnx/model_q4.onnx?download=true",
+            category = "text",
+            sizeBytes = 1224116481L, // main + onnx_data + tokenizer (HF API; Thinking repo same layout)
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 4),
+            contextWindowSize = 128000,
+            modelFormat = "onnx",
+            additionalFiles = listOf(
+                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/onnx/model_q4.onnx_data?download=true",
+                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/tokenizer.json?download=true",
+                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/tokenizer_config.json?download=true"
+            )
+        ),
+        LLMModel(
+            name = "LFM-2.5 1.2B Thinking (ONNX Q8)",
+            description = "LiquidAI's 1.2B reasoning model in ONNX format. Q8 quantization for higher quality. 128k context. Requires downloading 2 files.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/onnx/model_q8.onnx?download=true",
+            category = "text",
+            sizeBytes = 1772844567L, // main + onnx_data + tokenizer (HF API)
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 5),
+            contextWindowSize = 128000,
+            modelFormat = "onnx",
+            additionalFiles = listOf(
+                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/onnx/model_q8.onnx_data?download=true",
+                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/tokenizer.json?download=true",
+                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/tokenizer_config.json?download=true"
+            )
+        ),
+
+        // LFM-2.5 VL 1.6B Models (Vision-Language GGUF)
+        LLMModel(
+            name = "LFM-2.5 VL 1.6B (BF16)",
+            description = "LiquidAI's 1.6B vision-language model. BF16 precision. Supports vision + text. Requires mmproj for vision.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-GGUF/resolve/main/LFM2.5-VL-1.6B-BF16.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 2340000000L, // 2.34 GB from HuggingFace
+            source = "LiquidAI",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 128000,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM-2.5 VL 1.6B (F16)",
+            description = "LiquidAI's 1.6B vision-language model. F16 precision. Supports vision + text. Requires mmproj for vision.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-GGUF/resolve/main/LFM2.5-VL-1.6B-F16.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 2340000000L, // 2.34 GB from HuggingFace
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 128000,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM-2.5 VL 1.6B (Q4_0)",
+            description = "LiquidAI's 1.6B vision-language model. Q4_0 quantization. Supports vision + text. Requires mmproj for vision.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-GGUF/resolve/main/LFM2.5-VL-1.6B-Q4_0.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 696000000L, // 696 MB from HuggingFace
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 128000,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM-2.5 VL 1.6B (Q8_0)",
+            description = "LiquidAI's 1.6B vision-language model. Q8_0 quantization. Supports vision + text. Requires mmproj for vision.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-GGUF/resolve/main/LFM2.5-VL-1.6B-Q8_0.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 1250000000L, // 1.25 GB from HuggingFace
+            source = "LiquidAI",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 5),
+            contextWindowSize = 128000,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM-2.5 VL 1.6B (Vision Projector, BF16)",
+            description = "Vision Projector for LFM-2.5 VL models. BF16 variant required for image input. Download this to enable vision.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-GGUF/resolve/main/mmproj-LFM2.5-VL-1.6b-BF16.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 856000000L, // 856 MB from HuggingFace
+            source = "LiquidAI",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 2),
+            contextWindowSize = 0,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM-2.5 VL 1.6B (Vision Projector, Q8_0)",
+            description = "Vision Projector for LFM-2.5 VL models. Q8_0 quantized variant for smaller size. Download this to enable vision.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-GGUF/resolve/main/mmproj-LFM2.5-VL-1.6b-Q8_0.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 583000000L, // 583 MB from HuggingFace
+            source = "LiquidAI",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 2),
+            contextWindowSize = 0,
+            modelFormat = "gguf"
+        ),
+
+        // LFM-2.5 VL 1.6B Models (Vision-Language ONNX)
+        // LLMModel(
+        //     name = "LFM-2.5 VL 1.6B (ONNX Q4)",
+        //     description = "LiquidAI's 1.6B vision-language model in ONNX format. Q4 quantization. Supports vision + text. Requires multiple files.",
+        //     url = "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-ONNX/resolve/main/onnx/decoder_q4.onnx?download=true",
+        //     category = "multimodal",
+        //     sizeBytes = 1760000000L, // decoder_q4 + embed_images_q4 + embed_tokens_fp16 + tokenizer (~1.76 GB)
+        //     source = "LiquidAI",
+        //     supportsVision = true,
+        //     supportsGpu = false,
+        //     requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 5),
+        //     contextWindowSize = 128000,
+        //     modelFormat = "onnx",
+        //     additionalFiles = listOf(
+        //         "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-ONNX/resolve/main/onnx/decoder_q4.onnx_data?download=true",
+        //         "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-ONNX/resolve/main/onnx/embed_images_q4.onnx?download=true",
+        //         "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-ONNX/resolve/main/onnx/embed_images_q4.onnx_data?download=true",
+        //         "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-ONNX/resolve/main/onnx/embed_tokens_fp16.onnx?download=true",
+        //         "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-ONNX/resolve/main/onnx/embed_tokens_fp16.onnx_data?download=true",
+        //         "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-ONNX/resolve/main/config.json?download=true",
+        //         "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-ONNX/resolve/main/tokenizer.json?download=true",
+        //         "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-ONNX/resolve/main/tokenizer_config.json?download=true"
+        //     )
+        // ),
+        // LLMModel(
+        //     name = "LFM-2.5 VL 1.6B (ONNX Q8)",
+        //     description = "LiquidAI's 1.6B vision-language model in ONNX format. Q8 quantization for higher quality. Supports vision + text.",
+        //     url = "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-ONNX/resolve/main/onnx/decoder_q8.onnx?download=true",
+        //     category = "multimodal",
+        //     sizeBytes = 2540000000L, // decoder_q8 + embed_images_q8 + embed_tokens_fp16 + tokenizer (~2.54 GB)
+        //     source = "LiquidAI",
+        //     supportsVision = true,
+        //     supportsGpu = false,
+        //     requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+        //     contextWindowSize = 128000,
+        //     modelFormat = "onnx",
+        //     additionalFiles = listOf(
+        //         "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-ONNX/resolve/main/onnx/decoder_q8.onnx_data?download=true",
+        //         "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-ONNX/resolve/main/onnx/embed_images_q8.onnx?download=true",
+        //         "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-ONNX/resolve/main/onnx/embed_images_q8.onnx_data?download=true",
+        //         "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-ONNX/resolve/main/onnx/embed_tokens_fp16.onnx?download=true",
+        //         "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-ONNX/resolve/main/onnx/embed_tokens_fp16.onnx_data?download=true",
+        //         "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-ONNX/resolve/main/config.json?download=true",
+        //         "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-ONNX/resolve/main/tokenizer.json?download=true",
+        //         "https://huggingface.co/LiquidAI/LFM2.5-VL-1.6B-ONNX/resolve/main/tokenizer_config.json?download=true"
+        //     )
+        // ),
+
+        // Ministral-3 3B Instruct Models (MistralAI GGUF)
+        LLMModel(
+            name = "Ministral-3 3B Instruct (Q4_K_M)",
+            description = "MistralAI's 3B instruct model. Q4_K_M quantization. 32k context. Supports Vision (Requires mmproj).",
+            url = "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-GGUF/resolve/main/Ministral-3-3B-Instruct-2512-Q4_K_M.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 2150000000L, // 2.15 GB from HuggingFace
+            source = "MistralAI",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 262144,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Ministral-3 3B Instruct (Q5_K_M)",
+            description = "MistralAI's 3B instruct model. Q5_K_M quantization. 32k context. Supports Vision (Requires mmproj).",
+            url = "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-GGUF/resolve/main/Ministral-3-3B-Instruct-2512-Q5_K_M.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 2470000000L, // 2.47 GB from HuggingFace
+            source = "MistralAI",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 7),
+            contextWindowSize = 262144,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Ministral-3 3B Instruct (Q8_0)",
+            description = "MistralAI's 3B instruct model. Q8_0 quantization. 32k context. Supports Vision (Requires mmproj).",
+            url = "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-GGUF/resolve/main/Ministral-3-3B-Instruct-2512-Q8_0.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 3650000000L, // 3.65 GB from HuggingFace
+            source = "MistralAI",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 8),
+            contextWindowSize = 262144,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Ministral-3 3B Instruct (Vision Projector, BF16)",
+            description = "Multimodal Vision Projector for Ministral-3 3B models. Specifically the BF16 variant required for image input capabilities. Download this if you want to enable Vision for Ministral models.",
+            url = "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-GGUF/resolve/main/Ministral-3-3B-Instruct-2512-BF16-mmproj.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 842000000L, // 842 MB from HuggingFace
+            source = "MistralAI",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 2),
+            contextWindowSize = 0,
             modelFormat = "gguf"
         ),
 

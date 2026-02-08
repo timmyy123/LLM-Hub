@@ -48,7 +48,8 @@ interface InferenceService {
         chatId: String, 
         images: List<Bitmap> = emptyList(), 
         audioData: ByteArray? = null,
-        webSearchEnabled: Boolean = true
+        webSearchEnabled: Boolean = true,
+        imagePaths: List<String> = emptyList()
     ): Flow<String>
     suspend fun resetChatSession(chatId: String)
     suspend fun onCleared()
@@ -683,7 +684,8 @@ class MediaPipeInferenceService(private val applicationContext: Context) : Infer
         chatId: String, 
         images: List<Bitmap>, 
         audioData: ByteArray?,
-        webSearchEnabled: Boolean
+        webSearchEnabled: Boolean,
+        imagePaths: List<String>
     ): Flow<String> = callbackFlow {
         ensureModelLoaded(model)
         

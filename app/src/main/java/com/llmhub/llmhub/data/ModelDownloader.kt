@@ -917,6 +917,23 @@ class ModelDownloader(
         emit(DownloadStatus(cumulativeDownloaded, authoritativeTotal, 0))
         Log.i(TAG, "Completed downloading all files for ${model.name}. Total: $cumulativeDownloaded (authoritative total: $authoritativeTotal)")
 
+        // Fix case mismatch in LFM 2.5 VL projector filenames (HuggingFace has lowercase 'b', but SDK expects capital 'B')
+        try {
+            modelDir.listFiles()?.forEach { file ->
+                if (file.name.contains("mmproj") && file.name.contains("-1.6b-")) {
+                    val correctedName = file.name.replace("-1.6b-", "-1.6B-")
+                    val correctedFile = File(modelDir, correctedName)
+                    if (file.renameTo(correctedFile)) {
+                        Log.i(TAG, "Renamed projector file: ${file.name} -> $correctedName")
+                    } else {
+                        Log.w(TAG, "Failed to rename projector file: ${file.name}")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Post-download projector rename failed: ${e.message}")
+        }
+
         // Post-download diagnostic: list any mmproj files now present in the model dir
         try {
             val found = modelDir.listFiles()?.filter { it.name.contains("mmproj", ignoreCase = true) && it.name.endsWith(".gguf") } ?: emptyList()
