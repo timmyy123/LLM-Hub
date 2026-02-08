@@ -47,6 +47,7 @@ class NexaInferenceService @Inject constructor(
     
     private var currentModel: LLMModel? = null
     private var currentPreferredBackend: LlmInference.Backend? = null
+    private var currentVisionDisabled: Boolean = false
     
     private var overrideMaxTokens: Int? = null
     private var overrideTopK: Int? = null
@@ -64,7 +65,9 @@ class NexaInferenceService @Inject constructor(
     }
 
     override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?): Boolean {
-        return loadModelInternal(model, preferredBackend)
+        // Default to vision enabled for the two-arg load; clear any previous override
+        currentVisionDisabled = false
+        return loadModelInternal(model, preferredBackend, false)
     }
 
     override suspend fun loadModel(
@@ -73,10 +76,12 @@ class NexaInferenceService @Inject constructor(
         disableVision: Boolean,
         disableAudio: Boolean
     ): Boolean {
-         return loadModelInternal(model, preferredBackend)
+         // Respect the caller's disableVision flag so we can load as text-only if requested
+         currentVisionDisabled = disableVision
+         return loadModelInternal(model, preferredBackend, disableVision)
     }
     
-    private suspend fun loadModelInternal(model: LLMModel, preferredBackend: LlmInference.Backend?): Boolean {
+    private suspend fun loadModelInternal(model: LLMModel, preferredBackend: LlmInference.Backend?, disableVision: Boolean = false): Boolean {
         if (currentModel?.name == model.name && (llmWrapper != null || vlmWrapper != null)) {
             return true
         }
@@ -104,12 +109,12 @@ class NexaInferenceService @Inject constructor(
                 // Cap context size to prevent OOM on mobile devices.
                 // GGUF models allocate KV cache proportional to nCtx;
                 // 130K+ tokens will exhaust RAM on any phone.
-                // VLM models need a much smaller nCtx because the vision encoder
-                // prefill time scales with KV cache size. Reduced to 512 for faster vision processing.
-                val MAX_SAFE_CTX = if (model.supportsVision) 256 else 8192
+                // VLM models' memory cost grows with nCtx. Cap to 8192 for vision-enabled GGUF to keep allocations reasonable
+                // When vision is disabled, honor the user/model selected context window instead of forcing a cap.
+                val MAX_SAFE_CTX = if (model.supportsVision && !disableVision) 8192 else Int.MAX_VALUE
                 val rawCtx = overrideMaxTokens ?: model.contextWindowSize
-                val nCtx = rawCtx.coerceAtMost(MAX_SAFE_CTX)
-                if (rawCtx != nCtx) {
+                val nCtx = if (disableVision) rawCtx else rawCtx.coerceAtMost(MAX_SAFE_CTX)
+                if (!disableVision && rawCtx != nCtx) {
                     Log.w(TAG, "Capped nCtx from $rawCtx to $nCtx to prevent OOM")
                 }
                 val deviceToUse = if (backendId == "CPU") null else "GPUOpenCL"
@@ -141,13 +146,13 @@ class NexaInferenceService @Inject constructor(
                     }
                 }
 
-                // Find mmproj path for VLM models
-                val mmprojPath = if (model.supportsVision) {
+                // Find mmproj path for VLM models (only when vision is enabled)
+                val mmprojPath = if (model.supportsVision && !disableVision) {
                     findMmprojFile(modelDir, modelFile)?.absolutePath
                 } else null
 
                 // Use VlmWrapper for vision-capable models, LlmWrapper for text-only
-                if (model.supportsVision && mmprojPath != null) {
+                if (model.supportsVision && !disableVision && mmprojPath != null) {
                     Log.i(TAG, "Loading as VLM with mmproj: $mmprojPath")
                     val vlmCreateInput = VlmCreateInput(
                         model_name = "",
@@ -169,6 +174,7 @@ class NexaInferenceService @Inject constructor(
                         isVlmLoaded = true
                         currentModel = model
                         currentPreferredBackend = if (backendId == "CPU") LlmInference.Backend.CPU else LlmInference.Backend.GPU
+                        currentVisionDisabled = disableVision
                         Log.i(TAG, "✓ Successfully loaded VLM with $backendId backend")
                         return true
                     } else {
@@ -198,6 +204,7 @@ class NexaInferenceService @Inject constructor(
                         isVlmLoaded = false
                         currentModel = model
                         currentPreferredBackend = if (backendId == "CPU") LlmInference.Backend.CPU else LlmInference.Backend.GPU
+                        currentVisionDisabled = disableVision
                         Log.i(TAG, "✓ Successfully loaded LLM with $backendId backend")
                         return true
                     } else {
@@ -356,7 +363,8 @@ class NexaInferenceService @Inject constructor(
             return@callbackFlow
         }
         
-        val maxTokensVal = (overrideMaxTokens ?: model.contextWindowSize).coerceAtMost(8192)
+        val baseMaxTokens = overrideMaxTokens ?: model.contextWindowSize
+        val maxTokensVal = if (isVlmLoaded && !currentVisionDisabled) baseMaxTokens.coerceAtMost(8192) else baseMaxTokens
         val temperatureVal = overrideTemperature ?: 0.7f
         val topKVal = overrideTopK ?: 40
         val topPVal = overrideTopP ?: 0.9f
@@ -737,8 +745,8 @@ class NexaInferenceService @Inject constructor(
                 
                 // Reload the model to get fresh vision encoder state
                 if (modelToReload != null) {
-                    Log.d(TAG, "VLM: Reloading model ${modelToReload.name} for fresh state")
-                    loadModelInternal(modelToReload, backendToUse)
+                    Log.d(TAG, "VLM: Reloading model ${modelToReload.name} for fresh state (visionDisabled=$currentVisionDisabled)")
+                    loadModelInternal(modelToReload, backendToUse, currentVisionDisabled)
                 }
             } else if (llmWrapper != null) {
                 llmWrapper?.stopStream()
