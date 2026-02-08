@@ -609,7 +609,9 @@ class ChatViewModel(
      * Load downloaded models synchronously so callers can rely on the result immediately.
      */
     private suspend fun loadAvailableModelsSync(context: Context) {
-        val downloadedModels = ModelData.models.filter { it.category != "embedding" }.mapNotNull { model ->
+        val downloadedModels = ModelData.models
+            .filter { it.category != "embedding" && !it.name.contains("Projector", ignoreCase = true) }
+            .mapNotNull { model ->
             var isAvailable = false
             var actualSize = model.sizeBytes
 
@@ -1023,11 +1025,14 @@ class ChatViewModel(
                 // Ensure the model is loaded in the inference service before generating
                 try {
                     _isLoadingModel.value = true
-                    inferenceService.loadModel(currentModel!!, _selectedBackend.value)
+                    // Perform model load on IO dispatcher to avoid UI blocking / ANR
+                    val loaded = withContext(Dispatchers.IO) {
+                        inferenceService.loadModel(currentModel!!, _selectedBackend.value)
+                    }
                     // Sync the currently loaded model state
                     syncCurrentlyLoadedModel()
                     _isLoadingModel.value = false
-                    Log.d("ChatViewModel", "Successfully ensured model ${currentModel!!.name} is loaded for generation")
+                    Log.d("ChatViewModel", "Successfully ensured model ${currentModel!!.name} is loaded for generation (loaded=$loaded)")
                 } catch (e: Exception) {
                     Log.w("ChatViewModel", "Failed to ensure model is loaded: ${e.message}")
                     repository.addMessage(chatId, "Failed to load model. Please try again.", isFromUser = false)
@@ -1540,21 +1545,11 @@ class ChatViewModel(
                                 Log.d("ChatViewModel", "Generation completed successfully with ${continuationCount} continuations")
                                 Log.d("ChatViewModel", "Final content length: ${finalContent.length}")
                                 if (finalContent.isBlank()) {
-                                    Log.w("ChatViewModel", "No response produced - auto-regenerating with fresh session and only latest prompt")
-                                    // Auto-regenerate: reset session and resend only the latest user prompt
-                                    try {
-                                        handedOffToAutoRegenerate = true
-                                        autoRegenerateAfterNoResponse(context, chatId, placeholderId)
-                                        // Early return since auto-regeneration will manage updates/finalization
-                                        return@launch
-                                    } catch (e: Exception) {
-                                        Log.w("ChatViewModel", "Auto-regenerate failed: ${e.message}")
-                                        val fallback = context.getString(R.string.no_response_produced)
-                                        repository.updateMessageContent(placeholderId, fallback.trimEnd())
-                                        val time = System.currentTimeMillis() - generationStartTime
-                                        val streamDurationMs = ((if (lastChunkAt > 0) lastChunkAt else System.currentTimeMillis()) - (if (firstChunkAt > 0) firstChunkAt else generationStartTime)).coerceAtLeast(1L)
-                                        finalizeMessage(placeholderId, fallback, streamDurationMs)
-                                    }
+                                    Log.w("ChatViewModel", "No response produced – showing error to user")
+                                    val fallback = context.getString(R.string.no_response_produced)
+                                    repository.updateMessageContent(placeholderId, fallback.trimEnd())
+                                    val streamDurationMs = ((if (lastChunkAt > 0) lastChunkAt else System.currentTimeMillis()) - (if (firstChunkAt > 0) firstChunkAt else generationStartTime)).coerceAtLeast(1L)
+                                    finalizeMessage(placeholderId, fallback, streamDurationMs)
                                 } else {
                                     val safeFinal = finalContent
                                     repository.updateMessageContent(placeholderId, safeFinal.trimEnd())
@@ -1602,18 +1597,11 @@ class ChatViewModel(
                         // ALWAYS save final content and call finalizeMessage (for both cancel and error) even if the parent Job is cancelled
                         withContext(kotlinx.coroutines.NonCancellable) {
                             if (finalContent.isBlank()) {
-                                Log.w("ChatViewModel", "No response produced in error path - auto-regenerating")
-                                try {
-                                    handedOffToAutoRegenerate = true
-                                    autoRegenerateAfterNoResponse(context, chatId, placeholderId)
-                                    return@withContext
-                                } catch (e2: Exception) {
-                                    Log.w("ChatViewModel", "Auto-regenerate (error path) failed: ${e2.message}")
-                                    val fallback = context.getString(R.string.no_response_produced)
-                                    repository.updateMessageContent(placeholderId, fallback.trimEnd())
-                                    val streamDurationMs = ((if (lastChunkAt > 0) lastChunkAt else System.currentTimeMillis()) - (if (firstChunkAt > 0) firstChunkAt else generationStartTime)).coerceAtLeast(1L)
-                                    finalizeMessage(placeholderId, fallback, streamDurationMs)
-                                }
+                                Log.w("ChatViewModel", "No response produced in error path – showing error to user")
+                                val fallback = context.getString(R.string.no_response_produced)
+                                repository.updateMessageContent(placeholderId, fallback.trimEnd())
+                                val streamDurationMs = ((if (lastChunkAt > 0) lastChunkAt else System.currentTimeMillis()) - (if (firstChunkAt > 0) firstChunkAt else generationStartTime)).coerceAtLeast(1L)
+                                finalizeMessage(placeholderId, fallback, streamDurationMs)
                             } else {
                                 val safeFinal = sanitizeModelOutput(finalContent)
                                 repository.updateMessageContent(placeholderId, safeFinal.trimEnd())
@@ -1733,7 +1721,7 @@ class ChatViewModel(
         _isLoading.value = true
         isGenerating = true
         // Ensure model is loaded
-        inferenceService.loadModel(model, _selectedBackend.value)
+        withContext(Dispatchers.IO) { inferenceService.loadModel(model, _selectedBackend.value) }
 
         // Start a new generation streaming into the same placeholder with proper cancellation and TTS support
         val webSearchEnabled = try { themePreferences.webSearchEnabled.first() } catch (_: Exception) { false }
@@ -2074,7 +2062,7 @@ class ChatViewModel(
                                 delay(300)
                                 inferenceService.onCleared()
                                 delay(300)
-                                inferenceService.loadModel(newModel, _selectedBackend.value)
+                                withContext(Dispatchers.IO) { inferenceService.loadModel(newModel, _selectedBackend.value) }
                                 Log.d("ChatViewModel", "Force recreated session after reset failure")
                             } catch (recreateException: Exception) {
                                 Log.w("ChatViewModel", "Force recreation also failed: ${recreateException.message}")
@@ -2551,17 +2539,23 @@ class ChatViewModel(
     // If we just reset, be stricter to guarantee fast recovery.
     val historyFraction = if (recentlyReset) 0.30 else 0.66
         
-        // Use effective max tokens for ONNX (respects user slider), but stick to model defaults for Task/MediaPipe 
-        // to avoid unintended context truncation when slider is low (Task models treat slider as generation limit only)
-        val limitBase = if (model.modelFormat.equals("onnx", ignoreCase = true)) {
+        // For GGUF/ONNX, respect user slider. For Task models, use model defaults.
+        val limitBase = if (model.modelFormat.equals("onnx", ignoreCase = true) || model.modelFormat.equals("gguf", ignoreCase = true)) {
             inferenceService.getEffectiveMaxTokens(model)
         } else {
             model.contextWindowSize
         }
-        val maxContextTokens = (limitBase * historyFraction).toInt().coerceAtLeast(256)
-        val maxContextChars = maxContextTokens * 4 // Rough character limit (1 token ≈ 4 characters)
         
-        Log.d("ChatViewModel", "Context window: Model ${model.name} has ${model.contextWindowSize} tokens, using ${maxContextTokens} tokens (${maxContextChars} chars) for chat $currentChatId with ${chatMessages.size} messages")
+        // For local GGUF/Nexa, we can use most of the window for history. 
+        // We'll leave only a 2048 token buffer for the response, using the rest for history.
+        val maxContextTokens = if (model.modelFormat.equals("gguf", ignoreCase = true)) {
+            (limitBase - 2048).coerceAtLeast(limitBase / 2).coerceAtLeast(512)
+        } else {
+            (limitBase * historyFraction).toInt().coerceAtLeast(256)
+        }
+        val maxContextChars = maxContextTokens * 4 
+        
+        Log.d("ChatViewModel", "Context window: Model ${model.name} (${model.modelFormat}) has ${model.contextWindowSize} tokens, effectively using $limitBase. Allocating $maxContextTokens tokens for history.")
         
         // Convert messages to conversation pairs for better context management
         val conversationPairs = mutableListOf<Pair<MessageEntity?, MessageEntity>>()

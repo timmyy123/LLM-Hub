@@ -1,3 +1,4 @@
 {
-    "chat.agent.maxRequests": 1e+22
+    "chat.agent.maxRequests": 1e+22,
+    "github.copilot.chat.anthropic.tools.websearch.maxUses": 20
 }

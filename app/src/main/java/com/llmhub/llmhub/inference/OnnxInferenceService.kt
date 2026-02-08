@@ -6,6 +6,7 @@ import android.util.Log
 import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
+import ai.onnxruntime.OnnxJavaType
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.data.LLMModel
 import kotlinx.coroutines.Dispatchers
@@ -21,6 +22,9 @@ import kotlinx.coroutines.isActive
 import java.io.File
 import java.nio.FloatBuffer
 import java.nio.LongBuffer
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.nio.ShortBuffer
 import java.util.EnumSet
 import javax.inject.Inject
 import ai.onnxruntime.providers.NNAPIFlags
@@ -71,6 +75,99 @@ class OnnxInferenceService @Inject constructor(
     private val SENTINEL_THINK = "\u200B\u200BTHINK\u200B\u200B"
     private val SENTINEL_ENDTHINK = "\u200B\u200BENDTHINK\u200B\u200B"
 
+    private fun logOrtNativeLibs() {
+        try {
+            val nativeDir = context.applicationInfo.nativeLibraryDir
+            Log.d(TAG, "ORT native dir: $nativeDir")
+            val ortLib = File(nativeDir, "libonnxruntime.so")
+            val jniLib = File(nativeDir, "libonnxruntime4j_jni.so")
+            Log.d(TAG, "libonnxruntime.so exists=${ortLib.exists()} size=${ortLib.length()}")
+            Log.d(TAG, "libonnxruntime4j_jni.so exists=${jniLib.exists()} size=${jniLib.length()}")
+
+            File("/proc/self/maps").useLines { lines ->
+                lines.filter { it.contains("libonnxruntime.so") || it.contains("libonnxruntime4j_jni.so") }
+                    .take(6)
+                    .forEach { Log.d(TAG, "maps: $it") }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to inspect ORT native libs: ${e.message}")
+        }
+    }
+
+    private fun ensureOrtLoaded() {
+        try {
+            System.loadLibrary("onnxruntime")
+        } catch (e: UnsatisfiedLinkError) {
+            Log.e(TAG, "Failed to load libonnxruntime.so explicitly", e)
+            throw e
+        }
+        try {
+            System.loadLibrary("onnxruntime4j_jni")
+        } catch (e: UnsatisfiedLinkError) {
+            Log.e(TAG, "Failed to load libonnxruntime4j_jni.so explicitly", e)
+            throw e
+        }
+    }
+
+    private fun floatToHalfBits(value: Float): Short {
+        val bits = java.lang.Float.floatToIntBits(value)
+        val sign = (bits ushr 16) and 0x8000
+        var valBits = bits and 0x7fffffff
+
+        if (valBits >= 0x7f800000) {
+            val nan = if (valBits > 0x7f800000) 0x200 else 0
+            return (sign or 0x7c00 or nan).toShort()
+        }
+
+        val exp = ((valBits ushr 23) and 0xff) - 127 + 15
+        val mant = valBits and 0x7fffff
+
+        if (exp <= 0) {
+            if (exp < -10) return sign.toShort()
+            val shifted = (mant or 0x800000) shr (1 - exp)
+            return (sign or ((shifted + 0x1000) shr 13)).toShort()
+        }
+        if (exp >= 31) return (sign or 0x7c00).toShort()
+
+        return (sign or (exp shl 10) or (mant shr 13)).toShort()
+    }
+
+    private fun createFloat16Tensor(env: OrtEnvironment, floats: FloatArray, shape: LongArray): OnnxTensor {
+        val halfs = ShortArray(floats.size)
+        for (i in floats.indices) {
+            halfs[i] = floatToHalfBits(floats[i])
+        }
+        val bb = ByteBuffer.allocateDirect(halfs.size * 2).order(ByteOrder.nativeOrder())
+        val sb = bb.asShortBuffer()
+        sb.put(halfs)
+        sb.rewind()
+        return OnnxTensor.createTensor(env, sb, shape, OnnxJavaType.FLOAT16)
+    }
+
+    private fun createZeroTensor(env: OrtEnvironment, tensorInfo: ai.onnxruntime.TensorInfo, shape: LongArray, totalSize: Int): OnnxTensor {
+        return if (tensorInfo.type == OnnxJavaType.FLOAT16) {
+            val bb = ByteBuffer.allocateDirect(totalSize * 2).order(ByteOrder.nativeOrder())
+            val sb = bb.asShortBuffer()
+            OnnxTensor.createTensor(env, sb, shape, OnnxJavaType.FLOAT16)
+        } else {
+            val zeroData = FloatArray(totalSize) { 0f }
+            OnnxTensor.createTensor(env, FloatBuffer.wrap(zeroData), shape)
+        }
+    }
+
+    private fun ensureInputsEmbedsType(env: OrtEnvironment, session: OrtSession, embeds: OnnxTensor): OnnxTensor {
+        val expected = (session.inputInfo["inputs_embeds"]?.info as? ai.onnxruntime.TensorInfo)?.type
+        if (expected == OnnxJavaType.FLOAT16 && embeds.info.type != OnnxJavaType.FLOAT16) {
+            val fb = embeds.floatBuffer
+            val floats = FloatArray(fb.remaining())
+            fb.get(floats)
+            val shape = embeds.info.shape
+            embeds.close()
+            return createFloat16Tensor(env, floats, shape)
+        }
+        return embeds
+    }
+
     override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?): Boolean {
         return loadModelInternal(model, preferredBackend)
     }
@@ -103,7 +200,26 @@ class OnnxInferenceService @Inject constructor(
             
             withContext(Dispatchers.IO) {
                 mutex.withLock {
-                    ortEnvironment = OrtEnvironment.getEnvironment()
+                    try {
+                        // Log which libonnxruntime.so we are about to load
+                        logOrtNativeLibs()
+                        // Force-load ORT native libs in the correct order
+                        ensureOrtLoaded()
+                        ortEnvironment = OrtEnvironment.getEnvironment()
+                    } catch (e: UnsatisfiedLinkError) {
+                        Log.e(TAG, "ONNX Runtime native library conflict (libonnxruntime.so). " +
+                            "This usually means the Nexa SDK's bundled copy was loaded instead of Microsoft's. " +
+                            "Clean build and reinstall required.", e)
+                        return@withContext
+                    } catch (e: ExceptionInInitializerError) {
+                        Log.e(TAG, "ONNX Runtime initialization failed: ${e.cause?.message}", e)
+                        return@withContext
+                    }
+                    
+                    if (ortEnvironment == null) {
+                        Log.e(TAG, "Failed to create ORT environment")
+                        return@withContext
+                    }
                     
                     if (useGpu) {
                         // Try NNAPI-only first (no CPU fallback) so full graph runs on GPU/NPU if driver supports it.
@@ -212,7 +328,14 @@ class OnnxInferenceService @Inject constructor(
                     Log.d(TAG, "Output names: ${ortSession?.outputNames}")
                 }
             }
-            true
+            // If ortEnvironment or ortSession failed to initialize, report failure
+            ortEnvironment != null && ortSession != null
+        } catch (e: UnsatisfiedLinkError) {
+            Log.e(TAG, "ONNX Runtime native library failed to load", e)
+            false
+        } catch (e: ExceptionInInitializerError) {
+            Log.e(TAG, "ONNX Runtime class init failed", e)
+            false
         } catch (e: Exception) {
             Log.e(TAG, "Error loading ONNX model", e)
             false
@@ -410,11 +533,8 @@ class OnnxInferenceService @Inject constructor(
                     } else {
                         onnxShape.fold(1L) { acc, d -> acc * d }.toInt()
                     }
-                    val zeroData = FloatArray(totalSize) { 0f }
-                    
-                    // Create zero tensor  
-                    val zeroTensor = OnnxTensor.createTensor(env, 
-                        java.nio.FloatBuffer.wrap(zeroData), onnxShape)
+                    // Create zero tensor using the model's expected type
+                    val zeroTensor = createZeroTensor(env, tensorInfo, onnxShape, totalSize)
                     cache[inputName] = zeroTensor
                 }
                 
@@ -460,8 +580,9 @@ class OnnxInferenceService @Inject constructor(
                         if (embedSession != null) {
                             val embedOutputs = embedSession.run(mapOf("input_ids" to idsTensor))
                             val embeds = embedOutputs[0] as OnnxTensor
-                            embedTensorToClose = embeds
-                            feed["inputs_embeds"] = embeds
+                            val typedEmbeds = ensureInputsEmbedsType(env, session, embeds)
+                            embedTensorToClose = typedEmbeds
+                            feed["inputs_embeds"] = typedEmbeds
                         } else {
                             throw IllegalStateException("Decoder expects inputs_embeds but embedding session not loaded. Ensure embed_tokens_fp16.onnx is in the model directory.")
                         }
@@ -878,7 +999,8 @@ class OnnxInferenceService @Inject constructor(
                     imageOffset++
                 }
             }
-            val mergedTensor = OnnxTensor.createTensor(env, FloatBuffer.wrap(merged), longArrayOf(1, inputIds.size.toLong(), embedDim.toLong()))
+            val mergedTensorRaw = OnnxTensor.createTensor(env, FloatBuffer.wrap(merged), longArrayOf(1, inputIds.size.toLong(), embedDim.toLong()))
+            val mergedTensor = ensureInputsEmbedsType(env, session, mergedTensorRaw)
             runDecoderLoop(env, session, model, inputIds, mergedTensor, tok, send)
         }
     }
@@ -910,8 +1032,7 @@ class OnnxInferenceService @Inject constructor(
                 }
             }.toLongArray()
             val totalSize = if (onnxShape.contains(0L)) 0 else onnxShape.fold(1L) { acc, d -> acc * d }.toInt()
-            val zeroData = FloatArray(totalSize) { 0f }
-            cache[inputName] = OnnxTensor.createTensor(env, FloatBuffer.wrap(zeroData), onnxShape)
+            cache[inputName] = createZeroTensor(env, tensorInfo, onnxShape, totalSize)
         }
         var seqLen = initialInputIds.size
         val generatedTokens = mutableListOf<Long>()
@@ -933,7 +1054,8 @@ class OnnxInferenceService @Inject constructor(
                     val eo = embedSession!!.run(mapOf("input_ids" to idsTensor))
                     eo[0] as OnnxTensor
                 }
-                feed["inputs_embeds"] = embeds
+                val typedEmbeds = if (step == 0) embeds else ensureInputsEmbedsType(env, session, embeds)
+                feed["inputs_embeds"] = typedEmbeds
             }
             feed["attention_mask"] = maskTensor
             if (usePositionIds && posIds != null) {
