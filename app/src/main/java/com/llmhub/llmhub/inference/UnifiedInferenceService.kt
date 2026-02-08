@@ -101,9 +101,10 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         chatId: String,
         images: List<Bitmap>,
         audioData: ByteArray?,
-        webSearchEnabled: Boolean
+        webSearchEnabled: Boolean,
+        imagePaths: List<String>
     ): Flow<String> {
-        return currentService.generateResponseStreamWithSession(prompt, model, chatId, images, audioData, webSearchEnabled)
+        return currentService.generateResponseStreamWithSession(prompt, model, chatId, images, audioData, webSearchEnabled, imagePaths)
     }
 
     override suspend fun resetChatSession(chatId: String) {

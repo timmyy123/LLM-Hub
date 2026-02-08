@@ -56,6 +56,8 @@ class NexaInferenceService @Inject constructor(
     init {
         try {
             NexaSdk.getInstance().init(context)
+            // Clean up any stale VLM cache files from previous sessions
+            cleanupStaleCacheFiles()
         } catch (e: Exception) {
             Log.e(TAG, "Failed to init NexaSdk", e)
         }
@@ -103,8 +105,8 @@ class NexaInferenceService @Inject constructor(
                 // GGUF models allocate KV cache proportional to nCtx;
                 // 130K+ tokens will exhaust RAM on any phone.
                 // VLM models need a much smaller nCtx because the vision encoder
-                // prefill time scales with KV cache size. The Nexa demo uses 1024.
-                val MAX_SAFE_CTX = if (model.supportsVision) 1024 else 8192
+                // prefill time scales with KV cache size. Reduced to 512 for faster vision processing.
+                val MAX_SAFE_CTX = if (model.supportsVision) 256 else 8192
                 val rawCtx = overrideMaxTokens ?: model.contextWindowSize
                 val nCtx = rawCtx.coerceAtMost(MAX_SAFE_CTX)
                 if (rawCtx != nCtx) {
@@ -258,6 +260,25 @@ class NexaInferenceService @Inject constructor(
 
         return matched ?: allMmproj.firstOrNull()
     }
+    
+    /**
+     * Clean up stale VLM cache files from previous sessions to prevent accumulation
+     */
+    private fun cleanupStaleCacheFiles() {
+        try {
+            val cacheDir = context.cacheDir
+            val vlmFiles = cacheDir.listFiles { file ->
+                file.name.startsWith("nexa_vlm_") && file.name.endsWith(".jpg")
+            } ?: return
+            
+            if (vlmFiles.isNotEmpty()) {
+                Log.d(TAG, "Cleaning up ${vlmFiles.size} stale VLM cache files")
+                vlmFiles.forEach { it.delete() }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to clean up VLM cache files: ${e.message}")
+        }
+    }
 
     override suspend fun unloadModel() {
          try {
@@ -294,12 +315,13 @@ class NexaInferenceService @Inject constructor(
         chatId: String,
         images: List<Bitmap>,
         audioData: ByteArray?,
-        webSearchEnabled: Boolean
+        webSearchEnabled: Boolean,
+        imagePaths: List<String>
     ): Flow<String> {
         val imagePaths = if (images.isNotEmpty()) {
             images.mapIndexed { index, bitmap ->
                 // Downscale large images to speed up the VLM vision encoder.
-                val maxDim = 384
+                val maxDim = 300
                 val scaled = if (bitmap.width > maxDim || bitmap.height > maxDim) {
                     val scale = maxDim.toFloat() / maxOf(bitmap.width, bitmap.height)
                     val w = (bitmap.width * scale).toInt()
@@ -501,7 +523,16 @@ class NexaInferenceService @Inject constructor(
                 trySend(text)
             }
             is LlmStreamResult.Completed -> close()
-            is LlmStreamResult.Error -> close(Exception("SDK Error"))
+            is LlmStreamResult.Error -> {
+                // Log detailed error information for debugging
+                try {
+                    val errorCode = streamResult::class.java.getDeclaredField("errorCode").apply { isAccessible = true }.get(streamResult)
+                    Log.e(TAG, "VLM/LLM SDK Error - Code: $errorCode")
+                } catch (e: Exception) {
+                    Log.e(TAG, "VLM/LLM SDK Error (unable to extract error code)")
+                }
+                close(Exception("SDK Error"))
+            }
         }
     }
 
@@ -693,10 +724,22 @@ class NexaInferenceService @Inject constructor(
 
     override suspend fun resetChatSession(chatId: String) {
         // Clear VLM KV cache to prevent cross-chat state contamination
+        // For VLM models, we need to fully destroy and reload to clear vision encoder state
         try {
             if (isVlmLoaded && vlmWrapper != null) {
+                val modelToReload = currentModel
+                val backendToUse = currentPreferredBackend
+                
+                Log.d(TAG, "VLM: Destroying wrapper to clear vision state for new chat")
                 vlmWrapper?.stopStream()
-                Log.d(TAG, "VLM: Reset chat session – cleared KV cache")
+                vlmWrapper?.destroy()
+                vlmWrapper = null
+                
+                // Reload the model to get fresh vision encoder state
+                if (modelToReload != null) {
+                    Log.d(TAG, "VLM: Reloading model ${modelToReload.name} for fresh state")
+                    loadModelInternal(modelToReload, backendToUse)
+                }
             } else if (llmWrapper != null) {
                 llmWrapper?.stopStream()
             }

@@ -299,8 +299,15 @@ fun stripNexaOnnxFromCache() {
 }
 
 tasks.register("stripOnnxFromNexa") {
+    inputs.files(
+        rootProject.file("build.gradle.kts"),
+        rootProject.file("settings.gradle.kts"),
+        project.file("build.gradle.kts")
+    )
+    outputs.file(layout.buildDirectory.file("stripOnnxFromNexa.marker"))
     doLast {
         stripNexaOnnxFromCache()
+        layout.buildDirectory.file("stripOnnxFromNexa.marker").get().asFile.writeText("ok")
     }
 }
 
@@ -313,14 +320,4 @@ tasks.configureEach {
     }
 }
 
-// Safety: ensure strip runs before any build variant
-tasks.matching { it.name.equals("preBuild", ignoreCase = true) }.configureEach {
-    dependsOn("stripOnnxFromNexa")
-}
-
-// Ensure the strip runs before dependency resolution too (covers IDE sync/build paths)
-configurations.configureEach {
-    incoming.beforeResolve {
-        stripNexaOnnxFromCache()
-    }
-}
+// Note: stripOnnxFromNexa only re-runs when Gradle files change (inputs/outputs).

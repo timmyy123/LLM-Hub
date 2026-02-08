@@ -802,7 +802,8 @@ class OnnxInferenceService @Inject constructor(
 
     override suspend fun generateResponseStreamWithSession(
         prompt: String, model: LLMModel, chatId: String,
-        images: List<Bitmap>, audioData: ByteArray?, webSearchEnabled: Boolean
+        images: List<Bitmap>, audioData: ByteArray?, webSearchEnabled: Boolean,
+        imagePaths: List<String>
     ): Flow<String> = callbackFlow {
         ensureModelLoaded(model)
         

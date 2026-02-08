@@ -662,17 +662,20 @@ class ChatViewModel(
                     }
 
                     if (primaryFile.exists()) {
-                        // Only treat as available if passes integrity checks
-                        // We rely on isModelFileValid for format checking (GGUF magic, ZIP structure)
-                        // Relaxing strict size check to avoid issues where hardcoded metadata size slightly differs from actual file
-                        val sizeOk = primaryFile.length() >= 10L * 1024 * 1024 // At least 10MB
+                        // Only treat as available if file is fully downloaded (at least 99% of expected size)
+                        val sizeKnown = model.sizeBytes > 0
+                        val sizeOk = if (sizeKnown) {
+                            primaryFile.length() >= (model.sizeBytes * 0.99).toLong()
+                        } else {
+                            primaryFile.length() >= 10L * 1024 * 1024 // Fallback for unknown size: at least 10MB
+                        }
                         val valid = isModelFileValid(primaryFile, model.modelFormat)
                         if (sizeOk && valid) {
                             isAvailable = true
                             actualSize = primaryFile.length()
                             Log.d("ChatViewModel", "Found VALID model in files: ${primaryFile.absolutePath} (${actualSize / (1024*1024)} MB)")
                         } else {
-                            Log.d("ChatViewModel", "Ignoring incomplete/invalid model file: ${primaryFile.absolutePath} sizeOk=$sizeOk valid=$valid")
+                            Log.d("ChatViewModel", "Ignoring incomplete/invalid model file: ${primaryFile.absolutePath} sizeOk=$sizeOk valid=$valid size=${primaryFile.length()}/${model.sizeBytes}")
                         }
                         }
                     }
