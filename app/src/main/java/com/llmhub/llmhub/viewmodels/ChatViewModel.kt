@@ -336,6 +336,9 @@ class ChatViewModel(
             field = value
             savedStateHandle.set(KEY_IS_GENERATING, value)
         }
+    
+    // Track whether we've already retried after a context reset to prevent infinite loops
+    private var isRetryAfterContextReset = false
 
     // Track when session was reset due to repetitive content to ensure clean next generation
     private var lastSessionResetAt = 0L
@@ -1002,6 +1005,7 @@ class ChatViewModel(
                 attachmentFileName = attachmentFileInfo?.name,
                 attachmentFileSize = attachmentFileInfo?.size
             )
+            val userMessageId = _messages.value.lastOrNull { it.isFromUser && it.chatId == chatId }?.id
             
             // Debug logging for file size
             if (attachmentFileInfo != null) {
@@ -1088,6 +1092,7 @@ class ChatViewModel(
                             var firstChunkAt = 0L
                             var lastChunkAt = 0L
                             var handedOffToAutoRegenerate = false
+                            var triggeredRetry = false // Track if this attempt triggered a retry
                             
                             try {
                                 // Pre-load model separately from generation timing
@@ -1548,11 +1553,33 @@ class ChatViewModel(
                                 Log.d("ChatViewModel", "Generation completed successfully with ${continuationCount} continuations")
                                 Log.d("ChatViewModel", "Final content length: ${finalContent.length}")
                                 if (finalContent.isBlank()) {
-                                    Log.w("ChatViewModel", "No response produced – showing error to user")
-                                    val fallback = context.getString(R.string.no_response_produced)
-                                    repository.updateMessageContent(placeholderId, fallback.trimEnd())
-                                    val streamDurationMs = ((if (lastChunkAt > 0) lastChunkAt else System.currentTimeMillis()) - (if (firstChunkAt > 0) firstChunkAt else generationStartTime)).coerceAtLeast(1L)
-                                    finalizeMessage(placeholderId, fallback, streamDurationMs)
+                                    // Check if this is a GGUF model - if so, auto-reset session and retry
+                                    val isGgufModel = currentModel?.modelFormat?.equals("gguf", ignoreCase = true) == true
+                                    if (isGgufModel && !isRetryAfterContextReset) {
+                                        Log.w("ChatViewModel", "No response from GGUF model - context window likely full. Auto-resetting session and retrying...")
+                                        triggeredRetry = true
+                                        isRetryAfterContextReset = true
+                                        // Delete the placeholder and user message (sendMessage will re-add user message)
+                                        repository.deleteMessageById(placeholderId)
+                                        if (userMessageId != null) repository.deleteMessageById(userMessageId)
+                                        // Destroy and reload the model to clear KV cache
+                                        try {
+                                            inferenceService.resetChatSession(chatId)
+                                            Log.d("ChatViewModel", "Successfully reset GGUF model for chat $chatId")
+                                        } catch (resetEx: Exception) {
+                                            Log.e("ChatViewModel", "Failed to reset GGUF model: ${resetEx.message}")
+                                        }
+                                        // Drop history so the retry only sends the current prompt
+                                        dropHistoryOnce = true
+                                        sendMessage(context, messageText, attachmentUri, audioData)
+                                        return@launch
+                                    } else {
+                                        Log.w("ChatViewModel", "No response produced – showing error to user")
+                                        val fallback = context.getString(R.string.no_response_produced)
+                                        repository.updateMessageContent(placeholderId, fallback.trimEnd())
+                                        val streamDurationMs = ((if (lastChunkAt > 0) lastChunkAt else System.currentTimeMillis()) - (if (firstChunkAt > 0) firstChunkAt else generationStartTime)).coerceAtLeast(1L)
+                                        finalizeMessage(placeholderId, fallback, streamDurationMs)
+                                    }
                                 } else {
                                     val safeFinal = finalContent
                                     repository.updateMessageContent(placeholderId, safeFinal.trimEnd())
@@ -1600,11 +1627,34 @@ class ChatViewModel(
                         // ALWAYS save final content and call finalizeMessage (for both cancel and error) even if the parent Job is cancelled
                         withContext(kotlinx.coroutines.NonCancellable) {
                             if (finalContent.isBlank()) {
-                                Log.w("ChatViewModel", "No response produced in error path – showing error to user")
-                                val fallback = context.getString(R.string.no_response_produced)
-                                repository.updateMessageContent(placeholderId, fallback.trimEnd())
-                                val streamDurationMs = ((if (lastChunkAt > 0) lastChunkAt else System.currentTimeMillis()) - (if (firstChunkAt > 0) firstChunkAt else generationStartTime)).coerceAtLeast(1L)
-                                finalizeMessage(placeholderId, fallback, streamDurationMs)
+                                // Check if this is a GGUF model - if so, auto-reset session and retry
+                                val isGgufModel = currentModel?.modelFormat?.equals("gguf", ignoreCase = true) == true
+                                if (isGgufModel && !isRetryAfterContextReset) {
+                                    Log.w("ChatViewModel", "No response from GGUF model (error path) - context window likely full. Auto-resetting session and retrying...")
+                                    triggeredRetry = true
+                                    isRetryAfterContextReset = true
+                                    // Delete the placeholder and user message (sendMessage will re-add user message)
+                                    repository.deleteMessageById(placeholderId)
+                                    if (userMessageId != null) repository.deleteMessageById(userMessageId)
+                                    // Destroy and reload the model to clear KV cache
+                                    try {
+                                        inferenceService.resetChatSession(chatId)
+                                        Log.d("ChatViewModel", "Successfully reset GGUF model for chat $chatId (error path)")
+                                    } catch (resetEx: Exception) {
+                                        Log.e("ChatViewModel", "Failed to reset GGUF model (error path): ${resetEx.message}")
+                                    }
+                                    // Drop history so the retry only sends the current prompt
+                                    dropHistoryOnce = true
+                                    withContext(Dispatchers.Main) {
+                                        sendMessage(context, messageText, attachmentUri, audioData)
+                                    }
+                                } else {
+                                    Log.w("ChatViewModel", "No response produced in error path – showing error to user")
+                                    val fallback = context.getString(R.string.no_response_produced)
+                                    repository.updateMessageContent(placeholderId, fallback.trimEnd())
+                                    val streamDurationMs = ((if (lastChunkAt > 0) lastChunkAt else System.currentTimeMillis()) - (if (firstChunkAt > 0) firstChunkAt else generationStartTime)).coerceAtLeast(1L)
+                                    finalizeMessage(placeholderId, fallback, streamDurationMs)
+                                }
                             } else {
                                 val safeFinal = sanitizeModelOutput(finalContent)
                                 repository.updateMessageContent(placeholderId, safeFinal.trimEnd())
@@ -1614,7 +1664,7 @@ class ChatViewModel(
                             }
                         }
                     } finally {
-                        if (!handedOffToAutoRegenerate) {
+                        if (!handedOffToAutoRegenerate && !triggeredRetry) {
                             _isLoading.value = false
                             _isLoadingModel.value = false
                             isGenerating = false
@@ -1622,6 +1672,11 @@ class ChatViewModel(
                             val updatedStreaming = _streamingContents.value.toMutableMap()
                             updatedStreaming.remove(placeholderId)
                             _streamingContents.value = updatedStreaming
+                        }
+                        // Reset the retry flag only if we didn't just trigger a retry
+                        // This ensures the flag persists into the retry attempt
+                        if (isRetryAfterContextReset && !triggeredRetry) {
+                            isRetryAfterContextReset = false
                         }
                     }
                 }

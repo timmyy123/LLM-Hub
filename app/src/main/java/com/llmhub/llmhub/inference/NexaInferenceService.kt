@@ -731,13 +731,14 @@ class NexaInferenceService @Inject constructor(
     }
 
     override suspend fun resetChatSession(chatId: String) {
-        // Clear VLM KV cache to prevent cross-chat state contamination
-        // For VLM models, we need to fully destroy and reload to clear vision encoder state
+        // Clear KV cache by destroying and reloading the model wrapper.
+        // The Nexa SDK has no explicit KV-cache-clear API, so a full
+        // destroy + rebuild cycle is the only reliable way to reset state.
         try {
+            val modelToReload = currentModel
+            val backendToUse = currentPreferredBackend
+            
             if (isVlmLoaded && vlmWrapper != null) {
-                val modelToReload = currentModel
-                val backendToUse = currentPreferredBackend
-                
                 Log.d(TAG, "VLM: Destroying wrapper to clear vision state for new chat")
                 vlmWrapper?.stopStream()
                 vlmWrapper?.destroy()
@@ -749,7 +750,16 @@ class NexaInferenceService @Inject constructor(
                     loadModelInternal(modelToReload, backendToUse, currentVisionDisabled)
                 }
             } else if (llmWrapper != null) {
+                Log.d(TAG, "LLM: Destroying wrapper to clear KV cache")
                 llmWrapper?.stopStream()
+                llmWrapper?.destroy()
+                llmWrapper = null
+                
+                // Reload the model to get a fresh KV cache
+                if (modelToReload != null) {
+                    Log.d(TAG, "LLM: Reloading model ${modelToReload.name} for fresh KV cache")
+                    loadModelInternal(modelToReload, backendToUse, currentVisionDisabled)
+                }
             }
         } catch (e: Exception) {
             Log.w(TAG, "Error resetting chat session: ${e.message}")
