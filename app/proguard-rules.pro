@@ -31,3 +31,37 @@
 # Keep Protobuf generated message classes and fields used by RAG SDK
 -keep class com.google.ai.edge.localagents.rag.** { *; }
 -keepclassmembers class com.google.ai.edge.localagents.rag.** { *; }
+
+# ── ONNX Runtime JNI Protection ──────────────────────────────────────
+# ONNX Runtime uses JNI extensively - must preserve all classes/methods
+# that are called from native code to prevent "java_class == null" crashes
+-keep class ai.onnxruntime.** { *; }
+-keepclassmembers class ai.onnxruntime.** { *; }
+-keepclasseswithmembernames class * {
+    native <methods>;
+}
+
+# Keep OrtSession and related classes used via JNI reflection
+-keep class ai.onnxruntime.OrtSession { *; }
+-keep class ai.onnxruntime.OrtSession$* { *; }
+-keep class ai.onnxruntime.OrtEnvironment { *; }
+-keep class ai.onnxruntime.OrtSessionOptions { *; }
+-keep class ai.onnxruntime.OnnxTensor { *; }
+-keep class ai.onnxruntime.TensorInfo { *; }
+-keep class ai.onnxruntime.OnnxValue { *; }
+-keep class ai.onnxruntime.OrtException { *; }
+-keep class ai.onnxruntime.OrtProvider { *; }
+-keep class ai.onnxruntime.OrtProvider$* { *; }
+
+# Keep enums used by ONNX Runtime
+-keepclassmembers enum ai.onnxruntime.** {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
+# ── Nexa SDK Protection ─────────────────────────────────────────────
+# Nexa SDK uses native libraries and JNI - preserve all classes
+-keep class ai.nexa.** { *; }
+-keepclassmembers class ai.nexa.** { *; }
+-keep class ai.nexa.core.** { *; }
+-keepclassmembers class ai.nexa.core.** { *; }
