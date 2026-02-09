@@ -84,8 +84,8 @@ fun ChatSettingsSheet(
     }
     
     // Config state
-    var maxTokensValue by remember { mutableStateOf(baseMaxTokensCap) }
-    var maxTokensText by remember { mutableStateOf(baseMaxTokensCap.toString()) }
+    var maxTokensValue by remember { mutableStateOf(minOf(4096, baseMaxTokensCap)) }
+    var maxTokensText by remember { mutableStateOf(minOf(4096, baseMaxTokensCap).toString()) }
     var topK by remember { mutableStateOf(64) }
     var topP by remember { mutableStateOf(0.95f) }
     var temperature by remember { mutableStateOf(1.0f) }
@@ -136,8 +136,9 @@ fun ChatSettingsSheet(
                 } else {
                     // Reset to defaults for new model
                     val effCap = if (model.supportsVision && !newIsGemma3n) minOf(newBaseCap, 8192) else newBaseCap
-                    maxTokensValue = effCap
-                    maxTokensText = effCap.toString()
+                    val defaultMax = minOf(4096, effCap)
+                    maxTokensValue = defaultMax
+                    maxTokensText = defaultMax.toString()
                     topK = 64
                     topP = 0.95f
                     temperature = 1.0f
@@ -148,8 +149,9 @@ fun ChatSettingsSheet(
             } catch (e: Exception) {
                 // Reset to defaults on error
                 val effCap = if (model.supportsVision) minOf(newBaseCap, 8192) else newBaseCap
-                maxTokensValue = effCap
-                maxTokensText = effCap.toString()
+                val defaultMax = minOf(4096, effCap)
+                maxTokensValue = defaultMax
+                maxTokensText = defaultMax.toString()
                 topK = 64
                 topP = 0.95f
                 temperature = 1.0f
@@ -690,9 +692,10 @@ fun ChatSettingsSheet(
                                     val newIsGemma3n = model.name.contains("Gemma-3n", ignoreCase = true)
                                     val newIsPhi4Mini = model.name.contains("Phi-4 Mini", ignoreCase = true)
                                     val newDefaultUseGpu = if (newIsPhi4Mini) false else model.supportsGpu
+                                    val defaultMax = minOf(4096, newMaxTokensCap)
                                     
-                                    maxTokensValue = newMaxTokensCap
-                                    maxTokensText = newMaxTokensCap.toString()
+                                    maxTokensValue = defaultMax
+                                    maxTokensText = defaultMax.toString()
                                     topK = 64
                                     topP = 0.95f
                                     temperature = 1.0f

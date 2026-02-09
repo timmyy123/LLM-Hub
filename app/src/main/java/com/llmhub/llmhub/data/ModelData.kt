@@ -128,6 +128,478 @@ object ModelData {
             modelFormat = "task"
         ),
 
+        // Llama-3.2 1B GGUF Models from bartowski
+        LLMModel(
+            name = "Llama-3.2 1B (IQ3_M)",
+            description = "Llama 3.2 1B with IQ3_M quantization. Smallest size, great for low-memory devices. 128k context. (657MB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-IQ3_M.gguf?download=true",
+            category = "text",
+            sizeBytes = 657000000L, // 657 MB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 1B (IQ4_XS)",
+            description = "Llama 3.2 1B with IQ4_XS quantization. Optimized 4-bit. 128k context. (743MB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-IQ4_XS.gguf?download=true",
+            category = "text",
+            sizeBytes = 743000000L, // 743 MB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 1B (Q3_K_L)",
+            description = "Llama 3.2 1B with Q3_K_L quantization. Large 3-bit variant. 128k context. (733MB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q3_K_L.gguf?download=true",
+            category = "text",
+            sizeBytes = 733000000L, // 733 MB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 1B (Q3_K_XL)",
+            description = "Llama 3.2 1B with Q3_K_XL quantization. Extra-large 3-bit variant. 128k context. (796MB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q3_K_XL.gguf?download=true",
+            category = "text",
+            sizeBytes = 796000000L, // 796 MB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 1B (Q4_0)",
+            description = "Llama 3.2 1B with Q4_0 quantization. Standard 4-bit, good balance. 128k context. (773MB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_0.gguf?download=true",
+            category = "text",
+            sizeBytes = 773000000L, // 773 MB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 1B (Q4_0_4_4)",
+            description = "Llama 3.2 1B with Q4_0_4_4 quantization. 4-bit ARM-optimized. 128k context. (771MB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_0_4_4.gguf?download=true",
+            category = "text",
+            sizeBytes = 771000000L, // 771 MB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 1B (Q4_0_4_8)",
+            description = "Llama 3.2 1B with Q4_0_4_8 quantization. 4-bit ARM-optimized. 128k context. (771MB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_0_4_8.gguf?download=true",
+            category = "text",
+            sizeBytes = 771000000L, // 771 MB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 1B (Q4_0_8_8)",
+            description = "Llama 3.2 1B with Q4_0_8_8 quantization. 4-bit ARM-optimized. 128k context. (771MB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_0_8_8.gguf?download=true",
+            category = "text",
+            sizeBytes = 771000000L, // 771 MB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 1B (Q4_K_L)",
+            description = "Llama 3.2 1B with Q4_K_L quantization. Large K-quant 4-bit. 128k context. (871MB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_K_L.gguf?download=true",
+            category = "text",
+            sizeBytes = 871000000L, // 871 MB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 1B (Q4_K_M)",
+            description = "Llama 3.2 1B with Q4_K_M quantization. Medium K-quant 4-bit, recommended. 128k context. (808MB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_K_M.gguf?download=true",
+            category = "text",
+            sizeBytes = 808000000L, // 808 MB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 1B (Q4_K_S)",
+            description = "Llama 3.2 1B with Q4_K_S quantization. Small K-quant 4-bit. 128k context. (776MB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_K_S.gguf?download=true",
+            category = "text",
+            sizeBytes = 776000000L, // 776 MB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 1B (Q5_K_L)",
+            description = "Llama 3.2 1B with Q5_K_L quantization. Large K-quant 5-bit. 128k context. (975MB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q5_K_L.gguf?download=true",
+            category = "text",
+            sizeBytes = 975000000L, // 975 MB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 1B (Q5_K_M)",
+            description = "Llama 3.2 1B with Q5_K_M quantization. Medium K-quant 5-bit, high quality. 128k context. (912MB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q5_K_M.gguf?download=true",
+            category = "text",
+            sizeBytes = 912000000L, // 912 MB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 1B (Q5_K_S)",
+            description = "Llama 3.2 1B with Q5_K_S quantization. Small K-quant 5-bit. 128k context. (893MB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q5_K_S.gguf?download=true",
+            category = "text",
+            sizeBytes = 893000000L, // 893 MB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 1B (Q6_K)",
+            description = "Llama 3.2 1B with Q6_K quantization. 6-bit, very high quality. 128k context. (1.02GB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q6_K.gguf?download=true",
+            category = "text",
+            sizeBytes = 1020000000L, // 1.02 GB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 1B (Q6_K_L)",
+            description = "Llama 3.2 1B with Q6_K_L quantization. Large 6-bit, highest quality. 128k context. (1.09GB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q6_K_L.gguf?download=true",
+            category = "text",
+            sizeBytes = 1090000000L, // 1.09 GB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 1B (Q8_0)",
+            description = "Llama 3.2 1B with Q8_0 quantization. 8-bit, near-original quality. 128k context. (1.32GB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q8_0.gguf?download=true",
+            category = "text",
+            sizeBytes = 1320000000L, // 1.32 GB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 1B (f16)",
+            description = "Llama 3.2 1B with f16 (full precision). Maximum quality, largest size. 128k context. (2.48GB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-f16.gguf?download=true",
+            category = "text",
+            sizeBytes = 2480000000L, // 2.48 GB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+
+        // Llama-3.2 3B GGUF Models from bartowski
+        LLMModel(
+            name = "Llama-3.2 3B (IQ3_M)",
+            description = "Llama 3.2 3B with IQ3_M quantization. Smallest size, great for low-memory devices. 128k context. (1.6GB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-IQ3_M.gguf?download=true",
+            category = "text",
+            sizeBytes = 1600000000L, // 1.6 GB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 3B (IQ4_XS)",
+            description = "Llama 3.2 3B with IQ4_XS quantization. Optimized 4-bit. 128k context. (1.83GB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-IQ4_XS.gguf?download=true",
+            category = "text",
+            sizeBytes = 1830000000L, // 1.83 GB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 3B (Q3_K_L)",
+            description = "Llama 3.2 3B with Q3_K_L quantization. Large 3-bit variant. 128k context. (1.82GB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q3_K_L.gguf?download=true",
+            category = "text",
+            sizeBytes = 1820000000L, // 1.82 GB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 3B (Q3_K_XL)",
+            description = "Llama 3.2 3B with Q3_K_XL quantization. Extra-large 3-bit variant. 128k context. (1.91GB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q3_K_XL.gguf?download=true",
+            category = "text",
+            sizeBytes = 1910000000L, // 1.91 GB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 3B (Q4_0)",
+            description = "Llama 3.2 3B with Q4_0 quantization. Standard 4-bit, good balance. 128k context. (1.92GB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_0.gguf?download=true",
+            category = "text",
+            sizeBytes = 1920000000L, // 1.92 GB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 3B (Q4_0_4_4)",
+            description = "Llama 3.2 3B with Q4_0_4_4 quantization. 4-bit ARM-optimized. 128k context. (1.92GB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_0_4_4.gguf?download=true",
+            category = "text",
+            sizeBytes = 1920000000L, // 1.92 GB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 3B (Q4_0_4_8)",
+            description = "Llama 3.2 3B with Q4_0_4_8 quantization. 4-bit ARM-optimized. 128k context. (1.92GB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_0_4_8.gguf?download=true",
+            category = "text",
+            sizeBytes = 1920000000L, // 1.92 GB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 3B (Q4_0_8_8)",
+            description = "Llama 3.2 3B with Q4_0_8_8 quantization. 4-bit ARM-optimized. 128k context. (1.92GB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_0_8_8.gguf?download=true",
+            category = "text",
+            sizeBytes = 1920000000L, // 1.92 GB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 3B (Q4_K_L)",
+            description = "Llama 3.2 3B with Q4_K_L quantization. Large K-quant 4-bit. 128k context. (2.11GB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_L.gguf?download=true",
+            category = "text",
+            sizeBytes = 2110000000L, // 2.11 GB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 5),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 3B (Q4_K_M)",
+            description = "Llama 3.2 3B with Q4_K_M quantization. Medium K-quant 4-bit, recommended. 128k context. (2.02GB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_M.gguf?download=true",
+            category = "text",
+            sizeBytes = 2020000000L, // 2.02 GB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 5),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 3B (Q4_K_S)",
+            description = "Llama 3.2 3B with Q4_K_S quantization. Small K-quant 4-bit. 128k context. (1.93GB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_S.gguf?download=true",
+            category = "text",
+            sizeBytes = 1930000000L, // 1.93 GB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 3B (Q5_K_L)",
+            description = "Llama 3.2 3B with Q5_K_L quantization. Large K-quant 5-bit. 128k context. (2.42GB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q5_K_L.gguf?download=true",
+            category = "text",
+            sizeBytes = 2420000000L, // 2.42 GB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 5),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 3B (Q5_K_M)",
+            description = "Llama 3.2 3B with Q5_K_M quantization. Medium K-quant 5-bit, high quality. 128k context. (2.32GB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q5_K_M.gguf?download=true",
+            category = "text",
+            sizeBytes = 2320000000L, // 2.32 GB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 5),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 3B (Q5_K_S)",
+            description = "Llama 3.2 3B with Q5_K_S quantization. Small K-quant 5-bit. 128k context. (2.27GB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q5_K_S.gguf?download=true",
+            category = "text",
+            sizeBytes = 2270000000L, // 2.27 GB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 5),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 3B (Q6_K)",
+            description = "Llama 3.2 3B with Q6_K quantization. 6-bit, very high quality. 128k context. (2.64GB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q6_K.gguf?download=true",
+            category = "text",
+            sizeBytes = 2640000000L, // 2.64 GB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 3B (Q6_K_L)",
+            description = "Llama 3.2 3B with Q6_K_L quantization. Large 6-bit, highest quality. 128k context. (2.74GB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q6_K_L.gguf?download=true",
+            category = "text",
+            sizeBytes = 2740000000L, // 2.74 GB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 3B (Q8_0)",
+            description = "Llama 3.2 3B with Q8_0 quantization. 8-bit, near-original quality. 128k context. (3.42GB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q8_0.gguf?download=true",
+            category = "text",
+            sizeBytes = 3420000000L, // 3.42 GB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 5, recommendedRamGB = 7),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Llama-3.2 3B (f16)",
+            description = "Llama 3.2 3B with f16 (full precision). Maximum quality, largest size. 128k context. (6.43GB)",
+            url = "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-f16.gguf?download=true",
+            category = "text",
+            sizeBytes = 6430000000L, // 6.43 GB
+            source = "Meta via bartowski",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 8, recommendedRamGB = 10),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+
         // Phi-4 Mini updated to user-provided litertlm link
         LLMModel(
             name = "Phi-4 Mini (INT8, 4k)",
