@@ -26,7 +26,7 @@ android {
         applicationId = "com.llmhub.llmhub"
         minSdk = 27
         targetSdk = 36
-        versionCode = 57
+        versionCode = 62
         versionName = "3.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -40,10 +40,6 @@ android {
             // to rebuild native libraries with 16KB alignment
             debugSymbolLevel = "FULL"
         }
-        
-        // Note: SD backend native library only works on arm64-v8a, but we don't filter ABIs
-        // so the app can be installed on more devices. Image generation will only work on
-        // arm64-v8a devices; other features (AI Chat, Writing Aid, etc.) work on all devices.
     }
     
     // Specify supported locales to ensure proper resource loading
@@ -52,13 +48,22 @@ android {
         localeFilters += listOf("en", "es", "pt", "de", "fr", "ru", "it", "tr", "pl", "ar", "ja", "id", "in", "ko", "fa", "he", "iw", "uk")
     }
 
+    // Configure asset packs for install-time delivery
+    assetPacks += mutableSetOf(":qnn_pack")
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // Enable R8/ProGuard and resource shrinking to remove unused code and resources
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Strip native debug symbols for release builds to reduce native library sizes.
+            ndk {
+                debugSymbolLevel = "NONE"
+            }
             signingConfig = signingConfigs.getByName("debug")
         }
     }
@@ -99,6 +104,10 @@ android {
         // library extracted to disk (not compressed in APK)
         jniLibs {
             useLegacyPackaging = true
+            // Note: strip native debug symbols via release.ndk.debugSymbolLevel = "NONE"
+            // Some AGP APIs around keepDebugSymbols vary by AGP version; avoid using
+            // keepDebugSymbols to preserve compatibility across AGP releases.
+
             // Pick only the architecture we need to reduce size and alignment issues
             // Prevent duplicate .so files from different MediaPipe tasks modules
             pickFirsts += setOf("**/libmediapipe_tasks_text_jni.so")
@@ -212,6 +221,8 @@ dependencies {
     
     // Protobuf - required for MediaPipe
     implementation("com.google.protobuf:protobuf-java:3.25.1")
+    // Provide a no-op SLF4J binder so R8 finds org.slf4j.impl.StaticLoggerBinder
+    implementation("org.slf4j:slf4j-nop:2.0.9")
     
     // AI Edge RAG SDK for proper Gecko embedding support
     implementation("com.google.ai.edge.localagents:localagents-rag:0.3.0")
@@ -233,6 +244,10 @@ dependencies {
     implementation("ai.nexa:core:0.0.20") {
         exclude(group = "com.microsoft.onnxruntime")
     }
+
+    // Play Core for asset pack access at runtime
+    implementation("com.google.android.play:asset-delivery:2.2.2")
+    implementation("com.google.android.play:asset-delivery-ktx:2.2.2")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -321,3 +336,50 @@ tasks.configureEach {
 }
 
 // Note: stripOnnxFromNexa only re-runs when Gradle files change (inputs/outputs).
+
+// ── Conditionally exclude qnnlibs from base module during AAB builds ──────────
+// When building an AAB, qnnlibs are delivered via asset pack (qnn_pack).
+// When building an APK, qnnlibs must be in app/src/main/assets for functionality.
+// These tasks automatically hide qnnlibs during bundle builds and restore after.
+
+val qnnlibsDir = project.file("src/main/assets/qnnlibs")
+val qnnlibsHiddenDir = project.file("src/main/assets/.qnnlibs_hidden")
+
+tasks.register("hideQnnLibsForBundle") {
+    doLast {
+        if (qnnlibsDir.exists() && !qnnlibsHiddenDir.exists()) {
+            logger.lifecycle("Hiding qnnlibs from base module for AAB build (will use asset pack)")
+            qnnlibsDir.renameTo(qnnlibsHiddenDir)
+        }
+    }
+}
+
+tasks.register("restoreQnnLibsAfterBundle") {
+    doLast {
+        if (qnnlibsHiddenDir.exists()) {
+            logger.lifecycle("Restoring qnnlibs to app/src/main/assets")
+            qnnlibsHiddenDir.renameTo(qnnlibsDir)
+        }
+    }
+}
+
+tasks.register("ensureQnnLibsForApk") {
+    doLast {
+        if (qnnlibsHiddenDir.exists() && !qnnlibsDir.exists()) {
+            logger.lifecycle("Restoring qnnlibs for APK build")
+            qnnlibsHiddenDir.renameTo(qnnlibsDir)
+        }
+    }
+}
+
+// Hook into bundle tasks to exclude qnnlibs from base module
+tasks.configureEach {
+    if (name.startsWith("bundle") && name.contains("Release", ignoreCase = true)) {
+        dependsOn("hideQnnLibsForBundle")
+        finalizedBy("restoreQnnLibsAfterBundle")
+    }
+    // Hook into assemble tasks to ensure qnnlibs are present for APK builds
+    if (name.startsWith("assemble") && name.contains("Release", ignoreCase = true)) {
+        dependsOn("ensureQnnLibsForApk")
+    }
+}
