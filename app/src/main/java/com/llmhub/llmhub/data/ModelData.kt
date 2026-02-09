@@ -600,6 +600,400 @@ object ModelData {
             modelFormat = "gguf"
         ),
 
+        // Granite 4.0 H-Tiny 7B models (IBM)
+        LLMModel(
+            name = "Granite 4.0 H-Tiny (Q2_K)",
+            description = "IBM Granite 4.0 H-Tiny with Q2_K quantization. Smallest size. 128k context. (2.59GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-tiny-GGUF/resolve/main/granite-4.0-h-tiny-Q2_K.gguf?download=true",
+            category = "text",
+            sizeBytes = 2590000000L, // 2.59 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.0 H-Tiny (Q3_K_S)",
+            description = "IBM Granite 4.0 H-Tiny with Q3_K_S quantization. Balanced size. 128k context. (3.06GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-tiny-GGUF/resolve/main/granite-4.0-h-tiny-Q3_K_S.gguf?download=true",
+            category = "text",
+            sizeBytes = 3060000000L, // 3.06 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 5),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.0 H-Tiny (Q3_K_M)",
+            description = "IBM Granite 4.0 H-Tiny with Q3_K_M quantization. Good quality. 128k context. (3.35GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-tiny-GGUF/resolve/main/granite-4.0-h-tiny-Q3_K_M.gguf?download=true",
+            category = "text",
+            sizeBytes = 3350000000L, // 3.35 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 5),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.0 H-Tiny (Q3_K_L)",
+            description = "IBM Granite 4.0 H-Tiny with Q3_K_L quantization. Better quality. 128k context. (3.6GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-tiny-GGUF/resolve/main/granite-4.0-h-tiny-Q3_K_L.gguf?download=true",
+            category = "text",
+            sizeBytes = 3600000000L, // 3.6 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 5),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.0 H-Tiny (Q4_0)",
+            description = "IBM Granite 4.0 H-Tiny with Q4_0 quantization. Good balance. 128k context. (3.96GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-tiny-GGUF/resolve/main/granite-4.0-h-tiny-Q4_0.gguf?download=true",
+            category = "text",
+            sizeBytes = 3960000000L, // 3.96 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 5, recommendedRamGB = 6),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.0 H-Tiny (Q4_K_S)",
+            description = "IBM Granite 4.0 H-Tiny with Q4_K_S quantization. High quality. 128k context. (4GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-tiny-GGUF/resolve/main/granite-4.0-h-tiny-Q4_K_S.gguf?download=true",
+            category = "text",
+            sizeBytes = 4000000000L, // 4 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 5, recommendedRamGB = 6),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.0 H-Tiny (Q4_K_M)",
+            description = "IBM Granite 4.0 H-Tiny with Q4_K_M quantization. Very high quality. 128k context. (4.23GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-tiny-GGUF/resolve/main/granite-4.0-h-tiny-Q4_K_M.gguf?download=true",
+            category = "text",
+            sizeBytes = 4230000000L, // 4.23 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 5, recommendedRamGB = 6),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.0 H-Tiny (Q4_1)",
+            description = "IBM Granite 4.0 H-Tiny with Q4_1 quantization. Enhanced quality. 128k context. (4.39GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-tiny-GGUF/resolve/main/granite-4.0-h-tiny-Q4_1.gguf?download=true",
+            category = "text",
+            sizeBytes = 4390000000L, // 4.39 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 5, recommendedRamGB = 6),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.0 H-Tiny (Q5_K_S)",
+            description = "IBM Granite 4.0 H-Tiny with Q5_K_S quantization. Excellent quality. 128k context. (4.81GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-tiny-GGUF/resolve/main/granite-4.0-h-tiny-Q5_K_S.gguf?download=true",
+            category = "text",
+            sizeBytes = 4810000000L, // 4.81 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 7),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.0 H-Tiny (Q5_0)",
+            description = "IBM Granite 4.0 H-Tiny with Q5_0 quantization. Near-lossless. 128k context. (4.81GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-tiny-GGUF/resolve/main/granite-4.0-h-tiny-Q5_0.gguf?download=true",
+            category = "text",
+            sizeBytes = 4810000000L, // 4.81 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 7),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.0 H-Tiny (Q5_K_M)",
+            description = "IBM Granite 4.0 H-Tiny with Q5_K_M quantization. Superior quality. 128k context. (4.95GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-tiny-GGUF/resolve/main/granite-4.0-h-tiny-Q5_K_M.gguf?download=true",
+            category = "text",
+            sizeBytes = 4950000000L, // 4.95 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 7),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.0 H-Tiny (Q5_1)",
+            description = "IBM Granite 4.0 H-Tiny with Q5_1 quantization. Premium quality. 128k context. (5.23GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-tiny-GGUF/resolve/main/granite-4.0-h-tiny-Q5_1.gguf?download=true",
+            category = "text",
+            sizeBytes = 5230000000L, // 5.23 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 7),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.0 H-Tiny (Q6_K)",
+            description = "IBM Granite 4.0 H-Tiny with Q6_K quantization. Outstanding quality. 128k context. (5.71GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-tiny-GGUF/resolve/main/granite-4.0-h-tiny-Q6_K.gguf?download=true",
+            category = "text",
+            sizeBytes = 5710000000L, // 5.71 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 7, recommendedRamGB = 8),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.0 H-Tiny (Q8_0)",
+            description = "IBM Granite 4.0 H-Tiny with Q8_0 quantization. Ultimate quality. 128k context. (7.39GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-tiny-GGUF/resolve/main/granite-4.0-h-tiny-Q8_0.gguf?download=true",
+            category = "text",
+            sizeBytes = 7390000000L, // 7.39 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 8, recommendedRamGB = 10),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.0 H-Tiny (f16)",
+            description = "IBM Granite 4.0 H-Tiny with f16 (full precision). Maximum quality, largest size. 128k context. (13.9GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-tiny-GGUF/resolve/main/granite-4.0-h-tiny-f16.gguf?download=true",
+            category = "text",
+            sizeBytes = 13900000000L, // 13.9 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 14, recommendedRamGB = 16),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+
+        // Granite 4.0 H-Small 32B models (IBM)
+        LLMModel(
+            name = "Granite 4.0 H-Small (Q2_K)",
+            description = "IBM Granite 4.0 H-Small with Q2_K quantization. Smallest size. 128k context. (11.8GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-small-GGUF/resolve/main/granite-4.0-h-small-Q2_K.gguf?download=true",
+            category = "text",
+            sizeBytes = 11800000000L, // 11.8 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 14),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.0 H-Small (Q3_K_S)",
+            description = "IBM Granite 4.0 H-Small with Q3_K_S quantization. Balanced size. 128k context. (14.1GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-small-GGUF/resolve/main/granite-4.0-h-small-Q3_K_S.gguf?download=true",
+            category = "text",
+            sizeBytes = 14100000000L, // 14.1 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 14, recommendedRamGB = 16),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.0 H-Small (Q3_K_M)",
+            description = "IBM Granite 4.0 H-Small with Q3_K_M quantization. Good quality. 128k context. (15.4GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-small-GGUF/resolve/main/granite-4.0-h-small-Q3_K_M.gguf?download=true",
+            category = "text",
+            sizeBytes = 15400000000L, // 15.4 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 15, recommendedRamGB = 18),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.0 H-Small (Q3_K_L)",
+            description = "IBM Granite 4.0 H-Small with Q3_K_L quantization. Better quality. 128k context. (16.5GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-small-GGUF/resolve/main/granite-4.0-h-small-Q3_K_L.gguf?download=true",
+            category = "text",
+            sizeBytes = 16500000000L, // 16.5 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 16, recommendedRamGB = 20),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.0 H-Small (Q4_0)",
+            description = "IBM Granite 4.0 H-Small with Q4_0 quantization. Good balance. 128k context. (18.3GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-small-GGUF/resolve/main/granite-4.0-h-small-Q4_0.gguf?download=true",
+            category = "text",
+            sizeBytes = 18300000000L, // 18.3 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 18, recommendedRamGB = 22),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.0 H-Small (Q4_K_S)",
+            description = "IBM Granite 4.0 H-Small with Q4_K_S quantization. High quality. 128k context. (18.4GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-small-GGUF/resolve/main/granite-4.0-h-small-Q4_K_S.gguf?download=true",
+            category = "text",
+            sizeBytes = 18400000000L, // 18.4 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 18, recommendedRamGB = 22),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.0 H-Small (Q4_K_M)",
+            description = "IBM Granite 4.0 H-Small with Q4_K_M quantization. Very high quality. 128k context. (19.5GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-small-GGUF/resolve/main/granite-4.0-h-small-Q4_K_M.gguf?download=true",
+            category = "text",
+            sizeBytes = 19500000000L, // 19.5 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 19, recommendedRamGB = 24),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.0 H-Small (Q4_1)",
+            description = "IBM Granite 4.0 H-Small with Q4_1 quantization. Enhanced quality. 128k context. (20.3GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-small-GGUF/resolve/main/granite-4.0-h-small-Q4_1.gguf?download=true",
+            category = "text",
+            sizeBytes = 20300000000L, // 20.3 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 20, recommendedRamGB = 24),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.0 H-Small (Q5_0)",
+            description = "IBM Granite 4.0 H-Small with Q5_0 quantization. Near-lossless. 128k context. (22.2GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-small-GGUF/resolve/main/granite-4.0-h-small-Q5_0.gguf?download=true",
+            category = "text",
+            sizeBytes = 22200000000L, // 22.2 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 22, recommendedRamGB = 26),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.0 H-Small (Q5_K_S)",
+            description = "IBM Granite 4.0 H-Small with Q5_K_S quantization. Excellent quality. 128k context. (22.2GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-small-GGUF/resolve/main/granite-4.0-h-small-Q5_K_S.gguf?download=true",
+            category = "text",
+            sizeBytes = 22200000000L, // 22.2 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 22, recommendedRamGB = 26),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.0 H-Small (Q5_K_M)",
+            description = "IBM Granite 4.0 H-Small with Q5_K_M quantization. Superior quality. 128k context. (22.9GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-small-GGUF/resolve/main/granite-4.0-h-small-Q5_K_M.gguf?download=true",
+            category = "text",
+            sizeBytes = 22900000000L, // 22.9 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 23, recommendedRamGB = 26),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.0 H-Small (Q5_1)",
+            description = "IBM Granite 4.0 H-Small with Q5_1 quantization. Premium quality. 128k context. (24.2GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-small-GGUF/resolve/main/granite-4.0-h-small-Q5_1.gguf?download=true",
+            category = "text",
+            sizeBytes = 24200000000L, // 24.2 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 24, recommendedRamGB = 28),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.0 H-Small (Q6_K)",
+            description = "IBM Granite 4.0 H-Small with Q6_K quantization. Outstanding quality. 128k context. (26.5GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-small-GGUF/resolve/main/granite-4.0-h-small-Q6_K.gguf?download=true",
+            category = "text",
+            sizeBytes = 26500000000L, // 26.5 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 26, recommendedRamGB = 30),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.0 H-Small (Q8_0)",
+            description = "IBM Granite 4.0 H-Small with Q8_0 quantization. Ultimate quality. 128k context. (34.3GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-small-GGUF/resolve/main/granite-4.0-h-small-Q8_0.gguf?download=true",
+            category = "text",
+            sizeBytes = 34300000000L, // 34.3 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 34, recommendedRamGB = 40),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.0 H-Small (f16)",
+            description = "IBM Granite 4.0 H-Small with f16 (full precision). Maximum quality, largest size. 128k context. (64.4GB)",
+            url = "https://huggingface.co/ibm-granite/granite-4.0-h-small-GGUF/resolve/main/granite-4.0-h-small-f16.gguf?download=true",
+            category = "text",
+            sizeBytes = 64400000000L, // 64.4 GB
+            source = "IBM Granite",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 64, recommendedRamGB = 80),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+
         // Phi-4 Mini updated to user-provided litertlm link
         LLMModel(
             name = "Phi-4 Mini (INT8, 4k)",

@@ -122,5 +122,12 @@ class ChatRepository(
     suspend fun deleteMessagesAfter(chatId: String, afterTimestamp: Long) {
         messageDao.deleteMessagesAfter(chatId, afterTimestamp)
     }
+    
+    suspend fun deleteMessageById(messageId: String) {
+        val message = messageDao.getMessageById(messageId)
+        message?.let {
+            messageDao.deleteMessage(it)
+        }
+    }
 }
 
