@@ -72,12 +72,13 @@
     <string name="source_code">Kod Źródłowy:</string>
     <string name="github_repository">Repozytorium GitHub</string>
     <string name="acknowledgments">Podziękowania</string>
-    <string name="acknowledgments_text">Specjalne podziękowania dla Google, Meta, Microsoft i społeczności HuggingFace za dostarczenie niesamowitych modeli LLM, które napędzają tę aplikację. Ten projekt również opiera się na niesamowitej pracy społeczności deweloperskiej Android i ekosystemu open source.</string>
+    <string name="acknowledgments_text">Specjalne podziękowania dla Google, Meta, Microsoft, IBM i społeczności HuggingFace za udostępnienie niesamowitych modeli LLM, które zasilają tę aplikację. Ten projekt opiera się również na niesamowitej pracy społeczności programistów Androida i ekosystemu open source.</string>
     <string name="sd_models_credit">Modele generowania obrazów są zasilane przez implementacje Stable Diffusion xororz przy użyciu backendów Qualcomm QNN (NPU) i Alibaba MNN (CPU).</string>
+    <string name="nexa_sdk_credit">Wnioskowanie modeli GGUF jest obsługiwane przez Nexa SDK.</string>
     <string name="ai_thinking">AI myśli...</string>
     <string name="thinking_label">Myślenie</string>
     <string name="thinking_tokens">Myślenie (%1$d tokenów)</string>
-    <string name="version_number">Wersja 3.4</string>
+    <string name="version_number">Wersja 3.5</string>
     <string name="app_version">Wersja Aplikacji</string>
     
     <!-- Terms of Service -->
