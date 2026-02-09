@@ -125,9 +125,10 @@
     <string name="source_code">Исходный Код:</string>
     <string name="github_repository">GitHub Репозиторий</string>
     <string name="acknowledgments">Благодарности</string>
-    <string name="acknowledgments_text">Особая благодарность Google, Meta, Microsoft, и сообществу HuggingFace за предоставление невероятных LLM-моделей, которые питают это приложение. Этот проект также опирается на удивительную работу сообщества разработчиков Android и экосистемы открытого исходного кода.</string>
+    <string name="acknowledgments_text">Особая благодарность Google, Meta, Microsoft, IBM, и сообществу HuggingFace за предоставление невероятных LLM-моделей, которые питают это приложение. Этот проект также опирается на удивительную работу сообщества разработчиков Android и экосистемы открытого исходного кода.</string>
     <string name="sd_models_credit">Модели генерации изображений работают на основе реализаций Stable Diffusion от xororz с использованием бэкендов Qualcomm QNN (NPU) и Alibaba MNN (CPU).</string>
-    <string name="version_number">Версия 3.4</string>
+    <string name="nexa_sdk_credit">Вывод моделей GGUF работает на основе Nexa SDK.</string>
+    <string name="version_number">Версия 3.5</string>
     <string name="ai_thinking">ИИ думает...</string>
     <string name="thinking_label">Размышление</string>
     <string name="thinking_tokens">Размышление (%1$d токенов)</string>

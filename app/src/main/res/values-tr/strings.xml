@@ -72,12 +72,13 @@
     <string name="source_code">Kaynak Kodu</string>
     <string name="github_repository">GitHub Deposu</string>
     <string name="acknowledgments">Teşekkürler</string>
-    <string name="acknowledgments_text">Bu uygulamayı destekleyen inanılmaz LLM modellerini sağladıkları için Google, Meta, Microsoft ve HuggingFace topluluğuna özel teşekkürler. Bu proje ayrıca Android geliştirme topluluğunun ve açık kaynak ekosisteminin harika çalışmalarına dayanmaktadır.</string>
+    <string name="acknowledgments_text">Bu uygulamayı destekleyen inanılmaz LLM modellerini sağladıkları için Google, Meta, Microsoft, IBM ve HuggingFace topluluğuna özel teşekkürler. Bu proje ayrıca Android geliştirme topluluğunun ve açık kaynak ekosisteminin harika çalışmalarına dayanmaktadır.</string>
     <string name="sd_models_credit">Görüntü oluşturma modelleri, Qualcomm QNN (NPU) ve Alibaba MNN (CPU) arka uçlarını kullanan xororz\'un Stable Diffusion uygulamaları tarafından desteklenmektedir.</string>
+    <string name="nexa_sdk_credit">GGUF model çıkarımı Nexa SDK tarafından desteklenmektedir.</string>
     <string name="ai_thinking">Yapay zeka düşünüyor...</string>
     <string name="thinking_label">Düşünme</string>
     <string name="thinking_tokens">Düşünme (%1$d token)</string>
-    <string name="version_number">Sürüm 3.4</string>
+    <string name="version_number">Sürüm 3.5</string>
     <string name="app_version">Uygulama Sürümü</string>
     
     <!-- Terms of Service -->

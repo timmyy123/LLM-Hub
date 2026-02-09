@@ -316,6 +316,15 @@ fun AboutScreen(
                             textAlign = TextAlign.Justify,
                             color = MaterialTheme.colorScheme.onSurface
                         )
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        Text(
+                            text = stringResource(R.string.nexa_sdk_credit),
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Justify,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 }
             }

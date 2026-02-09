@@ -1,11 +1,6 @@
 # LLM Hub 🤖
 
-[![Android](https://img.shields.io/badge/Platform-Android-green.svg)](https://android.com)
-[![Kotlin](https://img.shields.io/badge/Language-Kotlin-blue.svg)](https://kotlinlang.org)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-3.0-blue.svg)](https://github.com/timmyy123/LLM-Hub/releases)
-
-**LLM Hub** is an open-source Android application that brings the power of Large Language Models and AI image generation directly to your mobile device. Experience AI conversations, create images, translate languages, and more - all running locally on your phone for maximum privacy and offline accessibility.
+**LLM Hub** is an open-source Android app for on-device LLM chat and image generation. It's optimized for mobile usage (CPU/GPU/NPU acceleration) and supports multiple model formats so you can run powerful models locally and privately.
 
 ## 📸 Screenshots
 
@@ -20,12 +15,6 @@
       <img src="assets/screenshots/Screenshot_20251007_042146_LLM%20Hub.jpg" alt="Chat Interface" style="width:300px;height:auto;border-radius:8px;display:block;" />
    </figure>
 </div>
-
-## Download
-
-[![Get it on Google Play](https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png)](https://play.google.com/store/apps/details?id=com.llmhub.llmhub)
-
----
 
 ## 🚀 Features
 
@@ -49,71 +38,46 @@
 - GPU/NPU acceleration for fast performance
 - Text-to-Speech with auto-readout
 - RAG with global memory for enhanced responses
-- Import custom models (.task, .litertlm, .mnn)
+- Import custom models (.task, .litertlm, .mnn, .gguf)
 - Direct downloads from HuggingFace
 - 16 language interfaces
 
-## 📱 Supported Models
+Quick Start
+1. Download from Google Play or build from source
+2. Open Settings → Download Models → Download or Import a model
+3. Select a model and start chatting or generating images
 
-### Text & Multimodal Models
-| Model | Type | Context |
-|-------|------|---------|
-| **Gemma-3 1B** (Google) | Text | 2k-4k |
-| **Gemma-3n E2B/E4B** (Google) | Text + Vision + Audio | 4k |
-| **Llama-3.2 1B/3B** (Meta) | Text | 1.2k |
-| **Phi-4 Mini** (Microsoft) | Text | 4k |
+Supported Model Families (summary)
+- Gemma (LiteRT Task)
+- Llama (Task + GGUF variants)
+- Phi (LiteRT LM)
+- LiquidAI LFM (LFM 2.5 1.2B + LFM VL 1.6B vision-enabled)
+- Ministral / Mistral family (GGUF / ONNX)
+- IBM Granite (GGUF)
 
-### Image Generation Models
-| Model | Backend |
-|-------|---------|
-| **Absolute Reality SD1.5** | MNN (CPU) / QNN (NPU) |
+Model Formats
+- Task / LiteRT (.task): MediaPipe/LiteRT optimized models (GPU/NPU capable)
+- LiteRT LM (.litertlm): LiteRT language models
+- GGUF (.gguf): Quantized models — CPU inference powered by Nexa SDK; some vision-capable GGUF models require an additional `mmproj` vision project file
+- ONNX (.onnx): Cross-platform model runtime
 
-### Embedding Models (RAG)
-- **Gecko-110M** - Compact embeddings (64D-1024D)
-- **EmbeddingGemma-300M** - High-quality text embeddings
+Importing models
+- Settings → Download Models → Import Model → choose `.task`, `.litertlm`, `.mnn`, `.gguf`, or `.onnx`
+- The full model list and download links live in `app/src/.../data/ModelData.kt` (do not exhaustively list variants in the README)
 
-## 🧠 RAG & Memory System
+Technology
+- Kotlin + Jetpack Compose (Material 3)
+- LLM Runtime: MediaPipe, LiteRT, Nexa SDK
+- Image Gen: MNN / Qualcomm QNN
+- Quantization: INT4/INT8
 
-- **On-device RAG & Embeddings**: Retrieval-augmented generation runs locally using embedding models
-- **Global Memory**: Upload documents to a shared memory store for RAG lookups across conversations
-- **Chunking & Persistence**: Documents are split into chunks with embeddings stored in Room database
-- **Privacy**: All embeddings and searches happen locally - no external endpoints
+Acknowledgments
+- **Nexa SDK** — GGUF model inference support (credit shown in-app About) ⚡
+- **Google, Meta, Microsoft, IBM, LiquidAI, Mistral, HuggingFace** — model and tooling contributions
 
-## 🔎 Web Search
+Development Setup
 
-- **DuckDuckGo integration** for optional web augmentation
-- **URL content extraction** for fetching page content
-- **Privacy-focused**: Uses public DuckDuckGo endpoints, no API keys required
-
-## 🛠️ Technology Stack
-
-| Component | Technology |
-|-----------|------------|
-| Language | Kotlin |
-| UI | Jetpack Compose + Material 3 |
-| LLM Runtime | MediaPipe & LiteRT |
-| Image Gen | MNN / QNN (Stable Diffusion) |
-| Quantization | INT4/INT8 |
-| GPU | LiteRT XNNPACK delegate |
-
-## 📋 Requirements
-
-- **Android 8.0+** (API 26)
-- **RAM**: 2GB minimum, 6GB+ recommended
-- **Storage**: 1-5GB depending on models
-- **Internet**: Only for model downloads
-
-## 🚀 Getting Started
-
-### Installation
-
-1. Download from [Google Play](https://play.google.com/store/apps/details?id=com.llmhub.llmhub) or [Releases](https://github.com/timmyy123/LLM-Hub/releases)
-2. Open the app and go to **Settings → Download Models**
-3. Download your preferred models
-4. Start using AI tools offline!
-
-### Building from Source
-
+### Building from source
 ```bash
 git clone https://github.com/timmyy123/LLM-Hub.git
 cd LLM-Hub
@@ -121,87 +85,26 @@ cd LLM-Hub
 ./gradlew installDebug
 ```
 
-### Importing Custom Models
-
-- **Supported formats**: `.task`, `.litertlm`, `.mnn`
-- Go to **Settings → Download Models → Import Model**
-- Select your model file from device storage
-
-## 🔧 Model Selection Guide
-
-| RAM | Recommended Models |
-|-----|-------------------|
-| 2GB | Gemma-3 1B INT4 |
-| 4GB | Gemma-3 1B INT8, Llama-3.2 1B |
-| 6GB+ | Gemma-3n, Llama-3.2 3B, SD Image Gen |
-| 8GB+ | Phi-4 Mini with GPU |
-
-
-## 🤝 Contributing
-
-We welcome contributions! Here's how you can help:
-
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
-4. **Push** to the branch (`git push origin feature/amazing-feature`)
-5. **Open** a Pull Request
-
-### Development Setup
-
-```bash
-# Install Android Studio
-# Open project in Android Studio
-# Sync Gradle files
-# Run on device/emulator
+### Setting up Hugging Face Token for Development
+To use private or gated models, add your HuggingFace token to `local.properties` (do NOT commit this file):
+```properties
+HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
+Save and sync Gradle in Android Studio; the app will read `BuildConfig.HF_TOKEN` at build time.
 
-## 📄 License
+Contributing
+- Fork → branch → PR. See CONTRIBUTING.md (or open an issue/discussion if unsure).
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+License
+- MIT (see LICENSE)
 
-## 🙏 Acknowledgments
+Support
+- Email: timmyboy0623@gmail.com
+- Issues & Discussions: GitHub
 
-- **Google** for Gemma models and MediaPipe framework
-- **Meta** for Llama models
-- **Microsoft** for Phi models
-- **Alibaba** for MNN framework (Stable Diffusion)
-- **HuggingFace** for model hosting and community
+Notes
+- This README is intentionally concise — consult `ModelData.kt` for exact model variants, sizes, and format details.
 
-## 📞 Support
-
-- **Email**: [timmyboy0623@gmail.com](mailto:timmyboy0623@gmail.com)
-- **Issues**: [GitHub Issues](https://github.com/timmyy123/LLM-Hub/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/timmyy123/LLM-Hub/discussions)
-
-
-**Made with ❤️ by Timmy**
-
-*Bringing AI to your pocket, privately and securely.*
-
-## Setting up Hugging Face Token for Development
-
-To use private or gated models, you need to provide your Hugging Face (HF) access token. This project is set up to securely load your token from your local machine using `local.properties` (never commit your token to source control).
-
-### Steps:
-
-1. **Open or create `local.properties` in your project root.**
-   - This file is usually already present and is ignored by git by default.
-
-2. **Add your Hugging Face token:**
-   ```properties
-   HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-   ```
-   Replace `hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` with your actual token from https://huggingface.co/settings/tokens
-
-3. **Sync Gradle:**
-   - In Android Studio, click "Sync Project with Gradle Files" after saving `local.properties`.
-
-4. **How it works:**
-   - The build system injects your token into the app at build time as `BuildConfig.HF_TOKEN`.
-   - The app uses this token for authenticated model downloads.
-
-**Note:**
-- Never commit your `local.properties` file or your token to version control.
-- If you change your token, update `local.properties` and re-sync Gradle.
+---
+*If you want, I can also add a short “Release notes / changelog” section and a quick performance guide for device profiles.*
 

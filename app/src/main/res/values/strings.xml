@@ -72,12 +72,13 @@
     <string name="source_code">Source Code:</string>
     <string name="github_repository">GitHub Repository</string>
     <string name="acknowledgments">Acknowledgments</string>
-    <string name="acknowledgments_text">Special thanks to Google, Meta, Microsoft, and the HuggingFace community for providing the incredible LLM models that power this application. This project also relies on the amazing work of the Android development community and the open-source ecosystem.</string>
+    <string name="acknowledgments_text">Special thanks to Google, Meta, Microsoft, IBM, and the HuggingFace community for providing the incredible LLM models that power this application. This project also relies on the amazing work of the Android development community and the open-source ecosystem.</string>
     <string name="sd_models_credit">Image generation models are powered by xororz\'s Stable Diffusion implementations using Qualcomm QNN (NPU) and Alibaba MNN (CPU) backends.</string>
+    <string name="nexa_sdk_credit">GGUF model inference is powered by Nexa SDK.</string>
     <string name="ai_thinking">AI is thinking...</string>
     <string name="thinking_label">Thinking</string>
     <string name="thinking_tokens">Thinking (%1$d tokens)</string>
-    <string name="version_number">Version 3.4</string>
+    <string name="version_number">Version 3.5</string>
     <string name="app_version">App Version</string>
     
     <!-- Terms of Service -->

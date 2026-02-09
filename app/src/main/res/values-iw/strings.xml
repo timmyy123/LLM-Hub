@@ -71,12 +71,13 @@
     <string name="source_code">קוד מקור:</string>
     <string name="github_repository">מאגר GitHub</string>
     <string name="acknowledgments">תודות</string>
-    <string name="acknowledgments_text">תודה מיוחדת ל-Google, ‏Meta, ‏Microsoft וקהילת HuggingFace על המודלים המדהימים שמפעילים את האפליקציה הזו. הפרויקט נשען גם על עבודת קהילת המפתחים לאנדרואיד ועל קוד פתוח.</string>
+    <string name="acknowledgments_text">תודה מיוחדת ל-Google, ‏Meta, ‏Microsoft, IBM וקהילת HuggingFace על המודלים המדהימים שמפעילים את האפליקציה הזו. הפרויקט נשען גם על עבודת קהילת המפתחים לאנדרואיד ועל קוד פתוח.</string>
     <string name="sd_models_credit">מודלים ליצירת תמונות מופעלים על ידי מימושי Stable Diffusion של xororz באמצעות backends של Qualcomm QNN (NPU) ו-Alibaba MNN (CPU).</string>
+    <string name="nexa_sdk_credit">הסקת מודלים GGUF מופעלת על ידי Nexa SDK.</string>
     <string name="ai_thinking">ה-AI חושב…</string>
     <string name="thinking_label">חשיבה</string>
     <string name="thinking_tokens">חשיבה (%1$d אסימונים)</string>
-    <string name="version_number">גרסה 3.4</string>
+    <string name="version_number">גרסה 3.5</string>
     <string name="app_version">גרסת אפליקציה</string>
 
     <!-- Terms of Service -->
