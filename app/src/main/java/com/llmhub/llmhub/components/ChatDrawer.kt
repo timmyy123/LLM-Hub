@@ -21,9 +21,9 @@ import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import com.llmhub.llmhub.R
-import androidx.compose.ui.platform.LocalConfiguration
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,13 +36,13 @@ fun ChatDrawer(
     onClearAllChats: (() -> Unit)? = null,
     viewModel: ChatDrawerViewModel = viewModel()
 ) {
-    // Now gets chats from the view model
     val chats by viewModel.allChats.collectAsState()
     var showDeleteAllDialog by remember { mutableStateOf(false) }
 
-    // Orientation check for responsive layout
+    // Fixed width only (no fraction) to avoid 0-width measure on rotation (auto-open bug).
+    // Wider on tablet for better use of space.
     val configuration = LocalConfiguration.current
-    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
+    val drawerWidth = if (configuration.screenWidthDp >= 600) 400.dp else 360.dp
 
     if (showDeleteAllDialog) {
         AlertDialog(
@@ -71,11 +71,10 @@ fun ChatDrawer(
         )
     }
     
-    // Drawer width: max 85% of screen, with sensible min/max bounds.
     ModalDrawerSheet(
         modifier = Modifier
-            .fillMaxWidth(if (isLandscape) 0.55f else 0.85f)
-            .widthIn(min = 280.dp, max = 420.dp)
+            .width(drawerWidth)
+            .fillMaxHeight()
     ) {
         // Layout so that action items stay visible; chat list scrolls independently.
         Column(

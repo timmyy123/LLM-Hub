@@ -7,7 +7,8 @@ import androidx.lifecycle.lifecycleScope
 import com.llmhub.llmhub.data.LlmHubDatabase
 import com.llmhub.llmhub.data.ThemePreferences
 import com.llmhub.llmhub.inference.InferenceService
-import com.llmhub.llmhub.inference.MediaPipeInferenceService
+
+import com.llmhub.llmhub.inference.UnifiedInferenceService
 import com.llmhub.llmhub.repository.ChatRepository
 import com.llmhub.llmhub.utils.LocaleHelper
 import kotlinx.coroutines.CoroutineScope
@@ -23,7 +24,7 @@ class LlmHubApplication : Application() {
     val inferenceService: InferenceService
         get() {
             if (_inferenceService == null) {
-                _inferenceService = MediaPipeInferenceService(this)
+                _inferenceService = UnifiedInferenceService(this)
             }
             return _inferenceService!!
         }

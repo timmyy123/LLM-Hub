@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit
 
 class ScamDetectorViewModel(application: Application) : AndroidViewModel(application) {
     
-    private val inferenceService = MediaPipeInferenceService(application)
+    private val inferenceService = (application as com.llmhub.llmhub.LlmHubApplication).inferenceService
     private val prefs = application.getSharedPreferences("scam_detector_prefs", android.content.Context.MODE_PRIVATE)
     
     companion object {
@@ -109,7 +109,7 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
         viewModelScope.launch {
             val context = getApplication<Application>()
             val available = ModelAvailabilityProvider.loadAvailableModels(context)
-                .filter { it.category != "embedding" }
+                .filter { it.category != "embedding" && !it.name.contains("Projector", ignoreCase = true) }
             _availableModels.value = available
             
             // Restore saved model or use first as default
@@ -118,6 +118,9 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
                 val savedModel = available.find { it.name == savedModelName }
                 if (savedModel != null) {
                     _selectedModel.value = savedModel
+                    if (!savedModel.supportsGpu && _selectedBackend.value == LlmInference.Backend.GPU) {
+                        _selectedBackend.value = LlmInference.Backend.CPU
+                    }
                 }
             }
             
@@ -141,13 +144,11 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
             _visionEnabled.value = false
         }
         
-        // Only auto-select backend if none is selected yet
-        if (_selectedBackend.value == null) {
-            _selectedBackend.value = if (model.supportsGpu) {
-                LlmInference.Backend.GPU
-            } else {
-                LlmInference.Backend.CPU
-            }
+        // Force CPU when model doesn't support GPU (e.g. ONNX); otherwise keep or set backend
+        _selectedBackend.value = if (model.supportsGpu) {
+            _selectedBackend.value ?: LlmInference.Backend.GPU
+        } else {
+            LlmInference.Backend.CPU
         }
         
         saveSettings()
@@ -298,7 +299,9 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
                 
                 // Collect images if provided and vision is enabled (convert URI to Bitmap)
                 val images = if (inputImageUri != null && _visionEnabled.value) {
-                    loadBitmapFromUri(inputImageUri)?.let { listOf(it) } ?: emptyList()
+                    val app = getApplication<Application>()
+                    val stableUri = copyImageToInternalStorage(app, inputImageUri)
+                    loadImageFromUri(app, stableUri)?.let { listOf(it) } ?: emptyList()
                 } else {
                     emptyList()
                 }
@@ -478,14 +481,64 @@ Be thorough and specific in your analysis. If you detect a scam, clearly state i
         }
     }
     
-    private suspend fun loadBitmapFromUri(uri: Uri): Bitmap? {
-        val app = getApplication<Application>()
+    private suspend fun copyImageToInternalStorage(context: android.content.Context, sourceUri: Uri): Uri {
         return withContext(Dispatchers.IO) {
             try {
-                app.contentResolver.openInputStream(uri)?.use { stream ->
-                    BitmapFactory.decodeStream(stream)
+                val contentResolver = context.contentResolver
+                val inputStream = contentResolver.openInputStream(sourceUri)
+
+                if (inputStream != null) {
+                    val timestamp = System.currentTimeMillis()
+                    val fileName = "scam_image_${timestamp}.jpg"
+
+                    val imagesDir = java.io.File(context.filesDir, "images")
+                    if (!imagesDir.exists()) {
+                        imagesDir.mkdirs()
+                    }
+
+                    val outputFile = java.io.File(imagesDir, fileName)
+
+                    inputStream.use { input ->
+                        outputFile.outputStream().use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+
+                    Log.d(TAG, "Copied image to: ${outputFile.absolutePath}")
+                    Uri.fromFile(outputFile)
+                } else {
+                    Log.w(TAG, "Failed to open input stream for URI: $sourceUri")
+                    sourceUri
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to copy image to internal storage", e)
+                sourceUri
+            }
+        }
+    }
+
+    private suspend fun loadImageFromUri(context: android.content.Context, uri: Uri): Bitmap? {
+        return withContext(Dispatchers.IO) {
+            try {
+                Log.d(TAG, "Opening input stream for URI: $uri")
+                val inputStream = context.contentResolver.openInputStream(uri)
+                if (inputStream != null) {
+                    inputStream.use { stream ->
+                        val bitmap = BitmapFactory.decodeStream(stream)
+                        if (bitmap != null) {
+                            Log.d(TAG, "Bitmap decoded successfully: ${bitmap.width}x${bitmap.height}")
+                            bitmap
+                        } else {
+                            Log.w(TAG, "BitmapFactory.decodeStream returned null")
+                            null
+                        }
+                    }
+                } else {
+                    Log.w(TAG, "Failed to open input stream for URI: $uri")
+                    null
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to load image from URI: $uri", e)
                 null
             }
         }

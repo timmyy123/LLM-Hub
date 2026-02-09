@@ -73,6 +73,8 @@
     <string name="github_repository">GitHub-Repository</string>
     <string name="acknowledgments">Danksagungen</string>
     <string name="acknowledgments_text">Besonderen Dank an Google, Meta, Microsoft und die HuggingFace-Community für die Bereitstellung der unglaublichen LLM-Modelle, die diese Anwendung antreiben. Dieses Projekt stützt sich auch auf die erstaunliche Arbeit der Android-Entwicklergemeinschaft und des Open-Source-Ökosystems.</string>    <string name="sd_models_credit">Bildgenerierungsmodelle werden von xororz\'s Stable Diffusion-Implementierungen mit Qualcomm QNN (NPU) und Alibaba MNN (CPU) Backends betrieben.</string>    <string name="ai_thinking">KI denkt nach...</string>
+    <string name="thinking_label">Denken</string>
+    <string name="thinking_tokens">Denken (%1$d Tokens)</string>
     <string name="version_number">Version 3.4</string>
     <string name="app_version">App-Version</string>
     

@@ -75,6 +75,8 @@
     <string name="acknowledgments_text">Terima kasih khusus kepada Google, Meta, Microsoft, dan komunitas HuggingFace karena menyediakan model LLM luar biasa yang mendukung aplikasi ini. Proyek ini juga bergantung pada karya luar biasa dari komunitas pengembangan Android dan ekosistem sumber terbuka.</string>
     <string name="sd_models_credit">Model generasi gambar didukung oleh implementasi Stable Diffusion xororz menggunakan backend Qualcomm QNN (NPU) dan Alibaba MNN (CPU).</string>
     <string name="ai_thinking">AI sedang berpikir...</string>
+    <string name="thinking_label">Pemikiran</string>
+    <string name="thinking_tokens">Pemikiran (%1$d token)</string>
     <string name="version_number">Versi 3.4</string>
     <string name="app_version">Versi Aplikasi</string>
     

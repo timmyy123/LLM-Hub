@@ -34,6 +34,8 @@ import coil.compose.AsyncImage
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.components.ModelSelectorCard
 import com.llmhub.llmhub.components.SelectableMarkdownText
+import com.llmhub.llmhub.components.ThinkingAwareResultContent
+import com.llmhub.llmhub.components.getDisplayContentWithoutThinking
 import com.llmhub.llmhub.ui.components.AudioInputService
 import com.llmhub.llmhub.viewmodels.TranslatorViewModel
 import com.llmhub.llmhub.viewmodels.TranscriberViewModel
@@ -1797,12 +1799,13 @@ fun ScamDetectorScreen(
                     onModelSelected = { viewModel.selectModel(it) },
                     onBackendSelected = { viewModel.selectBackend(it) },
                     onLoadModel = { viewModel.loadModel() },
-                    onUnloadModel = { viewModel.unloadModel() }
+                    onUnloadModel = { viewModel.unloadModel() },
+                    filterMultimodalOnly = false
                 )
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                // Vision toggle
+                // Vision toggle (image input available when model supports vision, e.g. Ministral)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -2041,55 +2044,50 @@ fun ScamDetectorScreen(
                         }
                     }
                     
-                    // Output Area
+                    // Output Area: expandable thinking + answer (same as chat).
                     if (outputText.isNotEmpty()) {
+                        val displayForActions = getDisplayContentWithoutThinking(outputText)
                         Divider()
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp)
                         ) {
-                            SelectableMarkdownText(
-                                markdown = outputText,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontSize = MaterialTheme.typography.bodyLarge.fontSize,
-                                modifier = Modifier.fillMaxWidth()
+                            ThinkingAwareResultContent(
+                                content = outputText,
+                                useMarkdownForAnswer = true
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.End
-                            ) {
-                                // TTS button
-                                IconButton(
-                                    onClick = {
-                                        if (isTtsSpeaking) {
-                                            ttsService.stop()
-                                        } else {
-                                            // Set language to app locale before speaking
-                                            val appLocale = com.llmhub.llmhub.utils.LocaleHelper.getCurrentLocale(context)
-                                            ttsService.setLanguage(appLocale)
-                                            ttsService.speak(outputText)
+                            if (displayForActions.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.End
+                                ) {
+                                    IconButton(
+                                        onClick = {
+                                            if (isTtsSpeaking) ttsService.stop()
+                                            else {
+                                                val appLocale = com.llmhub.llmhub.utils.LocaleHelper.getCurrentLocale(context)
+                                                ttsService.setLanguage(appLocale)
+                                                ttsService.speak(displayForActions)
+                                            }
                                         }
+                                    ) {
+                                        Icon(
+                                            if (isTtsSpeaking) Icons.Default.Stop else Icons.Default.VolumeUp,
+                                            contentDescription = if (isTtsSpeaking) "Stop reading" else "Read aloud",
+                                            tint = if (isTtsSpeaking) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
                                     }
-                                ) {
-                                    Icon(
-                                        if (isTtsSpeaking) Icons.Default.Stop else Icons.Default.VolumeUp,
-                                        contentDescription = if (isTtsSpeaking) "Stop reading" else "Read aloud",
-                                        tint = if (isTtsSpeaking) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                // Copy button
-                                IconButton(
-                                    onClick = {
-                                        clipboardManager.setText(AnnotatedString(outputText))
+                                    IconButton(
+                                        onClick = { clipboardManager.setText(AnnotatedString(displayForActions)) }
+                                    ) {
+                                        Icon(
+                                            Icons.Default.ContentCopy,
+                                            contentDescription = "Copy",
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
                                     }
-                                ) {
-                                    Icon(
-                                        Icons.Default.ContentCopy,
-                                        contentDescription = "Copy",
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
                                 }
                             }
                         }
