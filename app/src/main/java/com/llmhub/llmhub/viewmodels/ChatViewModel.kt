@@ -336,6 +336,9 @@ class ChatViewModel(
             field = value
             savedStateHandle.set(KEY_IS_GENERATING, value)
         }
+    
+    // Track whether we've already retried after a context reset to prevent infinite loops
+    private var isRetryAfterContextReset = false
 
     // Track when session was reset due to repetitive content to ensure clean next generation
     private var lastSessionResetAt = 0L
@@ -609,7 +612,9 @@ class ChatViewModel(
      * Load downloaded models synchronously so callers can rely on the result immediately.
      */
     private suspend fun loadAvailableModelsSync(context: Context) {
-        val downloadedModels = ModelData.models.filter { it.category != "embedding" }.mapNotNull { model ->
+        val downloadedModels = ModelData.models
+            .filter { it.category != "embedding" && !it.name.contains("Projector", ignoreCase = true) }
+            .mapNotNull { model ->
             var isAvailable = false
             var actualSize = model.sizeBytes
 
@@ -629,28 +634,56 @@ class ChatViewModel(
             } catch (e: Exception) {
                 // Model not in assets, check files directory
                 val modelsDir = File(context.filesDir, "models")
-                val primaryFile = File(modelsDir, model.localFileName())
-                val legacyFile = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
+                
+                // Check for ONNX models with additional files first
+                if (model.modelFormat == "onnx" && model.additionalFiles.isNotEmpty()) {
+                    val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
+                    val onnxModelDir = File(modelsDir, modelDirName)
+                    
+                    if (onnxModelDir.exists() && onnxModelDir.isDirectory) {
+                        val files = onnxModelDir.listFiles() ?: emptyArray()
+                        val fileCount = files.filter { it.length() > 0 }.size
+                        val expectedFileCount = 1 + model.additionalFiles.size
+                        val totalSize = files.sumOf { it.length() }
+                        
+                        if (fileCount >= expectedFileCount) {
+                            isAvailable = true
+                            actualSize = totalSize
+                            Log.d("ChatViewModel", "Found ONNX model in ${onnxModelDir.absolutePath} with $fileCount files (${totalSize / (1024*1024)} MB)")
+                        } else {
+                            Log.d("ChatViewModel", "ONNX model incomplete: only $fileCount/$expectedFileCount files in ${onnxModelDir.absolutePath}")
+                        }
+                    }
+                } else {
+                    // Regular single-file models
+                    val primaryFile = File(modelsDir, model.localFileName())
+                    val legacyFile = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
 
-                // Migrate legacy file if needed
-                if (!primaryFile.exists() && legacyFile.exists()) {
-                    legacyFile.renameTo(primaryFile)
-                }
+                    // Migrate legacy file if needed
+                    if (!primaryFile.exists() && legacyFile.exists()) {
+                        legacyFile.renameTo(primaryFile)
+                    }
 
-                if (primaryFile.exists()) {
-                    // Only treat as available if passes integrity checks and size is close to expected when known
-                    val sizeKnown = model.sizeBytes > 0
-                    val sizeOk = if (sizeKnown) primaryFile.length() >= (model.sizeBytes * 0.98).toLong() else primaryFile.length() >= 10L * 1024 * 1024
-                    val valid = isModelFileValid(primaryFile, model.modelFormat)
-                    if (sizeOk && valid) {
-                        isAvailable = true
-                        actualSize = primaryFile.length()
-                        Log.d("ChatViewModel", "Found VALID model in files: ${primaryFile.absolutePath} (${actualSize / (1024*1024)} MB)")
-                    } else {
-                        Log.d("ChatViewModel", "Ignoring incomplete/invalid model file: ${primaryFile.absolutePath} sizeOk=$sizeOk valid=$valid")
+                    if (primaryFile.exists()) {
+                        // Only treat as available if file is fully downloaded (at least 99% of expected size)
+                        val sizeKnown = model.sizeBytes > 0
+                        val sizeOk = if (sizeKnown) {
+                            primaryFile.length() >= (model.sizeBytes * 0.99).toLong()
+                        } else {
+                            primaryFile.length() >= 10L * 1024 * 1024 // Fallback for unknown size: at least 10MB
+                        }
+                        val valid = isModelFileValid(primaryFile, model.modelFormat)
+                        if (sizeOk && valid) {
+                            isAvailable = true
+                            actualSize = primaryFile.length()
+                            Log.d("ChatViewModel", "Found VALID model in files: ${primaryFile.absolutePath} (${actualSize / (1024*1024)} MB)")
+                        } else {
+                            Log.d("ChatViewModel", "Ignoring incomplete/invalid model file: ${primaryFile.absolutePath} sizeOk=$sizeOk valid=$valid size=${primaryFile.length()}/${model.sizeBytes}")
+                        }
+                        }
                     }
                 }
-            }
+
 
             if (isAvailable) {
                 model.copy(isDownloaded = true, sizeBytes = actualSize)
@@ -972,6 +1005,7 @@ class ChatViewModel(
                 attachmentFileName = attachmentFileInfo?.name,
                 attachmentFileSize = attachmentFileInfo?.size
             )
+            val userMessageId = _messages.value.lastOrNull { it.isFromUser && it.chatId == chatId }?.id
             
             // Debug logging for file size
             if (attachmentFileInfo != null) {
@@ -998,11 +1032,14 @@ class ChatViewModel(
                 // Ensure the model is loaded in the inference service before generating
                 try {
                     _isLoadingModel.value = true
-                    inferenceService.loadModel(currentModel!!)
+                    // Perform model load on IO dispatcher to avoid UI blocking / ANR
+                    val loaded = withContext(Dispatchers.IO) {
+                        inferenceService.loadModel(currentModel!!, _selectedBackend.value)
+                    }
                     // Sync the currently loaded model state
                     syncCurrentlyLoadedModel()
                     _isLoadingModel.value = false
-                    Log.d("ChatViewModel", "Successfully ensured model ${currentModel!!.name} is loaded for generation")
+                    Log.d("ChatViewModel", "Successfully ensured model ${currentModel!!.name} is loaded for generation (loaded=$loaded)")
                 } catch (e: Exception) {
                     Log.w("ChatViewModel", "Failed to ensure model is loaded: ${e.message}")
                     repository.addMessage(chatId, "Failed to load model. Please try again.", isFromUser = false)
@@ -1055,13 +1092,14 @@ class ChatViewModel(
                             var firstChunkAt = 0L
                             var lastChunkAt = 0L
                             var handedOffToAutoRegenerate = false
+                            var triggeredRetry = false // Track if this attempt triggered a retry
                             
                             try {
                                 // Pre-load model separately from generation timing
                                 _isLoadingModel.value = true
                                 
                                 // Ensure model is loaded first
-                                inferenceService.loadModel(currentModel!!)
+                                inferenceService.loadModel(currentModel!!, _selectedBackend.value)
                                 
                                 _isLoadingModel.value = false
                                 
@@ -1515,18 +1553,30 @@ class ChatViewModel(
                                 Log.d("ChatViewModel", "Generation completed successfully with ${continuationCount} continuations")
                                 Log.d("ChatViewModel", "Final content length: ${finalContent.length}")
                                 if (finalContent.isBlank()) {
-                                    Log.w("ChatViewModel", "No response produced - auto-regenerating with fresh session and only latest prompt")
-                                    // Auto-regenerate: reset session and resend only the latest user prompt
-                                    try {
-                                        handedOffToAutoRegenerate = true
-                                        autoRegenerateAfterNoResponse(context, chatId, placeholderId)
-                                        // Early return since auto-regeneration will manage updates/finalization
+                                    // Check if this is a GGUF model - if so, auto-reset session and retry
+                                    val isGgufModel = currentModel?.modelFormat?.equals("gguf", ignoreCase = true) == true
+                                    if (isGgufModel && !isRetryAfterContextReset) {
+                                        Log.w("ChatViewModel", "No response from GGUF model - context window likely full. Auto-resetting session and retrying...")
+                                        triggeredRetry = true
+                                        isRetryAfterContextReset = true
+                                        // Delete the placeholder and user message (sendMessage will re-add user message)
+                                        repository.deleteMessageById(placeholderId)
+                                        if (userMessageId != null) repository.deleteMessageById(userMessageId)
+                                        // Destroy and reload the model to clear KV cache
+                                        try {
+                                            inferenceService.resetChatSession(chatId)
+                                            Log.d("ChatViewModel", "Successfully reset GGUF model for chat $chatId")
+                                        } catch (resetEx: Exception) {
+                                            Log.e("ChatViewModel", "Failed to reset GGUF model: ${resetEx.message}")
+                                        }
+                                        // Drop history so the retry only sends the current prompt
+                                        dropHistoryOnce = true
+                                        sendMessage(context, messageText, attachmentUri, audioData)
                                         return@launch
-                                    } catch (e: Exception) {
-                                        Log.w("ChatViewModel", "Auto-regenerate failed: ${e.message}")
+                                    } else {
+                                        Log.w("ChatViewModel", "No response produced – showing error to user")
                                         val fallback = context.getString(R.string.no_response_produced)
                                         repository.updateMessageContent(placeholderId, fallback.trimEnd())
-                                        val time = System.currentTimeMillis() - generationStartTime
                                         val streamDurationMs = ((if (lastChunkAt > 0) lastChunkAt else System.currentTimeMillis()) - (if (firstChunkAt > 0) firstChunkAt else generationStartTime)).coerceAtLeast(1L)
                                         finalizeMessage(placeholderId, fallback, streamDurationMs)
                                     }
@@ -1569,21 +1619,37 @@ class ChatViewModel(
                             Log.d("ChatViewModel", "Generation was cancelled by user.")
                             Log.d("ChatViewModel", "About to call finalizeMessage for cancellation (raw=${time}ms, rag=${ragSearchTimeMs}ms, net=${netTime}ms)")
                         } else {
-                            // ERROR: MediaPipe or other error
-                            Log.e("ChatViewModel", "MediaPipe generation error: ${e.message}", e)
+                            // ERROR: Model generation error (MediaPipe, ONNX, etc.)
+                            Log.e("ChatViewModel", "Model generation error: ${e.message}", e)
                             Log.d("ChatViewModel", "About to call finalizeMessage for error")
                         }
                         
                         // ALWAYS save final content and call finalizeMessage (for both cancel and error) even if the parent Job is cancelled
                         withContext(kotlinx.coroutines.NonCancellable) {
                             if (finalContent.isBlank()) {
-                                Log.w("ChatViewModel", "No response produced in error path - auto-regenerating")
-                                try {
-                                    handedOffToAutoRegenerate = true
-                                    autoRegenerateAfterNoResponse(context, chatId, placeholderId)
-                                    return@withContext
-                                } catch (e: Exception) {
-                                    Log.w("ChatViewModel", "Auto-regenerate (error path) failed: ${e.message}")
+                                // Check if this is a GGUF model - if so, auto-reset session and retry
+                                val isGgufModel = currentModel?.modelFormat?.equals("gguf", ignoreCase = true) == true
+                                if (isGgufModel && !isRetryAfterContextReset) {
+                                    Log.w("ChatViewModel", "No response from GGUF model (error path) - context window likely full. Auto-resetting session and retrying...")
+                                    triggeredRetry = true
+                                    isRetryAfterContextReset = true
+                                    // Delete the placeholder and user message (sendMessage will re-add user message)
+                                    repository.deleteMessageById(placeholderId)
+                                    if (userMessageId != null) repository.deleteMessageById(userMessageId)
+                                    // Destroy and reload the model to clear KV cache
+                                    try {
+                                        inferenceService.resetChatSession(chatId)
+                                        Log.d("ChatViewModel", "Successfully reset GGUF model for chat $chatId (error path)")
+                                    } catch (resetEx: Exception) {
+                                        Log.e("ChatViewModel", "Failed to reset GGUF model (error path): ${resetEx.message}")
+                                    }
+                                    // Drop history so the retry only sends the current prompt
+                                    dropHistoryOnce = true
+                                    withContext(Dispatchers.Main) {
+                                        sendMessage(context, messageText, attachmentUri, audioData)
+                                    }
+                                } else {
+                                    Log.w("ChatViewModel", "No response produced in error path – showing error to user")
                                     val fallback = context.getString(R.string.no_response_produced)
                                     repository.updateMessageContent(placeholderId, fallback.trimEnd())
                                     val streamDurationMs = ((if (lastChunkAt > 0) lastChunkAt else System.currentTimeMillis()) - (if (firstChunkAt > 0) firstChunkAt else generationStartTime)).coerceAtLeast(1L)
@@ -1598,7 +1664,7 @@ class ChatViewModel(
                             }
                         }
                     } finally {
-                        if (!handedOffToAutoRegenerate) {
+                        if (!handedOffToAutoRegenerate && !triggeredRetry) {
                             _isLoading.value = false
                             _isLoadingModel.value = false
                             isGenerating = false
@@ -1606,6 +1672,11 @@ class ChatViewModel(
                             val updatedStreaming = _streamingContents.value.toMutableMap()
                             updatedStreaming.remove(placeholderId)
                             _streamingContents.value = updatedStreaming
+                        }
+                        // Reset the retry flag only if we didn't just trigger a retry
+                        // This ensures the flag persists into the retry attempt
+                        if (isRetryAfterContextReset && !triggeredRetry) {
+                            isRetryAfterContextReset = false
                         }
                     }
                 }
@@ -1708,7 +1779,7 @@ class ChatViewModel(
         _isLoading.value = true
         isGenerating = true
         // Ensure model is loaded
-        inferenceService.loadModel(model)
+        withContext(Dispatchers.IO) { inferenceService.loadModel(model, _selectedBackend.value) }
 
         // Start a new generation streaming into the same placeholder with proper cancellation and TTS support
         val webSearchEnabled = try { themePreferences.webSearchEnabled.first() } catch (_: Exception) { false }
@@ -2019,7 +2090,7 @@ class ChatViewModel(
             // Pre-load the model when switching
             try {
                 // Trigger model loading without generating content
-                inferenceService.loadModel(newModel)
+                inferenceService.loadModel(newModel, _selectedBackend.value)
                 // Sync the currently loaded model state
                 syncCurrentlyLoadedModel()
                 // Set the first-generation guard
@@ -2049,7 +2120,7 @@ class ChatViewModel(
                                 delay(300)
                                 inferenceService.onCleared()
                                 delay(300)
-                                inferenceService.loadModel(newModel)
+                                withContext(Dispatchers.IO) { inferenceService.loadModel(newModel, _selectedBackend.value) }
                                 Log.d("ChatViewModel", "Force recreated session after reset failure")
                             } catch (recreateException: Exception) {
                                 Log.w("ChatViewModel", "Force recreation also failed: ${recreateException.message}")
@@ -2340,14 +2411,36 @@ class ChatViewModel(
         }
     }
 
+    /**
+     * Unloads the model from the inference engine only, without clearing the selected model.
+     * Used when leaving the chat screen so memory is freed but the user's model selection is kept.
+     * When the user returns and sends a message, the model will be loaded again.
+     */
+    fun unloadModelFromInferenceOnly() {
+        viewModelScope.launch {
+            try {
+                generationJob?.let { job ->
+                    job.cancel()
+                    try {
+                        job.join()
+                    } catch (_: CancellationException) { }
+                    generationJob = null
+                }
+                inferenceService.unloadModel()
+                _currentlyLoadedModel.value = null
+                Log.d("ChatViewModel", "Model unloaded from inference (selection kept)")
+            } catch (e: Exception) {
+                Log.w("ChatViewModel", "Failed to unload model from inference: ${e.message}")
+            }
+        }
+    }
+
     override fun onCleared() {
         viewModelScope.launch {
-            // Clean up resources
-            currentChatId?.let { chatId ->
-                // Session cleanup is now handled by the inference service
-                Log.d("ChatViewModel", "Chat session cleanup delegated to inference service")
-            }
-            inferenceService.onCleared()
+            // Clean up RAG and TTS only. Do NOT call inferenceService.onCleared() here:
+            // the inference service is app-scoped and the ViewModel is keyed by chatId,
+            // so onCleared() runs when switching chats (new ViewModel for new chat).
+            // Unloading here would force ONNX (and other backends) to reload on every new chat.
             ragServiceManager.cleanup() // Clean up RAG service
             ttsService.shutdown() // Clean up TTS service
         }
@@ -2503,10 +2596,24 @@ class ChatViewModel(
     // system overhead. Use the remaining ~2/3 for history + current user prompt.
     // If we just reset, be stricter to guarantee fast recovery.
     val historyFraction = if (recentlyReset) 0.30 else 0.66
-    val maxContextTokens = (model.contextWindowSize * historyFraction).toInt().coerceAtLeast(256)
-        val maxContextChars = maxContextTokens * 4 // Rough character limit (1 token ≈ 4 characters)
         
-        Log.d("ChatViewModel", "Context window: Model ${model.name} has ${model.contextWindowSize} tokens, using ${maxContextTokens} tokens (${maxContextChars} chars) for chat $currentChatId with ${chatMessages.size} messages")
+        // For GGUF/ONNX, respect user slider. For Task models, use model defaults.
+        val limitBase = if (model.modelFormat.equals("onnx", ignoreCase = true) || model.modelFormat.equals("gguf", ignoreCase = true)) {
+            inferenceService.getEffectiveMaxTokens(model)
+        } else {
+            model.contextWindowSize
+        }
+        
+        // For local GGUF/Nexa, we can use most of the window for history. 
+        // We'll leave only a 2048 token buffer for the response, using the rest for history.
+        val maxContextTokens = if (model.modelFormat.equals("gguf", ignoreCase = true)) {
+            (limitBase - 2048).coerceAtLeast(limitBase / 2).coerceAtLeast(512)
+        } else {
+            (limitBase * historyFraction).toInt().coerceAtLeast(256)
+        }
+        val maxContextChars = maxContextTokens * 4 
+        
+        Log.d("ChatViewModel", "Context window: Model ${model.name} (${model.modelFormat}) has ${model.contextWindowSize} tokens, effectively using $limitBase. Allocating $maxContextTokens tokens for history.")
         
         // Convert messages to conversation pairs for better context management
         val conversationPairs = mutableListOf<Pair<MessageEntity?, MessageEntity>>()
@@ -2570,7 +2677,7 @@ class ChatViewModel(
         var currentLength = 0
         
     // Always keep at least a small recent window (minimum viable context)
-    val minimumPairs = 3
+    val minimumPairs = 1
         
     // Hard upper bound safeguard: never include more than maxPairsHistory pairs to avoid pathological large messages.
     val maxPairsHistory = 18
@@ -2594,14 +2701,9 @@ class ChatViewModel(
             }
         }
         
-        // If we had to truncate, add context summary and ensure sliding window semantics are clear
+        // Return truncated history without meta-commentary (which confuses models)
+        val result = recentPairs.joinToString("\n\n")
         val truncatedCount = cappedPairStrings.size - recentPairs.size
-        val result = if (truncatedCount > 0) {
-            val contextSummary = "[Previous conversation context: ${truncatedCount} earlier exchanges were truncated to fit context window]"
-            listOf(contextSummary, recentPairs.joinToString("\n\n")).joinToString("\n\n")
-        } else {
-            recentPairs.joinToString("\n\n")
-        }
         
         Log.d("ChatViewModel", "Context window management: Original ${fullHistory.length} chars (${pairStrings.size} pairs), trimmed to ${result.length} chars (${recentPairs.size} pairs, ${truncatedCount} truncated)")
         
@@ -3083,7 +3185,7 @@ class ChatViewModel(
                 
                 // Ensure the model is loaded
                 try {
-                    inferenceService.loadModel(currentModel!!)
+                    inferenceService.loadModel(currentModel!!, _selectedBackend.value)
                     // Sync the currently loaded model state
                     syncCurrentlyLoadedModel()
                 } catch (e: Exception) {
@@ -3111,7 +3213,7 @@ class ChatViewModel(
                         delay(200)
                         inferenceService.onCleared()
                         delay(500)
-                        inferenceService.loadModel(currentModel!!)
+                        inferenceService.loadModel(currentModel!!, _selectedBackend.value)
                         delay(200)
                         Log.d("ChatViewModel", "Force recreated session for regeneration after reset failure")
                     } catch (recreateException: Exception) {
@@ -3183,7 +3285,7 @@ class ChatViewModel(
                         
                         // Ensure the model is freshly loaded before regeneration
                         _isLoadingModel.value = true
-                        inferenceService.loadModel(currentModel!!)
+                        inferenceService.loadModel(currentModel!!, _selectedBackend.value)
                         _isLoadingModel.value = false
                         
                         // Get web search preference
@@ -3326,7 +3428,7 @@ class ChatViewModel(
 
             // Ensure model is ready
             try {
-                inferenceService.loadModel(currentModel!!)
+                inferenceService.loadModel(currentModel!!, _selectedBackend.value)
                 syncCurrentlyLoadedModel()
             } catch (e: Exception) {
                 Log.w("ChatViewModel", "Failed to ensure model is loaded for edit+resend: ${e.message}")
@@ -3345,7 +3447,7 @@ class ChatViewModel(
                     delay(200)
                     inferenceService.onCleared()
                     delay(500)
-                    inferenceService.loadModel(currentModel!!)
+                    inferenceService.loadModel(currentModel!!, _selectedBackend.value)
                     delay(200)
                 } catch (re: Exception) {
                     repository.addMessage(chatId, "Failed to prepare session. Try switching models.", isFromUser = false)
@@ -3378,7 +3480,7 @@ class ChatViewModel(
                     }
 
                     _isLoadingModel.value = true
-                    inferenceService.loadModel(currentModel!!)
+                    inferenceService.loadModel(currentModel!!, _selectedBackend.value)
                     _isLoadingModel.value = false
 
                     val webSearchEnabled = runBlocking { themePreferences.webSearchEnabled.first() }

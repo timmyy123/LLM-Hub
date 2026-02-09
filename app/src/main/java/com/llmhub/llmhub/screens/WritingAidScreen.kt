@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.components.ModelSelectorCard
+import com.llmhub.llmhub.components.ThinkingAwareResultContent
+import com.llmhub.llmhub.components.getDisplayContentWithoutThinking
 import com.llmhub.llmhub.viewmodels.WritingAidViewModel
 import com.llmhub.llmhub.viewmodels.WritingMode
 import kotlinx.coroutines.launch
@@ -314,8 +316,9 @@ fun WritingAidScreen(
                     }
                 }
                 
-                // Output Area (no title, no card background)
+                // Output Area: expandable thinking + answer (same as chat).
                 if (outputText.isNotEmpty()) {
+                    val displayForActions = getDisplayContentWithoutThinking(outputText)
                     Divider()
                     Column(
                         modifier = Modifier
@@ -323,46 +326,37 @@ fun WritingAidScreen(
                             .padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text(
-                            text = outputText,
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            // TTS button (Read aloud)
-                            IconButton(
-                                onClick = { 
-                                    if (isTtsSpeaking) {
-                                        ttsService.stop()
-                                    } else {
-                                        // Set language to app locale before speaking
-                                        val appLocale = com.llmhub.llmhub.utils.LocaleHelper.getCurrentLocale(context)
-                                        ttsService.setLanguage(appLocale)
-                                        ttsService.speak(outputText)
+                        ThinkingAwareResultContent(content = outputText)
+                        if (displayForActions.isNotEmpty()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        if (isTtsSpeaking) ttsService.stop()
+                                        else {
+                                            val appLocale = com.llmhub.llmhub.utils.LocaleHelper.getCurrentLocale(context)
+                                            ttsService.setLanguage(appLocale)
+                                            ttsService.speak(displayForActions)
+                                        }
                                     }
+                                ) {
+                                    Icon(
+                                        if (isTtsSpeaking) Icons.Default.Stop else Icons.Default.VolumeUp,
+                                        contentDescription = if (isTtsSpeaking) "Stop reading" else "Read aloud",
+                                        tint = if (isTtsSpeaking) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 }
-                            ) {
-                                Icon(
-                                    if (isTtsSpeaking) Icons.Default.Stop else Icons.Default.VolumeUp,
-                                    contentDescription = if (isTtsSpeaking) "Stop reading" else "Read aloud",
-                                    tint = if (isTtsSpeaking) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            
-                            // Copy button
-                            IconButton(
-                                onClick = { 
-                                    clipboardManager.setText(AnnotatedString(outputText))
+                                IconButton(
+                                    onClick = { clipboardManager.setText(AnnotatedString(displayForActions)) }
+                                ) {
+                                    Icon(
+                                        Icons.Default.ContentCopy,
+                                        contentDescription = stringResource(R.string.copy),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
                                 }
-                            ) {
-                                Icon(
-                                    Icons.Default.ContentCopy,
-                                    contentDescription = stringResource(R.string.copy),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
                             }
                         }
                     }

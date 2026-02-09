@@ -17,7 +17,8 @@ data class LLMModel(
     val supportsGpu: Boolean = false,
     val requirements: ModelRequirements,
     val contextWindowSize: Int = 2048, // Default context window size in tokens
-    val modelFormat: String = "task", // "task", or "litertlm" (MediaPipe formats)
+    val modelFormat: String = "task", // "task", "litertlm" (MediaPipe formats), or "onnx" (ONNX Runtime)
+    val additionalFiles: List<String> = emptyList(), // Additional files required (for ONNX models that have separate data files)
     var isDownloaded: Boolean = false,
     var isDownloading: Boolean = false, // New: whether a download is currently in progress for this model
     var isExtracting: Boolean = false, // Whether ZIP extraction is in progress

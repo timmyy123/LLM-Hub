@@ -21,7 +21,7 @@ import kotlinx.coroutines.withContext
 
 class WritingAidViewModel(application: Application) : AndroidViewModel(application) {
     
-    private val inferenceService = MediaPipeInferenceService(application)
+    private val inferenceService = (application as com.llmhub.llmhub.LlmHubApplication).inferenceService
     private val prefs = application.getSharedPreferences("writing_aid_prefs", Context.MODE_PRIVATE)
     
     private var processingJob: Job? = null
@@ -83,6 +83,10 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
                 val model = _availableModels.value.find { it.name == savedModelName }
                 if (model != null) {
                     _selectedModel.value = model
+                    // If restored model doesn't support GPU, force CPU (saved backend may be GPU from another model)
+                    if (!model.supportsGpu && _selectedBackend.value == LlmInference.Backend.GPU) {
+                        _selectedBackend.value = LlmInference.Backend.CPU
+                    }
                 }
             }
         }
@@ -101,18 +105,15 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
         viewModelScope.launch {
             val context = getApplication<Application>()
             val available = ModelAvailabilityProvider.loadAvailableModels(context)
-                .filter { it.category != "embedding" }
+                .filter { it.category != "embedding" && !it.name.contains("Projector", ignoreCase = true) }
             _availableModels.value = available
             if (_selectedModel.value == null) {
                 available.firstOrNull()?.let {
                     _selectedModel.value = it
-                    // Auto-select backend if not already set
-                    if (_selectedBackend.value == null) {
-                        _selectedBackend.value = if (it.supportsGpu) {
-                            LlmInference.Backend.GPU
-                        } else {
-                            LlmInference.Backend.CPU
-                        }
+                    _selectedBackend.value = if (it.supportsGpu) {
+                        _selectedBackend.value ?: LlmInference.Backend.GPU
+                    } else {
+                        LlmInference.Backend.CPU
                     }
                 }
             }
@@ -128,13 +129,11 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
         _selectedModel.value = model
         _isModelLoaded.value = false
         
-        // Auto-select backend based on GPU support
-        if (_selectedBackend.value == null) {
-            _selectedBackend.value = if (model.supportsGpu) {
-                LlmInference.Backend.GPU
-            } else {
-                LlmInference.Backend.CPU
-            }
+        // Force CPU when model doesn't support GPU (e.g. ONNX); otherwise keep or set backend
+        _selectedBackend.value = if (model.supportsGpu) {
+            _selectedBackend.value ?: LlmInference.Backend.GPU
+        } else {
+            LlmInference.Backend.CPU
         }
         
         saveSettings()

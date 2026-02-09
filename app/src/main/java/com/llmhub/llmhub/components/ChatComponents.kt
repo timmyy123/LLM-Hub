@@ -379,6 +379,129 @@ fun parseInlineMarkdown(text: String, baseColor: Color, builder: AnnotatedString
     }
 }
 
+// LFM Thinking stream sentinels (must match OnnxInferenceService)
+private const val SENTINEL_THINK = "\u200B\u200BTHINK\u200B\u200B"
+private const val SENTINEL_ENDTHINK = "\u200B\u200BENDTHINK\u200B\u200B"
+
+// Raw think tags from model output (when inference doesn't emit sentinels, e.g. some backends)
+private const val RAW_OPEN_THINK = "<think>"
+private const val RAW_CLOSE_THINK = "</think>"
+
+private fun parseThinkingAndAnswer(content: String): Pair<String, String> {
+    // 1) Same as chat: sentinels from OnnxInferenceService
+    if (content.contains(SENTINEL_THINK)) {
+        val afterThink = content.substringAfter(SENTINEL_THINK)
+        if (afterThink.contains(SENTINEL_ENDTHINK)) {
+            val thinking = afterThink.substringBefore(SENTINEL_ENDTHINK)
+            val answer = afterThink.substringAfter(SENTINEL_ENDTHINK)
+            return thinking to answer
+        }
+        return afterThink to ""
+    }
+    // 2) Raw <think>...</think>
+    if (content.contains(RAW_OPEN_THINK) && content.contains(RAW_CLOSE_THINK)) {
+        val afterThink = content.substringAfter(RAW_OPEN_THINK)
+        if (afterThink.contains(RAW_CLOSE_THINK)) {
+            val answer = afterThink.substringAfter(RAW_CLOSE_THINK).trim()
+            return "" to answer
+        }
+    }
+    // 3) Closing tag only (e.g. "THINK I think ... </think>\n\nanswer" when no <think>)
+    if (content.contains(RAW_CLOSE_THINK)) {
+        val answer = content.substringAfter(RAW_CLOSE_THINK).trim()
+        if (answer.isNotEmpty()) return "" to answer
+    }
+    return "" to content
+}
+
+/**
+ * Returns content safe for display when using a thinking model: only the answer part after
+ * the thinking block (sentinels or raw <think> tags). If only thinking is present (no answer yet),
+ * returns "" so we don't show thinking as result. Same logic as chat (MessageBubble).
+ */
+fun getDisplayContentWithoutThinking(content: String): String {
+    val (thinkingPart, answer) = parseThinkingAndAnswer(content)
+    if (answer.isNotEmpty()) return answer
+    // Don't show thinking as result: if we detected thinking (sentinels or THINK prefix / </think>) but no answer, show nothing
+    val hasThinking = content.contains(SENTINEL_THINK) ||
+        (content.contains(RAW_CLOSE_THINK)) ||
+        (content.trimStart().uppercase().startsWith("THINK"))
+    return if (hasThinking) "" else content
+}
+
+/**
+ * Displays result content with expandable thinking block (same as chat MessageBubble).
+ * Use in Writing Aid, Scam Detector, etc.
+ */
+@Composable
+fun ThinkingAwareResultContent(
+    content: String,
+    modifier: Modifier = Modifier,
+    useMarkdownForAnswer: Boolean = false
+) {
+    val (thinkingPart, answerPart) = parseThinkingAndAnswer(content)
+    val hasThinking = thinkingPart.isNotEmpty()
+    val hasAnswer = answerPart.isNotEmpty()
+    var thinkingExpanded by remember { mutableStateOf(true) }
+    Column(modifier = modifier.fillMaxWidth()) {
+        if (hasThinking) {
+            val estimatedTokens = (thinkingPart.length / 4).coerceAtLeast(1)
+            val label = if (thinkingExpanded) {
+                "▼ ${stringResource(R.string.thinking_label)}"
+            } else {
+                "▶ ${stringResource(R.string.thinking_tokens, estimatedTokens)}"
+            }
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { thinkingExpanded = !thinkingExpanded },
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    if (thinkingExpanded) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        RenderMessageSegments(
+                            displayContent = thinkingPart,
+                            isUser = false,
+                            baseColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            linkColor = MaterialTheme.colorScheme.primary,
+                            fontSize = MaterialTheme.typography.bodyMedium.fontSize,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            }
+            if (hasAnswer || hasThinking) Spacer(modifier = Modifier.height(8.dp))
+        }
+        if (hasAnswer || !hasThinking) {
+            val mainContent = if (hasAnswer) answerPart else content
+            if (useMarkdownForAnswer) {
+                SelectableMarkdownText(
+                    markdown = mainContent,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = MaterialTheme.typography.bodyLarge.fontSize,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            } else {
+                RenderMessageSegments(
+                    displayContent = mainContent,
+                    isUser = false,
+                    baseColor = MaterialTheme.colorScheme.onSurface,
+                    linkColor = MaterialTheme.colorScheme.primary,
+                    fontSize = MaterialTheme.typography.bodyLarge.fontSize,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
+}
+
 /**
  * Enhanced chat bubble that shows user/assistant messages in ChatGPT mobile style.
  * User messages have bubbles, AI responses are plain text without background.
@@ -582,22 +705,75 @@ fun MessageBubble(
                     }
                 }
                 
-                // Display text content - plain text without background
-                if (message.content.isNotEmpty() && message.content != "Shared a file") {
-                    val displayContent = if (streamingContent.isNotEmpty()) streamingContent else message.content
-
-                    RenderMessageSegments(
-                        displayContent = displayContent,
-                        isUser = false,
-                        baseColor = MaterialTheme.colorScheme.onSurface,
-                        linkColor = MaterialTheme.colorScheme.primary,
-                        fontSize = MaterialTheme.typography.bodyLarge.fontSize,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                // Display text content - plain text without background (parse thinking/answer for LFM Thinking)
+                if (message.content.isNotEmpty() || streamingContent.isNotEmpty()) {
+                    if (message.content != "Shared a file") {
+                        val displayContent = if (streamingContent.isNotEmpty()) streamingContent else message.content
+                        val (thinkingPart, answerPart) = parseThinkingAndAnswer(displayContent)
+                        val hasThinking = thinkingPart.isNotEmpty()
+                        val hasAnswer = answerPart.isNotEmpty()
+                        // Key by message id so user's collapse choice is preserved during streaming (don't re-open on every token)
+                        var thinkingExpanded by remember(message.id) {
+                            mutableStateOf(true)
+                        }
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            if (hasThinking) {
+                                val estimatedTokens = (thinkingPart.length / 4).coerceAtLeast(1)
+                                val label = if (thinkingExpanded) {
+                                    "▼ ${stringResource(R.string.thinking_label)}"
+                                } else {
+                                    "▶ ${stringResource(R.string.thinking_tokens, estimatedTokens)}"
+                                }
+                                Surface(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { thinkingExpanded = !thinkingExpanded },
+                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                    ) {
+                                        Text(
+                                            text = label,
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        if (thinkingExpanded) {
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            RenderMessageSegments(
+                                                displayContent = thinkingPart,
+                                                isUser = false,
+                                                baseColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                linkColor = MaterialTheme.colorScheme.primary,
+                                                fontSize = MaterialTheme.typography.bodyMedium.fontSize,
+                                                modifier = Modifier.fillMaxWidth()
+                                            )
+                                        }
+                                    }
+                                }
+                                if (hasAnswer || hasThinking) Spacer(modifier = Modifier.height(8.dp))
+                            }
+                            if (hasAnswer || !hasThinking) {
+                                val mainContent = if (hasAnswer) answerPart else displayContent
+                                RenderMessageSegments(
+                                    displayContent = mainContent,
+                                    isUser = false,
+                                    baseColor = MaterialTheme.colorScheme.onSurface,
+                                    linkColor = MaterialTheme.colorScheme.primary,
+                                    fontSize = MaterialTheme.typography.bodyLarge.fontSize,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+                    }
                 }
                 
                 // Action buttons row for AI messages
-                if (message.content != "…" && message.content.isNotEmpty()) {
+                if (message.content != "…" && (message.content.isNotEmpty() || streamingContent.isNotEmpty())) {
+                    val displayContentForActions = if (streamingContent.isNotEmpty()) streamingContent else message.content
+                    val (_, answerForActions) = parseThinkingAndAnswer(displayContentForActions)
+                    val contentToCopyOrRead = if (answerForActions.isNotEmpty()) answerForActions else displayContentForActions
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -605,15 +781,14 @@ fun MessageBubble(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // TTS button (Read aloud)
+                        // TTS button (Read aloud) - uses answer only when thinking is present
                         if (onTtsSpeak != null && onTtsStop != null) {
                             IconButton(
                                 onClick = {
                                     if (isTtsSpeaking) {
                                         onTtsStop()
                                     } else {
-                                        val displayContent = if (streamingContent.isNotEmpty()) streamingContent else message.content
-                                        onTtsSpeak(displayContent)
+                                        onTtsSpeak(contentToCopyOrRead)
                                     }
                                 },
                                 modifier = Modifier.size(32.dp)
@@ -627,12 +802,11 @@ fun MessageBubble(
                             }
                         }
                         
-                        // Copy button
+                        // Copy button - copies answer only when thinking is present
                         IconButton(
                             onClick = {
                                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                val displayContent = if (streamingContent.isNotEmpty()) streamingContent else message.content
-                                val clip = ClipData.newPlainText("Message", displayContent)
+                                val clip = ClipData.newPlainText("Message", contentToCopyOrRead)
                                 clipboard.setPrimaryClip(clip)
                             },
                             modifier = Modifier.size(32.dp)

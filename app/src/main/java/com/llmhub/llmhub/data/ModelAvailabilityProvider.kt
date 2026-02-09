@@ -43,24 +43,59 @@ object ModelAvailabilityProvider {
             }
         } catch (_: Exception) {
             val modelsDir = File(context.filesDir, "models")
-            val primaryFile = File(modelsDir, model.localFileName())
-            val legacyFile = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
 
-            if (!primaryFile.exists() && legacyFile.exists()) {
-                legacyFile.renameTo(primaryFile)
-            }
-
-            if (primaryFile.exists()) {
-                val sizeKnown = model.sizeBytes > 0
-                val sizeOk = if (sizeKnown) {
-                    primaryFile.length() >= (model.sizeBytes * 0.98).toLong()
+            // ONNX multi-file models: same logic as ChatViewModel.loadAvailableModelsSync (subdir, all files required)
+            if (model.modelFormat == "onnx" && model.additionalFiles.isNotEmpty()) {
+                val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
+                val onnxModelDir = File(modelsDir, modelDirName)
+                Log.d("ModelAvailability", "Checking ONNX model: ${model.name}")
+                Log.d("ModelAvailability", "  ONNX dir: ${onnxModelDir.absolutePath}, exists: ${onnxModelDir.exists()}")
+                if (onnxModelDir.exists() && onnxModelDir.isDirectory) {
+                    val files = onnxModelDir.listFiles() ?: emptyArray()
+                    val fileCount = files.filter { it.length() > 0 }.size
+                    val expectedFileCount = 1 + model.additionalFiles.size
+                    val totalSize = files.sumOf { it.length() }
+                    if (fileCount >= expectedFileCount) {
+                        isAvailable = true
+                        actualSize = totalSize
+                        Log.d("ModelAvailability", "  ✓ ONNX model available: ${model.name} ($fileCount files)")
+                    } else {
+                        Log.d("ModelAvailability", "  ✗ ONNX incomplete: $fileCount/$expectedFileCount files")
+                    }
                 } else {
-                    primaryFile.length() >= 10L * 1024 * 1024
+                    Log.d("ModelAvailability", "  ✗ ONNX dir does not exist: ${model.name}")
                 }
-                val valid = isModelFileValid(primaryFile, model.modelFormat)
-                if (sizeOk && valid) {
-                    isAvailable = true
-                    actualSize = primaryFile.length()
+            } else {
+                val primaryFile = File(modelsDir, model.localFileName())
+                val legacyFile = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
+                Log.d("ModelAvailability", "Checking for model: ${model.name} (format: ${model.modelFormat})")
+                Log.d("ModelAvailability", "  Primary path: ${primaryFile.absolutePath}, exists: ${primaryFile.exists()}")
+                Log.d("ModelAvailability", "  Legacy path: ${legacyFile.absolutePath}, exists: ${legacyFile.exists()}")
+
+                if (!primaryFile.exists() && legacyFile.exists()) {
+                    Log.d("ModelAvailability", "Renaming legacy file to primary name")
+                    legacyFile.renameTo(primaryFile)
+                }
+
+                if (primaryFile.exists()) {
+                    val sizeKnown = model.sizeBytes > 0
+                    val sizeOk = if (sizeKnown) {
+                        // Require file to be at least 99% of expected size to filter out partial downloads
+                        primaryFile.length() >= (model.sizeBytes * 0.99).toLong()
+                    } else {
+                        primaryFile.length() >= 10L * 1024 * 1024
+                    }
+                    val valid = isModelFileValid(primaryFile, model.modelFormat)
+                    Log.d("ModelAvailability", "  File size: ${primaryFile.length()}, expected: ${model.sizeBytes}, sizeOk: $sizeOk, valid: $valid")
+                    if (sizeOk && valid) {
+                        isAvailable = true
+                        actualSize = primaryFile.length()
+                        Log.d("ModelAvailability", "  ✓ Model available: ${model.name}")
+                    } else {
+                        Log.d("ModelAvailability", "  ✗ Model NOT available (size or validation failed): ${model.name}")
+                    }
+                } else {
+                    Log.d("ModelAvailability", "  ✗ Model file does not exist: ${model.name}")
                 }
             }
         }

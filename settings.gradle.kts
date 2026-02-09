@@ -17,6 +17,9 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven { url = uri("https://jitpack.io") }
+        maven { url = uri("https://packages.jetbrains.team/maven/p/ki/maven") }
+        maven { url = uri("https://packages.jetbrains.team/maven/p/grazi/grazie-platform-public") }
+        maven { url = uri("https://raw.githubusercontent.com/NexaAI/core/main") }
     }
 }
 

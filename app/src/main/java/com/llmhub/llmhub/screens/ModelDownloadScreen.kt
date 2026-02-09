@@ -48,7 +48,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import android.net.Uri
 
 enum class ModelFormat {
-    TASK, LITERTLM, QNN_NPU, MNN_CPU
+    TASK, LITERTLM, GGUF, QNN_NPU, MNN_CPU
 }
 
 /**
@@ -268,13 +268,13 @@ private fun ModelFamilyCard(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 
-                // First row: Multimodal capabilities
-                if (isMultimodal) {
+                // First row: Capabilities (vision, audio, thinking)
+                val hasThinking = variants.any { it.name.contains("Thinking", ignoreCase = true) }
+                if (isMultimodal || hasThinking) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.padding(top = 8.dp)
                     ) {
-                        // Check for specific vision support
                         if (variants.any { it.supportsVision }) {
                             IconWithLabel(
                                 icon = Icons.Default.RemoveRedEye,
@@ -282,12 +282,17 @@ private fun ModelFamilyCard(
                                 tint = MaterialTheme.colorScheme.tertiary
                             )
                         }
-                        
-                        // Check for specific audio support  
                         if (variants.any { it.supportsAudio }) {
                             IconWithLabel(
                                 icon = Icons.Default.Mic,
                                 label = stringResource(R.string.audio_support),
+                                tint = MaterialTheme.colorScheme.tertiary
+                            )
+                        }
+                        if (hasThinking) {
+                            IconWithLabel(
+                                icon = Icons.Default.Psychology,
+                                label = stringResource(R.string.thinking_label),
                                 tint = MaterialTheme.colorScheme.tertiary
                             )
                         }
@@ -297,7 +302,7 @@ private fun ModelFamilyCard(
                 // Second row: GPU support and variant count
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.padding(top = if (isMultimodal) 4.dp else 8.dp)
+                    modifier = Modifier.padding(top = if (isMultimodal || hasThinking) 4.dp else 8.dp)
                 ) {
                     // Show a GPU badge for the family header when any variant declares GPU support.
                     // Per-variant GPU availability (device checks) is still handled in the variant row.
@@ -761,7 +766,7 @@ private fun ImportExternalModelDialog(
             Log.d("ModelImport", "Derived fileExtension: $fileExtension")
             
             // Validate file format
-            if (fileExtension != "task" && fileExtension != "litertlm" && fileExtension != "zip") {
+            if (fileExtension != "task" && fileExtension != "litertlm" && fileExtension != "gguf" && fileExtension != "zip") {
                 showError = true
                 errorMessage = context.getString(R.string.unsupported_file_format)
                 return@let
@@ -900,8 +905,8 @@ private fun ImportExternalModelDialog(
                     }
                 
                 
-                // Show Vision/Audio/GPU options only for text models
-                if (modelFormat != ModelFormat.QNN_NPU && modelFormat != ModelFormat.MNN_CPU) {
+                // Show Vision/Audio/GPU options only for text models (not for GGUF, QNN_NPU, MNN_CPU)
+                if (modelFormat != ModelFormat.GGUF && modelFormat != ModelFormat.QNN_NPU && modelFormat != ModelFormat.MNN_CPU) {
                     item {
                         Row(
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1000,8 +1005,8 @@ private fun ImportExternalModelDialog(
                             }
                         }
                         
-                        // Only show context window for text models (TASK, LITERTLM)
-                        if (modelFormat == ModelFormat.TASK || modelFormat == ModelFormat.LITERTLM) {
+                        // Only show context window for text models (TASK, LITERTLM, GGUF)
+                        if (modelFormat == ModelFormat.TASK || modelFormat == ModelFormat.LITERTLM || modelFormat == ModelFormat.GGUF) {
                             val contextWindowError = contextWindowSize.toIntOrNull() == null || contextWindowSize.toIntOrNull()!! <= 0
                             val contextWindowErrorText = stringResource(R.string.context_window_size_invalid)
                             
@@ -1027,8 +1032,8 @@ private fun ImportExternalModelDialog(
                     // Validate inputs
                     val nameValid = modelName.isNotBlank()
                     val fileValid = selectedFileUri != null
-                    // Context window only required for text models (TASK, LITERTLM)
-                    val contextValid = if (modelFormat == ModelFormat.TASK || modelFormat == ModelFormat.LITERTLM) {
+                    // Context window only required for text models (TASK, LITERTLM, GGUF)
+                    val contextValid = if (modelFormat == ModelFormat.TASK || modelFormat == ModelFormat.LITERTLM || modelFormat == ModelFormat.GGUF) {
                         contextWindowSize.toIntOrNull() != null && contextWindowSize.toIntOrNull()!! > 0
                     } else {
                         true // Image models don't need context window
@@ -1086,9 +1091,14 @@ private fun ImportExternalModelDialog(
                             return@Button
                         }
                     } else {
-                        // For text models (TASK, LITERTLM)
+                        // For text models (TASK, LITERTLM, GGUF)
+                        // For GGUF: always GPU=true, Vision=false, Audio=false
+                        val actualSupportsVision = if (modelFormat == ModelFormat.GGUF) false else supportsVision
+                        val actualSupportsAudio = if (modelFormat == ModelFormat.GGUF) false else supportsAudio
+                        val actualSupportsGpu = if (modelFormat == ModelFormat.GGUF) true else supportsGpu
+                        
                         // Determine category based on capabilities - use "multimodal" if vision/audio, else "text"
-                        val modelCategory = if (supportsVision || supportsAudio) "multimodal" else "text"
+                        val modelCategory = if (actualSupportsVision || actualSupportsAudio) "multimodal" else "text"
                         val externalModel = LLMModel(
                             name = modelName,
                             description = "Custom LLM model: $modelName",
@@ -1096,9 +1106,9 @@ private fun ImportExternalModelDialog(
                             category = modelCategory,
                             sizeBytes = fileSize,
                             source = "Custom",
-                            supportsVision = supportsVision,
-                            supportsAudio = supportsAudio,
-                            supportsGpu = supportsGpu,
+                            supportsVision = actualSupportsVision,
+                            supportsAudio = actualSupportsAudio,
+                            supportsGpu = actualSupportsGpu,
                             requirements = ModelRequirements(
                                 minRamGB = 4,
                                 recommendedRamGB = 8
