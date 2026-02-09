@@ -26,7 +26,7 @@ android {
         applicationId = "com.llmhub.llmhub"
         minSdk = 27
         targetSdk = 36
-        versionCode = 62
+        versionCode = 63
         versionName = "3.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -53,9 +53,9 @@ android {
 
     buildTypes {
         release {
-            // Enable R8/ProGuard and resource shrinking to remove unused code and resources
-            isMinifyEnabled = true
-            isShrinkResources = true
+            // Disable R8 minification to prevent stripping ONNX/Nexa JNI classes
+            isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
