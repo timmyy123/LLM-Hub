@@ -19,3 +19,15 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Suppress missing protobuf and SLF4J binder warnings during R8
+-dontwarn com.google.protobuf.Internal$ProtoNonnullApi
+-dontwarn com.google.protobuf.ProtoField
+-dontwarn com.google.protobuf.ProtoPresenceBits
+-dontwarn com.google.protobuf.ProtoPresenceCheckedField
+-dontwarn org.slf4j.impl.StaticLoggerBinder
+-dontwarn com.google.protobuf.Internal$ProtoMethodMayReturnNull
+
+# Keep Protobuf generated message classes and fields used by RAG SDK
+-keep class com.google.ai.edge.localagents.rag.** { *; }
+-keepclassmembers class com.google.ai.edge.localagents.rag.** { *; }

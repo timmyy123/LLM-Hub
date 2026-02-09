@@ -11,6 +11,8 @@ import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.llmhub.llmhub.R
+import com.google.android.play.core.assetpacks.AssetPackManager
+import com.google.android.play.core.assetpacks.AssetPackManagerFactory
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.TimeUnit
@@ -73,7 +75,7 @@ class SDBackendService : Service() {
     }
     
     /**
-     * Extract QNN runtime libraries from assets to filesDir
+     * Extract QNN runtime libraries from asset pack to filesDir
      * This must be done because assets are read-only and libraries need execute permission
      */
     private fun prepareRuntimeDir() {
@@ -84,32 +86,47 @@ class SDBackendService : Service() {
                 }
             }
             
-            // Extract QNN libraries from assets
-            val qnnLibs = assets.list("qnnlibs") ?: emptyArray()
-            Log.i(TAG, "Found ${qnnLibs.size} QNN libraries in assets")
+            // Get QNN asset pack path (install-time delivery, available immediately)
+            val assetPackManager = AssetPackManagerFactory.getInstance(this)
+            val packLocations = assetPackManager.packLocations
+            val qnnPackPath = packLocations["qnn_pack"]?.assetsPath()
             
-            qnnLibs.forEach { fileName ->
-                val targetFile = File(runtimeDir, fileName)
+            if (qnnPackPath != null) {
+                val qnnDir = File(qnnPackPath)
+                // Asset pack root contains the assets directly
+                val qnnLibsDir = File(qnnDir, "qnnlibs")
                 
-                // Check if we need to copy (file doesn't exist or size mismatch)
-                val needsCopy = !targetFile.exists() || run {
-                    val assetSize = assets.open("qnnlibs/$fileName").use { it.available().toLong() }
-                    targetFile.length() != assetSize
-                }
-                
-                if (needsCopy) {
-                    assets.open("qnnlibs/$fileName").use { input ->
-                        targetFile.outputStream().use { output ->
-                            input.copyTo(output)
+                if (qnnLibsDir.exists() && qnnLibsDir.isDirectory) {
+                    val qnnLibs = qnnLibsDir.listFiles() ?: emptyArray()
+                    Log.i(TAG, "Found ${qnnLibs.size} QNN libraries in asset pack")
+                    
+                    qnnLibs.forEach { sourceFile ->
+                        val targetFile = File(runtimeDir, sourceFile.name)
+                        
+                        // Check if we need to copy (file doesn't exist or size mismatch)
+                        val needsCopy = !targetFile.exists() || targetFile.length() != sourceFile.length()
+                        
+                        if (needsCopy) {
+                            sourceFile.inputStream().use { input ->
+                                targetFile.outputStream().use { output ->
+                                    input.copyTo(output)
+                                }
+                            }
+                            
+                            // Set permissions
+                            targetFile.setReadable(true, true)
+                            targetFile.setExecutable(true, true)
+                            
+                            Log.d(TAG, "Extracted: ${sourceFile.name}")
                         }
                     }
-                    
-                    // Set permissions
-                    targetFile.setReadable(true, true)
-                    targetFile.setExecutable(true, true)
-                    
-                    Log.d(TAG, "Extracted: $fileName")
+                } else {
+                    Log.w(TAG, "QNN libs directory not found in asset pack, falling back to assets")
+                    extractQnnLibsFromAssets()
                 }
+            } else {
+                Log.w(TAG, "QNN asset pack not found, falling back to assets")
+                extractQnnLibsFromAssets()
             }
             
             runtimeDir.setReadable(true, true)
@@ -117,9 +134,39 @@ class SDBackendService : Service() {
             
             Log.i(TAG, "Runtime directory prepared: ${runtimeDir.absolutePath}")
             
-        } catch (e: IOException) {
+        } catch (e: Exception) {
             Log.e(TAG, "Failed to prepare runtime directory", e)
             throw RuntimeException("Failed to prepare runtime directory", e)
+        }
+    }
+    
+    private fun extractQnnLibsFromAssets() {
+        // Fallback: Extract QNN libraries from app assets (backward compatibility)
+        val qnnLibs = assets.list("qnnlibs") ?: emptyArray()
+        Log.i(TAG, "Found ${qnnLibs.size} QNN libraries in app assets (fallback)")
+        
+        qnnLibs.forEach { fileName ->
+            val targetFile = File(runtimeDir, fileName)
+            
+            // Check if we need to copy (file doesn't exist or size mismatch)
+            val needsCopy = !targetFile.exists() || run {
+                val assetSize = assets.open("qnnlibs/$fileName").use { it.available().toLong() }
+                targetFile.length() != assetSize
+            }
+            
+            if (needsCopy) {
+                assets.open("qnnlibs/$fileName").use { input ->
+                    targetFile.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                
+                // Set permissions
+                targetFile.setReadable(true, true)
+                targetFile.setExecutable(true, true)
+                
+                Log.d(TAG, "Extracted: $fileName")
+            }
         }
     }
     
