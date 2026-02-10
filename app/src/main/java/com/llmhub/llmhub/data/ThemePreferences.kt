@@ -27,6 +27,7 @@ class ThemePreferences(private val context: Context) {
         private val SELECTED_EMBEDDING_MODEL_KEY = stringPreferencesKey("selected_embedding_model")
         private val MEMORY_ENABLED_KEY = booleanPreferencesKey("memory_enabled")
         private val AUTO_READOUT_ENABLED_KEY = booleanPreferencesKey("auto_readout_enabled")
+        private val GITHUB_STARS_KEY = androidx.datastore.preferences.core.intPreferencesKey("github_stars")
     }
 
     val themeMode: Flow<ThemeMode> = context.dataStore.data
@@ -116,6 +117,17 @@ class ThemePreferences(private val context: Context) {
     suspend fun setAutoReadoutEnabled(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[AUTO_READOUT_ENABLED_KEY] = enabled
+        }
+    }
+
+    val githubStars: Flow<Int> = context.dataStore.data
+        .map { preferences ->
+            preferences[GITHUB_STARS_KEY] ?: 0 // Default to 0
+        }
+
+    suspend fun setGithubStars(stars: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[GITHUB_STARS_KEY] = stars
         }
     }
 }
