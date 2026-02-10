@@ -78,7 +78,7 @@
     <string name="ai_thinking">AI가 생각 중입니다...</string>
     <string name="thinking_label">생각</string>
     <string name="thinking_tokens">생각 (%1$d 토큰)</string>
-    <string name="version_number">버전 3.5.1</string>
+    <string name="version_number">버전 3.5.2</string>
     <string name="app_version">앱 버전</string>
     
     <!-- Terms of Service -->

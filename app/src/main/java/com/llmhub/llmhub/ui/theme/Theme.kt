@@ -122,8 +122,12 @@ fun LlmHubTheme(
             val window = (view.context as Activity).window
             // Use surface color for better readability
             window.statusBarColor = colorScheme.surface.toArgb()
-            // Set status bar content to dark in light theme, light in dark theme
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            window.navigationBarColor = colorScheme.surface.toArgb()
+            
+            // Set status bar and nav bar content to dark in light theme, light in dark theme
+            val insetsController = WindowCompat.getInsetsController(window, view)
+            insetsController.isAppearanceLightStatusBars = !darkTheme
+            insetsController.isAppearanceLightNavigationBars = !darkTheme
         }
     }
 

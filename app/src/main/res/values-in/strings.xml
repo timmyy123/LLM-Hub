@@ -78,7 +78,7 @@
     <string name="ai_thinking">AI sedang berpikir...</string>
     <string name="thinking_label">Pemikiran</string>
     <string name="thinking_tokens">Pemikiran (%1$d token)</string>
-    <string name="version_number">Versi 3.5.1</string>
+    <string name="version_number">Versi 3.5.2</string>
     <string name="app_version">Versi Aplikasi</string>
     
     <!-- Terms of Service -->

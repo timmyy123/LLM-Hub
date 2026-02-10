@@ -78,7 +78,7 @@
     <string name="ai_thinking">L\'IA réfléchit...</string>
     <string name="thinking_label">Réflexion</string>
     <string name="thinking_tokens">Réflexion (%1$d jetons)</string>
-    <string name="version_number">Version 3.5.1</string>
+    <string name="version_number">Version 3.5.2</string>
     <string name="app_version">Version de l\'App</string>
     
     <!-- Terms of Service -->
