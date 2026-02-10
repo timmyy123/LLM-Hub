@@ -77,7 +77,7 @@
     <string name="ai_thinking">ה-AI חושב…</string>
     <string name="thinking_label">חשיבה</string>
     <string name="thinking_tokens">חשיבה (%1$d אסימונים)</string>
-    <string name="version_number">גרסה 3.5.1</string>
+    <string name="version_number">גרסה 3.5.2</string>
     <string name="app_version">גרסת אפליקציה</string>
 
     <!-- Terms of Service -->

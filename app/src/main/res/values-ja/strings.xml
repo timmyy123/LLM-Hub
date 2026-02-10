@@ -75,7 +75,7 @@
     <string name="acknowledgments_text">このアプリケーションを支える素晴らしいLLMモデルを提供してくれたGoogle、Meta、Microsoft、IBM、およびHuggingFaceコミュニティに特別な感謝を。このプロジェクトは、Android開発コミュニティとオープンソースエコシステムの素晴らしい仕事にも依存しています。</string>    <string name="sd_models_credit">画像生成モデルは、Qualcomm QNN（NPU）とAlibaba MNN（CPU）バックエンドを使用したxororzのStable Diffusion実装により提供されています。</string>    <string name="nexa_sdk_credit">GGUFモデルの推論はNexa SDKによって提供されています。</string>    <string name="ai_thinking">AIが考え中...</string>
     <string name="thinking_label">思考</string>
     <string name="thinking_tokens">思考（%1$d トークン）</string>
-    <string name="version_number">バージョン 3.5.1</string>
+    <string name="version_number">バージョン 3.5.2</string>
     <string name="app_version">アプリバージョン</string>
     
     <!-- Terms of Service -->
