@@ -78,7 +78,7 @@
     <string name="ai_thinking">La IA está pensando...</string>
     <string name="thinking_label">Pensamiento</string>
     <string name="thinking_tokens">Pensamiento (%1$d tokens)</string>
-    <string name="version_number">Versión 3.5</string>
+    <string name="version_number">Versión 3.5.1</string>
     <string name="app_version">Versión de la App</string>
     
     <!-- Terms of Service -->

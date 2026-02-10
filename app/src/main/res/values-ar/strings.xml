@@ -78,7 +78,7 @@
     <string name="ai_thinking">الذكاء الاصطناعي يفكر...</string>
     <string name="thinking_label">التفكير</string>
     <string name="thinking_tokens">التفكير (%1$d رموز)</string>
-    <string name="version_number">الإصدار 3.5</string>
+    <string name="version_number">الإصدار 3.5.1</string>
     <string name="app_version">إصدار التطبيق</string>
 
     <!-- Terms of Service -->
