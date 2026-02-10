@@ -77,7 +77,7 @@
     <string name="ai_thinking">AI думає…</string>
     <string name="thinking_label">Міркування</string>
     <string name="thinking_tokens">Міркування (%1$d токенів)</string>
-    <string name="version_number">Версія 3.5</string>
+    <string name="version_number">Версія 3.5.1</string>
     <string name="app_version">Версія застосунку</string>
 
     <!-- Terms of Service -->
