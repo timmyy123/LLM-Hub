@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
 import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.localFileName
 import com.llmhub.llmhub.data.DeviceInfo
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import kotlinx.coroutines.CoroutineScope
@@ -34,6 +35,10 @@ import com.nexa.sdk.bean.GenerationConfig
 import com.nexa.sdk.bean.LlmStreamResult
 import com.nexa.sdk.bean.ChatMessage
 import com.nexa.sdk.bean.LlmApplyChatTemplateOutput
+import com.llmhub.llmhub.R
+import com.llmhub.llmhub.websearch.WebSearchService
+import com.llmhub.llmhub.websearch.DuckDuckGoSearchService
+import com.llmhub.llmhub.websearch.SearchIntentDetector
 
 @Singleton
 class NexaInferenceService @Inject constructor(
@@ -41,6 +46,7 @@ class NexaInferenceService @Inject constructor(
 ) : InferenceService {
 
     private val TAG = "NexaInferenceService"
+    private val webSearchService: WebSearchService = DuckDuckGoSearchService()
     private var llmWrapper: LlmWrapper? = null
     private var vlmWrapper: VlmWrapper? = null
     private var isVlmLoaded: Boolean = false
@@ -87,13 +93,44 @@ class NexaInferenceService @Inject constructor(
         }
 
         unloadModel()
-        
+
+        val modelFile: File
         val modelDir = getModelDirectory(model)
-        val modelFile = findGGUFModelFile(modelDir, model)
-        
-        if (!modelFile.exists()) {
-            Log.e(TAG, "Model file not found: ${modelFile.absolutePath}")
-            return false
+
+        // Handle imported models with content:// URIs (same as InferenceService)
+        if (model.source == "Custom" && model.url.startsWith("content://")) {
+            Log.d(TAG, "Loading imported GGUF model from URI: ${model.url}")
+            val targetFile = File(context.filesDir, "models/${model.localFileName()}")
+            targetFile.parentFile?.mkdirs()
+
+            if (!targetFile.exists()) {
+                try {
+                    context.contentResolver.openInputStream(android.net.Uri.parse(model.url))?.use { input ->
+                        targetFile.outputStream().use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    Log.d(TAG, "Copied imported model to: ${targetFile.absolutePath}")
+                } catch (e: SecurityException) {
+                    Log.e(TAG, "Permission denied for URI: ${model.url}")
+                    return false
+                }
+            } else {
+                Log.d(TAG, "Using existing copied model: ${targetFile.absolutePath}")
+            }
+
+            if (!targetFile.exists()) {
+                Log.e(TAG, "Failed to copy imported model from URI: ${model.url}")
+                return false
+            }
+            modelFile = targetFile
+        } else {
+            modelFile = findGGUFModelFile(modelDir, model)
+
+            if (!modelFile.exists()) {
+                Log.e(TAG, "Model file not found: ${modelFile.absolutePath}")
+                return false
+            }
         }
 
         val backendsToTry = mutableListOf<String>()
@@ -350,17 +387,69 @@ class NexaInferenceService @Inject constructor(
             emptyList()
         }
         
-        return generateResponseStreamInternal(prompt, model, imagePaths)
+        return generateResponseStreamInternal(prompt, model, imagePaths, webSearchEnabled, chatId)
     }
 
     private suspend fun generateResponseStreamInternal(
         prompt: String, 
         model: LLMModel, 
-        imagePaths: List<String> = emptyList()
+        imagePaths: List<String> = emptyList(),
+        webSearchEnabled: Boolean = false,
+        chatId: String = ""
     ): Flow<String> = callbackFlow {
         if (llmWrapper == null && vlmWrapper == null) {
             close(IllegalStateException("Model not loaded"))
             return@callbackFlow
+        }
+
+        // --- Web Search ---
+        val currentUserMessage = extractUserTextForSearch(prompt)
+        val needsWebSearch = webSearchEnabled && SearchIntentDetector.needsWebSearch(currentUserMessage)
+        var effectivePrompt = prompt
+
+        if (needsWebSearch) {
+            Log.d(TAG, "Web search detected for chat $chatId. Current message: '$currentUserMessage'")
+            trySend(context.getString(R.string.web_searching))
+
+            try {
+                val searchQuery = SearchIntentDetector.extractSearchQuery(currentUserMessage)
+                Log.d(TAG, "Extracted search query: '$searchQuery'")
+
+                val searchResults = webSearchService.search(searchQuery, maxResults = 5)
+
+                if (searchResults.isNotEmpty()) {
+                    Log.d(TAG, "Found ${searchResults.size} search results")
+                    trySend(context.getString(R.string.web_search_found_results, searchResults.size))
+
+                    val resultsText = searchResults.joinToString("\n\n") { result ->
+                        "SOURCE: ${result.source}\nTITLE: ${result.title}\nCONTENT: ${result.snippet}\n---"
+                    }
+
+                    effectivePrompt = """
+                        CURRENT WEB SEARCH RESULTS:
+                        $resultsText
+                        
+                        Based on the above current web search results, please answer the user's question: "$currentUserMessage"
+                        
+                        IMPORTANT INSTRUCTIONS:
+                        - Use ONLY the information from the web search results above
+                        - If the search results contain the answer, provide a clear and specific response
+                        - If the search results don't contain enough information, say so clearly
+                        - For dates and events, be specific based on what you find in the results
+                        - Do not make up information not found in the search results
+                        
+                        Answer the question directly and clearly:
+                    """.trimIndent()
+
+                    Log.d(TAG, "Enhanced prompt created with ${searchResults.size} search results")
+                } else {
+                    Log.w(TAG, "No search results found for query: '$searchQuery'")
+                    trySend(context.getString(R.string.web_search_no_results) + "\n\n")
+                }
+            } catch (searchException: Exception) {
+                Log.e(TAG, "Web search failed for chat $chatId", searchException)
+                trySend(context.getString(R.string.web_search_failed, searchException.message ?: "Unknown error") + "\n\n")
+            }
         }
         
         val baseMaxTokens = overrideMaxTokens ?: model.contextWindowSize
@@ -379,7 +468,7 @@ class NexaInferenceService @Inject constructor(
                     val vlm = vlmWrapper!!
                     
                     // Extract the actual user text from the prompt
-                    val userText = extractUserText(prompt, imagePaths.isNotEmpty())
+                    val userText = extractUserText(effectivePrompt, imagePaths.isNotEmpty())
                     Log.d(TAG, "VLM: User text: $userText")
                     
                     // Build VLM content list: images first, then text
@@ -454,7 +543,7 @@ class NexaInferenceService @Inject constructor(
                 } else {
                     // === LLM path: text-only generation ===
                     val wrapper = llmWrapper!!
-                    val formattedPrompt = formatPrompt(prompt, model)
+                    val formattedPrompt = formatPrompt(effectivePrompt, model)
                     
                     val genConfig = GenerationConfig().apply {
                         try {
@@ -576,6 +665,36 @@ class NexaInferenceService @Inject constructor(
         }
         
         return result
+    }
+
+    /**
+     * Extract the current user message from the prompt for web search intent detection.
+     * Similar to extractCurrentUserMessage in OnnxInferenceService.
+     */
+    private fun extractUserTextForSearch(prompt: String): String {
+        val lines = prompt.trim().split('\n')
+
+        // Look for the last user message in the conversation
+        for (i in lines.lastIndex downTo 0) {
+            val line = lines[i].trim()
+            if (line.startsWith("user:")) {
+                return line.removePrefix("user:").trim()
+            }
+        }
+
+        // If no "user:" prefix found, check if the entire prompt is just a user message
+        if (!prompt.contains("assistant:") && !prompt.contains("user:")) {
+            return prompt.trim()
+        }
+
+        // Fallback: return the last non-empty line that doesn't start with "assistant:"
+        for (i in lines.lastIndex downTo 0) {
+            val line = lines[i].trim()
+            if (line.isNotEmpty() && !line.startsWith("assistant:")) {
+                return line
+            }
+        }
+        return prompt.trim()
     }
 
     /** Check if text is a placeholder like "Shared a file" or just a filename like "📄 photo.png" */
