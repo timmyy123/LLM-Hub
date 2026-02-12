@@ -61,15 +61,28 @@ class NexaInferenceService @Inject constructor(
     private var overrideTopP: Float? = null
     private var overrideTemperature: Float? = null
     
+    // Whether the Nexa native SDK and its JNI bindings successfully initialized on this device.
+    // UnsatisfiedLinkError is an Error (not Exception), so catch Throwable to avoid crashing the app
+    // on platforms that do not provide Nexa native libraries (emulators, non‑NPU devices).
+    private var nexaAvailable: Boolean = true
+
     init {
         try {
             NexaSdk.getInstance().init(context)
             // Clean up any stale VLM cache files from previous sessions
             cleanupStaleCacheFiles()
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to init NexaSdk", e)
+            nexaAvailable = true
+        } catch (t: Throwable) {
+            // Catch Throwable to include UnsatisfiedLinkError / LinkageError
+            Log.e(TAG, "Nexa SDK unavailable on this device — disabling Nexa backend", t)
+            nexaAvailable = false
         }
     }
+
+    /**
+     * Expose availability so callers (UnifiedInferenceService) can fall back when needed.
+     */
+    fun isAvailable(): Boolean = nexaAvailable
 
     override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?): Boolean {
         // Default to vision enabled for the two-arg load; clear any previous override
@@ -89,6 +102,13 @@ class NexaInferenceService @Inject constructor(
     }
     
     private suspend fun loadModelInternal(model: LLMModel, preferredBackend: LlmInference.Backend?, disableVision: Boolean = false): Boolean {
+        // If Nexa is unavailable (emulator / missing native libs), bail out immediately so the
+        // UnifiedInferenceService can choose a different backend instead of crashing the app.
+        if (!nexaAvailable) {
+            Log.w(TAG, "Nexa backend not available on this device — refusing to load model: ${model.name}")
+            return false
+        }
+
         if (currentModel?.name == model.name && (llmWrapper != null || vlmWrapper != null)) {
             return true
         }
@@ -351,6 +371,16 @@ class NexaInferenceService @Inject constructor(
     }
 
     override suspend fun unloadModel() {
+         if (!nexaAvailable) {
+             // Nothing to do when Nexa isn't present
+             llmWrapper = null
+             vlmWrapper = null
+             isVlmLoaded = false
+             currentModel = null
+             currentPreferredBackend = null
+             return
+         }
+
          try {
              if (isVlmLoaded) {
                  vlmWrapper?.stopStream()

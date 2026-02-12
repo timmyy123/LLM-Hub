@@ -24,7 +24,7 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         // Determine which service to use
         val newService = when (model.modelFormat) {
             "onnx" -> onnxService
-            "gguf" -> nexaService
+            "gguf" -> if ((nexaService as? com.llmhub.llmhub.inference.NexaInferenceService)?.isAvailable() == true) nexaService else mediaPipeService
             else -> mediaPipeService
         }
 
@@ -57,7 +57,7 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
     ): Boolean {
          val newService = when (model.modelFormat) {
             "onnx" -> onnxService
-            "gguf" -> nexaService
+            "gguf" -> if ((nexaService as? com.llmhub.llmhub.inference.NexaInferenceService)?.isAvailable() == true) nexaService else mediaPipeService
             else -> mediaPipeService
         }
 
@@ -114,7 +114,9 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
     override suspend fun onCleared() {
         mediaPipeService.onCleared()
         onnxService.onCleared()
-        nexaService.onCleared()
+        if ((nexaService as? com.llmhub.llmhub.inference.NexaInferenceService)?.isAvailable() == true) {
+            nexaService.onCleared()
+        }
     }
 
     override fun getCurrentlyLoadedModel(): LLMModel? {
@@ -136,7 +138,9 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
     override fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?) {
         mediaPipeService.setGenerationParameters(maxTokens, topK, topP, temperature)
         onnxService.setGenerationParameters(maxTokens, topK, topP, temperature)
-        nexaService.setGenerationParameters(maxTokens, topK, topP, temperature)
+        if ((nexaService as? com.llmhub.llmhub.inference.NexaInferenceService)?.isAvailable() == true) {
+            nexaService.setGenerationParameters(maxTokens, topK, topP, temperature)
+        }
     }
 
     override fun isVisionCurrentlyDisabled(): Boolean {
@@ -154,7 +158,7 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
     override fun getEffectiveMaxTokens(model: LLMModel): Int {
         return when (model.modelFormat) {
             "onnx" -> onnxService.getEffectiveMaxTokens(model)
-            "gguf" -> nexaService.getEffectiveMaxTokens(model)
+            "gguf" -> if ((nexaService as? com.llmhub.llmhub.inference.NexaInferenceService)?.isAvailable() == true) nexaService.getEffectiveMaxTokens(model) else mediaPipeService.getEffectiveMaxTokens(model)
             else -> mediaPipeService.getEffectiveMaxTokens(model)
         }
     }
