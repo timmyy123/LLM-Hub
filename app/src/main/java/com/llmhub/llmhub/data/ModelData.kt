@@ -1427,6 +1427,62 @@ object ModelData {
             contextWindowSize = 4096,
             modelFormat = "litertlm"
         ),
+
+        // --- Added Gemma-3 GGUF multimodal models (4B & 12B) + vision projectors ---
+        LLMModel(
+            name = "Gemma-3 4B (Q4_0, GGUF)",
+            description = "Google Gemma-3 4B quantized GGUF (Q4_0). Supports text + vision — download the Vision Projector (mmproj) to enable image input.",
+            url = "https://huggingface.co/google/gemma-3-4b-it-qat-q4_0-gguf/resolve/main/gemma-3-4b-it-q4_0.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 3155051328L, // 3,155,051,328 bytes (~3008.89 MB)
+            source = "Google",
+            supportsVision = true,
+            supportsAudio = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 8),
+            contextWindowSize = 4096,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Gemma-3 4B (Vision Projector, BF16)",
+            description = "Vision Projector (mmproj) required to enable image input for Gemma-3 4B. BF16 variant for accurate visual encodings.",
+            url = "https://huggingface.co/google/gemma-3-4b-it-qat-q4_0-gguf/resolve/main/mmproj-model-f16-4B.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 851251104L, // 851,251,104 bytes (~811.82 MB)
+            source = "Google",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 2),
+            contextWindowSize = 0,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Gemma-3 12B (Q4_0, GGUF)",
+            description = "Google Gemma-3 12B quantized GGUF (Q4_0). Supports text + vision — download the Vision Projector (mmproj) to enable image input.",
+            url = "https://huggingface.co/google/gemma-3-12b-it-qat-q4_0-gguf/resolve/main/gemma-3-12b-it-q4_0.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 8074473920L, // 8,074,473,920 bytes (~7700.42 MB)
+            source = "Google",
+            supportsVision = true,
+            supportsAudio = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
+            contextWindowSize = 4096,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Gemma-3 12B (Vision Projector, BF16)",
+            description = "Vision Projector (mmproj) required to enable image input for Gemma-3 12B. BF16 variant for accurate visual encodings.",
+            url = "https://huggingface.co/google/gemma-3-12b-it-qat-q4_0-gguf/resolve/main/mmproj-model-f16-12B.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 854200224L, // 854,200,224 bytes (~814.63 MB)
+            source = "Google",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 2),
+            contextWindowSize = 0,
+            modelFormat = "gguf"
+        ),
         
         // Gecko Embedding Models - Various dimension sizes for different use cases
         LLMModel(
