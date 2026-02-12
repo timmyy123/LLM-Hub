@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
+import java.util.UUID
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.delay
@@ -387,8 +388,10 @@ class NexaInferenceService @Inject constructor(
         webSearchEnabled: Boolean,
         imagePaths: List<String>
     ): Flow<String> {
+        val prepStart = System.currentTimeMillis()
         val imagePaths = if (images.isNotEmpty()) {
             images.mapIndexed { index, bitmap ->
+                val oneImageStart = System.currentTimeMillis()
                 // Downscale large images to speed up the VLM vision encoder.
                 val maxDim = 300
                 val scaled = if (bitmap.width > maxDim || bitmap.height > maxDim) {
@@ -406,13 +409,18 @@ class NexaInferenceService @Inject constructor(
                 }
                 // Recycle the scaled copy if we created one
                 if (scaled !== bitmap) scaled.recycle()
+                Log.d(TAG, "VLM timing: image[$index] prep=${System.currentTimeMillis() - oneImageStart}ms path=${file.name}")
                 file.absolutePath
             }
         } else {
             emptyList()
         }
+        val imagePrepMs = System.currentTimeMillis() - prepStart
+        if (images.isNotEmpty()) {
+            Log.i(TAG, "VLM timing: image_prep_total=${imagePrepMs}ms images=${images.size}")
+        }
         
-        return generateResponseStreamInternal(prompt, model, imagePaths, webSearchEnabled, chatId)
+        return generateResponseStreamInternal(prompt, model, imagePaths, webSearchEnabled, chatId, imagePrepMs)
     }
 
     private suspend fun generateResponseStreamInternal(
@@ -420,8 +428,16 @@ class NexaInferenceService @Inject constructor(
         model: LLMModel, 
         imagePaths: List<String> = emptyList(),
         webSearchEnabled: Boolean = false,
-        chatId: String = ""
+        chatId: String = "",
+        imagePrepMs: Long = 0L
     ): Flow<String> = callbackFlow {
+        val requestId = UUID.randomUUID().toString().take(8)
+        val requestStart = System.currentTimeMillis()
+        Log.i(
+            TAG,
+            "GEN[$requestId] start model=${model.name} mode=${if (isVlmLoaded) "VLM" else "LLM"} images=${imagePaths.size} chatId=${if (chatId.isBlank()) "none" else chatId}"
+        )
+
         if (llmWrapper == null && vlmWrapper == null) {
             close(IllegalStateException("Model not loaded"))
             return@callbackFlow
@@ -544,23 +560,35 @@ class NexaInferenceService @Inject constructor(
                         Log.w(TAG, "VLM: applyChatTemplate failed, using raw text")
                         userText
                     }
-                    Log.d(TAG, "VLM: Formatted prompt length: ${formattedPrompt.length} (template=${tAfterTemplate - tStart}ms)")
+                    Log.d(TAG, "GEN[$requestId] VLM template=${tAfterTemplate - tStart}ms prompt_len=${formattedPrompt.length}")
 
                     val configWithMedia = vlm.injectMediaPathsToConfig(vlmMessages, baseConfig)
                     val tAfterInject = System.currentTimeMillis()
-                    Log.d(TAG, "VLM: Config has ${configWithMedia.imageCount} images (inject=${tAfterInject - tAfterTemplate}ms)")
+                    Log.d(TAG, "GEN[$requestId] VLM inject_media=${tAfterInject - tAfterTemplate}ms image_count=${configWithMedia.imageCount}")
 
                     // Generate using the SDK-formatted prompt and track time-to-first-token
                     val vlmStart = System.currentTimeMillis()
                     var firstTokenAt = 0L
+                    var tokenCount = 0L
                     vlm.generateStreamFlow(formattedPrompt, configWithMedia)
                         .collect { streamResult ->
                             if (isActive) {
                                 if (streamResult is com.nexa.sdk.bean.LlmStreamResult.Token) {
+                                    tokenCount++
                                     if (firstTokenAt == 0L) {
                                         firstTokenAt = System.currentTimeMillis()
-                                        Log.i(TAG, "VLM: time-to-first-token=${firstTokenAt - vlmStart}ms (total prefill=${firstTokenAt - tStart}ms)")
+                                        val prefillOnlyMs = firstTokenAt - vlmStart
+                                        val totalToFirstTokenMs = firstTokenAt - requestStart
+                                        Log.i(
+                                            TAG,
+                                            "GEN[$requestId] VLM first_token prefill=${prefillOnlyMs}ms total_to_first_token=${totalToFirstTokenMs}ms image_prep=${imagePrepMs}ms"
+                                        )
                                     }
+                                } else if (streamResult is com.nexa.sdk.bean.LlmStreamResult.Completed) {
+                                    val end = System.currentTimeMillis()
+                                    val decodeMs = if (firstTokenAt > 0L) end - firstTokenAt else 0L
+                                    val totalMs = end - requestStart
+                                    Log.i(TAG, "GEN[$requestId] VLM completed total=${totalMs}ms decode=${decodeMs}ms tokens=$tokenCount")
                                 }
                                 handleStreamResult(streamResult, isThinkingModel)
                             }
@@ -590,9 +618,27 @@ class NexaInferenceService @Inject constructor(
                         } catch (_: Exception) {}
                     }
                     
+                    val llmStart = System.currentTimeMillis()
+                    var firstTokenAt = 0L
+                    var tokenCount = 0L
                     wrapper.generateStreamFlow(formattedPrompt, genConfig)
                         .collect { streamResult ->
                             if (isActive) {
+                                if (streamResult is com.nexa.sdk.bean.LlmStreamResult.Token) {
+                                    tokenCount++
+                                    if (firstTokenAt == 0L) {
+                                        firstTokenAt = System.currentTimeMillis()
+                                        Log.i(
+                                            TAG,
+                                            "GEN[$requestId] LLM first_token prefill=${firstTokenAt - llmStart}ms total_to_first_token=${firstTokenAt - requestStart}ms"
+                                        )
+                                    }
+                                } else if (streamResult is com.nexa.sdk.bean.LlmStreamResult.Completed) {
+                                    val end = System.currentTimeMillis()
+                                    val decodeMs = if (firstTokenAt > 0L) end - firstTokenAt else 0L
+                                    val totalMs = end - requestStart
+                                    Log.i(TAG, "GEN[$requestId] LLM completed total=${totalMs}ms decode=${decodeMs}ms tokens=$tokenCount")
+                                }
                                 handleStreamResult(streamResult, isThinkingModel)
                             }
                         }
