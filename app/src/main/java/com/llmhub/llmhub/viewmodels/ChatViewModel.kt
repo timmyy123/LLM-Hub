@@ -2463,7 +2463,11 @@ class ChatViewModel(
     
     fun currentModelSupportsVision(): Boolean {
         val currentModel = inferenceService.getCurrentlyLoadedModel()
-        return currentModel?.supportsVision == true && !isVisionDisabled
+        return currentModel?.let { model ->
+            model.supportsVision &&
+                !isVisionDisabled &&
+                (!model.requiresExternalVisionProjector() || model.hasDownloadedVisionProjector(context))
+        } == true
     }
     
     fun currentModelSupportsAudio(): Boolean {

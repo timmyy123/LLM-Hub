@@ -217,6 +217,7 @@ fun ChatScreen(
                             )
                             // Show model in header only when one is actually loaded (not just selected).
                             currentlyLoadedModel?.let { model ->
+                                val currentModel = model
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
@@ -228,8 +229,7 @@ fun ChatScreen(
                                         overflow = TextOverflow.Ellipsis
                                     )
                                     // Use the currently loaded model state to show icons
-                                    val currentModel = viewModel.currentlyLoadedModel.collectAsState().value
-                                    if (currentModel?.supportsVision == true && !viewModel.isVisionCurrentlyDisabled()) {
+                                    if (viewModel.currentModelSupportsVision()) {
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Icon(
                                             Icons.Default.RemoveRedEye,

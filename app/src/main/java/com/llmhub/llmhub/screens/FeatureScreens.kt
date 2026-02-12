@@ -36,6 +36,8 @@ import com.llmhub.llmhub.components.ModelSelectorCard
 import com.llmhub.llmhub.components.SelectableMarkdownText
 import com.llmhub.llmhub.components.ThinkingAwareResultContent
 import com.llmhub.llmhub.components.getDisplayContentWithoutThinking
+import com.llmhub.llmhub.data.hasDownloadedVisionProjector
+import com.llmhub.llmhub.data.requiresExternalVisionProjector
 import com.llmhub.llmhub.ui.components.AudioInputService
 import com.llmhub.llmhub.viewmodels.TranslatorViewModel
 import com.llmhub.llmhub.viewmodels.TranscriberViewModel
@@ -1725,6 +1727,10 @@ fun ScamDetectorScreen(
     val inputImageUri by viewModel.inputImageUri.collectAsState()
     val outputText by viewModel.outputText.collectAsState()
     val loadError by viewModel.loadError.collectAsState()
+    val modelSupportsVisionInput = selectedModel?.let { model ->
+        model.supportsVision &&
+            (!model.requiresExternalVisionProjector() || model.hasDownloadedVisionProjector(context))
+    } == true
     
     // Settings sheet state
     var showSettingsSheet by remember { mutableStateOf(false) }
@@ -1805,34 +1811,35 @@ fun ScamDetectorScreen(
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                // Vision toggle (image input available when model supports vision, e.g. Ministral)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            text = stringResource(R.string.scam_detector_enable_vision),
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = stringResource(R.string.scam_detector_vision_desc),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                if (modelSupportsVisionInput) {
+                    // Vision toggle (show only when selected model has usable vision input)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = stringResource(R.string.scam_detector_enable_vision),
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = stringResource(R.string.scam_detector_vision_desc),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = visionEnabled,
+                            onCheckedChange = { viewModel.toggleVision(it) }
                         )
                     }
-                    Switch(
-                        checked = visionEnabled,
-                        onCheckedChange = { viewModel.toggleVision(it) },
-                        enabled = selectedModel?.supportsVision == true
-                    )
+
+                    Spacer(modifier = Modifier.height(32.dp))
                 }
-                
-                Spacer(modifier = Modifier.height(32.dp))
             }
         }
     }
@@ -1980,7 +1987,7 @@ fun ScamDetectorScreen(
                         }
                         
                         // Image input section (only show if vision is enabled)
-                        if (visionEnabled && selectedModel?.supportsVision == true) {
+                        if (visionEnabled && modelSupportsVisionInput) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
