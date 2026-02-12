@@ -655,7 +655,7 @@ fun TranslatorScreen(
                     Spacer(modifier = Modifier.height(24.dp))
                     Text(
                         text = stringResource(
-                            if (availableModels.isEmpty()) R.string.download_models_first
+                            if (availableModels.isEmpty()) R.string.translator_requires_gemma3n
                             else R.string.scam_detector_load_model
                         ),
                         style = MaterialTheme.typography.titleLarge,
@@ -1400,7 +1400,7 @@ fun TranscriberScreen(
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(
                     text = stringResource(
-                        if (availableModels.isEmpty()) R.string.download_models_first
+                        if (availableModels.isEmpty()) R.string.transcriber_requires_gemma3n
                         else R.string.scam_detector_load_model
                     ),
                     style = MaterialTheme.typography.titleLarge,
