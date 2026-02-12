@@ -291,8 +291,32 @@ class NexaInferenceService @Inject constructor(
         } ?: return null
 
         if (allMmproj.isEmpty()) return null
+        
+        val modelName = modelFile.nameWithoutExtension
+        val modelLower = modelName.lowercase()
 
-        // Try to match the model variant (e.g. Instruct vs Reasoning)
+        // 1) Prefer exact variant projector match first (BF16/F16/Q*)
+        val variantRegex = Regex("""(?:q\d(?:_[a-z0-9]+)?|bf16|f16)""", RegexOption.IGNORE_CASE)
+        val modelVariantRaw = variantRegex.find(modelLower)?.value?.lowercase()
+        val modelVariant = when {
+            modelVariantRaw == "f16" || modelVariantRaw == "bf16" -> "bf16"
+            else -> modelVariantRaw
+        }
+        if (modelVariant != null) {
+            val exactVariant = allMmproj.firstOrNull { candidate ->
+                val candidateVariantRaw = variantRegex.find(candidate.nameWithoutExtension.lowercase())
+                    ?.value
+                    ?.lowercase()
+                val candidateVariant = when {
+                    candidateVariantRaw == "f16" || candidateVariantRaw == "bf16" -> "bf16"
+                    else -> candidateVariantRaw
+                }
+                candidateVariant == modelVariant
+            }
+            if (exactVariant != null) return exactVariant
+        }
+
+        // 2) Try to match the model base name/family
         val modelBaseName = modelFile.nameWithoutExtension
             .replace(Regex("[-_]Q[0-9].*"), "") // Strip quant suffix
         
@@ -302,6 +326,7 @@ class NexaInferenceService @Inject constructor(
             candidateBase.equals(modelBaseName, ignoreCase = true)
         }
 
+        // 3) Fallback to first available projector if we couldn't resolve a better match
         return matched ?: allMmproj.firstOrNull()
     }
     

@@ -22,6 +22,8 @@ import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.ModelConfig
 import com.llmhub.llmhub.data.ModelPreferences
+import com.llmhub.llmhub.data.hasDownloadedVisionProjector
+import com.llmhub.llmhub.data.requiresExternalVisionProjector
 import com.llmhub.llmhub.inference.MediaPipeInferenceService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -101,11 +103,19 @@ fun ChatSettingsSheet(
     }
     var disableVision by remember { mutableStateOf(isGemma3nModel) }
     var disableAudio by remember { mutableStateOf(isGemma3nModel) }
+    val selectedModelSupportsVisionInput by remember(selectedModel, context) {
+        derivedStateOf {
+            selectedModel?.let { model ->
+                model.supportsVision &&
+                    (!model.requiresExternalVisionProjector() || model.hasDownloadedVisionProjector(context))
+            } == true
+        }
+    }
 
     // Effective cap depends on whether vision is enabled for the selected model
     val effectiveMaxTokensCap by remember(selectedModel, baseMaxTokensCap, disableVision) {
         derivedStateOf {
-            if (selectedModel?.supportsVision == true && !disableVision) minOf(baseMaxTokensCap, 8192) else baseMaxTokensCap
+            if (selectedModelSupportsVisionInput && !disableVision) minOf(baseMaxTokensCap, 8192) else baseMaxTokensCap
         }
     }
     
@@ -121,7 +131,7 @@ fun ChatSettingsSheet(
                 val saved = modelPrefs.getModelConfig(model.name)
                 if (saved != null) {
                     // Clamp saved value to the effective cap
-                    maxTokensValue = saved.maxTokens.coerceIn(1, minOf(newBaseCap, if (model.supportsVision && !saved.disableVision) 8192 else newBaseCap))
+                    maxTokensValue = saved.maxTokens.coerceIn(1, minOf(newBaseCap, if (selectedModelSupportsVisionInput && !saved.disableVision) 8192 else newBaseCap))
                     maxTokensText = maxTokensValue.toString()
                     topK = saved.topK
                     topP = saved.topP
@@ -131,11 +141,11 @@ fun ChatSettingsSheet(
                         "CPU" -> false
                         else -> newDefaultUseGpu
                     }
-                    disableVision = saved.disableVision
+                    disableVision = saved.disableVision || !selectedModelSupportsVisionInput
                     disableAudio = saved.disableAudio
                 } else {
                     // Reset to defaults for new model
-                    val effCap = if (model.supportsVision && !newIsGemma3n) minOf(newBaseCap, 8192) else newBaseCap
+                    val effCap = if (selectedModelSupportsVisionInput && !newIsGemma3n) minOf(newBaseCap, 8192) else newBaseCap
                     val defaultMax = minOf(4096, effCap)
                     maxTokensValue = defaultMax
                     maxTokensText = defaultMax.toString()
@@ -143,12 +153,12 @@ fun ChatSettingsSheet(
                     topP = 0.95f
                     temperature = 1.0f
                     useGpu = newDefaultUseGpu
-                    disableVision = newIsGemma3n
+                    disableVision = newIsGemma3n || !selectedModelSupportsVisionInput
                     disableAudio = newIsGemma3n
                 }
             } catch (e: Exception) {
                 // Reset to defaults on error
-                val effCap = if (model.supportsVision) minOf(newBaseCap, 8192) else newBaseCap
+                val effCap = if (selectedModelSupportsVisionInput) minOf(newBaseCap, 8192) else newBaseCap
                 val defaultMax = minOf(4096, effCap)
                 maxTokensValue = defaultMax
                 maxTokensText = defaultMax.toString()
@@ -156,9 +166,15 @@ fun ChatSettingsSheet(
                 topP = 0.95f
                 temperature = 1.0f
                 useGpu = newDefaultUseGpu
-                disableVision = newIsGemma3n
+                disableVision = newIsGemma3n || !selectedModelSupportsVisionInput
                 disableAudio = newIsGemma3n
             }
+        }
+    }
+
+    LaunchedEffect(selectedModelSupportsVisionInput) {
+        if (!selectedModelSupportsVisionInput) {
+            disableVision = true
         }
     }
     
@@ -416,7 +432,7 @@ fun ChatSettingsSheet(
                                 onClick = {
                                     selectedModel?.let { model ->
                                         // Ensure finalMax respects the effective cap when vision is enabled
-                                        val finalMax = maxTokensValue.coerceIn(1, if (selectedModel?.supportsVision == true && !disableVision) minOf(baseMaxTokensCap, 8192) else baseMaxTokensCap)
+                                        val finalMax = maxTokensValue.coerceIn(1, if (selectedModelSupportsVisionInput && !disableVision) minOf(baseMaxTokensCap, 8192) else baseMaxTokensCap)
                                         val backend = if (canSelectAccelerator) {
                                             if (useGpu) LlmInference.Backend.GPU else LlmInference.Backend.CPU
                                         } else null
@@ -503,7 +519,7 @@ fun ChatSettingsSheet(
                             Slider(
                                 value = maxTokensValue.toFloat(),
                                 onValueChange = {
-                                    val cap = if (selectedModel?.supportsVision == true && !disableVision) minOf(baseMaxTokensCap, 8192) else baseMaxTokensCap
+                                    val cap = if (selectedModelSupportsVisionInput && !disableVision) minOf(baseMaxTokensCap, 8192) else baseMaxTokensCap
                                     val intVal = it.toInt().coerceIn(1, cap)
                                     maxTokensValue = intVal
                                     maxTokensText = intVal.toString()
@@ -523,7 +539,7 @@ fun ChatSettingsSheet(
                                 onValueChange = { input ->
                                     val numeric = input.filter { it.isDigit() }
                                     val intVal = numeric.toIntOrNull() ?: 0
-                                    val cap = if (selectedModel?.supportsVision == true && !disableVision) minOf(baseMaxTokensCap, 8192) else baseMaxTokensCap
+                                    val cap = if (selectedModelSupportsVisionInput && !disableVision) minOf(baseMaxTokensCap, 8192) else baseMaxTokensCap
                                     val clamped = intVal.coerceIn(1, cap)
                                     maxTokensText = clamped.toString()
                                     maxTokensValue = clamped
@@ -625,7 +641,7 @@ fun ChatSettingsSheet(
                         }
                         
                         // Modality options (Vision/Audio toggles)
-                        if (selectedModel?.supportsVision == true || selectedModel?.supportsAudio == true) {
+                        if (selectedModelSupportsVisionInput || selectedModel?.supportsAudio == true) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = stringResource(R.string.modality_options),
@@ -633,7 +649,7 @@ fun ChatSettingsSheet(
                             )
                             
                             // Vision toggle
-                            if (selectedModel?.supportsVision == true) {
+                            if (selectedModelSupportsVisionInput) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -700,7 +716,7 @@ fun ChatSettingsSheet(
                                     topP = 0.95f
                                     temperature = 1.0f
                                     useGpu = newDefaultUseGpu
-                                    disableVision = newIsGemma3n
+                                    disableVision = newIsGemma3n || !selectedModelSupportsVisionInput
                                     disableAudio = newIsGemma3n
                                 }
                             },
