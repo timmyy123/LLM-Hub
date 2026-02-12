@@ -59,6 +59,15 @@ fun LLMModel.hasDownloadedVisionProjector(context: Context): Boolean {
     val modelsDir = File(context.filesDir, "models")
     val modelDirName = name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
     val modelDir = File(modelsDir, modelDirName)
+
+    // 1) If this is an imported model and the importer recorded additionalFiles, check them first.
+    if (additionalFiles.isNotEmpty()) {
+        additionalFiles.forEach { fname ->
+            if (File(modelDir, fname).exists() || File(modelsDir, fname).exists()) return true
+        }
+    }
+
+    // 2) Fallback: look for known projector entries in ModelData (for bundled/downloaded models)
     val compatibleProjectors = ModelData.models.filter { candidate ->
         candidate.modelFormat.equals("gguf", ignoreCase = true) &&
             candidate.name.contains("Projector", ignoreCase = true) &&

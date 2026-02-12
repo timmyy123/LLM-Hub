@@ -403,6 +403,7 @@
     <!-- External Model Import -->
     <string name="import_external_model">استيراد نموذج خارجي</string>
     <string name="model_name">اسم النموذج</string>
+    <string name="select">اختر</string>
     <string name="select_model_file">اختر ملف النموذج</string>
     <string name="supports_vision">يدعم الرؤية</string>
     <string name="supports_audio">يدعم الصوت</string>
@@ -420,7 +421,7 @@
     <string name="download_image_models_from">يمكنك تنزيل نماذج الصور المتوافقة من:</string>
     <string name="sd_models_link">نماذج Stable Diffusion على Hugging Face</string>
     <string name="supports_npu">يدعم NPU</string>
-    <string name="import_model_warning">⚠️ مهم: يرجى قراءة ملف README للنموذج على Hugging Face قبل الاستيراد. أدخل القدرات الصحيحة (الرؤية، الصوت، GPU) وحجم نافذة السياق كما هو مذكور في توثيق النموذج. قد تؤدي الإعدادات غير الصحيحة إلى عدم عمل النموذج كما ينبغي.</string>
+    <string name="import_model_warning">⚠️ مهم: يرجى قراءة ملف README للنموذج على Hugging Face قبل الاستيراد. أدخل القدرات الصحيحة (الرؤية، الصوت، GPU) وحجم نافذة السياق كما هو مذكور في توثيق النموذج. قد تؤدي الإعدادات غير الصحيحة إلى عدم عمل النموذج كما ينبغي. مهم: تتطلب نماذج GGUF الداعمة للرؤية Vision Projector (mmproj). استورد ملف الـ projector لتمكين إدخال الصور.</string>
 
     <!-- Home Screen -->
     <string name="home_welcome">مرحبًا بك في LLM Hub</string>
