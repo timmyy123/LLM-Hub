@@ -230,9 +230,13 @@ fun ModelDownloadScreen(
         if (showImportDialog) {
             ImportExternalModelDialog(
                 onDismiss = { showImportDialog = false },
-                onImport = { externalModel ->
+                onImport = { externalModel, projectorUri ->
                     val success = downloadViewModel.addExternalModel(externalModel)
                     if (success) {
+                        // If a projector URI was provided, copy it asynchronously in the ViewModel
+                        if (projectorUri != null && externalModel.supportsVision && externalModel.modelFormat.equals("gguf", ignoreCase = true)) {
+                            downloadViewModel.importVisionProjector(externalModel.name, projectorUri)
+                        }
                         showImportDialog = false
                     }
                     success
@@ -727,12 +731,14 @@ private fun getModelDisplayName(model: LLMModel, context: Context): String {
 @Composable
 private fun ImportExternalModelDialog(
     onDismiss: () -> Unit,
-    onImport: (LLMModel) -> Boolean
+    onImport: (LLMModel, Uri?) -> Boolean
 ) {
     val context = LocalContext.current
     var modelName by remember { mutableStateOf("") }
     var selectedFileUri by remember { mutableStateOf<Uri?>(null) }
     var selectedFileName by remember { mutableStateOf("") }
+    var selectedVisionProjectorUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedVisionProjectorName by remember { mutableStateOf("") }
     var supportsVision by remember { mutableStateOf(false) }
     var supportsAudio by remember { mutableStateOf(false) }
     var supportsGpu by remember { mutableStateOf(false) }
@@ -793,6 +799,34 @@ private fun ImportExternalModelDialog(
         }
     }
 
+    // Separate launcher for selecting a Vision Projector file (mmproj / gguf projector)
+    val visionProjectorLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri?.let {
+            val fileName = try {
+                context.contentResolver.query(it, null, null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                        if (nameIndex >= 0) cursor.getString(nameIndex) else null
+                    } else null
+                } ?: it.lastPathSegment ?: "Unknown file"
+            } catch (e: Exception) {
+                it.lastPathSegment ?: "Unknown file"
+            }
+            selectedVisionProjectorUri = it
+            selectedVisionProjectorName = if (fileName.length > 20) fileName.take(20) + "..." else fileName
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    it,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (e: Exception) {
+                Log.w("ModelDownloadScreen", "Could not take persistent permission for projector URI: ${e.message}")
+            }
+        }
+    }
+
         val keyboardController = LocalSoftwareKeyboardController.current
         
         AlertDialog(
@@ -842,6 +876,31 @@ private fun ImportExternalModelDialog(
                                 if (selectedFileName.isNotBlank()) selectedFileName
                                 else stringResource(R.string.select_model_file)
                             )
+                        }
+                    }
+
+                    // If user enabled Supports Vision, show a file selector for the Vision Projector
+                    if (supportsVision) {
+                        item {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Button(
+                                onClick = { visionProjectorLauncher.launch(arrayOf("*/*")) },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.PhotoCamera,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                // Show selected projector name when available (same UX as model file button)
+                                Text(
+                                    if (selectedVisionProjectorName.isNotBlank()) selectedVisionProjectorName
+                                    else stringResource(R.string.select) + " Vision Projector"
+                                )
+                            }
+
+
                         }
                     }
                     
@@ -905,8 +964,9 @@ private fun ImportExternalModelDialog(
                     }
                 
                 
-                // Show Vision/Audio/GPU options only for text models (not for GGUF, QNN_NPU, MNN_CPU)
-                if (modelFormat != ModelFormat.GGUF && modelFormat != ModelFormat.QNN_NPU && modelFormat != ModelFormat.MNN_CPU) {
+                // Show Vision option for GGUF and other text formats.
+                // For GGUF: show only the "Supports Vision" toggle (no GPU/audio toggles).
+                if (modelFormat == ModelFormat.GGUF) {
                     item {
                         Row(
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -923,7 +983,25 @@ private fun ImportExternalModelDialog(
                             )
                         }
                     }
-                    
+                } else if (modelFormat != ModelFormat.QNN_NPU && modelFormat != ModelFormat.MNN_CPU) {
+                    // Existing behavior for TASK/LITERTLM and other text formats
+                    item {
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = stringResource(R.string.supports_vision),
+                                modifier = Modifier.clickable { supportsVision = !supportsVision }
+                            )
+                            RadioButton(
+                                selected = supportsVision,
+                                onClick = { supportsVision = !supportsVision }
+                            )
+                        }
+                    }
+
                     item {
                         Row(
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -940,7 +1018,7 @@ private fun ImportExternalModelDialog(
                             )
                         }
                     }
-                    
+
                     item {
                         Row(
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1084,7 +1162,7 @@ private fun ImportExternalModelDialog(
                             isExtracting = true,
                             downloadProgress = 0.0f
                         )
-                        val success = onImport(externalModel)
+                        val success = onImport(externalModel, null)
                         if (!success) {
                             showError = true
                             errorMessage = context.getString(R.string.model_name_already_exists, modelName)
@@ -1093,7 +1171,8 @@ private fun ImportExternalModelDialog(
                     } else {
                         // For text models (TASK, LITERTLM, GGUF)
                         // For GGUF: always GPU=true, Vision=false, Audio=false
-                        val actualSupportsVision = if (modelFormat == ModelFormat.GGUF) false else supportsVision
+                        // GGUF can be vision-capable now — allow user to toggle 'Supports Vision' for GGUF as well
+                        val actualSupportsVision = supportsVision
                         val actualSupportsAudio = if (modelFormat == ModelFormat.GGUF) false else supportsAudio
                         val actualSupportsGpu = if (modelFormat == ModelFormat.GGUF) true else supportsGpu
                         
@@ -1115,11 +1194,13 @@ private fun ImportExternalModelDialog(
                             ),
                             contextWindowSize = contextWindowSize.toInt(),
                             modelFormat = modelFormat.name.lowercase(),
+                            // projector file will be copied asynchronously by ViewModel after import
+                            additionalFiles = emptyList(),
                             isDownloaded = true,
                             isDownloading = false,
                             downloadProgress = 1.0f
                         )
-                        val success = onImport(externalModel)
+                        val success = onImport(externalModel, selectedVisionProjectorUri)
                         if (!success) {
                             showError = true
                             errorMessage = context.getString(R.string.model_name_already_exists, modelName)

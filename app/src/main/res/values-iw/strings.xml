@@ -405,6 +405,7 @@
     <!-- External Model Import -->
     <string name="import_external_model">ייבוא מודל חיצוני</string>
     <string name="model_name">שם המודל</string>
+    <string name="select">בחר</string>
     <string name="select_model_file">בחר קובץ מודל</string>
     <string name="supports_vision">תומך בראייה</string>
     <string name="supports_audio">תומך באודיו</string>
@@ -424,7 +425,7 @@
     <string name="download_image_models_from">ניתן להוריד מודלים תואמים של תמונות מ:</string>
     <string name="sd_models_link">מודלי Stable Diffusion ב-Hugging Face</string>
     <string name="supports_npu">תומך ב-NPU</string>
-    <string name="import_model_warning">⚠️ חשוב: קרא את README של המודל ב-Hugging Face לפני הייבוא. הזן יכולות נכונות (ראייה, אודיו, GPU) וגודל חלון ההקשר כמצוין בתיעוד המודל.</string>
+    <string name="import_model_warning">⚠️ חשוב: קרא את README של המודל ב-Hugging Face לפני הייבוא. הזן יכולות נכונות (ראייה, אודיו, GPU) וגודל חלון ההקשר כמצוין בתיעוד המודל. חשוב: מודלים GGUF התומכים בראייה דורשים Vision Projector (mmproj). ייבא את קובץ ה-projection כדי לאפשר קלט תמונה.</string>
 
     <!-- Home Screen -->
     <string name="home_welcome">ברוך הבא ל-LLM Hub</string>

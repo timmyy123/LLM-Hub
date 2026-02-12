@@ -405,6 +405,7 @@
     <!-- External Model Import -->
     <string name="import_external_model">Імпорт зовнішньої моделі</string>
     <string name="model_name">Назва моделі</string>
+    <string name="select">Вибрати</string>
     <string name="select_model_file">Вибрати файл моделі</string>
     <string name="supports_vision">Підтримує зір</string>
     <string name="supports_audio">Підтримує аудіо</string>
@@ -424,7 +425,7 @@
     <string name="download_image_models_from">Ви можете завантажити сумісні моделі зображень з:</string>
     <string name="sd_models_link">Моделі Stable Diffusion на Hugging Face</string>
     <string name="supports_npu">Підтримка NPU</string>
-    <string name="import_model_warning">⚠️ Важливо: перед імпортом прочитайте README моделі на Hugging Face. Вкажіть правильні можливості (зір, аудіо, GPU) і розмір контексту згідно з документацією моделі.</string>
+    <string name="import_model_warning">⚠️ Важливо: перед імпортом прочитайте README моделі на Hugging Face. Вкажіть правильні можливості (зір, аудіо, GPU) і розмір контексту згідно з документацією моделі. Важливо: GGUF-моделі з підтримкою зору вимагають Vision Projector (mmproj). Імпортуйте файл проєктора, щоб увімкнути введення зображень.</string>
 
     <!-- Home Screen -->
     <string name="home_welcome">Ласкаво просимо до LLM Hub</string>

@@ -404,6 +404,7 @@
     <!-- External Model Import -->
     <string name="import_external_model">Importuj Model Zewnętrzny</string>
     <string name="model_name">Nazwa Modelu</string>
+    <string name="select">Wybierz</string>
     <string name="select_model_file">Wybierz Plik Modelu</string>
     <string name="supports_vision">Obsługuje Wizję</string>
     <string name="supports_audio">Obsługuje Dźwięk</string>
@@ -423,7 +424,7 @@
     <string name="download_image_models_from">Możesz pobrać kompatybilne modele obrazów z:</string>
     <string name="sd_models_link">Modele Stable Diffusion na Hugging Face</string>
     <string name="supports_npu">Obsługuje NPU</string>
-    <string name="import_model_warning">⚠️ Ważne: Proszę przeczytać README modelu na Hugging Face przed importem. Wprowadź poprawne możliwości (wizja, dźwięk, GPU) i rozmiar okna kontekstowego określone w dokumentacji modelu. Nieprawidłowe ustawienia mogą spowodować, że model nie będzie działał poprawnie.</string>
+    <string name="import_model_warning">⚠️ Ważne: Proszę przeczytać README modelu na Hugging Face przed importem. Wprowadź poprawne możliwości (wizja, dźwięk, GPU) i rozmiar okna kontekstowego określone w dokumentacji modelu. Nieprawidłowe ustawienia mogą spowodować, że model nie będzie działał poprawnie. Ważne: Modele GGUF obsługujące wizję wymagają Vision Projector (mmproj). Zaimportuj plik projektora, aby włączyć wprowadzanie obrazu.</string>
     
     <!-- Home Screen -->
     <string name="home_welcome">Witaj w LLM Hub</string>
