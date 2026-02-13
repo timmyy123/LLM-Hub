@@ -74,12 +74,14 @@ fun getLocalizedModelName(model: LLMModel): String {
 @Composable
 fun ChatScreen(
     chatId: String,
+    creatorId: String? = null,
     viewModelFactory: ChatViewModelFactory,
     onNavigateToSettings: () -> Unit,
     onNavigateToModels: () -> Unit,
     onNavigateToChat: (String) -> Unit,
+    onNavigateToCreatorChat: (String) -> Unit,
     onNavigateBack: () -> Unit,
-    drawerState: androidx.compose.material3.DrawerState
+    drawerState: DrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 ) {
     val viewModel: ChatViewModel = viewModel(
         key = "chat_$chatId",
@@ -97,6 +99,9 @@ fun ChatScreen(
     val currentlyLoadedModel by viewModel.currentlyLoadedModel.collectAsState()
     val selectedModel by viewModel.selectedModel.collectAsState()
     val selectedBackend by viewModel.selectedBackend.collectAsState()
+    
+    // Creator state for header
+    val currentCreator by viewModel.currentCreator.collectAsState()
     
     // RAG state
     val isRagReady by viewModel.isRagReady.collectAsState()
@@ -135,8 +140,9 @@ fun ChatScreen(
     }
 
     // Initialize chat - only run once per chatId or when context changes
-    LaunchedEffect(chatId) {
-        viewModel.initializeChat(chatId, context)
+    // Initialize chat - only run once per chatId/creatorId or when context changes
+    LaunchedEffect(chatId, creatorId) {
+        viewModel.initializeChat(chatId, context, creatorId)
     }
     
     // Sync model state immediately to show icons
@@ -182,6 +188,12 @@ fun ChatScreen(
                     }
                     onNavigateToModels()
                 },
+                onNavigateToCreatorChat = { creatorId ->
+                    coroutineScope.launch {
+                        drawerState.close()
+                    }
+                    onNavigateToCreatorChat(creatorId)
+                },
                 onNavigateBack = {
                     coroutineScope.launch {
                         drawerState.close()
@@ -198,98 +210,31 @@ fun ChatScreen(
             )
         }
     ) {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = {
-                        // Avoid a fixed title height so the title / chips stay vertically centered
-                        // across portrait/landscape and larger tablet screens.
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = currentChat?.title ?: stringResource(R.string.chat),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            // Show model in header only when one is actually loaded (not just selected).
-                            currentlyLoadedModel?.let { model ->
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = getLocalizedModelName(model),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    // Use the currently loaded model state to show icons
-                                    val currentModel = viewModel.currentlyLoadedModel.collectAsState().value
-                                    if (currentModel?.supportsVision == true && !viewModel.isVisionCurrentlyDisabled()) {
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Icon(
-                                            Icons.Default.RemoveRedEye,
-                                            contentDescription = stringResource(R.string.vision_enabled),
-                                            modifier = Modifier.size(12.dp),
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                    if (currentModel?.supportsAudio == true && !viewModel.isAudioCurrentlyDisabled()) {
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Icon(
-                                            Icons.Default.Mic,
-                                            contentDescription = "Audio enabled",
-                                            modifier = Modifier.size(12.dp),
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                    if (currentModel?.name?.contains("Thinking", ignoreCase = true) == true) {
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Icon(
-                                            Icons.Default.Psychology,
-                                            contentDescription = stringResource(R.string.thinking_label),
-                                            modifier = Modifier.size(12.dp),
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                    if (viewModel.isGpuBackendEnabled()) {
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Icon(
-                                            Icons.Default.Speed,
-                                            contentDescription = "GPU enabled",
-                                            modifier = Modifier.size(12.dp),
-                                            tint = MaterialTheme.colorScheme.secondary
-                                        )
-                                    }
-                                    // RAG indicator removed from top bar
-                                    // Show RAG enabled indicator when embeddings are enabled
-                                    if (isEmbeddingEnabled) {
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Box(
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(12.dp))
-                                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f))
-                                                .padding(horizontal = 8.dp, vertical = 4.dp),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(
-                                                text = stringResource(R.string.rag_enabled),
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.primary,
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.Medium,
-                                                textAlign = TextAlign.Center
-                                            )
-                                        }
-                                    }
-                                }
-                            }
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    // Avoid a fixed title height so the title / chips stay vertically centered
+                    // across portrait/landscape and larger tablet screens.
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        val headerTitle = when {
+                            currentChat != null -> currentChat!!.title
+                            currentCreator != null -> "${currentCreator!!.icon} ${currentCreator!!.name}"
+                            else -> stringResource(R.string.chat) // "New Chat" or similar
                         }
-                    },
+                        
+                        Text(
+                            text = headerTitle,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                },
                     navigationIcon = {
                         IconButton(onClick = {
                             coroutineScope.launch { drawerState.open() }
@@ -485,7 +430,7 @@ fun ChatScreen(
         )
     }
 }
-    
+
 @Composable
 private fun WelcomeMessage(
     currentModel: String,
