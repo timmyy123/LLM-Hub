@@ -43,6 +43,7 @@ import com.llmhub.llmhub.ui.components.*
 import androidx.compose.ui.res.stringResource
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.ModelRequirements
+import com.llmhub.llmhub.data.DeviceInfo
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.net.Uri
@@ -57,6 +58,26 @@ enum class ModelFormat {
  */
 private fun isGpuSupportedForModel(model: LLMModel, context: Context): Boolean {
     return model.supportsGpu
+}
+
+private fun is8Gen4Device(): Boolean = DeviceInfo.getChipsetSuffix() == "8gen4"
+
+private fun is8GenFamilyDeviceForQnn(): Boolean {
+    return when (DeviceInfo.getChipsetSuffix()) {
+        "8gen1", "8gen2", "8gen3", "8gen4" -> true
+        else -> false
+    }
+}
+
+private fun shouldShowNpuBadge(model: LLMModel): Boolean {
+    val format = model.modelFormat.lowercase()
+    return when (format) {
+        // GGUF NPU badge only on 8 Gen 4 devices (includes imported GGUF)
+        "gguf" -> is8Gen4Device()
+        // QNN models (listed + imported) on 8 Gen 1/2/3/4-class devices
+        "qnn_npu" -> is8GenFamilyDeviceForQnn()
+        else -> false
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -317,6 +338,14 @@ private fun ModelFamilyCard(
                             tint = MaterialTheme.colorScheme.secondary
                         )
                     }
+
+                    if (variants.any { shouldShowNpuBadge(it) }) {
+                        IconWithLabel(
+                            icon = Icons.Default.Bolt,
+                            label = "NPU",
+                            tint = MaterialTheme.colorScheme.secondary
+                        )
+                    }
                     
                     IconWithLabel(
                         icon = Icons.Default.Storage,
@@ -462,6 +491,14 @@ private fun ModelVariantItem(
                     IconWithLabel(
                         icon = Icons.Default.Speed,
                         label = stringResource(R.string.gpu),
+                        tint = MaterialTheme.colorScheme.secondary
+                    )
+                }
+
+                if (shouldShowNpuBadge(model)) {
+                    IconWithLabel(
+                        icon = Icons.Default.Bolt,
+                        label = "NPU",
                         tint = MaterialTheme.colorScheme.secondary
                     )
                 }

@@ -41,6 +41,19 @@ object DeviceInfo {
         val suffix = getChipsetSuffix()
         return suffix == "8gen2" || suffix == "8gen3" || suffix == "8gen4"
     }
+
+    /**
+     * Normalize chipset suffix for SD QNN package naming.
+     * Current hosted SD-QNN variants are keyed as 8gen1 and 8gen2, where 8gen2 is
+     * also used for newer chips (8gen3/8gen4/8s/Elite class) for compatibility.
+     */
+    fun getSdQnnPackageSuffix(): String {
+        return when (getChipsetSuffix()) {
+            "8gen1" -> "8gen1"
+            "8gen2", "8gen3", "8gen4" -> "8gen2"
+            else -> "min"
+        }
+    }
 }
 
 object ModelData {
@@ -1646,11 +1659,11 @@ object ModelData {
         
         // Image Generation Models - Absolute Reality (Stable Diffusion 1.5)
         LLMModel(
-            name = "Absolute Reality (NPU - ${DeviceInfo.getChipsetSuffix() ?: "Not Supported"})",
+            name = "Absolute Reality (NPU - ${DeviceInfo.getSdQnnPackageSuffix()})",
             description = "Absolute Reality SD1.5 model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation at 512x512 resolution. Requires Snapdragon 8 Gen 1 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~1.06 GB download from HuggingFace.",
-            url = "https://huggingface.co/xororz/sd-qnn/resolve/main/AbsoluteReality_qnn2.28_${DeviceInfo.getChipsetSuffix() ?: "min"}.zip",
+            url = "https://huggingface.co/xororz/sd-qnn/resolve/main/AbsoluteReality_qnn2.28_${DeviceInfo.getSdQnnPackageSuffix()}.zip",
             category = "image_generation",
-            sizeBytes = when(DeviceInfo.getChipsetSuffix()) {
+            sizeBytes = when(DeviceInfo.getSdQnnPackageSuffix()) {
                 "8gen1" -> 1138900992L    // 1.06 GB
                 "8gen2" -> 1128267776L    // 1.05 GB  
                 else -> 1041235968L       // 993 MB (min)
