@@ -16,14 +16,16 @@ class ChatViewModelFactory(
     private val context: Context
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
+        val inferenceService = (application as com.llmhub.llmhub.LlmHubApplication).inferenceService
+        
         if (modelClass.isAssignableFrom(ChatViewModel::class.java)) {
             val savedStateHandle = extras.createSavedStateHandle()
-            // Use application-scoped InferenceService so model state persists across ViewModels
-            // (avoids creating a new MediaPipeInferenceService per ViewModel which would cause
-            // models to be unloaded when a ViewModel is cleared)
-            val inferenceService = (application as com.llmhub.llmhub.LlmHubApplication).inferenceService
             @Suppress("UNCHECKED_CAST")
-            return ChatViewModel(inferenceService, repository, context, savedStateHandle) as T
+            return ChatViewModel(inferenceService, repository, application, savedStateHandle) as T
+        }
+        if (modelClass.isAssignableFrom(CreatorViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return CreatorViewModel(repository, inferenceService, application) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

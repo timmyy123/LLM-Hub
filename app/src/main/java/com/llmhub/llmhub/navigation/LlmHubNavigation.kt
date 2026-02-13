@@ -6,7 +6,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.DrawerState
@@ -23,8 +22,10 @@ import com.llmhub.llmhub.viewmodels.ThemeViewModel
 
 sealed class Screen(val route: String) {
     object Home : Screen("home")
-    object Chat : Screen("chat/{chatId}") {
-        fun createRoute(chatId: String = "new") = "chat/$chatId"
+    object Chat : Screen("chat/{chatId}?creatorId={creatorId}") {
+        fun createRoute(chatId: String = "new", creatorId: String? = null): String {
+            return if (creatorId != null) "chat/$chatId?creatorId=$creatorId" else "chat/$chatId"
+        }
     }
     object ChatHistory : Screen("chat_history")
     object WritingAid : Screen("writing_aid")
@@ -32,10 +33,16 @@ sealed class Screen(val route: String) {
     object Transcriber : Screen("transcriber")
     object ScamDetector : Screen("scam_detector")
     object ImageGenerator : Screen("image_generator")
+    object VibeCoder : Screen("vibe_coder")
+    object CodeCanvas : Screen("code_canvas") {
+        fun createRoute(codeContent: String, codeType: String = "html") =
+            "code_canvas?code=${android.net.Uri.encode(codeContent)}&type=$codeType"
+    }
     object Settings : Screen("settings")
     object Models : Screen("models")
     object About : Screen("about")
     object Terms : Screen("terms")
+    object CreatorGeneration : Screen("creator_generation")
 }
 
 @Composable
@@ -78,6 +85,8 @@ fun LlmHubNavigation(
                         "transcriber" -> navController.navigate(Screen.Transcriber.route)
                         "scam_detector" -> navController.navigate(Screen.ScamDetector.route)
                         "image_generator" -> navController.navigate(Screen.ImageGenerator.route)
+                        "vibe_coder" -> navController.navigate(Screen.VibeCoder.route)
+                        "creator_generation" -> navController.navigate(Screen.CreatorGeneration.route)
                     }
                 },
                 onNavigateToSettings = {
@@ -109,12 +118,23 @@ fun LlmHubNavigation(
         
         // Chat Screen (existing functionality preserved)
         composable(
-            route = Screen.Chat.route
+            route = Screen.Chat.route,
+            arguments = listOf(
+                androidx.navigation.navArgument("chatId") { defaultValue = "new" },
+                androidx.navigation.navArgument("creatorId") { nullable = true; defaultValue = null }
+            )
         ) { backStackEntry ->
             val chatId = backStackEntry.arguments?.getString("chatId") ?: "new"
-
+            val creatorId = backStackEntry.arguments?.getString("creatorId")
+            
+            // We need to pass creatorId to ChatScreen/ViewModel somehow.
+            // Since ChatScreen takes a ViewModel, we might need to update ChatScreen signature
+            // or rely on ViewModel to handle "new" chat with params.
+            // Actually, ChatScreen instantiates the ViewModel. We should pass arguments there.
+            
             ChatScreen(
                 chatId = chatId,
+                creatorId = creatorId,
                 viewModelFactory = chatViewModelFactory,
                 onNavigateToSettings = {
                     navController.navigate(Screen.Settings.route)
@@ -124,6 +144,11 @@ fun LlmHubNavigation(
                 },
                 onNavigateToChat = { newChatId ->
                     navController.navigate(Screen.Chat.createRoute(newChatId)) {
+                        popUpTo(Screen.Chat.route) { inclusive = true }
+                    }
+                },
+                onNavigateToCreatorChat = { newCreatorId ->
+                    navController.navigate(Screen.Chat.createRoute("new", newCreatorId)) {
                         popUpTo(Screen.Chat.route) { inclusive = true }
                     }
                 },
@@ -170,6 +195,33 @@ fun LlmHubNavigation(
             )
         }
         
+        composable(Screen.VibeCoder.route) {
+            VibeCoderScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToModels = { navController.navigate(Screen.Models.route) },
+                onNavigateToCanvas = { code, type ->
+                    navController.navigate(Screen.CodeCanvas.createRoute(code, type))
+                }
+            )
+        }
+        
+        composable(
+            route = "code_canvas?code={code}&type={type}",
+            arguments = listOf(
+                androidx.navigation.navArgument("code") { type = androidx.navigation.NavType.StringType },
+                androidx.navigation.navArgument("type") { type = androidx.navigation.NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val codeContent = android.net.Uri.decode(backStackEntry.arguments?.getString("code") ?: "")
+            val codeType = backStackEntry.arguments?.getString("type") ?: "html"
+            
+            CodeCanvasScreen(
+                codeContent = codeContent,
+                codeType = codeType,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        
         composable(Screen.Settings.route) {
             SettingsScreen(
                 onNavigateBack = {
@@ -209,6 +261,20 @@ fun LlmHubNavigation(
                 onNavigateBack = {
                     navController.popBackStack()
                 }
+            )
+        }
+
+        composable(Screen.CreatorGeneration.route) {
+            CreatorGenerationScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToChat = { creatorId ->
+                    navController.navigate(Screen.Chat.createRoute("new", creatorId)) {
+                        popUpTo(Screen.Home.route)
+                    }
+                },
+                viewModelFactory = chatViewModelFactory
             )
         }
     }

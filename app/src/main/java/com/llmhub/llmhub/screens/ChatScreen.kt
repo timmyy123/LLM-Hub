@@ -74,12 +74,14 @@ fun getLocalizedModelName(model: LLMModel): String {
 @Composable
 fun ChatScreen(
     chatId: String,
+    creatorId: String? = null,
     viewModelFactory: ChatViewModelFactory,
     onNavigateToSettings: () -> Unit,
     onNavigateToModels: () -> Unit,
     onNavigateToChat: (String) -> Unit,
+    onNavigateToCreatorChat: (String) -> Unit,
     onNavigateBack: () -> Unit,
-    drawerState: androidx.compose.material3.DrawerState
+    drawerState: DrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 ) {
     val viewModel: ChatViewModel = viewModel(
         key = "chat_$chatId",
@@ -97,7 +99,6 @@ fun ChatScreen(
     val currentlyLoadedModel by viewModel.currentlyLoadedModel.collectAsState()
     val selectedModel by viewModel.selectedModel.collectAsState()
     val selectedBackend by viewModel.selectedBackend.collectAsState()
-    val selectedNpuDeviceId by viewModel.selectedNpuDeviceId.collectAsState()
     
     // RAG state
     val isRagReady by viewModel.isRagReady.collectAsState()
@@ -136,8 +137,9 @@ fun ChatScreen(
     }
 
     // Initialize chat - only run once per chatId or when context changes
-    LaunchedEffect(chatId) {
-        viewModel.initializeChat(chatId, context)
+    // Initialize chat - only run once per chatId/creatorId or when context changes
+    LaunchedEffect(chatId, creatorId) {
+        viewModel.initializeChat(chatId, context, creatorId)
     }
     
     // Sync model state immediately to show icons
@@ -183,6 +185,12 @@ fun ChatScreen(
                     }
                     onNavigateToModels()
                 },
+                onNavigateToCreatorChat = { creatorId ->
+                    coroutineScope.launch {
+                        drawerState.close()
+                    }
+                    onNavigateToCreatorChat(creatorId)
+                },
                 onNavigateBack = {
                     coroutineScope.launch {
                         drawerState.close()
@@ -218,7 +226,7 @@ fun ChatScreen(
                             )
                             // Show model in header only when one is actually loaded (not just selected).
                             currentlyLoadedModel?.let { model ->
-                                val currentModel = model
+                                val currentModel = model                            
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
@@ -259,6 +267,7 @@ fun ChatScreen(
                                     }
                                     if (viewModel.isGpuBackendEnabled()) {
                                         val isNpu = selectedNpuDeviceId?.startsWith("HTP", ignoreCase = true) == true
+
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Icon(
                                             if (isNpu) Icons.Default.Bolt else Icons.Default.Speed,
@@ -488,7 +497,7 @@ fun ChatScreen(
         )
     }
 }
-    
+
 @Composable
 private fun WelcomeMessage(
     currentModel: String,

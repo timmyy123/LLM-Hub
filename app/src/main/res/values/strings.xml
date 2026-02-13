@@ -449,6 +449,24 @@
     <string name="feature_scam_detector_desc">Analyze text, images, or URLs for potential scams</string>
     <string name="feature_image_generator">Image Generator</string>
     <string name="feature_image_generator_desc">Generate images from text prompts with AI</string>
+    <string name="feature_vibe_coder">Vibes</string>
+    <string name="feature_vibe_coder_desc">Generate HTML, JavaScript, and Python code with AI</string>
+    <string name="feature_creator_generation">creAItors</string>
+    <string name="feature_creator_generation_desc">Create your own custom AI personas</string>
+    <string name="drawer_my_creators">my creAItors</string>
+    
+    <!-- Vibe Coder Screen -->
+    <string name="vibe_coder_title">Vibes</string>
+    <string name="vibe_coder_prompt_label">What would you like to code?</string>
+    <string name="vibe_coder_prompt_hint">Describe the code you want to generate...</string>
+    <string name="vibe_coder_generate">Generate Code</string>
+    <string name="vibe_coder_generating">Generating code...</string>
+    <string name="vibe_coder_generated_code">Generated Code</string>
+    <string name="vibe_coder_copy">Copy</string>
+    <string name="vibe_coder_preview">Preview</string>
+    <string name="vibe_coder_no_model">No model loaded. Please download and select a model first.</string>
+    <string name="vibe_coder_settings">Settings</string>
+    <string name="vibe_coder_backend_select">Select Backend</string>
     
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">Writing Aid</string>
