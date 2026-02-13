@@ -77,7 +77,7 @@
     <string name="ai_thinking">هوش مصنوعی در حال فکر کردن…</string>
     <string name="thinking_label">تفکر</string>
     <string name="thinking_tokens">تفکر (%1$d توکن)</string>
-    <string name="version_number">نسخه 3.5.2</string>
+    <string name="version_number">نسخه 3.5.3</string>
     <string name="app_version">نسخه برنامه</string>
 
     <!-- Terms of Service (Short titles translated; body kept concise translation) -->
@@ -405,6 +405,7 @@
     <!-- External Model Import -->
     <string name="import_external_model">وارد کردن مدل خارجی</string>
     <string name="model_name">نام مدل</string>
+    <string name="select">انتخاب</string>
     <string name="select_model_file">انتخاب فایل مدل</string>
     <string name="supports_vision">پشتیبانی از بینایی</string>
     <string name="supports_audio">پشتیبانی از صوت</string>
@@ -424,7 +425,7 @@
     <string name="download_image_models_from">می‌توانید مدل‌های تصویر سازگار را از اینجا دانلود کنید:</string>
     <string name="sd_models_link">مدل‌های Stable Diffusion در Hugging Face</string>
     <string name="supports_npu">پشتیبانی NPU</string>
-    <string name="import_model_warning">⚠️ مهم: لطفاً README مدل در Hugging Face را قبل از وارد کردن بخوانید. قابلیت‌ها (بینایی، صوت، GPU) و اندازه پنجره زمینه را مطابق مستندات مدل وارد کنید. تنظیمات نادرست ممکن است باعث اختلال در عملکرد مدل شود.</string>
+    <string name="import_model_warning">⚠️ مهم: لطفاً README مدل در Hugging Face را قبل از وارد کردن بخوانید. قابلیت‌ها (بینایی، صوت، GPU) و اندازه پنجره زمینه را مطابق مستندات مدل وارد کنید. تنظیمات نادرست ممکن است باعث اختلال در عملکرد مدل شود. مهم: مدل‌های GGUF با پشتیبانی تصویر به Vision Projector (mmproj) نیاز دارند. برای فعال‌سازی ورودی تصویر، فایل پروجکتور را وارد کنید.</string>
 
     <!-- Home Screen -->
     <string name="home_welcome">به LLM Hub خوش آمدید</string>

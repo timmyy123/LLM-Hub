@@ -36,6 +36,10 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
     
     private val _selectedBackend = MutableStateFlow(LlmInference.Backend.GPU)
     val selectedBackend: StateFlow<LlmInference.Backend> = _selectedBackend.asStateFlow()
+
+    // Optional selected NPU device id when user chooses NPU for GGUF
+    private val _selectedNpuDeviceId = MutableStateFlow<String?>(null)
+    val selectedNpuDeviceId: StateFlow<String?> = _selectedNpuDeviceId.asStateFlow()
     
     // Loading states
     private val _isLoadingModel = MutableStateFlow(false)
@@ -182,13 +186,14 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
         saveSettings()
     }
     
-    fun selectBackend(backend: LlmInference.Backend) {
+    fun selectBackend(backend: LlmInference.Backend, deviceId: String? = null) {
         // Unload current model before switching backend
         if (_isModelLoaded.value) {
             unloadModel()
         }
         
         _selectedBackend.value = backend
+        _selectedNpuDeviceId.value = deviceId
         saveSettings()
     }
     
@@ -295,7 +300,8 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
                     model = model,
                     preferredBackend = _selectedBackend.value,
                     disableVision = disableVision,
-                    disableAudio = disableAudio
+                    disableAudio = disableAudio,
+                    deviceId = _selectedNpuDeviceId.value
                 )
                 _isModelLoaded.value = true
             } catch (e: Exception) {

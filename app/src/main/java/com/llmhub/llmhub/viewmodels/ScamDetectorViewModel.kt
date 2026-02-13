@@ -9,6 +9,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.ModelAvailabilityProvider
+import com.llmhub.llmhub.data.hasDownloadedVisionProjector
+import com.llmhub.llmhub.data.requiresExternalVisionProjector
 import com.llmhub.llmhub.inference.MediaPipeInferenceService
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import kotlinx.coroutines.CancellationException
@@ -48,6 +50,10 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
     
     private val _selectedBackend = MutableStateFlow<LlmInference.Backend?>(null)
     val selectedBackend: StateFlow<LlmInference.Backend?> = _selectedBackend.asStateFlow()
+
+    // Optional selected NPU device id when user chooses NPU for GGUF
+    private val _selectedNpuDeviceId = MutableStateFlow<String?>(null)
+    val selectedNpuDeviceId: StateFlow<String?> = _selectedNpuDeviceId.asStateFlow()
     
     private val _isLoadingModel = MutableStateFlow(false)
     val isLoadingModel: StateFlow<Boolean> = _isLoadingModel.asStateFlow()
@@ -92,6 +98,9 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
             LlmInference.Backend.GPU
         }
         
+        // Restore optional selected NPU device
+        _selectedNpuDeviceId.value = prefs.getString("selected_npu_device", null)
+        
         // Restore vision setting
         _visionEnabled.value = prefs.getBoolean("vision_enabled", false)
     }
@@ -100,6 +109,7 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
         prefs.edit().apply {
             putString("selected_model_name", _selectedModel.value?.name)
             putString("selected_backend", _selectedBackend.value?.name)
+            putString("selected_npu_device", _selectedNpuDeviceId.value)
             putBoolean("vision_enabled", _visionEnabled.value)
             apply()
         }
@@ -140,7 +150,7 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
         _isModelLoaded.value = false
         
         // Reset vision if model doesn't support it
-        if (!model.supportsVision) {
+        if (!modelSupportsVisionInput(model)) {
             _visionEnabled.value = false
         }
         
@@ -154,13 +164,14 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
         saveSettings()
     }
     
-    fun selectBackend(backend: LlmInference.Backend) {
+    fun selectBackend(backend: LlmInference.Backend, deviceId: String? = null) {
         // Unload current model before switching backend
         if (_isModelLoaded.value) {
             unloadModel()
         }
         
         _selectedBackend.value = backend
+        _selectedNpuDeviceId.value = deviceId
         _isModelLoaded.value = false
         saveSettings()
     }
@@ -171,7 +182,8 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
             unloadModel()
         }
         
-        _visionEnabled.value = enabled
+        val model = _selectedModel.value
+        _visionEnabled.value = enabled && model != null && modelSupportsVisionInput(model)
         _isModelLoaded.value = false
         // Clear image if vision is disabled
         if (!enabled) {
@@ -211,12 +223,13 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
                 inferenceService.unloadModel()
                 
                 // Load the selected model with vision setting
-                val disableVision = !_visionEnabled.value
+                val disableVision = !_visionEnabled.value || !modelSupportsVisionInput(model)
                 val success = inferenceService.loadModel(
                     model = model,
                     preferredBackend = backend,
                     disableVision = disableVision,
-                    disableAudio = true
+                    disableAudio = true,
+                    deviceId = _selectedNpuDeviceId.value
                 )
                 
                 _isModelLoaded.value = success
@@ -246,6 +259,12 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
                 Log.e(TAG, "Error unloading model", e)
             }
         }
+    }
+
+    private fun modelSupportsVisionInput(model: LLMModel): Boolean {
+        if (!model.supportsVision) return false
+        if (!model.requiresExternalVisionProjector()) return true
+        return model.hasDownloadedVisionProjector(getApplication())
     }
     
     fun cancelAnalysis() {

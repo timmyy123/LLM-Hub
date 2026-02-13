@@ -78,7 +78,7 @@
     <string name="ai_thinking">Yapay zeka düşünüyor...</string>
     <string name="thinking_label">Düşünme</string>
     <string name="thinking_tokens">Düşünme (%1$d token)</string>
-    <string name="version_number">Sürüm 3.5.2</string>
+    <string name="version_number">Sürüm 3.5.3</string>
     <string name="app_version">Uygulama Sürümü</string>
     
     <!-- Terms of Service -->
@@ -403,6 +403,7 @@
     <!-- External Model Import -->
     <string name="import_external_model">Harici Model İçe Aktar</string>
     <string name="model_name">Model Adı</string>
+    <string name="select">Seç</string>
     <string name="select_model_file">Model Dosyası Seç</string>
     <string name="supports_vision">Görseli Destekler</string>
     <string name="supports_audio">Sesi Destekler</string>
@@ -420,7 +421,7 @@
     <string name="download_image_models_from">Uyumlu görüntü modellerini şuradan indirebilirsiniz:</string>
     <string name="sd_models_link">Hugging Face\'te Stable Diffusion modelleri</string>
     <string name="supports_npu">NPU\'yu Destekler</string>
-    <string name="import_model_warning">⚠️ Önemli: İçe aktarmadan önce lütfen modelin README\'sini Hugging Face\'te okuyun. Doğru yetenekleri (görsel, ses, GPU) ve model belgelerinde belirtildiği şekilde bağlam penceresi boyutunu girin. Yanlış ayarlar modelin düzgün çalışmamasına neden olabilir.</string>
+    <string name="import_model_warning">⚠️ Önemli: İçe aktarmadan önce lütfen modelin README\'sini Hugging Face\'te okuyun. Doğru yetenekleri (görsel, ses, GPU) ve model belgelerinde belirtildiği şekilde bağlam penceresi boyutunu girin. Yanlış ayarlar modelin düzgün çalışmamasına neden olabilir. Önemli: Görsel destekli GGUF modelleri Vision Projector (mmproj) gerektirir. Görüntü girişi etkinleştirmek için projector dosyasını içe aktarın.</string>
     
     <!-- Home Screen -->
     <string name="home_welcome">LLM Hub\'a Hoş Geldiniz</string>

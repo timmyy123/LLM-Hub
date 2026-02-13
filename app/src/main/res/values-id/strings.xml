@@ -78,7 +78,7 @@
     <string name="ai_thinking">AI sedang berpikir...</string>
     <string name="thinking_label">Pemikiran</string>
     <string name="thinking_tokens">Pemikiran (%1$d token)</string>
-    <string name="version_number">Versi 3.5.2</string>
+    <string name="version_number">Versi 3.5.3</string>
     <string name="app_version">Versi Aplikasi</string>
     
     <!-- Terms of Service -->
@@ -404,6 +404,7 @@
     <!-- External Model Import -->
     <string name="import_external_model">Impor Model Eksternal</string>
     <string name="model_name">Nama Model</string>
+    <string name="select">Pilih</string>
     <string name="select_model_file">Pilih File Model</string>
     <string name="supports_vision">Mendukung Visi</string>
     <string name="supports_audio">Mendukung Audio</string>
@@ -423,7 +424,7 @@
     <string name="download_image_models_from">Anda dapat mengunduh model gambar yang kompatibel dari:</string>
     <string name="sd_models_link">Model Stable Diffusion di Hugging Face</string>
     <string name="supports_npu">Mendukung NPU</string>
-    <string name="import_model_warning">⚠️ Penting: Harap baca README model di Hugging Face sebelum mengimpor. Masukkan kemampuan yang benar (visi, audio, GPU) dan ukuran jendela konteks seperti yang ditentukan dalam dokumentasi model. Pengaturan yang salah dapat menyebabkan model tidak berfungsi dengan benar.</string>
+    <string name="import_model_warning">⚠️ Penting: Harap baca README model di Hugging Face sebelum mengimpor. Masukkan kemampuan yang benar (visi, audio, GPU) dan ukuran jendela konteks seperti yang ditentukan dalam dokumentasi model. Pengaturan yang salah dapat menyebabkan model tidak berfungsi dengan benar. Penting: Model GGUF yang mendukung visi memerlukan Vision Projector (mmproj). Impor file projector untuk mengaktifkan input gambar.</string>
     
     <!-- Home Screen -->
     <string name="home_welcome">Selamat Datang di LLM Hub</string>

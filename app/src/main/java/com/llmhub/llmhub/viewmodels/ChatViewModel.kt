@@ -85,6 +85,10 @@ class ChatViewModel(
     private val _selectedBackend = MutableStateFlow<LlmInference.Backend?>(null)
     val selectedBackend: StateFlow<LlmInference.Backend?> = _selectedBackend.asStateFlow()
 
+    // Optional selected NPU device id when user chooses NPU for GGUF
+    private val _selectedNpuDeviceId = MutableStateFlow<String?>(null)
+    val selectedNpuDeviceId: StateFlow<String?> = _selectedNpuDeviceId.asStateFlow()
+
     // RAG status state
     private val _isRagReady = MutableStateFlow(false)
     val isRagReady: StateFlow<Boolean> = _isRagReady.asStateFlow()
@@ -130,6 +134,7 @@ class ChatViewModel(
                 } else {
                     "Document chat unavailable"
                 }
+                restorePersistedGlobalMemoryAfterRagInit("initial chat open")
             } catch (e: Exception) {
                 Log.e("ChatViewModel", "Failed to initialize RAG service", e)
                 _ragStatus.value = "Document chat failed to initialize"
@@ -162,26 +167,8 @@ class ChatViewModel(
                             "Document chat unavailable"
                         }
                         Log.d("ChatViewModel", "RAG service reinitialized successfully")
+                        restorePersistedGlobalMemoryAfterRagInit("embedding settings changed")
 
-                        // After RAG has been reinitialized due to embedding toggle, rehydrate
-                        // persisted global memory chunks so memory isn't lost when the user
-                        // disabled both embeddings (RAG) and memory and then re-enabled them.
-                        if (_isRagReady.value && isEnabled) {
-                            try {
-                                val memoryEnabledPref = themePreferences.memoryEnabled.first()
-                                if (memoryEnabledPref) {
-                                    val chunkList = withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                        com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context).memoryDao().getAllChunks()
-                                    }
-                                    if (chunkList.isNotEmpty()) {
-                                        Log.d("ChatViewModel", "Restoring ${chunkList.size} global memory chunks after RAG reinit")
-                                        ragServiceManager.restoreGlobalDocumentsFromChunks(chunkList)
-                                    }
-                                }
-                            } catch (e: Exception) {
-                                Log.w("ChatViewModel", "Failed to restore global memory chunks after RAG reinit: ${e.message}")
-                            }
-                        }
                     } catch (e: Exception) {
                         Log.e("ChatViewModel", "Failed to reinitialize RAG service", e)
                         _ragStatus.value = "Document chat failed to initialize"
@@ -268,6 +255,32 @@ class ChatViewModel(
         }
     }
 
+    private suspend fun restorePersistedGlobalMemoryAfterRagInit(reason: String) {
+        if (!_isRagReady.value) return
+        try {
+            val db = com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context)
+            val chunkList = withContext(Dispatchers.IO) { db.memoryDao().getAllChunks() }
+            if (chunkList.isNotEmpty()) {
+                Log.d("ChatViewModel", "Restoring ${chunkList.size} global memory chunks after RAG init ($reason)")
+                ragServiceManager.restoreGlobalDocumentsFromChunks(chunkList)
+            } else {
+                Log.d("ChatViewModel", "No persisted global memory chunks to restore after RAG init ($reason)")
+            }
+        } catch (e: Exception) {
+            Log.w("ChatViewModel", "Failed to restore global memory chunks after RAG init ($reason): ${e.message}")
+        }
+
+        // Resume pending embedding jobs after app restart (moved from app startup to chat lifecycle).
+        try {
+            val db = com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context)
+            withContext(Dispatchers.IO) {
+                com.llmhub.llmhub.data.MemoryProcessor(context, db).processPending()
+            }
+        } catch (e: Exception) {
+            Log.w("ChatViewModel", "Failed to start MemoryProcessor after RAG init ($reason): ${e.message}")
+        }
+    }
+
     var currentModel: LLMModel? = null
         private set
     
@@ -284,6 +297,9 @@ class ChatViewModel(
         // Restore modality settings
         isVisionDisabled = prefs.getBoolean("vision_disabled", false)
         isAudioDisabled = prefs.getBoolean("audio_disabled", false)
+
+        // Restore optional selected NPU device
+        _selectedNpuDeviceId.value = prefs.getString("selected_npu_device", null)
         
         // Restore selected model by name (after available models are loaded)
         val savedModelName = prefs.getString("selected_model_name", null)
@@ -304,6 +320,7 @@ class ChatViewModel(
         prefs.edit().apply {
             putString("selected_model_name", _selectedModel.value?.name)
             putString("selected_backend", _selectedBackend.value?.name)
+            putString("selected_npu_device", _selectedNpuDeviceId.value)
             putBoolean("vision_disabled", isVisionDisabled)
             putBoolean("audio_disabled", isAudioDisabled)
             apply()
@@ -325,8 +342,9 @@ class ChatViewModel(
     }
     
     // Public method to select backend and persist
-    fun selectBackend(backend: LlmInference.Backend) {
+    fun selectBackend(backend: LlmInference.Backend, deviceId: String? = null) {
         _selectedBackend.value = backend
+        _selectedNpuDeviceId.value = deviceId
         saveChatSettings()
     }
 
@@ -984,7 +1002,13 @@ class ChatViewModel(
                     _isLoadingModel.value = true
                     // Perform model load on IO dispatcher to avoid UI blocking / ANR
                     val loaded = withContext(Dispatchers.IO) {
-                        inferenceService.loadModel(currentModel!!, _selectedBackend.value)
+                        inferenceService.loadModel(
+                            currentModel!!,
+                            _selectedBackend.value,
+                            isVisionDisabled,
+                            isAudioDisabled,
+                            _selectedNpuDeviceId.value
+                        )
                     }
                     // Sync the currently loaded model state
                     syncCurrentlyLoadedModel()
@@ -1049,7 +1073,7 @@ class ChatViewModel(
                                 _isLoadingModel.value = true
                                 
                                 // Ensure model is loaded first
-                                inferenceService.loadModel(currentModel!!, _selectedBackend.value)
+inferenceService.loadModel(currentModel!!, _selectedBackend.value, _selectedNpuDeviceId.value)
                                 
                                 _isLoadingModel.value = false
                                 
@@ -1740,7 +1764,7 @@ class ChatViewModel(
         _isLoading.value = true
         isGenerating = true
         // Ensure model is loaded
-        withContext(Dispatchers.IO) { inferenceService.loadModel(model, _selectedBackend.value) }
+        withContext(Dispatchers.IO) { inferenceService.loadModel(model, _selectedBackend.value, _selectedNpuDeviceId.value) }
 
         // Start a new generation streaming into the same placeholder with proper cancellation and TTS support
         val webSearchEnabled = try { themePreferences.webSearchEnabled.first() } catch (_: Exception) { false }
@@ -2051,7 +2075,7 @@ class ChatViewModel(
             // Pre-load the model when switching
             try {
                 // Trigger model loading without generating content
-                inferenceService.loadModel(newModel, _selectedBackend.value)
+                inferenceService.loadModel(newModel, _selectedBackend.value, _selectedNpuDeviceId.value)
                 // Sync the currently loaded model state
                 syncCurrentlyLoadedModel()
                 // Set the first-generation guard
@@ -2081,7 +2105,7 @@ class ChatViewModel(
                                 delay(300)
                                 inferenceService.onCleared()
                                 delay(300)
-                                withContext(Dispatchers.IO) { inferenceService.loadModel(newModel, _selectedBackend.value) }
+                                withContext(Dispatchers.IO) { inferenceService.loadModel(newModel, _selectedBackend.value, _selectedNpuDeviceId.value) }
                                 Log.d("ChatViewModel", "Force recreated session after reset failure")
                             } catch (recreateException: Exception) {
                                 Log.w("ChatViewModel", "Force recreation also failed: ${recreateException.message}")
@@ -2147,7 +2171,7 @@ class ChatViewModel(
             // Pre-load the model when switching with specified backend
             try {
                 // Trigger model loading without generating content
-                inferenceService.loadModel(newModel, backend)
+                inferenceService.loadModel(newModel, backend, _selectedNpuDeviceId.value)
                 // Sync the currently loaded model state
                 syncCurrentlyLoadedModel()
                 // Set the first-generation guard
@@ -2177,7 +2201,7 @@ class ChatViewModel(
                                 delay(300)
                                 inferenceService.onCleared()
                                 delay(300)
-                                inferenceService.loadModel(newModel, backend)
+                                inferenceService.loadModel(newModel, backend, _selectedNpuDeviceId.value)
                                 Log.d("ChatViewModel", "Force recreated session after reset failure")
                             } catch (recreateException: Exception) {
                                 Log.w("ChatViewModel", "Force recreation also failed: ${recreateException.message}")
@@ -2270,7 +2294,7 @@ class ChatViewModel(
             // Pre-load the model when switching with specified backend and modality settings
             try {
                 // Trigger model loading with modality options
-                inferenceService.loadModel(newModel, backend, disableVision, disableAudio)
+                inferenceService.loadModel(newModel, backend, disableVision, disableAudio, _selectedNpuDeviceId.value)
                 // Sync the currently loaded model state
                 syncCurrentlyLoadedModel()
                 // Set the first-generation guard
@@ -2300,7 +2324,7 @@ class ChatViewModel(
                                 delay(300)
                                 inferenceService.onCleared()
                                 delay(300)
-                                inferenceService.loadModel(newModel, backend, disableVision)
+                                inferenceService.loadModel(newModel, backend, disableVision, disableAudio, _selectedNpuDeviceId.value)
                                 Log.d("ChatViewModel", "Force recreated session after reset failure")
                             } catch (recreateException: Exception) {
                                 Log.w("ChatViewModel", "Force recreation also failed: ${recreateException.message}")
@@ -2424,7 +2448,11 @@ class ChatViewModel(
     
     fun currentModelSupportsVision(): Boolean {
         val currentModel = inferenceService.getCurrentlyLoadedModel()
-        return currentModel?.supportsVision == true && !isVisionDisabled
+        return currentModel?.let { model ->
+            model.supportsVision &&
+                !isVisionDisabled &&
+                (!model.requiresExternalVisionProjector() || model.hasDownloadedVisionProjector(context))
+        } == true
     }
     
     fun currentModelSupportsAudio(): Boolean {
@@ -3161,7 +3189,7 @@ class ChatViewModel(
                 
                 // Ensure the model is loaded
                 try {
-                    inferenceService.loadModel(currentModel!!, _selectedBackend.value)
+                    inferenceService.loadModel(currentModel!!, _selectedBackend.value, _selectedNpuDeviceId.value)
                     // Sync the currently loaded model state
                     syncCurrentlyLoadedModel()
                 } catch (e: Exception) {
@@ -3189,7 +3217,7 @@ class ChatViewModel(
                         delay(200)
                         inferenceService.onCleared()
                         delay(500)
-                        inferenceService.loadModel(currentModel!!, _selectedBackend.value)
+                        inferenceService.loadModel(currentModel!!, _selectedBackend.value, _selectedNpuDeviceId.value)
                         delay(200)
                         Log.d("ChatViewModel", "Force recreated session for regeneration after reset failure")
                     } catch (recreateException: Exception) {
@@ -3261,7 +3289,7 @@ class ChatViewModel(
                         
                         // Ensure the model is freshly loaded before regeneration
                         _isLoadingModel.value = true
-                        inferenceService.loadModel(currentModel!!, _selectedBackend.value)
+                        inferenceService.loadModel(currentModel!!, _selectedBackend.value, _selectedNpuDeviceId.value)
                         _isLoadingModel.value = false
                         
                         // Get web search preference
@@ -3404,7 +3432,7 @@ class ChatViewModel(
 
             // Ensure model is ready
             try {
-                inferenceService.loadModel(currentModel!!, _selectedBackend.value)
+                inferenceService.loadModel(currentModel!!, _selectedBackend.value, _selectedNpuDeviceId.value)
                 syncCurrentlyLoadedModel()
             } catch (e: Exception) {
                 Log.w("ChatViewModel", "Failed to ensure model is loaded for edit+resend: ${e.message}")
@@ -3423,7 +3451,7 @@ class ChatViewModel(
                     delay(200)
                     inferenceService.onCleared()
                     delay(500)
-                    inferenceService.loadModel(currentModel!!, _selectedBackend.value)
+                    inferenceService.loadModel(currentModel!!, _selectedBackend.value, _selectedNpuDeviceId.value)
                     delay(200)
                 } catch (re: Exception) {
                     repository.addMessage(chatId, "Failed to prepare session. Try switching models.", isFromUser = false)
@@ -3456,7 +3484,7 @@ class ChatViewModel(
                     }
 
                     _isLoadingModel.value = true
-                    inferenceService.loadModel(currentModel!!, _selectedBackend.value)
+                    inferenceService.loadModel(currentModel!!, _selectedBackend.value, _selectedNpuDeviceId.value)
                     _isLoadingModel.value = false
 
                     val webSearchEnabled = runBlocking { themePreferences.webSearchEnabled.first() }

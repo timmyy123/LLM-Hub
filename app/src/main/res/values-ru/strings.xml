@@ -128,7 +128,7 @@
     <string name="acknowledgments_text">Особая благодарность Google, Meta, Microsoft, IBM, и сообществу HuggingFace за предоставление невероятных LLM-моделей, которые питают это приложение. Этот проект также опирается на удивительную работу сообщества разработчиков Android и экосистемы открытого исходного кода.</string>
     <string name="sd_models_credit">Модели генерации изображений работают на основе реализаций Stable Diffusion от xororz с использованием бэкендов Qualcomm QNN (NPU) и Alibaba MNN (CPU).</string>
     <string name="nexa_sdk_credit">Вывод моделей GGUF работает на основе Nexa SDK.</string>
-    <string name="version_number">Версия 3.5.2</string>
+    <string name="version_number">Версия 3.5.3</string>
     <string name="ai_thinking">ИИ думает...</string>
     <string name="thinking_label">Размышление</string>
     <string name="thinking_tokens">Размышление (%1$d токенов)</string>
@@ -385,6 +385,7 @@
     <!-- External Model Import -->
     <string name="import_external_model">Импорт Внешней Модели</string>
     <string name="model_name">Имя Модели</string>
+    <string name="select">Выбрать</string>
     <string name="select_model_file">Выбрать Файл Модели</string>
     <string name="supports_vision">Поддерживает Зрение</string>
     <string name="supports_audio">Поддерживает Аудио</string>
@@ -404,7 +405,7 @@
     <string name="download_image_models_from">Вы можете скачать совместимые модели изображений с:</string>
     <string name="sd_models_link">Модели Stable Diffusion на Hugging Face</string>
     <string name="supports_npu">Поддержка NPU</string>
-    <string name="import_model_warning">⚠️ Важно: Пожалуйста, прочитайте README модели на Hugging Face перед импортом. Введите правильные возможности (зрение, аудио, GPU) и размер контекстного окна, как указано в документации модели. Неправильные настройки могут привести к тому, что модель не будет работать должным образом.</string>
+    <string name="import_model_warning">⚠️ Важно: Пожалуйста, прочитайте README модели на Hugging Face перед импортом. Введите правильные возможности (зрение, аудио, GPU) и размер контекстного окна, как указано в документации модели. Неправильные настройки могут привести к тому, что модель не будет работать должным образом. Важно: GGUF-модели с поддержкой зрения требуют Vision Projector (mmproj). Импортируйте файл проектора, чтобы включить ввод изображений.</string>
     
     <!-- Home Screen -->
     <string name="home_welcome">Добро пожаловать в LLM Hub</string>
