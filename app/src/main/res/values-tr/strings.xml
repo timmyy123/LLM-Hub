@@ -78,7 +78,7 @@
     <string name="ai_thinking">Yapay zeka düşünüyor...</string>
     <string name="thinking_label">Düşünme</string>
     <string name="thinking_tokens">Düşünme (%1$d token)</string>
-    <string name="version_number">Sürüm 3.5.2</string>
+    <string name="version_number">Sürüm 3.5.3</string>
     <string name="app_version">Uygulama Sürümü</string>
     
     <!-- Terms of Service -->
