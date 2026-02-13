@@ -79,7 +79,7 @@
     <string name="ai_thinking">L\'IA sta pensando...</string>
     <string name="thinking_label">Pensiero</string>
     <string name="thinking_tokens">Pensiero (%1$d token)</string>
-    <string name="version_number">Versione 3.5.2</string>
+    <string name="version_number">Versione 3.5.3</string>
     <string name="app_version">Versione App</string>
     
     <!-- Terms of Service -->

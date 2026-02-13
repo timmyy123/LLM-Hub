@@ -78,7 +78,7 @@
     <string name="ai_thinking">AI myśli...</string>
     <string name="thinking_label">Myślenie</string>
     <string name="thinking_tokens">Myślenie (%1$d tokenów)</string>
-    <string name="version_number">Wersja 3.5.2</string>
+    <string name="version_number">Wersja 3.5.3</string>
     <string name="app_version">Wersja Aplikacji</string>
     
     <!-- Terms of Service -->
