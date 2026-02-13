@@ -37,9 +37,8 @@ object DeviceInfo {
     }
     
     fun isQualcommNpuSupported(): Boolean {
-        // NPU supported on 8 Gen 2+ typically, definitely on Gen 3/4
-        val suffix = getChipsetSuffix()
-        return suffix == "8gen2" || suffix == "8gen3" || suffix == "8gen4"
+        // App policy: expose GGUF NPU option only on 8 Gen 4 class devices.
+        return getChipsetSuffix() == "8gen4"
     }
 
     /**
