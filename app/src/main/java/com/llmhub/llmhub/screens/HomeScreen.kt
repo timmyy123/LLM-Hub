@@ -126,6 +126,8 @@ fun HomeScreen(
         )
     }
     
+    val startTime = remember { System.currentTimeMillis() }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -280,6 +282,7 @@ fun HomeScreen(
                         feature = feature,
                         index = index,
                         cardHeight = cardHeight,
+                        startTime = startTime,
                         onClick = {
                             onNavigateToFeature(feature.route)
                         }
@@ -361,6 +364,7 @@ fun AnimatedFeatureCard(
     feature: FeatureCard,
     index: Int,
     cardHeight: Dp? = null,
+    startTime: Long,
     onClick: () -> Unit
 ) {
     var visible by remember { mutableStateOf(false) }
@@ -368,7 +372,11 @@ fun AnimatedFeatureCard(
     
     // Staggered entrance animation
     LaunchedEffect(Unit) {
-        delay(index * 80L)
+        val currentTime = System.currentTimeMillis()
+        val elapsedTime = currentTime - startTime
+        val initialDelay = index * 80L
+        val actualDelay = (initialDelay - elapsedTime).coerceAtLeast(0L)
+        delay(actualDelay)
         visible = true
     }
     
