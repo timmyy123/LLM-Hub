@@ -78,7 +78,7 @@
     <string name="ai_thinking">La IA está pensando...</string>
     <string name="thinking_label">Pensamiento</string>
     <string name="thinking_tokens">Pensamiento (%1$d tokens)</string>
-    <string name="version_number">Versión 3.5.2</string>
+    <string name="version_number">Versión 3.5.3</string>
     <string name="app_version">Versión de la App</string>
     
     <!-- Terms of Service -->
@@ -384,6 +384,7 @@
     <!-- External Model Import -->
     <string name="import_external_model">Importar Modelo Externo</string>
     <string name="model_name">Nombre del Modelo</string>
+    <string name="select">Seleccionar</string>
     <string name="select_model_file">Seleccionar Archivo del Modelo</string>
     <string name="supports_vision">Soporta Visión</string>
     <string name="supports_audio">Soporta Audio</string>
@@ -403,7 +404,7 @@
     <string name="download_image_models_from">Puedes descargar modelos de imágenes compatibles desde:</string>
     <string name="sd_models_link">Modelos de Stable Diffusion en Hugging Face</string>
     <string name="supports_npu">Compatible con NPU</string>
-    <string name="import_model_warning">⚠️ Importante: Por favor lee el README del modelo en Hugging Face antes de importar. Ingresa las capacidades correctas (visión, audio, GPU) y el tamaño de ventana de contexto como se especifica en la documentación del modelo. Configuraciones incorrectas pueden hacer que el modelo no funcione correctamente.</string>
+    <string name="import_model_warning">⚠️ Importante: Por favor lee el README del modelo en Hugging Face antes de importar. Ingresa las capacidades correctas (visión, audio, GPU) y el tamaño de ventana de contexto como se especifica en la documentación del modelo. Configuraciones incorrectas pueden hacer que el modelo no funcione correctamente. Importante: Los modelos GGUF con visión requieren un Vision Projector (mmproj). Importa el archivo del proyector para habilitar la entrada de imágenes.</string>
     
     <!-- Home Screen -->
     <string name="home_welcome">Bienvenido a LLM Hub</string>

@@ -100,9 +100,6 @@ fun ChatScreen(
     val selectedModel by viewModel.selectedModel.collectAsState()
     val selectedBackend by viewModel.selectedBackend.collectAsState()
     
-    // Creator state for header
-    val currentCreator by viewModel.currentCreator.collectAsState()
-    
     // RAG state
     val isRagReady by viewModel.isRagReady.collectAsState()
     val ragStatus by viewModel.ragStatus.collectAsState()
@@ -210,31 +207,100 @@ fun ChatScreen(
             )
         }
     ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    // Avoid a fixed title height so the title / chips stay vertically centered
-                    // across portrait/landscape and larger tablet screens.
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        val headerTitle = when {
-                            currentChat != null -> currentChat!!.title
-                            currentCreator != null -> "${currentCreator!!.icon} ${currentCreator!!.name}"
-                            else -> stringResource(R.string.chat) // "New Chat" or similar
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        // Avoid a fixed title height so the title / chips stay vertically centered
+                        // across portrait/landscape and larger tablet screens.
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = currentChat?.title ?: stringResource(R.string.chat),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            // Show model in header only when one is actually loaded (not just selected).
+                            currentlyLoadedModel?.let { model ->
+                                val currentModel = model                            
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = getLocalizedModelName(model),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    // Use the currently loaded model state to show icons
+                                    if (viewModel.currentModelSupportsVision()) {
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Icon(
+                                            Icons.Default.RemoveRedEye,
+                                            contentDescription = stringResource(R.string.vision_enabled),
+                                            modifier = Modifier.size(12.dp),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                    if (currentModel?.supportsAudio == true && !viewModel.isAudioCurrentlyDisabled()) {
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Icon(
+                                            Icons.Default.Mic,
+                                            contentDescription = "Audio enabled",
+                                            modifier = Modifier.size(12.dp),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                    if (currentModel?.name?.contains("Thinking", ignoreCase = true) == true) {
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Icon(
+                                            Icons.Default.Psychology,
+                                            contentDescription = stringResource(R.string.thinking_label),
+                                            modifier = Modifier.size(12.dp),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                    if (viewModel.isGpuBackendEnabled()) {
+                                        val isNpu = selectedNpuDeviceId?.startsWith("HTP", ignoreCase = true) == true
+
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Icon(
+                                            if (isNpu) Icons.Default.Bolt else Icons.Default.Speed,
+                                            contentDescription = if (isNpu) "NPU enabled" else "GPU enabled",
+                                            modifier = Modifier.size(12.dp),
+                                            tint = MaterialTheme.colorScheme.secondary
+                                        )
+                                    }
+                                    // RAG indicator removed from top bar
+                                    // Show RAG enabled indicator when embeddings are enabled
+                                    if (isEmbeddingEnabled) {
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f))
+                                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = stringResource(R.string.rag_enabled),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Medium,
+                                                textAlign = TextAlign.Center
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
-                        
-                        Text(
-                            text = headerTitle,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                },
+                    },
                     navigationIcon = {
                         IconButton(onClick = {
                             coroutineScope.launch { drawerState.open() }
@@ -399,13 +465,14 @@ fun ChatScreen(
             availableModels = availableModels,
             initialSelectedModel = selectedModel,
             initialSelectedBackend = selectedBackend,
+            initialSelectedNpuDeviceId = selectedNpuDeviceId,
             currentlyLoadedModel = currentlyLoadedModel,
             isLoadingModel = isLoadingModel,
             onModelSelected = { model ->
                 viewModel.selectModel(model)
             },
-            onBackendSelected = { backend ->
-                viewModel.selectBackend(backend)
+            onBackendSelected = { backend, deviceId ->
+                viewModel.selectBackend(backend, deviceId)
             },
             onLoadModel = { model, maxTokens, topK, topP, temperature, backend, disableVision, disableAudio ->
                 Log.d("ChatScreen", "Model configs confirmed: maxTokens=$maxTokens topK=$topK topP=$topP temperature=$temperature backend=$backend disableVision=$disableVision disableAudio=$disableAudio for model ${model.name}")

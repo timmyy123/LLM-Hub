@@ -168,11 +168,12 @@ class OnnxInferenceService @Inject constructor(
         return embeds
     }
 
-    override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?): Boolean {
+    override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?, deviceId: String?): Boolean {
+        // ONNX backend does not use deviceId (NPU handled by Nexa/GGUF path)
         return loadModelInternal(model, preferredBackend)
     }
 
-    override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?, disableVision: Boolean, disableAudio: Boolean): Boolean {
+    override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?, disableVision: Boolean, disableAudio: Boolean, deviceId: String?): Boolean {
         return loadModelInternal(model, preferredBackend)
     }
 

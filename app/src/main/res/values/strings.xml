@@ -78,7 +78,7 @@
     <string name="ai_thinking">AI is thinking...</string>
     <string name="thinking_label">Thinking</string>
     <string name="thinking_tokens">Thinking (%1$d tokens)</string>
-    <string name="version_number">Version 3.5.2</string>
+    <string name="version_number">Version 3.5.3</string>
     <string name="app_version">App Version</string>
     
     <!-- Terms of Service -->
@@ -409,7 +409,9 @@
     <!-- External Model Import -->
     <string name="import_external_model">Import External Model</string>
     <string name="model_name">Model Name</string>
+    <string name="select">Select</string>
     <string name="select_model_file">Select Model File</string>
+
     <string name="supports_vision">Supports Vision</string>
     <string name="supports_audio">Supports Audio</string>
     <string name="supports_gpu">Supports GPU</string>
@@ -428,7 +430,7 @@
     <string name="download_image_models_from">You can download compatible image models from:</string>
     <string name="sd_models_link">Stable Diffusion models on Hugging Face</string>
     <string name="supports_npu">Supports NPU</string>
-    <string name="import_model_warning">⚠️ Important: Please read the model\'s README on Hugging Face before importing. Enter the correct capabilities (vision, audio, GPU) and context window size as specified in the model documentation. Incorrect settings may cause the model to not work properly.</string>
+    <string name="import_model_warning">⚠️ Important: Please read the model\'s README on Hugging Face before importing. Enter the correct capabilities (vision, audio, GPU) and context window size as specified in the model documentation. Incorrect settings may cause the model to not work properly. Important: Vision GGUF models require a Vision Projector (mmproj). Import the projector file to enable image input.</string>
     
     <!-- Home Screen -->
     <string name="home_welcome">Welcome to LLM Hub</string>
@@ -654,6 +656,7 @@
     <string name="select_backend">Select Backend</string>
     <string name="backend_cpu">CPU</string>
     <string name="backend_gpu">GPU</string>
+    <string name="backend_npu">NPU (Hexagon)</string>
     <string name="gpu_not_supported">GPU not supported by this model</string>
     <string name="load_model">Load Model</string>
     <string name="model_loaded">Model loaded successfully</string>

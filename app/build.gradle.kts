@@ -26,8 +26,8 @@ android {
         applicationId = "com.llmhub.llmhub"
         minSdk = 27
         targetSdk = 36
-        versionCode = 67
-        versionName = "3.5.2"
+        versionCode = 71
+        versionName = "3.5.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         val hfToken: String = localProperties.getProperty("HF_TOKEN", "")
@@ -241,7 +241,7 @@ dependencies {
     // Nexa bundles libonnxruntime.so directly in its AAR (6.5MB) which conflicts with
     // Microsoft's ORT JNI bridge. The task below strips it from the cached AAR so only
     // Microsoft's version ends up in the APK.
-    implementation("ai.nexa:core:0.0.20") {
+    implementation("ai.nexa:core:0.0.22") {
         exclude(group = "com.microsoft.onnxruntime")
     }
 
@@ -266,7 +266,7 @@ dependencies {
 // This task physically strips the .so from the cached AAR so that only
 // Microsoft's copy ends up in the APK.
 fun stripNexaOnnxFromCache() {
-    val cacheDir = file("${System.getProperty("user.home")}/.gradle/caches/modules-2/files-2.1/ai.nexa/core/0.0.20")
+    val cacheDir = file("${System.getProperty("user.home")}/.gradle/caches/modules-2/files-2.1/ai.nexa/core/0.0.22")
     if (!cacheDir.exists()) {
         logger.warn("Nexa AAR cache dir not found – skipping libonnxruntime.so strip")
         return
@@ -305,7 +305,7 @@ fun stripNexaOnnxFromCache() {
     val transformsDir = file("${System.getProperty("user.home")}/.gradle/caches")
     if (transformsDir.exists()) {
         transformsDir.walkTopDown()
-            .filter { it.name == "libonnxruntime.so" && it.path.contains("/transformed/core-0.0.20/") }
+            .filter { it.name == "libonnxruntime.so" && it.path.contains("/transformed/core-0.0.22/") }
             .forEach { lib ->
                 logger.lifecycle("Removing transformed libonnxruntime.so: ${lib.path}")
                 try { lib.delete() } catch (_: Exception) { }

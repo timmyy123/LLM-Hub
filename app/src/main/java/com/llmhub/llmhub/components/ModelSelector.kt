@@ -27,7 +27,8 @@ fun ModelSelectorCard(
     selectedModel: LLMModel?,
     onModelSelected: (LLMModel) -> Unit,
     selectedBackend: LlmInference.Backend?,
-    onBackendSelected: (LlmInference.Backend) -> Unit,
+    selectedNpuDeviceId: String? = null,
+    onBackendSelected: (LlmInference.Backend, String?) -> Unit,
     onLoadModel: () -> Unit,
     isLoading: Boolean,
     isModelLoaded: Boolean = false,
@@ -44,6 +45,8 @@ fun ModelSelectorCard(
     
     var showModelMenu by remember { mutableStateOf(false) }
     var showBackendMenu by remember { mutableStateOf(false) }
+    val isNpuSelected = selectedBackend == LlmInference.Backend.GPU &&
+        (selectedNpuDeviceId?.startsWith("HTP", ignoreCase = true) == true)
     
     Card(
         shape = RoundedCornerShape(24.dp),
@@ -157,8 +160,8 @@ fun ModelSelectorCard(
                     ) {
                         OutlinedTextField(
                             value = when(selectedBackend) {
+                                LlmInference.Backend.GPU -> if (isNpuSelected) stringResource(R.string.backend_npu) else stringResource(R.string.backend_gpu)
                                 LlmInference.Backend.CPU -> stringResource(R.string.backend_cpu)
-                                LlmInference.Backend.GPU -> stringResource(R.string.backend_gpu)
                                 else -> stringResource(R.string.select_backend)
                             },
                             onValueChange = {},
@@ -169,8 +172,11 @@ fun ModelSelectorCard(
                             },
                             leadingIcon = {
                                 Icon(
-                                    if (selectedBackend == LlmInference.Backend.GPU) Icons.Default.Bolt 
-                                    else Icons.Default.Computer,
+                                    when {
+                                        isNpuSelected -> Icons.Default.Bolt
+                                        selectedBackend == LlmInference.Backend.GPU -> Icons.Default.Speed
+                                        else -> Icons.Default.Computer
+                                    },
                                     contentDescription = null
                                 )
                             },
@@ -188,7 +194,7 @@ fun ModelSelectorCard(
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.backend_cpu)) },
                                 onClick = {
-                                    onBackendSelected(LlmInference.Backend.CPU)
+                                    onBackendSelected(LlmInference.Backend.CPU, null)
                                     showBackendMenu = false
                                 },
                                 leadingIcon = {
@@ -222,16 +228,17 @@ fun ModelSelectorCard(
                                 },
                                 onClick = {
                                     if (gpuSupported) {
-                                        onBackendSelected(LlmInference.Backend.GPU)
+                                        // GPU selection clears any previously selected NPU device
+                                        onBackendSelected(LlmInference.Backend.GPU, null)
                                         showBackendMenu = false
                                     }
                                 },
                                 enabled = gpuSupported,
                                 leadingIcon = {
-                                    Icon(Icons.Default.Bolt, contentDescription = null)
+                                    Icon(Icons.Default.Speed, contentDescription = null)
                                 },
                                 trailingIcon = {
-                                    if (selectedBackend == LlmInference.Backend.GPU && gpuSupported) {
+                                    if (selectedBackend == LlmInference.Backend.GPU && gpuSupported && !isNpuSelected) {
                                         Icon(
                                             Icons.Default.CheckCircle,
                                             contentDescription = null,
@@ -240,6 +247,29 @@ fun ModelSelectorCard(
                                     }
                                 }
                             )
+
+                            // NPU Option (GGUF-on-Hexagon). Show only for GGUF models on Qualcomm devices.
+                            val showNpuOption = selectedModel?.modelFormat == "gguf" && com.llmhub.llmhub.data.DeviceInfo.isQualcommNpuSupported()
+                            if (showNpuOption) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.backend_npu)) },
+                                    onClick = {
+                                        // Represent NPU by selecting GPU backend + deviceId="HTP0"
+                                        onBackendSelected(LlmInference.Backend.GPU, "HTP0")
+                                        showBackendMenu = false
+                                    },
+                                    leadingIcon = { Icon(Icons.Default.Bolt, contentDescription = null) },
+                                    trailingIcon = {
+                                        if (isNpuSelected) {
+                                            Icon(
+                                                Icons.Default.CheckCircle,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    }
+                                )
+                            }
                         }
                     }
                 }

@@ -78,7 +78,7 @@
     <string name="ai_thinking">A IA está pensando...</string>
     <string name="thinking_label">Pensamento</string>
     <string name="thinking_tokens">Pensamento (%1$d tokens)</string>
-    <string name="version_number">Versão 3.5.2</string>
+    <string name="version_number">Versão 3.5.3</string>
     <string name="app_version">Versão do App</string>
     
     <!-- Navigation -->
@@ -368,6 +368,7 @@
     <!-- External Model Import -->
     <string name="import_external_model">Importar Modelo Externo</string>
     <string name="model_name">Nome do Modelo</string>
+    <string name="select">Selecionar</string>
     <string name="select_model_file">Selecionar Arquivo do Modelo</string>
     <string name="supports_vision">Suporta Visão</string>
     <string name="supports_audio">Suporta Áudio</string>
@@ -387,7 +388,7 @@
     <string name="download_image_models_from">Você pode baixar modelos de imagem compatíveis de:</string>
     <string name="sd_models_link">Modelos Stable Diffusion no Hugging Face</string>
     <string name="supports_npu">Suporta NPU</string>
-    <string name="import_model_warning">⚠️ Importante: Por favor leia o README do modelo no Hugging Face antes de importar. Digite as capacidades corretas (visão, áudio, GPU) e o tamanho da janela de contexto conforme especificado na documentação do modelo. Configurações incorretas podem fazer com que o modelo não funcione corretamente.</string>
+    <string name="import_model_warning">⚠️ Importante: Por favor leia o README do modelo no Hugging Face antes de importar. Digite as capacidades corretas (visão, áudio, GPU) e o tamanho da janela de contexto conforme especificado na documentação do modelo. Configurações incorretas podem fazer com que o modelo não funcione corretamente. Importante: Modelos GGUF com visão exigem um Vision Projector (mmproj). Importe o arquivo do projetor para habilitar a entrada de imagem.</string>
     
     <!-- Home Screen -->
     <string name="home_welcome">Bem-vindo ao LLM Hub</string>

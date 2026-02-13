@@ -75,7 +75,7 @@
     <string name="acknowledgments_text">Besonderen Dank an Google, Meta, Microsoft, IBM und die HuggingFace-Community für die Bereitstellung der unglaublichen LLM-Modelle, die diese Anwendung antreiben. Dieses Projekt stützt sich auch auf die erstaunliche Arbeit der Android-Entwicklergemeinschaft und des Open-Source-Ökosystems.</string>    <string name="sd_models_credit">Bildgenerierungsmodelle werden von xororz\'s Stable Diffusion-Implementierungen mit Qualcomm QNN (NPU) und Alibaba MNN (CPU) Backends betrieben.</string>    <string name="nexa_sdk_credit">GGUF-Modellinferenz wird von Nexa SDK bereitgestellt.</string>    <string name="ai_thinking">KI denkt nach...</string>
     <string name="thinking_label">Denken</string>
     <string name="thinking_tokens">Denken (%1$d Tokens)</string>
-    <string name="version_number">Version 3.5.2</string>
+    <string name="version_number">Version 3.5.3</string>
     <string name="app_version">App-Version</string>
     
     <!-- Terms of Service -->
@@ -381,6 +381,7 @@
     <!-- External Model Import -->
     <string name="import_external_model">Externes Modell Importieren</string>
     <string name="model_name">Modellname</string>
+    <string name="select">Auswählen</string>
     <string name="select_model_file">Modell-Datei Auswählen</string>
     <string name="supports_vision">Unterstützt Vision</string>
     <string name="supports_audio">Unterstützt Audio</string>
@@ -398,7 +399,7 @@
     <string name="download_image_models_from">Sie können kompatible Bildmodelle herunterladen von:</string>
     <string name="sd_models_link">Stable Diffusion Modelle auf Hugging Face</string>
     <string name="supports_npu">Unterstützt NPU</string>
-    <string name="import_model_warning">⚠️ Wichtig: Bitte lesen Sie die README des Modells auf Hugging Face vor dem Importieren. Geben Sie die korrekten Fähigkeiten (Vision, Audio, GPU) und Kontextfenstergröße wie in der Modelldokumentation angegeben ein. Falsche Einstellungen können dazu führen, dass das Modell nicht ordnungsgemäß funktioniert.</string>
+    <string name="import_model_warning">⚠️ Wichtig: Bitte lesen Sie die README des Modells auf Hugging Face vor dem Importieren. Geben Sie die korrekten Fähigkeiten (Vision, Audio, GPU) und Kontextfenstergröße wie in der Modelldokumentation angegeben ein. Falsche Einstellungen können dazu führen, dass das Modell nicht ordnungsgemäß funktioniert. Wichtig: GGUF-Modelle mit Vision-Unterstützung benötigen einen Vision Projector (mmproj). Importieren Sie die Projector-Datei, um die Bild-Eingabe zu aktivieren.</string>
     
     <!-- Home Screen -->
     <string name="home_welcome">Willkommen bei LLM Hub</string>

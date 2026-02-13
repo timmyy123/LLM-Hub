@@ -37,9 +37,21 @@ object DeviceInfo {
     }
     
     fun isQualcommNpuSupported(): Boolean {
-        // NPU supported on 8 Gen 2+ typically, definitely on Gen 3/4
-        val suffix = getChipsetSuffix()
-        return suffix == "8gen2" || suffix == "8gen3" || suffix == "8gen4"
+        // App policy: expose GGUF NPU option only on 8 Gen 4 class devices.
+        return getChipsetSuffix() == "8gen4"
+    }
+
+    /**
+     * Normalize chipset suffix for SD QNN package naming.
+     * Current hosted SD-QNN variants are keyed as 8gen1 and 8gen2, where 8gen2 is
+     * also used for newer chips (8gen3/8gen4/8s/Elite class) for compatibility.
+     */
+    fun getSdQnnPackageSuffix(): String {
+        return when (getChipsetSuffix()) {
+            "8gen1" -> "8gen1"
+            "8gen2", "8gen3", "8gen4" -> "8gen2"
+            else -> "min"
+        }
     }
 }
 
@@ -1427,6 +1439,62 @@ object ModelData {
             contextWindowSize = 4096,
             modelFormat = "litertlm"
         ),
+
+        // --- Added Gemma-3 GGUF multimodal models (4B & 12B) + vision projectors ---
+        LLMModel(
+            name = "Gemma-3 4B (Q4_0, GGUF)",
+            description = "Google Gemma-3 4B quantized GGUF (Q4_0). Supports text + vision — download the Vision Projector (mmproj) to enable image input.",
+            url = "https://huggingface.co/google/gemma-3-4b-it-qat-q4_0-gguf/resolve/main/gemma-3-4b-it-q4_0.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 3155051328L, // 3,155,051,328 bytes (~3008.89 MB)
+            source = "Google",
+            supportsVision = true,
+            supportsAudio = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 8),
+            contextWindowSize = 4096,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Gemma-3 4B (Vision Projector, BF16)",
+            description = "Vision Projector (mmproj) required to enable image input for Gemma-3 4B. BF16 variant for accurate visual encodings.",
+            url = "https://huggingface.co/google/gemma-3-4b-it-qat-q4_0-gguf/resolve/main/mmproj-model-f16-4B.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 851251104L, // 851,251,104 bytes (~811.82 MB)
+            source = "Google",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 2),
+            contextWindowSize = 0,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Gemma-3 12B (Q4_0, GGUF)",
+            description = "Google Gemma-3 12B quantized GGUF (Q4_0). Supports text + vision — download the Vision Projector (mmproj) to enable image input.",
+            url = "https://huggingface.co/google/gemma-3-12b-it-qat-q4_0-gguf/resolve/main/gemma-3-12b-it-q4_0.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 8074473920L, // 8,074,473,920 bytes (~7700.42 MB)
+            source = "Google",
+            supportsVision = true,
+            supportsAudio = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
+            contextWindowSize = 4096,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Gemma-3 12B (Vision Projector, BF16)",
+            description = "Vision Projector (mmproj) required to enable image input for Gemma-3 12B. BF16 variant for accurate visual encodings.",
+            url = "https://huggingface.co/google/gemma-3-12b-it-qat-q4_0-gguf/resolve/main/mmproj-model-f16-12B.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 854200224L, // 854,200,224 bytes (~814.63 MB)
+            source = "Google",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 2),
+            contextWindowSize = 0,
+            modelFormat = "gguf"
+        ),
         
         // Gecko Embedding Models - Various dimension sizes for different use cases
         LLMModel(
@@ -1590,11 +1658,11 @@ object ModelData {
         
         // Image Generation Models - Absolute Reality (Stable Diffusion 1.5)
         LLMModel(
-            name = "Absolute Reality (NPU - ${DeviceInfo.getChipsetSuffix() ?: "Not Supported"})",
+            name = "Absolute Reality (NPU - ${DeviceInfo.getSdQnnPackageSuffix()})",
             description = "Absolute Reality SD1.5 model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation at 512x512 resolution. Requires Snapdragon 8 Gen 1 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~1.06 GB download from HuggingFace.",
-            url = "https://huggingface.co/xororz/sd-qnn/resolve/main/AbsoluteReality_qnn2.28_${DeviceInfo.getChipsetSuffix() ?: "min"}.zip",
+            url = "https://huggingface.co/xororz/sd-qnn/resolve/main/AbsoluteReality_qnn2.28_${DeviceInfo.getSdQnnPackageSuffix()}.zip",
             category = "image_generation",
-            sizeBytes = when(DeviceInfo.getChipsetSuffix()) {
+            sizeBytes = when(DeviceInfo.getSdQnnPackageSuffix()) {
                 "8gen1" -> 1138900992L    // 1.06 GB
                 "8gen2" -> 1128267776L    // 1.05 GB  
                 else -> 1041235968L       // 993 MB (min)

@@ -37,8 +37,12 @@ import kotlinx.coroutines.CancellationException
  * Interface for a service that can run model inference.
  */
 interface InferenceService {
-    suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend? = null): Boolean
-    suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend? = null, disableVision: Boolean = false, disableAudio: Boolean = false): Boolean
+    /**
+     * Load a model. For GGUF models an optional deviceId (e.g. "HTP0") may be supplied to request
+     * Hexagon/NPU usage; implementations that don't support deviceId should ignore it.
+     */
+    suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend? = null, deviceId: String? = null): Boolean
+    suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend? = null, disableVision: Boolean = false, disableAudio: Boolean = false, deviceId: String? = null): Boolean
     suspend fun unloadModel()
     suspend fun generateResponse(prompt: String, model: LLMModel): String
     suspend fun generateResponseStream(prompt: String, model: LLMModel): Flow<String>
@@ -149,7 +153,8 @@ class MediaPipeInferenceService(private val applicationContext: Context) : Infer
         return overrideMaxTokens?.coerceAtMost(defaultMaxTokens) ?: defaultMaxTokens
     }
 
-    override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?): Boolean {
+    override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?, deviceId: String?): Boolean {
+        // deviceId is irrelevant for MediaPipe implementation; ignore it
         return try {
             ensureModelLoaded(model, preferredBackend, disableVision = false, disableAudio = false)
             true
@@ -159,7 +164,8 @@ class MediaPipeInferenceService(private val applicationContext: Context) : Infer
         }
     }
     
-    override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?, disableVision: Boolean, disableAudio: Boolean): Boolean {
+    override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?, disableVision: Boolean, disableAudio: Boolean, deviceId: String?): Boolean {
+        // deviceId is ignored for MediaPipe; preserved in signature to match interface
         return try {
             ensureModelLoaded(model, preferredBackend, disableVision, disableAudio)
             true

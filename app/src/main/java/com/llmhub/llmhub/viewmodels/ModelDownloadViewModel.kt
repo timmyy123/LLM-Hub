@@ -998,6 +998,50 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         
         return true
     }
+
+    /**
+     * Import a Vision Projector file (mmproj/gguf projector) for an already-added custom model.
+     * Runs on Dispatchers.IO and updates the imported model record (additionalFiles) when complete.
+     */
+    fun importVisionProjector(modelName: String, projectorUri: Uri) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val resolver = context.contentResolver
+                val projName = resolver.query(projectorUri, null, null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val idx = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                        if (idx >= 0) cursor.getString(idx) else null
+                    } else null
+                } ?: projectorUri.lastPathSegment ?: "vision_projector.gguf"
+
+                val modelsDir = File(context.filesDir, "models")
+                if (!modelsDir.exists()) modelsDir.mkdirs()
+
+                // Place projector inside a model-specific folder to keep things tidy
+                val modelDirName = modelName.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
+                val modelDir = File(modelsDir, modelDirName)
+                if (!modelDir.exists()) modelDir.mkdirs()
+
+                val outFile = File(modelDir, projName)
+                resolver.openInputStream(projectorUri)?.use { input ->
+                    outFile.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+
+                // Update the imported model entry to record the projector filename
+                updateModel(modelName) { existing ->
+                    val updatedFiles = existing.additionalFiles + projName
+                    existing.copy(additionalFiles = updatedFiles)
+                }
+
+                saveImportedModels()
+                android.util.Log.d("ModelDownloadViewModel", "Imported vision projector for $modelName -> ${outFile.absolutePath}")
+            } catch (e: Exception) {
+                android.util.Log.e("ModelDownloadViewModel", "Failed to import vision projector for $modelName: ${e.message}")
+            }
+        }
+    }
     
     fun getImportedModels(): List<LLMModel> {
         return _models.value.filter { it.source == "Custom" && it.isDownloaded }
