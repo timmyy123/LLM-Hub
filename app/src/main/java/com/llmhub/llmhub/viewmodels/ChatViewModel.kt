@@ -134,6 +134,7 @@ class ChatViewModel(
                 } else {
                     "Document chat unavailable"
                 }
+                restorePersistedGlobalMemoryAfterRagInit("initial chat open")
             } catch (e: Exception) {
                 Log.e("ChatViewModel", "Failed to initialize RAG service", e)
                 _ragStatus.value = "Document chat failed to initialize"
@@ -166,26 +167,8 @@ class ChatViewModel(
                             "Document chat unavailable"
                         }
                         Log.d("ChatViewModel", "RAG service reinitialized successfully")
+                        restorePersistedGlobalMemoryAfterRagInit("embedding settings changed")
 
-                        // After RAG has been reinitialized due to embedding toggle, rehydrate
-                        // persisted global memory chunks so memory isn't lost when the user
-                        // disabled both embeddings (RAG) and memory and then re-enabled them.
-                        if (_isRagReady.value && isEnabled) {
-                            try {
-                                val memoryEnabledPref = themePreferences.memoryEnabled.first()
-                                if (memoryEnabledPref) {
-                                    val chunkList = withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                        com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context).memoryDao().getAllChunks()
-                                    }
-                                    if (chunkList.isNotEmpty()) {
-                                        Log.d("ChatViewModel", "Restoring ${chunkList.size} global memory chunks after RAG reinit")
-                                        ragServiceManager.restoreGlobalDocumentsFromChunks(chunkList)
-                                    }
-                                }
-                            } catch (e: Exception) {
-                                Log.w("ChatViewModel", "Failed to restore global memory chunks after RAG reinit: ${e.message}")
-                            }
-                        }
                     } catch (e: Exception) {
                         Log.e("ChatViewModel", "Failed to reinitialize RAG service", e)
                         _ragStatus.value = "Document chat failed to initialize"
@@ -269,6 +252,32 @@ class ChatViewModel(
                     Log.w("ChatViewModel", "Error reacting to embedding model change: ${e.message}")
                 }
             }
+        }
+    }
+
+    private suspend fun restorePersistedGlobalMemoryAfterRagInit(reason: String) {
+        if (!_isRagReady.value) return
+        try {
+            val db = com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context)
+            val chunkList = withContext(Dispatchers.IO) { db.memoryDao().getAllChunks() }
+            if (chunkList.isNotEmpty()) {
+                Log.d("ChatViewModel", "Restoring ${chunkList.size} global memory chunks after RAG init ($reason)")
+                ragServiceManager.restoreGlobalDocumentsFromChunks(chunkList)
+            } else {
+                Log.d("ChatViewModel", "No persisted global memory chunks to restore after RAG init ($reason)")
+            }
+        } catch (e: Exception) {
+            Log.w("ChatViewModel", "Failed to restore global memory chunks after RAG init ($reason): ${e.message}")
+        }
+
+        // Resume pending embedding jobs after app restart (moved from app startup to chat lifecycle).
+        try {
+            val db = com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context)
+            withContext(Dispatchers.IO) {
+                com.llmhub.llmhub.data.MemoryProcessor(context, db).processPending()
+            }
+        } catch (e: Exception) {
+            Log.w("ChatViewModel", "Failed to start MemoryProcessor after RAG init ($reason): ${e.message}")
         }
     }
 

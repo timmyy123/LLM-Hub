@@ -58,6 +58,7 @@ fun LlmHubNavigation(
     LaunchedEffect(isOnChatRoute) {
         if (wasOnChatRoute && !isOnChatRoute) {
             (context.applicationContext as? LlmHubApplication)?.inferenceService?.unloadModel()
+            com.llmhub.llmhub.embedding.RagServiceManager.getInstance(context.applicationContext).cleanup()
         }
         wasOnChatRoute = isOnChatRoute
     }
