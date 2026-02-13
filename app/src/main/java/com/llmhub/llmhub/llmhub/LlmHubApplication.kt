@@ -30,7 +30,7 @@ class LlmHubApplication : Application() {
         }
     
     val database by lazy { LlmHubDatabase.getDatabase(this) }
-    val chatRepository by lazy { ChatRepository(database.chatDao(), database.messageDao()) }
+    val chatRepository by lazy { ChatRepository(database.chatDao(), database.messageDao(), database.creatorDao()) }
     
     override fun onCreate() {
         super.onCreate()
