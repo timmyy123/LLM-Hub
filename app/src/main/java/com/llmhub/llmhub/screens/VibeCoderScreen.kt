@@ -153,7 +153,7 @@ fun VibeCoderScreen(
                     viewModel.selectModel(model)
                 },
                 selectedBackend = selectedBackend,
-                onBackendSelected = { backend ->
+                onBackendSelected = { backend, _ ->
                     viewModel.selectBackend(backend)
                 },
                 onLoadModel = {
