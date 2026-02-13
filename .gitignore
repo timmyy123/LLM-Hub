@@ -23,3 +23,4 @@ text-embed/embeddinggemma-300M_seq2048_mixed-precision.tflite
 text-embed/sentencepiece.model
 NPU_BACKEND_RESEARCH.md
 LLM-Hub
+.env
