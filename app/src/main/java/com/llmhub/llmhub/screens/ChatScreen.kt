@@ -99,6 +99,7 @@ fun ChatScreen(
     val currentlyLoadedModel by viewModel.currentlyLoadedModel.collectAsState()
     val selectedModel by viewModel.selectedModel.collectAsState()
     val selectedBackend by viewModel.selectedBackend.collectAsState()
+    val selectedNpuDeviceId by viewModel.selectedNpuDeviceId.collectAsState()
     
     // RAG state
     val isRagReady by viewModel.isRagReady.collectAsState()
