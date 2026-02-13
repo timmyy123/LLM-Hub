@@ -117,15 +117,13 @@ fun WritingAidScreen(
                     isLoading = isLoading,
                     isModelLoaded = isModelLoaded,
                     onModelSelected = { viewModel.selectModel(it) },
-                    onBackendSelected = { viewModel.selectBackend(it) },
+                    onBackendSelected = { backend, deviceId -> viewModel.selectBackend(backend, deviceId) },
                     onLoadModel = { viewModel.loadModel() },
                     onUnloadModel = { viewModel.unloadModel() },
                     filterMultimodalOnly = false,
                     modifier = Modifier.fillMaxWidth()
                 )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
+
                 // Tone Selector
                 Text(
                     text = stringResource(R.string.writing_aid_select_mode),

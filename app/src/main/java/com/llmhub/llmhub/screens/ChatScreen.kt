@@ -450,17 +450,20 @@ fun ChatScreen(
     
     // Settings Bottom Sheet for model selection and configuration
     if (showSettingsSheet) {
+        val selectedNpuDeviceId by viewModel.selectedNpuDeviceId.collectAsState()
+
         ChatSettingsSheet(
             availableModels = availableModels,
             initialSelectedModel = selectedModel,
             initialSelectedBackend = selectedBackend,
+            initialSelectedNpuDeviceId = selectedNpuDeviceId,
             currentlyLoadedModel = currentlyLoadedModel,
             isLoadingModel = isLoadingModel,
             onModelSelected = { model ->
                 viewModel.selectModel(model)
             },
-            onBackendSelected = { backend ->
-                viewModel.selectBackend(backend)
+            onBackendSelected = { backend, deviceId ->
+                viewModel.selectBackend(backend, deviceId)
             },
             onLoadModel = { model, maxTokens, topK, topP, temperature, backend, disableVision, disableAudio ->
                 Log.d("ChatScreen", "Model configs confirmed: maxTokens=$maxTokens topK=$topK topP=$topP temperature=$temperature backend=$backend disableVision=$disableVision disableAudio=$disableAudio for model ${model.name}")

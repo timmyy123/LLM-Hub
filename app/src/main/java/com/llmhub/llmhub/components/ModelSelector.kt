@@ -27,7 +27,7 @@ fun ModelSelectorCard(
     selectedModel: LLMModel?,
     onModelSelected: (LLMModel) -> Unit,
     selectedBackend: LlmInference.Backend?,
-    onBackendSelected: (LlmInference.Backend) -> Unit,
+    onBackendSelected: (LlmInference.Backend, String?) -> Unit,
     onLoadModel: () -> Unit,
     isLoading: Boolean,
     isModelLoaded: Boolean = false,
@@ -188,7 +188,7 @@ fun ModelSelectorCard(
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.backend_cpu)) },
                                 onClick = {
-                                    onBackendSelected(LlmInference.Backend.CPU)
+                                    onBackendSelected(LlmInference.Backend.CPU, null)
                                     showBackendMenu = false
                                 },
                                 leadingIcon = {
@@ -222,7 +222,8 @@ fun ModelSelectorCard(
                                 },
                                 onClick = {
                                     if (gpuSupported) {
-                                        onBackendSelected(LlmInference.Backend.GPU)
+                                        // GPU selection clears any previously selected NPU device
+                                        onBackendSelected(LlmInference.Backend.GPU, null)
                                         showBackendMenu = false
                                     }
                                 },
@@ -240,6 +241,24 @@ fun ModelSelectorCard(
                                     }
                                 }
                             )
+
+                            // NPU Option (GGUF-on-Hexagon). Show only for GGUF models on Qualcomm devices.
+                            val showNpuOption = selectedModel?.modelFormat == "gguf" && com.llmhub.llmhub.data.DeviceInfo.isQualcommNpuSupported()
+                            if (showNpuOption) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.backend_npu)) },
+                                    onClick = {
+                                        // Represent NPU by selecting GPU backend + deviceId="HTP0"
+                                        onBackendSelected(LlmInference.Backend.GPU, "HTP0")
+                                        showBackendMenu = false
+                                    },
+                                    leadingIcon = { Icon(Icons.Default.Memory, contentDescription = null) },
+                                    trailingIcon = {
+                                        // Consider NPU selected when backend==GPU and the ViewModel stored deviceId==HTP0 — UI reflects that via selectedBackend only; the exact device badge is persisted in ViewModel
+                                        // We don't have direct access to the selected deviceId here, so visual check will be handled by callers if needed.
+                                    }
+                                )
+                            }
                         }
                     }
                 }

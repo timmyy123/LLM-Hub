@@ -638,6 +638,7 @@
     <string name="select_backend">Select Backend</string>
     <string name="backend_cpu">CPU</string>
     <string name="backend_gpu">GPU</string>
+    <string name="backend_npu">NPU (Hexagon)</string>
     <string name="gpu_not_supported">GPU not supported by this model</string>
     <string name="load_model">Load Model</string>
     <string name="model_loaded">Model loaded successfully</string>

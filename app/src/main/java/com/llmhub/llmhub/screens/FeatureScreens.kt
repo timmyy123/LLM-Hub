@@ -440,7 +440,7 @@ fun TranslatorScreen(
                     isLoading = isLoadingModel,
                     isModelLoaded = isModelLoaded,
                     onModelSelected = { viewModel.selectModel(it) },
-                    onBackendSelected = { viewModel.selectBackend(it) },
+                    onBackendSelected = { backend, deviceId -> viewModel.selectBackend(backend, deviceId) },
                     onLoadModel = { viewModel.loadModel() },
                     onUnloadModel = { viewModel.unloadModel() },
                     filterMultimodalOnly = true,
@@ -1692,7 +1692,7 @@ fun TranscriberScreen(
                     isLoading = isLoadingModel,
                     isModelLoaded = isModelLoaded,
                     onModelSelected = { viewModel.selectModel(it) },
-                    onBackendSelected = { viewModel.selectBackend(it) },
+                    onBackendSelected = { backend, deviceId -> viewModel.selectBackend(backend, deviceId) },
                     onLoadModel = { viewModel.loadModel() },
                     onUnloadModel = { viewModel.unloadModel() },
                     filterMultimodalOnly = true
@@ -1803,7 +1803,7 @@ fun ScamDetectorScreen(
                     isLoading = isLoadingModel,
                     isModelLoaded = isModelLoaded,
                     onModelSelected = { viewModel.selectModel(it) },
-                    onBackendSelected = { viewModel.selectBackend(it) },
+                    onBackendSelected = { backend, deviceId -> viewModel.selectBackend(backend, deviceId) },
                     onLoadModel = { viewModel.loadModel() },
                     onUnloadModel = { viewModel.unloadModel() },
                     filterMultimodalOnly = false

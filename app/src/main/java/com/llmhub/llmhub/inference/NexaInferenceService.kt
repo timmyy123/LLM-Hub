@@ -55,6 +55,7 @@ class NexaInferenceService @Inject constructor(
     private var currentModel: LLMModel? = null
     private var currentPreferredBackend: LlmInference.Backend? = null
     private var currentVisionDisabled: Boolean = false
+    private var currentAudioDisabled: Boolean = false
     
     private var overrideMaxTokens: Int? = null
     private var overrideTopK: Int? = null
@@ -84,24 +85,95 @@ class NexaInferenceService @Inject constructor(
      */
     fun isAvailable(): Boolean = nexaAvailable
 
-    override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?): Boolean {
+    /**
+     * Lightweight runtime probe to verify whether Hexagon/HTP device access is usable.
+     * - Attempts to build a tiny Nexa LlmWrapper using `plugin_id = "cpu_gpu"`,
+     *   `device_id = deviceId`, and `nGpuLayers = 1` against any local GGUF model.
+     * - Returns Pair(allowed:Boolean, reason:String?) where reason is non-null when denied.
+     * - This is defensive: it catches native/SELinux failures and returns a human-friendly reason.
+     */
+    suspend fun probeNpuAvailability(deviceId: String = "HTP0"): Pair<Boolean, String?> {
+        if (!nexaAvailable) {
+            Log.w(TAG, "NPU probe: Nexa SDK unavailable")
+            return Pair(false, "Nexa SDK unavailable on device")
+        }
+
+        // Find any local GGUF model to use as a harmless probe target (do not change files)
+        val modelsDir = File(context.filesDir, "models")
+        val ggufFile = modelsDir.listFiles { _, name -> name.endsWith(".gguf", ignoreCase = true) && !name.contains("mmproj", ignoreCase = true) }?.firstOrNull()
+        if (ggufFile == null) {
+            Log.w(TAG, "NPU probe: no local GGUF model available to probe")
+            return Pair(false, "no local GGUF model available to probe")
+        }
+
+        return try {
+            val probeConfig = ModelConfig(nCtx = 8, nGpuLayers = 1)
+            val createInput = LlmCreateInput(
+                model_name = "",
+                model_path = ggufFile.absolutePath,
+                tokenizer_path = null,
+                config = probeConfig,
+                plugin_id = "cpu_gpu",
+                device_id = deviceId
+            )
+
+            val buildResult = withContext(Dispatchers.IO) {
+                LlmWrapper.builder()
+                    .llmCreateInput(createInput)
+                    .build()
+            }
+
+            if (buildResult.isSuccess) {
+                // Close immediately — this was only a probe
+                try { buildResult.getOrNull()?.close() } catch (_: Exception) {}
+                Log.i(TAG, "NPU probe: allowed — device responded successfully (deviceId=$deviceId)")
+                Pair(true, null)
+            } else {
+                val err = buildResult.exceptionOrNull()
+                val reason = err?.message ?: "unknown error"
+                val friendly = when {
+                    reason.contains("Permission denied", ignoreCase = true) -> "Permission denied (fastrpc/SELinux)"
+                    reason.contains("open_shell failed", ignoreCase = true) -> "vendor fastRPC open_shell failed"
+                    reason.contains("Bad address", ignoreCase = true) -> "kernel FastRPC optimization failure"
+                    else -> reason
+                }
+                Log.w(TAG, "NPU probe: denied — $friendly", err)
+                Pair(false, friendly)
+            }
+        } catch (t: Throwable) {
+            val reason = t.message ?: t.toString()
+            val friendly = when {
+                reason.contains("Permission denied", ignoreCase = true) -> "Permission denied (fastrpc/SELinux)"
+                reason.contains("open_shell failed", ignoreCase = true) -> "vendor fastRPC open_shell failed"
+                reason.contains("Bad address", ignoreCase = true) -> "kernel FastRPC optimization failure"
+                else -> reason
+            }
+            Log.w(TAG, "NPU probe: denied — $friendly", t)
+            Pair(false, friendly)
+        }
+    }
+
+    override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?, deviceId: String?): Boolean {
         // Default to vision enabled for the two-arg load; clear any previous override
         currentVisionDisabled = false
-        return loadModelInternal(model, preferredBackend, false)
+        currentAudioDisabled = false
+        return loadModelInternal(model, preferredBackend, false, deviceId)
     }
 
     override suspend fun loadModel(
         model: LLMModel,
         preferredBackend: LlmInference.Backend?,
         disableVision: Boolean,
-        disableAudio: Boolean
+        disableAudio: Boolean,
+        deviceId: String?
     ): Boolean {
          // Respect the caller's disableVision flag so we can load as text-only if requested
          currentVisionDisabled = disableVision
-         return loadModelInternal(model, preferredBackend, disableVision)
+         currentAudioDisabled = disableAudio
+         return loadModelInternal(model, preferredBackend, disableVision, deviceId)
     }
     
-    private suspend fun loadModelInternal(model: LLMModel, preferredBackend: LlmInference.Backend?, disableVision: Boolean = false): Boolean {
+    private suspend fun loadModelInternal(model: LLMModel, preferredBackend: LlmInference.Backend?, disableVision: Boolean = false, deviceId: String? = null): Boolean {
         // If Nexa is unavailable (emulator / missing native libs), bail out immediately so the
         // UnifiedInferenceService can choose a different backend instead of crashing the app.
         if (!nexaAvailable) {
@@ -117,6 +189,10 @@ class NexaInferenceService @Inject constructor(
 
         val modelFile: File
         val modelDir = getModelDirectory(model)
+        // If caller passed a deviceId but model is not GGUF, ignore it and log (NPU only supported for GGUF-on-Hexagon)
+        if (!deviceId.isNullOrBlank() && model.modelFormat != "gguf") {
+            Log.w(TAG, "DeviceId requested but model is not GGUF; ignoring deviceId=$deviceId for model.format=${model.modelFormat}")
+        }
 
         // Handle imported models with content:// URIs (same as InferenceService)
         if (model.source == "Custom" && model.url.startsWith("content://")) {
@@ -175,8 +251,46 @@ class NexaInferenceService @Inject constructor(
                 if (!disableVision && rawCtx != nCtx) {
                     Log.w(TAG, "Capped nCtx from $rawCtx to $nCtx to prevent OOM")
                 }
-                val deviceToUse = if (backendId == "CPU") null else "GPUOpenCL"
-                val gpuLayers = if (backendId == "CPU") 0 else 999
+                // Determine device/plugin to use. If caller provided an explicit deviceId (e.g. "HTP0") prefer it
+                val userRequestedNpu = !deviceId.isNullOrBlank() && deviceId.startsWith("HTP", ignoreCase = true)
+                var isNpuRequested = userRequestedNpu
+
+                // If an HTP device is requested (either explicitly by user or by auto-selection),
+                // run a lightweight probe. Behavior differs based on intent:
+                // - explicit user request: fail fast (return false) if probe denies — do NOT fall back
+                // - automatic request: fall back to GPUOpenCL on probe denial
+                if (isNpuRequested) {
+                    val (allowed, reason) = probeNpuAvailability(deviceId ?: "HTP0")
+                    if (!allowed) {
+                        if (userRequestedNpu) {
+                            // User explicitly asked for NPU — do not silently fall back. Return failure
+                            Log.e(TAG, "NPU probe denied for explicit request deviceId=$deviceId; reason=$reason — refusing to load model")
+                            return false
+                        } else {
+                            Log.w(TAG, "NPU probe denied for deviceId=$deviceId; reason=$reason — falling back to GPUOpenCL")
+                            isNpuRequested = false
+                        }
+                    } else {
+                        Log.i(TAG, "NPU probe allowed for deviceId=$deviceId — proceeding with HTP")
+                    }
+                }
+
+                val deviceToUse = when {
+                    backendId == "CPU" -> null
+                    isNpuRequested -> deviceId // explicit Hexagon device like HTP0
+                    else -> "GPUOpenCL"
+                }
+
+                // nGpuLayers > 0 is required to enable offloading to Hexagon (GGUF cpu_gpu path).
+                // Nexa docs provide examples that set `nGpuLayers = 999` to attempt offloading all layers for
+                // LLMs. The docs require `nGpuLayers > 0` for GGUF-on-Hexagon; they do not mandate a smaller
+                // value for VLMs. To match the Nexa documentation exactly, when an HTP device is requested
+                // we set `nGpuLayers = 999` (attempt full offload) for both LLM and VLM examples.
+                val gpuLayers = when {
+                    backendId == "CPU" -> 0
+                    isNpuRequested -> 999 // follow Nexa docs/examples: use 999 to attempt full offload
+                    else -> 999
+                }
 
                 val modelConfig = ModelConfig(nCtx = nCtx, nGpuLayers = gpuLayers).apply {
                     val cls = this::class.java
@@ -186,6 +300,10 @@ class NexaInferenceService @Inject constructor(
                         "maxTokens" to nCtx,
                         "max_tokens" to nCtx
                     )
+
+                    if (isNpuRequested) {
+                        Log.i(TAG, "NPU requested: deviceId=$deviceId -> setting nGpuLayers=$gpuLayers and plugin=cpu_gpu (per Nexa docs)")
+                    }
 
                     // Enable Thinking mode if the model name suggests it
                     if (model.name.contains("Thinking", ignoreCase = true) || 
@@ -233,7 +351,12 @@ class NexaInferenceService @Inject constructor(
                         currentModel = model
                         currentPreferredBackend = if (backendId == "CPU") LlmInference.Backend.CPU else LlmInference.Backend.GPU
                         currentVisionDisabled = disableVision
-                        Log.i(TAG, "✓ Successfully loaded VLM with $backendId backend")
+                        val resolvedBackend = if (!deviceToUse.isNullOrBlank() && deviceToUse.startsWith("HTP", ignoreCase = true)) {
+                            "NPU($deviceToUse)"
+                        } else {
+                            backendId
+                        }
+                        Log.i(TAG, "✓ Successfully loaded VLM with $resolvedBackend backend")
                         return true
                     } else {
                         val err = buildResult.exceptionOrNull()
@@ -263,7 +386,12 @@ class NexaInferenceService @Inject constructor(
                         currentModel = model
                         currentPreferredBackend = if (backendId == "CPU") LlmInference.Backend.CPU else LlmInference.Backend.GPU
                         currentVisionDisabled = disableVision
-                        Log.i(TAG, "✓ Successfully loaded LLM with $backendId backend")
+                        val resolvedBackend = if (!deviceToUse.isNullOrBlank() && deviceToUse.startsWith("HTP", ignoreCase = true)) {
+                            "NPU($deviceToUse)"
+                        } else {
+                            backendId
+                        }
+                        Log.i(TAG, "✓ Successfully loaded LLM with $resolvedBackend backend")
                         return true
                     } else {
                         val err = buildResult.exceptionOrNull()
@@ -600,29 +728,42 @@ class NexaInferenceService @Inject constructor(
                     val vlmStart = System.currentTimeMillis()
                     var firstTokenAt = 0L
                     var tokenCount = 0L
-                    vlm.generateStreamFlow(formattedPrompt, configWithMedia)
-                        .collect { streamResult ->
-                            if (isActive) {
-                                if (streamResult is com.nexa.sdk.bean.LlmStreamResult.Token) {
-                                    tokenCount++
-                                    if (firstTokenAt == 0L) {
-                                        firstTokenAt = System.currentTimeMillis()
-                                        val prefillOnlyMs = firstTokenAt - vlmStart
-                                        val totalToFirstTokenMs = firstTokenAt - requestStart
-                                        Log.i(
-                                            TAG,
-                                            "GEN[$requestId] VLM first_token prefill=${prefillOnlyMs}ms total_to_first_token=${totalToFirstTokenMs}ms image_prep=${imagePrepMs}ms"
-                                        )
+                    try {
+                        vlm.generateStreamFlow(formattedPrompt, configWithMedia)
+                            .collect { streamResult ->
+                                if (isActive) {
+                                    if (streamResult is com.nexa.sdk.bean.LlmStreamResult.Token) {
+                                        tokenCount++
+                                        if (firstTokenAt == 0L) {
+                                            firstTokenAt = System.currentTimeMillis()
+                                            val prefillOnlyMs = firstTokenAt - vlmStart
+                                            val totalToFirstTokenMs = firstTokenAt - requestStart
+                                            Log.i(
+                                                TAG,
+                                                "GEN[$requestId] VLM first_token prefill=${prefillOnlyMs}ms total_to_first_token=${totalToFirstTokenMs}ms image_prep=${imagePrepMs}ms"
+                                            )
+                                        }
+                                    } else if (streamResult is com.nexa.sdk.bean.LlmStreamResult.Completed) {
+                                        val end = System.currentTimeMillis()
+                                        val decodeMs = if (firstTokenAt > 0L) end - firstTokenAt else 0L
+                                        val totalMs = end - requestStart
+                                        Log.i(TAG, "GEN[$requestId] VLM completed total=${totalMs}ms decode=${decodeMs}ms tokens=$tokenCount")
                                     }
-                                } else if (streamResult is com.nexa.sdk.bean.LlmStreamResult.Completed) {
-                                    val end = System.currentTimeMillis()
-                                    val decodeMs = if (firstTokenAt > 0L) end - firstTokenAt else 0L
-                                    val totalMs = end - requestStart
-                                    Log.i(TAG, "GEN[$requestId] VLM completed total=${totalMs}ms decode=${decodeMs}ms tokens=$tokenCount")
+                                    handleStreamResult(streamResult, isThinkingModel)
                                 }
-                                handleStreamResult(streamResult, isThinkingModel)
                             }
+                    } catch (t: Throwable) {
+                        if (t is kotlinx.coroutines.CancellationException || t is java.util.concurrent.CancellationException) {
+                            Log.d(TAG, "Nexa VLM generation cancelled; keeping Nexa backend available")
+                            close()
+                            return@launch
                         }
+                        // Defensive: mark Nexa unavailable on severe native/SDK failures and surface an error
+                        Log.e(TAG, "Fatal error during Nexa VLM generation; disabling Nexa backend", t)
+                        nexaAvailable = false
+                        close(Exception("Nexa backend fatal error: ${t.message}"))
+                        return@launch
+                    }
                 } else {
                     // === LLM path: text-only generation ===
                     val wrapper = llmWrapper!!
@@ -651,27 +792,39 @@ class NexaInferenceService @Inject constructor(
                     val llmStart = System.currentTimeMillis()
                     var firstTokenAt = 0L
                     var tokenCount = 0L
-                    wrapper.generateStreamFlow(formattedPrompt, genConfig)
-                        .collect { streamResult ->
-                            if (isActive) {
-                                if (streamResult is com.nexa.sdk.bean.LlmStreamResult.Token) {
-                                    tokenCount++
-                                    if (firstTokenAt == 0L) {
-                                        firstTokenAt = System.currentTimeMillis()
-                                        Log.i(
-                                            TAG,
-                                            "GEN[$requestId] LLM first_token prefill=${firstTokenAt - llmStart}ms total_to_first_token=${firstTokenAt - requestStart}ms"
-                                        )
+                    try {
+                        wrapper.generateStreamFlow(formattedPrompt, genConfig)
+                            .collect { streamResult ->
+                                if (isActive) {
+                                    if (streamResult is com.nexa.sdk.bean.LlmStreamResult.Token) {
+                                        tokenCount++
+                                        if (firstTokenAt == 0L) {
+                                            firstTokenAt = System.currentTimeMillis()
+                                            Log.i(
+                                                TAG,
+                                                "GEN[$requestId] LLM first_token prefill=${firstTokenAt - llmStart}ms total_to_first_token=${firstTokenAt - requestStart}ms"
+                                            )
+                                        }
+                                    } else if (streamResult is com.nexa.sdk.bean.LlmStreamResult.Completed) {
+                                        val end = System.currentTimeMillis()
+                                        val decodeMs = if (firstTokenAt > 0L) end - firstTokenAt else 0L
+                                        val totalMs = end - requestStart
+                                        Log.i(TAG, "GEN[$requestId] LLM completed total=${totalMs}ms decode=${decodeMs}ms tokens=$tokenCount")
                                     }
-                                } else if (streamResult is com.nexa.sdk.bean.LlmStreamResult.Completed) {
-                                    val end = System.currentTimeMillis()
-                                    val decodeMs = if (firstTokenAt > 0L) end - firstTokenAt else 0L
-                                    val totalMs = end - requestStart
-                                    Log.i(TAG, "GEN[$requestId] LLM completed total=${totalMs}ms decode=${decodeMs}ms tokens=$tokenCount")
+                                    handleStreamResult(streamResult, isThinkingModel)
                                 }
-                                handleStreamResult(streamResult, isThinkingModel)
                             }
+                    } catch (t: Throwable) {
+                        if (t is kotlinx.coroutines.CancellationException || t is java.util.concurrent.CancellationException) {
+                            Log.d(TAG, "Nexa LLM generation cancelled; keeping Nexa backend available")
+                            close()
+                            return@launch
                         }
+                        Log.e(TAG, "Fatal error during Nexa LLM generation; disabling Nexa backend", t)
+                        nexaAvailable = false
+                        close(Exception("Nexa backend fatal error: ${t.message}"))
+                        return@launch
+                    }
                 }
                 close()
             } catch (e: Exception) {
@@ -997,8 +1150,8 @@ class NexaInferenceService @Inject constructor(
         overrideTopP = topP
         overrideTemperature = temperature
     }
-    override fun isVisionCurrentlyDisabled(): Boolean = false
-    override fun isAudioCurrentlyDisabled(): Boolean = false
+    override fun isVisionCurrentlyDisabled(): Boolean = currentVisionDisabled
+    override fun isAudioCurrentlyDisabled(): Boolean = currentAudioDisabled
     override fun isGpuBackendEnabled(): Boolean = currentPreferredBackend == LlmInference.Backend.GPU
     override fun getEffectiveMaxTokens(model: LLMModel): Int = overrideMaxTokens ?: model.contextWindowSize
 }
