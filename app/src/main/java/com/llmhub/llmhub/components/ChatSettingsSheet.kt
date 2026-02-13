@@ -377,7 +377,11 @@ fun ChatSettingsSheet(
                                     },
                                     leadingIcon = {
                                         Icon(
-                                            if (useGpu) Icons.Default.Bolt else Icons.Default.Computer,
+                                            when {
+                                                useNpu -> Icons.Default.Bolt
+                                                useGpu -> Icons.Default.Speed
+                                                else -> Icons.Default.Computer
+                                            },
                                             contentDescription = null
                                         )
                                     },
@@ -416,7 +420,7 @@ fun ChatSettingsSheet(
                                             onBackendSelected(LlmInference.Backend.GPU, null)
                                             showBackendMenu = false
                                         },
-                                        leadingIcon = { Icon(Icons.Default.Bolt, contentDescription = null) },
+                                        leadingIcon = { Icon(Icons.Default.Speed, contentDescription = null) },
                                         trailingIcon = {
                                             if (useGpu && !useNpu) {
                                                 Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
@@ -435,7 +439,7 @@ fun ChatSettingsSheet(
                                                 onBackendSelected(LlmInference.Backend.GPU, "HTP0")
                                                 showBackendMenu = false
                                             },
-                                            leadingIcon = { Icon(Icons.Default.Memory, contentDescription = null) },
+                                            leadingIcon = { Icon(Icons.Default.Bolt, contentDescription = null) },
                                             trailingIcon = {
                                                 if (useGpu && useNpu) {
                                                     Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)

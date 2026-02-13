@@ -27,6 +27,7 @@ fun ModelSelectorCard(
     selectedModel: LLMModel?,
     onModelSelected: (LLMModel) -> Unit,
     selectedBackend: LlmInference.Backend?,
+    selectedNpuDeviceId: String? = null,
     onBackendSelected: (LlmInference.Backend, String?) -> Unit,
     onLoadModel: () -> Unit,
     isLoading: Boolean,
@@ -44,6 +45,8 @@ fun ModelSelectorCard(
     
     var showModelMenu by remember { mutableStateOf(false) }
     var showBackendMenu by remember { mutableStateOf(false) }
+    val isNpuSelected = selectedBackend == LlmInference.Backend.GPU &&
+        (selectedNpuDeviceId?.startsWith("HTP", ignoreCase = true) == true)
     
     Card(
         shape = RoundedCornerShape(24.dp),
@@ -157,8 +160,8 @@ fun ModelSelectorCard(
                     ) {
                         OutlinedTextField(
                             value = when(selectedBackend) {
+                                LlmInference.Backend.GPU -> if (isNpuSelected) stringResource(R.string.backend_npu) else stringResource(R.string.backend_gpu)
                                 LlmInference.Backend.CPU -> stringResource(R.string.backend_cpu)
-                                LlmInference.Backend.GPU -> stringResource(R.string.backend_gpu)
                                 else -> stringResource(R.string.select_backend)
                             },
                             onValueChange = {},
@@ -169,8 +172,11 @@ fun ModelSelectorCard(
                             },
                             leadingIcon = {
                                 Icon(
-                                    if (selectedBackend == LlmInference.Backend.GPU) Icons.Default.Bolt 
-                                    else Icons.Default.Computer,
+                                    when {
+                                        isNpuSelected -> Icons.Default.Bolt
+                                        selectedBackend == LlmInference.Backend.GPU -> Icons.Default.Speed
+                                        else -> Icons.Default.Computer
+                                    },
                                     contentDescription = null
                                 )
                             },
@@ -229,10 +235,10 @@ fun ModelSelectorCard(
                                 },
                                 enabled = gpuSupported,
                                 leadingIcon = {
-                                    Icon(Icons.Default.Bolt, contentDescription = null)
+                                    Icon(Icons.Default.Speed, contentDescription = null)
                                 },
                                 trailingIcon = {
-                                    if (selectedBackend == LlmInference.Backend.GPU && gpuSupported) {
+                                    if (selectedBackend == LlmInference.Backend.GPU && gpuSupported && !isNpuSelected) {
                                         Icon(
                                             Icons.Default.CheckCircle,
                                             contentDescription = null,
@@ -252,10 +258,15 @@ fun ModelSelectorCard(
                                         onBackendSelected(LlmInference.Backend.GPU, "HTP0")
                                         showBackendMenu = false
                                     },
-                                    leadingIcon = { Icon(Icons.Default.Memory, contentDescription = null) },
+                                    leadingIcon = { Icon(Icons.Default.Bolt, contentDescription = null) },
                                     trailingIcon = {
-                                        // Consider NPU selected when backend==GPU and the ViewModel stored deviceId==HTP0 — UI reflects that via selectedBackend only; the exact device badge is persisted in ViewModel
-                                        // We don't have direct access to the selected deviceId here, so visual check will be handled by callers if needed.
+                                        if (isNpuSelected) {
+                                            Icon(
+                                                Icons.Default.CheckCircle,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
                                     }
                                 )
                             }
