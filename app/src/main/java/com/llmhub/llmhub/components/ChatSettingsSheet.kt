@@ -38,10 +38,11 @@ fun ChatSettingsSheet(
     availableModels: List<LLMModel>,
     initialSelectedModel: LLMModel?,
     initialSelectedBackend: LlmInference.Backend?,
+    initialSelectedNpuDeviceId: String?,
     currentlyLoadedModel: LLMModel?,
     isLoadingModel: Boolean,
     onModelSelected: (LLMModel) -> Unit,
-    onBackendSelected: (LlmInference.Backend) -> Unit,
+    onBackendSelected: (LlmInference.Backend, String?) -> Unit,
     onLoadModel: (model: LLMModel, maxTokens: Int, topK: Int, topP: Float, temperature: Float, backend: LlmInference.Backend?, disableVision: Boolean, disableAudio: Boolean) -> Unit,
     onUnloadModel: () -> Unit,
     onDismiss: () -> Unit
@@ -101,8 +102,13 @@ fun ChatSettingsSheet(
             }
         )
     }
+
+    // Track whether NPU (Hexagon GGUF) is selected — initial value comes from the caller
+    var useNpu by remember(initialSelectedNpuDeviceId) { mutableStateOf(initialSelectedNpuDeviceId != null) }
+
     var disableVision by remember { mutableStateOf(isGemma3nModel) }
     var disableAudio by remember { mutableStateOf(isGemma3nModel) }
+
     val selectedModelSupportsVisionInput by remember(selectedModel, context) {
         derivedStateOf {
             selectedModel?.let { model ->
@@ -358,7 +364,11 @@ fun ChatSettingsSheet(
                                 onExpandedChange = { showBackendMenu = !showBackendMenu }
                             ) {
                                 OutlinedTextField(
-                                    value = if (useGpu) stringResource(R.string.backend_gpu) else stringResource(R.string.backend_cpu),
+                                    value = when {
+                                        useNpu -> stringResource(R.string.backend_npu)
+                                        useGpu -> stringResource(R.string.backend_gpu)
+                                        else -> stringResource(R.string.backend_cpu)
+                                    },
                                     onValueChange = {},
                                     readOnly = true,
                                     label = { Text(stringResource(R.string.select_backend)) },
@@ -385,30 +395,54 @@ fun ChatSettingsSheet(
                                         text = { Text(stringResource(R.string.backend_cpu)) },
                                         onClick = {
                                             useGpu = false
-                                            onBackendSelected(LlmInference.Backend.CPU)
+                                            useNpu = false
+                                            onBackendSelected(LlmInference.Backend.CPU, null)
                                             showBackendMenu = false
                                         },
                                         leadingIcon = { Icon(Icons.Default.Computer, contentDescription = null) },
                                         trailingIcon = {
-                                            if (!useGpu) {
+                                            if (!useGpu && !useNpu) {
                                                 Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                             }
                                         }
                                     )
+
+                                    // GPU option (clears any NPU device)
                                     DropdownMenuItem(
                                         text = { Text(stringResource(R.string.backend_gpu)) },
                                         onClick = {
                                             useGpu = true
-                                            onBackendSelected(LlmInference.Backend.GPU)
+                                            useNpu = false
+                                            onBackendSelected(LlmInference.Backend.GPU, null)
                                             showBackendMenu = false
                                         },
                                         leadingIcon = { Icon(Icons.Default.Bolt, contentDescription = null) },
                                         trailingIcon = {
-                                            if (useGpu) {
+                                            if (useGpu && !useNpu) {
                                                 Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                             }
                                         }
                                     )
+
+                                    // NPU option for GGUF on Qualcomm Hexagon
+                                    val showNpuOption = selectedModel?.modelFormat == "gguf" && com.llmhub.llmhub.data.DeviceInfo.isQualcommNpuSupported()
+                                    if (showNpuOption) {
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(R.string.backend_npu)) },
+                                            onClick = {
+                                                useGpu = true
+                                                useNpu = true
+                                                onBackendSelected(LlmInference.Backend.GPU, "HTP0")
+                                                showBackendMenu = false
+                                            },
+                                            leadingIcon = { Icon(Icons.Default.Memory, contentDescription = null) },
+                                            trailingIcon = {
+                                                if (useGpu && useNpu) {
+                                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                }
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         }

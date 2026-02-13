@@ -139,13 +139,17 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
         saveSettings()
     }
     
-    fun selectBackend(backend: LlmInference.Backend) {
+    private val _selectedNpuDeviceId = MutableStateFlow<String?>(null)
+    val selectedNpuDeviceId: StateFlow<String?> = _selectedNpuDeviceId.asStateFlow()
+
+    fun selectBackend(backend: LlmInference.Backend, deviceId: String? = null) {
         // Unload current model before switching backend
         if (_isModelLoaded.value) {
             unloadModel()
         }
         
         _selectedBackend.value = backend
+        _selectedNpuDeviceId.value = deviceId
         _isModelLoaded.value = false
         saveSettings()
     }
@@ -177,7 +181,8 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
                     model = model,
                     preferredBackend = backend,
                     disableVision = true,  // Writing aid only needs text
-                    disableAudio = true
+                    disableAudio = true,
+                    deviceId = _selectedNpuDeviceId.value
                 )
                 
                 if (success) {

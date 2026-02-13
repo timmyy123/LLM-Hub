@@ -32,6 +32,10 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
     
     private val _selectedBackend = MutableStateFlow(LlmInference.Backend.GPU)
     val selectedBackend: StateFlow<LlmInference.Backend> = _selectedBackend.asStateFlow()
+
+    // Optional selected NPU device id when user chooses NPU for GGUF
+    private val _selectedNpuDeviceId = MutableStateFlow<String?>(null)
+    val selectedNpuDeviceId: StateFlow<String?> = _selectedNpuDeviceId.asStateFlow()
     
     // Loading states
     private val _isLoadingModel = MutableStateFlow(false)
@@ -107,13 +111,14 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
         saveSettings()
     }
     
-    fun selectBackend(backend: LlmInference.Backend) {
+    fun selectBackend(backend: LlmInference.Backend, deviceId: String? = null) {
         // Unload current model before switching backend
         if (_isModelLoaded.value) {
             unloadModel()
         }
         
         _selectedBackend.value = backend
+        _selectedNpuDeviceId.value = deviceId
         saveSettings()
     }
     
@@ -152,7 +157,8 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
                     model = model,
                     preferredBackend = _selectedBackend.value,
                     disableVision = true,  // Only audio, no vision
-                    disableAudio = false   // Enable audio
+                    disableAudio = false,  // Enable audio
+                    deviceId = _selectedNpuDeviceId.value
                 )
                 _isModelLoaded.value = true
             } catch (e: Exception) {

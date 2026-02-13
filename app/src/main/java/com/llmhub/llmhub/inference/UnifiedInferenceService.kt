@@ -20,7 +20,7 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
     private var currentService: InferenceService = mediaPipeService
     private var currentModel: LLMModel? = null
 
-    override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?): Boolean {
+    override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?, deviceId: String?): Boolean {
         // Determine which service to use
         val newService = when (model.modelFormat) {
             "onnx" -> onnxService
@@ -46,14 +46,15 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         currentService = newService
         currentModel = model
         
-        return currentService.loadModel(model, preferredBackend)
+        return currentService.loadModel(model, preferredBackend, deviceId)
     }
 
     override suspend fun loadModel(
         model: LLMModel, 
         preferredBackend: LlmInference.Backend?, 
         disableVision: Boolean, 
-        disableAudio: Boolean
+        disableAudio: Boolean,
+        deviceId: String?
     ): Boolean {
          val newService = when (model.modelFormat) {
             "onnx" -> onnxService
@@ -79,7 +80,7 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         currentService = newService
         currentModel = model
         
-        return currentService.loadModel(model, preferredBackend, disableVision, disableAudio)
+        return currentService.loadModel(model, preferredBackend, disableVision, disableAudio, deviceId)
     }
 
     override suspend fun unloadModel() {
