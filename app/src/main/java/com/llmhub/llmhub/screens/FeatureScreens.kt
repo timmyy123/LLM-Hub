@@ -216,6 +216,7 @@ fun TranslatorScreen(
     val availableModels by viewModel.availableModels.collectAsState()
     val selectedModel by viewModel.selectedModel.collectAsState()
     val selectedBackend by viewModel.selectedBackend.collectAsState()
+    val selectedNpuDeviceId by viewModel.selectedNpuDeviceId.collectAsState()
     val isLoadingModel by viewModel.isLoadingModel.collectAsState()
     val isModelLoaded by viewModel.isModelLoaded.collectAsState()
     val isTranslating by viewModel.isTranslating.collectAsState()
@@ -437,6 +438,7 @@ fun TranslatorScreen(
                     models = availableModels,
                     selectedModel = selectedModel,
                     selectedBackend = selectedBackend,
+                    selectedNpuDeviceId = selectedNpuDeviceId,
                     isLoading = isLoadingModel,
                     isModelLoaded = isModelLoaded,
                     onModelSelected = { viewModel.selectModel(it) },
@@ -1264,6 +1266,7 @@ fun TranscriberScreen(
     val availableModels by viewModel.availableModels.collectAsState()
     val selectedModel by viewModel.selectedModel.collectAsState()
     val selectedBackend by viewModel.selectedBackend.collectAsState()
+    val selectedNpuDeviceId by viewModel.selectedNpuDeviceId.collectAsState()
     val isLoadingModel by viewModel.isLoadingModel.collectAsState()
     val isTranscribing by viewModel.isTranscribing.collectAsState()
     val isRecording by viewModel.isRecording.collectAsState()
@@ -1689,6 +1692,7 @@ fun TranscriberScreen(
                     models = availableModels,
                     selectedModel = selectedModel,
                     selectedBackend = selectedBackend,
+                    selectedNpuDeviceId = selectedNpuDeviceId,
                     isLoading = isLoadingModel,
                     isModelLoaded = isModelLoaded,
                     onModelSelected = { viewModel.selectModel(it) },
@@ -1718,6 +1722,7 @@ fun ScamDetectorScreen(
     val availableModels by viewModel.availableModels.collectAsState()
     val selectedModel by viewModel.selectedModel.collectAsState()
     val selectedBackend by viewModel.selectedBackend.collectAsState()
+    val selectedNpuDeviceId by viewModel.selectedNpuDeviceId.collectAsState()
     val isLoadingModel by viewModel.isLoadingModel.collectAsState()
     val isModelLoaded by viewModel.isModelLoaded.collectAsState()
     val visionEnabled by viewModel.visionEnabled.collectAsState()
@@ -1800,6 +1805,7 @@ fun ScamDetectorScreen(
                     models = availableModels,
                     selectedModel = selectedModel,
                     selectedBackend = selectedBackend,
+                    selectedNpuDeviceId = selectedNpuDeviceId,
                     isLoading = isLoadingModel,
                     isModelLoaded = isModelLoaded,
                     onModelSelected = { viewModel.selectModel(it) },

@@ -50,6 +50,7 @@ fun WritingAidScreen(
     val availableModels by viewModel.availableModels.collectAsState()
     val selectedModel by viewModel.selectedModel.collectAsState()
     val selectedBackend by viewModel.selectedBackend.collectAsState()
+    val selectedNpuDeviceId by viewModel.selectedNpuDeviceId.collectAsState()
     val selectedMode by viewModel.selectedMode.collectAsState()
     val isModelLoaded by viewModel.isModelLoaded.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -114,6 +115,7 @@ fun WritingAidScreen(
                     models = availableModels,
                     selectedModel = selectedModel,
                     selectedBackend = selectedBackend,
+                    selectedNpuDeviceId = selectedNpuDeviceId,
                     isLoading = isLoading,
                     isModelLoaded = isModelLoaded,
                     onModelSelected = { viewModel.selectModel(it) },

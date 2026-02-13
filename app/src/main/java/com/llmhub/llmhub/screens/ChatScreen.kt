@@ -97,6 +97,7 @@ fun ChatScreen(
     val currentlyLoadedModel by viewModel.currentlyLoadedModel.collectAsState()
     val selectedModel by viewModel.selectedModel.collectAsState()
     val selectedBackend by viewModel.selectedBackend.collectAsState()
+    val selectedNpuDeviceId by viewModel.selectedNpuDeviceId.collectAsState()
     
     // RAG state
     val isRagReady by viewModel.isRagReady.collectAsState()
@@ -257,10 +258,11 @@ fun ChatScreen(
                                         )
                                     }
                                     if (viewModel.isGpuBackendEnabled()) {
+                                        val isNpu = selectedNpuDeviceId?.startsWith("HTP", ignoreCase = true) == true
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Icon(
-                                            Icons.Default.Speed,
-                                            contentDescription = "GPU enabled",
+                                            if (isNpu) Icons.Default.Bolt else Icons.Default.Speed,
+                                            contentDescription = if (isNpu) "NPU enabled" else "GPU enabled",
                                             modifier = Modifier.size(12.dp),
                                             tint = MaterialTheme.colorScheme.secondary
                                         )
@@ -450,8 +452,6 @@ fun ChatScreen(
     
     // Settings Bottom Sheet for model selection and configuration
     if (showSettingsSheet) {
-        val selectedNpuDeviceId by viewModel.selectedNpuDeviceId.collectAsState()
-
         ChatSettingsSheet(
             availableModels = availableModels,
             initialSelectedModel = selectedModel,
