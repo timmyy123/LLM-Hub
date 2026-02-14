@@ -992,7 +992,7 @@ class ChatViewModel(
                     attachmentFileInfo != null -> "📄 ${attachmentFileInfo.name.take(30)}"
                     else -> context.getString(R.string.drawer_new_chat)
                 }
-                repository.updateChatTitle(chatId, chatTitle)
+                repository.updateChatTitle(chatId, chatTitle.trim())
                 _currentChat.value = repository.getChatById(chatId)
             }
 
@@ -3100,6 +3100,16 @@ inferenceService.loadModel(currentModel!!, _selectedBackend.value, _selectedNpuD
             ragServiceManager.clearChatDocuments(chatId) // Clear RAG documents too
             if (chatId == currentChatId) {
                 _messages.value = emptyList()
+            }
+        }
+    }
+
+    fun renameChat(chatId: String, newTitle: String) {
+        viewModelScope.launch {
+            repository.updateChatTitle(chatId, newTitle.trim())
+            // Update current chat if it's the one being renamed
+            if (currentChatId == chatId) {
+                _currentChat.value = repository.getChatById(chatId)
             }
         }
     }
