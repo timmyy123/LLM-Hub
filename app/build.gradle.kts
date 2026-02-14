@@ -185,6 +185,9 @@ dependencies {
     // DataStore for settings
     implementation("androidx.datastore:datastore-preferences:1.0.0")
 
+    // Security (EncryptedSharedPreferences)
+    implementation("androidx.security:security-crypto:1.0.0")
+
     // AppCompat for per-app locale APIs
     implementation("androidx.appcompat:appcompat:1.7.0")
     
