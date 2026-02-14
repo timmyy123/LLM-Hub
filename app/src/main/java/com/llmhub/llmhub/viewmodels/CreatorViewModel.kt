@@ -46,7 +46,7 @@ class CreatorViewModel(
     private val _selectedNpuDeviceId = MutableStateFlow<String?>(null)
     val selectedNpuDeviceId: StateFlow<String?> = _selectedNpuDeviceId.asStateFlow()
 
-    private val _selectedMaxTokens = MutableStateFlow(2048)
+    private val _selectedMaxTokens = MutableStateFlow(4096)
     val selectedMaxTokens: StateFlow<Int> = _selectedMaxTokens.asStateFlow()
 
     private val _isModelLoaded = MutableStateFlow(false)
@@ -71,7 +71,7 @@ class CreatorViewModel(
 
     private fun loadSavedSettings() {
         val savedBackendName = prefs.getString("selected_backend", LlmInference.Backend.GPU.name)
-        val savedMaxTokens = prefs.getInt("selected_max_tokens", 2048)
+        val savedMaxTokens = prefs.getInt("selected_max_tokens", 4096)
         val savedNpuDeviceId = prefs.getString("selected_npu_device_id", null)
         _selectedBackend.value = try {
             LlmInference.Backend.valueOf(savedBackendName ?: LlmInference.Backend.GPU.name)
@@ -159,7 +159,7 @@ class CreatorViewModel(
     }
 
     fun setMaxTokens(maxTokens: Int) {
-        val cap = _selectedModel.value?.contextWindowSize?.coerceAtLeast(1) ?: 2048
+        val cap = _selectedModel.value?.contextWindowSize?.coerceAtLeast(1) ?: 4096
         _selectedMaxTokens.value = maxTokens.coerceIn(1, cap)
         saveSettings()
     }

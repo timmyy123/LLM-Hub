@@ -54,6 +54,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.R
@@ -62,6 +63,7 @@ import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.hasDownloadedVisionProjector
 import com.llmhub.llmhub.data.requiresExternalVisionProjector
 import com.llmhub.llmhub.inference.MediaPipeInferenceService
+import androidx.compose.foundation.interaction.MutableInteractionSource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -99,7 +101,7 @@ fun FeatureModelSettingsSheet(
         if (isPhi4Mini) false else selectedModel?.supportsGpu == true
     }
 
-    var maxTokensValue by remember { mutableStateOf(initialMaxTokens.coerceIn(1, baseMaxTokensCap.coerceAtLeast(1))) }
+    var maxTokensValue by remember { mutableStateOf(minOf(4096, baseMaxTokensCap.coerceAtLeast(1))) }
     var maxTokensText by remember { mutableStateOf(maxTokensValue.toString()) }
     var useGpu by remember {
         mutableStateOf(
@@ -122,7 +124,7 @@ fun FeatureModelSettingsSheet(
     }
 
     LaunchedEffect(selectedModel?.name, baseMaxTokensCap) {
-        maxTokensValue = maxTokensValue.coerceIn(1, baseMaxTokensCap.coerceAtLeast(1))
+        maxTokensValue = minOf(4096, baseMaxTokensCap.coerceAtLeast(1))
         maxTokensText = maxTokensValue.toString()
         onMaxTokensChanged(maxTokensValue)
         if (selectedModel != null) {
@@ -420,7 +422,13 @@ fun FeatureModelSettingsSheet(
                                     onMaxTokensChanged(intVal)
                                 },
                                 valueRange = 1f..baseMaxTokensCap.toFloat(),
-                                modifier = Modifier.weight(1f).height(36.dp)
+                                modifier = Modifier.weight(1f).height(36.dp),
+                                thumb = {
+                                    SliderDefaults.Thumb(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        thumbSize = DpSize(24.dp, 24.dp)
+                                    )
+                                }
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             OutlinedTextField(
