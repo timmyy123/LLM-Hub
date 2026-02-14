@@ -67,6 +67,11 @@ Model Formats
 - GGUF (.gguf): Quantized models — CPU inference powered by Nexa SDK; some vision-capable GGUF models require an additional `mmproj` vision project file
 - ONNX (.onnx): Cross-platform model runtime
 
+GGUF Compatibility Notes
+- Not all Android devices can load GGUF models in this app.
+- GGUF loading/runtime depends on Nexa SDK native libraries and device/ABI support; on unsupported devices, GGUF model loading can fail even if the model file is valid.
+- In this app, the GGUF NPU option is intentionally shown only for Snapdragon 8 Gen 4-class devices.
+
 Importing models
 - Settings → Download Models → Import Model → choose `.task`, `.litertlm`, `.mnn`, `.gguf`, or `.onnx`
 - The full model list and download links live in `app/src/.../data/ModelData.kt` (do not exhaustively list variants in the README)
