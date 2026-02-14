@@ -368,7 +368,6 @@ fun CreatorGenerationScreen(
                 viewModel.setMaxTokens(maxTokens)
                 if (backend != null) viewModel.selectBackend(backend, deviceId)
                 viewModel.loadModel()
-                showSettingsSheet = false
             },
             onUnloadModel = { viewModel.unloadModel() },
             onDismiss = { showSettingsSheet = false }
