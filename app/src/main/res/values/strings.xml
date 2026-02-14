@@ -206,6 +206,7 @@
     <string name="model_supports_vision">Supports vision</string>
     <string name="model_supports_multimodal">Supports multimodal</string>
     <string name="model_text_only">Text only</string>
+    <string name="not_loaded">Not Loaded</string>
     
     <!-- Chat Drawer -->
     <string name="drawer_title">LLM Hub</string>
