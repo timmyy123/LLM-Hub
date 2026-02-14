@@ -41,8 +41,20 @@ fun ChatDrawer(
     val chats by viewModel.allChats.collectAsState()
     val creators by viewModel.allCreators.collectAsState()
     var showDeleteAllDialog by remember { mutableStateOf(false) }
+    var chatToRename by remember { mutableStateOf<ChatEntity?>(null) }
     
     // ... dialog logic ...
+    
+    if (chatToRename != null) {
+        com.llmhub.llmhub.screens.RenameChatDialog(
+            chatTitle = chatToRename!!.title,
+            onConfirm = { newTitle ->
+                viewModel.renameChat(chatToRename!!.id, newTitle)
+                chatToRename = null
+            },
+            onDismiss = { chatToRename = null }
+        )
+    }
 
     ModalDrawerSheet {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -106,7 +118,8 @@ fun ChatDrawer(
                     ChatHistoryItem(
                         chat = chat,
                         onClick = { onNavigateToChat(chat.id) },
-                        onDelete = { viewModel.deleteChat(chat.id) }
+                        onDelete = { viewModel.deleteChat(chat.id) },
+                        onRename = { chatToRename = chat }
                     )
                 }
                 if (chats.isEmpty()) {
@@ -158,32 +171,10 @@ fun ChatDrawer(
 private fun ChatHistoryItem(
     chat: ChatEntity,
     onClick: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onRename: () -> Unit
 ) {
-    var showDeleteDialog by remember { mutableStateOf(false) }
-
-    if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text(stringResource(R.string.dialog_delete_chat_title)) },
-            text = { Text(stringResource(R.string.dialog_delete_chat_message, chat.title)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onDelete()
-                        showDeleteDialog = false
-                    }
-                ) {
-                    Text(stringResource(R.string.action_delete))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text(stringResource(R.string.action_cancel))
-                }
-            }
-        )
-    }
+    var expanded by remember { mutableStateOf(false) }
 
     Surface(
         onClick = onClick,
@@ -212,12 +203,46 @@ private fun ChatHistoryItem(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            IconButton(onClick = { showDeleteDialog = true }) {
-                Icon(
-                    Icons.Outlined.Delete,
-                    contentDescription = stringResource(R.string.content_description_delete_chat),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            Box {
+                IconButton(onClick = { expanded = true }) {
+                    Icon(
+                        Icons.Default.MoreVert,
+                        contentDescription = stringResource(R.string.more_options),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.action_rename)) },
+                        onClick = {
+                            expanded = false
+                            onRename()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Outlined.Edit,
+                                contentDescription = null
+                            )
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error) },
+                        onClick = {
+                            expanded = false
+                            onDelete()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Outlined.Delete,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    )
+                }
             }
         }
     }

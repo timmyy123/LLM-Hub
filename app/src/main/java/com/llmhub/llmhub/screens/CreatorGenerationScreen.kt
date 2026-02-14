@@ -142,7 +142,7 @@ fun CreatorGenerationScreen(
                 selectedModel = selectedModel,
                 onModelSelected = { viewModel.selectModel(it) },
                 selectedBackend = selectedBackend,
-                onBackendSelected = { viewModel.selectBackend(it) },
+                onBackendSelected = { backend, _ -> viewModel.selectBackend(backend) },
                 onLoadModel = { viewModel.loadModel() },
                 isLoading = isLoading,
                 isModelLoaded = isModelLoaded,
