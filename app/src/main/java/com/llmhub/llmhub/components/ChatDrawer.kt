@@ -41,11 +41,74 @@ fun ChatDrawer(
     val chats by viewModel.allChats.collectAsState()
     val creators by viewModel.allCreators.collectAsState()
     var showDeleteAllDialog by remember { mutableStateOf(false) }
-    
-    // ... dialog logic ...
+    val configuration = LocalConfiguration.current
+    val drawerWidth = if (configuration.screenWidthDp >= 600) 400.dp else 360.dp
 
-    ModalDrawerSheet {
-        Column(modifier = Modifier.padding(16.dp)) {
+    if (showDeleteAllDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteAllDialog = false },
+            title = { Text(stringResource(R.string.dialog_delete_all_chats_title)) },
+            text = { Text(stringResource(R.string.dialog_delete_all_chats_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (onClearAllChats != null) {
+                            onClearAllChats()
+                        } else {
+                            viewModel.deleteAllChats()
+                        }
+                        showDeleteAllDialog = false
+                    }
+                ) {
+                    Text(stringResource(R.string.action_delete_all))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteAllDialog = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
+    }
+
+    ModalDrawerSheet(
+        modifier = Modifier
+            .width(drawerWidth)
+            .fillMaxHeight()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxHeight()
+                .padding(16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 12.dp)
+            ) {
+                IconButton(
+                    onClick = onNavigateBack,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = stringResource(R.string.back),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    Icons.Default.PhoneAndroid,
+                    contentDescription = null,
+                    modifier = Modifier.size(28.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.drawer_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
 
             // New Chat Button
             FilledTonalButton(
