@@ -186,7 +186,8 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.0.0")
 
     // Security (EncryptedSharedPreferences)
-    implementation("androidx.security:security-crypto:1.0.0")
+    // Use 1.1.0-alpha06 for MasterKey API support (replaces deprecated MasterKeys)
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
     // AppCompat for per-app locale APIs
     implementation("androidx.appcompat:appcompat:1.7.0")
