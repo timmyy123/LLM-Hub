@@ -8,33 +8,37 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.GetApp
+import androidx.compose.material.icons.filled.ModelTraining
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.llmhub.llmhub.viewmodels.ChatViewModelFactory
 import com.llmhub.llmhub.viewmodels.CreatorViewModel
-import com.llmhub.llmhub.components.ModelSelectorCard
-import kotlinx.coroutines.launch
+import com.llmhub.llmhub.components.FeatureModelSettingsSheet
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import android.graphics.Rect
 import android.view.ViewTreeObserver
+import com.llmhub.llmhub.R
 
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun CreatorGenerationScreen(
     onNavigateBack: () -> Unit,
     onNavigateToChat: (String) -> Unit, // Navigate to new chat with creator ID
+    onNavigateToModels: (() -> Unit)? = null,
     viewModelFactory: ChatViewModelFactory
 ) {
     val viewModel: CreatorViewModel = viewModel(factory = viewModelFactory)
@@ -46,11 +50,13 @@ fun CreatorGenerationScreen(
     val availableModels by viewModel.availableModels.collectAsState()
     val selectedModel by viewModel.selectedModel.collectAsState()
     val selectedBackend by viewModel.selectedBackend.collectAsState()
+    val selectedNpuDeviceId by viewModel.selectedNpuDeviceId.collectAsState()
+    val selectedMaxTokens by viewModel.selectedMaxTokens.collectAsState()
     val isModelLoaded by viewModel.isModelLoaded.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     
     var userPrompt by remember { mutableStateOf("") }
-    val scope = rememberCoroutineScope()
+    var showSettingsSheet by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
 
     // Keyboard handling
@@ -82,18 +88,16 @@ fun CreatorGenerationScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("new creAItor", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.feature_creator_generation), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 actions = {
-                    Text(
-                        text = "v1.2",
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier.padding(end = 16.dp)
-                    )
+                    IconButton(onClick = { showSettingsSheet = true }) {
+                        Icon(Icons.Default.Tune, contentDescription = stringResource(R.string.feature_settings_title))
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
@@ -102,15 +106,70 @@ fun CreatorGenerationScreen(
             )
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .imePadding() // Fix for keyboard overlay
-                .padding(16.dp)
-                .verticalScroll(scrollState),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+        if (!isModelLoaded) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(paddingValues)
+                    .padding(32.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ModelTraining,
+                    contentDescription = null,
+                    modifier = Modifier.size(80.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(
+                    text = stringResource(
+                        if (availableModels.isEmpty()) R.string.download_models_first
+                        else R.string.scam_detector_load_model
+                    ),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = stringResource(R.string.scam_detector_load_model_desc),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(32.dp))
+                FilledTonalButton(
+                    onClick = {
+                        if (availableModels.isEmpty()) onNavigateToModels?.invoke() ?: run { showSettingsSheet = true }
+                        else showSettingsSheet = true
+                    },
+                    modifier = Modifier.fillMaxWidth(0.6f)
+                ) {
+                    Icon(
+                        imageVector = if (availableModels.isEmpty()) Icons.Default.GetApp else Icons.Default.Tune,
+                        contentDescription = null
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        stringResource(
+                            if (availableModels.isEmpty()) R.string.download_models
+                            else R.string.feature_settings_title
+                        )
+                    )
+                }
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .imePadding()
+                    .padding(16.dp)
+                    .verticalScroll(scrollState),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
             // Header Card
             Card(
                 modifier = Modifier
@@ -135,20 +194,6 @@ fun CreatorGenerationScreen(
                     )
                 }
             }
-
-            // Model Selector
-            ModelSelectorCard(
-                models = availableModels,
-                selectedModel = selectedModel,
-                onModelSelected = { viewModel.selectModel(it) },
-                selectedBackend = selectedBackend,
-                onBackendSelected = { backend, _ -> viewModel.selectBackend(backend) },
-                onLoadModel = { viewModel.loadModel() },
-                isLoading = isLoading,
-                isModelLoaded = isModelLoaded,
-                onUnloadModel = { viewModel.unloadModel() },
-                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
-            )
 
             // Input Area
             OutlinedTextField(
@@ -303,5 +348,30 @@ fun CreatorGenerationScreen(
                 }
             }
         }
+        }
+    }
+
+    if (showSettingsSheet) {
+        FeatureModelSettingsSheet(
+            availableModels = availableModels,
+            initialSelectedModel = selectedModel,
+            initialSelectedBackend = selectedBackend,
+            initialSelectedNpuDeviceId = selectedNpuDeviceId,
+            initialMaxTokens = selectedMaxTokens,
+            currentlyLoadedModel = if (isModelLoaded) selectedModel else null,
+            isLoadingModel = isLoading,
+            onModelSelected = { viewModel.selectModel(it) },
+            onBackendSelected = { backend, deviceId -> viewModel.selectBackend(backend, deviceId) },
+            onMaxTokensChanged = { viewModel.setMaxTokens(it) },
+            onLoadModel = { model, maxTokens, backend, deviceId ->
+                viewModel.selectModel(model)
+                viewModel.setMaxTokens(maxTokens)
+                if (backend != null) viewModel.selectBackend(backend, deviceId)
+                viewModel.loadModel()
+                showSettingsSheet = false
+            },
+            onUnloadModel = { viewModel.unloadModel() },
+            onDismiss = { showSettingsSheet = false }
+        )
     }
 }

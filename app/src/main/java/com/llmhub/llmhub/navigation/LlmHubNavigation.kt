@@ -274,6 +274,7 @@ fun LlmHubNavigation(
                         popUpTo(Screen.Home.route)
                     }
                 },
+                onNavigateToModels = { navController.navigate(Screen.Models.route) },
                 viewModelFactory = chatViewModelFactory
             )
         }
