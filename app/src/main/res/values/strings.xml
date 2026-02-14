@@ -206,6 +206,7 @@
     <string name="model_supports_vision">Supports vision</string>
     <string name="model_supports_multimodal">Supports multimodal</string>
     <string name="model_text_only">Text only</string>
+    <string name="not_loaded">Not Loaded</string>
     
     <!-- Chat Drawer -->
     <string name="drawer_title">LLM Hub</string>
@@ -217,12 +218,16 @@
     <string name="drawer_settings">Settings</string>
     
     <!-- Chat Management -->
+    <string name="dialog_rename_chat_title">Rename Chat</string>
+    <string name="chat_title">Chat Title</string>
+    <string name="more_options">More Options</string>
     <string name="dialog_delete_all_chats_title">Delete All Chats?</string>
     <string name="dialog_delete_all_chats_message">This will permanently delete all conversation history. This action cannot be undone.</string>
     <string name="dialog_delete_chat_title">Delete Chat?</string>
     <string name="dialog_delete_chat_message">Delete conversation \"%1$s\"?</string>
     <string name="action_delete_all">Delete All</string>
     <string name="action_delete">Delete</string>
+    <string name="action_rename">Rename</string>
     <string name="action_cancel">Cancel</string>
     <string name="content_description_delete_chat">Delete Chat</string>
     
