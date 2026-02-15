@@ -79,6 +79,12 @@ fun CreatorGenerationScreen(
         }
     }
 
+    LaunchedEffect(generatedCreator) {
+        if (generatedCreator != null) {
+            scrollState.animateScrollTo(scrollState.maxValue)
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -291,8 +297,8 @@ fun CreatorGenerationScreen(
                             },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
                             )
                         ) {
                             Icon(Icons.Default.Save, contentDescription = null)
