@@ -160,7 +160,7 @@ fun CreatorGenerationScreen(
                     .bringIntoViewRequester(promptBringRequester)
                     .onFocusChanged { promptFocused = it.isFocused },
                 label = { Text("Describe your creAItor...") },
-                placeholder = { Text("e.g., A grumpy cat that hates Mondays but loves lasagna. Is very sarcastic.") },
+                placeholder = { Text("e.g., summarize any topic as a rhyming poem of less than 10 lines") },
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
