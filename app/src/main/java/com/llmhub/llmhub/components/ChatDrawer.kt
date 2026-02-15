@@ -12,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -33,84 +34,30 @@ fun ChatDrawer(
     onNavigateToSettings: () -> Unit,
     onNavigateToModels: () -> Unit,
     onNavigateBack: () -> Unit,
+    onNavigateToCreatorChat: (String) -> Unit,
     onClearAllChats: (() -> Unit)? = null,
     viewModel: ChatDrawerViewModel = viewModel()
 ) {
     val chats by viewModel.allChats.collectAsState()
+    val creators by viewModel.allCreators.collectAsState()
     var showDeleteAllDialog by remember { mutableStateOf(false) }
-
-    // Fixed width only (no fraction) to avoid 0-width measure on rotation (auto-open bug).
-    // Wider on tablet for better use of space.
-    val configuration = LocalConfiguration.current
-    val drawerWidth = if (configuration.screenWidthDp >= 600) 400.dp else 360.dp
-
-    if (showDeleteAllDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteAllDialog = false },
-            title = { Text(stringResource(R.string.dialog_delete_all_chats_title)) },
-            text = { Text(stringResource(R.string.dialog_delete_all_chats_message)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        if (onClearAllChats != null) {
-                            onClearAllChats()
-                        } else {
-                            viewModel.deleteAllChats()
-                        }
-                        showDeleteAllDialog = false
-                    }
-                ) {
-                    Text(stringResource(R.string.action_delete_all))
-                }
+    var chatToRename by remember { mutableStateOf<ChatEntity?>(null) }
+    
+    // ... dialog logic ...
+    
+    if (chatToRename != null) {
+        com.llmhub.llmhub.screens.RenameChatDialog(
+            chatTitle = chatToRename!!.title,
+            onConfirm = { newTitle ->
+                viewModel.renameChat(chatToRename!!.id, newTitle)
+                chatToRename = null
             },
-            dismissButton = {
-                TextButton(onClick = { showDeleteAllDialog = false }) {
-                    Text(stringResource(R.string.action_cancel))
-                }
-            }
+            onDismiss = { chatToRename = null }
         )
     }
-    
-    ModalDrawerSheet(
-        modifier = Modifier
-            .width(drawerWidth)
-            .fillMaxHeight()
-    ) {
-        // Layout so that action items stay visible; chat list scrolls independently.
-        Column(
-            modifier = Modifier
-                .fillMaxHeight()
-                .padding(16.dp)
-        ) {
-            // Header with Back Arrow
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 12.dp)
-            ) {
-                IconButton(
-                    onClick = onNavigateBack,
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Icon(
-                        Icons.Default.ArrowBack,
-                        contentDescription = stringResource(R.string.back),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-                Spacer(modifier = Modifier.width(4.dp))
-                Icon(
-                    Icons.Default.PhoneAndroid,
-                    contentDescription = null,
-                    modifier = Modifier.size(28.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = stringResource(R.string.drawer_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
+
+    ModalDrawerSheet {
+        Column(modifier = Modifier.padding(16.dp)) {
 
             // New Chat Button
             FilledTonalButton(
@@ -121,6 +68,34 @@ fun ChatDrawer(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(stringResource(R.string.drawer_new_chat))
             }
+            
+            // Creators Section
+            if (creators.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = stringResource(R.string.drawer_my_creators),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 6.dp)
+                )
+                
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 200.dp), // Limit height so it doesn't take over
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    items(creators) { creator ->
+                        CreatorItem(
+                            creator = creator,
+                            onClick = { onNavigateToCreatorChat(creator.id) },
+                            onDelete = { viewModel.deleteCreator(creator) }
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Chat History header
             Text(
@@ -143,7 +118,8 @@ fun ChatDrawer(
                     ChatHistoryItem(
                         chat = chat,
                         onClick = { onNavigateToChat(chat.id) },
-                        onDelete = { viewModel.deleteChat(chat.id) }
+                        onDelete = { viewModel.deleteChat(chat.id) },
+                        onRename = { chatToRename = chat }
                     )
                 }
                 if (chats.isEmpty()) {
@@ -195,32 +171,10 @@ fun ChatDrawer(
 private fun ChatHistoryItem(
     chat: ChatEntity,
     onClick: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onRename: () -> Unit
 ) {
-    var showDeleteDialog by remember { mutableStateOf(false) }
-
-    if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text(stringResource(R.string.dialog_delete_chat_title)) },
-            text = { Text(stringResource(R.string.dialog_delete_chat_message, chat.title)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onDelete()
-                        showDeleteDialog = false
-                    }
-                ) {
-                    Text(stringResource(R.string.action_delete))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text(stringResource(R.string.action_cancel))
-                }
-            }
-        )
-    }
+    var expanded by remember { mutableStateOf(false) }
 
     Surface(
         onClick = onClick,
@@ -249,12 +203,46 @@ private fun ChatHistoryItem(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            IconButton(onClick = { showDeleteDialog = true }) {
-                Icon(
-                    Icons.Outlined.Delete,
-                    contentDescription = stringResource(R.string.content_description_delete_chat),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            Box {
+                IconButton(onClick = { expanded = true }) {
+                    Icon(
+                        Icons.Default.MoreVert,
+                        contentDescription = stringResource(R.string.more_options),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.action_rename)) },
+                        onClick = {
+                            expanded = false
+                            onRename()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Outlined.Edit,
+                                contentDescription = null
+                            )
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error) },
+                        onClick = {
+                            expanded = false
+                            onDelete()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Outlined.Delete,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    )
+                }
             }
         }
     }

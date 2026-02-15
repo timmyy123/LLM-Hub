@@ -10,6 +10,7 @@ data class ChatEntity(
     val id: String = UUID.randomUUID().toString(),
     val title: String,
     val modelName: String,
+    val creatorId: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 ) 

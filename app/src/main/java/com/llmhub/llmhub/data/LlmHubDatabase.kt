@@ -8,8 +8,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import android.content.Context
 
 @Database(
-    entities = [ChatEntity::class, MessageEntity::class, MemoryDocument::class, com.llmhub.llmhub.data.MemoryChunkEmbedding::class],
-    version = 4,
+    entities = [ChatEntity::class, MessageEntity::class, MemoryDocument::class, com.llmhub.llmhub.data.MemoryChunkEmbedding::class, CreatorEntity::class],
+    version = 5,
     exportSchema = false
 )
 abstract class LlmHubDatabase : RoomDatabase() {
@@ -17,6 +17,7 @@ abstract class LlmHubDatabase : RoomDatabase() {
     abstract fun chatDao(): ChatDao
     abstract fun messageDao(): MessageDao
     abstract fun memoryDao(): MemoryDao
+    abstract fun creatorDao(): CreatorDao
     
     companion object {
         @Volatile
@@ -47,6 +48,17 @@ abstract class LlmHubDatabase : RoomDatabase() {
                 )
             }
         }
+
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Create creators table
+                database.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `creators` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `pctfPrompt` TEXT NOT NULL, `description` TEXT NOT NULL, `icon` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+                )
+                // Add creatorId to ChatEntity
+                database.execSQL("ALTER TABLE chats ADD COLUMN creatorId TEXT")
+            }
+        }
         
         fun getDatabase(context: Context): LlmHubDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -54,7 +66,10 @@ abstract class LlmHubDatabase : RoomDatabase() {
                     context.applicationContext,
                     LlmHubDatabase::class.java,
                     "llmhub_database"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build()
+                )
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                .fallbackToDestructiveMigration() // Optional: useful for dev, but we have migrations now
+                .build()
                 INSTANCE = instance
                 instance
             }

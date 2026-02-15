@@ -25,15 +25,21 @@
 
 ## 🚀 Features
 
-### 🛠️ Six AI Tools
+### 🛠️ AI Tools Suite
 | Tool | Description |
 |------|-------------|
-| **💬 Chat** | Multi-turn conversations with RAG memory, web search, TTS auto-readout, and multimodal input (text, images, audio) |
+| **💬 Chat** | Multi-turn conversations with RAG memory, web search, TTS auto-readout, and multimodal input |
+| **🤖 creAItor** | **[NEW]** Design custom AI personas with specialized system prompts (PCTF) in seconds |
+| **💻 Vibe Coder** | **[NEW]** Explain your app idea and watch it be built in real-time with live HTML/JS preview |
 | **✍️ Writing Aid** | Summarize, expand, rewrite, improve grammar, or generate code from descriptions |
-| **🎨 Image Generator** | Create images from text prompts using Stable Diffusion 1.5 with swipeable gallery for variations |
-| **🌍 Translator** | Translate text, images (OCR), and audio across 50+ languages - works offline |
+| **🎨 Image Generator** | Create images from text prompts using Stable Diffusion 1.5 with swipeable gallery |
+| **🌍 Translator** | Translate text, images (OCR), and audio across 50+ languages - offline |
 | **🎙️ Transcriber** | Convert speech to text with on-device processing |
 | **🛡️ Scam Detector** | Analyze messages and images for phishing with risk assessment |
+
+### ✨ Vibes & Creators (New in v1.2)
+- **creAItor**: Instant persona generation. Just describe a character ("A grumpy cat that loves lasagna"), and the on-device LLM generates a complex system prompt (PCTF format) to bring them to life.
+- **Vibe Coder**: A full on-device coding environment. The LLM writes HTML/JS/CSS based on your requirements, and you can preview/run the app instantly in a secure sandbox.
 
 ### 🔐 Privacy First
 - **100% on-device processing** - no internet required for inference
@@ -103,6 +109,18 @@ To use private or gated models, add your HuggingFace token to `local.properties`
 HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 Save and sync Gradle in Android Studio; the app will read `BuildConfig.HF_TOKEN` at build time.
+
+### Model License Acceptance
+Some models on HuggingFace (especially from Google and Meta) require explicit license acceptance before downloading. When building the app locally:
+
+1. Ensure you have a valid HuggingFace read token in `local.properties` (see above)
+2. **For each model you want to download:**
+   - Visit the model's HuggingFace page (e.g., https://huggingface.co/google/gemma-3n-E2B-it-litert-lm)
+   - Click the "Access repository" or license acceptance button
+   - Grant consent to the model's license terms
+   - Try downloading the model in the app again
+
+**Note:** This is only required for local development builds. The Play Store version uses different authentication and does not require manual license acceptance for each model.
 
 Contributing
 - Fork → branch → PR. See CONTRIBUTING.md (or open an issue/discussion if unsure).
