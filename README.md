@@ -2,6 +2,11 @@
 
 **LLM Hub** is an open-source Android app for on-device LLM chat and image generation. It's optimized for mobile usage (CPU/GPU/NPU acceleration) and supports multiple model formats so you can run powerful models locally and privately.
 
+## Download
+
+[Get it on Google Play](https://play.google.com/store/apps/details?id=com.llmhub.llmhub)
+
+
 ## 📸 Screenshots
 
 <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;">
@@ -117,4 +122,5 @@ Notes
 
 ---
 *If you want, I can also add a short “Release notes / changelog” section and a quick performance guide for device profiles.*
+
 
