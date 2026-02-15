@@ -74,12 +74,14 @@ fun getLocalizedModelName(model: LLMModel): String {
 @Composable
 fun ChatScreen(
     chatId: String,
+    creatorId: String? = null,
     viewModelFactory: ChatViewModelFactory,
     onNavigateToSettings: () -> Unit,
     onNavigateToModels: () -> Unit,
     onNavigateToChat: (String) -> Unit,
+    onNavigateToCreatorChat: (String) -> Unit,
     onNavigateBack: () -> Unit,
-    drawerState: androidx.compose.material3.DrawerState
+    drawerState: DrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 ) {
     val viewModel: ChatViewModel = viewModel(
         key = "chat_$chatId",
@@ -136,8 +138,9 @@ fun ChatScreen(
     }
 
     // Initialize chat - only run once per chatId or when context changes
-    LaunchedEffect(chatId) {
-        viewModel.initializeChat(chatId, context)
+    // Initialize chat - only run once per chatId/creatorId or when context changes
+    LaunchedEffect(chatId, creatorId) {
+        viewModel.initializeChat(chatId, context, creatorId)
     }
     
     // Sync model state immediately to show icons
@@ -183,6 +186,12 @@ fun ChatScreen(
                     }
                     onNavigateToModels()
                 },
+                onNavigateToCreatorChat = { creatorId ->
+                    coroutineScope.launch {
+                        drawerState.close()
+                    }
+                    onNavigateToCreatorChat(creatorId)
+                },
                 onNavigateBack = {
                     coroutineScope.launch {
                         drawerState.close()
@@ -216,59 +225,86 @@ fun ChatScreen(
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis
                             )
-                            // Show model in header only when one is actually loaded (not just selected).
-                            currentlyLoadedModel?.let { model ->
-                                val currentModel = model
+                            // Determine which model we SHOULD be showing (target model)
+                            val targetModelName = selectedModel?.name ?: currentChat?.modelName
+                            val isTargetModelLoaded = targetModelName != null && currentlyLoadedModel?.name == targetModelName
+                            
+                            // Get model object for capabilities if available
+                            val targetModel = selectedModel ?: (if (isTargetModelLoaded) currentlyLoadedModel else null) 
+                                ?: availableModels.find { it.name == targetModelName }
+
+                            if (targetModelName != null) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = getLocalizedModelName(model),
+                                        text = if (targetModel != null) getLocalizedModelName(targetModel) else targetModelName,
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
-                                    // Use the currently loaded model state to show icons
-                                    if (viewModel.currentModelSupportsVision()) {
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Icon(
-                                            Icons.Default.RemoveRedEye,
-                                            contentDescription = stringResource(R.string.vision_enabled),
-                                            modifier = Modifier.size(12.dp),
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
+                                    
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    
+                                    if (isTargetModelLoaded) {
+                                        // Model IS loaded - show capabilities
+                                        if (viewModel.currentModelSupportsVision()) {
+                                            Icon(
+                                                Icons.Default.RemoveRedEye,
+                                                contentDescription = stringResource(R.string.vision_enabled),
+                                                modifier = Modifier.size(12.dp),
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                        }
+                                        if (targetModel?.supportsAudio == true && !viewModel.isAudioCurrentlyDisabled()) {
+                                            Icon(
+                                                Icons.Default.Mic,
+                                                contentDescription = "Audio enabled",
+                                                modifier = Modifier.size(12.dp),
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                        }
+                                        if (targetModel?.name?.contains("Thinking", ignoreCase = true) == true) {
+                                            Icon(
+                                                Icons.Default.Psychology,
+                                                contentDescription = stringResource(R.string.thinking_label),
+                                                modifier = Modifier.size(12.dp),
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                        }
+                                        if (viewModel.isGpuBackendEnabled()) {
+                                            val isNpu = selectedNpuDeviceId?.startsWith("HTP", ignoreCase = true) == true
+                                            Icon(
+                                                if (isNpu) Icons.Default.Bolt else Icons.Default.Speed,
+                                                contentDescription = if (isNpu) "NPU enabled" else "GPU enabled",
+                                                modifier = Modifier.size(12.dp),
+                                                tint = MaterialTheme.colorScheme.secondary
+                                            )
+                                        }
+                                    } else {
+                                        // Model is NOT loaded - show status chip
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(MaterialTheme.colorScheme.errorContainer)
+                                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = stringResource(R.string.not_loaded), 
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
                                     }
-                                    if (currentModel?.supportsAudio == true && !viewModel.isAudioCurrentlyDisabled()) {
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Icon(
-                                            Icons.Default.Mic,
-                                            contentDescription = "Audio enabled",
-                                            modifier = Modifier.size(12.dp),
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                    if (currentModel?.name?.contains("Thinking", ignoreCase = true) == true) {
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Icon(
-                                            Icons.Default.Psychology,
-                                            contentDescription = stringResource(R.string.thinking_label),
-                                            modifier = Modifier.size(12.dp),
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                    if (viewModel.isGpuBackendEnabled()) {
-                                        val isNpu = selectedNpuDeviceId?.startsWith("HTP", ignoreCase = true) == true
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Icon(
-                                            if (isNpu) Icons.Default.Bolt else Icons.Default.Speed,
-                                            contentDescription = if (isNpu) "NPU enabled" else "GPU enabled",
-                                            modifier = Modifier.size(12.dp),
-                                            tint = MaterialTheme.colorScheme.secondary
-                                        )
-                                    }
-                                    // RAG indicator removed from top bar
-                                    // Show RAG enabled indicator when embeddings are enabled
+
+                                    // RAG indicator - show if enabled regardless of model load status
                                     if (isEmbeddingEnabled) {
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Box(
@@ -294,15 +330,31 @@ fun ChatScreen(
                     },
                     navigationIcon = {
                         IconButton(onClick = {
-                            coroutineScope.launch { drawerState.open() }
+                            coroutineScope.launch {
+                                // Close drawer if open (though usually it's closed here)
+                                drawerState.close()
+                            }
+                            onNavigateBack()
                         }) {
                             Icon(
-                                imageVector = Icons.Default.Menu,
-                                contentDescription = "Menu"
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = stringResource(R.string.back)
                             )
                         }
                     },
+
                     actions = {
+                        // Menu button - opens drawer
+                        IconButton(
+                            onClick = { coroutineScope.launch { drawerState.open() } }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = "Menu",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
                         // Settings button - opens bottom sheet for model selection and config
                         IconButton(
                             onClick = { showSettingsSheet = true }
@@ -343,10 +395,15 @@ fun ChatScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 contentAlignment = Alignment.Center
                             ) {
+                                // Calculate target model status for welcome message
+                                val targetModelName = selectedModel?.name ?: currentChat?.modelName
+                                val isTargetModelLoaded = targetModelName != null && currentlyLoadedModel?.name == targetModelName
+                                
                                 WelcomeMessage(
                                     currentModel = currentChat?.modelName ?: stringResource(R.string.no_model_selected),
                                     onNavigateToModels = onNavigateToModels,
-                                    hasDownloadedModels = viewModel.hasDownloadedModels()
+                                    hasDownloadedModels = viewModel.hasDownloadedModels(),
+                                    isModelLoaded = isTargetModelLoaded
                                 )
                             }
                         }
@@ -488,12 +545,13 @@ fun ChatScreen(
         )
     }
 }
-    
+
 @Composable
 private fun WelcomeMessage(
     currentModel: String,
     onNavigateToModels: () -> Unit,
-    hasDownloadedModels: Boolean
+    hasDownloadedModels: Boolean,
+    isModelLoaded: Boolean = false
 ) {
     ModernCard(
         modifier = Modifier
@@ -566,12 +624,21 @@ private fun WelcomeMessage(
                 } else {
                     // Ensure the chip is horizontally centered even in landscape/tablet widths
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                        StatusChip(
-                            text = currentModel,
-                            icon = Icons.Default.Link,
-                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-                        )
+                        if (isModelLoaded) {
+                            StatusChip(
+                                text = currentModel,
+                                icon = Icons.Default.Link,
+                                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        } else {
+                            StatusChip(
+                                text = "$currentModel (${stringResource(R.string.not_loaded)})",
+                                icon = Icons.Default.Warning,
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(

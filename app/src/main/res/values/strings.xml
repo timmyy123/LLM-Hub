@@ -206,6 +206,7 @@
     <string name="model_supports_vision">Supports vision</string>
     <string name="model_supports_multimodal">Supports multimodal</string>
     <string name="model_text_only">Text only</string>
+    <string name="not_loaded">Not Loaded</string>
     
     <!-- Chat Drawer -->
     <string name="drawer_title">LLM Hub</string>
@@ -217,12 +218,16 @@
     <string name="drawer_settings">Settings</string>
     
     <!-- Chat Management -->
+    <string name="dialog_rename_chat_title">Rename Chat</string>
+    <string name="chat_title">Chat Title</string>
+    <string name="more_options">More Options</string>
     <string name="dialog_delete_all_chats_title">Delete All Chats?</string>
     <string name="dialog_delete_all_chats_message">This will permanently delete all conversation history. This action cannot be undone.</string>
     <string name="dialog_delete_chat_title">Delete Chat?</string>
     <string name="dialog_delete_chat_message">Delete conversation \"%1$s\"?</string>
     <string name="action_delete_all">Delete All</string>
     <string name="action_delete">Delete</string>
+    <string name="action_rename">Rename</string>
     <string name="action_cancel">Cancel</string>
     <string name="content_description_delete_chat">Delete Chat</string>
     
@@ -449,6 +454,24 @@
     <string name="feature_scam_detector_desc">Analyze text, images, or URLs for potential scams</string>
     <string name="feature_image_generator">Image Generator</string>
     <string name="feature_image_generator_desc">Generate images from text prompts with AI</string>
+    <string name="feature_vibe_coder">Vibes</string>
+    <string name="feature_vibe_coder_desc">Generate HTML, JavaScript, and Python code with AI</string>
+    <string name="feature_creator_generation">creAItors</string>
+    <string name="feature_creator_generation_desc">Create your own custom AI personas</string>
+    <string name="drawer_my_creators">my creAItors</string>
+    
+    <!-- Vibe Coder Screen -->
+    <string name="vibe_coder_title">Vibes</string>
+    <string name="vibe_coder_prompt_label">What would you like to code?</string>
+    <string name="vibe_coder_prompt_hint">Describe the code you want to generate...</string>
+    <string name="vibe_coder_generate">Generate Code</string>
+    <string name="vibe_coder_generating">Generating code...</string>
+    <string name="vibe_coder_generated_code">Generated Code</string>
+    <string name="vibe_coder_copy">Copy</string>
+    <string name="vibe_coder_preview">Preview</string>
+    <string name="vibe_coder_no_model">No model loaded. Please download and select a model first.</string>
+    <string name="vibe_coder_settings">Settings</string>
+    <string name="vibe_coder_backend_select">Select Backend</string>
     
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">Writing Aid</string>

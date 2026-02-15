@@ -6,7 +6,7 @@
 
 <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;">
    <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
-      <img src="assets/screenshots/Screenshot_20251007_041833_LLM%20Hub.jpg" alt="AI Models" style="width:300px;height:auto;border-radius:8px;display:block;" />
+      <img src="assets\screenshots\Screenshot_20260214_201455.png" alt="AI Models" style="width:300px;height:auto;border-radius:8px;display:block;" />
    </figure>
    <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
       <img src="assets/screenshots/Screenshot_20251007_042114_LLM%20Hub.jpg" alt="AI Features" style="width:300px;height:auto;border-radius:8px;display:block;" />
@@ -18,17 +18,29 @@
 
 ## 🚀 Features
 
-### 🛠️ Six AI Tools
+### 🛠️ AI Tools Suite
 | Tool | Description |
 |------|-------------|
-| **💬 Chat** | Multi-turn conversations with RAG memory, web search, TTS auto-readout, and multimodal input (text, images, audio) |
+| **💬 Chat** | Multi-turn conversations with RAG memory, web search, TTS auto-readout, and multimodal input |
+| **🤖 creAItor** | **[NEW]** Design custom AI personas with specialized system prompts (PCTF) in seconds |
+| **💻 Vibe Coder** | **[NEW]** Explain your app idea and watch it be built in real-time with live HTML/JS preview |
 | **✍️ Writing Aid** | Summarize, expand, rewrite, improve grammar, or generate code from descriptions |
-| **🎨 Image Generator** | Create images from text prompts using Stable Diffusion 1.5 with swipeable gallery for variations |
-| **🌍 Translator** | Translate text, images (OCR), and audio across 50+ languages - works offline |
+| **🎨 Image Generator** | Create images from text prompts using Stable Diffusion 1.5 with swipeable gallery |
+| **🌍 Translator** | Translate text, images (OCR), and audio across 50+ languages - offline |
 | **🎙️ Transcriber** | Convert speech to text with on-device processing |
 | **🛡️ Scam Detector** | Analyze messages and images for phishing with risk assessment |
 
-### 🔐 Privacy First
+### ✨ Vibes & Creators
+- **Vibes**: A full on-device coding environment. The LLM writes HTML/JS/CSS based on your requirements, and you can preview/run the app instantly in a secure sandbox.
+- **creAItor**: Powerful persona generation to create anything from characters with fun personalities to system architects. Just describe a creAItor ("respond like a pirate" or "respond with a markdown spec for a code agent to generate a full-stack system"), and the on-device LLM generates a complex system prompt (PCTF format) that you can use in chat.
+
+###  Kid Mode
+Activate this in Settings under Kid Mode. Set a PIN, and the mode will remain in effect until you unlock it with the same PIN.
+- **Safe Exploration**: Families can introduce children to private local AI with confidence.
+- **Model-Level Guardrails**: Automatically activates strict safety protocols at the model inference layer across **all** tools (Chat, Writing Aid, Image Gen, etc.).
+- **Peace of Mind**: Ensures all generated content is age-appropriate without compromising the privacy benefits of on-device processing.
+
+### �🔐 Privacy First
 - **100% on-device processing** - no internet required for inference
 - **Zero data collection** - conversations never leave your device
 - **No accounts, no tracking** - completely private
@@ -96,6 +108,18 @@ To use private or gated models, add your HuggingFace token to `local.properties`
 HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 Save and sync Gradle in Android Studio; the app will read `BuildConfig.HF_TOKEN` at build time.
+
+### Model License Acceptance
+Some models on HuggingFace (especially from Google and Meta) require explicit license acceptance before downloading. When building the app locally:
+
+1. Ensure you have a valid HuggingFace read token in `local.properties` (see above)
+2. **For each model you want to download:**
+   - Visit the model's HuggingFace page (e.g., https://huggingface.co/google/gemma-3n-E2B-it-litert-lm)
+   - Click the "Access repository" or license acceptance button
+   - Grant consent to the model's license terms
+   - Try downloading the model in the app again
+
+**Note:** This is only required for local development builds. The Play Store version uses different authentication and does not require manual license acceptance for each model.
 
 Contributing
 - Fork → branch → PR. See CONTRIBUTING.md (or open an issue/discussion if unsure).

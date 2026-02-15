@@ -33,6 +33,168 @@ class ModelDownloader(
     private val hfToken: String? = null // optional Hugging Face access token
 ) {
 
+    /**
+     * Validates if the HuggingFace token has access to a specific model by testing a HEAD request
+     * to the file itself. This is more accurate than the API for gated/private models.
+     * Returns a detailed message about the access status.
+     */
+    fun validateTokenAccess(repoId: String, fileUrl: String? = null): String {
+        return try {
+            // If we have the actual file URL, test access directly (most reliable)
+            if (!fileUrl.isNullOrBlank()) {
+                Log.i(TAG, "Testing token access via HEAD request to file: $fileUrl")
+                
+                val url = URL(fileUrl)
+                val connection = (url.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "HEAD"
+                    connectTimeout = 10_000
+                    readTimeout = 10_000
+                    instanceFollowRedirects = false // Don't auto-follow, we want to see the actual response
+                    setRequestProperty("User-Agent", "Mozilla/5.0")
+                    if (!hfToken.isNullOrBlank()) {
+                        setRequestProperty("Authorization", "Bearer $hfToken")
+                        Log.d(TAG, "[validateTokenAccess] Sending Authorization header for HEAD request")
+                    }
+                }
+
+                val responseCode = connection.responseCode
+                Log.d(TAG, "HEAD request response code: $responseCode")
+                connection.disconnect()
+
+                return when (responseCode) {
+                    in 200..299, 206 -> {
+                        "✓ Token HAS ACCESS to the model file"
+                    }
+                    401 -> {
+                        "✗ Token is INVALID or REVOKED (HTTP 401).\n" +
+                        "Check: local.properties has correct HF_TOKEN\n" +
+                        "Visit: https://huggingface.co/settings/tokens to verify"
+                    }
+                    403 -> {
+                        "✗ Access DENIED (HTTP 403).\n" +
+                        "This model may be GATED and require:\n" +
+                        "  1. Accepting the license on HuggingFace\n" +
+                        "  2. Using a token with sufficient permissions\n" +
+                        "Visit: https://huggingface.co/$repoId"
+                    }
+                    404 -> {
+                        "✗ File not found (HTTP 404).\nCheck: File path/name in model config"
+                    }
+                    else -> {
+                        "✗ HTTP $responseCode - Unexpected response from HuggingFace"
+                    }
+                }
+            }
+
+            // Fallback: Try API endpoint
+            val parts = repoId.split("/")
+            if (parts.size < 2) {
+                return "Invalid repo format. Expected: owner/repo_name"
+            }
+
+            Log.i(TAG, "Checking token access via HuggingFace API for repo: $repoId")
+            val apiUrl = "https://huggingface.co/api/models/$repoId"
+            
+            val url = URL(apiUrl)
+            val connection = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "HEAD"
+                connectTimeout = 10_000
+                readTimeout = 10_000
+                instanceFollowRedirects = false
+                setRequestProperty("User-Agent", "Mozilla/5.0")
+                if (!hfToken.isNullOrBlank()) {
+                    setRequestProperty("Authorization", "Bearer $hfToken")
+                }
+            }
+
+            val responseCode = connection.responseCode
+            Log.d(TAG, "API HEAD response code: $responseCode")
+            connection.disconnect()
+
+            when (responseCode) {
+                in 200..299 -> "✓ Repo exists and token has access"
+                401 -> "✗ Token invalid/expired (HTTP 401)"
+                403 -> "✗ Access denied - likely gated model (HTTP 403)\nVisit: https://huggingface.co/$repoId to accept license"
+                404 -> "✗ Repo not found (HTTP 404) or is private without access"
+                else -> "⚠ HTTP $responseCode - unclear access status"
+            }
+        } catch (e: Exception) {
+            "⚠ Could not validate token: ${e.message}"
+        }
+    }
+
+    /**
+     * Opens an HttpURLConnection with proper redirect handling that preserves Authorization headers.
+     * HuggingFace redirects downloads, but Java's default behavior drops auth headers on redirect.
+     * This manually follows redirects while re-applying the Authorization header each time.
+     */
+    private fun openConnectionWithAuthRedirects(initialUrl: String, rangeStart: Long? = null): HttpURLConnection {
+        var currentUrl = initialUrl
+        var redirectCount = 0
+        val maxRedirects = 10
+
+        while (redirectCount < maxRedirects) {
+            val url = URL(currentUrl)
+            val connection = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                connectTimeout = 15_000
+                readTimeout = 60_000
+                instanceFollowRedirects = false // Manually handle redirects to preserve auth header
+                setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+                if (!hfToken.isNullOrBlank()) {
+                    setRequestProperty("Authorization", "Bearer $hfToken")
+                }
+                if (rangeStart != null && rangeStart > 0) {
+                    setRequestProperty("Range", "bytes=$rangeStart-")
+                }
+            }
+
+            val responseCode = connection.responseCode
+            Log.d(TAG, "Connection attempt $redirectCount: HTTP $responseCode from $currentUrl")
+
+            when {
+                responseCode in 200..299 || responseCode == 206 -> {
+                    // Success - return connection
+                    return connection
+                }
+                responseCode in 301..308 -> {
+                    // Redirect - close this connection and follow it
+                    val location = connection.getHeaderField("Location")
+                    connection.disconnect()
+                    if (location == null) {
+                        throw RuntimeException("HTTP $responseCode received but no Location header found")
+                    }
+                    currentUrl = location
+                    redirectCount++
+                    Log.d(TAG, "Redirect: $responseCode to $location")
+                }
+                else -> {
+                    // Error
+                    connection.disconnect()
+                    
+                    // For 403 errors, try to provide diagnostic information
+                    val errorMsg = if (responseCode == 403) {
+                        try {
+                            // Try to extract repo ID from URL (format: https://huggingface.co/owner/repo/resolve/...)
+                            val repoMatch = Regex("huggingface\\.co/([^/]+/[^/]+)").find(currentUrl)
+                            val repoId = repoMatch?.groupValues?.get(1) ?: "unknown/repo"
+                            val diagnostics = validateTokenAccess(repoId, currentUrl)
+                            "HTTP 403 Forbidden at URL $currentUrl\n\nDiagnosis:\n$diagnostics"
+                        } catch (diagError: Exception) {
+                            "HTTP $responseCode at URL $currentUrl (diagnosis failed: ${diagError.message})"
+                        }
+                    } else {
+                        "HTTP $responseCode at URL $currentUrl"
+                    }
+                    
+                    throw RuntimeException("Download failed with $errorMsg")
+                }
+            }
+        }
+
+        throw RuntimeException("Too many redirects (>$maxRedirects) for URL $initialUrl")
+    }
+
     fun downloadModel(model: LLMModel): Flow<DownloadStatus> = flow {
         Log.i(TAG, "Preparing to download model: ${model.name} from ${model.url}")
         
@@ -102,22 +264,7 @@ class ModelDownloader(
         emit(DownloadStatus(downloadedBytes, if (inferredTotalBytes > 0) inferredTotalBytes else 0L, 0))
         Log.d(TAG, "Start downloading ${model.name} from byte $downloadedBytes")
 
-        val url = URL(model.url)
-        val connection = (url.openConnection() as HttpURLConnection).apply {
-            requestMethod = "GET"
-            connectTimeout = 15_000
-            readTimeout = 60_000
-            instanceFollowRedirects = true
-            setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-            if (!hfToken.isNullOrBlank()) {
-                Log.d(TAG, "[downloadModel] Setting Authorization header: Bearer "+hfToken.take(8)+"...")
-                setRequestProperty("Authorization", "Bearer $hfToken")
-            }
-            // If resuming, set Range header
-            if (downloadedBytes > 0) {
-                setRequestProperty("Range", "bytes=$downloadedBytes-")
-            }
-        }
+        val connection = openConnectionWithAuthRedirects(model.url, if (downloadedBytes > 0) downloadedBytes else null)
 
         val responseCode = connection.responseCode
         
@@ -239,17 +386,7 @@ class ModelDownloader(
         
         // Step 1: Download manifest.json
         Log.d(TAG, "Downloading manifest from: ${model.url}")
-        val manifestUrl = URL(model.url)
-        val connection = (manifestUrl.openConnection() as HttpURLConnection).apply {
-            requestMethod = "GET"
-            connectTimeout = 15_000
-            readTimeout = 30_000
-            instanceFollowRedirects = true
-            setRequestProperty("User-Agent", "Mozilla/5.0")
-            if (!hfToken.isNullOrBlank()) {
-                setRequestProperty("Authorization", "Bearer $hfToken")
-            }
-        }
+        val connection = openConnectionWithAuthRedirects(model.url)
         
         val manifestJson = connection.inputStream.bufferedReader().use { it.readText() }
         connection.disconnect()
@@ -301,17 +438,8 @@ class ModelDownloader(
             // Download the file
             filesDownloaded++
             Log.d(TAG, "Downloading ($filesDownloaded/$totalFiles): $fileName")
-            val fileUrl = URL(baseUrl + fileName)
-            val fileConnection = (fileUrl.openConnection() as HttpURLConnection).apply {
-                requestMethod = "GET"
-                connectTimeout = 15_000
-                readTimeout = 60_000
-                instanceFollowRedirects = true
-                setRequestProperty("User-Agent", "Mozilla/5.0")
-                if (!hfToken.isNullOrBlank()) {
-                    setRequestProperty("Authorization", "Bearer $hfToken")
-                }
-            }
+            val fileUrl = baseUrl + fileName
+            val fileConnection = openConnectionWithAuthRedirects(fileUrl)
             
             try {
                 fileConnection.inputStream.use { input ->
@@ -409,35 +537,16 @@ class ModelDownloader(
         if (!zipFile.exists() || zipFile.length() < model.sizeBytes * 0.9) {
             Log.d(TAG, "Downloading ZIP from: ${model.url}")
             
-            val url = URL(model.url)
             // Support resume: if a partial zip exists, request Range header and append to file
             val existingBytes = if (zipFile.exists()) zipFile.length() else 0L
 
-            val connection = (url.openConnection() as HttpURLConnection).apply {
-                requestMethod = "GET"
-                connectTimeout = 15_000
-                readTimeout = 60_000
-                instanceFollowRedirects = true
-                setRequestProperty("User-Agent", "Mozilla/5.0")
-                if (!hfToken.isNullOrBlank()) {
-                    setRequestProperty("Authorization", "Bearer $hfToken")
-                }
-                if (existingBytes > 0L) {
-                    // Ask server to send remaining bytes
-                    setRequestProperty("Range", "bytes=$existingBytes-")
-                    Log.d(TAG, "Requesting Range: bytes=$existingBytes-")
-                }
-            }
-
+            val connection = openConnectionWithAuthRedirects(model.url, if (existingBytes > 0) existingBytes else null)
+            
             val responseCode = connection.responseCode
             val acceptRanges = connection.getHeaderField("Accept-Ranges")
             val contentRangeHeader = connection.getHeaderField("Content-Range")
             val contentLengthHeader = connection.getHeaderField("Content-Length")
             Log.d(TAG, "ZIP download HTTP response: $responseCode, Accept-Ranges=$acceptRanges, Content-Range=$contentRangeHeader, Content-Length=$contentLengthHeader, localZipSize=$existingBytes")
-            if (responseCode !in 200..299 && responseCode != 206) {
-                connection.disconnect()
-                throw RuntimeException("Download failed with HTTP $responseCode")
-            }
 
             // Compute total bytes: if server returned 206 with Content-Range/Content-Length, account for existing
             val totalBytes = when {
@@ -622,17 +731,7 @@ class ModelDownloader(
             
             Log.d(TAG, "Downloading ($currentFileIndex/${allFiles.size}): $fileName from $fileUrl -> target: ${targetFile.absolutePath}")
             
-            val url = URL(fileUrl)
-            val connection = (url.openConnection() as HttpURLConnection).apply {
-                requestMethod = "GET"
-                connectTimeout = 15_000
-                readTimeout = 60_000
-                instanceFollowRedirects = true
-                setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-                if (!hfToken.isNullOrBlank()) {
-                    setRequestProperty("Authorization", "Bearer $hfToken")
-                }
-            }
+            val connection = openConnectionWithAuthRedirects(fileUrl)
             
             val responseCode = connection.responseCode
             if (responseCode !in 200..299) {
@@ -810,20 +909,7 @@ class ModelDownloader(
             var fileTotalBytes = -1L // Unknown initially
             
             // Connect to check size / resume
-             val url = URL(fileUrl)
-             val connection = (url.openConnection() as HttpURLConnection).apply {
-                requestMethod = "GET"
-                connectTimeout = 15_000
-                readTimeout = 60_000
-                instanceFollowRedirects = true
-                setRequestProperty("User-Agent", "Mozilla/5.0")
-                if (!hfToken.isNullOrBlank()) {
-                    setRequestProperty("Authorization", "Bearer $hfToken")
-                }
-                if (existingBytes > 0) {
-                    setRequestProperty("Range", "bytes=$existingBytes-")
-                }
-            }
+             val connection = openConnectionWithAuthRedirects(fileUrl, if (existingBytes > 0) existingBytes else null)
             
             try {
                 val responseCode = connection.responseCode
