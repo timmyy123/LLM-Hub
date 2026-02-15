@@ -6,7 +6,7 @@
 
 <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;">
    <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
-      <img src="assets/screenshots/Screenshot_20251007_041833_LLM%20Hub.jpg" alt="AI Models" style="width:300px;height:auto;border-radius:8px;display:block;" />
+      <img src="assets\screenshots\Screenshot_20260214_201455.png" alt="AI Models" style="width:300px;height:auto;border-radius:8px;display:block;" />
    </figure>
    <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
       <img src="assets/screenshots/Screenshot_20251007_042114_LLM%20Hub.jpg" alt="AI Features" style="width:300px;height:auto;border-radius:8px;display:block;" />
@@ -30,11 +30,17 @@
 | **🎙️ Transcriber** | Convert speech to text with on-device processing |
 | **🛡️ Scam Detector** | Analyze messages and images for phishing with risk assessment |
 
-### ✨ Vibes & Creators (New in v1.2)
+### ✨ Vibes & Creators
 - **creAItor**: Instant persona generation. Just describe a character ("A grumpy cat that loves lasagna"), and the on-device LLM generates a complex system prompt (PCTF format) to bring them to life.
-- **Vibe Coder**: A full on-device coding environment. The LLM writes HTML/JS/CSS based on your requirements, and you can preview/run the app instantly in a secure sandbox.
+- **Vibesr**: A full on-device coding environment. The LLM writes HTML/JS/CSS based on your requirements, and you can preview/run the app instantly in a secure sandbox.
 
-### 🔐 Privacy First
+### � Kid Mode
+Activate this in Settings under Kid Mode. Set a PIN, and the mode will remain in effect until you unlock it with the same PIN.
+- **Safe Exploration**: Families can introduce children to private local AI with confidence.
+- **Model-Level Guardrails**: Automatically activates strict safety protocols at the model inference layer across **all** tools (Chat, Writing Aid, Image Gen, etc.).
+- **Peace of Mind**: Ensures all generated content is age-appropriate without compromising the privacy benefits of on-device processing.
+
+### �🔐 Privacy First
 - **100% on-device processing** - no internet required for inference
 - **Zero data collection** - conversations never leave your device
 - **No accounts, no tracking** - completely private
