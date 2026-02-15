@@ -599,6 +599,19 @@ class MediaPipeInferenceService(private val applicationContext: Context) : Infer
     override suspend fun generateResponse(prompt: String, model: LLMModel): String {
         ensureModelLoaded(model)
         
+        // Inject Kid Mode Instruction if enabled (Global Injection)
+        val kidModeManager = com.llmhub.llmhub.utils.KidModeManager(applicationContext)
+        var finalPrompt = prompt
+        if (kidModeManager.isKidModeEnabled.value) {
+            Log.d(TAG, "Global Injection: Injecting Kid Mode Instruction")
+            val kidInstruction = com.llmhub.llmhub.utils.KidModeManager.SYSTEM_INSTRUCTION
+            if (finalPrompt.startsWith("system:")) {
+                finalPrompt = finalPrompt.replaceFirst("system:", "system: $kidInstruction\n\n")
+            } else {
+                finalPrompt = "system: $kidInstruction\n\n$finalPrompt"
+            }
+        }
+        
         return withContext(Dispatchers.IO) {
             val responseBuilder = StringBuilder()
             var localSession: LlmInferenceSession? = null
@@ -611,7 +624,7 @@ class MediaPipeInferenceService(private val applicationContext: Context) : Infer
                 var isComplete = false
                 
                 // Add query to session
-                localSession.addQueryChunk(prompt)
+                localSession.addQueryChunk(finalPrompt)
                 
                 // Generate response synchronously
                 localSession.generateResponseAsync { partialResult, done ->
@@ -639,6 +652,19 @@ class MediaPipeInferenceService(private val applicationContext: Context) : Infer
     
     override suspend fun generateResponseStream(prompt: String, model: LLMModel): Flow<String> = callbackFlow {
         ensureModelLoaded(model)
+
+        // Inject Kid Mode Instruction if enabled (Global Injection)
+        val kidModeManager = com.llmhub.llmhub.utils.KidModeManager(applicationContext)
+        var finalPrompt = prompt
+        if (kidModeManager.isKidModeEnabled.value) {
+            Log.d(TAG, "Global Injection: Injecting Kid Mode Instruction")
+            val kidInstruction = com.llmhub.llmhub.utils.KidModeManager.SYSTEM_INSTRUCTION
+            if (finalPrompt.startsWith("system:")) {
+                finalPrompt = finalPrompt.replaceFirst("system:", "system: $kidInstruction\n\n")
+            } else {
+                finalPrompt = "system: $kidInstruction\n\n$finalPrompt"
+            }
+        }
         
         val localSession = try {
             val engine = modelInstance?.engine
@@ -653,7 +679,7 @@ class MediaPipeInferenceService(private val applicationContext: Context) : Infer
         var isGenerationComplete = false
         
         try {
-            localSession.addQueryChunk(prompt)
+            localSession.addQueryChunk(finalPrompt)
             localSession.generateResponseAsync { partialResult, done ->
                 if (!isClosedForSend) {
                     trySend(partialResult)
@@ -711,6 +737,9 @@ class MediaPipeInferenceService(private val applicationContext: Context) : Infer
         val currentUserMessage = extractCurrentUserMessage(prompt)
         val needsWebSearch = webSearchEnabled && SearchIntentDetector.needsWebSearch(currentUserMessage)
         var enhancedPrompt = prompt
+
+        // Inject Kid Mode Instruction if enabled (Global Injection) - MOVED DOWN
+        // to prevent overwrite by Web Search logic
         
         try {
             if (needsWebSearch) {
@@ -868,10 +897,26 @@ class MediaPipeInferenceService(private val applicationContext: Context) : Infer
                 }
             }
             
+            
             // Now use the session (either existing or freshly reset)
             val currentSession = instance.session
             // Update estimation after any reset
             currentTokens = estimatedSessionTokens
+
+            // Inject Kid Mode Instruction if enabled (Global Injection) - Check AGAIN
+            // This ensures we inject even if Web Search modified the prompt.
+            val kidModeManager = com.llmhub.llmhub.utils.KidModeManager(applicationContext)
+            if (kidModeManager.isKidModeEnabled.value) {
+                Log.d(TAG, "Global Injection: Injecting Kid Mode Instruction (Final Stage)")
+                val kidInstruction = com.llmhub.llmhub.utils.KidModeManager.SYSTEM_INSTRUCTION
+                if (enhancedPrompt.startsWith("system:")) {
+                    enhancedPrompt = enhancedPrompt.replaceFirst("system:", "system: $kidInstruction\n\n")
+                } else {
+                    // If prompt was enhanced by web search, it might not have "system:" prefix anymore but is just text.
+                    // We just prepend the instruction.
+                    enhancedPrompt = "system: $kidInstruction\n\n$enhancedPrompt"
+                }
+            }
             
             // CRITICAL: For vision models, text query MUST be added before images
             // This is required by MediaPipe's vision implementation

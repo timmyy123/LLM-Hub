@@ -964,6 +964,10 @@ class ChatViewModel(
                 }
             }
 
+            // Check if this is the first message (before adding the new one)
+            // We check if the list is empty OR if there are no user messages yet
+            val isFirstUserMessage = _messages.value.none { it.isFromUser }
+
             repository.addMessage(
                 chatId = chatId,
                 content = finalMessageContent,
@@ -973,8 +977,10 @@ class ChatViewModel(
                 attachmentFileName = attachmentFileInfo?.name,
                 attachmentFileSize = attachmentFileInfo?.size
             )
+            // Note: _messages flow might not strictly update immediately, so we use our pre-check
+            // Retrieve ID of the just-added message for potential deletion during retry
             val userMessageId = _messages.value.lastOrNull { it.isFromUser && it.chatId == chatId }?.id
-            
+
             // Debug logging for file size
             if (attachmentFileInfo != null) {
                 Log.d("ChatViewModel", "Adding message with attachment:")
@@ -984,7 +990,7 @@ class ChatViewModel(
             }
 
             // The first message sets the title
-            if (_messages.value.size == 1) {
+            if (isFirstUserMessage) {
                 val chatTitle = when {
                     messageText.isNotEmpty() -> messageText.take(50)
                     attachmentFileInfo?.type == FileUtils.SupportedFileType.AUDIO -> context.getString(R.string.audio_message)
@@ -992,7 +998,8 @@ class ChatViewModel(
                     attachmentFileInfo != null -> "📄 ${attachmentFileInfo.name.take(30)}"
                     else -> context.getString(R.string.drawer_new_chat)
                 }
-                repository.updateChatTitle(chatId, chatTitle)
+                repository.updateChatTitle(chatId, chatTitle.trim())
+                // Force update current chat to reflect title change immediately in UI
                 _currentChat.value = repository.getChatById(chatId)
             }
 
@@ -3100,6 +3107,16 @@ inferenceService.loadModel(currentModel!!, _selectedBackend.value, _selectedNpuD
             ragServiceManager.clearChatDocuments(chatId) // Clear RAG documents too
             if (chatId == currentChatId) {
                 _messages.value = emptyList()
+            }
+        }
+    }
+
+    fun renameChat(chatId: String, newTitle: String) {
+        viewModelScope.launch {
+            repository.updateChatTitle(chatId, newTitle.trim())
+            // Update current chat if it's the one being renamed
+            if (currentChatId == chatId) {
+                _currentChat.value = repository.getChatById(chatId)
             }
         }
     }
