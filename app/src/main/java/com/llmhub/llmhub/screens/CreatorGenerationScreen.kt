@@ -130,7 +130,7 @@ fun CreatorGenerationScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Describe the persona you want to create. Be creative! The AI will generate a specialized system prompt for you.",
+                        text = "You have the power to bring a custom AI creAItor to life. Just describe how your creAItor will respond to any input, request, or idea. Once we generate your creAItor, you'll be able to use it in chat.",
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }

@@ -31,10 +31,10 @@
 | **🛡️ Scam Detector** | Analyze messages and images for phishing with risk assessment |
 
 ### ✨ Vibes & Creators
-- **creAItor**: Instant persona generation. Just describe a character ("A grumpy cat that loves lasagna"), and the on-device LLM generates a complex system prompt (PCTF format) to bring them to life.
-- **Vibesr**: A full on-device coding environment. The LLM writes HTML/JS/CSS based on your requirements, and you can preview/run the app instantly in a secure sandbox.
+- **Vibes**: A full on-device coding environment. The LLM writes HTML/JS/CSS based on your requirements, and you can preview/run the app instantly in a secure sandbox.
+- **creAItor**: Powerful persona generation to create anything from characters with fun personalities to system architects. Just describe a creAItor ("respond like a pirate" or "respond with a markdown spec for a code agent to generate a full-stack system"), and the on-device LLM generates a complex system prompt (PCTF format) that you can use in chat.
 
-### � Kid Mode
+###  Kid Mode
 Activate this in Settings under Kid Mode. Set a PIN, and the mode will remain in effect until you unlock it with the same PIN.
 - **Safe Exploration**: Families can introduce children to private local AI with confidence.
 - **Model-Level Guardrails**: Automatically activates strict safety protocols at the model inference layer across **all** tools (Chat, Writing Aid, Image Gen, etc.).
