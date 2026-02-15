@@ -35,6 +35,7 @@ fun ChatHistoryScreen(
     val chats by viewModel.allChats.collectAsState()
     var showDeleteAllDialog by remember { mutableStateOf(false) }
     var chatToDelete by remember { mutableStateOf<ChatEntity?>(null) }
+    var chatToRename by remember { mutableStateOf<ChatEntity?>(null) }
     
     if (showDeleteAllDialog) {
         AlertDialog(
@@ -182,28 +183,75 @@ fun ChatHistoryScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(chats) { chat ->
-                    AnimatedVisibility(
-                        visible = true,
-                        enter = fadeIn() + slideInVertically()
-                    ) {
-                        ChatHistoryCard(
-                            chat = chat,
-                            onClick = { onNavigateToChat(chat.id) },
-                            onDelete = { chatToDelete = chat }
-                        )
-                    }
+                    ChatHistoryCard(
+                        chat = chat,
+                        onClick = { onNavigateToChat(chat.id) },
+                        onDelete = { chatToDelete = chat },
+                        onRename = { chatToRename = chat }
+                    )
                 }
             }
         }
     }
+    
+    if (chatToRename != null) {
+        RenameChatDialog(
+            chatTitle = chatToRename!!.title,
+            onConfirm = { newTitle ->
+                viewModel.renameChat(chatToRename!!.id, newTitle)
+                chatToRename = null
+            },
+            onDismiss = { chatToRename = null }
+        )
+    }
+}
+
+@Composable
+fun RenameChatDialog(
+    chatTitle: String,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var text by remember { mutableStateOf(chatTitle) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.dialog_rename_chat_title), fontWeight = FontWeight.Bold) },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                label = { Text(stringResource(R.string.chat_title)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(text) },
+                enabled = text.isNotBlank()
+            ) {
+                Text(stringResource(R.string.action_rename), fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_cancel))
+            }
+        },
+        shape = RoundedCornerShape(24.dp)
+    )
 }
 
 @Composable
 private fun ChatHistoryCard(
     chat: ChatEntity,
     onClick: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onRename: () -> Unit
 ) {
+    var expanded by remember { mutableStateOf(false) }
+
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -244,12 +292,46 @@ private fun ChatHistoryCard(
                     )
                 }
             }
-            IconButton(onClick = onDelete) {
-                Icon(
-                    Icons.Outlined.Delete,
-                    contentDescription = stringResource(R.string.action_delete),
-                    tint = MaterialTheme.colorScheme.error
-                )
+            Box {
+                IconButton(onClick = { expanded = true }) {
+                    Icon(
+                        Icons.Default.MoreVert,
+                        contentDescription = stringResource(R.string.more_options),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.action_rename)) },
+                        onClick = {
+                            expanded = false
+                            onRename()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Outlined.Edit,
+                                contentDescription = null
+                            )
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error) },
+                        onClick = {
+                            expanded = false
+                            onDelete()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Outlined.Delete,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    )
+                }
             }
         }
     }

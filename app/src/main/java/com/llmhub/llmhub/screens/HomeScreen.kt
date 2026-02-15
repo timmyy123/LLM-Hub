@@ -42,8 +42,8 @@ import androidx.compose.ui.platform.LocalContext
 import com.llmhub.llmhub.data.ThemePreferences
 
 data class FeatureCard(
-    val title: String,
-    val description: String,
+    val title: Int,
+    val description: Int,
     val icon: ImageVector,
     val gradient: Pair<Color, Color>,
     val route: String
@@ -68,57 +68,57 @@ fun HomeScreen(
     val features = remember {
         listOf(
             FeatureCard(
-                title = "feature_ai_chat",
-                description = "feature_ai_chat_desc",
+                title = R.string.feature_ai_chat,
+                description = R.string.feature_ai_chat_desc,
                 icon = Icons.Filled.Chat,
                 gradient = Pair(Color(0xFF667eea), Color(0xFF764ba2)),
                 route = "chat"
             ),
             FeatureCard(
-                title = "feature_writing_aid",
-                description = "feature_writing_aid_desc",
+                title = R.string.feature_writing_aid,
+                description = R.string.feature_writing_aid_desc,
                 icon = Icons.Filled.Edit,
                 gradient = Pair(Color(0xFFf093fb), Color(0xFFf5576c)),
                 route = "writing_aid"
             ),
             FeatureCard(
-                title = "feature_translator",
-                description = "feature_translator_desc",
+                title = R.string.feature_translator,
+                description = R.string.feature_translator_desc,
                 icon = Icons.Filled.Language,
                 gradient = Pair(Color(0xFF4facfe), Color(0xFF00f2fe)),
                 route = "translator"
             ),
             FeatureCard(
-                title = "feature_transcriber",
-                description = "feature_transcriber_desc",
+                title = R.string.feature_transcriber,
+                description = R.string.feature_transcriber_desc,
                 icon = Icons.Filled.Mic,
                 gradient = Pair(Color(0xFF43e97b), Color(0xFF38f9d7)),
                 route = "transcriber"
             ),
             FeatureCard(
-                title = "feature_scam_detector",
-                description = "feature_scam_detector_desc",
+                title = R.string.feature_scam_detector,
+                description = R.string.feature_scam_detector_desc,
                 icon = Icons.Filled.Security,
                 gradient = Pair(Color(0xFFfa709a), Color(0xFFfee140)),
                 route = "scam_detector"
             ),
             FeatureCard(
-                title = "feature_image_generator",
-                description = "feature_image_generator_desc",
+                title = R.string.feature_image_generator,
+                description = R.string.feature_image_generator_desc,
                 icon = Icons.Filled.Palette,
                 gradient = Pair(Color(0xFF6a11cb), Color(0xFF2575fc)),
                 route = "image_generator"
             ),
             FeatureCard(
-                title = "feature_vibe_coder",
-                description = "feature_vibe_coder_desc",
+                title = R.string.feature_vibe_coder,
+                description = R.string.feature_vibe_coder_desc,
                 icon = Icons.Filled.Code,
                 gradient = Pair(Color(0xFFf794a4), Color(0xFFfdd6bd)),
                 route = "vibe_coder"
             ),
             FeatureCard(
-                title = "feature_creator_generation",
-                description = "feature_creator_generation_desc",
+                title = R.string.feature_creator_generation,
+                description = R.string.feature_creator_generation_desc,
                 icon = Icons.Filled.AutoAwesome,
                 gradient = Pair(Color(0xFF8EC5FC), Color(0xFFE0C3FC)),
                 route = "creator_generation"
@@ -367,17 +367,23 @@ fun AnimatedFeatureCard(
     startTime: Long,
     onClick: () -> Unit
 ) {
-    var visible by remember { mutableStateOf(false) }
+    // Calculate initial visibility based on time passed since screen load
+    // This prevents delay when scrolling down to items that should already be visible
+    val initialDelay = index * 80L
+    val timePassed = System.currentTimeMillis() - startTime
+    
+    var visible by remember { 
+        mutableStateOf(timePassed > initialDelay) 
+    }
     var isPressed by remember { mutableStateOf(false) }
     
-    // Staggered entrance animation
+    // Staggered entrance animation only if not already visible
     LaunchedEffect(Unit) {
-        val currentTime = System.currentTimeMillis()
-        val elapsedTime = currentTime - startTime
-        val initialDelay = index * 80L
-        val actualDelay = (initialDelay - elapsedTime).coerceAtLeast(0L)
-        delay(actualDelay)
-        visible = true
+        if (!visible) {
+            val delayNeeded = (initialDelay - timePassed).coerceAtLeast(0L)
+            if (delayNeeded > 0) delay(delayNeeded)
+            visible = true
+        }
     }
     
     val scale by animateFloatAsState(
@@ -455,9 +461,7 @@ fun AnimatedFeatureCard(
                     
                     // Title
                     Text(
-                        text = stringResource(
-                            id = getStringResourceId(feature.title)
-                        ),
+                        text = stringResource(id = feature.title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -466,9 +470,7 @@ fun AnimatedFeatureCard(
                     Spacer(modifier = Modifier.height(4.dp))
                     // Description
                     Text(
-                        text = stringResource(
-                            id = getStringResourceId(feature.description)
-                        ),
+                        text = stringResource(id = feature.description),
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.White.copy(alpha = 0.8f),
                         textAlign = TextAlign.Center,
@@ -535,10 +537,4 @@ fun rememberGithubIcon(): ImageVector {
     }
 }
 
-// Helper to get string resource ID dynamically from a string name
-@Composable
-fun getStringResourceId(name: String): Int {
-    return LocalContext.current.resources.getIdentifier(
-        name, "string", LocalContext.current.packageName
-    )
-}
+

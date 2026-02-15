@@ -24,3 +24,4 @@ text-embed/sentencepiece.model
 NPU_BACKEND_RESEARCH.md
 LLM-Hub
 .env
+.vscode/settings.json
