@@ -16,16 +16,24 @@ class ChatDrawerViewModel(application: Application) : AndroidViewModel(applicati
     private val repository: ChatRepository
 
     val allChats: StateFlow<List<ChatEntity>>
+    val allCreators: StateFlow<List<com.llmhub.llmhub.data.CreatorEntity>>
 
     init {
         val database = LlmHubDatabase.getDatabase(application)
-        repository = ChatRepository(database.chatDao(), database.messageDao())
+        repository = ChatRepository(database.chatDao(), database.messageDao(), database.creatorDao())
 
         allChats = repository.getActiveChats()
             .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = emptyList()
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5000),
+                emptyList()
+            )
+            
+        allCreators = repository.getAllCreators()
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5000),
+                emptyList()
             )
     }
 
@@ -33,7 +41,15 @@ class ChatDrawerViewModel(application: Application) : AndroidViewModel(applicati
         repository.deleteChat(chatId)
     }
 
+    fun renameChat(chatId: String, newTitle: String) = viewModelScope.launch {
+        repository.updateChatTitle(chatId, newTitle.trim())
+    }
+
     fun deleteAllChats() = viewModelScope.launch {
         repository.deleteAllChats()
+    }
+    
+    fun deleteCreator(creator: com.llmhub.llmhub.data.CreatorEntity) = viewModelScope.launch {
+        repository.deleteCreator(creator)
     }
 } 
