@@ -241,15 +241,30 @@ class NexaInferenceService @Inject constructor(
                 Log.d(TAG, "Attempting load with $backendId...")
                 
                 // Cap context size to prevent OOM on mobile devices.
-                // GGUF models allocate KV cache proportional to nCtx;
-                // 130K+ tokens will exhaust RAM on any phone.
+                // GGUF models allocate KV cache proportional to nCtx.
                 // VLM models' memory cost grows with nCtx. Cap to 8192 for vision-enabled GGUF to keep allocations reasonable
-                // When vision is disabled, honor the user/model selected context window instead of forcing a cap.
-                val MAX_SAFE_CTX = if (model.supportsVision && !disableVision) 8192 else Int.MAX_VALUE
+                // For text models, determine maximum safe context based on total device RAM.
+                val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+                val memoryInfo = android.app.ActivityManager.MemoryInfo()
+                activityManager.getMemoryInfo(memoryInfo)
+                val totalRamGb = memoryInfo.totalMem.toDouble() / (1024 * 1024 * 1024)
+                
+                val MAX_SAFE_CTX = if (model.supportsVision && !disableVision) {
+                    8192
+                } else {
+                    when {
+                        totalRamGb >= 20.0 -> 131072 // e.g. 24GB devices (true heavyweights)
+                        totalRamGb >= 14.0 -> 65536  // e.g. 16GB devices
+                        totalRamGb >= 10.0 -> 32768  // e.g. 12GB devices
+                        totalRamGb >= 6.0 -> 16384   // e.g. 8GB devices
+                        else -> 8192                 // < 6GB devices
+                    }
+                }
+                
                 val rawCtx = overrideMaxTokens ?: model.contextWindowSize
-                val nCtx = if (disableVision) rawCtx else rawCtx.coerceAtMost(MAX_SAFE_CTX)
-                if (!disableVision && rawCtx != nCtx) {
-                    Log.w(TAG, "Capped nCtx from $rawCtx to $nCtx to prevent OOM")
+                val nCtx = rawCtx.coerceAtMost(MAX_SAFE_CTX)
+                if (rawCtx != nCtx) {
+                    Log.w(TAG, "Capped nCtx from $rawCtx to $nCtx to prevent OOM (Device RAM ~${String.format("%.1f", totalRamGb)}GB)")
                 }
                 // Determine device/plugin to use. If caller provided an explicit deviceId (e.g. "HTP0") prefer it
                 val userRequestedNpu = !deviceId.isNullOrBlank() && deviceId.startsWith("HTP", ignoreCase = true)
@@ -755,6 +770,11 @@ class NexaInferenceService @Inject constructor(
                     } catch (t: Throwable) {
                         if (t is kotlinx.coroutines.CancellationException || t is java.util.concurrent.CancellationException) {
                             Log.d(TAG, "Nexa VLM generation cancelled; keeping Nexa backend available")
+                            try {
+                                vlmWrapper?.stopStream()
+                            } catch (e: Exception) {
+                                Log.w(TAG, "Failed to stop VLM stream on cancellation: ${e.message}")
+                            }
                             close()
                             return@launch
                         }
@@ -817,6 +837,11 @@ class NexaInferenceService @Inject constructor(
                     } catch (t: Throwable) {
                         if (t is kotlinx.coroutines.CancellationException || t is java.util.concurrent.CancellationException) {
                             Log.d(TAG, "Nexa LLM generation cancelled; keeping Nexa backend available")
+                            try {
+                                llmWrapper?.stopStream()
+                            } catch (e: Exception) {
+                                Log.w(TAG, "Failed to stop LLM stream on cancellation: ${e.message}")
+                            }
                             close()
                             return@launch
                         }
@@ -978,15 +1003,37 @@ class NexaInferenceService @Inject constructor(
 
         if (cleanPrompt.contains("user: ") || cleanPrompt.contains("assistant: ")) {
             try {
+                var systemPromptText = ""
                 val segments = cleanPrompt.split("\n\n").filter { it.isNotBlank() }
+                
                 for (segment in segments) {
                     when {
-                        segment.startsWith("user: ") -> messages.add(ChatMessage("user", segment.removePrefix("user: ").trim()))
-                        segment.startsWith("assistant: ") -> messages.add(ChatMessage("assistant", segment.removePrefix("assistant: ").trim()))
+                        segment.startsWith("system: ") -> {
+                            val content = segment.removePrefix("system: ").trim()
+                            if (content.isNotEmpty()) {
+                                systemPromptText += content + "\n\n"
+                            }
+                        }
+                        segment.startsWith("user: ") -> {
+                            val content = segment.removePrefix("user: ").trim()
+                            if (messages.isEmpty() && systemPromptText.isNotEmpty()) {
+                                // Inject system prompt into the first user turn.
+                                // This solves issues with Gemma models and others that don't support a dedicated system role.
+                                messages.add(ChatMessage("user", systemPromptText + content))
+                                systemPromptText = "" // Clear it so we don't inject it again
+                            } else {
+                                messages.add(ChatMessage("user", content))
+                            }
+                        }
+                        segment.startsWith("assistant: ") -> {
+                            messages.add(ChatMessage("assistant", segment.removePrefix("assistant: ").trim()))
+                        }
                         else -> {
-                            if (messages.isEmpty()) messages.add(ChatMessage("system", segment.trim()))
-                            else {
-                                // Append to last message if unsure
+                            // If it doesn't have a marker, consider it a system prompt if at the very beginning
+                            if (messages.isEmpty()) {
+                                systemPromptText += segment.trim() + "\n\n"
+                            } else {
+                                // Append to the last message
                                 val last = messages.last()
                                 val role = try { last::class.java.getDeclaredField("role").apply { isAccessible = true }.get(last) as String } catch(e:Exception) { "user" }
                                 val content = try { last::class.java.getDeclaredField("content").apply { isAccessible = true }.get(last) as String } catch(e:Exception) { "" }
@@ -994,6 +1041,10 @@ class NexaInferenceService @Inject constructor(
                             }
                         }
                     }
+                }
+                // If there's STILL a system prompt but no user turn was found to attach it to, add it
+                if (systemPromptText.isNotEmpty()) {
+                    messages.add(0, ChatMessage("system", systemPromptText.trimEnd()))
                 }
             } catch (e: Exception) {
                 // Parsing failed, proceed with empty messages

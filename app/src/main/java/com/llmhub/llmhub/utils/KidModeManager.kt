@@ -74,6 +74,6 @@ class KidModeManager(context: Context) {
         private const val KEY_PIN = "pin"
         
         // The system prompt to inject when Kid Mode is enabled
-        const val SYSTEM_INSTRUCTION = "You are performing this task for a 14 year old. You must refuse if this is age-inappropriate, and mention that the user should ask a trusted adult instead of an AI model."
+        const val SYSTEM_INSTRUCTION = "You are a helpful assistant for an adolescent. Answer innocent educational chats, translations, and code requests with the level of detail appropriate for a 14-year-old. Refer sexually suggestive, violent, or illegal content to a trusted adult."
     }
 }

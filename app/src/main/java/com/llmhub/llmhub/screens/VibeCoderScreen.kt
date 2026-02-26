@@ -6,23 +6,25 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.llmhub.llmhub.R
-import com.llmhub.llmhub.components.FeatureModelSettingsSheet
+import com.llmhub.llmhub.components.ModelSelectorCard
 import com.llmhub.llmhub.viewmodels.VibeCoderViewModel
 import com.llmhub.llmhub.viewmodels.CodeLanguage
 import kotlinx.coroutines.launch
@@ -42,6 +44,7 @@ fun VibeCoderScreen(
     onNavigateToCanvas: ((String, String) -> Unit)? = null,
     viewModel: VibeCoderViewModel = viewModel()
 ) {
+    val context = LocalContext.current
     val keyboard = LocalSoftwareKeyboardController.current
     val clipboardManager = LocalClipboardManager.current
     val promptBringRequester = remember { BringIntoViewRequester() }
@@ -77,7 +80,6 @@ fun VibeCoderScreen(
     val selectedModel by viewModel.selectedModel.collectAsState()
     val selectedBackend by viewModel.selectedBackend.collectAsState()
     val selectedNpuDeviceId by viewModel.selectedNpuDeviceId.collectAsState()
-    val selectedMaxTokens by viewModel.selectedMaxTokens.collectAsState()
     val isModelLoaded by viewModel.isModelLoaded.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val isProcessing by viewModel.isProcessing.collectAsState()
@@ -86,9 +88,9 @@ fun VibeCoderScreen(
     val codeLanguage by viewModel.codeLanguage.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     
-    // Scroll state for auto-scrolling
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
+    val codeScrollState = rememberScrollState()
     
     // Snackbar
     val snackbarHostState = remember { SnackbarHostState() }
@@ -103,6 +105,7 @@ fun VibeCoderScreen(
         if (generatedCode.isNotEmpty() && isProcessing) {
             coroutineScope.launch {
                 scrollState.animateScrollTo(scrollState.maxValue)
+                codeScrollState.animateScrollTo(codeScrollState.maxValue)
             }
         }
     }
@@ -118,82 +121,52 @@ fun VibeCoderScreen(
                 title = { Text(stringResource(R.string.vibe_coder_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
+                    Text(
+                        text = "v3.6",
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(end = 16.dp)
+                    )
                     IconButton(onClick = { showSettingsSheet = true }) {
-                        Icon(Icons.Default.Tune, contentDescription = stringResource(R.string.feature_settings_title))
+                        Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }
                 }
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
-        if (!isModelLoaded) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(innerPadding)
-                    .padding(32.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ModelTraining,
-                    contentDescription = null,
-                    modifier = Modifier.size(80.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-                Text(
-                    text = stringResource(
-                        if (availableModels.isEmpty()) R.string.download_models_first
-                        else R.string.scam_detector_load_model
-                    ),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = stringResource(R.string.scam_detector_load_model_desc),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(32.dp))
-                FilledTonalButton(
-                    onClick = {
-                        if (availableModels.isEmpty()) onNavigateToModels()
-                        else showSettingsSheet = true
-                    },
-                    modifier = Modifier.fillMaxWidth(0.6f)
-                ) {
-                    Icon(
-                        imageVector = if (availableModels.isEmpty()) Icons.Default.GetApp else Icons.Default.Tune,
-                        contentDescription = null
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        stringResource(
-                            if (availableModels.isEmpty()) R.string.download_models
-                            else R.string.feature_settings_title
-                        )
-                    )
-                }
-            }
-        } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .imePadding()
-                    .verticalScroll(scrollState)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .imePadding() // specific fix for keyboard overlay
+                .verticalScroll(scrollState)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            ModelSelectorCard(
+                models = availableModels,
+                selectedModel = selectedModel,
+                onModelSelected = { model ->
+                    viewModel.selectModel(model)
+                },
+                selectedBackend = selectedBackend,
+                selectedNpuDeviceId = selectedNpuDeviceId,
+                onBackendSelected = { backend, deviceId ->
+                    viewModel.selectBackend(backend, deviceId)
+                },
+                onLoadModel = {
+                    viewModel.loadModel()
+                },
+                isLoading = isLoading,
+                isModelLoaded = isModelLoaded
+            )
+            
+            // Prompt Input Section
+            if (isModelLoaded) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -297,8 +270,10 @@ fun VibeCoderScreen(
                         }
                     }
                 }
-                // Code Output Section
-                if (generatedCode.isNotEmpty() || isProcessing) {
+            }
+            
+            // Code Output Section
+            if (generatedCode.isNotEmpty() || isProcessing) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
@@ -347,7 +322,11 @@ fun VibeCoderScreen(
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Text(
-                                text = if (isPlanning) "Planning architecture..." else stringResource(R.string.vibe_coder_generating),
+                                text = when {
+                                    isPlanning -> "Planning architecture..."
+                                    promptText.isNotEmpty() && !promptText.equals("new", ignoreCase = true) -> "Revising code..."
+                                    else -> stringResource(R.string.vibe_coder_generating)
+                                },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -365,7 +344,7 @@ fun VibeCoderScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(12.dp)
-                                        .verticalScroll(rememberScrollState()),
+                                        .verticalScroll(codeScrollState),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
@@ -373,72 +352,149 @@ fun VibeCoderScreen(
                             }
                             
                             // Action buttons for generated code
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Button(
-                                    onClick = {
-                                        clipboardManager.setText(AnnotatedString(generatedCode))
-                                    },
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(40.dp),
-                                    colors = ButtonDefaults.outlinedButtonColors()
+                            if (!isProcessing) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(stringResource(R.string.vibe_coder_copy), style = MaterialTheme.typography.labelSmall)
-                                }
-                                
-                                if (codeLanguage == CodeLanguage.HTML) {
                                     Button(
                                         onClick = {
-                                            onNavigateToCanvas?.invoke(generatedCode, "html")
+                                            clipboardManager.setText(AnnotatedString(generatedCode))
                                         },
                                         modifier = Modifier
                                             .weight(1f)
                                             .height(40.dp),
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = MaterialTheme.colorScheme.primary
-                                        )
+                                        colors = ButtonDefaults.outlinedButtonColors()
                                     ) {
-                                        Icon(Icons.Default.Preview, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Text(stringResource(R.string.vibe_coder_preview), style = MaterialTheme.typography.labelSmall)
+                                        Text(stringResource(R.string.vibe_coder_copy), style = MaterialTheme.typography.labelSmall)
+                                    }
+                                    
+                                    if (codeLanguage == CodeLanguage.HTML) {
+                                        Button(
+                                            onClick = {
+                                                onNavigateToCanvas?.invoke(generatedCode, "html")
+                                            },
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .height(40.dp),
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = MaterialTheme.colorScheme.primary
+                                            )
+                                        ) {
+                                            Icon(Icons.Default.Preview, contentDescription = null, modifier = Modifier.size(16.dp))
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(stringResource(R.string.vibe_coder_preview), style = MaterialTheme.typography.labelSmall)
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                 }
-                }
-                Spacer(modifier = Modifier.height(8.dp))
             }
+            
+            // No Model Loaded Message
+            if (!isModelLoaded && !isLoading) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Info,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                        Text(
+                            text = stringResource(R.string.vibe_coder_no_model),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
         }
     }
     
     // Settings Bottom Sheet
     if (showSettingsSheet) {
-        FeatureModelSettingsSheet(
-            availableModels = availableModels,
-            initialSelectedModel = selectedModel,
-            initialSelectedBackend = selectedBackend,
-            initialSelectedNpuDeviceId = selectedNpuDeviceId,
-            initialMaxTokens = selectedMaxTokens,
-            currentlyLoadedModel = if (isModelLoaded) selectedModel else null,
-            isLoadingModel = isLoading,
-            onModelSelected = { viewModel.selectModel(it) },
-            onBackendSelected = { backend, deviceId -> viewModel.selectBackend(backend, deviceId) },
-            onMaxTokensChanged = { viewModel.setMaxTokens(it) },
-            onLoadModel = { model, maxTokens, backend, deviceId ->
-                viewModel.selectModel(model)
-                viewModel.setMaxTokens(maxTokens)
-                if (backend != null) viewModel.selectBackend(backend, deviceId)
-                viewModel.loadModel()
-            },
-            onUnloadModel = { viewModel.unloadModel() },
-            onDismiss = { showSettingsSheet = false }
-        )
+        ModalBottomSheet(
+            onDismissRequest = { showSettingsSheet = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.vibe_coder_settings),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                Divider()
+                
+                Text(
+                    text = stringResource(R.string.vibe_coder_backend_select),
+                    style = MaterialTheme.typography.titleSmall
+                )
+                
+                BackendSelector(
+                    selectedBackend = selectedBackend,
+                    onBackendSelected = { backend ->
+                        viewModel.selectBackend(backend)
+                    }
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Button(
+                    onClick = { showSettingsSheet = false },
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        .height(40.dp)
+                ) {
+                    Text(stringResource(R.string.close))
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun BackendSelector(
+    selectedBackend: com.google.mediapipe.tasks.genai.llminference.LlmInference.Backend?,
+    onBackendSelected: (com.google.mediapipe.tasks.genai.llminference.LlmInference.Backend) -> Unit
+) {
+    val backends = listOf(
+        com.google.mediapipe.tasks.genai.llminference.LlmInference.Backend.GPU,
+        com.google.mediapipe.tasks.genai.llminference.LlmInference.Backend.CPU
+    )
+    
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        backends.forEach { backend ->
+            FilterChip(
+                selected = selectedBackend == backend,
+                onClick = { onBackendSelected(backend) },
+                label = { Text(backend.name) },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
     }
 }

@@ -2,11 +2,18 @@
 
 **LLM Hub** is an open-source Android app for on-device LLM chat and image generation. It's optimized for mobile usage (CPU/GPU/NPU acceleration) and supports multiple model formats so you can run powerful models locally and privately.
 
+## Download
+
+<a href="https://play.google.com/store/apps/details?id=com.llmhub.llmhub">
+  <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" width="280" />
+</a>
+
+
 ## 📸 Screenshots
 
 <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;">
    <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
-      <img src="assets\screenshots\Screenshot_20260214_201455.png" alt="AI Models" style="width:300px;height:auto;border-radius:8px;display:block;" />
+      <img src="assets/screenshots/Screenshot_20260214_201455.png" alt="AI Models" style="width:300px;height:auto;border-radius:8px;display:block;" />
    </figure>
    <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
       <img src="assets/screenshots/Screenshot_20251007_042114_LLM%20Hub.jpg" alt="AI Features" style="width:300px;height:auto;border-radius:8px;display:block;" />
@@ -139,6 +146,5 @@ Notes
 
 [![Star History Chart](https://api.star-history.com/svg?repos=timmyy123/LLM-Hub&type=date&legend=top-left)](https://www.star-history.com/#timmyy123/LLM-Hub&type=date&legend=top-left)
 
----
-*If you want, I can also add a short “Release notes / changelog” section and a quick performance guide for device profiles.*
+
 
