@@ -141,7 +141,15 @@ class ModelDownloader(
                 readTimeout = 60_000
                 instanceFollowRedirects = false // Manually handle redirects to preserve auth header
                 setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-                if (!hfToken.isNullOrBlank()) {
+                
+                // Only send HuggingFace token to huggingface.co or hf.co domains.
+                // Sending it to a redirected domain (like an AWS S3 pre-signed URL) will cause
+                // the S3 strictly-enforced signature verification to fail with a 403 Forbidden.
+                val host = url.host ?: ""
+                val isHuggingFaceDomain = host == "huggingface.co" || host.endsWith(".huggingface.co") || 
+                                          host == "hf.co" || host.endsWith(".hf.co")
+                                          
+                if (isHuggingFaceDomain && !hfToken.isNullOrBlank()) {
                     setRequestProperty("Authorization", "Bearer $hfToken")
                 }
                 if (rangeStart != null && rangeStart > 0) {
@@ -164,9 +172,16 @@ class ModelDownloader(
                     if (location == null) {
                         throw RuntimeException("HTTP $responseCode received but no Location header found")
                     }
-                    currentUrl = location
+                    // Handle relative redirects by resolving against current URL
+                    val prevUrl = URL(currentUrl)
+                    currentUrl = URL(prevUrl, location).toString()
                     redirectCount++
                     Log.d(TAG, "Redirect: $responseCode to $location")
+                }
+                responseCode == 416 -> {
+                    // Range not satisfiable means we already have the whole file. 
+                    // Let the caller handle this response code.
+                    return connection
                 }
                 else -> {
                     // Error
@@ -398,57 +413,64 @@ class ModelDownloader(
         
         Log.i(TAG, "Manifest loaded: $totalFiles files to download")
         
-        // Check how many files already exist
-        var filesDownloaded = 0
+        // Check how many files already exist to calculate baseline for totalDownloaded
         var totalDownloaded = 0L
         for (i in 0 until totalFiles) {
             val fileName = filesArray.getString(i)
             val targetFile = File(targetDir, fileName)
-            if (targetFile.exists() && targetFile.length() > 0) {
-                filesDownloaded++
+            if (targetFile.exists()) {
                 totalDownloaded += targetFile.length()
             }
         }
         
-        // If all files exist, we're done
-        if (filesDownloaded == totalFiles) {
-            Log.i(TAG, "All $totalFiles files already downloaded! Total size: $totalDownloaded bytes")
-            val authoritativeTotal = if (totalFiles > 0 && model.sizeBytes > 0) model.sizeBytes else totalDownloaded
-            emit(DownloadStatus(totalDownloaded, authoritativeTotal, 0))
-            return@flow
-        }
+        Log.i(TAG, "Starting to download remaining files... (total existing length: $totalDownloaded)")
         
-        Log.i(TAG, "Found $filesDownloaded/$totalFiles existing files, downloading remaining...")
-        
-        // Step 2: Download each missing file
+        // Step 2: Download each file
         val totalSize = model.sizeBytes
         var lastEmitTime = System.currentTimeMillis()
         var bytesSinceLastEmit = 0L
+        var filesDownloaded = 0
         
         for (i in 0 until totalFiles) {
             val fileName = filesArray.getString(i)
             val targetFile = File(targetDir, fileName)
             
-            // Skip if file already exists and is non-empty
-            if (targetFile.exists() && targetFile.length() > 0) {
-                Log.d(TAG, "Skipping existing file ($filesDownloaded/$totalFiles): $fileName")
-                continue
-            }
+            val existingBytes = if (targetFile.exists()) targetFile.length() else 0L
             
-            // Download the file
-            filesDownloaded++
-            Log.d(TAG, "Downloading ($filesDownloaded/$totalFiles): $fileName")
+            Log.d(TAG, "Downloading ($i/$totalFiles): $fileName")
             val fileUrl = baseUrl + fileName
-            val fileConnection = openConnectionWithAuthRedirects(fileUrl)
+            val fileConnection = openConnectionWithAuthRedirects(fileUrl, if (existingBytes > 0) existingBytes else null)
             
             try {
+                val responseCode = fileConnection.responseCode
+                if (responseCode == 416) {
+                    Log.d(TAG, "File $fileName already complete (HTTP 416).")
+                    filesDownloaded++
+                    continue
+                }
+                
+                if (responseCode !in 200..299 && responseCode != 206) {
+                    throw RuntimeException("Download failed for $fileName with HTTP $responseCode")
+                }
+                
+                var fileOutputBytes = existingBytes
+                if (responseCode == 200 && existingBytes > 0) {
+                    Log.w(TAG, "Server ignored Range. Restarting full download for $fileName.")
+                    totalDownloaded -= existingBytes
+                    if (targetFile.exists()) targetFile.delete()
+                    targetFile.createNewFile()
+                    fileOutputBytes = 0L
+                }
+                
                 fileConnection.inputStream.use { input ->
-                    targetFile.outputStream().use { output ->
+                    RandomAccessFile(targetFile, "rw").use { raf ->
+                        raf.seek(fileOutputBytes)
                         val buffer = ByteArray(8192)
                         var bytesRead: Int
                         while (input.read(buffer).also { bytesRead = it } != -1) {
-                            output.write(buffer, 0, bytesRead)
+                            raf.write(buffer, 0, bytesRead)
                             totalDownloaded += bytesRead
+                            fileOutputBytes += bytesRead
                             bytesSinceLastEmit += bytesRead
                             
                             // Emit progress every 500ms
@@ -463,6 +485,7 @@ class ModelDownloader(
                         }
                     }
                 }
+                filesDownloaded++
                 Log.d(TAG, "Downloaded ($filesDownloaded/$totalFiles): $fileName (${targetFile.length()} bytes)")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to download $fileName: ${e.message}")
@@ -693,26 +716,16 @@ class ModelDownloader(
         
         Log.i(TAG, "Total files to download: ${allFiles.size}")
         
-        // Check which files already exist
+        // Check which files already exist to calculate baseline for totalDownloaded
         var totalDownloaded = 0L
-        var filesComplete = 0
         for ((_, fileName) in allFiles) {
             val file = File(modelDir, fileName)
-            if (file.exists() && file.length() > 0) {
+            if (file.exists()) {
                 totalDownloaded += file.length()
-                filesComplete++
             }
         }
         
-        // If all files exist, we're done
-        if (filesComplete == allFiles.size) {
-            Log.i(TAG, "All ${allFiles.size} ONNX files already downloaded! Total size: $totalDownloaded bytes")
-            val authoritativeTotal = if (model.sizeBytes > 0) model.sizeBytes else totalDownloaded
-            emit(DownloadStatus(totalDownloaded, authoritativeTotal, 0))
-            return@flow
-        }
-        
-        Log.i(TAG, "Found $filesComplete/${allFiles.size} existing files, downloading remaining...")
+        Log.i(TAG, "Starting ONNX downloads... (total existing length: $totalDownloaded)")
         
         val totalSize = model.sizeBytes
         var lastEmitTime = System.currentTimeMillis()
@@ -723,29 +736,42 @@ class ModelDownloader(
             currentFileIndex++
             val targetFile = File(modelDir, fileName)
             
-            // Skip if file already exists
-            if (targetFile.exists() && targetFile.length() > 0) {
-                Log.d(TAG, "Skipping existing file ($currentFileIndex/${allFiles.size}): $fileName")
-                continue
-            }
+            val existingBytes = if (targetFile.exists()) targetFile.length() else 0L
             
             Log.d(TAG, "Downloading ($currentFileIndex/${allFiles.size}): $fileName from $fileUrl -> target: ${targetFile.absolutePath}")
             
-            val connection = openConnectionWithAuthRedirects(fileUrl)
-            
-            val responseCode = connection.responseCode
-            if (responseCode !in 200..299) {
-                connection.disconnect()
-                throw RuntimeException("Download failed for $fileName with HTTP $responseCode")
-            }
+            val connection = openConnectionWithAuthRedirects(fileUrl, if (existingBytes > 0) existingBytes else null)
             
             try {
+                val responseCode = connection.responseCode
+                if (responseCode == 416) {
+                    // File fully downloaded
+                    Log.d(TAG, "File $fileName already complete (HTTP 416).")
+                    continue
+                }
+                
+                if (responseCode !in 200..299 && responseCode != 206) {
+                    throw RuntimeException("Download failed for $fileName with HTTP $responseCode")
+                }
+                
+                var fileOutputBytes = existingBytes
+                
+                if (existingBytes > 0 && responseCode == 200) {
+                    Log.w(TAG, "Server ignored Range. Restarting full download for $fileName.")
+                    totalDownloaded -= existingBytes
+                    if (targetFile.exists()) targetFile.delete()
+                    targetFile.createNewFile()
+                    fileOutputBytes = 0L
+                }
+                
                 connection.inputStream.use { input ->
-                    targetFile.outputStream().use { output ->
+                    RandomAccessFile(targetFile, "rw").use { raf ->
+                        raf.seek(fileOutputBytes)
                         val buffer = ByteArray(8192)
                         var bytesRead: Int
                         while (input.read(buffer).also { bytesRead = it } != -1) {
-                            output.write(buffer, 0, bytesRead)
+                            raf.write(buffer, 0, bytesRead)
+                            fileOutputBytes += bytesRead
                             totalDownloaded += bytesRead
                             bytesSinceLastEmit += bytesRead
                             
@@ -853,48 +879,12 @@ class ModelDownloader(
             Log.w(TAG, "Pre-download mmproj check failed: ${e.message}")
         }
 
-        // Check already downloaded files to calculate resume state (within modelDir)
-        var totalDownloaded = 0L
-        var filesComplete = 0
-        for ((_, fileName) in allFiles) {
-            val file = File(modelDir, fileName)
-            if (file.exists() && file.length() > 0) {
-                totalDownloaded += file.length()
-                filesComplete++
-            }
-        }
-
-        // If all files exist, check if we need to validate size?
-        // Ideally we should match against expected size if known, but for now assuming existence is good enough
-        // unless we want to do a more robust check. Given GGUF are large, we might not want to re-download if it looks done.
-        // However, if sizeBytes matches exactly the sum of files, we can be sure.
-        val totalExpectedSize = model.sizeBytes
-        
-        if (filesComplete == allFiles.size && (totalExpectedSize <= 0 || totalDownloaded >= totalExpectedSize * 0.98)) {
-            Log.i(TAG, "All ${allFiles.size} GGUF files already downloaded! Total size: $totalDownloaded bytes")
-            emit(DownloadStatus(totalDownloaded, totalDownloaded, 0))
-            return@flow
-        }
-
-        Log.i(TAG, "Found $filesComplete/${allFiles.size} existing files, checking remaining...")
-
-        var currentDownloadedBytes = 0L // Tracks progress for current session
-        
-        // Sum of sizes of files we already skipped + current progress
-        // Actually we should track total progress across all files relative to model.sizeBytes
-        
-        // To do this correctly with resume support, we need to iterate all files.
-        // If a file is complete, add its size to progress.
-        // If a file is partial (or missing), download it and add stream progress.
-        
-        // We need to know the size of EACH file to report correct progress relative to total.
-        // If we don't know individual file sizes ahead of time (only total), it's hard.
-        // But we can just use the sum of downloaded bytes so far.
-        
+        // We evaluate completeness file by file in the loop using HTTP Range requests.
         var cumulativeDownloaded = 0L
         var reportedTotalAcrossFiles = 0L // sum of fileTotalBytes when available
         var lastEmitTime = System.currentTimeMillis()
         var bytesSinceLastEmit = 0L
+
         
         // We will iterate and download missing files.
         // Note: this simple logic assumes we download sequentially.

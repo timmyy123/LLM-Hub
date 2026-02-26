@@ -522,14 +522,14 @@ fun ChatScreen(
             onBackendSelected = { backend, deviceId ->
                 viewModel.selectBackend(backend, deviceId)
             },
-            onLoadModel = { model, maxTokens, topK, topP, temperature, backend, disableVision, disableAudio ->
-                Log.d("ChatScreen", "Model configs confirmed: maxTokens=$maxTokens topK=$topK topP=$topP temperature=$temperature backend=$backend disableVision=$disableVision disableAudio=$disableAudio for model ${model.name}")
+            onLoadModel = { model, maxTokens, topK, topP, temperature, backend, deviceId, disableVision, disableAudio ->
+                Log.d("ChatScreen", "Model configs confirmed: maxTokens=$maxTokens topK=$topK topP=$topP temperature=$temperature backend=$backend deviceId=$deviceId disableVision=$disableVision disableAudio=$disableAudio for model ${model.name}")
                 
                 // Push generation parameters to inference service via ViewModel
                 viewModel.setGenerationParameters(maxTokens, topK, topP, temperature)
                 
                 if (backend != null) {
-                    viewModel.switchModelWithBackend(model, backend, disableVision, disableAudio)
+                    viewModel.switchModelWithBackend(model, backend, disableVision, disableAudio, deviceId)
                 } else {
                     viewModel.switchModel(model)
                 }

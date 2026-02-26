@@ -378,6 +378,7 @@ fun ModelConfigsDialog(
                                         topP = topP,
                                         temperature = temperature,
                                         backend = backend?.name,
+                                        deviceId = null,
                                         disableVision = disableVision,
                                         disableAudio = disableAudio
                                     )

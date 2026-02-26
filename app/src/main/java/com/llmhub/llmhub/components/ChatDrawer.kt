@@ -41,10 +41,13 @@ fun ChatDrawer(
     val chats by viewModel.allChats.collectAsState()
     val creators by viewModel.allCreators.collectAsState()
     var showDeleteAllDialog by remember { mutableStateOf(false) }
-    val configuration = LocalConfiguration.current
-    val drawerWidth = if (configuration.screenWidthDp >= 600) 400.dp else 360.dp
     var chatToRename by remember { mutableStateOf<ChatEntity?>(null) }
-
+    var creatorToRename by remember { mutableStateOf<com.llmhub.llmhub.data.CreatorEntity?>(null) }
+    var chatToDelete by remember { mutableStateOf<ChatEntity?>(null) }
+    var creatorToDelete by remember { mutableStateOf<com.llmhub.llmhub.data.CreatorEntity?>(null) }
+    
+    // ... dialog logic ...
+    
     if (chatToRename != null) {
         com.llmhub.llmhub.screens.RenameChatDialog(
             chatTitle = chatToRename!!.title,
@@ -56,71 +59,57 @@ fun ChatDrawer(
         )
     }
 
-    if (showDeleteAllDialog) {
+    if (creatorToRename != null) {
+        com.llmhub.llmhub.screens.RenameChatDialog(
+            chatTitle = creatorToRename!!.name,
+            onConfirm = { newName ->
+                viewModel.renameCreator(creatorToRename!!.id, newName)
+                creatorToRename = null
+            },
+            onDismiss = { creatorToRename = null }
+        )
+    }
+
+    if (chatToDelete != null) {
         AlertDialog(
-            onDismissRequest = { showDeleteAllDialog = false },
-            title = { Text(stringResource(R.string.dialog_delete_all_chats_title)) },
-            text = { Text(stringResource(R.string.dialog_delete_all_chats_message)) },
+            onDismissRequest = { chatToDelete = null },
+            title = { Text(stringResource(R.string.dialog_delete_chat_title)) },
+            text = { Text(stringResource(R.string.dialog_delete_chat_message, chatToDelete!!.title)) },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        if (onClearAllChats != null) {
-                            onClearAllChats()
-                        } else {
-                            viewModel.deleteAllChats()
-                        }
-                        showDeleteAllDialog = false
+                        viewModel.deleteChat(chatToDelete!!.id)
+                        chatToDelete = null
                     }
-                ) {
-                    Text(stringResource(R.string.action_delete_all))
-                }
+                ) { Text(stringResource(R.string.action_delete)) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteAllDialog = false }) {
-                    Text(stringResource(R.string.action_cancel))
-                }
+                TextButton(onClick = { chatToDelete = null }) { Text(stringResource(R.string.action_cancel)) }
             }
         )
     }
 
-    ModalDrawerSheet(
-        modifier = Modifier
-            .width(drawerWidth)
-            .fillMaxHeight()
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxHeight()
-                .padding(16.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 12.dp)
-            ) {
-                IconButton(
-                    onClick = onNavigateBack,
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Icon(
-                        Icons.Default.ArrowBack,
-                        contentDescription = stringResource(R.string.back),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-                Spacer(modifier = Modifier.width(4.dp))
-                Icon(
-                    Icons.Default.PhoneAndroid,
-                    contentDescription = null,
-                    modifier = Modifier.size(28.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = stringResource(R.string.drawer_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
+    if (creatorToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { creatorToDelete = null },
+            title = { Text(stringResource(R.string.dialog_delete_creator_title)) },
+            text = { Text(stringResource(R.string.dialog_delete_creator_message, creatorToDelete!!.name)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteCreator(creatorToDelete!!)
+                        creatorToDelete = null
+                    }
+                ) { Text(stringResource(R.string.action_delete)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { creatorToDelete = null }) { Text(stringResource(R.string.action_cancel)) }
             }
+        )
+    }
+
+    ModalDrawerSheet {
+        Column(modifier = Modifier.padding(16.dp)) {
 
             // New Chat Button
             FilledTonalButton(
@@ -152,7 +141,8 @@ fun ChatDrawer(
                         CreatorItem(
                             creator = creator,
                             onClick = { onNavigateToCreatorChat(creator.id) },
-                            onDelete = { viewModel.deleteCreator(creator) }
+                            onDelete = { creatorToDelete = creator },
+                            onRename = { creatorToRename = creator }
                         )
                     }
                 }
@@ -181,7 +171,7 @@ fun ChatDrawer(
                     ChatHistoryItem(
                         chat = chat,
                         onClick = { onNavigateToChat(chat.id) },
-                        onDelete = { viewModel.deleteChat(chat.id) },
+                        onDelete = { chatToDelete = chat },
                         onRename = { chatToRename = chat }
                     )
                 }
