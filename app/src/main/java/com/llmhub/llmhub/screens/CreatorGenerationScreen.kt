@@ -79,6 +79,11 @@ fun CreatorGenerationScreen(
         onDispose { view.viewTreeObserver.removeOnGlobalLayoutListener(listener) }
     }
 
+    // Unload model when leaving this screen
+    DisposableEffect(Unit) {
+        onDispose { viewModel.unloadModel() }
+    }
+
     LaunchedEffect(imeVisible.value) {
         if (imeVisible.value && promptFocused) {
             promptBringRequester.bringIntoView()

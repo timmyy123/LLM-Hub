@@ -90,14 +90,12 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
      */
     private fun loadSavedSettings() {
         val savedBackendName = prefs.getString("selected_backend", LlmInference.Backend.GPU.name)
-        val savedMaxTokens = prefs.getInt("selected_max_tokens", 4096)
         val savedNpuDeviceId = prefs.getString("selected_npu_device_id", null)
         _selectedBackend.value = try {
             LlmInference.Backend.valueOf(savedBackendName ?: LlmInference.Backend.GPU.name)
         } catch (_: IllegalArgumentException) {
             LlmInference.Backend.GPU
         }
-        _selectedMaxTokens.value = savedMaxTokens.coerceAtLeast(1)
         _selectedNpuDeviceId.value = savedNpuDeviceId
 
         val savedModelName = prefs.getString("selected_model_name", null)
@@ -107,6 +105,8 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                 val model = _availableModels.value.find { it.name == savedModelName }
                 if (model != null) {
                     _selectedModel.value = model
+                    val savedTokens = prefs.getInt("max_tokens_${model.name}", minOf(4096, model.contextWindowSize.coerceAtLeast(1)))
+                    _selectedMaxTokens.value = savedTokens.coerceIn(1, model.contextWindowSize.coerceAtLeast(1))
                     if (!model.supportsGpu && _selectedBackend.value == LlmInference.Backend.GPU) {
                         _selectedBackend.value = LlmInference.Backend.CPU
                     }
@@ -122,7 +122,9 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         prefs.edit().apply {
             putString("selected_model_name", _selectedModel.value?.name)
             putString("selected_backend", _selectedBackend.value?.name)
-            putInt("selected_max_tokens", _selectedMaxTokens.value)
+            _selectedModel.value?.name?.let { name ->
+                putInt("max_tokens_$name", _selectedMaxTokens.value)
+            }
             putString("selected_npu_device_id", _selectedNpuDeviceId.value)
             apply()
         }
@@ -140,7 +142,8 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             if (_selectedModel.value == null) {
                 available.firstOrNull()?.let {
                     _selectedModel.value = it
-                    _selectedMaxTokens.value = _selectedMaxTokens.value.coerceIn(1, it.contextWindowSize.coerceAtLeast(1))
+                    val savedTokens = prefs.getInt("max_tokens_${it.name}", minOf(4096, it.contextWindowSize.coerceAtLeast(1)))
+                    _selectedMaxTokens.value = savedTokens.coerceIn(1, it.contextWindowSize.coerceAtLeast(1))
                     _selectedBackend.value = if (it.supportsGpu) {
                         _selectedBackend.value ?: LlmInference.Backend.GPU
                     } else {
@@ -161,7 +164,8 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         
         _selectedModel.value = model
         _isModelLoaded.value = false
-        _selectedMaxTokens.value = _selectedMaxTokens.value.coerceIn(1, model.contextWindowSize.coerceAtLeast(1))
+        val savedTokens = prefs.getInt("max_tokens_${model.name}", minOf(4096, model.contextWindowSize.coerceAtLeast(1)))
+        _selectedMaxTokens.value = savedTokens.coerceIn(1, model.contextWindowSize.coerceAtLeast(1))
         _selectedNpuDeviceId.value = null
 
         _selectedBackend.value = if (model.supportsGpu) {
@@ -565,7 +569,14 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         _codeLanguage.value = CodeLanguage.UNKNOWN
         currentSpec = ""
     }
-    
+
+    /**
+     * Update generated code (user edits)
+     */
+    fun updateGeneratedCode(code: String) {
+        _generatedCode.value = code
+    }
+
     /**
      * Clear error message
      */
@@ -764,6 +775,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     override fun onCleared() {
         super.onCleared()
         viewModelScope.launch {
+            try { inferenceService.unloadModel() } catch (_: Exception) {}
             inferenceService.onCleared()
         }
     }

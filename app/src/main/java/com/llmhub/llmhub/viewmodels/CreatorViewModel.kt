@@ -81,23 +81,22 @@ class CreatorViewModel(
 
     private fun loadSavedSettings() {
         val savedBackendName = prefs.getString("selected_backend", LlmInference.Backend.GPU.name)
-        val savedMaxTokens = prefs.getInt("selected_max_tokens", 4096)
         _selectedBackend.value = try {
             LlmInference.Backend.valueOf(savedBackendName ?: LlmInference.Backend.GPU.name)
         } catch (_: IllegalArgumentException) {
             LlmInference.Backend.GPU
         }
-        _selectedMaxTokens.value = savedMaxTokens.coerceAtLeast(1)
         _selectedNpuDeviceId.value = prefs.getString("selected_npu_device", null)
 
         val savedModelName = prefs.getString("selected_model_name", null)
-        if (savedModelName != null && _selectedModel.value == null) { // Only load if not already set by loaded check
+        if (savedModelName != null && _selectedModel.value == null) {
             viewModelScope.launch {
-                // Wait for available models to populate
-                kotlinx.coroutines.delay(100) 
+                kotlinx.coroutines.delay(100)
                 val model = _availableModels.value.find { it.name == savedModelName }
                 if (model != null) {
                     _selectedModel.value = model
+                    val savedTokens = prefs.getInt("max_tokens_${model.name}", minOf(4096, model.contextWindowSize.coerceAtLeast(1)))
+                    _selectedMaxTokens.value = savedTokens.coerceIn(1, model.contextWindowSize.coerceAtLeast(1))
                     if (!model.supportsGpu && _selectedBackend.value == LlmInference.Backend.GPU) {
                         _selectedBackend.value = LlmInference.Backend.CPU
                     }
@@ -110,7 +109,9 @@ class CreatorViewModel(
         prefs.edit().apply {
             putString("selected_model_name", _selectedModel.value?.name)
             putString("selected_backend", _selectedBackend.value?.name)
-            putInt("selected_max_tokens", _selectedMaxTokens.value)
+            _selectedModel.value?.name?.let { name ->
+                putInt("max_tokens_$name", _selectedMaxTokens.value)
+            }
             putString("selected_npu_device", _selectedNpuDeviceId.value)
             apply()
         }
@@ -126,7 +127,8 @@ class CreatorViewModel(
             if (_selectedModel.value == null && !_isModelLoaded.value) {
                 available.firstOrNull()?.let {
                     _selectedModel.value = it
-                    _selectedMaxTokens.value = _selectedMaxTokens.value.coerceIn(1, it.contextWindowSize.coerceAtLeast(1))
+                    val savedTokens = prefs.getInt("max_tokens_${it.name}", minOf(4096, it.contextWindowSize.coerceAtLeast(1)))
+                    _selectedMaxTokens.value = savedTokens.coerceIn(1, it.contextWindowSize.coerceAtLeast(1))
                     _selectedBackend.value = if (it.supportsGpu) {
                         _selectedBackend.value ?: LlmInference.Backend.GPU
                     } else {
@@ -143,8 +145,9 @@ class CreatorViewModel(
         }
         
         _selectedModel.value = model
-        _isModelLoaded.value = false // Require reload if model changed
-        _selectedMaxTokens.value = _selectedMaxTokens.value.coerceIn(1, model.contextWindowSize.coerceAtLeast(1))
+        _isModelLoaded.value = false
+        val savedTokens = prefs.getInt("max_tokens_${model.name}", minOf(4096, model.contextWindowSize.coerceAtLeast(1)))
+        _selectedMaxTokens.value = savedTokens.coerceIn(1, model.contextWindowSize.coerceAtLeast(1))
 
         _selectedBackend.value = if (model.supportsGpu) {
             _selectedBackend.value ?: LlmInference.Backend.GPU
@@ -334,5 +337,12 @@ class CreatorViewModel(
     
     fun clearError() {
         _error.value = null
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        viewModelScope.launch {
+            try { inferenceService.unloadModel() } catch (_: Exception) {}
+        }
     }
 }

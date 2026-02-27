@@ -2,9 +2,11 @@ package com.llmhub.llmhub.screens
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -62,6 +64,12 @@ fun VibeCoderScreen(
         onDispose { view.viewTreeObserver.removeOnGlobalLayoutListener(listener) }
     }
 
+    // Unload model when truly leaving this screen (not when going to canvas preview)
+    var navigatingToCanvas by remember { mutableStateOf(false) }
+    DisposableEffect(Unit) {
+        onDispose { if (!navigatingToCanvas) viewModel.unloadModel() }
+    }
+
     LaunchedEffect(imeVisible.value) {
         if (imeVisible.value && promptFocused) {
             promptBringRequester.bringIntoView()
@@ -71,6 +79,7 @@ fun VibeCoderScreen(
     // UI State
     var promptText by remember { mutableStateOf("") }
     var showSettingsSheet by remember { mutableStateOf(false) }
+    var codeFocused by remember { mutableStateOf(false) }
     
     // ViewModel states
     val availableModels by viewModel.availableModels.collectAsState()
@@ -98,13 +107,12 @@ fun VibeCoderScreen(
             viewModel.clearError()
         }
     }
-    // Auto-scroll to bottom when code is being generated
-    LaunchedEffect(generatedCode) {
-        if (generatedCode.isNotEmpty() && isProcessing) {
-            coroutineScope.launch {
-                scrollState.animateScrollTo(scrollState.maxValue)
-                codeScrollState.animateScrollTo(codeScrollState.maxValue)
-            }
+    // Auto-scroll to bottom when code is being generated —
+    // use snapshotFlow on maxValue so we scroll AFTER layout has measured new content
+    LaunchedEffect(isProcessing) {
+        if (isProcessing) {
+            snapshotFlow { codeScrollState.maxValue }
+                .collect { max -> codeScrollState.animateScrollTo(max) }
         }
     }
     
@@ -191,11 +199,15 @@ fun VibeCoderScreen(
                     .fillMaxSize()
                     .padding(innerPadding)
                     .imePadding()
-                    .verticalScroll(scrollState)
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-            // Prompt Input Section
+            // Prompt Input Section — hidden when editing code with keyboard up
+            AnimatedVisibility(
+                visible = !(codeFocused && imeVisible.value),
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -299,20 +311,23 @@ fun VibeCoderScreen(
                         }
                     }
                 }
+            } // end AnimatedVisibility prompt section
             
-            // Code Output Section
+            // Code Output Section — fills remaining height
             if (generatedCode.isNotEmpty() || isProcessing) {
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Column(
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .fillMaxSize()
                             .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Header
+                        // Header row
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -323,30 +338,36 @@ fun VibeCoderScreen(
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold
                             )
-                            
-                            if (codeLanguage != CodeLanguage.UNKNOWN) {
-                                Surface(
-                                    modifier = Modifier
-                                        .padding(start = 8.dp),
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f)
-                                ) {
-                                    Text(
-                                        text = codeLanguage.name,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.tertiary
-                                    )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (codeLanguage != CodeLanguage.UNKNOWN) {
+                                    Surface(
+                                        modifier = Modifier.padding(end = 8.dp),
+                                        shape = RoundedCornerShape(16.dp),
+                                        color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f)
+                                    ) {
+                                        Text(
+                                            text = codeLanguage.name,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.tertiary
+                                        )
+                                    }
+                                }
+                                if (!isProcessing && generatedCode.isNotEmpty()) {
+                                    IconButton(
+                                        onClick = { clipboardManager.setText(AnnotatedString(generatedCode)) },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(Icons.Default.ContentCopy, contentDescription = "Copy", modifier = Modifier.size(16.dp))
+                                    }
                                 }
                             }
                         }
-                        
-                        // Loading indicator
+
+                        // Loading indicator (streaming)
                         if (isProcessing && generatedCode.isEmpty()) {
                             LinearProgressIndicator(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(4.dp),
+                                modifier = Modifier.fillMaxWidth().height(4.dp),
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Text(
@@ -358,72 +379,60 @@ fun VibeCoderScreen(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                        } else if (generatedCode.isNotEmpty()) {
-                            // Code display
-                            Surface(
+                        }
+
+                        // Editable code field — fills remaining Card space, auto-scrolls during generation
+                        if (generatedCode.isNotEmpty() || isProcessing) {
+                            Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .heightIn(min = 100.dp, max = 300.dp),
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                shape = RoundedCornerShape(8.dp)
+                                    .weight(1f)
+                                    .background(
+                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .verticalScroll(codeScrollState)
+                                    .padding(12.dp)
                             ) {
-                                Text(
-                                    text = generatedCode,
+                                BasicTextField(
+                                    value = generatedCode,
+                                    onValueChange = { if (!isProcessing) viewModel.updateGeneratedCode(it) },
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(12.dp)
-                                        .verticalScroll(codeScrollState),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                                        .onFocusChanged { codeFocused = it.isFocused },
+                                    textStyle = MaterialTheme.typography.bodySmall.copy(
+                                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    ),
+                                    readOnly = isProcessing,
+                                    enabled = true
                                 )
                             }
-                            
-                            // Action buttons for generated code
-                            if (!isProcessing) {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Button(
-                                        onClick = {
-                                            clipboardManager.setText(AnnotatedString(generatedCode))
-                                        },
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .height(40.dp),
-                                        colors = ButtonDefaults.outlinedButtonColors()
-                                    ) {
-                                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(stringResource(R.string.vibe_coder_copy), style = MaterialTheme.typography.labelSmall)
-                                    }
-                                    
-                                    if (codeLanguage == CodeLanguage.HTML) {
-                                        Button(
-                                            onClick = {
-                                                onNavigateToCanvas?.invoke(generatedCode, "html")
-                                            },
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .height(40.dp),
-                                            colors = ButtonDefaults.buttonColors(
-                                                containerColor = MaterialTheme.colorScheme.primary
-                                            )
-                                        ) {
-                                            Icon(Icons.Default.Preview, contentDescription = null, modifier = Modifier.size(16.dp))
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            Text(stringResource(R.string.vibe_coder_preview), style = MaterialTheme.typography.labelSmall)
-                                        }
-                                    }
-                                }
+                        }
+
+                        // Preview pill button — shown below code box for HTML
+                        if (!isProcessing && generatedCode.isNotEmpty() && codeLanguage == CodeLanguage.HTML) {
+                            Button(
+                                onClick = {
+                                    navigatingToCanvas = true
+                                    onNavigateToCanvas?.invoke(generatedCode, "html")
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(44.dp),
+                                shape = RoundedCornerShape(50),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                Icon(Icons.Default.OpenInBrowser, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.vibe_coder_preview))
                             }
                         }
                     }
                 }
             }
-            
-            Spacer(modifier = Modifier.height(8.dp))
             } // end Column
         } // end else
     }

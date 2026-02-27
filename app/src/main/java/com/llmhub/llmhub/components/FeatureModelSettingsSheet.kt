@@ -108,9 +108,11 @@ fun FeatureModelSettingsSheet(
     }
 
     LaunchedEffect(selectedModel?.name, baseMaxTokensCap) {
-        maxTokensValue = minOf(4096, baseMaxTokensCap.coerceAtLeast(1))
-        maxTokensText = maxTokensValue.toString()
-        onMaxTokensChanged(maxTokensValue)
+        // Preserve user's saved value, just cap it to the selected model's context window
+        val capped = minOf(maxTokensValue.coerceAtLeast(1), baseMaxTokensCap.coerceAtLeast(1))
+        maxTokensValue = capped
+        maxTokensText = capped.toString()
+        onMaxTokensChanged(capped)
         if (selectedModel != null) {
             useGpu = if (isPhi4Mini) false else useGpu
         }
