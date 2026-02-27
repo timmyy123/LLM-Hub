@@ -233,95 +233,37 @@ fun ChatScreen(
                             val targetModel = selectedModel ?: (if (isTargetModelLoaded) currentlyLoadedModel else null) 
                                 ?: availableModels.find { it.name == targetModelName }
 
-                            if (targetModelName != null) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
+                            // Only show subtitle when model is actually loaded
+                            if (isTargetModelLoaded) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        text = if (targetModel != null) getLocalizedModelName(targetModel) else targetModelName,
+                                        text = if (targetModel != null) getLocalizedModelName(targetModel) else targetModelName!!,
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
-                                    
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    
-                                    if (isTargetModelLoaded) {
-                                        // Model IS loaded - show capabilities
-                                        if (viewModel.currentModelSupportsVision()) {
-                                            Icon(
-                                                Icons.Default.RemoveRedEye,
-                                                contentDescription = stringResource(R.string.vision_enabled),
-                                                modifier = Modifier.size(12.dp),
-                                                tint = MaterialTheme.colorScheme.primary
-                                            )
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                        }
-                                        if (targetModel?.supportsAudio == true && !viewModel.isAudioCurrentlyDisabled()) {
-                                            Icon(
-                                                Icons.Default.Mic,
-                                                contentDescription = "Audio enabled",
-                                                modifier = Modifier.size(12.dp),
-                                                tint = MaterialTheme.colorScheme.primary
-                                            )
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                        }
-                                        if (targetModel?.name?.contains("Thinking", ignoreCase = true) == true) {
-                                            Icon(
-                                                Icons.Default.Psychology,
-                                                contentDescription = stringResource(R.string.thinking_label),
-                                                modifier = Modifier.size(12.dp),
-                                                tint = MaterialTheme.colorScheme.primary
-                                            )
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                        }
-                                        if (viewModel.isGpuBackendEnabled()) {
-                                            val isNpu = selectedNpuDeviceId?.startsWith("HTP", ignoreCase = true) == true
-                                            Icon(
-                                                if (isNpu) Icons.Default.Bolt else Icons.Default.Speed,
-                                                contentDescription = if (isNpu) "NPU enabled" else "GPU enabled",
-                                                modifier = Modifier.size(12.dp),
-                                                tint = MaterialTheme.colorScheme.secondary
-                                            )
-                                        }
-                                    } else {
-                                        // Model is NOT loaded - show status chip
-                                        Box(
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .background(MaterialTheme.colorScheme.errorContainer)
-                                                .padding(horizontal = 6.dp, vertical = 2.dp),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(
-                                                text = stringResource(R.string.not_loaded), 
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onErrorContainer,
-                                                fontSize = 9.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
+                                    if (viewModel.currentModelSupportsVision()) {
+                                        Icon(Icons.Default.RemoveRedEye, contentDescription = stringResource(R.string.vision_enabled), modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.primary)
+                                        Spacer(modifier = Modifier.width(4.dp))
                                     }
-
-                                    // RAG indicator - show if enabled regardless of model load status
+                                    if (targetModel?.supportsAudio == true && !viewModel.isAudioCurrentlyDisabled()) {
+                                        Icon(Icons.Default.Mic, contentDescription = "Audio enabled", modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.primary)
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                    }
+                                    if (targetModel?.name?.contains("Thinking", ignoreCase = true) == true) {
+                                        Icon(Icons.Default.Psychology, contentDescription = stringResource(R.string.thinking_label), modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.primary)
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                    }
+                                    if (viewModel.isGpuBackendEnabled()) {
+                                        val isNpu = selectedNpuDeviceId?.startsWith("HTP", ignoreCase = true) == true
+                                        Icon(if (isNpu) Icons.Default.Bolt else Icons.Default.Speed, contentDescription = if (isNpu) "NPU enabled" else "GPU enabled", modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.secondary)
+                                    }
                                     if (isEmbeddingEnabled) {
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Box(
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(12.dp))
-                                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f))
-                                                .padding(horizontal = 8.dp, vertical = 4.dp),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(
-                                                text = stringResource(R.string.rag_enabled),
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.primary,
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.Medium,
-                                                textAlign = TextAlign.Center
-                                            )
+                                        Box(modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)).padding(horizontal = 8.dp, vertical = 4.dp), contentAlignment = Alignment.Center) {
+                                            Text(text = stringResource(R.string.rag_enabled), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center)
                                         }
                                     }
                                 }
@@ -400,10 +342,9 @@ fun ChatScreen(
                                 val isTargetModelLoaded = targetModelName != null && currentlyLoadedModel?.name == targetModelName
                                 
                                 WelcomeMessage(
-                                    currentModel = currentChat?.modelName ?: stringResource(R.string.no_model_selected),
+                                    currentModel = currentlyLoadedModel?.name,
                                     onNavigateToModels = onNavigateToModels,
-                                    hasDownloadedModels = viewModel.hasDownloadedModels(),
-                                    isModelLoaded = isTargetModelLoaded
+                                    hasDownloadedModels = viewModel.hasDownloadedModels()
                                 )
                             }
                         }
@@ -548,10 +489,9 @@ fun ChatScreen(
 
 @Composable
 private fun WelcomeMessage(
-    currentModel: String,
+    currentModel: String?,
     onNavigateToModels: () -> Unit,
-    hasDownloadedModels: Boolean,
-    isModelLoaded: Boolean = false
+    hasDownloadedModels: Boolean
 ) {
     ModernCard(
         modifier = Modifier
@@ -615,30 +555,21 @@ private fun WelcomeMessage(
                         style = MaterialTheme.typography.labelLarge
                     )
                 }
-            } else if (currentModel == stringResource(R.string.no_model_selected) || currentModel == stringResource(R.string.no_model_downloaded)) {
+            } else if (currentModel == null) {
                 Text(
-                    text = stringResource(R.string.ready_to_chat),
+                    text = stringResource(R.string.load_model_to_start),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                } else {
+            } else {
                     // Ensure the chip is horizontally centered even in landscape/tablet widths
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                        if (isModelLoaded) {
-                            StatusChip(
-                                text = currentModel,
-                                icon = Icons.Default.Link,
-                                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-                            )
-                        } else {
-                            StatusChip(
-                                text = "$currentModel (${stringResource(R.string.not_loaded)})",
-                                icon = Icons.Default.Warning,
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
-                                contentColor = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                        }
+                        StatusChip(
+                            text = currentModel,
+                            icon = Icons.Default.Link,
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                        )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
