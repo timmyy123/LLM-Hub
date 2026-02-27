@@ -14,6 +14,7 @@ data class ModelConfig(
     val topP: Float,
     val temperature: Float,
     val backend: String?, // "CPU" or "GPU" or null
+    val deviceId: String?, // e.g. "HTP0" for NPU
     val disableVision: Boolean,
     val disableAudio: Boolean
 ) {
@@ -25,6 +26,7 @@ data class ModelConfig(
         obj.put("topP", topP.toDouble())
         obj.put("temperature", temperature.toDouble())
         if (backend != null) obj.put("backend", backend) else obj.put("backend", JSONObject.NULL)
+        if (deviceId != null) obj.put("deviceId", deviceId) else obj.put("deviceId", JSONObject.NULL)
         obj.put("disableVision", disableVision)
         obj.put("disableAudio", disableAudio)
         return obj
@@ -38,6 +40,7 @@ data class ModelConfig(
                 topP = obj.optDouble("topP", 0.95).toFloat(),
                 temperature = obj.optDouble("temperature", 1.0).toFloat(),
                 backend = if (obj.has("backend") && !obj.isNull("backend")) obj.optString("backend") else null,
+                deviceId = if (obj.has("deviceId") && !obj.isNull("deviceId")) obj.optString("deviceId") else null,
                 disableVision = obj.optBoolean("disableVision", false),
                 disableAudio = obj.optBoolean("disableAudio", false)
             )

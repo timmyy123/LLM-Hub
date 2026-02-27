@@ -4,8 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.ModelData
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.llmhub.llmhub.data.ModelDownloader
@@ -30,6 +33,9 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
     
     private val _hfToken = MutableStateFlow<String?>(null)
     val hfToken: StateFlow<String?> = _hfToken.asStateFlow()
+
+    private val _downloadErrors = MutableSharedFlow<Pair<String, String>>()
+    val downloadErrors: SharedFlow<Pair<String, String>> = _downloadErrors.asSharedFlow()
 
     private val ktorClient = HttpClient(Android)
     private val context = application.applicationContext
@@ -162,7 +168,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                     if (fileCount > 0) {
                         android.util.Log.d("ModelDownloadViewModel", "[loadModels:image_gen] dir=${imageGenDir.absolutePath} fileCount=$fileCount totalDownloaded=$totalDownloaded model.sizeBytes=${model.sizeBytes} expectedFileCount=$expectedFileCount")
                         val completeEnough = if (expectedFileCount > 0) {
-                            fileCount >= expectedFileCount
+                            fileCount >= expectedFileCount && (model.sizeBytes <= 0 || totalDownloaded >= (model.sizeBytes * 0.95).toLong())
                         } else {
                             model.sizeBytes > 0 && totalDownloaded >= (model.sizeBytes * 0.95).toLong()
                         }
@@ -212,8 +218,8 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                     if (fileCount > 0) {
                         android.util.Log.d("ModelDownloadViewModel", "[loadModels:onnx] dir=${onnxModelDir.absolutePath} fileCount=$fileCount totalDownloaded=$totalDownloaded expectedFileCount=$expectedFileCount")
                         
-                        // Check if we have all expected files
-                        val completeEnough = fileCount >= expectedFileCount
+                        // Check if we have all expected files AND if the size is close to expected
+                        val completeEnough = fileCount >= expectedFileCount && (model.sizeBytes <= 0 || totalDownloaded >= (model.sizeBytes * 0.98).toLong())
                         
                         if (completeEnough) {
                             model.copy(
@@ -271,7 +277,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
 
                 val sizeKnown = model.sizeBytes > 0
                 // 98% threshold to account for minor size differences or overhead
-                val completeEnough = sizeKnown && totalFoundBytes >= (model.sizeBytes * 0.98).toLong()
+                val completeEnough = allFilesFound && (!sizeKnown || totalFoundBytes >= (model.sizeBytes * 0.98).toLong())
 
                 if (completeEnough) {
                     model.copy(
@@ -472,7 +478,9 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
             modelDownloader.downloadModel(model)
                 .catch { exception ->
                     // Handle exceptions with better error reporting
-                    android.util.Log.e("ModelDownloadViewModel", "Download failed for ${model.name}: ${exception.message}", exception)
+                    val errorMsg = exception.message ?: "Unknown error occurred"
+                    android.util.Log.e("ModelDownloadViewModel", "Download failed for ${model.name}: $errorMsg", exception)
+                    _downloadErrors.emit(Pair(model.name, errorMsg))
                     updateModel(model.name) { 
                         it.copy(
                             isDownloading = false,
@@ -574,7 +582,10 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                             val fileCount = files.size
                             val totalDownloaded = files.sumOf { it.length() }
                             val expectedFileCount = 1 + model.additionalFiles.size
-                            val completeEnough = fileCount >= expectedFileCount
+                            
+                            val expectedTotal = if (latestStatus != null && latestStatus!!.totalBytes > 0) latestStatus!!.totalBytes else model.sizeBytes
+                            val completeEnough = fileCount >= expectedFileCount && (expectedTotal <= 0 || totalDownloaded >= (expectedTotal * 0.98).toLong())
+                            
                             if (completeEnough && cause == null) {
                                 android.util.Log.i("ModelDownloadViewModel", "ONNX model download completed: ${model.name}, files: $fileCount/$expectedFileCount, size: $totalDownloaded")
                                 updateModel(model.name) {
@@ -754,19 +765,31 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         val modelsDir = File(context.filesDir, "models")
         if (modelsDir.exists() && modelsDir.isDirectory) {
             try {
-                // Primary expected filename
-                val primary = File(modelsDir, model.localFileName())
-                if (primary.exists()) primary.delete()
+                // Determine if this is a directory-based model (ONNX or GGUF multi-file)
+                if ((model.modelFormat == "onnx" || model.modelFormat == "gguf") && model.additionalFiles.isNotEmpty()) {
+                    val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
+                    val modelDir = File(modelsDir, modelDirName)
+                    if (modelDir.exists() && modelDir.isDirectory) {
+                        modelDir.deleteRecursively()
+                        android.util.Log.i("ModelDownloadViewModel", "Deleted multi-file model directory: ${modelDir.absolutePath}")
+                    }
+                } else {
+                    // Standard single-file deletion logic
+                    
+                    // Primary expected filename
+                    val primary = File(modelsDir, model.localFileName())
+                    if (primary.exists()) primary.delete()
 
-                // Legacy .gguf name
-                val legacy = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
-                if (legacy.exists()) legacy.delete()
+                    // Legacy .gguf name
+                    val legacy = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
+                    if (legacy.exists()) legacy.delete()
 
-                // Also remove any files that start with the URL-derived base name (handles .part, .tmp, etc.)
-                val base = model.localFileName().substringBeforeLast('.')
-                modelsDir.listFiles()?.forEach { f ->
-                    if (f.name.startsWith(base) && f.name != model.localFileName()) {
-                        try { f.delete() } catch (_: Exception) { }
+                    // Also remove any files that start with the URL-derived base name (handles .part, .tmp, etc.)
+                    val base = model.localFileName().substringBeforeLast('.')
+                    modelsDir.listFiles()?.forEach { f ->
+                        if (f.name.startsWith(base) && f.name != model.localFileName()) {
+                            try { f.delete() } catch (_: Exception) { }
+                        }
                     }
                 }
             } catch (e: Exception) {

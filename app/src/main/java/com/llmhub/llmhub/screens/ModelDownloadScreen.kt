@@ -48,6 +48,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.net.Uri
 
+import android.view.WindowManager
+import androidx.compose.runtime.DisposableEffect
+
 enum class ModelFormat {
     TASK, LITERTLM, GGUF, QNN_NPU, MNN_CPU
 }
@@ -108,6 +111,27 @@ fun ModelDownloadScreen(
     val imageGenGrouped = imageGenerationModels.groupBy { it.name.substringBefore("(").trim() }
 
     var showImportDialog by remember { mutableStateOf(false) }
+    var errorDialogInfo by remember { mutableStateOf<Pair<String, String>?>(null) }
+
+    LaunchedEffect(downloadViewModel) {
+        downloadViewModel.downloadErrors.collect { errorInfo ->
+            errorDialogInfo = errorInfo
+        }
+    }
+
+    // Keep screen on while any model is downloading or extracting
+    val isAnyModelDownloading = models.any { it.isDownloading || it.isExtracting }
+    DisposableEffect(isAnyModelDownloading) {
+        val window = activity.window
+        if (isAnyModelDownloading) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+        onDispose {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -261,6 +285,20 @@ fun ModelDownloadScreen(
                         showImportDialog = false
                     }
                     success
+                }
+            )
+        }
+        
+        // Error Dialog
+        errorDialogInfo?.let { (modelName, errorMessage) ->
+            AlertDialog(
+                onDismissRequest = { errorDialogInfo = null },
+                title = { Text(stringResource(R.string.error) + ": " + modelName) },
+                text = { Text(errorMessage) },
+                confirmButton = {
+                    TextButton(onClick = { errorDialogInfo = null }) {
+                        Text(stringResource(android.R.string.ok))
+                    }
                 }
             )
         }

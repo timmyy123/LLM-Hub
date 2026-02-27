@@ -43,11 +43,10 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     
     private val _selectedBackend = MutableStateFlow<LlmInference.Backend?>(null)
     val selectedBackend: StateFlow<LlmInference.Backend?> = _selectedBackend.asStateFlow()
+    
+    // Optional selected NPU device id when user chooses NPU for GGUF
     private val _selectedNpuDeviceId = MutableStateFlow<String?>(null)
     val selectedNpuDeviceId: StateFlow<String?> = _selectedNpuDeviceId.asStateFlow()
-
-    private val _selectedMaxTokens = MutableStateFlow(4096)
-    val selectedMaxTokens: StateFlow<Int> = _selectedMaxTokens.asStateFlow()
     
     // Loading states
     private val _isModelLoaded = MutableStateFlow(false)
@@ -88,15 +87,13 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
      */
     private fun loadSavedSettings() {
         val savedBackendName = prefs.getString("selected_backend", LlmInference.Backend.GPU.name)
-        val savedMaxTokens = prefs.getInt("selected_max_tokens", 4096)
-        val savedNpuDeviceId = prefs.getString("selected_npu_device_id", null)
         _selectedBackend.value = try {
             LlmInference.Backend.valueOf(savedBackendName ?: LlmInference.Backend.GPU.name)
         } catch (_: IllegalArgumentException) {
             LlmInference.Backend.GPU
         }
-        _selectedMaxTokens.value = savedMaxTokens.coerceAtLeast(1)
-        _selectedNpuDeviceId.value = savedNpuDeviceId
+        
+        _selectedNpuDeviceId.value = prefs.getString("selected_npu_device", null)
         
         val savedModelName = prefs.getString("selected_model_name", null)
         if (savedModelName != null) {
@@ -120,8 +117,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         prefs.edit().apply {
             putString("selected_model_name", _selectedModel.value?.name)
             putString("selected_backend", _selectedBackend.value?.name)
-            putInt("selected_max_tokens", _selectedMaxTokens.value)
-            putString("selected_npu_device_id", _selectedNpuDeviceId.value)
+            putString("selected_npu_device", _selectedNpuDeviceId.value)
             apply()
         }
     }
@@ -138,7 +134,6 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             if (_selectedModel.value == null) {
                 available.firstOrNull()?.let {
                     _selectedModel.value = it
-                    _selectedMaxTokens.value = _selectedMaxTokens.value.coerceIn(1, it.contextWindowSize.coerceAtLeast(1))
                     _selectedBackend.value = if (it.supportsGpu) {
                         _selectedBackend.value ?: LlmInference.Backend.GPU
                     } else {
@@ -159,8 +154,6 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         
         _selectedModel.value = model
         _isModelLoaded.value = false
-        _selectedMaxTokens.value = _selectedMaxTokens.value.coerceIn(1, model.contextWindowSize.coerceAtLeast(1))
-        _selectedNpuDeviceId.value = null
         
         _selectedBackend.value = if (model.supportsGpu) {
             _selectedBackend.value ?: LlmInference.Backend.GPU
@@ -184,12 +177,6 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         _isModelLoaded.value = false
         saveSettings()
     }
-
-    fun setMaxTokens(maxTokens: Int) {
-        val cap = _selectedModel.value?.contextWindowSize?.coerceAtLeast(1) ?: 4096
-        _selectedMaxTokens.value = maxTokens.coerceIn(1, cap)
-        saveSettings()
-    }
     
     /**
      * Load the selected model into memory
@@ -197,7 +184,6 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     fun loadModel() {
         val model = _selectedModel.value ?: return
         val backend = _selectedBackend.value ?: return
-        val deviceId = _selectedNpuDeviceId.value
         
         if (_isLoading.value || _isModelLoaded.value) {
             return
@@ -209,12 +195,6 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             
             try {
                 inferenceService.unloadModel()
-                inferenceService.setGenerationParameters(
-                    _selectedMaxTokens.value.coerceIn(1, model.contextWindowSize.coerceAtLeast(1)),
-                    null,
-                    null,
-                    null
-                )
                 
                 // Load model with text-only mode (vibe coder generates code as text)
                 val success = inferenceService.loadModel(
@@ -222,7 +202,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                     preferredBackend = backend,
                     disableVision = true,
                     disableAudio = true,
-                    deviceId = deviceId
+                    deviceId = _selectedNpuDeviceId.value
                 )
                 
                 if (success) {
@@ -276,7 +256,6 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         
         processingJob = viewModelScope.launch {
             _isProcessing.value = true
-            _generatedCode.value = ""
             _errorMessage.value = null
             
             // Determine if request is creative/game or utility/precise
@@ -290,13 +269,6 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             // - Games/Creative: 0.6 temperature for balanced creativity
             val temperature = if (isCreative) 0.6f else 0.2f
             
-            inferenceService.setGenerationParameters(
-                maxTokens = 8192,
-                topK = 40,
-                topP = 0.95f,
-                temperature = temperature
-            )
-            
             try {
                 // Step 1: Architect (Meta-Prompting) vs Direct Modification
                 // If we have existing code and the prompt implies a revision, we SKIP the architect
@@ -306,14 +278,28 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                 val currentCode = _generatedCode.value
                 val isRevision = currentCode.isNotBlank() && !prompt.equals("new", ignoreCase = true)
                 
+                if (!isRevision) {
+                    _generatedCode.value = "" // Clear code only for new projects
+                } else {
+                    _generatedCode.value = "" // Clear the old code from the screen so user knows we are working
+                }
+                
                 var builtSpec = ""
                 
                 // Only run Architect if this is a NEW project
                 if (!isRevision) {
                     _isPlanning.value = true
                     try {
-                        // Timeout for planning phase (90 seconds)
-                        kotlinx.coroutines.withTimeout(90_000L) {
+                        // Adjust parameters for Architect (shorter output needed)
+                        inferenceService.setGenerationParameters(
+                            maxTokens = 1024, // Architect only needs to write a short list
+                            topK = 40,
+                            topP = 0.95f,
+                            temperature = temperature
+                        )
+                        
+                        // Timeout for planning phase (3 minutes)
+                        val planResult = kotlinx.coroutines.withTimeoutOrNull(180_000L) {
                             val specPrompt = buildSpecPrompt(prompt, "")
                             val specChatId = "vibe-spec-${UUID.randomUUID()}"
                             
@@ -329,6 +315,11 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                             specResponseFlow.collect { token ->
                                 builtSpec += token
                             }
+                            true // Return true on successful completion
+                        }
+                        
+                        if (planResult == null) {
+                            Log.w("VibeCoderVM", "Planning phase timed out after 3 minutes, using generated spec up to this point: $builtSpec")
                         }
                         
                         // DEBUG: Log the Architect's generated requirements
@@ -343,7 +334,10 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                         }
                         
                     } catch (e: Exception) {
-                         Log.w("VibeCoderVM", "Planning phase failed or timed out: ${e.message}. Falling back to direct generation.")
+                         if (e is kotlinx.coroutines.CancellationException) {
+                             throw e // Ensure genuine cancellations to the job are not swallowed
+                         }
+                         Log.w("VibeCoderVM", "Planning phase failed: ${e.message}. Falling back to direct generation.")
                          try {
                             inferenceService.resetChatSession("vibe-spec-cleanup")
                          } catch (resetEx: Exception) {
@@ -354,6 +348,14 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                 }
                 
                 currentSpec = builtSpec
+                
+                // Configure parameters for the Coder phase (needs lots of output space for code)
+                inferenceService.setGenerationParameters(
+                    maxTokens = 8192,
+                    topK = 40,
+                    topP = 0.95f,
+                    temperature = temperature
+                )
                 
                 // Step 2: Coder (Implementation or Modification)
                 val implementationPrompt = if (isRevision) {
@@ -483,6 +485,16 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             return
         }
         
+        // If no code block is found, assume the entire response is code if it loosely fits a pattern
+        val isLikelyCode = response.contains("<!DOCTYPE", ignoreCase = true) || 
+                           response.contains("<html", ignoreCase = true) || 
+                           response.contains("def ") || 
+                           response.contains("function ")
+        
+        if (isLikelyCode && !response.contains("```")) {
+            _generatedCode.value = response.trim()
+        }
+        
         // Try to extract from XML-like tags (fallback)
         val xmlHtmlMatch = Regex("<code[^>]*>([\\s\\S]*?)</code>", RegexOption.IGNORE_CASE).find(response)
         if (xmlHtmlMatch != null) {
@@ -578,8 +590,10 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
      */
     private fun buildImplementationPrompt(requirements: String): String {
         return """
-            You are an expert developer who is adept at generating production-ready stand-alone apps and games in either HTML or Python. 
-            Your task is to generate clean, functional code based on the Requirements provided below. The code will run in an offline interpreter.
+            You are an expert developer who is adept at generating production-ready stand-alone apps and games.
+            **CRITICAL STACK RULE:** You MUST default to HTML/JS for ALL games and apps. HTML/JS is required because it runs natively in the user's view. Python cannot render UI or playable games in this environment, and should be a LAST RESORT used ONLY for pure math/charting tasks, backend/scripting tasks meant to be copied, or if the user explicitly asks for Python.
+
+            Your task is to generate clean, functional code based on the Requirements provided below.
             
             REQUIREMENTS:
             $requirements
@@ -639,6 +653,8 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         return """
             You are an expert developer. The user wants to MODIFY the existing code below.
             
+            **CRITICAL STACK RULE:** You MUST keep or default to HTML/JS if generating UI-based code. Python cannot render UI in this environment and is ONLY for math/charting, back-end scripts, or if explicitly requested.
+            
             EXISTING CODE:
             ```
             $currentCode
@@ -671,10 +687,12 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
      */
     private fun buildPrompt(userPrompt: String): String {
         return """
-            You are an expert developer who is adept at generating production-ready stand-alone apps and games in either HTML or Python. 
-            Your task is to generate clean, functional code based on the current user request. The code will run in an offline interpreter.
+            You are an expert developer who is adept at generating production-ready stand-alone apps and games.
+            **CRITICAL STACK RULE:** You MUST default to HTML/JS for ALL games and apps. HTML/JS is required because it runs natively in the user's view. Python cannot render UI or playable games in this environment, and should be a LAST RESORT used ONLY for pure math/charting tasks, backend/scripting tasks meant to be copied, or if the user explicitly asks for Python.
 
-            User request: $userPrompt
+            Your task is to generate clean, functional code based on the current user request.
+
+            User request: ${"$"}userPrompt
 
             Think about how to meet the user's request for the best stand-alone functional code to delight the user, considering the constraints and requirements that follow.
 

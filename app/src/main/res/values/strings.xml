@@ -225,6 +225,8 @@
     <string name="dialog_delete_all_chats_message">This will permanently delete all conversation history. This action cannot be undone.</string>
     <string name="dialog_delete_chat_title">Delete Chat?</string>
     <string name="dialog_delete_chat_message">Delete conversation \"%1$s\"?</string>
+    <string name="dialog_delete_creator_title">Delete creAItor?</string>
+    <string name="dialog_delete_creator_message">Delete creAItor \"%1$s\"?</string>
     <string name="action_delete_all">Delete All</string>
     <string name="action_delete">Delete</string>
     <string name="action_rename">Rename</string>

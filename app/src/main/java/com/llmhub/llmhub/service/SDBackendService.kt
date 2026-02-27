@@ -319,6 +319,7 @@ class SDBackendService : Service() {
         val env = mutableMapOf<String, String>()
         
         val systemLibPaths = listOf(
+            applicationInfo.nativeLibraryDir,
             runtimeDir.absolutePath,
             "/system/lib64",
             "/vendor/lib64",

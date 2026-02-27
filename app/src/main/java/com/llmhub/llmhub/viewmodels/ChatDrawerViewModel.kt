@@ -45,6 +45,13 @@ class ChatDrawerViewModel(application: Application) : AndroidViewModel(applicati
         repository.updateChatTitle(chatId, newTitle.trim())
     }
 
+    fun renameCreator(creatorId: String, newName: String) = viewModelScope.launch {
+        val creator = repository.getCreatorById(creatorId)
+        if (creator != null) {
+            repository.insertCreator(creator.copy(name = newName.trim()))
+        }
+    }
+
     fun deleteAllChats() = viewModelScope.launch {
         repository.deleteAllChats()
     }
