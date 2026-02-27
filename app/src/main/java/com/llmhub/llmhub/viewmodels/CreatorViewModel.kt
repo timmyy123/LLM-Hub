@@ -56,6 +56,9 @@ class CreatorViewModel(
     private val _selectedNpuDeviceId = MutableStateFlow<String?>(null)
     val selectedNpuDeviceId: StateFlow<String?> = _selectedNpuDeviceId.asStateFlow()
 
+    private val _selectedMaxTokens = MutableStateFlow(4096)
+    val selectedMaxTokens: StateFlow<Int> = _selectedMaxTokens.asStateFlow()
+
     private val _isModelLoaded = MutableStateFlow(false)
     val isModelLoaded: StateFlow<Boolean> = _isModelLoaded.asStateFlow()
 
@@ -78,12 +81,13 @@ class CreatorViewModel(
 
     private fun loadSavedSettings() {
         val savedBackendName = prefs.getString("selected_backend", LlmInference.Backend.GPU.name)
+        val savedMaxTokens = prefs.getInt("selected_max_tokens", 4096)
         _selectedBackend.value = try {
             LlmInference.Backend.valueOf(savedBackendName ?: LlmInference.Backend.GPU.name)
         } catch (_: IllegalArgumentException) {
             LlmInference.Backend.GPU
         }
-        
+        _selectedMaxTokens.value = savedMaxTokens.coerceAtLeast(1)
         _selectedNpuDeviceId.value = prefs.getString("selected_npu_device", null)
 
         val savedModelName = prefs.getString("selected_model_name", null)
@@ -106,6 +110,7 @@ class CreatorViewModel(
         prefs.edit().apply {
             putString("selected_model_name", _selectedModel.value?.name)
             putString("selected_backend", _selectedBackend.value?.name)
+            putInt("selected_max_tokens", _selectedMaxTokens.value)
             putString("selected_npu_device", _selectedNpuDeviceId.value)
             apply()
         }
@@ -121,6 +126,7 @@ class CreatorViewModel(
             if (_selectedModel.value == null && !_isModelLoaded.value) {
                 available.firstOrNull()?.let {
                     _selectedModel.value = it
+                    _selectedMaxTokens.value = _selectedMaxTokens.value.coerceIn(1, it.contextWindowSize.coerceAtLeast(1))
                     _selectedBackend.value = if (it.supportsGpu) {
                         _selectedBackend.value ?: LlmInference.Backend.GPU
                     } else {
@@ -138,13 +144,20 @@ class CreatorViewModel(
         
         _selectedModel.value = model
         _isModelLoaded.value = false // Require reload if model changed
-        
+        _selectedMaxTokens.value = _selectedMaxTokens.value.coerceIn(1, model.contextWindowSize.coerceAtLeast(1))
+
         _selectedBackend.value = if (model.supportsGpu) {
             _selectedBackend.value ?: LlmInference.Backend.GPU
         } else {
             LlmInference.Backend.CPU
         }
-        
+
+        saveSettings()
+    }
+
+    fun setMaxTokens(maxTokens: Int) {
+        val cap = _selectedModel.value?.contextWindowSize?.coerceAtLeast(1) ?: 4096
+        _selectedMaxTokens.value = maxTokens.coerceIn(1, cap)
         saveSettings()
     }
 
@@ -174,9 +187,13 @@ class CreatorViewModel(
             try {
                 // Unload current if any
                 inferenceService.unloadModel()
-                
-                // Load model 
-                // Using standard settings, enabling generic vision/audio if supported by model, though not strictly used for generation here yet
+                inferenceService.setGenerationParameters(
+                    _selectedMaxTokens.value.coerceIn(1, model.contextWindowSize.coerceAtLeast(1)),
+                    null,
+                    null,
+                    null
+                )
+
                 val success = inferenceService.loadModel(
                     model = model,
                     preferredBackend = backend,
