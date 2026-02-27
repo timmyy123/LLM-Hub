@@ -245,7 +245,7 @@ dependencies {
     // Nexa bundles libonnxruntime.so directly in its AAR (6.5MB) which conflicts with
     // Microsoft's ORT JNI bridge. The task below strips it from the cached AAR so only
     // Microsoft's version ends up in the APK.
-    implementation("ai.nexa:core:0.0.22") {
+    implementation("ai.nexa:core:0.0.24") {
         exclude(group = "com.microsoft.onnxruntime")
     }
 
