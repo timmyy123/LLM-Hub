@@ -158,7 +158,10 @@ class OnnxInferenceService @Inject constructor(
     private fun ensureInputsEmbedsType(env: OrtEnvironment, session: OrtSession, embeds: OnnxTensor): OnnxTensor {
         val expected = (session.inputInfo["inputs_embeds"]?.info as? ai.onnxruntime.TensorInfo)?.type
         if (expected == OnnxJavaType.FLOAT16 && embeds.info.type != OnnxJavaType.FLOAT16) {
-            val fb = embeds.floatBuffer
+            val getBufferMethod = embeds.javaClass.getDeclaredMethod("getBuffer")
+            getBufferMethod.isAccessible = true
+            val rawByteBuffer = getBufferMethod.invoke(embeds) as ByteBuffer
+            val fb = rawByteBuffer.order(ByteOrder.nativeOrder()).asFloatBuffer()
             val floats = FloatArray(fb.remaining())
             fb.get(floats)
             val shape = embeds.info.shape
@@ -448,31 +451,38 @@ class OnnxInferenceService @Inject constructor(
                 // For Ministral we must put ONLY the user message in [INST], not "user: X\nassistant:" — otherwise
                 // the model sees "X" and "assistant" adjacent and interprets it as "Xassistant".
                 val formattedPrompt = if (model.name.contains("Ministral", ignoreCase = true) || model.name.contains("Mistral", ignoreCase = true)) {
+                    val systemPart = if (prompt.startsWith("system: ")) {
+                        prompt.substringAfter("system: ").substringBefore("\n\nuser: ").trim() + "\n\n"
+                    } else ""
                     val lastUser = prompt.substringAfterLast("user: ").substringBefore("\nassistant:").trim()
                     val instBody = if (lastUser.isNotEmpty()) lastUser else prompt.trim()
-                    "[INST]\n$instBody\n[/INST]\n"
+                    "[INST]\n" + systemPart + instBody + "\n[/INST]\n"
                 } else {
-                    // ChatML formatting. If prompt uses app's internal transcript format, convert to proper ChatML turns.
-                    // This prevents models from getting confused by "user:"/"assistant:" markers inside a single user turn.
+                    // ChatML formatting.
                     if (prompt.contains("user: ") && (prompt.contains("\nassistant:") || prompt.endsWith("assistant:"))) {
                         var p = prompt
-                        // 1. Start interaction (First User Turn)
+                        // 0. Handle System Prompt
+                        if (p.startsWith("system: ")) {
+                            p = p.replaceFirst("system: ", "<|im_start|>system\n")
+                            // Add end token before the first user turn if there is one
+                            if (p.contains("\n\nuser: ")) {
+                                p = p.replaceFirst("\n\nuser: ", "<|im_end|>\n<|im_start|>user\n")
+                            }
+                        }
+                        
+                        // 1. Start interaction (First User Turn if no system prompt)
                         if (p.startsWith("user: ")) {
                             p = p.replaceFirst("user: ", "<|im_start|>user\n")
                         }
                         // 2. Middle Interactions (User Turn starts after Assistant Turn ends)
-                        // The \n\n separator from ChatViewModel indicates the end of the previous assistant response.
-                        // We close the previous Assistant turn and open the new User turn.
                         p = p.replace("\n\nuser: ", "<|im_end|>\n<|im_start|>user\n")
                         
                         // 3. Assistant Turns (and closing of User Turns)
-                        // Matches "\nassistant: " (with space) or "\nassistant:" (no space/end of prompt)
-                        // We close the current User turn and open the new Assistant turn.
                         p = p.replace(Regex("\nassistant: ?"), "<|im_end|>\n<|im_start|>assistant\n")
                         
                         "<|startoftext|>" + p
                     } else {
-                        // Fallback: Wrap entire prompt in a single user turn (old behavior)
+                        // Fallback: Wrap entire prompt in a single user turn
                         "<|startoftext|><|im_start|>user\n$prompt<|im_end|>\n<|im_start|>assistant\n"
                     }
                 }
@@ -613,7 +623,15 @@ class OnnxInferenceService @Inject constructor(
                     if (!outputIterator.hasNext()) throw Exception("No outputs from model")
                     val logitsEntry = outputIterator.next()
                     val logitsTensor = logitsEntry.value as OnnxTensor
-                    val logits = logitsTensor.floatBuffer
+                    
+                    // CRITICAL: Avoid grabbing logitsTensor.floatBuffer directly or getByteBuffer() which 
+                    // allocates a JVM heap array equal to the ENTIRE tensor size (can be 500MB+ for logic ctx).
+                    // We use reflection to call the private `getBuffer()` method on OnnxTensor, 
+                    // which returns a mapped DirectByteBuffer zero-copy.
+                    val getBufferMethod = logitsTensor.javaClass.getDeclaredMethod("getBuffer")
+                    getBufferMethod.isAccessible = true
+                    val rawByteBuffer = getBufferMethod.invoke(logitsTensor) as ByteBuffer
+                    val logits = rawByteBuffer.order(ByteOrder.nativeOrder()).asFloatBuffer()
                     
                     // Sample next token from last position  
                     val vocabSize = logits.remaining() / ids.size

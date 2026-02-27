@@ -1127,7 +1127,7 @@ object ModelData {
             description = "LiquidAI's 1.2B instruction model in ONNX format. Q8 quantization for higher quality. 128k context. Requires downloading 2 files.",
             url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/onnx/model_q8.onnx?download=true",
             category = "text",
-            sizeBytes = 1772844567L, // main + onnx_data + tokenizer (HF API)
+            sizeBytes = 2276166039L, // main + onnx_data + onnx_data_1 + tokenizer (HF API)
             source = "LiquidAI",
             supportsVision = false,
             supportsGpu = false,
@@ -1136,6 +1136,7 @@ object ModelData {
             modelFormat = "onnx",
             additionalFiles = listOf(
                 "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/onnx/model_q8.onnx_data?download=true",
+                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/onnx/model_q8.onnx_data_1?download=true",
                 "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/tokenizer.json?download=true",
                 "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/tokenizer_config.json?download=true"
             )
@@ -1165,7 +1166,7 @@ object ModelData {
             description = "LiquidAI's 1.2B reasoning model in ONNX format. Q8 quantization for higher quality. 128k context. Requires downloading 2 files.",
             url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/onnx/model_q8.onnx?download=true",
             category = "text",
-            sizeBytes = 1772844567L, // main + onnx_data + tokenizer (HF API)
+            sizeBytes = 2276166039L, // main + onnx_data + onnx_data_1 + tokenizer (HF API)
             source = "LiquidAI",
             supportsVision = false,
             supportsGpu = false,
@@ -1174,6 +1175,7 @@ object ModelData {
             modelFormat = "onnx",
             additionalFiles = listOf(
                 "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/onnx/model_q8.onnx_data?download=true",
+                "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/onnx/model_q8.onnx_data_1?download=true",
                 "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/tokenizer.json?download=true",
                 "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/tokenizer_config.json?download=true"
             )

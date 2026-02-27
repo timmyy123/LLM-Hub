@@ -23,6 +23,15 @@ class CreatorViewModel(
     private val context: Context
 ) : ViewModel() {
 
+    fun renameCreator(creatorId: String, newName: String) {
+        viewModelScope.launch {
+            val creator = repository.getCreatorById(creatorId)
+            if (creator != null) {
+                repository.insertCreator(creator.copy(name = newName))
+            }
+        }
+    }
+
     private val prefs = context.getSharedPreferences("creator_prefs", Context.MODE_PRIVATE)
 
     private val _isGenerating = MutableStateFlow(false)
@@ -43,11 +52,9 @@ class CreatorViewModel(
 
     private val _selectedBackend = MutableStateFlow<LlmInference.Backend?>(null)
     val selectedBackend: StateFlow<LlmInference.Backend?> = _selectedBackend.asStateFlow()
+
     private val _selectedNpuDeviceId = MutableStateFlow<String?>(null)
     val selectedNpuDeviceId: StateFlow<String?> = _selectedNpuDeviceId.asStateFlow()
-
-    private val _selectedMaxTokens = MutableStateFlow(4096)
-    val selectedMaxTokens: StateFlow<Int> = _selectedMaxTokens.asStateFlow()
 
     private val _isModelLoaded = MutableStateFlow(false)
     val isModelLoaded: StateFlow<Boolean> = _isModelLoaded.asStateFlow()
@@ -71,15 +78,13 @@ class CreatorViewModel(
 
     private fun loadSavedSettings() {
         val savedBackendName = prefs.getString("selected_backend", LlmInference.Backend.GPU.name)
-        val savedMaxTokens = prefs.getInt("selected_max_tokens", 4096)
-        val savedNpuDeviceId = prefs.getString("selected_npu_device_id", null)
         _selectedBackend.value = try {
             LlmInference.Backend.valueOf(savedBackendName ?: LlmInference.Backend.GPU.name)
         } catch (_: IllegalArgumentException) {
             LlmInference.Backend.GPU
         }
-        _selectedMaxTokens.value = savedMaxTokens.coerceAtLeast(1)
-        _selectedNpuDeviceId.value = savedNpuDeviceId
+        
+        _selectedNpuDeviceId.value = prefs.getString("selected_npu_device", null)
 
         val savedModelName = prefs.getString("selected_model_name", null)
         if (savedModelName != null && _selectedModel.value == null) { // Only load if not already set by loaded check
@@ -101,8 +106,7 @@ class CreatorViewModel(
         prefs.edit().apply {
             putString("selected_model_name", _selectedModel.value?.name)
             putString("selected_backend", _selectedBackend.value?.name)
-            putInt("selected_max_tokens", _selectedMaxTokens.value)
-            putString("selected_npu_device_id", _selectedNpuDeviceId.value)
+            putString("selected_npu_device", _selectedNpuDeviceId.value)
             apply()
         }
     }
@@ -117,7 +121,6 @@ class CreatorViewModel(
             if (_selectedModel.value == null && !_isModelLoaded.value) {
                 available.firstOrNull()?.let {
                     _selectedModel.value = it
-                    _selectedMaxTokens.value = _selectedMaxTokens.value.coerceIn(1, it.contextWindowSize.coerceAtLeast(1))
                     _selectedBackend.value = if (it.supportsGpu) {
                         _selectedBackend.value ?: LlmInference.Backend.GPU
                     } else {
@@ -135,8 +138,6 @@ class CreatorViewModel(
         
         _selectedModel.value = model
         _isModelLoaded.value = false // Require reload if model changed
-        _selectedMaxTokens.value = _selectedMaxTokens.value.coerceIn(1, model.contextWindowSize.coerceAtLeast(1))
-        _selectedNpuDeviceId.value = null
         
         _selectedBackend.value = if (model.supportsGpu) {
             _selectedBackend.value ?: LlmInference.Backend.GPU
@@ -148,7 +149,7 @@ class CreatorViewModel(
     }
 
     fun selectBackend(backend: LlmInference.Backend, deviceId: String? = null) {
-        if (_isModelLoaded.value && (_selectedBackend.value != backend || _selectedNpuDeviceId.value != deviceId)) {
+        if (_isModelLoaded.value && _selectedBackend.value != backend) {
             unloadModel()
         }
         
@@ -158,16 +159,9 @@ class CreatorViewModel(
         saveSettings()
     }
 
-    fun setMaxTokens(maxTokens: Int) {
-        val cap = _selectedModel.value?.contextWindowSize?.coerceAtLeast(1) ?: 4096
-        _selectedMaxTokens.value = maxTokens.coerceIn(1, cap)
-        saveSettings()
-    }
-
     fun loadModel() {
         val model = _selectedModel.value ?: return
         val backend = _selectedBackend.value ?: return
-        val deviceId = _selectedNpuDeviceId.value
         
         if (_isLoading.value || _isModelLoaded.value) {
             return
@@ -180,12 +174,6 @@ class CreatorViewModel(
             try {
                 // Unload current if any
                 inferenceService.unloadModel()
-                inferenceService.setGenerationParameters(
-                    _selectedMaxTokens.value.coerceIn(1, model.contextWindowSize.coerceAtLeast(1)),
-                    null,
-                    null,
-                    null
-                )
                 
                 // Load model 
                 // Using standard settings, enabling generic vision/audio if supported by model, though not strictly used for generation here yet
@@ -194,7 +182,7 @@ class CreatorViewModel(
                     preferredBackend = backend,
                     disableVision = !model.supportsVision,
                     disableAudio = !model.supportsAudio,
-                    deviceId = deviceId
+                    deviceId = _selectedNpuDeviceId.value
                 )
                 
                 if (success) {
@@ -262,8 +250,8 @@ class CreatorViewModel(
                     Do not add any other text or conversational filler. Just the format above.
                 """.trimIndent()
 
-                // Add 90-second timeout
-                withTimeout(90_000L) {
+                // Add 3 minute timeout
+                withTimeout(180_000L) {
                     val response = inferenceService.generateResponse(metaPrompt, model)
                     
                     val parsedCreator = parseResponse(response, userPrompt)
@@ -276,7 +264,7 @@ class CreatorViewModel(
 
             } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
                 Log.e("CreatorViewModel", "Generation timed out", e)
-                _error.value = "Generation timed out (90s limit). Please try a simpler prompt or faster model."
+                _error.value = "Generation timed out (3 min limit). Please try a simpler prompt or faster model."
             } catch (e: Exception) {
                 Log.e("CreatorViewModel", "Generation failed", e)
                 _error.value = "Error: ${e.message}"

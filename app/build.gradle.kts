@@ -26,8 +26,8 @@ android {
         applicationId = "com.llmhub.llmhub"
         minSdk = 27
         targetSdk = 36
-        versionCode = 71
-        versionName = "3.5.4"
+        versionCode = 73
+        versionName = "3.6.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         val hfToken: String = localProperties.getProperty("HF_TOKEN", "")
@@ -270,46 +270,72 @@ dependencies {
 // This task physically strips the .so from the cached AAR so that only
 // Microsoft's copy ends up in the APK.
 fun stripNexaOnnxFromCache() {
-    val cacheDir = file("${System.getProperty("user.home")}/.gradle/caches/modules-2/files-2.1/ai.nexa/core/0.0.22")
-    if (!cacheDir.exists()) {
-        logger.warn("Nexa AAR cache dir not found – skipping libonnxruntime.so strip")
+    logger.lifecycle("Attempting to find Nexa Core AAR in debugRuntimeClasspath...")
+    // Dynamically find the Nexa Core AAR from resolved dependencies
+    val configuration = project.configurations.findByName("debugRuntimeClasspath") 
+    if (configuration == null) {
+        logger.error("Configuration debugRuntimeClasspath not found")
         return
     }
-    cacheDir.walkTopDown().filter { it.extension == "aar" }.forEach { aar ->
-        val marker = File(aar.parentFile, ".onnx_stripped")
-        if (marker.exists()) return@forEach          // already processed
+    
+    val artifacts = try {
+        configuration.resolvedConfiguration.resolvedArtifacts
+    } catch (e: Exception) {
+        logger.error("Could not resolve debugRuntimeClasspath: ${e.message}")
+        e.printStackTrace()
+        return
+    }
+    
+    logger.lifecycle("Found ${artifacts.size} artifacts in debugRuntimeClasspath")
+    val nexaArtifact = artifacts.find { 
+        it.moduleVersion.id.group == "ai.nexa" && it.moduleVersion.id.name == "core" 
+    }
+    
+    if (nexaArtifact == null) {
+        logger.error("Nexa core artifact not found in debugRuntimeClasspath. Artifacts: ${artifacts.map { "${it.moduleVersion.id.group}:${it.moduleVersion.id.name}" }}")
+        return
+    }
+    
+    val aar = nexaArtifact.file
+    logger.lifecycle("Found Nexa AAR at: ${aar.absolutePath}")
+    if (!aar.exists()) {
+        logger.warn("Nexa AAR file not found at ${aar.absolutePath}")
+        return
+    }
 
-        logger.lifecycle("Stripping libonnxruntime.so from ${aar.name}")
-        val tmp = File(aar.absolutePath + ".tmp")
-        aar.inputStream().buffered().use { fis ->
-            ZipInputStream(fis).use { zis ->
-                tmp.outputStream().buffered().use { fos ->
-                    ZipOutputStream(fos).use { zos ->
-                        var entry = zis.nextEntry
-                        while (entry != null) {
-                            if (entry.name.endsWith("libonnxruntime.so")) {
-                                logger.lifecycle("  removed: ${entry.name}")
-                            } else {
-                                zos.putNextEntry(ZipEntry(entry.name))
-                                zis.copyTo(zos)
-                                zos.closeEntry()
-                            }
-                            entry = zis.nextEntry
+    val marker = File(aar.parentFile, ".onnx_stripped")
+    if (marker.exists()) return
+
+    logger.lifecycle("Stripping libonnxruntime.so from ${aar.name} at ${aar.absolutePath}")
+    val tmp = File(aar.absolutePath + ".tmp")
+    aar.inputStream().buffered().use { fis ->
+        ZipInputStream(fis).use { zis ->
+            tmp.outputStream().buffered().use { fos ->
+                ZipOutputStream(fos).use { zos ->
+                    var entry = zis.nextEntry
+                    while (entry != null) {
+                        if (entry.name.endsWith("libonnxruntime.so")) {
+                            logger.lifecycle("  removed: ${entry.name}")
+                        } else {
+                            zos.putNextEntry(ZipEntry(entry.name))
+                            zis.copyTo(zos)
+                            zos.closeEntry()
                         }
+                        entry = zis.nextEntry
                     }
                 }
             }
         }
-        aar.delete()
-        tmp.renameTo(aar)
-        marker.createNewFile()
     }
+    aar.delete()
+    tmp.renameTo(aar)
+    marker.createNewFile()
 
     // Also strip any transformed cache copies (AGP transforms) that still include libonnxruntime.so
     val transformsDir = file("${System.getProperty("user.home")}/.gradle/caches")
     if (transformsDir.exists()) {
         transformsDir.walkTopDown()
-            .filter { it.name == "libonnxruntime.so" && it.path.contains("/transformed/core-0.0.22/") }
+            .filter { it.name == "libonnxruntime.so" && it.path.contains("/transformed/core-0.0.24/") }
             .forEach { lib ->
                 logger.lifecycle("Removing transformed libonnxruntime.so: ${lib.path}")
                 try { lib.delete() } catch (_: Exception) { }

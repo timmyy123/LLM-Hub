@@ -21,15 +21,15 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
     private var currentModel: LLMModel? = null
 
     override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?, deviceId: String?): Boolean {
-        // Determine which service to use
-        val newService = when (model.modelFormat) {
+        // Determine which service to use initially
+        val targetService = when (model.modelFormat) {
             "onnx" -> onnxService
             "gguf" -> if ((nexaService as? com.llmhub.llmhub.inference.NexaInferenceService)?.isAvailable() == true) nexaService else mediaPipeService
             else -> mediaPipeService
         }
 
         // Same service and same model already loaded with same backend: skip reload (honor user's CPU/GPU choice on next load)
-        if (currentService == newService) {
+        if (currentService == targetService) {
             val loaded = currentService.getCurrentlyLoadedModel()
             val currentBackend = currentService.getCurrentlyLoadedBackend()
             if (loaded?.name == model.name && (preferredBackend == null || preferredBackend == currentBackend)) {
@@ -39,14 +39,45 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         }
 
         // If switching services, unload the old one
-        if (currentService != newService && currentModel != null) {
+        if (currentService != targetService && currentModel != null) {
             currentService.unloadModel()
         }
 
-        currentService = newService
+        currentService = targetService
         currentModel = model
         
-        return currentService.loadModel(model, preferredBackend, deviceId)
+        var success = false
+        try {
+            success = currentService.loadModel(model, preferredBackend, deviceId)
+        } catch (e: Exception) {
+            android.util.Log.e("UnifiedInferenceService", "Primary service ${currentService.javaClass.simpleName} failed to load", e)
+            success = false
+        }
+
+        // FALLBACK LOGIC: If Nexa failed, try MediaPipe
+        if (!success && currentService == nexaService) {
+            android.util.Log.w("UnifiedInferenceService", "Nexa backend failed to load model. Attempting fallback to MediaPipe/LiteRT.")
+            try {
+                // Unload Nexa just in case it left partial state
+                nexaService.unloadModel()
+                
+                // Switch to MediaPipe
+                currentService = mediaPipeService
+                success = currentService.loadModel(model, preferredBackend, deviceId)
+                if (success) {
+                    android.util.Log.i("UnifiedInferenceService", "Fallback to MediaPipe successful via loadModel(3 args)")
+                }
+            } catch (eFallback: Exception) {
+                android.util.Log.e("UnifiedInferenceService", "Fallback to MediaPipe failed", eFallback)
+                success = false
+            }
+        }
+
+        if (!success) {
+            throw AllBackendsFailedException("Failed to load model with primary and fallback backends")
+        }
+
+        return success
     }
 
     override suspend fun loadModel(
@@ -56,14 +87,14 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         disableAudio: Boolean,
         deviceId: String?
     ): Boolean {
-         val newService = when (model.modelFormat) {
+         val targetService = when (model.modelFormat) {
             "onnx" -> onnxService
             "gguf" -> if ((nexaService as? com.llmhub.llmhub.inference.NexaInferenceService)?.isAvailable() == true) nexaService else mediaPipeService
             else -> mediaPipeService
         }
 
         // Same service and same model already loaded with same backend: skip reload (honor user's CPU/GPU choice on next load)
-        if (currentService == newService) {
+        if (currentService == targetService) {
             val loaded = currentService.getCurrentlyLoadedModel()
             val currentBackend = currentService.getCurrentlyLoadedBackend()
             if (loaded?.name == model.name && (preferredBackend == null || preferredBackend == currentBackend)) {
@@ -73,14 +104,42 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         }
 
         // If switching services, unload the old one
-        if (currentService != newService && currentModel != null) {
+        if (currentService != targetService && currentModel != null) {
             currentService.unloadModel()
         }
 
-        currentService = newService
+        currentService = targetService
         currentModel = model
         
-        return currentService.loadModel(model, preferredBackend, disableVision, disableAudio, deviceId)
+        var success = false
+        try {
+            success = currentService.loadModel(model, preferredBackend, disableVision, disableAudio, deviceId)
+        } catch (e: Exception) {
+            android.util.Log.e("UnifiedInferenceService", "Primary service ${currentService.javaClass.simpleName} failed to load", e)
+            success = false
+        }
+
+        // FALLBACK LOGIC: If Nexa failed, try MediaPipe
+        if (!success && currentService == nexaService) {
+            android.util.Log.w("UnifiedInferenceService", "Nexa backend failed to load model. Attempting fallback to MediaPipe/LiteRT.")
+            try {
+                nexaService.unloadModel()
+                currentService = mediaPipeService
+                success = currentService.loadModel(model, preferredBackend, disableVision, disableAudio, deviceId)
+                if (success) {
+                    android.util.Log.i("UnifiedInferenceService", "Fallback to MediaPipe successful via loadModel(5 args)")
+                }
+            } catch (eFallback: Exception) {
+                 android.util.Log.e("UnifiedInferenceService", "Fallback to MediaPipe failed", eFallback)
+                 success = false
+            }
+        }
+
+        if (!success) {
+            throw AllBackendsFailedException("Failed to load model with primary and fallback backends")
+        }
+
+        return success
     }
 
     override suspend fun unloadModel() {

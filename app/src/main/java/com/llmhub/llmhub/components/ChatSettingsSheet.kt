@@ -43,7 +43,7 @@ fun ChatSettingsSheet(
     isLoadingModel: Boolean,
     onModelSelected: (LLMModel) -> Unit,
     onBackendSelected: (LlmInference.Backend, String?) -> Unit,
-    onLoadModel: (model: LLMModel, maxTokens: Int, topK: Int, topP: Float, temperature: Float, backend: LlmInference.Backend?, disableVision: Boolean, disableAudio: Boolean) -> Unit,
+    onLoadModel: (model: LLMModel, maxTokens: Int, topK: Int, topP: Float, temperature: Float, backend: LlmInference.Backend?, deviceId: String?, disableVision: Boolean, disableAudio: Boolean) -> Unit,
     onUnloadModel: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -147,6 +147,7 @@ fun ChatSettingsSheet(
                         "CPU" -> false
                         else -> newDefaultUseGpu
                     }
+                    useNpu = saved.deviceId == "HTP0"
                     disableVision = saved.disableVision || !selectedModelSupportsVisionInput
                     disableAudio = saved.disableAudio
                 } else {
@@ -159,6 +160,7 @@ fun ChatSettingsSheet(
                     topP = 0.95f
                     temperature = 1.0f
                     useGpu = newDefaultUseGpu
+                    useNpu = false
                     disableVision = newIsGemma3n || !selectedModelSupportsVisionInput
                     disableAudio = newIsGemma3n
                 }
@@ -172,6 +174,7 @@ fun ChatSettingsSheet(
                 topP = 0.95f
                 temperature = 1.0f
                 useGpu = newDefaultUseGpu
+                useNpu = false
                 disableVision = newIsGemma3n || !selectedModelSupportsVisionInput
                 disableAudio = newIsGemma3n
             }
@@ -474,6 +477,7 @@ fun ChatSettingsSheet(
                                         val backend = if (canSelectAccelerator) {
                                             if (useGpu) LlmInference.Backend.GPU else LlmInference.Backend.CPU
                                         } else null
+                                        val deviceId = if (useNpu) "HTP0" else null
                                         
                                         // Save config
                                         scope.launch(Dispatchers.IO) {
@@ -484,6 +488,7 @@ fun ChatSettingsSheet(
                                                     topP = topP,
                                                     temperature = temperature,
                                                     backend = backend?.name,
+                                                    deviceId = deviceId,
                                                     disableVision = disableVision,
                                                     disableAudio = disableAudio
                                                 )
@@ -491,7 +496,7 @@ fun ChatSettingsSheet(
                                             } catch (_: Exception) {}
                                         }
                                         
-                                        onLoadModel(model, finalMax, topK, topP, temperature, backend, disableVision, disableAudio)
+                                        onLoadModel(model, finalMax, topK, topP, temperature, backend, deviceId, disableVision, disableAudio)
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
@@ -754,6 +759,7 @@ fun ChatSettingsSheet(
                                     topP = 0.95f
                                     temperature = 1.0f
                                     useGpu = newDefaultUseGpu
+                                    useNpu = false
                                     disableVision = newIsGemma3n || !selectedModelSupportsVisionInput
                                     disableAudio = newIsGemma3n
                                 }
