@@ -47,7 +47,10 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     // Optional selected NPU device id when user chooses NPU for GGUF
     private val _selectedNpuDeviceId = MutableStateFlow<String?>(null)
     val selectedNpuDeviceId: StateFlow<String?> = _selectedNpuDeviceId.asStateFlow()
-    
+
+    private val _selectedMaxTokens = MutableStateFlow(4096)
+    val selectedMaxTokens: StateFlow<Int> = _selectedMaxTokens.asStateFlow()
+
     // Loading states
     private val _isModelLoaded = MutableStateFlow(false)
     val isModelLoaded: StateFlow<Boolean> = _isModelLoaded.asStateFlow()
@@ -87,14 +90,16 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
      */
     private fun loadSavedSettings() {
         val savedBackendName = prefs.getString("selected_backend", LlmInference.Backend.GPU.name)
+        val savedMaxTokens = prefs.getInt("selected_max_tokens", 4096)
+        val savedNpuDeviceId = prefs.getString("selected_npu_device_id", null)
         _selectedBackend.value = try {
             LlmInference.Backend.valueOf(savedBackendName ?: LlmInference.Backend.GPU.name)
         } catch (_: IllegalArgumentException) {
             LlmInference.Backend.GPU
         }
-        
-        _selectedNpuDeviceId.value = prefs.getString("selected_npu_device", null)
-        
+        _selectedMaxTokens.value = savedMaxTokens.coerceAtLeast(1)
+        _selectedNpuDeviceId.value = savedNpuDeviceId
+
         val savedModelName = prefs.getString("selected_model_name", null)
         if (savedModelName != null) {
             viewModelScope.launch {
@@ -117,7 +122,8 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         prefs.edit().apply {
             putString("selected_model_name", _selectedModel.value?.name)
             putString("selected_backend", _selectedBackend.value?.name)
-            putString("selected_npu_device", _selectedNpuDeviceId.value)
+            putInt("selected_max_tokens", _selectedMaxTokens.value)
+            putString("selected_npu_device_id", _selectedNpuDeviceId.value)
             apply()
         }
     }
@@ -134,6 +140,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             if (_selectedModel.value == null) {
                 available.firstOrNull()?.let {
                     _selectedModel.value = it
+                    _selectedMaxTokens.value = _selectedMaxTokens.value.coerceIn(1, it.contextWindowSize.coerceAtLeast(1))
                     _selectedBackend.value = if (it.supportsGpu) {
                         _selectedBackend.value ?: LlmInference.Backend.GPU
                     } else {
@@ -154,16 +161,24 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         
         _selectedModel.value = model
         _isModelLoaded.value = false
-        
+        _selectedMaxTokens.value = _selectedMaxTokens.value.coerceIn(1, model.contextWindowSize.coerceAtLeast(1))
+        _selectedNpuDeviceId.value = null
+
         _selectedBackend.value = if (model.supportsGpu) {
             _selectedBackend.value ?: LlmInference.Backend.GPU
         } else {
             LlmInference.Backend.CPU
         }
-        
+
         saveSettings()
     }
-    
+
+    fun setMaxTokens(maxTokens: Int) {
+        val cap = _selectedModel.value?.contextWindowSize?.coerceAtLeast(1) ?: 4096
+        _selectedMaxTokens.value = maxTokens.coerceIn(1, cap)
+        saveSettings()
+    }
+
     /**
      * Select inference backend (GPU, CPU, etc.)
      */
@@ -195,7 +210,13 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             
             try {
                 inferenceService.unloadModel()
-                
+                inferenceService.setGenerationParameters(
+                    _selectedMaxTokens.value.coerceIn(1, model.contextWindowSize.coerceAtLeast(1)),
+                    null,
+                    null,
+                    null
+                )
+
                 // Load model with text-only mode (vibe coder generates code as text)
                 val success = inferenceService.loadModel(
                     model = model,

@@ -248,7 +248,7 @@ fun HomeScreen(
             val columns = if (isLandscapeLocal) 3 else 2
 
             // Decide how many rows to fit on screen: landscape 2 rows (3x2), tablet portrait 3 rows (2x3)
-            val headerEstimatedHeight = if (isLandscapeLocal) 120.dp else 160.dp
+            val headerEstimatedHeight = 0.dp
             val rowsWanted: Int? = when {
                 isLandscapeLocal -> 2 // Show 3x2 in landscape
                 !isLandscapeLocal && maxWidth >= 600.dp -> 3 // Tablet portrait: 2x3
@@ -271,10 +271,6 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
-                // Header Section
-                item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
-                    AnimatedWelcomeHeader()
-                }
 
                 // Feature Cards
                 itemsIndexed(features) { index, feature ->
@@ -293,71 +289,7 @@ fun HomeScreen(
     }
 }
 
-@Composable
-fun AnimatedWelcomeHeader() {
-    var visible by remember { mutableStateOf(false) }
-    
-    // Animate visibility on first composition
-    LaunchedEffect(Unit) {
-        visible = true
-    }
-    
-    // Shimmer animation for the welcome text
-    val infiniteTransition = rememberInfiniteTransition(label = "shimmer")
-    val shimmerOffset by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1000f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(3000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "shimmerOffset"
-    )
-    
-    AnimatedVisibility(
-        visible = visible,
-        enter = fadeIn(
-            animationSpec = tween(durationMillis = 600, easing = FastOutSlowInEasing)
-        ) + slideInVertically(
-            initialOffsetY = { -it / 2 },
-            animationSpec = tween(durationMillis = 600, easing = FastOutSlowInEasing)
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp, horizontal = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // Animated gradient text for "Welcome to LLM Hub"
-            Text(
-                text = stringResource(R.string.home_welcome),
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            Color(0xFF667eea),
-                            Color(0xFF764ba2),
-                            Color(0xFFf093fb),
-                            Color(0xFF667eea)
-                        ),
-                        start = androidx.compose.ui.geometry.Offset(shimmerOffset, 0f),
-                        end = androidx.compose.ui.geometry.Offset(shimmerOffset + 300f, 100f)
-                    )
-                ),
-                fontWeight = FontWeight.ExtraBold,
-                textAlign = TextAlign.Center,
-                letterSpacing = 0.5.sp
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = stringResource(R.string.home_subtitle),
-                style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
+
 
 @Composable
 fun AnimatedFeatureCard(
