@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Declares the locales supported by this app so the Android system can:
+    1. Honour AppCompatDelegate.setApplicationLocales() on Android 13+
+    2. Properly report RTL layout direction for right-to-left locales
+       (Arabic, Persian/Farsi, Hebrew) to the Compose layout engine.
+-->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="en"/>
+    <locale android:name="es"/>
+    <locale android:name="pt"/>
+    <locale android:name="de"/>
+    <locale android:name="fr"/>
+    <locale android:name="ru"/>
+    <locale android:name="it"/>
+    <locale android:name="tr"/>
+    <locale android:name="pl"/>
+    <locale android:name="ar"/>
+    <locale android:name="ja"/>
+    <locale android:name="id"/>
+    <locale android:name="ko"/>
+    <locale android:name="fa"/>
+    <locale android:name="he"/>
+    <locale android:name="uk"/>
+</locale-config>
