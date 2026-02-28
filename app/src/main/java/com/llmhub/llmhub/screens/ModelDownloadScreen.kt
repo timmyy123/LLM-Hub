@@ -25,6 +25,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -331,65 +332,41 @@ private fun ModelFamilyCard(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 
-                // First row: Capabilities (vision, audio, thinking)
+                // Render all capability + hardware badges as a 2-column grid for vertical alignment
                 val hasThinking = variants.any { it.name.contains("Thinking", ignoreCase = true) }
-                if (isMultimodal || hasThinking) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.padding(top = 8.dp)
-                    ) {
-                        if (variants.any { it.supportsVision }) {
-                            IconWithLabel(
-                                icon = Icons.Default.RemoveRedEye,
-                                label = stringResource(R.string.vision),
-                                tint = MaterialTheme.colorScheme.tertiary
-                            )
-                        }
-                        if (variants.any { it.supportsAudio }) {
-                            IconWithLabel(
-                                icon = Icons.Default.Mic,
-                                label = stringResource(R.string.audio_support),
-                                tint = MaterialTheme.colorScheme.tertiary
-                            )
-                        }
-                        if (hasThinking) {
-                            IconWithLabel(
-                                icon = Icons.Default.Psychology,
-                                label = stringResource(R.string.thinking_label),
-                                tint = MaterialTheme.colorScheme.tertiary
-                            )
-                        }
-                    }
+                val tertiaryColor = MaterialTheme.colorScheme.tertiary
+                val secondaryColor = MaterialTheme.colorScheme.secondary
+                val primaryColor = MaterialTheme.colorScheme.primary
+                val variantLabel = variants.size.toString() + " " +
+                    if (variants.size > 1) stringResource(R.string.variants) else stringResource(R.string.variant)
+                val badges = buildList<Triple<ImageVector, String, Color>> {
+                    if (variants.any { it.supportsVision })
+                        add(Triple(Icons.Default.RemoveRedEye, stringResource(R.string.vision), tertiaryColor))
+                    if (variants.any { it.supportsAudio })
+                        add(Triple(Icons.Default.Mic, stringResource(R.string.audio_support), tertiaryColor))
+                    if (hasThinking)
+                        add(Triple(Icons.Default.Psychology, stringResource(R.string.thinking_label), tertiaryColor))
+                    if (variants.any { it.supportsGpu })
+                        add(Triple(Icons.Default.Speed, stringResource(R.string.gpu), secondaryColor))
+                    if (variants.any { shouldShowNpuBadge(it) })
+                        add(Triple(Icons.Default.Bolt, "NPU", secondaryColor))
+                    add(Triple(Icons.Default.Storage, variantLabel, primaryColor))
                 }
-                
-                // Second row: GPU support and variant count
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.padding(top = if (isMultimodal || hasThinking) 4.dp else 8.dp)
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.padding(top = 8.dp)
                 ) {
-                    // Show a GPU badge for the family header when any variant declares GPU support.
-                    // Per-variant GPU availability (device checks) is still handled in the variant row.
-                    if (variants.any { it.supportsGpu }) {
-                        IconWithLabel(
-                            icon = Icons.Default.Speed,
-                            label = stringResource(R.string.gpu),
-                            tint = MaterialTheme.colorScheme.secondary
-                        )
+                    badges.chunked(2).forEach { row ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            row.forEach { (icon, label, tint) ->
+                                IconWithLabel(
+                                    icon = icon,
+                                    label = label,
+                                    tint = tint
+                                )
+                            }
+                        }
                     }
-
-                    if (variants.any { shouldShowNpuBadge(it) }) {
-                        IconWithLabel(
-                            icon = Icons.Default.Bolt,
-                            label = "NPU",
-                            tint = MaterialTheme.colorScheme.secondary
-                        )
-                    }
-                    
-                    IconWithLabel(
-                        icon = Icons.Default.Storage,
-                        label = variants.size.toString() + " " + if (variants.size > 1) stringResource(R.string.variants) else stringResource(R.string.variant),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
                 }
             }
             
