@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="multimodal">Multimodal</string>
     <string name="text_only">Nur Text</string>
@@ -665,8 +665,64 @@
     <string name="language_persian">فارسی</string>
     <string name="language_ukrainian">Українська</string>
     <string name="language_hebrew">עברית</string>
+    <!-- New Chat Management & Creator Strings -->
+    <string name="not_loaded">Nicht geladen</string>
+    <string name="dialog_rename_chat_title">Chat umbenennen</string>
+    <string name="chat_title">Chat-Titel</string>
+    <string name="more_options">Weitere Optionen</string>
+    <string name="dialog_delete_creator_title">Persona löschen?</string>
+    <string name="dialog_delete_creator_message">Persona \"%1\" löschen?</string>
+    <string name="action_rename">Umbenennen</string>
+
+    <!-- Vibe Coder Feature -->
+    <string name="feature_vibe_coder">VibeCode</string>
+    <string name="feature_vibe_coder_desc">HTML, JavaScript und Python-Code mit KI generieren</string>
+    <string name="feature_creator_generation">Personas</string>
+    <string name="feature_creator_generation_desc">Erstellen Sie Ihre eigenen individuellen KI-Personas</string>
+    <string name="drawer_my_creators">meine Personas</string>
+    <string name="vibe_coder_title">VibeCode</string>
+    <string name="vibe_coder_prompt_label">Was möchten Sie codieren?</string>
+    <string name="vibe_coder_prompt_hint">Beschreiben Sie den Code, den Sie generieren möchten...</string>
+    <string name="vibe_coder_generate">Code generieren</string>
+    <string name="vibe_coder_generating">Code wird generiert...</string>
+    <string name="vibe_coder_generated_code">Generierter Code</string>
+    <string name="vibe_coder_copy">Kopieren</string>
+    <string name="vibe_coder_preview">Vorschau</string>
+    <string name="vibe_coder_no_model">Kein Modell geladen. Bitte laden Sie zuerst ein Modell herunter und wählen es aus.</string>
+    <string name="vibe_coder_settings">Einstellungen</string>
+    <string name="vibe_coder_backend_select">Backend auswählen</string>
+
+    <!-- VibeCode additions -->
+    <string name="vibe_coder_modification_mode">Änderungsmodus</string>
+    <string name="vibe_coder_refine">Code verfeinern</string>
+    <string name="vibe_coder_clear">Neues Projekt / Kontext löschen</string>
+    <string name="vibe_coder_planning">Architektur planen...</string>
+    <string name="vibe_coder_revising">Code überarbeiten...</string>
+
+    <!-- Creator Generation Screen -->
+    <string name="creator_screen_title">Neuer KI-Charakter</string>
+    <string name="creator_bring_to_life">Einem KI-Charakter Leben einhauchen</string>
+    <string name="creator_description">Du hast die Möglichkeit, einen maßgeschneiderten KI-Charakter zum Leben zu erwecken. Beschreibe einfach, wie dein Charakter auf Eingaben, Anfragen oder Ideen reagieren soll. Sobald wir deinen Charakter erstellt haben, kannst du ihn im Chat verwenden.</string>
+    <string name="creator_prompt_label">Beschreibe deinen KI-Charakter...</string>
+    <string name="creator_prompt_placeholder">z.B. Fasse jedes Thema als Reimgedicht von weniger als 10 Zeilen zusammen</string>
+    <string name="creator_brewing">Magie wird gebraut...</string>
+    <string name="creator_generate_persona">Persona generieren</string>
+    <string name="creator_load_model_first">Bitte zuerst ein Modell laden.</string>
+    <string name="creator_result_heading">Dein neuer KI-Charakter!</string>
+    <string name="creator_system_prompt_label">System-Prompt (PCTF):</string>
+    <string name="creator_save_and_chat">Speichern &amp; Chatten</string>
+
+    <!-- Kid Mode -->
+    <string name="kid_mode_title">Kindermodus</string>
+    <string name="kid_mode_enabled_status">Aktiviert – Sicherheitseinschränkungen aktiv</string>
+    <string name="kid_mode_disabled_status">Deaktiviert</string>
+    <string name="kid_mode_incorrect_pin">Falsche PIN</string>
+    <string name="kid_mode_set_pin_title">PIN für Kindermodus festlegen</string>
+    <string name="kid_mode_set_pin_body">Gib eine 4-stellige PIN ein, um den Kindermodus zu aktivieren. Du benötigst diese PIN zum späteren Deaktivieren.</string>
+    <string name="kid_mode_pin_label">4-stellige PIN</string>
+    <string name="kid_mode_pin_error">PIN muss 4 Ziffern haben</string>
+    <string name="kid_mode_enable">Aktivieren</string>
+    <string name="kid_mode_disable_title">Kindermodus deaktivieren</string>
+    <string name="kid_mode_verify_body">Gib deine 4-stellige PIN ein, um den Kindermodus zu deaktivieren.</string>
+    <string name="kid_mode_disable">Deaktivieren</string>
 </resources>
-
-
-
-

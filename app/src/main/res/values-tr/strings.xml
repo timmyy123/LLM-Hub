@@ -1,4 +1,4 @@
-<resources>
+﻿<resources>
     <string name="app_name">LLM Hub</string>
     
     <!-- Common -->
@@ -698,4 +698,64 @@
     <string name="language_persian">فارسی</string>
     <string name="language_ukrainian">Українська</string>
     <string name="language_hebrew">עברית</string>
+    <!-- New Chat Management & Creator Strings -->
+    <string name="not_loaded">Yüklenmedi</string>
+    <string name="dialog_rename_chat_title">Sohbeti Yeniden Adlandır</string>
+    <string name="chat_title">Sohbet Başlığı</string>
+    <string name="more_options">Daha Fazla Seçenek</string>
+    <string name="dialog_delete_creator_title">Persona Silinsin mi?</string>
+    <string name="dialog_delete_creator_message">Persona \"%1\" silinsin mi?</string>
+    <string name="action_rename">Yeniden Adlandır</string>
+
+    <!-- Vibe Coder Feature -->
+    <string name="feature_vibe_coder">VibeCode</string>
+    <string name="feature_vibe_coder_desc">AI ile HTML, JavaScript ve Python kodu oluşturun</string>
+    <string name="feature_creator_generation">Personalar</string>
+    <string name="feature_creator_generation_desc">Kendi özel AI personalarınızı oluşturun</string>
+    <string name="drawer_my_creators">Personalarım</string>
+    <string name="vibe_coder_title">VibeCode</string>
+    <string name="vibe_coder_prompt_label">Ne kodlamak istersiniz?</string>
+    <string name="vibe_coder_prompt_hint">Oluşturmak istediğiniz kodu açıklayın...</string>
+    <string name="vibe_coder_generate">Kod Oluştur</string>
+    <string name="vibe_coder_generating">Kod oluşturuluyor...</string>
+    <string name="vibe_coder_generated_code">Oluşturulan Kod</string>
+    <string name="vibe_coder_copy">Kopyala</string>
+    <string name="vibe_coder_preview">Önizleme</string>
+    <string name="vibe_coder_no_model">Yüklü model yok. Lütfen önce bir model indirin ve seçin.</string>
+    <string name="vibe_coder_settings">Ayarlar</string>
+    <string name="vibe_coder_backend_select">Backend Seç</string>
+
+    <!-- VibeCode additions -->
+    <string name="vibe_coder_modification_mode">Değişiklik Modu</string>
+    <string name="vibe_coder_refine">Kodu İyileştir</string>
+    <string name="vibe_coder_clear">Yeni Proje / Bağlamı Temizle</string>
+    <string name="vibe_coder_planning">Mimari planlanıyor...</string>
+    <string name="vibe_coder_revising">Kod revize ediliyor...</string>
+
+    <!-- Creator Generation Screen -->
+    <string name="creator_screen_title">Yeni AI Karakteri</string>
+    <string name="creator_bring_to_life">Bir AI\'ya hayat verin</string>
+    <string name="creator_description">Özel bir AI karakterini hayata geçirme gücüne sahipsiniz. Karakterinizin herhangi bir girdi, istek veya fikre nasıl yanıt vereceğini açıklamanız yeterli. Karakteriniz oluşturulduktan sonra sohbette kullanabilirsiniz.</string>
+    <string name="creator_prompt_label">AI karakterinizi tanımlayın...</string>
+    <string name="creator_prompt_placeholder">örn., herhangi bir konuyu 10 satırdan kısa kafiyeli şiir olarak özetle</string>
+    <string name="creator_brewing">sihir hazırlanıyor...</string>
+    <string name="creator_generate_persona">Karakter Oluştur</string>
+    <string name="creator_load_model_first">Lütfen önce bir model yükleyin.</string>
+    <string name="creator_result_heading">Yeni AI karakteriniz hazır!</string>
+    <string name="creator_system_prompt_label">Sistem Yönergesi (PCTF):</string>
+    <string name="creator_save_and_chat">Kaydet ve Sohbet Et</string>
+
+    <!-- Kid Mode -->
+    <string name="kid_mode_title">Çocuk Modu</string>
+    <string name="kid_mode_enabled_status">Etkin - Güvenlik korumaları aktif</string>
+    <string name="kid_mode_disabled_status">Devre dışı</string>
+    <string name="kid_mode_incorrect_pin">Yanlış PIN</string>
+    <string name="kid_mode_set_pin_title">Çocuk Modu PIN Belirle</string>
+    <string name="kid_mode_set_pin_body">Çocuk Modunu etkinleştirmek için 4 haneli bir PIN girin. Daha sonra devre dışı bırakmak için bu PIN gerekli olacak.</string>
+    <string name="kid_mode_pin_label">4 Haneli PIN</string>
+    <string name="kid_mode_pin_error">PIN 4 haneli olmalıdır</string>
+    <string name="kid_mode_enable">Etkinleştir</string>
+    <string name="kid_mode_disable_title">Çocuk Modunu Devre Dışı Bırak</string>
+    <string name="kid_mode_verify_body">Çocuk Modunu devre dışı bırakmak için 4 haneli PIN\'inizi girin.</string>
+    <string name="kid_mode_disable">Devre Dışı Bırak</string>
 </resources>

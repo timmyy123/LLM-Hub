@@ -99,10 +99,10 @@ fun CreatorGenerationScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("new creAItor", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.creator_screen_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 actions = {
@@ -193,14 +193,14 @@ fun CreatorGenerationScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Bring an AI to life",
+                        text = stringResource(R.string.creator_bring_to_life),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "You have the power to bring a custom AI creAItor to life. Just describe how your creAItor will respond to any input, request, or idea. Once we generate your creAItor, you'll be able to use it in chat.",
+                        text = stringResource(R.string.creator_description),
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -216,8 +216,8 @@ fun CreatorGenerationScreen(
                     .bringIntoViewRequester(promptBringRequester)
                     .onFocusChanged { promptFocused = it.isFocused },
                 minLines = 3,
-                label = { Text("Describe your creAItor...") },
-                placeholder = { Text("e.g., summarize any topic as a rhyming poem of less than 10 lines") },
+                label = { Text(stringResource(R.string.creator_prompt_label)) },
+                placeholder = { Text(stringResource(R.string.creator_prompt_placeholder)) },
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -245,18 +245,18 @@ fun CreatorGenerationScreen(
                         strokeWidth = 2.dp
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("brewing magic...")
+                    Text(stringResource(R.string.creator_brewing))
                 } else {
                     Icon(Icons.Default.AutoAwesome, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Generate Persona")
+                    Text(stringResource(R.string.creator_generate_persona))
                 }
             }
             
             if (!isModelLoaded && userPrompt.isNotBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Please load a model first.",
+                    text = stringResource(R.string.creator_load_model_first),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.error
                 )
@@ -283,7 +283,7 @@ fun CreatorGenerationScreen(
                 Spacer(modifier = Modifier.height(24.dp))
                 
                 Text(
-                    text = "Here is your new creAItor!",
+                    text = stringResource(R.string.creator_result_heading),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.align(Alignment.Start)
@@ -321,7 +321,7 @@ fun CreatorGenerationScreen(
                         HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
                         
                         Text(
-                            text = "System Prompt (PCTF):",
+                            text = stringResource(R.string.creator_system_prompt_label),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -354,7 +354,7 @@ fun CreatorGenerationScreen(
                         ) {
                             Icon(Icons.Default.Save, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Save & Chat")
+                            Text(stringResource(R.string.creator_save_and_chat))
                         }
                     }
                 }

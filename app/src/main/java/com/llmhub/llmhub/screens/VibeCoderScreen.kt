@@ -127,7 +127,7 @@ fun VibeCoderScreen(
                 title = { Text(stringResource(R.string.vibe_coder_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 actions = {
@@ -234,7 +234,7 @@ fun VibeCoderScreen(
                                     shape = RoundedCornerShape(4.dp)
                                 ) {
                                     Text(
-                                        text = "Modification Mode",
+                                        text = stringResource(R.string.vibe_coder_modification_mode),
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onTertiaryContainer
@@ -290,7 +290,7 @@ fun VibeCoderScreen(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        if (generatedCode.isNotBlank()) "Refine Code" 
+                                        if (generatedCode.isNotBlank()) stringResource(R.string.vibe_coder_refine)
                                         else stringResource(R.string.vibe_coder_generate)
                                     )
                                 }
@@ -306,7 +306,7 @@ fun VibeCoderScreen(
                                     .padding(end = 0.dp),
                                 colors = ButtonDefaults.outlinedButtonColors()
                             ) {
-                                Icon(Icons.Default.Clear, contentDescription = "New Project / Clear Context")
+                                Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.vibe_coder_clear))
                             }
                         }
                     }
@@ -358,7 +358,7 @@ fun VibeCoderScreen(
                                         onClick = { clipboardManager.setText(AnnotatedString(generatedCode)) },
                                         modifier = Modifier.size(32.dp)
                                     ) {
-                                        Icon(Icons.Default.ContentCopy, contentDescription = "Copy", modifier = Modifier.size(16.dp))
+                                        Icon(Icons.Default.ContentCopy, contentDescription = stringResource(R.string.vibe_coder_copy), modifier = Modifier.size(16.dp))
                                     }
                                 }
                             }
@@ -372,8 +372,8 @@ fun VibeCoderScreen(
                             )
                             Text(
                                 text = when {
-                                    isPlanning -> "Planning architecture..."
-                                    promptText.isNotEmpty() && !promptText.equals("new", ignoreCase = true) -> "Revising code..."
+                                    isPlanning -> stringResource(R.string.vibe_coder_planning)
+                                    promptText.isNotEmpty() && !promptText.equals("new", ignoreCase = true) -> stringResource(R.string.vibe_coder_revising)
                                     else -> stringResource(R.string.vibe_coder_generating)
                                 },
                                 style = MaterialTheme.typography.bodySmall,

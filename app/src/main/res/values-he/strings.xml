@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Common -->
     <string name="app_name">LLM Hub</string>
@@ -698,6 +698,64 @@
     <string name="model_not_loaded">המודל לא נטען כראוי. נסה לעבור למודל אחר או הפעל מחדש.</string>
     <string name="no_response_produced">לא הופקה תגובה. (ייתכן: מגבלת טוקנים או איפוס מושב). הקש על צור מחדש.</string>
     <string name="prompt_too_long">הבקשה ארוכה מדי. קיצר את ההודעה ונסה שוב.</string>
+    <!-- New Chat Management & Creator Strings -->
+    <string name="not_loaded">לא נטען</string>
+    <string name="dialog_rename_chat_title">שנה שם לצ\'אט</string>
+    <string name="chat_title">כותרת הצ\'אט</string>
+    <string name="more_options">אפשרויות נוספות</string>
+    <string name="dialog_delete_creator_title">מחק פרסונה?</string>
+    <string name="dialog_delete_creator_message">למחוק פרסונה \"%1\"?</string>
+    <string name="action_rename">שנה שם</string>
+
+    <!-- Vibe Coder Feature -->
+    <string name="feature_vibe_coder">VibeCode</string>
+    <string name="feature_vibe_coder_desc">הפק קוד HTML, JavaScript ו-Python עם AI</string>
+    <string name="feature_creator_generation">פרסונות</string>
+    <string name="feature_creator_generation_desc">צור פרסונות AI מותאמות אישית משלך</string>
+    <string name="drawer_my_creators">הפרסונות שלי</string>
+    <string name="vibe_coder_title">VibeCode</string>
+    <string name="vibe_coder_prompt_label">מה תרצה לתכנת?</string>
+    <string name="vibe_coder_prompt_hint">תאר את הקוד שברצונך לייצר...</string>
+    <string name="vibe_coder_generate">הפק קוד</string>
+    <string name="vibe_coder_generating">מייצר קוד...</string>
+    <string name="vibe_coder_generated_code">קוד שנוצר</string>
+    <string name="vibe_coder_copy">העתק</string>
+    <string name="vibe_coder_preview">תצוגה מקדימה</string>
+    <string name="vibe_coder_no_model">לא נטען מודל. אנא הורד ובחר מודל תחילה.</string>
+    <string name="vibe_coder_settings">הגדרות</string>
+    <string name="vibe_coder_backend_select">בחר Backend</string>
+
+    <!-- VibeCode additions -->
+    <string name="vibe_coder_modification_mode">מצב שינוי</string>
+    <string name="vibe_coder_refine">שיפור קוד</string>
+    <string name="vibe_coder_clear">פרוייקט חדש / נקה הקשר</string>
+    <string name="vibe_coder_planning">מתכנן ארכיטקטורה...</string>
+    <string name="vibe_coder_revising">מעדכן קוד...</string>
+
+    <!-- Creator Generation Screen -->
+    <string name="creator_screen_title">יוצר AI חדש</string>
+    <string name="creator_bring_to_life">תן חיים לבינה מלאכותית</string>
+    <string name="creator_description">יש לך את הכוח לתת חיים לדמות AI מותאמת אישית. פשוט תאר כיצד הדמות שלך תגיב לכל קלט, בקשה או רעיון. לאחר יצירת הדמות, תוכל להשתמש בה בצ\'אט.</string>
+    <string name="creator_prompt_label">תאר את הדמות שלך...</string>
+    <string name="creator_prompt_placeholder">לדוגמה: סכם כל נושא כשיר מחורז מפחות מ-10 שורות</string>
+    <string name="creator_brewing">הקסם מתרקם...</string>
+    <string name="creator_generate_persona">צור דמות</string>
+    <string name="creator_load_model_first">אנא טען מודל קודם.</string>
+    <string name="creator_result_heading">הנה הדמות החדשה שלך!</string>
+    <string name="creator_system_prompt_label">הנחיית מערכת (PCTF):</string>
+    <string name="creator_save_and_chat">שמור ושוחח</string>
+
+    <!-- Kid Mode -->
+    <string name="kid_mode_title">מצב ילדים</string>
+    <string name="kid_mode_enabled_status">מופעל - הגנות בטיחות פעילות</string>
+    <string name="kid_mode_disabled_status">מושבת</string>
+    <string name="kid_mode_incorrect_pin">קוד PIN שגוי</string>
+    <string name="kid_mode_set_pin_title">הגדר קוד PIN למצב ילדים</string>
+    <string name="kid_mode_set_pin_body">הזן קוד PIN בן 4 ספרות להפעלת מצב ילדים. תזדקק לקוד זה להשבתתו בהמשך.</string>
+    <string name="kid_mode_pin_label">קוד PIN בן 4 ספרות</string>
+    <string name="kid_mode_pin_error">קוד PIN חייב להכיל 4 ספרות</string>
+    <string name="kid_mode_enable">הפעל</string>
+    <string name="kid_mode_disable_title">השבת מצב ילדים</string>
+    <string name="kid_mode_verify_body">הזן את קוד ה-PIN בן 4 הספרות שלך להשבתת מצב ילדים.</string>
+    <string name="kid_mode_disable">השבת</string>
 </resources>
-
-

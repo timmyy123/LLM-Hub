@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Common -->
     <string name="app_name">LLM Hub</string>
@@ -699,6 +699,64 @@
     <string name="model_not_loaded">مدل به‌درستی بارگذاری نشده است. لطفاً به مدل دیگری سوئیچ کنید یا برنامه را از نو راه‌اندازی کنید.</string>
     <string name="no_response_produced">هیچ پاسخی تولید نشد. (ممکن: محدودیت توکن یا بازنشانی جلسه). روی تولید دوباره ضربه بزنید.</string>
     <string name="prompt_too_long">درخواست خیلی طولانی است. لطفاً متن را کوتاه‌تر کنید و دوباره امتحان کنید.</string>
+    <!-- New Chat Management & Creator Strings -->
+    <string name="not_loaded">بارگذاری نشده</string>
+    <string name="dialog_rename_chat_title">تغییر نام چت</string>
+    <string name="chat_title">عنوان چت</string>
+    <string name="more_options">گزینه‌های بیشتر</string>
+    <string name="dialog_delete_creator_title">حذف پرسونا؟</string>
+    <string name="dialog_delete_creator_message">پرسونای \"%1\" حذف شود؟</string>
+    <string name="action_rename">تغییر نام</string>
+
+    <!-- Vibe Coder Feature -->
+    <string name="feature_vibe_coder">VibeCode</string>
+    <string name="feature_vibe_coder_desc">تولید کد HTML، JavaScript و Python با هوش مصنوعی</string>
+    <string name="feature_creator_generation">پرسوناها</string>
+    <string name="feature_creator_generation_desc">پرسوناهای هوش مصنوعی سفارشی خود را بسازید</string>
+    <string name="drawer_my_creators">پرسوناهای من</string>
+    <string name="vibe_coder_title">VibeCode</string>
+    <string name="vibe_coder_prompt_label">می‌خواهید چه چیزی کد بزنید؟</string>
+    <string name="vibe_coder_prompt_hint">کدی را که می‌خواهید تولید کنید توصیف کنید...</string>
+    <string name="vibe_coder_generate">تولید کد</string>
+    <string name="vibe_coder_generating">در حال تولید کد...</string>
+    <string name="vibe_coder_generated_code">کد تولیدشده</string>
+    <string name="vibe_coder_copy">کپی</string>
+    <string name="vibe_coder_preview">پیش‌نمایش</string>
+    <string name="vibe_coder_no_model">هیچ مدلی بارگذاری نشده. لطفاً ابتدا یک مدل دانلود کرده و انتخاب کنید.</string>
+    <string name="vibe_coder_settings">تنظیمات</string>
+    <string name="vibe_coder_backend_select">انتخاب بک‌اند</string>
+
+    <!-- VibeCode additions -->
+    <string name="vibe_coder_modification_mode">حالت تغییر</string>
+    <string name="vibe_coder_refine">بهبود کد</string>
+    <string name="vibe_coder_clear">پروژه جدید / پاک کردن</string>
+    <string name="vibe_coder_planning">طراحی معماری...</string>
+    <string name="vibe_coder_revising">ویرایش کد...</string>
+
+    <!-- Creator Generation Screen -->
+    <string name="creator_screen_title">شخصیت جدید</string>
+    <string name="creator_bring_to_life">یک هوش مصنوعی بسازید</string>
+    <string name="creator_description">این قدرت را دارید که یک شخصیت هوش مصنوعی سفارشی بسازید. فقط توضیح دهید که شخصیت شما چطور به هر ورودی، درخواست یا ایده‌ای پاسخ می‌دهد. پس از ساخت شخصیت، می‌توانید از آن در چت استفاده کنید.</string>
+    <string name="creator_prompt_label">شخصیت خود را توضیح دهید...</string>
+    <string name="creator_prompt_placeholder">مثلاً: هر موضوعی را به صورت شعر مقفا کمتر از ۱۰ سطر خلاصه کنید</string>
+    <string name="creator_brewing">جادو در حال آماده شدن...</string>
+    <string name="creator_generate_persona">ساخت شخصیت</string>
+    <string name="creator_load_model_first">لطفاً ابتدا یک مدل بارگذاری کنید.</string>
+    <string name="creator_result_heading">شخصیت جدید شما!</string>
+    <string name="creator_system_prompt_label">راهنمای سیستم (PCTF):</string>
+    <string name="creator_save_and_chat">ذخیره و گفتگو</string>
+
+    <!-- Kid Mode -->
+    <string name="kid_mode_title">حالت کودک</string>
+    <string name="kid_mode_enabled_status">فعال - محافظت‌های ایمنی فعال است</string>
+    <string name="kid_mode_disabled_status">غیرفعال</string>
+    <string name="kid_mode_incorrect_pin">پین نادرست</string>
+    <string name="kid_mode_set_pin_title">تنظیم پین حالت کودک</string>
+    <string name="kid_mode_set_pin_body">یک پین ۴ رقمی وارد کنید تا حالت کودک فعال شود. برای غیرفعال کردن بعداً به این پین نیاز خواهید داشت.</string>
+    <string name="kid_mode_pin_label">پین ۴ رقمی</string>
+    <string name="kid_mode_pin_error">پین باید ۴ رقم باشد</string>
+    <string name="kid_mode_enable">فعال‌سازی</string>
+    <string name="kid_mode_disable_title">غیرفعال کردن حالت کودک</string>
+    <string name="kid_mode_verify_body">پین ۴ رقمی خود را وارد کنید تا حالت کودک غیرفعال شود.</string>
+    <string name="kid_mode_disable">غیرفعال‌سازی</string>
 </resources>
-
-

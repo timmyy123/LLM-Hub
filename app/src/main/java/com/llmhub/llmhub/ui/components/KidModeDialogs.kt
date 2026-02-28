@@ -10,6 +10,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.llmhub.llmhub.R
 
 @Composable
 fun KidModeSetPinDialog(
@@ -18,13 +19,14 @@ fun KidModeSetPinDialog(
 ) {
     var pin by remember { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
+    val pinErrorMessage = stringResource(R.string.kid_mode_pin_error)
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Set Kid Mode PIN") },
+        title = { Text(stringResource(R.string.kid_mode_set_pin_title)) },
         text = {
             Column {
-                Text("Enter a 4-digit PIN to enable Kid Mode. You will need this PIN to disable it later.")
+                Text(stringResource(R.string.kid_mode_set_pin_body))
                 Spacer(modifier = Modifier.height(16.dp))
                 OutlinedTextField(
                     value = pin,
@@ -34,7 +36,7 @@ fun KidModeSetPinDialog(
                             error = ""
                         }
                     },
-                    label = { Text("4-Digit PIN") },
+                    label = { Text(stringResource(R.string.kid_mode_pin_label)) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -49,16 +51,16 @@ fun KidModeSetPinDialog(
                     if (pin.length == 4) {
                         onConfirm(pin)
                     } else {
-                        error = "PIN must be 4 digits"
+                        error = pinErrorMessage
                     }
                 }
             ) {
-                Text("Enable")
+                Text(stringResource(R.string.kid_mode_enable))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.action_cancel))
             }
         }
     )
@@ -71,13 +73,14 @@ fun KidModeVerifyPinDialog(
 ) {
     var pin by remember { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
+    val pinErrorMessage = stringResource(R.string.kid_mode_pin_error)
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Disable Kid Mode") },
+        title = { Text(stringResource(R.string.kid_mode_disable_title)) },
         text = {
             Column {
-                Text("Enter your 4-digit PIN to disable Kid Mode.")
+                Text(stringResource(R.string.kid_mode_verify_body))
                 Spacer(modifier = Modifier.height(16.dp))
                 OutlinedTextField(
                     value = pin,
@@ -87,7 +90,7 @@ fun KidModeVerifyPinDialog(
                             error = ""
                         }
                     },
-                    label = { Text("4-Digit PIN") },
+                    label = { Text(stringResource(R.string.kid_mode_pin_label)) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -102,16 +105,16 @@ fun KidModeVerifyPinDialog(
                     if (pin.length == 4) {
                         onConfirm(pin)
                     } else {
-                        error = "PIN must be 4 digits"
+                        error = pinErrorMessage
                     }
                 }
             ) {
-                Text("Disable")
+                Text(stringResource(R.string.kid_mode_disable))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.action_cancel))
             }
         }
     )
