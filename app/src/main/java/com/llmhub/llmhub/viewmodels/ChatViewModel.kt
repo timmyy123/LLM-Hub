@@ -763,19 +763,27 @@ class ChatViewModel(
                 val errorMessage = StringBuilder()
                 errorMessage.append("❌ **Backend Failure**\n\n")
                 
-                if (currentModel?.modelFormat == "onnx") {
-                    errorMessage.append("A final, sorry, no variant of this ONNX model could be successfully loaded. ONNX fallback has failed.\n\n")
-                    errorMessage.append("Logs indicte this is usually caused by unsupported operations for your device's specific hardware.")
-                } else {
-                    errorMessage.append("The current model (${currentModel?.name}) could not be loaded by any supported backend (Nexa or MediaPipe).\n\n")
-                    
-                    if (onnxAlternative != null) {
-                        errorMessage.append("💡 **Recommendation:**\n")
-                        errorMessage.append("We found an **ONNX** version of this model: **${onnxAlternative.name}**.\n")
-                        errorMessage.append("ONNX is fully supported on your Pixel Fold's Tensor chip. Please switch to this model (you may need to download it first).")
-                    } else {
-                        errorMessage.append("💡 **Recommendation:**\n")
-                        errorMessage.append("Try using a different model format (like .task or .onnx) which might be more compatible with your device.")
+                when (currentModel?.modelFormat) {
+                    "onnx" -> {
+                        errorMessage.append("This ONNX model could not be loaded. This is usually caused by unsupported operations for your device's specific hardware.")
+                    }
+                    "gguf" -> {
+                        errorMessage.append("The GGUF model (${currentModel?.name}) could not be loaded by the Nexa SDK.\n\n")
+                        if (onnxAlternative != null) {
+                            errorMessage.append("💡 **Recommendation:**\n")
+                            errorMessage.append("We found an **ONNX** version of this model: **${onnxAlternative.name}**.\n")
+                            errorMessage.append("ONNX is fully supported on your device. Please switch to this model (you may need to download it first).")
+                        } else {
+                            errorMessage.append("💡 **Recommendation:**\n")
+                            errorMessage.append("Try using an ONNX version of this model which may be more compatible with your device.")
+                        }
+                    }
+                    else -> {
+                        errorMessage.append("The model (${currentModel?.name}) could not be loaded.\n\n")
+                        if (onnxAlternative != null) {
+                            errorMessage.append("💡 **Recommendation:**\n")
+                            errorMessage.append("Try the **ONNX** version instead: **${onnxAlternative.name}**.")
+                        }
                     }
                 }
 

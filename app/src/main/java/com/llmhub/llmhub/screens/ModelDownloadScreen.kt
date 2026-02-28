@@ -63,11 +63,11 @@ private fun isGpuSupportedForModel(model: LLMModel, context: Context): Boolean {
     return model.supportsGpu
 }
 
-private fun is8Gen4Device(): Boolean = DeviceInfo.getChipsetSuffix() == "8gen4"
+private fun is8Gen4Device(): Boolean = DeviceInfo.isQualcommNpuSupported()
 
 private fun is8GenFamilyDeviceForQnn(): Boolean {
     return when (DeviceInfo.getChipsetSuffix()) {
-        "8gen1", "8gen2", "8gen3", "8gen4" -> true
+        "8gen1", "8gen2", "8gen3", "8gen4", "8gen5" -> true
         else -> false
     }
 }
