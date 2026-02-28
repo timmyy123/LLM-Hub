@@ -62,7 +62,7 @@ fun FeatureModelSettingsSheet(
     onModelSelected: (LLMModel) -> Unit,
     onBackendSelected: (LlmInference.Backend, String?) -> Unit,
     onMaxTokensChanged: (Int) -> Unit,
-    onLoadModel: (model: LLMModel, maxTokens: Int, backend: LlmInference.Backend?, deviceId: String?) -> Unit,
+    onLoadModel: (model: LLMModel, maxTokens: Int, backend: LlmInference.Backend?, deviceId: String?, nGpuLayers: Int) -> Unit,
     onUnloadModel: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -97,6 +97,7 @@ fun FeatureModelSettingsSheet(
         )
     }
     var useNpu by remember(initialSelectedNpuDeviceId) { mutableStateOf(initialSelectedNpuDeviceId != null) }
+    var gpuLayers by remember { mutableStateOf(999) }
 
     val selectedModelSupportsVisionInput by remember(selectedModel, context) {
         derivedStateOf {
@@ -315,7 +316,7 @@ fun FeatureModelSettingsSheet(
                                             onClick = {
                                                 useGpu = true
                                                 useNpu = true
-                                                onBackendSelected(LlmInference.Backend.GPU, "HTP0")
+                                                onBackendSelected(LlmInference.Backend.GPU, "dev0")
                                                 showBackendMenu = false
                                             },
                                             leadingIcon = { Icon(Icons.Default.Bolt, contentDescription = null) },
@@ -349,8 +350,8 @@ fun FeatureModelSettingsSheet(
                                         val backend = if (canSelectAccelerator) {
                                             if (useGpu) LlmInference.Backend.GPU else LlmInference.Backend.CPU
                                         } else null
-                                        val deviceId = if (useNpu) "HTP0" else null
-                                        onLoadModel(model, finalMax, backend, deviceId)
+                                        val deviceId = if (useNpu) "dev0" else null
+                                        onLoadModel(model, finalMax, backend, deviceId, gpuLayers)
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
@@ -430,6 +431,35 @@ fun FeatureModelSettingsSheet(
                                 singleLine = true,
                                 modifier = Modifier.width(72.dp)
                             )
+                        }
+
+                        // GPU Layers (GGUF + GPU/NPU only)
+                        if (selectedModel?.modelFormat == "gguf" && (useGpu || useNpu)) {
+                            Text(
+                                text = stringResource(R.string.gpu_layers_label, gpuLayers),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                                Slider(
+                                    value = gpuLayers.toFloat(),
+                                    onValueChange = { gpuLayers = it.toInt() },
+                                    valueRange = 0f..999f,
+                                    modifier = Modifier.weight(1f).height(28.dp),
+                                    thumb = {
+                                        SliderDefaults.Thumb(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            thumbSize = DpSize(24.dp, 24.dp)
+                                        )
+                                    }
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                OutlinedTextField(
+                                    value = gpuLayers.toString(),
+                                    onValueChange = { v -> gpuLayers = v.filter { it.isDigit() }.toIntOrNull()?.coerceIn(0, 999) ?: gpuLayers },
+                                    modifier = Modifier.width(72.dp),
+                                    singleLine = true
+                                )
+                            }
                         }
                     }
                 }

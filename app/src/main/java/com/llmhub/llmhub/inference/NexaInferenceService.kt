@@ -41,6 +41,14 @@ import com.llmhub.llmhub.websearch.WebSearchService
 import com.llmhub.llmhub.websearch.DuckDuckGoSearchService
 import com.llmhub.llmhub.websearch.SearchIntentDetector
 
+/** State machine states for parsing GPT-OSS Harmony format output. */
+private enum class HarmonyState {
+    BEFORE_HEADER,   // buffering until <|channel|>analysis<|message|>
+    IN_ANALYSIS,     // streaming thinking content; watching for <|end|>
+    IN_TRANSITION,   // silently consuming <|start|>assistant<|channel|>final<|message|>
+    IN_FINAL         // streaming final answer directly
+}
+
 @Singleton
 class NexaInferenceService @Inject constructor(
     private val context: Context
@@ -61,6 +69,15 @@ class NexaInferenceService @Inject constructor(
     private var overrideTopK: Int? = null
     private var overrideTopP: Float? = null
     private var overrideTemperature: Float? = null
+    private var overrideNGpuLayers: Int? = null
+
+    // Thinking sentinel tokens (same values as OnnxInferenceService)
+    private val SENTINEL_THINK = "\u200B\u200BTHINK\u200B\u200B"
+    private val SENTINEL_ENDTHINK = "\u200B\u200BENDTHINK\u200B\u200B"
+
+    // Harmony format state machine (GPT-OSS models: <|channel|>analysis<|message|>...<|end|>...final)
+    private val harmonyBuffer = StringBuilder()
+    private var harmonyState = HarmonyState.BEFORE_HEADER
     
     // Whether the Nexa native SDK and its JNI bindings successfully initialized on this device.
     // UnsatisfiedLinkError is an Error (not Exception), so catch Throwable to avoid crashing the app
@@ -92,7 +109,7 @@ class NexaInferenceService @Inject constructor(
      * - Returns Pair(allowed:Boolean, reason:String?) where reason is non-null when denied.
      * - This is defensive: it catches native/SELinux failures and returns a human-friendly reason.
      */
-    suspend fun probeNpuAvailability(deviceId: String = "HTP0"): Pair<Boolean, String?> {
+    suspend fun probeNpuAvailability(deviceId: String = "dev0"): Pair<Boolean, String?> {
         if (!nexaAvailable) {
             Log.w(TAG, "NPU probe: Nexa SDK unavailable")
             return Pair(false, "Nexa SDK unavailable on device")
@@ -232,7 +249,7 @@ class NexaInferenceService @Inject constructor(
 
         val backendsToTry = mutableListOf<String>()
         if (preferredBackend == LlmInference.Backend.GPU || preferredBackend == null) {
-            backendsToTry.add("GPUOpenCL")
+            backendsToTry.add("gpu")
         }
         backendsToTry.add("CPU")
 
@@ -267,75 +284,55 @@ class NexaInferenceService @Inject constructor(
                     Log.w(TAG, "Capped nCtx from $rawCtx to $nCtx to prevent OOM (Device RAM ~${String.format("%.1f", totalRamGb)}GB)")
                 }
                 // Determine device/plugin to use. If caller provided an explicit deviceId (e.g. "HTP0") prefer it
-                val userRequestedNpu = !deviceId.isNullOrBlank() && deviceId.startsWith("HTP", ignoreCase = true)
+                val userRequestedNpu = !deviceId.isNullOrBlank() && deviceId.startsWith("dev", ignoreCase = true)
                 var isNpuRequested = userRequestedNpu
 
-                // If an HTP device is requested (either explicitly by user or by auto-selection),
+                // If a dev (NPU/Hexagon) device is requested (either explicitly by user or by auto-selection),
                 // run a lightweight probe. Behavior differs based on intent:
                 // - explicit user request: fail fast (return false) if probe denies — do NOT fall back
-                // - automatic request: fall back to GPUOpenCL on probe denial
+                // - automatic request: fall back to gpu on probe denial
                 if (isNpuRequested) {
-                    val (allowed, reason) = probeNpuAvailability(deviceId ?: "HTP0")
+                    val (allowed, reason) = probeNpuAvailability(deviceId ?: "dev0")
                     if (!allowed) {
                         if (userRequestedNpu) {
                             // User explicitly asked for NPU — do not silently fall back. Return failure
                             Log.e(TAG, "NPU probe denied for explicit request deviceId=$deviceId; reason=$reason — refusing to load model")
                             return false
                         } else {
-                            Log.w(TAG, "NPU probe denied for deviceId=$deviceId; reason=$reason — falling back to GPUOpenCL")
+                            Log.w(TAG, "NPU probe denied for deviceId=$deviceId; reason=$reason — falling back to gpu")
                             isNpuRequested = false
                         }
                     } else {
-                        Log.i(TAG, "NPU probe allowed for deviceId=$deviceId — proceeding with HTP")
+                        Log.i(TAG, "NPU probe allowed for deviceId=$deviceId — proceeding with Hexagon")
                     }
                 }
 
                 val deviceToUse = when {
                     backendId == "CPU" -> null
-                    isNpuRequested -> deviceId // explicit Hexagon device like HTP0
-                    else -> "GPUOpenCL"
+                    isNpuRequested -> deviceId // explicit Hexagon device like dev0
+                    else -> "gpu"
                 }
 
-                // nGpuLayers > 0 is required to enable offloading to Hexagon (GGUF cpu_gpu path).
-                // Nexa docs provide examples that set `nGpuLayers = 999` to attempt offloading all layers for
-                // LLMs. The docs require `nGpuLayers > 0` for GGUF-on-Hexagon; they do not mandate a smaller
-                // value for VLMs. To match the Nexa documentation exactly, when an HTP device is requested
-                // we set `nGpuLayers = 999` (attempt full offload) for both LLM and VLM examples.
+                // nGpuLayers > 0 is required to enable offloading to GPU/Hexagon (GGUF cpu_gpu path).
+                // Nexa docs: device_id="gpu" for GPU, "dev0" for NPU/Hexagon.
+                // When the user has set a custom layer count via the slider, honour it; otherwise default 999.
                 val gpuLayers = when {
                     backendId == "CPU" -> 0
-                    isNpuRequested -> 999 // follow Nexa docs/examples: use 999 to attempt full offload
-                    else -> 999
+                    else -> overrideNGpuLayers ?: 999
                 }
 
-                val modelConfig = ModelConfig(nCtx = nCtx, nGpuLayers = gpuLayers).apply {
-                    val cls = this::class.java
-                    val fieldsToSet = mutableMapOf<String, Any>(
-                        "nCtx" to nCtx,
-                        "n_ctx" to nCtx,
-                        "maxTokens" to nCtx,
-                        "max_tokens" to nCtx
-                    )
-
-                    if (isNpuRequested) {
-                        Log.i(TAG, "NPU requested: deviceId=$deviceId -> setting nGpuLayers=$gpuLayers and plugin=cpu_gpu (per Nexa docs)")
-                    }
-
-                    // Enable Thinking mode if the model name suggests it
-                    if (model.name.contains("Thinking", ignoreCase = true) || 
-                        model.name.contains("Reasoning", ignoreCase = true)) {
-                        fieldsToSet["enable_thinking"] = true
-                        fieldsToSet["enableThinking"] = true
-                    }
-                    
-                    for ((fieldName, value) in fieldsToSet) {
-                        try {
-                            val field = cls.getDeclaredField(fieldName)
-                            field.isAccessible = true
-                            field.set(this, value)
-                            Log.d(TAG, "✓ Set ModelConfig.$fieldName = $value")
-                        } catch (e: Exception) {}
-                    }
+                if (isNpuRequested) {
+                    Log.i(TAG, "NPU requested: deviceId=$deviceId -> nGpuLayers=$gpuLayers plugin=cpu_gpu (per Nexa docs)")
                 }
+
+                val isThinkingModelForConfig = model.name.contains("Thinking", ignoreCase = true) ||
+                    model.name.contains("Reasoning", ignoreCase = true)
+
+                val modelConfig = ModelConfig(
+                    nCtx = nCtx,
+                    nGpuLayers = gpuLayers,
+                    enable_thinking = isThinkingModelForConfig
+                )
 
                 // Find mmproj path for VLM models (only when vision is enabled)
                 val mmprojPath = if (model.supportsVision && !disableVision) {
@@ -366,7 +363,7 @@ class NexaInferenceService @Inject constructor(
                         currentModel = model
                         currentPreferredBackend = if (backendId == "CPU") LlmInference.Backend.CPU else LlmInference.Backend.GPU
                         currentVisionDisabled = disableVision
-                        val resolvedBackend = if (!deviceToUse.isNullOrBlank() && deviceToUse.startsWith("HTP", ignoreCase = true)) {
+                        val resolvedBackend = if (!deviceToUse.isNullOrBlank() && deviceToUse.startsWith("dev", ignoreCase = true)) {
                             "NPU($deviceToUse)"
                         } else {
                             backendId
@@ -401,7 +398,7 @@ class NexaInferenceService @Inject constructor(
                         currentModel = model
                         currentPreferredBackend = if (backendId == "CPU") LlmInference.Backend.CPU else LlmInference.Backend.GPU
                         currentVisionDisabled = disableVision
-                        val resolvedBackend = if (!deviceToUse.isNullOrBlank() && deviceToUse.startsWith("HTP", ignoreCase = true)) {
+                        val resolvedBackend = if (!deviceToUse.isNullOrBlank() && deviceToUse.startsWith("dev", ignoreCase = true)) {
                             "NPU($deviceToUse)"
                         } else {
                             backendId
@@ -672,9 +669,15 @@ class NexaInferenceService @Inject constructor(
         val topKVal = overrideTopK ?: 40
         val topPVal = overrideTopP ?: 0.9f
         
-        val isThinkingModel = model.name.contains("Thinking", ignoreCase = true) || 
+        val isThinkingModel = model.name.contains("Thinking", ignoreCase = true) ||
                               model.name.contains("Reasoning", ignoreCase = true)
-        
+        val isHarmonyModel = model.name.contains("gpt-oss", ignoreCase = true) ||
+                             model.name.contains("gpt_oss", ignoreCase = true)
+
+        // Reset per-generation Harmony state
+        harmonyBuffer.clear()
+        harmonyState = HarmonyState.BEFORE_HEADER
+
         val job = launch(Dispatchers.IO) {
             try {
                 if (isVlmLoaded && vlmWrapper != null) {
@@ -764,7 +767,7 @@ class NexaInferenceService @Inject constructor(
                                         val totalMs = end - requestStart
                                         Log.i(TAG, "GEN[$requestId] VLM completed total=${totalMs}ms decode=${decodeMs}ms tokens=$tokenCount")
                                     }
-                                    handleStreamResult(streamResult, isThinkingModel)
+                                    handleStreamResult(streamResult, isThinkingModel, isHarmonyModel)
                                 }
                             }
                     } catch (t: Throwable) {
@@ -831,7 +834,7 @@ class NexaInferenceService @Inject constructor(
                                         val totalMs = end - requestStart
                                         Log.i(TAG, "GEN[$requestId] LLM completed total=${totalMs}ms decode=${decodeMs}ms tokens=$tokenCount")
                                     }
-                                    handleStreamResult(streamResult, isThinkingModel)
+                                    handleStreamResult(streamResult, isThinkingModel, isHarmonyModel)
                                 }
                             }
                     } catch (t: Throwable) {
@@ -880,23 +883,26 @@ class NexaInferenceService @Inject constructor(
 
     /**
      * Handle a single stream result token, applying thinking tag normalization.
+     * For Harmony-format models (GPT-OSS), routes through [emitTokenForHarmony].
      */
     private fun kotlinx.coroutines.channels.ProducerScope<String>.handleStreamResult(
         streamResult: LlmStreamResult,
-        isThinkingModel: Boolean
+        isThinkingModel: Boolean,
+        isHarmonyModel: Boolean = false
     ) {
         when (streamResult) {
             is LlmStreamResult.Token -> {
-                var text = streamResult.text
-                if (isThinkingModel) {
-                    if (text.contains("<think>")) {
-                        text = text.replace("<think>", "\u200B\u200BTHINK\u200B\u200B")
+                val text = streamResult.text
+                when {
+                    isHarmonyModel -> emitTokenForHarmony(text) { trySend(it) }
+                    isThinkingModel -> {
+                        var t = text
+                        if (t.contains("<think>")) t = t.replace("<think>", SENTINEL_THINK)
+                        if (t.contains("</think>")) t = t.replace("</think>", SENTINEL_ENDTHINK)
+                        trySend(t)
                     }
-                    if (text.contains("</think>")) {
-                        text = text.replace("</think>", "\u200B\u200BENDTHINK\u200B\u200B")
-                    }
+                    else -> trySend(text)
                 }
-                trySend(text)
             }
             is LlmStreamResult.Completed -> close()
             is LlmStreamResult.Error -> {
@@ -908,6 +914,90 @@ class NexaInferenceService @Inject constructor(
                     Log.e(TAG, "VLM/LLM SDK Error (unable to extract error code)")
                 }
                 close(Exception("SDK Error"))
+            }
+        }
+    }
+
+    /**
+     * State-machine parser for GPT-OSS Harmony format output.
+     *
+     * Harmony output format:
+     *   <|channel|>analysis<|message|>THINKING_CONTENT<|end|><|start|>assistant<|channel|>final<|message|>FINAL_ANSWER
+     *
+     * States (harmonyState):
+     *   BEFORE_HEADER  — buffer silently until full analysis header arrives
+     *   IN_ANALYSIS    — emit SENTINEL_THINK once, stream analysis chars, hold `endTag.length-1`
+     *                    tail bytes to guard against partial tag splits across tokens
+     *   IN_TRANSITION  — buffer silently until the full final-answer header is consumed
+     *   IN_FINAL       — pass every new char straight through to the UI
+     */
+    private fun emitTokenForHarmony(tokenText: String, send: (String) -> Unit) {
+        harmonyBuffer.append(tokenText)
+
+        val analysisHeader = "<|channel|>analysis<|message|>"
+        val endTag         = "<|end|>"
+        val finalHeader    = "<|start|>assistant<|channel|>final<|message|>"
+
+        when (harmonyState) {
+            HarmonyState.BEFORE_HEADER -> {
+                val headerIdx = harmonyBuffer.indexOf(analysisHeader)
+                if (headerIdx >= 0) {
+                    // Discard everything up-to-and-including the header, keep the rest
+                    val afterHeader = harmonyBuffer.substring(headerIdx + analysisHeader.length)
+                    harmonyBuffer.setLength(0)
+                    harmonyBuffer.append(afterHeader)
+                    harmonyState = HarmonyState.IN_ANALYSIS
+                    // Emit SENTINEL_THINK immediately so the UI shows the thinking section
+                    send(SENTINEL_THINK)
+                    // Process any chars that arrived after the header in this same token
+                    if (harmonyBuffer.isNotEmpty()) emitTokenForHarmony("", send)
+                }
+                // else: header not yet complete — keep buffering
+            }
+
+            HarmonyState.IN_ANALYSIS -> {
+                val buf = harmonyBuffer.toString()
+                val endIdx = buf.indexOf(endTag)
+                if (endIdx >= 0) {
+                    // Flush content before <|end|>, then close the thinking section
+                    val chunk = buf.substring(0, endIdx)
+                    if (chunk.isNotEmpty()) send(chunk)
+                    send(SENTINEL_ENDTHINK)
+                    val remainder = buf.substring(endIdx + endTag.length)
+                    harmonyBuffer.setLength(0)
+                    harmonyBuffer.append(remainder)
+                    harmonyState = HarmonyState.IN_TRANSITION
+                    if (harmonyBuffer.isNotEmpty()) emitTokenForHarmony("", send)
+                } else {
+                    // No <|end|> yet — safely flush all but the last (endTag.length - 1) chars
+                    // so a tag split across token boundaries is never emitted prematurely.
+                    val safeLen = (buf.length - (endTag.length - 1)).coerceAtLeast(0)
+                    if (safeLen > 0) {
+                        send(buf.substring(0, safeLen))
+                        harmonyBuffer.delete(0, safeLen)
+                    }
+                }
+            }
+
+            HarmonyState.IN_TRANSITION -> {
+                val buf = harmonyBuffer.toString()
+                val finalIdx = buf.indexOf(finalHeader)
+                if (finalIdx >= 0) {
+                    val afterFinal = buf.substring(finalIdx + finalHeader.length)
+                    harmonyBuffer.setLength(0)
+                    harmonyBuffer.append(afterFinal)
+                    harmonyState = HarmonyState.IN_FINAL
+                    if (harmonyBuffer.isNotEmpty()) emitTokenForHarmony("", send)
+                }
+                // else: final-answer header not yet complete — keep buffering
+            }
+
+            HarmonyState.IN_FINAL -> {
+                // Emit everything in the buffer directly to the UI
+                if (harmonyBuffer.isNotEmpty()) {
+                    send(harmonyBuffer.toString())
+                    harmonyBuffer.setLength(0)
+                }
             }
         }
     }
@@ -1195,11 +1285,12 @@ class NexaInferenceService @Inject constructor(
     override fun getCurrentlyLoadedBackend(): LlmInference.Backend? = currentPreferredBackend
     override fun getMemoryWarningForImages(images: List<Bitmap>): String? = null
     override fun wasSessionRecentlyReset(chatId: String): Boolean = false
-    override fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?) {
+    override fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?, nGpuLayers: Int?) {
         overrideMaxTokens = maxTokens
         overrideTopK = topK
         overrideTopP = topP
         overrideTemperature = temperature
+        overrideNGpuLayers = nGpuLayers
     }
     override fun isVisionCurrentlyDisabled(): Boolean = currentVisionDisabled
     override fun isAudioCurrentlyDisabled(): Boolean = currentAudioDisabled

@@ -753,4 +753,7 @@
     <string name="kid_mode_disable_title">Disattiva Modalità Bambini</string>
     <string name="kid_mode_verify_body">Inserisci il tuo PIN a 4 cifre per disattivare la Modalità Bambini.</string>
     <string name="kid_mode_disable">Disattiva</string>
+
+    <string name="gpu_layers_label">GPU Layers: %1$d</string>
+    <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
 </resources>

@@ -56,6 +56,8 @@ class CreatorViewModel(
     private val _selectedNpuDeviceId = MutableStateFlow<String?>(null)
     val selectedNpuDeviceId: StateFlow<String?> = _selectedNpuDeviceId.asStateFlow()
 
+    private val _selectedNGpuLayers = MutableStateFlow<Int?>(null)
+
     private val _selectedMaxTokens = MutableStateFlow(4096)
     val selectedMaxTokens: StateFlow<Int> = _selectedMaxTokens.asStateFlow()
 
@@ -175,6 +177,10 @@ class CreatorViewModel(
         saveSettings()
     }
 
+    fun setNGpuLayers(n: Int) {
+        _selectedNGpuLayers.value = n
+    }
+
     fun loadModel() {
         val model = _selectedModel.value ?: return
         val backend = _selectedBackend.value ?: return
@@ -194,7 +200,8 @@ class CreatorViewModel(
                     _selectedMaxTokens.value.coerceIn(1, model.contextWindowSize.coerceAtLeast(1)),
                     null,
                     null,
-                    null
+                    null,
+                    _selectedNGpuLayers.value
                 )
 
                 val success = inferenceService.loadModel(

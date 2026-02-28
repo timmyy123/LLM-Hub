@@ -43,7 +43,7 @@ fun ChatSettingsSheet(
     isLoadingModel: Boolean,
     onModelSelected: (LLMModel) -> Unit,
     onBackendSelected: (LlmInference.Backend, String?) -> Unit,
-    onLoadModel: (model: LLMModel, maxTokens: Int, topK: Int, topP: Float, temperature: Float, backend: LlmInference.Backend?, deviceId: String?, disableVision: Boolean, disableAudio: Boolean) -> Unit,
+    onLoadModel: (model: LLMModel, maxTokens: Int, topK: Int, topP: Float, temperature: Float, backend: LlmInference.Backend?, deviceId: String?, disableVision: Boolean, disableAudio: Boolean, nGpuLayers: Int) -> Unit,
     onUnloadModel: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -105,6 +105,7 @@ fun ChatSettingsSheet(
 
     // Track whether NPU (Hexagon GGUF) is selected — initial value comes from the caller
     var useNpu by remember(initialSelectedNpuDeviceId) { mutableStateOf(initialSelectedNpuDeviceId != null) }
+    var gpuLayers by remember { mutableStateOf(999) }
 
     var disableVision by remember { mutableStateOf(isGemma3nModel) }
     var disableAudio by remember { mutableStateOf(isGemma3nModel) }
@@ -147,9 +148,10 @@ fun ChatSettingsSheet(
                         "CPU" -> false
                         else -> newDefaultUseGpu
                     }
-                    useNpu = saved.deviceId == "HTP0"
+                    useNpu = saved.deviceId == "dev0"
                     disableVision = saved.disableVision || !selectedModelSupportsVisionInput
                     disableAudio = saved.disableAudio
+                    gpuLayers = saved.nGpuLayers
                 } else {
                     // Reset to defaults for new model
                     val effCap = if (selectedModelSupportsVisionInput && !newIsGemma3n) minOf(newBaseCap, 8192) else newBaseCap
@@ -439,7 +441,7 @@ fun ChatSettingsSheet(
                                             onClick = {
                                                 useGpu = true
                                                 useNpu = true
-                                                onBackendSelected(LlmInference.Backend.GPU, "HTP0")
+                                                onBackendSelected(LlmInference.Backend.GPU, "dev0")
                                                 showBackendMenu = false
                                             },
                                             leadingIcon = { Icon(Icons.Default.Bolt, contentDescription = null) },
@@ -477,7 +479,7 @@ fun ChatSettingsSheet(
                                         val backend = if (canSelectAccelerator) {
                                             if (useGpu) LlmInference.Backend.GPU else LlmInference.Backend.CPU
                                         } else null
-                                        val deviceId = if (useNpu) "HTP0" else null
+                                        val deviceId = if (useNpu) "dev0" else null
                                         
                                         // Save config
                                         scope.launch(Dispatchers.IO) {
@@ -490,13 +492,14 @@ fun ChatSettingsSheet(
                                                     backend = backend?.name,
                                                     deviceId = deviceId,
                                                     disableVision = disableVision,
-                                                    disableAudio = disableAudio
+                                                    disableAudio = disableAudio,
+                                                    nGpuLayers = gpuLayers
                                                 )
                                                 modelPrefs.setModelConfig(model.name, cfg)
                                             } catch (_: Exception) {}
                                         }
                                         
-                                        onLoadModel(model, finalMax, topK, topP, temperature, backend, deviceId, disableVision, disableAudio)
+                                        onLoadModel(model, finalMax, topK, topP, temperature, backend, deviceId, disableVision, disableAudio, gpuLayers)
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
@@ -683,6 +686,38 @@ fun ChatSettingsSheet(
                             )
                         }
                         
+                        // GPU Layers (GGUF + GPU/NPU only)
+                        if (selectedModel?.modelFormat == "gguf" && (useGpu || useNpu)) {
+                            Text(
+                                text = stringResource(R.string.gpu_layers_label, gpuLayers),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Slider(
+                                    value = gpuLayers.toFloat(),
+                                    onValueChange = { gpuLayers = it.toInt() },
+                                    valueRange = 0f..999f,
+                                    modifier = Modifier.weight(1f).height(28.dp),
+                                    thumb = {
+                                        SliderDefaults.Thumb(
+                                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                            thumbSize = androidx.compose.ui.unit.DpSize(24.dp, 24.dp)
+                                        )
+                                    }
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                OutlinedTextField(
+                                    value = gpuLayers.toString(),
+                                    onValueChange = { v -> gpuLayers = v.filter { it.isDigit() }.toIntOrNull()?.coerceIn(0, 999) ?: gpuLayers },
+                                    modifier = Modifier.width(72.dp),
+                                    singleLine = true
+                                )
+                            }
+                        }
+
                         // Modality options (Vision/Audio toggles)
                         if (selectedModelSupportsVisionInput || selectedModel?.supportsAudio == true) {
                             Spacer(modifier = Modifier.height(4.dp))

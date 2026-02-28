@@ -375,10 +375,11 @@ fun CreatorGenerationScreen(
             onModelSelected = { viewModel.selectModel(it) },
             onBackendSelected = { backend, deviceId -> viewModel.selectBackend(backend, deviceId) },
             onMaxTokensChanged = { viewModel.setMaxTokens(it) },
-            onLoadModel = { model, maxTokens, backend, deviceId ->
+            onLoadModel = { model, maxTokens, backend, deviceId, nGpuLayers ->
                 viewModel.selectModel(model)
                 viewModel.setMaxTokens(maxTokens)
                 if (backend != null) viewModel.selectBackend(backend, deviceId)
+                viewModel.setNGpuLayers(nGpuLayers)
                 viewModel.loadModel()
             },
             onUnloadModel = { viewModel.unloadModel() },

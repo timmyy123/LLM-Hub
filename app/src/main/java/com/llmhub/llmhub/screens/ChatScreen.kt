@@ -257,7 +257,7 @@ fun ChatScreen(
                                         Spacer(modifier = Modifier.width(4.dp))
                                     }
                                     if (viewModel.isGpuBackendEnabled()) {
-                                        val isNpu = selectedNpuDeviceId?.startsWith("HTP", ignoreCase = true) == true
+                                        val isNpu = selectedNpuDeviceId?.startsWith("dev", ignoreCase = true) == true
                                         Icon(if (isNpu) Icons.Default.Bolt else Icons.Default.Speed, contentDescription = if (isNpu) "NPU enabled" else "GPU enabled", modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.secondary)
                                     }
                                     if (isEmbeddingEnabled) {
@@ -449,11 +449,11 @@ fun ChatScreen(
             onBackendSelected = { backend, deviceId ->
                 viewModel.selectBackend(backend, deviceId)
             },
-            onLoadModel = { model, maxTokens, topK, topP, temperature, backend, deviceId, disableVision, disableAudio ->
-                Log.d("ChatScreen", "Model configs confirmed: maxTokens=$maxTokens topK=$topK topP=$topP temperature=$temperature backend=$backend deviceId=$deviceId disableVision=$disableVision disableAudio=$disableAudio for model ${model.name}")
+            onLoadModel = { model, maxTokens, topK, topP, temperature, backend, deviceId, disableVision, disableAudio, nGpuLayers ->
+                Log.d("ChatScreen", "Model configs confirmed: maxTokens=$maxTokens topK=$topK topP=$topP temperature=$temperature backend=$backend deviceId=$deviceId disableVision=$disableVision disableAudio=$disableAudio nGpuLayers=$nGpuLayers for model ${model.name}")
                 
                 // Push generation parameters to inference service via ViewModel
-                viewModel.setGenerationParameters(maxTokens, topK, topP, temperature)
+                viewModel.setGenerationParameters(maxTokens, topK, topP, temperature, nGpuLayers)
                 
                 if (backend != null) {
                     viewModel.switchModelWithBackend(model, backend, disableVision, disableAudio, deviceId)

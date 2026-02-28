@@ -756,4 +756,7 @@
     <string name="kid_mode_disable_title">キッズモードを無効にする</string>
     <string name="kid_mode_verify_body">キッズモードを無効にするために4桁のPINを入力してください。</string>
     <string name="kid_mode_disable">無効にする</string>
+
+    <string name="gpu_layers_label">GPU Layers: %1$d</string>
+    <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
 </resources>
