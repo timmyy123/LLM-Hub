@@ -271,22 +271,6 @@ fun ChatScreen(
                         }
                     },
                     navigationIcon = {
-                        IconButton(onClick = {
-                            coroutineScope.launch {
-                                // Close drawer if open (though usually it's closed here)
-                                drawerState.close()
-                            }
-                            onNavigateBack()
-                        }) {
-                            Icon(
-                                imageVector = Icons.Default.ArrowBack,
-                                contentDescription = stringResource(R.string.back)
-                            )
-                        }
-                    },
-
-                    actions = {
-                        // Menu button - opens drawer
                         IconButton(
                             onClick = { coroutineScope.launch { drawerState.open() } }
                         ) {
@@ -296,7 +280,9 @@ fun ChatScreen(
                                 tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
+                    },
 
+                    actions = {
                         // Settings button - opens bottom sheet for model selection and config
                         IconButton(
                             onClick = { showSettingsSheet = true }

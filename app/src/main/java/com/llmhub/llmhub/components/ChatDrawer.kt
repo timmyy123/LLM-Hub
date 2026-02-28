@@ -108,8 +108,59 @@ fun ChatDrawer(
         )
     }
 
+    if (showDeleteAllDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteAllDialog = false },
+            title = { Text(stringResource(R.string.dialog_delete_all_chats_title)) },
+            text = { Text(stringResource(R.string.dialog_delete_all_chats_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onClearAllChats?.invoke()
+                        showDeleteAllDialog = false
+                    }
+                ) { Text(stringResource(R.string.action_delete_all)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteAllDialog = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
+    }
+
     ModalDrawerSheet {
         Column(modifier = Modifier.padding(16.dp)) {
+
+            // Header with Back Arrow
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 12.dp)
+            ) {
+                IconButton(
+                    onClick = onNavigateBack,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = stringResource(R.string.back),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    Icons.Default.PhoneAndroid,
+                    contentDescription = null,
+                    modifier = Modifier.size(28.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.drawer_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
 
             // New Chat Button
             FilledTonalButton(
