@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="multimodal">Мультимодальный</string>
     <string name="text_only">Только текст</string>
@@ -671,8 +671,64 @@
     <string name="language_persian">فارسی</string>
     <string name="language_ukrainian">Українська</string>
     <string name="language_hebrew">עברית</string>
+    <!-- New Chat Management & Creator Strings -->
+    <string name="not_loaded">Не загружено</string>
+    <string name="dialog_rename_chat_title">Переименовать Чат</string>
+    <string name="chat_title">Название Чата</string>
+    <string name="more_options">Дополнительные параметры</string>
+    <string name="dialog_delete_creator_title">Удалить Персону?</string>
+    <string name="dialog_delete_creator_message">Удалить Персону \"%1\"?</string>
+    <string name="action_rename">Переименовать</string>
+
+    <!-- Vibe Coder Feature -->
+    <string name="feature_vibe_coder">VibeCode</string>
+    <string name="feature_vibe_coder_desc">Создавайте HTML, JavaScript и Python-код с помощью ИИ</string>
+    <string name="feature_creator_generation">Персоны</string>
+    <string name="feature_creator_generation_desc">Создавайте собственные пользовательские персоны ИИ</string>
+    <string name="drawer_my_creators">мои Персоны</string>
+    <string name="vibe_coder_title">VibeCode</string>
+    <string name="vibe_coder_prompt_label">Что вы хотите написать?</string>
+    <string name="vibe_coder_prompt_hint">Опишите код, который хотите сгенерировать...</string>
+    <string name="vibe_coder_generate">Генерировать Код</string>
+    <string name="vibe_coder_generating">Генерация кода...</string>
+    <string name="vibe_coder_generated_code">Сгенерированный Код</string>
+    <string name="vibe_coder_copy">Копировать</string>
+    <string name="vibe_coder_preview">Предпросмотр</string>
+    <string name="vibe_coder_no_model">Модель не загружена. Пожалуйста, сначала скачайте и выберите модель.</string>
+    <string name="vibe_coder_settings">Настройки</string>
+    <string name="vibe_coder_backend_select">Выбрать Бэкенд</string>
+
+    <!-- VibeCode additions -->
+    <string name="vibe_coder_modification_mode">Режим изменения</string>
+    <string name="vibe_coder_refine">Улучшить код</string>
+    <string name="vibe_coder_clear">Новый проект / Очистить контекст</string>
+    <string name="vibe_coder_planning">Планирование архитектуры...</string>
+    <string name="vibe_coder_revising">Исправление кода...</string>
+
+    <!-- Creator Generation Screen -->
+    <string name="creator_screen_title">Новый ИИ-персонаж</string>
+    <string name="creator_bring_to_life">Оживите искусственный интеллект</string>
+    <string name="creator_description">У вас есть возможность оживить пользовательский ИИ-персонаж. Просто опишите, как ваш персонаж будет реагировать на любые входные данные, запросы или идеи. После создания персонажа вы сможете использовать его в чате.</string>
+    <string name="creator_prompt_label">Опишите вашего ИИ-персонажа...</string>
+    <string name="creator_prompt_placeholder">напр., суммируй любую тему в виде рифмованного стихотворения менее 10 строк</string>
+    <string name="creator_brewing">творим магию...</string>
+    <string name="creator_generate_persona">Создать персонажа</string>
+    <string name="creator_load_model_first">Пожалуйста, сначала загрузите модель.</string>
+    <string name="creator_result_heading">Вот ваш новый ИИ-персонаж!</string>
+    <string name="creator_system_prompt_label">Системный промпт (PCTF):</string>
+    <string name="creator_save_and_chat">Сохранить и общаться</string>
+
+    <!-- Kid Mode -->
+    <string name="kid_mode_title">Детский режим</string>
+    <string name="kid_mode_enabled_status">Включён - Защита безопасности активна</string>
+    <string name="kid_mode_disabled_status">Выключен</string>
+    <string name="kid_mode_incorrect_pin">Неверный PIN</string>
+    <string name="kid_mode_set_pin_title">Задать PIN детского режима</string>
+    <string name="kid_mode_set_pin_body">Введите 4-значный PIN для включения детского режима. Этот PIN понадобится для его отключения.</string>
+    <string name="kid_mode_pin_label">4-значный PIN</string>
+    <string name="kid_mode_pin_error">PIN должен состоять из 4 цифр</string>
+    <string name="kid_mode_enable">Включить</string>
+    <string name="kid_mode_disable_title">Отключить детский режим</string>
+    <string name="kid_mode_verify_body">Введите 4-значный PIN для отключения детского режима.</string>
+    <string name="kid_mode_disable">Отключить</string>
 </resources>
-
-
-
-

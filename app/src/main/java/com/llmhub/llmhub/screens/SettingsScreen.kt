@@ -128,12 +128,13 @@ fun SettingsScreen(
                     }
 
                     if (showKidModeVerifyPin) {
+                        val incorrectPinMsg = stringResource(R.string.kid_mode_incorrect_pin)
                         com.llmhub.llmhub.ui.components.KidModeVerifyPinDialog(
                             onConfirm = { pin ->
                                 if (kidModeManager.disableKidMode(pin)) {
                                     showKidModeVerifyPin = false
                                 } else {
-                                    android.widget.Toast.makeText(context, "Incorrect PIN", android.widget.Toast.LENGTH_SHORT).show()
+                                    android.widget.Toast.makeText(context, incorrectPinMsg, android.widget.Toast.LENGTH_SHORT).show()
                                 }
                             },
                             onDismiss = { showKidModeVerifyPin = false }
@@ -142,8 +143,8 @@ fun SettingsScreen(
 
                     SettingsItem(
                         icon = if (isKidModeEnabled) Icons.Default.ChildCare else Icons.Outlined.ChildCare,
-                        title = "Kid Mode",
-                        subtitle = if (isKidModeEnabled) "Enabled - Safety guardrails active" else "Disabled",
+                        title = stringResource(R.string.kid_mode_title),
+                        subtitle = if (isKidModeEnabled) stringResource(R.string.kid_mode_enabled_status) else stringResource(R.string.kid_mode_disabled_status),
                         onClick = {
                             if (isKidModeEnabled) {
                                 showKidModeVerifyPin = true

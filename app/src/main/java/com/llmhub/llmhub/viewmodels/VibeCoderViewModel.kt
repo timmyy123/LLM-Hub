@@ -611,6 +611,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             - Logic: [Rule]
             
             Output ONLY the list. Do not write code or introductions.
+            IMPORTANT: Respond in the same language as the user's request.
         """.trimIndent()
     }
 
@@ -673,6 +674,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             YOUR PYTHON CODE HERE
             ```
             - Respond ONLY with the production-ready stand-alone code in a markdown code block. DO NOT include explanations, warnings, or additional text before or after the code block.
+            IMPORTANT: All UI text, labels, button text, and messages in the generated code must be in the same language as the user's input.
     
         """.trimIndent()
     }
@@ -710,6 +712,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             - Wrap code in ```html or ```python blocks.
             - Return the FULL modified code, not just a diff.
             - No explanations.
+            IMPORTANT: All UI text, labels, button text, and messages in the generated code must be in the same language as the user's request.
         """.trimIndent()
     }
 
@@ -768,6 +771,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             YOUR PYTHON CODE HERE
             ```
             - Respond ONLY with the production-ready stand-alone code in a markdown code block. DO NOT include explanations, warnings, or additional text before or after the code block.
+            IMPORTANT: All UI text, labels, button text, and messages in the generated code must be in the same language as the user's input.
     
         """.trimIndent()
     }

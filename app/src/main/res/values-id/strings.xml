@@ -1,4 +1,4 @@
-<resources>
+﻿<resources>
     <string name="app_name">LLM Hub</string>
     
     <!-- Common -->
@@ -701,4 +701,64 @@
     <string name="language_persian">فارسی</string>
     <string name="language_ukrainian">Українська</string>
     <string name="language_hebrew">עברית</string>
+    <!-- New Chat Management & Creator Strings -->
+    <string name="not_loaded">Tidak dimuat</string>
+    <string name="dialog_rename_chat_title">Ganti Nama Obrolan</string>
+    <string name="chat_title">Judul Obrolan</string>
+    <string name="more_options">Lebih Banyak Opsi</string>
+    <string name="dialog_delete_creator_title">Hapus Persona?</string>
+    <string name="dialog_delete_creator_message">Hapus Persona \"%1\"?</string>
+    <string name="action_rename">Ganti Nama</string>
+
+    <!-- Vibe Coder Feature -->
+    <string name="feature_vibe_coder">VibeCode</string>
+    <string name="feature_vibe_coder_desc">Hasilkan kode HTML, JavaScript, dan Python dengan AI</string>
+    <string name="feature_creator_generation">Persona</string>
+    <string name="feature_creator_generation_desc">Buat persona AI kustom Anda sendiri</string>
+    <string name="drawer_my_creators">Persona Saya</string>
+    <string name="vibe_coder_title">VibeCode</string>
+    <string name="vibe_coder_prompt_label">Apa yang ingin Anda kodekan?</string>
+    <string name="vibe_coder_prompt_hint">Deskripsikan kode yang ingin Anda hasilkan...</string>
+    <string name="vibe_coder_generate">Hasilkan Kode</string>
+    <string name="vibe_coder_generating">Menghasilkan kode...</string>
+    <string name="vibe_coder_generated_code">Kode yang Dihasilkan</string>
+    <string name="vibe_coder_copy">Salin</string>
+    <string name="vibe_coder_preview">Pratinjau</string>
+    <string name="vibe_coder_no_model">Tidak ada model yang dimuat. Silakan unduh dan pilih model terlebih dahulu.</string>
+    <string name="vibe_coder_settings">Pengaturan</string>
+    <string name="vibe_coder_backend_select">Pilih Backend</string>
+
+    <!-- VibeCode additions -->
+    <string name="vibe_coder_modification_mode">Mode Modifikasi</string>
+    <string name="vibe_coder_refine">Perbaiki Kode</string>
+    <string name="vibe_coder_clear">Proyek Baru / Hapus Konteks</string>
+    <string name="vibe_coder_planning">Merencanakan arsitektur...</string>
+    <string name="vibe_coder_revising">Merevisi kode...</string>
+
+    <!-- Creator Generation Screen -->
+    <string name="creator_screen_title">Persona AI Baru</string>
+    <string name="creator_bring_to_life">Hidupkan sebuah AI</string>
+    <string name="creator_description">Anda memiliki kekuatan untuk menghidupkan persona AI kustom. Cukup deskripsikan bagaimana persona Anda akan merespons input, permintaan, atau ide apa pun. Setelah persona dibuat, Anda bisa menggunakannya dalam obrolan.</string>
+    <string name="creator_prompt_label">Deskripsikan persona Anda...</string>
+    <string name="creator_prompt_placeholder">mis., ringkas topik apa pun sebagai puisi berima kurang dari 10 baris</string>
+    <string name="creator_brewing">menyeduh keajaiban...</string>
+    <string name="creator_generate_persona">Buat Persona</string>
+    <string name="creator_load_model_first">Harap muat model terlebih dahulu.</string>
+    <string name="creator_result_heading">Persona baru Anda!</string>
+    <string name="creator_system_prompt_label">Prompt Sistem (PCTF):</string>
+    <string name="creator_save_and_chat">Simpan &amp; Chat</string>
+
+    <!-- Kid Mode -->
+    <string name="kid_mode_title">Mode Anak</string>
+    <string name="kid_mode_enabled_status">Aktif - Perlindungan keamanan aktif</string>
+    <string name="kid_mode_disabled_status">Nonaktif</string>
+    <string name="kid_mode_incorrect_pin">PIN salah</string>
+    <string name="kid_mode_set_pin_title">Atur PIN Mode Anak</string>
+    <string name="kid_mode_set_pin_body">Masukkan PIN 4 digit untuk mengaktifkan Mode Anak. Anda akan membutuhkan PIN ini untuk menonaktifkannya nanti.</string>
+    <string name="kid_mode_pin_label">PIN 4 Digit</string>
+    <string name="kid_mode_pin_error">PIN harus 4 digit</string>
+    <string name="kid_mode_enable">Aktifkan</string>
+    <string name="kid_mode_disable_title">Nonaktifkan Mode Anak</string>
+    <string name="kid_mode_verify_body">Masukkan PIN 4 digit Anda untuk menonaktifkan Mode Anak.</string>
+    <string name="kid_mode_disable">Nonaktifkan</string>
 </resources>

@@ -267,7 +267,7 @@ class CreatorViewModel(
                     SYSTEM_PROMPT:
                     [System prompt the agent must follow. Include concise, firm instructions on Personality, Context, Task, and Format that would meet the User Description goals. Use markdown for clarity (bolding, lists, etc).]
                     
-                    Do not add any other text or conversational filler. Just the format above.
+                    IMPORTANT: Respond in the same language as the User Description. Do not add any other text or conversational filler. Just the format above.
                 """.trimIndent()
 
                 // Add 3 minute timeout

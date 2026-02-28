@@ -1,4 +1,4 @@
-<resources>
+﻿<resources>
     <string name="app_name">LLM Hub</string>
 
     <!-- Common -->
@@ -698,4 +698,64 @@
     <string name="language_persian">فارسی</string>
     <string name="language_ukrainian">Українська</string>
     <string name="language_hebrew">עברית</string>
+    <!-- New Chat Management & Creator Strings -->
+    <string name="not_loaded">غير محمّل</string>
+    <string name="dialog_rename_chat_title">إعادة تسمية الدردشة</string>
+    <string name="chat_title">عنوان الدردشة</string>
+    <string name="more_options">المزيد من الخيارات</string>
+    <string name="dialog_delete_creator_title">حذف الشخصية؟</string>
+    <string name="dialog_delete_creator_message">حذف الشخصية &quot;%1&quot;؟</string>
+    <string name="action_rename">إعادة التسمية</string>
+
+    <!-- Vibe Coder Feature -->
+    <string name="feature_vibe_coder">VibeCode</string>
+    <string name="feature_vibe_coder_desc">إنشاء أكواد HTML وJavaScript وPython بالذكاء الاصطناعي</string>
+    <string name="feature_creator_generation">الشخصيات</string>
+    <string name="feature_creator_generation_desc">أنشئ شخصيات ذكاء اصطناعي مخصصة خاصة بك</string>
+    <string name="drawer_my_creators">شخصياتي</string>
+    <string name="vibe_coder_title">VibeCode</string>
+    <string name="vibe_coder_prompt_label">ماذا تريد أن تُبرمج؟</string>
+    <string name="vibe_coder_prompt_hint">اصف الكود الذي تريد إنشاءه...</string>
+    <string name="vibe_coder_generate">توليد الكود</string>
+    <string name="vibe_coder_generating">جارٍ توليد الكود...</string>
+    <string name="vibe_coder_generated_code">الكود المُولَّد</string>
+    <string name="vibe_coder_copy">نسخ</string>
+    <string name="vibe_coder_preview">معاينة</string>
+    <string name="vibe_coder_no_model">لم يتم تحميل أي نموذج. يرجى تنزيل نموذج واختياره أولاً.</string>
+    <string name="vibe_coder_settings">الإعدادات</string>
+    <string name="vibe_coder_backend_select">اختر الخلفية</string>
+
+    <!-- VibeCode additions -->
+    <string name="vibe_coder_modification_mode">وضع التعديل</string>
+    <string name="vibe_coder_refine">تحسين الكود</string>
+    <string name="vibe_coder_clear">مشروع جديد / مسح السياق</string>
+    <string name="vibe_coder_planning">تخطيط البنية...</string>
+    <string name="vibe_coder_revising">مراجعة الكود...</string>
+
+    <!-- Creator Generation Screen -->
+    <string name="creator_screen_title">شخصية ذكاء اصطناعي جديدة</string>
+    <string name="creator_bring_to_life">أحيِ ذكاءً اصطناعياً</string>
+    <string name="creator_description">لديك القدرة على إحياء شخصية ذكاء اصطناعي مخصصة. صف فقط كيف ستستجيب شخصيتك لأي مدخل أو طلب أو فكرة. بمجرد توليد شخصيتك، ستتمكن من استخدامها في الدردشة.</string>
+    <string name="creator_prompt_label">صف شخصيتك...</string>
+    <string name="creator_prompt_placeholder">مثال: لخّص أي موضوع كقصيدة مقفاة من أقل من 10 أسطر</string>
+    <string name="creator_brewing">يُجهَّز السحر...</string>
+    <string name="creator_generate_persona">توليد شخصية</string>
+    <string name="creator_load_model_first">الرجاء تحميل نموذج أولاً.</string>
+    <string name="creator_result_heading">هذه شخصيتك الجديدة!</string>
+    <string name="creator_system_prompt_label">موجه النظام (PCTF):</string>
+    <string name="creator_save_and_chat">حفظ والدردشة</string>
+
+    <!-- Kid Mode -->
+    <string name="kid_mode_title">وضع الأطفال</string>
+    <string name="kid_mode_enabled_status">مفعّل - حماية السلامة نشطة</string>
+    <string name="kid_mode_disabled_status">معطّل</string>
+    <string name="kid_mode_incorrect_pin">رمز PIN غير صحيح</string>
+    <string name="kid_mode_set_pin_title">تعيين رمز PIN لوضع الأطفال</string>
+    <string name="kid_mode_set_pin_body">أدخل رمز PIN مكوناً من 4 أرقام لتفعيل وضع الأطفال. ستحتاج هذا الرمز لإلغاء التفعيل لاحقاً.</string>
+    <string name="kid_mode_pin_label">رمز PIN من 4 أرقام</string>
+    <string name="kid_mode_pin_error">يجب أن يتكون رمز PIN من 4 أرقام</string>
+    <string name="kid_mode_enable">تفعيل</string>
+    <string name="kid_mode_disable_title">تعطيل وضع الأطفال</string>
+    <string name="kid_mode_verify_body">أدخل رمز PIN من 4 أرقام لتعطيل وضع الأطفال.</string>
+    <string name="kid_mode_disable">تعطيل</string>
 </resources>

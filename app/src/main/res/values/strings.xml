@@ -474,7 +474,39 @@
     <string name="vibe_coder_no_model">No model loaded. Please download and select a model first.</string>
     <string name="vibe_coder_settings">Settings</string>
     <string name="vibe_coder_backend_select">Select Backend</string>
-    
+    <string name="vibe_coder_modification_mode">Modification Mode</string>
+    <string name="vibe_coder_refine">Refine Code</string>
+    <string name="vibe_coder_clear">New Project / Clear Context</string>
+    <string name="vibe_coder_planning">Planning architecture...</string>
+    <string name="vibe_coder_revising">Revising code...</string>
+
+    <!-- Creator Generation Screen -->
+    <string name="creator_screen_title">new creAItor</string>
+    <string name="creator_bring_to_life">Bring an AI to life</string>
+    <string name="creator_description">You have the power to bring a custom AI creAItor to life. Just describe how your creAItor will respond to any input, request, or idea. Once we generate your creAItor, you\'ll be able to use it in chat.</string>
+    <string name="creator_prompt_label">Describe your creAItor...</string>
+    <string name="creator_prompt_placeholder">e.g., summarize any topic as a rhyming poem of less than 10 lines</string>
+    <string name="creator_brewing">brewing magic...</string>
+    <string name="creator_generate_persona">Generate Persona</string>
+    <string name="creator_load_model_first">Please load a model first.</string>
+    <string name="creator_result_heading">Here is your new creAItor!</string>
+    <string name="creator_system_prompt_label">System Prompt (PCTF):</string>
+    <string name="creator_save_and_chat">Save &amp; Chat</string>
+
+    <!-- Kid Mode -->
+    <string name="kid_mode_title">Kid Mode</string>
+    <string name="kid_mode_enabled_status">Enabled - Safety guardrails active</string>
+    <string name="kid_mode_disabled_status">Disabled</string>
+    <string name="kid_mode_incorrect_pin">Incorrect PIN</string>
+    <string name="kid_mode_set_pin_title">Set Kid Mode PIN</string>
+    <string name="kid_mode_set_pin_body">Enter a 4-digit PIN to enable Kid Mode. You will need this PIN to disable it later.</string>
+    <string name="kid_mode_pin_label">4-Digit PIN</string>
+    <string name="kid_mode_pin_error">PIN must be 4 digits</string>
+    <string name="kid_mode_enable">Enable</string>
+    <string name="kid_mode_disable_title">Disable Kid Mode</string>
+    <string name="kid_mode_verify_body">Enter your 4-digit PIN to disable Kid Mode.</string>
+    <string name="kid_mode_disable">Disable</string>
+
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">Writing Aid</string>
     <string name="writing_aid_input_label">Enter your text</string>
