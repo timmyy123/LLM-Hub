@@ -23,12 +23,12 @@ object DeviceInfo {
         "QCM8550" to "8gen2",
         "SM8650" to "8gen3",  // 8 Gen 3 (updated)
         "SM8650P" to "8gen3",
-        "SM8750" to "8gen4",  // 8 Elite / Gen 4 (updated)
+        "SM8750" to "8gen4",  // 8 Elite / Gen 4
         "SM8750P" to "8gen4",
-        "SM8850" to "8gen4",  // Hypothetical future
-        "SM8850P" to "8gen4",
         "SM8735" to "8gen3",  // 8s Gen 3
-        "SM8845" to "8gen4"
+        "SM8845" to "8gen5",  // Snapdragon 8 Gen 5
+        "SM8850" to "8gen5",  // Snapdragon 8 Elite Gen 5
+        "SM8850P" to "8gen5"
     )
     
     fun getChipsetSuffix(): String? {
@@ -37,8 +37,8 @@ object DeviceInfo {
     }
     
     fun isQualcommNpuSupported(): Boolean {
-        // App policy: expose GGUF NPU option only on 8 Gen 4 class devices.
-        return getChipsetSuffix() == "8gen4"
+        // App policy: expose GGUF NPU option on 8 Gen 4 and 8 Gen 5 class devices.
+        return getChipsetSuffix() in setOf("8gen4", "8gen5")
     }
 
     /**
@@ -49,7 +49,7 @@ object DeviceInfo {
     fun getSdQnnPackageSuffix(): String {
         return when (getChipsetSuffix()) {
             "8gen1" -> "8gen1"
-            "8gen2", "8gen3", "8gen4" -> "8gen2"
+            "8gen2", "8gen3", "8gen4", "8gen5" -> "8gen2"
             else -> "min"
         }
     }
