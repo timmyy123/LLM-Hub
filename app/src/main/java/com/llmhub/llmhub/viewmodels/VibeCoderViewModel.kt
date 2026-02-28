@@ -48,6 +48,8 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     private val _selectedNpuDeviceId = MutableStateFlow<String?>(null)
     val selectedNpuDeviceId: StateFlow<String?> = _selectedNpuDeviceId.asStateFlow()
 
+    private val _selectedNGpuLayers = MutableStateFlow<Int?>(null)
+
     private val _selectedMaxTokens = MutableStateFlow(4096)
     val selectedMaxTokens: StateFlow<Int> = _selectedMaxTokens.asStateFlow()
 
@@ -196,6 +198,10 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         _isModelLoaded.value = false
         saveSettings()
     }
+
+    fun setNGpuLayers(n: Int) {
+        _selectedNGpuLayers.value = n
+    }
     
     /**
      * Load the selected model into memory
@@ -218,7 +224,8 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                     _selectedMaxTokens.value.coerceIn(1, model.contextWindowSize.coerceAtLeast(1)),
                     null,
                     null,
-                    null
+                    null,
+                    _selectedNGpuLayers.value
                 )
 
                 // Load model with text-only mode (vibe coder generates code as text)

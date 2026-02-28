@@ -46,7 +46,7 @@ fun ModelSelectorCard(
     var showModelMenu by remember { mutableStateOf(false) }
     var showBackendMenu by remember { mutableStateOf(false) }
     val isNpuSelected = selectedBackend == LlmInference.Backend.GPU &&
-        (selectedNpuDeviceId?.startsWith("HTP", ignoreCase = true) == true)
+        (selectedNpuDeviceId?.startsWith("dev", ignoreCase = true) == true)
     
     Card(
         shape = RoundedCornerShape(24.dp),
@@ -254,8 +254,8 @@ fun ModelSelectorCard(
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.backend_npu)) },
                                     onClick = {
-                                        // Represent NPU by selecting GPU backend + deviceId="HTP0"
-                                        onBackendSelected(LlmInference.Backend.GPU, "HTP0")
+                                        // Represent NPU by selecting GPU backend + deviceId="dev0"
+                                        onBackendSelected(LlmInference.Backend.GPU, "dev0")
                                         showBackendMenu = false
                                     },
                                     leadingIcon = { Icon(Icons.Default.Bolt, contentDescription = null) },

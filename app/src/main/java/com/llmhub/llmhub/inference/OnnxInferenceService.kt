@@ -1139,7 +1139,7 @@ class OnnxInferenceService @Inject constructor(
         else null
     override fun wasSessionRecentlyReset(chatId: String): Boolean = false
     
-    override fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?) {
+    override fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?, nGpuLayers: Int?) {
         overrideMaxTokens = maxTokens
         overrideTopK = topK
         overrideTopP = topP

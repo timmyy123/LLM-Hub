@@ -758,4 +758,7 @@
     <string name="kid_mode_disable_title">Çocuk Modunu Devre Dışı Bırak</string>
     <string name="kid_mode_verify_body">Çocuk Modunu devre dışı bırakmak için 4 haneli PIN\'inizi girin.</string>
     <string name="kid_mode_disable">Devre Dışı Bırak</string>
+
+    <string name="gpu_layers_label">GPU Layers: %1$d</string>
+    <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
 </resources>

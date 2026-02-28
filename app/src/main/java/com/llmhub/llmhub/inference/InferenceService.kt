@@ -63,7 +63,7 @@ interface InferenceService {
     fun getMemoryWarningForImages(images: List<Bitmap>): String?
     fun wasSessionRecentlyReset(chatId: String): Boolean
     // Allow runtime update of generation parameters (from UI dialog)
-    fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?)
+    fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?, nGpuLayers: Int? = null)
     // Get current modality disabled states
     fun isVisionCurrentlyDisabled(): Boolean
     fun isAudioCurrentlyDisabled(): Boolean
@@ -175,7 +175,7 @@ class MediaPipeInferenceService(private val applicationContext: Context) : Infer
         }
     }
 
-    override fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?) {
+    override fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?, nGpuLayers: Int?) {
         overrideMaxTokens = maxTokens
         overrideTopK = topK
         overrideTopP = topP

@@ -761,4 +761,7 @@
     <string name="kid_mode_disable_title">Nonaktifkan Mode Anak</string>
     <string name="kid_mode_verify_body">Masukkan PIN 4 digit Anda untuk menonaktifkan Mode Anak.</string>
     <string name="kid_mode_disable">Nonaktifkan</string>
+
+    <string name="gpu_layers_label">GPU Layers: %1$d</string>
+    <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
 </resources>
