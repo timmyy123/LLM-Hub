@@ -8,9 +8,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.flow.first
@@ -37,11 +40,16 @@ class MainActivity : ComponentActivity() {
         setContent {
             val currentThemeMode by themeViewModel.themeMode.collectAsState()
             val currentLanguage by themeViewModel.appLanguage.collectAsState()
-            
-            // Apply locale based on current language setting
+
+            // Apply locale (updates Context resources + AppCompat locales)
             LocaleHelper.setLocale(this@MainActivity, currentLanguage)
-            
+
+            // RTL locales: Persian (fa), Arabic (ar), Hebrew (he/iw)
+            val isRtl = currentLanguage in setOf("fa", "ar", "he", "iw")
+            val layoutDirection = if (isRtl) LayoutDirection.Rtl else LayoutDirection.Ltr
+
             LlmHubTheme(themeMode = currentThemeMode) {
+                CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -53,6 +61,7 @@ class MainActivity : ComponentActivity() {
                         themeViewModel = themeViewModel
                     )
                 }
+                } // CompositionLocalProvider
             }
         }
     }
