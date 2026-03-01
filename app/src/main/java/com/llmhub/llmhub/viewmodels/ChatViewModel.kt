@@ -10,7 +10,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.SavedStateHandle
 import com.llmhub.llmhub.data.*
 import com.llmhub.llmhub.inference.InferenceService
-import com.llmhub.llmhub.inference.AllBackendsFailedException
 import com.llmhub.llmhub.repository.ChatRepository
 import com.llmhub.llmhub.utils.FileUtils
 import com.llmhub.llmhub.R
@@ -440,12 +439,7 @@ class ChatViewModel(
         }
     }
 
-    private val _currentCreator = MutableStateFlow<CreatorEntity?>(null)
-    val currentCreator: StateFlow<CreatorEntity?> = _currentCreator.asStateFlow()
-
-    // ... (existing code)
-
-    fun initializeChat(chatId: String, context: Context, creatorId: String? = null) {
+    fun initializeChat(chatId: String, context: Context) {
         // Sync the currently loaded model from inference service
         syncCurrentlyLoadedModel()
         
@@ -455,10 +449,29 @@ class ChatViewModel(
 
         // Close previous chat session if switching chats
         if (currentChatId != null && currentChatId != chatId) {
-             // ... (existing cleanup logic)
+            Log.d("ChatViewModel", "Switching from chat ${currentChatId} to chat $chatId")
+            val previousChatId = currentChatId!!
+            
+            // Cancel any ongoing generation before switching
+            generationJob?.cancel()
+            generationJob = null
+            
+            // Clear any streaming state
+            _streamingContents.value = emptyMap()
+            
+            // Reset chat session synchronously to prevent session conflicts
+            try {
+                runBlocking {
+                    inferenceService.resetChatSession(previousChatId)
+                }
+                Log.d("ChatViewModel", "Completed session cleanup for chat switch")
+            } catch (e: Exception) {
+                Log.w("ChatViewModel", "Error during session cleanup: ${e.message}")
+            }
         }
 
         // Remember the previously loaded model to preserve it across chat switches
+        // Use the inference service's currently loaded model as the source of truth
         val previousModel = inferenceService.getCurrentlyLoadedModel()
         Log.d("ChatViewModel", "Current model before switch: ${previousModel?.name ?: "None"}")
 
@@ -467,25 +480,61 @@ class ChatViewModel(
             loadAvailableModelsSync(context)
 
             if (chatId == "new") {
-                initializeNewChat(context, creatorId)
+                // For new chats, preserve the current model if one is loaded
+                val newChatId = repository.createNewChat(
+                    context.getString(R.string.drawer_new_chat),
+                    if (_availableModels.value.isEmpty()) context.getString(R.string.no_model_downloaded) else 
+                    (previousModel?.name ?: context.getString(R.string.no_model_selected))
+                )
+                currentChatId = newChatId
+                _currentChat.value = repository.getChatById(newChatId)
+                
+                // Only reset session if there's an existing session that might have stale context
+                try {
+                    val currentModel = inferenceService.getCurrentlyLoadedModel()
+                    if (currentModel != null) {
+                        inferenceService.resetChatSession(newChatId)
+                        Log.d("ChatViewModel", "Proactively reset session for new chat $newChatId")
+                    } else {
+                        Log.d("ChatViewModel", "Skipping session reset for new chat - no model loaded yet")
+                    }
+                } catch (e: Exception) {
+                    Log.w("ChatViewModel", "Unable to reset session for new chat: ${e.message}")
+                }
+
+                // Replicate global memory chunks into this chat's in-memory index so
+                // global memories behave like attached documents for the chat.
+                try {
+                    Log.d("ChatViewModel", "Replicating global memory into new chat $newChatId")
+                    ragServiceManager.replicateGlobalChunksToChat(newChatId)
+                } catch (e: Exception) {
+                    Log.w("ChatViewModel", "Failed to replicate global chunks into new chat $newChatId: ${e.message}")
+                }
+                
+                // Preserve the current model for new chats but don't auto-load it
+                currentModel = previousModel
+                
+                // If we have a model, update the chat to use it but don't load it
+                if (previousModel != null) {
+                    repository.updateChatModel(newChatId, previousModel.name)
+                    _currentChat.value = repository.getChatById(newChatId)
+                    Log.d("ChatViewModel", "Set model ${previousModel.name} for new chat but didn't auto-load it")
+                }
+
+                // Begin collecting messages for the newly created chat
+                messageCollectionJob = launch {
+                    repository.getMessagesForChat(newChatId).collectLatest { messageList ->
+                        _messages.value = messageList
+                    }
+                }
             } else {
                 // Check if the chat still exists
                 val chat = repository.getChatById(chatId)
                 if (chat == null) {
                     Log.e("ChatViewModel", "Chat $chatId does not exist, creating new chat instead")
-                    initializeNewChat(context, creatorId)
+                    initializeChat("new", context)
                     return@launch
                 }
-                
-                // Load creator if associated with this chat
-                if (chat.creatorId != null) {
-                    _currentCreator.value = repository.getCreatorById(chat.creatorId)
-                } else {
-                    _currentCreator.value = null
-                }
-                
-                // ... (rest of existing logic)
-
                 
                 // Check if chat contains images and current model supports vision
                 val chatMessages = repository.getMessagesForChatSync(chatId)
@@ -566,13 +615,6 @@ class ChatViewModel(
                             Log.w("ChatViewModel", "Error resetting session for chat $chatId: ${e.message}")
                         }
                     }
-                }
-                
-                // CRITICAL: Synchronize the selectedModel with the newly established currentModel
-                // so the ChatScreen accurately reflects the loaded/target model.
-                if (currentModel != null) {
-                    _selectedModel.value = currentModel
-                    saveChatSettings()
                 }
                 
                 messageCollectionJob = launch {
@@ -735,65 +777,16 @@ class ChatViewModel(
 
             // Verify we have a working model
             if (currentModel == null || !currentModel!!.isDownloaded) {
-                 // ... existing error checking ...
-            }
-            
-            // Try to ensure the model is loaded before checking attachments/sending
-            try {
-               val modelToLoad = currentModel!!
-                // We rely on the unified service to handle backend selection/fallback internally,
-                // but we wrap this in case it throws AllBackendsFailedException
-               if (inferenceService.getCurrentlyLoadedModel()?.name != modelToLoad.name) {
-                   inferenceService.loadModel(modelToLoad, selectedBackend.value, selectedNpuDeviceId.value)
-               }
-            } catch (e: AllBackendsFailedException) {
-                Log.e("ChatViewModel", "All backends failed for model: ${currentModel?.name}")
-                
-                // Check if an ONNX version exists
-                val failedModelName = currentModel?.name ?: ""
-                // Simple heuristic: look for a model with a similar name but "ONNX" in it
-                // e.g., "LFM-2.5 1.2B Instruct (Q4_0)" -> look for "LFM-2.5" and "ONNX"
-                val baseName = failedModelName.substringBefore("(").trim()
-                val onnxAlternative = _availableModels.value.find { 
-                    it.modelFormat == "onnx" && it.name.contains(baseName, ignoreCase = true) 
-                } ?: ModelData.models.find { 
-                     it.modelFormat == "onnx" && it.name.contains(baseName, ignoreCase = true) 
+                Log.e("ChatViewModel", "No valid model available for chat $chatId. CurrentModel: ${currentModel?.name}, isDownloaded: ${currentModel?.isDownloaded}, availableModels: ${_availableModels.value.size}")
+                val errorMessage = if (_availableModels.value.isEmpty()) {
+                    context.getString(R.string.please_download_model)
+                } else {
+                    context.getString(R.string.model_not_loaded)
                 }
-
-                val errorMessage = StringBuilder()
-                errorMessage.append("❌ **Backend Failure**\n\n")
-                
-                when (currentModel?.modelFormat) {
-                    "onnx" -> {
-                        errorMessage.append("This ONNX model could not be loaded. This is usually caused by unsupported operations for your device's specific hardware.")
-                    }
-                    "gguf" -> {
-                        errorMessage.append("The GGUF model (${currentModel?.name}) could not be loaded by the Nexa SDK.\n\n")
-                        if (onnxAlternative != null) {
-                            errorMessage.append("💡 **Recommendation:**\n")
-                            errorMessage.append("We found an **ONNX** version of this model: **${onnxAlternative.name}**.\n")
-                            errorMessage.append("ONNX is fully supported on your device. Please switch to this model (you may need to download it first).")
-                        } else {
-                            errorMessage.append("💡 **Recommendation:**\n")
-                            errorMessage.append("Try using an ONNX version of this model which may be more compatible with your device.")
-                        }
-                    }
-                    else -> {
-                        errorMessage.append("The model (${currentModel?.name}) could not be loaded.\n\n")
-                        if (onnxAlternative != null) {
-                            errorMessage.append("💡 **Recommendation:**\n")
-                            errorMessage.append("Try the **ONNX** version instead: **${onnxAlternative.name}**.")
-                        }
-                    }
-                }
-
-                repository.addMessage(chatId, errorMessage.toString(), isFromUser = false)
+                repository.addMessage(chatId, errorMessage, isFromUser = false)
                 _isLoading.value = false
                 isGenerating = false
                 return@launch
-            } catch (e: Exception) {
-                 Log.e("ChatViewModel", "Unexpected error loading model", e)
-                 // Continue and let the standard process fail nicely if needed
             }
 
             // Process attachment if present
@@ -1021,10 +1014,6 @@ class ChatViewModel(
                 }
             }
 
-            // Check if this is the first message (before adding the new one)
-            // We check if the list is empty OR if there are no user messages yet
-            val isFirstUserMessage = _messages.value.none { it.isFromUser }
-
             repository.addMessage(
                 chatId = chatId,
                 content = finalMessageContent,
@@ -1034,10 +1023,8 @@ class ChatViewModel(
                 attachmentFileName = attachmentFileInfo?.name,
                 attachmentFileSize = attachmentFileInfo?.size
             )
-            // Note: _messages flow might not strictly update immediately, so we use our pre-check
-            // Retrieve ID of the just-added message for potential deletion during retry
             val userMessageId = _messages.value.lastOrNull { it.isFromUser && it.chatId == chatId }?.id
-
+            
             // Debug logging for file size
             if (attachmentFileInfo != null) {
                 Log.d("ChatViewModel", "Adding message with attachment:")
@@ -1047,7 +1034,7 @@ class ChatViewModel(
             }
 
             // The first message sets the title
-            if (isFirstUserMessage) {
+            if (_messages.value.size == 1) {
                 val chatTitle = when {
                     messageText.isNotEmpty() -> messageText.take(50)
                     attachmentFileInfo?.type == FileUtils.SupportedFileType.AUDIO -> context.getString(R.string.audio_message)
@@ -1055,8 +1042,7 @@ class ChatViewModel(
                     attachmentFileInfo != null -> "📄 ${attachmentFileInfo.name.take(30)}"
                     else -> context.getString(R.string.drawer_new_chat)
                 }
-                repository.updateChatTitle(chatId, chatTitle.trim())
-                // Force update current chat to reflect title change immediately in UI
+                repository.updateChatTitle(chatId, chatTitle)
                 _currentChat.value = repository.getChatById(chatId)
             }
 
@@ -1382,17 +1368,6 @@ inferenceService.loadModel(currentModel!!, _selectedBackend.value, _selectedNpuD
                                             if (ragContext.isNotEmpty()) {
                                                 basePrompt = basePrompt.replace("\nassistant:", "${ragContext}\nassistant:")
                                             }
-                                            
-                                            // Inject Creator Persona if active
-                                            val creator = _currentCreator.value
-                                            if (creator != null && creator.pctfPrompt.isNotBlank()) {
-                                                Log.d("ChatViewModel", "Injecting Creator Persona: ${creator.name}")
-                                                // Prepend the system prompt. We use a clear separation.
-                                                // Some models handle "system:" tag, others just take the first segment.
-                                                // We'll use a "System:" prefix to be consistent with the chat format.
-                                                basePrompt = "system: ${creator.pctfPrompt}\n\n$basePrompt"
-                                            }
-                                            
                                             basePrompt
                                         }
                                     } else {
@@ -2306,10 +2281,10 @@ inferenceService.loadModel(currentModel!!, _selectedBackend.value, _selectedNpuD
     
     fun switchModelWithBackend(newModel: LLMModel, backend: LlmInference.Backend, disableVision: Boolean) {
         // Call the new overloaded method with disableAudio = false for backward compatibility
-        switchModelWithBackend(newModel, backend, disableVision, disableAudio = false, deviceId = null)
+        switchModelWithBackend(newModel, backend, disableVision, disableAudio = false)
     }
     
-    fun switchModelWithBackend(newModel: LLMModel, backend: LlmInference.Backend, disableVision: Boolean, disableAudio: Boolean, deviceId: String? = null) {
+    fun switchModelWithBackend(newModel: LLMModel, backend: LlmInference.Backend, disableVision: Boolean, disableAudio: Boolean) {
         viewModelScope.launch {
             // Store the modality disabled states
             isVisionDisabled = disableVision
@@ -2317,7 +2292,6 @@ inferenceService.loadModel(currentModel!!, _selectedBackend.value, _selectedNpuD
             // Immediately reflect the user's choice in UI
             _selectedModel.value = newModel
             _selectedBackend.value = backend
-            _selectedNpuDeviceId.value = deviceId
             
             // Persist settings
             saveChatSettings()
@@ -2537,10 +2511,10 @@ inferenceService.loadModel(currentModel!!, _selectedBackend.value, _selectedNpuD
         return isAudioDisabled
     }
 
-    fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?, nGpuLayers: Int? = null, enableThinking: Boolean? = null) {
+    fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?) {
         try {
-            inferenceService.setGenerationParameters(maxTokens, topK, topP, temperature, nGpuLayers, enableThinking)
-            Log.d("ChatViewModel", "Forwarded generation parameters to inference service: maxTokens=$maxTokens topK=$topK topP=$topP temperature=$temperature nGpuLayers=$nGpuLayers enableThinking=$enableThinking")
+            inferenceService.setGenerationParameters(maxTokens, topK, topP, temperature)
+            Log.d("ChatViewModel", "Forwarded generation parameters to inference service: maxTokens=$maxTokens topK=$topK topP=$topP temperature=$temperature")
         } catch (e: Exception) {
             Log.w("ChatViewModel", "Failed to set generation parameters: ${e.message}")
         }
@@ -2917,7 +2891,7 @@ inferenceService.loadModel(currentModel!!, _selectedBackend.value, _selectedNpuD
         }
     }
     
-    private suspend fun initializeNewChat(context: Context, creatorId: String? = null) {
+    private suspend fun initializeNewChat(context: Context) {
         // Store the current model before clearing state
         val previousModel = currentModel
         
@@ -2949,26 +2923,11 @@ inferenceService.loadModel(currentModel!!, _selectedBackend.value, _selectedNpuD
             }
         }
         
-        // Handle creator logic
-        var chatTitle = context.getString(R.string.drawer_new_chat)
-        if (creatorId != null) {
-            val creator = repository.getCreatorById(creatorId)
-            if (creator != null) {
-                _currentCreator.value = creator
-                chatTitle = "${creator.icon} ${creator.name}"
-            } else {
-                _currentCreator.value = null
-            }
-        } else {
-            _currentCreator.value = null
-        }
-        
         // Create new chat with appropriate model
         val newChatId = repository.createNewChat(
-            chatTitle,
+            context.getString(R.string.drawer_new_chat),
             if (_availableModels.value.isEmpty()) context.getString(R.string.no_model_downloaded) else 
-            (modelToUse?.name ?: context.getString(R.string.no_model_selected)),
-            creatorId
+            (modelToUse?.name ?: context.getString(R.string.no_model_selected))
         )
         
         // Set as current chat
@@ -3165,16 +3124,6 @@ inferenceService.loadModel(currentModel!!, _selectedBackend.value, _selectedNpuD
             ragServiceManager.clearChatDocuments(chatId) // Clear RAG documents too
             if (chatId == currentChatId) {
                 _messages.value = emptyList()
-            }
-        }
-    }
-
-    fun renameChat(chatId: String, newTitle: String) {
-        viewModelScope.launch {
-            repository.updateChatTitle(chatId, newTitle.trim())
-            // Update current chat if it's the one being renamed
-            if (currentChatId == chatId) {
-                _currentChat.value = repository.getChatById(chatId)
             }
         }
     }
