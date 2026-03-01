@@ -109,55 +109,6 @@ fun SettingsScreen(
                 }
             }
             
-            /*
-            item {
-                SettingsSection(title = "Safety & Guardrails") {
-                    val context = androidx.compose.ui.platform.LocalContext.current
-                    val kidModeManager = remember { com.llmhub.llmhub.utils.KidModeManager(context) }
-                    val isKidModeEnabled by kidModeManager.isKidModeEnabled.collectAsState()
-                    var showKidModeSetPin by remember { mutableStateOf(false) }
-                    var showKidModeVerifyPin by remember { mutableStateOf(false) }
-
-                    if (showKidModeSetPin) {
-                        com.llmhub.llmhub.ui.components.KidModeSetPinDialog(
-                            onConfirm = { pin ->
-                                kidModeManager.enableKidMode(pin)
-                                showKidModeSetPin = false
-                            },
-                            onDismiss = { showKidModeSetPin = false }
-                        )
-                    }
-
-                    if (showKidModeVerifyPin) {
-                        val incorrectPinMsg = stringResource(R.string.kid_mode_incorrect_pin)
-                        com.llmhub.llmhub.ui.components.KidModeVerifyPinDialog(
-                            onConfirm = { pin ->
-                                if (kidModeManager.disableKidMode(pin)) {
-                                    showKidModeVerifyPin = false
-                                } else {
-                                    android.widget.Toast.makeText(context, incorrectPinMsg, android.widget.Toast.LENGTH_SHORT).show()
-                                }
-                            },
-                            onDismiss = { showKidModeVerifyPin = false }
-                        )
-                    }
-
-                    SettingsItem(
-                        icon = if (isKidModeEnabled) Icons.Default.ChildCare else Icons.Outlined.ChildCare,
-                        title = stringResource(R.string.kid_mode_title),
-                        subtitle = if (isKidModeEnabled) stringResource(R.string.kid_mode_enabled_status) else stringResource(R.string.kid_mode_disabled_status),
-                        onClick = {
-                            if (isKidModeEnabled) {
-                                showKidModeVerifyPin = true
-                            } else {
-                                showKidModeSetPin = true
-                            }
-                        }
-                    )
-                }
-            }
-            */
-
             item {
                 SettingsSection(title = stringResource(R.string.features)) {
                     Row(
