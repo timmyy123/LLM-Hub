@@ -72,6 +72,7 @@ class OnnxInferenceService @Inject constructor(
     private var thinkSentinelEmitted = false
     /** After we see </think> we stream answer tokens as plain text (no THINK sentinel). */
     private var inAnswerPhase = false
+    private var overrideEnableThinking: Boolean? = null  // null = always think (model default)
     private val SENTINEL_THINK = "\u200B\u200BTHINK\u200B\u200B"
     private val SENTINEL_ENDTHINK = "\u200B\u200BENDTHINK\u200B\u200B"
 
@@ -158,7 +159,10 @@ class OnnxInferenceService @Inject constructor(
     private fun ensureInputsEmbedsType(env: OrtEnvironment, session: OrtSession, embeds: OnnxTensor): OnnxTensor {
         val expected = (session.inputInfo["inputs_embeds"]?.info as? ai.onnxruntime.TensorInfo)?.type
         if (expected == OnnxJavaType.FLOAT16 && embeds.info.type != OnnxJavaType.FLOAT16) {
-            val fb = embeds.floatBuffer
+            val getBufferMethod = embeds.javaClass.getDeclaredMethod("getBuffer")
+            getBufferMethod.isAccessible = true
+            val rawByteBuffer = getBufferMethod.invoke(embeds) as ByteBuffer
+            val fb = rawByteBuffer.order(ByteOrder.nativeOrder()).asFloatBuffer()
             val floats = FloatArray(fb.remaining())
             fb.get(floats)
             val shape = embeds.info.shape
@@ -448,31 +452,38 @@ class OnnxInferenceService @Inject constructor(
                 // For Ministral we must put ONLY the user message in [INST], not "user: X\nassistant:" — otherwise
                 // the model sees "X" and "assistant" adjacent and interprets it as "Xassistant".
                 val formattedPrompt = if (model.name.contains("Ministral", ignoreCase = true) || model.name.contains("Mistral", ignoreCase = true)) {
+                    val systemPart = if (prompt.startsWith("system: ")) {
+                        prompt.substringAfter("system: ").substringBefore("\n\nuser: ").trim() + "\n\n"
+                    } else ""
                     val lastUser = prompt.substringAfterLast("user: ").substringBefore("\nassistant:").trim()
                     val instBody = if (lastUser.isNotEmpty()) lastUser else prompt.trim()
-                    "[INST]\n$instBody\n[/INST]\n"
+                    "[INST]\n" + systemPart + instBody + "\n[/INST]\n"
                 } else {
-                    // ChatML formatting. If prompt uses app's internal transcript format, convert to proper ChatML turns.
-                    // This prevents models from getting confused by "user:"/"assistant:" markers inside a single user turn.
+                    // ChatML formatting.
                     if (prompt.contains("user: ") && (prompt.contains("\nassistant:") || prompt.endsWith("assistant:"))) {
                         var p = prompt
-                        // 1. Start interaction (First User Turn)
+                        // 0. Handle System Prompt
+                        if (p.startsWith("system: ")) {
+                            p = p.replaceFirst("system: ", "<|im_start|>system\n")
+                            // Add end token before the first user turn if there is one
+                            if (p.contains("\n\nuser: ")) {
+                                p = p.replaceFirst("\n\nuser: ", "<|im_end|>\n<|im_start|>user\n")
+                            }
+                        }
+                        
+                        // 1. Start interaction (First User Turn if no system prompt)
                         if (p.startsWith("user: ")) {
                             p = p.replaceFirst("user: ", "<|im_start|>user\n")
                         }
                         // 2. Middle Interactions (User Turn starts after Assistant Turn ends)
-                        // The \n\n separator from ChatViewModel indicates the end of the previous assistant response.
-                        // We close the previous Assistant turn and open the new User turn.
                         p = p.replace("\n\nuser: ", "<|im_end|>\n<|im_start|>user\n")
                         
                         // 3. Assistant Turns (and closing of User Turns)
-                        // Matches "\nassistant: " (with space) or "\nassistant:" (no space/end of prompt)
-                        // We close the current User turn and open the new Assistant turn.
                         p = p.replace(Regex("\nassistant: ?"), "<|im_end|>\n<|im_start|>assistant\n")
                         
                         "<|startoftext|>" + p
                     } else {
-                        // Fallback: Wrap entire prompt in a single user turn (old behavior)
+                        // Fallback: Wrap entire prompt in a single user turn
                         "<|startoftext|><|im_start|>user\n$prompt<|im_end|>\n<|im_start|>assistant\n"
                     }
                 }
@@ -487,7 +498,19 @@ class OnnxInferenceService @Inject constructor(
                     throw Exception(error)
                 }
                 
-                val inputIds = currentTokenizer.encode(formattedPrompt)
+                val inputIds = currentTokenizer.encode(run {
+                    // Thinking toggle: when thinking is disabled for a Thinking model, inject
+                    // /no_think after the last <|im_start|>user\n marker in the formatted prompt.
+                    val isThinkingModelOnnx = model.name.contains("Thinking", ignoreCase = true) ||
+                        model.name.contains("Reasoning", ignoreCase = true)
+                    val thinkingEnabledOnnx = overrideEnableThinking ?: true
+                    if (!thinkingEnabledOnnx && isThinkingModelOnnx) {
+                        val marker = "<|im_start|>user\n"
+                        val idx = formattedPrompt.lastIndexOf(marker)
+                        if (idx >= 0) formattedPrompt.substring(0, idx + marker.length) + "/no_think " + formattedPrompt.substring(idx + marker.length)
+                        else formattedPrompt
+                    } else formattedPrompt
+                })
                 Log.d(TAG, "Tokenized prompt: ${inputIds.size} tokens")
                 
                 val maxNewTokens = overrideMaxTokens ?: 1024
@@ -613,7 +636,15 @@ class OnnxInferenceService @Inject constructor(
                     if (!outputIterator.hasNext()) throw Exception("No outputs from model")
                     val logitsEntry = outputIterator.next()
                     val logitsTensor = logitsEntry.value as OnnxTensor
-                    val logits = logitsTensor.floatBuffer
+                    
+                    // CRITICAL: Avoid grabbing logitsTensor.floatBuffer directly or getByteBuffer() which 
+                    // allocates a JVM heap array equal to the ENTIRE tensor size (can be 500MB+ for logic ctx).
+                    // We use reflection to call the private `getBuffer()` method on OnnxTensor, 
+                    // which returns a mapped DirectByteBuffer zero-copy.
+                    val getBufferMethod = logitsTensor.javaClass.getDeclaredMethod("getBuffer")
+                    getBufferMethod.isAccessible = true
+                    val rawByteBuffer = getBufferMethod.invoke(logitsTensor) as ByteBuffer
+                    val logits = rawByteBuffer.order(ByteOrder.nativeOrder()).asFloatBuffer()
                     
                     // Sample next token from last position  
                     val vocabSize = logits.remaining() / ids.size
@@ -1121,11 +1152,12 @@ class OnnxInferenceService @Inject constructor(
         else null
     override fun wasSessionRecentlyReset(chatId: String): Boolean = false
     
-    override fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?) {
+    override fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?, nGpuLayers: Int?, enableThinking: Boolean?) {
         overrideMaxTokens = maxTokens
         overrideTopK = topK
         overrideTopP = topP
         overrideTemperature = temperature
+        overrideEnableThinking = enableThinking
     }
     
     override fun isVisionCurrentlyDisabled(): Boolean = (ortVisionSession == null)

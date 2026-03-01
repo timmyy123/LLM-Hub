@@ -23,12 +23,12 @@ object DeviceInfo {
         "QCM8550" to "8gen2",
         "SM8650" to "8gen3",  // 8 Gen 3 (updated)
         "SM8650P" to "8gen3",
-        "SM8750" to "8gen4",  // 8 Elite / Gen 4 (updated)
+        "SM8750" to "8gen4",  // 8 Elite / Gen 4
         "SM8750P" to "8gen4",
-        "SM8850" to "8gen4",  // Hypothetical future
-        "SM8850P" to "8gen4",
         "SM8735" to "8gen3",  // 8s Gen 3
-        "SM8845" to "8gen4"
+        "SM8845" to "8gen5",  // Snapdragon 8 Gen 5
+        "SM8850" to "8gen5",  // Snapdragon 8 Elite Gen 5
+        "SM8850P" to "8gen5"
     )
     
     fun getChipsetSuffix(): String? {
@@ -37,8 +37,8 @@ object DeviceInfo {
     }
     
     fun isQualcommNpuSupported(): Boolean {
-        // App policy: expose GGUF NPU option only on 8 Gen 4 class devices.
-        return getChipsetSuffix() == "8gen4"
+        // App policy: expose GGUF NPU option on 8 Gen 4 and 8 Gen 5 class devices.
+        return getChipsetSuffix() in setOf("8gen4", "8gen5")
     }
 
     /**
@@ -49,7 +49,7 @@ object DeviceInfo {
     fun getSdQnnPackageSuffix(): String {
         return when (getChipsetSuffix()) {
             "8gen1" -> "8gen1"
-            "8gen2", "8gen3", "8gen4" -> "8gen2"
+            "8gen2", "8gen3", "8gen4", "8gen5" -> "8gen2"
             else -> "min"
         }
     }
@@ -1103,13 +1103,80 @@ object ModelData {
             modelFormat = "gguf"
         ),
 
+        // LFM2-24B-A2B Models (LiquidAI GGUF - MoE, 2B active params)
+        LLMModel(
+            name = "LFM2-24B-A2B (Q4_0)",
+            description = "LiquidAI's MoE model with 24B total parameters but only 2B active per token. Q4_0 quantization. 32k context. Multilingual (9 languages).",
+            url = "https://huggingface.co/LiquidAI/LFM2-24B-A2B-GGUF/resolve/main/LFM2-24B-A2B-Q4_0.gguf?download=true",
+            category = "text",
+            sizeBytes = 13500000000L, // 13.5 GB from HuggingFace
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 16, recommendedRamGB = 18),
+            contextWindowSize = 32768,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM2-24B-A2B (Q4_K_M)",
+            description = "LiquidAI's MoE model with 24B total parameters but only 2B active per token. Q4_K_M quantization. 32k context. Multilingual (9 languages).",
+            url = "https://huggingface.co/LiquidAI/LFM2-24B-A2B-GGUF/resolve/main/LFM2-24B-A2B-Q4_K_M.gguf?download=true",
+            category = "text",
+            sizeBytes = 14400000000L, // 14.4 GB from HuggingFace
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 16, recommendedRamGB = 18),
+            contextWindowSize = 32768,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM2-24B-A2B (Q5_K_M)",
+            description = "LiquidAI's MoE model with 24B total parameters but only 2B active per token. Q5_K_M quantization for better quality. 32k context. Multilingual (9 languages).",
+            url = "https://huggingface.co/LiquidAI/LFM2-24B-A2B-GGUF/resolve/main/LFM2-24B-A2B-Q5_K_M.gguf?download=true",
+            category = "text",
+            sizeBytes = 16900000000L, // 16.9 GB from HuggingFace
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 18, recommendedRamGB = 24),
+            contextWindowSize = 32768,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM2-24B-A2B (Q6_K)",
+            description = "LiquidAI's MoE model with 24B total parameters but only 2B active per token. Q6_K quantization for high quality. 32k context. Multilingual (9 languages).",
+            url = "https://huggingface.co/LiquidAI/LFM2-24B-A2B-GGUF/resolve/main/LFM2-24B-A2B-Q6_K.gguf?download=true",
+            category = "text",
+            sizeBytes = 19600000000L, // 19.6 GB from HuggingFace
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 20, recommendedRamGB = 24),
+            contextWindowSize = 32768,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM2-24B-A2B (Q8_0)",
+            description = "LiquidAI's MoE model with 24B total parameters but only 2B active per token. Q8_0 quantization - near full quality. 32k context. Multilingual (9 languages).",
+            url = "https://huggingface.co/LiquidAI/LFM2-24B-A2B-GGUF/resolve/main/LFM2-24B-A2B-Q8_0.gguf?download=true",
+            category = "text",
+            sizeBytes = 25400000000L, // 25.4 GB from HuggingFace
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 28, recommendedRamGB = 32),
+            contextWindowSize = 32768,
+            modelFormat = "gguf"
+        ),
+
         // LFM-2.5 1.2B Instruct Models (ONNX) - Q4 and Q8 variants (sizeBytes = sum of all downloaded files from HF)
         LLMModel(
             name = "LFM-2.5 1.2B Instruct (ONNX Q4)",
             description = "LiquidAI's 1.2B instruction model in ONNX format. Q4 quantization for balanced quality and size. 128k context. Requires downloading 2 files.",
             url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/onnx/model_q4.onnx?download=true",
             category = "text",
-            sizeBytes = 1224116481L, // main + onnx_data + tokenizer.json + tokenizer_config.json (HF API)
+            sizeBytes = 853542627L, // model_q4.onnx + model_q4.onnx_data + tokenizer.json + tokenizer_config.json (HF API)
             source = "LiquidAI",
             supportsVision = false,
             supportsGpu = false,
@@ -1127,7 +1194,7 @@ object ModelData {
             description = "LiquidAI's 1.2B instruction model in ONNX format. Q8 quantization for higher quality. 128k context. Requires downloading 2 files.",
             url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-ONNX/resolve/main/onnx/model_q8.onnx?download=true",
             category = "text",
-            sizeBytes = 1772844567L, // main + onnx_data + tokenizer (HF API)
+            sizeBytes = 1771510908L, // model_q8.onnx + model_q8.onnx_data + tokenizer.json + tokenizer_config.json (HF API)
             source = "LiquidAI",
             supportsVision = false,
             supportsGpu = false,
@@ -1147,7 +1214,7 @@ object ModelData {
             description = "LiquidAI's 1.2B reasoning model in ONNX format. Q4 quantization for balanced quality and size. 128k context. Requires downloading 2 files.",
             url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/onnx/model_q4.onnx?download=true",
             category = "text",
-            sizeBytes = 1224116481L, // main + onnx_data + tokenizer (HF API; Thinking repo same layout)
+            sizeBytes = 853542627L, // model_q4.onnx + model_q4.onnx_data + tokenizer.json + tokenizer_config.json (HF API)
             source = "LiquidAI",
             supportsVision = false,
             supportsGpu = false,
@@ -1165,7 +1232,7 @@ object ModelData {
             description = "LiquidAI's 1.2B reasoning model in ONNX format. Q8 quantization for higher quality. 128k context. Requires downloading 2 files.",
             url = "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Thinking-ONNX/resolve/main/onnx/model_q8.onnx?download=true",
             category = "text",
-            sizeBytes = 1772844567L, // main + onnx_data + tokenizer (HF API)
+            sizeBytes = 1771510908L, // model_q8.onnx + model_q8.onnx_data + tokenizer.json + tokenizer_config.json (HF API)
             source = "LiquidAI",
             supportsVision = false,
             supportsGpu = false,
@@ -1408,6 +1475,60 @@ object ModelData {
                 "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-ONNX/resolve/main/tokenizer.json?download=true",
                 "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-ONNX/resolve/main/tokenizer_config.json?download=true"
             )
+        ),
+
+        // GPT-OSS 20B Models (OpenAI GGUF - MoE, Harmony chat format)
+        LLMModel(
+            name = "GPT-OSS 20B (Q4_K_M)",
+            description = "OpenAI's open-weight MoE model (21B total params, 3.6B active). Q4_K_M quantization. 128k context. Uses Harmony chat format. Supports reasoning modes (low/medium/high).",
+            url = "https://huggingface.co/unsloth/gpt-oss-20b-GGUF/resolve/main/gpt-oss-20b-Q4_K_M.gguf?download=true",
+            category = "text",
+            sizeBytes = 11600000000L, // 11.6 GB from HuggingFace
+            source = "OpenAI",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 14, recommendedRamGB = 16),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "GPT-OSS 20B (Q5_K_M)",
+            description = "OpenAI's open-weight MoE model (21B total params, 3.6B active). Q5_K_M quantization for better quality. 128k context. Uses Harmony chat format. Supports reasoning modes.",
+            url = "https://huggingface.co/unsloth/gpt-oss-20b-GGUF/resolve/main/gpt-oss-20b-Q5_K_M.gguf?download=true",
+            category = "text",
+            sizeBytes = 11700000000L, // 11.7 GB from HuggingFace
+            source = "OpenAI",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 14, recommendedRamGB = 16),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "GPT-OSS 20B (Q6_K)",
+            description = "OpenAI's open-weight MoE model (21B total params, 3.6B active). Q6_K quantization for high quality. 128k context. Uses Harmony chat format. Supports reasoning modes.",
+            url = "https://huggingface.co/unsloth/gpt-oss-20b-GGUF/resolve/main/gpt-oss-20b-Q6_K.gguf?download=true",
+            category = "text",
+            sizeBytes = 12000000000L, // 12 GB from HuggingFace
+            source = "OpenAI",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 14, recommendedRamGB = 16),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "GPT-OSS 20B (Q8_0)",
+            description = "OpenAI's open-weight MoE model (21B total params, 3.6B active). Q8_0 quantization - near full quality. 128k context. Uses Harmony chat format. Supports reasoning modes.",
+            url = "https://huggingface.co/unsloth/gpt-oss-20b-GGUF/resolve/main/gpt-oss-20b-Q8_0.gguf?download=true",
+            category = "text",
+            sizeBytes = 12100000000L, // 12.1 GB from HuggingFace
+            source = "OpenAI",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 14, recommendedRamGB = 16),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
         ),
 
         // Gemma-3n Models (Multimodal - Text + Vision + Audio)

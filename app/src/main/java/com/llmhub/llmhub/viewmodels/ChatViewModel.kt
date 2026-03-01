@@ -380,6 +380,9 @@ class ChatViewModel(
     // Keep reference to message collection to prevent multiple collectors
     private var messageCollectionJob: Job? = null
 
+    private val _currentCreator = MutableStateFlow<CreatorEntity?>(null)
+    val currentCreator: StateFlow<CreatorEntity?> = _currentCreator.asStateFlow()
+
     // Avoid aggressive continuation for the very first generation after model load
     private var firstGenerationSinceLoad: Boolean = false
     // Guard to avoid infinite retry loops when a response comes back empty
@@ -439,7 +442,7 @@ class ChatViewModel(
         }
     }
 
-    fun initializeChat(chatId: String, context: Context) {
+    fun initializeChat(chatId: String, context: Context, creatorId: String? = null) {
         // Sync the currently loaded model from inference service
         syncCurrentlyLoadedModel()
         
@@ -480,12 +483,17 @@ class ChatViewModel(
             loadAvailableModelsSync(context)
 
             if (chatId == "new") {
+                if (creatorId != null) {
+                    initializeNewChat(context, creatorId)
+                    return@launch
+                }
                 // For new chats, preserve the current model if one is loaded
                 val newChatId = repository.createNewChat(
                     context.getString(R.string.drawer_new_chat),
                     if (_availableModels.value.isEmpty()) context.getString(R.string.no_model_downloaded) else 
                     (previousModel?.name ?: context.getString(R.string.no_model_selected))
                 )
+                _currentCreator.value = null
                 currentChatId = newChatId
                 _currentChat.value = repository.getChatById(newChatId)
                 
@@ -532,8 +540,14 @@ class ChatViewModel(
                 val chat = repository.getChatById(chatId)
                 if (chat == null) {
                     Log.e("ChatViewModel", "Chat $chatId does not exist, creating new chat instead")
-                    initializeChat("new", context)
+                    initializeChat("new", context, creatorId)
                     return@launch
+                }
+
+                if (chat.creatorId != null) {
+                    _currentCreator.value = repository.getCreatorById(chat.creatorId)
+                } else {
+                    _currentCreator.value = null
                 }
                 
                 // Check if chat contains images and current model supports vision
@@ -1367,6 +1381,12 @@ inferenceService.loadModel(currentModel!!, _selectedBackend.value, _selectedNpuD
                                             // Insert RAG context before the assistant response (assign the result)
                                             if (ragContext.isNotEmpty()) {
                                                 basePrompt = basePrompt.replace("\nassistant:", "${ragContext}\nassistant:")
+                                            }
+
+                                            val creator = _currentCreator.value
+                                            if (creator != null && creator.pctfPrompt.isNotBlank()) {
+                                                Log.d("ChatViewModel", "Injecting Creator Persona: ${creator.name}")
+                                                basePrompt = "system: ${creator.pctfPrompt}\n\n$basePrompt"
                                             }
                                             basePrompt
                                         }
@@ -2891,7 +2911,7 @@ inferenceService.loadModel(currentModel!!, _selectedBackend.value, _selectedNpuD
         }
     }
     
-    private suspend fun initializeNewChat(context: Context) {
+    private suspend fun initializeNewChat(context: Context, creatorId: String? = null) {
         // Store the current model before clearing state
         val previousModel = currentModel
         
@@ -2923,11 +2943,25 @@ inferenceService.loadModel(currentModel!!, _selectedBackend.value, _selectedNpuD
             }
         }
         
+        var chatTitle = context.getString(R.string.drawer_new_chat)
+        if (creatorId != null) {
+            val creator = repository.getCreatorById(creatorId)
+            if (creator != null) {
+                _currentCreator.value = creator
+                chatTitle = "${creator.icon} ${creator.name}"
+            } else {
+                _currentCreator.value = null
+            }
+        } else {
+            _currentCreator.value = null
+        }
+
         // Create new chat with appropriate model
         val newChatId = repository.createNewChat(
-            context.getString(R.string.drawer_new_chat),
+            chatTitle,
             if (_availableModels.value.isEmpty()) context.getString(R.string.no_model_downloaded) else 
-            (modelToUse?.name ?: context.getString(R.string.no_model_selected))
+            (modelToUse?.name ?: context.getString(R.string.no_model_selected)),
+            creatorId
         )
         
         // Set as current chat

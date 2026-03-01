@@ -10,7 +10,8 @@ data class ChatWithLastMessage(
 
 class ChatRepository(
     private val chatDao: ChatDao,
-    private val messageDao: MessageDao
+    private val messageDao: MessageDao,
+    private val creatorDao: CreatorDao
 ) {
     
     fun getAllChats(): Flow<List<ChatEntity>> {
@@ -20,6 +21,22 @@ class ChatRepository(
     /** Chats that have at least one message. Use for the drawer. */
     fun getActiveChats(): Flow<List<ChatEntity>> {
         return chatDao.getNonEmptyChats()
+    }
+
+    fun getAllCreators(): Flow<List<CreatorEntity>> {
+        return creatorDao.getAllCreators()
+    }
+    
+    suspend fun getCreatorById(id: String): CreatorEntity? {
+        return creatorDao.getCreatorById(id)
+    }
+
+    suspend fun insertCreator(creator: CreatorEntity) {
+        creatorDao.insertCreator(creator)
+    }
+
+    suspend fun deleteCreator(creator: CreatorEntity) {
+        creatorDao.deleteCreator(creator)
     }
     
     suspend fun getAllChatsWithLastMessage(): List<ChatWithLastMessage> {
@@ -36,10 +53,11 @@ class ChatRepository(
         return messageDao.getMessagesForChatSync(chatId)
     }
     
-    suspend fun createNewChat(title: String, modelName: String): String {
+    suspend fun createNewChat(title: String, modelName: String, creatorId: String? = null): String {
         val chat = ChatEntity(
             title = title,
-            modelName = modelName
+            modelName = modelName,
+            creatorId = creatorId
         )
         chatDao.insertChat(chat)
         return chat.id
