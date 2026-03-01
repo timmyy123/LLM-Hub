@@ -109,6 +109,7 @@ fun SettingsScreen(
                 }
             }
             
+            /*
             item {
                 SettingsSection(title = "Safety & Guardrails") {
                     val context = androidx.compose.ui.platform.LocalContext.current
@@ -155,6 +156,7 @@ fun SettingsScreen(
                     )
                 }
             }
+            */
 
             item {
                 SettingsSection(title = stringResource(R.string.features)) {
