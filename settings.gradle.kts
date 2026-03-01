@@ -11,6 +11,9 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+}
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
@@ -26,4 +29,6 @@ dependencyResolutionManagement {
 rootProject.name = "Llm Hub"
 include(":app")
 include(":qnn_pack")
+include(":sd_pack")
+include(":nexa_npu_pack")
  

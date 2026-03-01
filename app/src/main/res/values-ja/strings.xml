@@ -1,4 +1,4 @@
-<resources>
+﻿<resources>
     <string name="app_name">LLM Hub</string>
     
     <!-- Common -->
@@ -75,7 +75,7 @@
     <string name="acknowledgments_text">このアプリケーションを支える素晴らしいLLMモデルを提供してくれたGoogle、Meta、Microsoft、IBM、およびHuggingFaceコミュニティに特別な感謝を。このプロジェクトは、Android開発コミュニティとオープンソースエコシステムの素晴らしい仕事にも依存しています。</string>    <string name="sd_models_credit">画像生成モデルは、Qualcomm QNN（NPU）とAlibaba MNN（CPU）バックエンドを使用したxororzのStable Diffusion実装により提供されています。</string>    <string name="nexa_sdk_credit">GGUFモデルの推論はNexa SDKによって提供されています。</string>    <string name="ai_thinking">AIが考え中...</string>
     <string name="thinking_label">思考</string>
     <string name="thinking_tokens">思考（%1$d トークン）</string>
-    <string name="version_number">バージョン 3.5.3</string>
+    <string name="version_number">バージョン 3.6.0</string>
     <string name="app_version">アプリバージョン</string>
     
     <!-- Terms of Service -->
@@ -393,6 +393,7 @@
     <string name="modality_options">モダリティオプション</string>
     <string name="enable_vision">ビジョンを有効化（画像サポート）</string>
     <string name="enable_audio">音声を有効化（音声入力）</string>
+    <string name="enable_thinking">思考機能を有効化</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 7〜8GBデバイスで安定したパフォーマンスを得るには、GPUメモリを節約するために音声を無効化することを検討してください。ビジョンは一般的により安定しています。</string>
     
     <!-- General performance tip for all devices -->
@@ -696,4 +697,67 @@
     <string name="language_persian">فارسی</string>
     <string name="language_ukrainian">Українська</string>
     <string name="language_hebrew">עברית</string>
+    <!-- New Chat Management & Creator Strings -->
+    <string name="not_loaded">読み込まれていません</string>
+    <string name="dialog_rename_chat_title">チャットの名前を変更</string>
+    <string name="chat_title">チャットタイトル</string>
+    <string name="more_options">その他のオプション</string>
+    <string name="dialog_delete_creator_title">ペルソナを削除しますか?</string>
+    <string name="dialog_delete_creator_message">ペルソナ「%1」を削除しますか?</string>
+    <string name="action_rename">名前を変更</string>
+
+    <!-- Vibe Coder Feature -->
+    <string name="feature_vibe_coder">VibeCode</string>
+    <string name="feature_vibe_coder_desc">AIでHTML、JavaScript、Pythonのコードを生成</string>
+    <string name="feature_creator_generation">ペルソナ</string>
+    <string name="feature_creator_generation_desc">独自のカスタムAIペルソナを作成</string>
+    <string name="drawer_my_creators">マイペルソナ</string>
+    <string name="vibe_coder_title">VibeCode</string>
+    <string name="vibe_coder_prompt_label">何をコーディングしたいですか?</string>
+    <string name="vibe_coder_prompt_hint">生成したいコードを説明してください...</string>
+    <string name="vibe_coder_generate">コードを生成</string>
+    <string name="vibe_coder_generating">コードを生成中...</string>
+    <string name="vibe_coder_generated_code">生成されたコード</string>
+    <string name="vibe_coder_copy">コピー</string>
+    <string name="vibe_coder_preview">プレビュー</string>
+    <string name="vibe_coder_no_model">モデルが読み込まれていません。まずモデルをダウンロードして選択してください。</string>
+    <string name="vibe_coder_settings">設定</string>
+    <string name="vibe_coder_backend_select">バックエンドを選択</string>
+
+    <!-- VibeCode additions -->
+    <string name="vibe_coder_modification_mode">変更モード</string>
+    <string name="vibe_coder_refine">コードを改善</string>
+    <string name="vibe_coder_clear">新規プロジェクト / コンテキストをクリア</string>
+    <string name="vibe_coder_planning">アーキテクチャを計画中...</string>
+    <string name="vibe_coder_revising">コードを修正中...</string>
+
+    <!-- Creator Generation Screen -->
+    <string name="creator_screen_title">新しいAIキャラクター</string>
+    <string name="creator_bring_to_life">AIに命を吹き込む</string>
+    <string name="creator_description">カスタムAIキャラクターを作成できます。あなたのキャラクターがどのような入力、リクエスト、アイデアにも応答する方法を説明してください。作成後、チャットで使用できます。</string>
+    <string name="creator_prompt_label">キャラクターを説明してください...</string>
+    <string name="creator_prompt_placeholder">例：どんなトピックも10行以内の韻を踏む詩で要約する</string>
+    <string name="creator_brewing">魔法を込めています...</string>
+    <string name="creator_generate_persona">キャラクターを生成</string>
+    <string name="creator_load_model_first">最初にモデルをロードしてください。</string>
+    <string name="creator_result_heading">新しいAIキャラクターが完成しました！</string>
+    <string name="creator_system_prompt_label">システムプロンプト (PCTF):</string>
+    <string name="creator_save_and_chat">保存してチャット</string>
+
+    <!-- Kid Mode -->
+    <string name="kid_mode_title">キッズモード</string>
+    <string name="kid_mode_enabled_status">有効 - セーフガードが有効</string>
+    <string name="kid_mode_disabled_status">無効</string>
+    <string name="kid_mode_incorrect_pin">PINが違います</string>
+    <string name="kid_mode_set_pin_title">キッズモードのPINを設定</string>
+    <string name="kid_mode_set_pin_body">キッズモードを有効にするために4桁のPINを入力してください。後で無効にするときにこのPINが必要です。</string>
+    <string name="kid_mode_pin_label">4桁のPIN</string>
+    <string name="kid_mode_pin_error">PINは4桁で入力してください</string>
+    <string name="kid_mode_enable">有効にする</string>
+    <string name="kid_mode_disable_title">キッズモードを無効にする</string>
+    <string name="kid_mode_verify_body">キッズモードを無効にするために4桁のPINを入力してください。</string>
+    <string name="kid_mode_disable">無効にする</string>
+
+    <string name="gpu_layers_label">GPU Layers: %1$d</string>
+    <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
 </resources>

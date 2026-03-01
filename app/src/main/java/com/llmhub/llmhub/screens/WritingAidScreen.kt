@@ -2,9 +2,11 @@ package com.llmhub.llmhub.screens
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -20,6 +22,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.llmhub.llmhub.R
@@ -57,6 +61,27 @@ fun WritingAidScreen(
     val isProcessing by viewModel.isProcessing.collectAsState()
     val outputText by viewModel.outputText.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    val enableThinking by viewModel.enableThinking.collectAsState()
+    val selectedMaxTokens by viewModel.selectedMaxTokens.collectAsState()
+    val selectedNGpuLayers by viewModel.selectedNGpuLayers.collectAsState()
+
+    // Slider local state (synced from viewmodel)
+    val baseMaxTokensCap by remember(selectedModel) {
+        derivedStateOf { selectedModel?.contextWindowSize?.coerceAtLeast(1) ?: 4096 }
+    }
+    var maxTokensValue by remember(selectedMaxTokens, baseMaxTokensCap) {
+        mutableStateOf(selectedMaxTokens.coerceIn(1, baseMaxTokensCap))
+    }
+    var maxTokensText by remember(maxTokensValue) { mutableStateOf(maxTokensValue.toString()) }
+    var gpuLayers by remember(selectedNGpuLayers) { mutableStateOf(selectedNGpuLayers ?: 999) }
+    val isGguf by remember(selectedModel) { derivedStateOf { selectedModel?.modelFormat == "gguf" } }
+    val isThinkingOrHarmonyModel by remember(selectedModel) {
+        derivedStateOf {
+            val name = selectedModel?.name?.lowercase() ?: ""
+            name.contains("thinking") || name.contains("reasoning") ||
+                name.contains("gpt-oss") || name.contains("gpt_oss")
+        }
+    }
     
     // TTS Service
     val ttsService = remember { com.llmhub.llmhub.ui.components.TtsService(context) }
@@ -126,6 +151,101 @@ fun WritingAidScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
 
+                // Max Tokens slider
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = stringResource(R.string.model_configs_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                            Text(text = stringResource(R.string.max_tokens), style = MaterialTheme.typography.bodyMedium)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "$baseMaxTokensCap ${stringResource(R.string.max)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                            Slider(
+                                value = maxTokensValue.toFloat(),
+                                onValueChange = {
+                                    val v = it.toInt().coerceIn(1, baseMaxTokensCap)
+                                    maxTokensValue = v
+                                    maxTokensText = v.toString()
+                                    viewModel.setMaxTokens(v)
+                                },
+                                valueRange = 1f..baseMaxTokensCap.toFloat(),
+                                modifier = Modifier.weight(1f).height(36.dp),
+                                thumb = {
+                                    SliderDefaults.Thumb(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        thumbSize = DpSize(24.dp, 24.dp)
+                                    )
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            OutlinedTextField(
+                                value = maxTokensText,
+                                onValueChange = { input ->
+                                    val numeric = input.filter { it.isDigit() }
+                                    val v = (numeric.toIntOrNull() ?: 1).coerceIn(1, baseMaxTokensCap)
+                                    maxTokensText = v.toString()
+                                    maxTokensValue = v
+                                    viewModel.setMaxTokens(v)
+                                },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                singleLine = true,
+                                modifier = Modifier.width(72.dp)
+                            )
+                        }
+
+                        // GPU Layers (GGUF only)
+                        if (isGguf) {
+                            Text(
+                                text = stringResource(R.string.gpu_layers_label, gpuLayers),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                                Slider(
+                                    value = gpuLayers.toFloat(),
+                                    onValueChange = {
+                                        gpuLayers = it.toInt()
+                                        viewModel.setNGpuLayers(gpuLayers)
+                                    },
+                                    valueRange = 0f..999f,
+                                    modifier = Modifier.weight(1f).height(28.dp),
+                                    thumb = {
+                                        SliderDefaults.Thumb(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            thumbSize = DpSize(24.dp, 24.dp)
+                                        )
+                                    }
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                OutlinedTextField(
+                                    value = gpuLayers.toString(),
+                                    onValueChange = { v ->
+                                        val n = v.filter { it.isDigit() }.toIntOrNull()?.coerceIn(0, 999) ?: gpuLayers
+                                        gpuLayers = n
+                                        viewModel.setNGpuLayers(n)
+                                    },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    singleLine = true,
+                                    modifier = Modifier.width(72.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
                 // Tone Selector
                 Text(
                     text = stringResource(R.string.writing_aid_select_mode),
@@ -163,8 +283,27 @@ fun WritingAidScreen(
                         }
                     }
                 }
-                
-                Spacer(modifier = Modifier.height(32.dp))
+                                // Thinking toggle (shown only for thinking/reasoning models)
+                if (isThinkingOrHarmonyModel) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.enable_thinking),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Switch(
+                            checked = enableThinking,
+                            onCheckedChange = { viewModel.setEnableThinking(it) }
+                        )
+                    }
+                }
+                                Spacer(modifier = Modifier.height(32.dp))
             }
         }
     }

@@ -82,6 +82,14 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
     private val _loadError = MutableStateFlow<String?>(null)
     val loadError: StateFlow<String?> = _loadError.asStateFlow()
     
+    private val _enableThinking = MutableStateFlow(true)
+    val enableThinking: StateFlow<Boolean> = _enableThinking.asStateFlow()
+
+    private val _selectedNGpuLayers = MutableStateFlow<Int?>(null)
+    val selectedNGpuLayers: StateFlow<Int?> = _selectedNGpuLayers.asStateFlow()
+    private val _selectedMaxTokens = MutableStateFlow(4096)
+    val selectedMaxTokens: StateFlow<Int> = _selectedMaxTokens.asStateFlow()
+
     private var analyzingJob: Job? = null
     
     init {
@@ -103,6 +111,10 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
         
         // Restore vision setting
         _visionEnabled.value = prefs.getBoolean("vision_enabled", false)
+
+        // Restore token and GPU layer settings
+        _selectedMaxTokens.value = prefs.getInt("max_tokens", 4096)
+        _selectedNGpuLayers.value = prefs.getInt("n_gpu_layers", 999).let { if (it == 999) null else it }
     }
     
     private fun saveSettings() {
@@ -111,6 +123,8 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
             putString("selected_backend", _selectedBackend.value?.name)
             putString("selected_npu_device", _selectedNpuDeviceId.value)
             putBoolean("vision_enabled", _visionEnabled.value)
+            putInt("max_tokens", _selectedMaxTokens.value)
+            putInt("n_gpu_layers", _selectedNGpuLayers.value ?: 999)
             apply()
         }
     }
@@ -204,6 +218,21 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
         _loadError.value = null
     }
     
+    fun setEnableThinking(enabled: Boolean) {
+        _enableThinking.value = enabled
+    }
+
+    fun setMaxTokens(maxTokens: Int) {
+        val cap = _selectedModel.value?.contextWindowSize?.coerceAtLeast(1) ?: 4096
+        _selectedMaxTokens.value = maxTokens.coerceIn(1, cap)
+        saveSettings()
+    }
+
+    fun setNGpuLayers(n: Int) {
+        _selectedNGpuLayers.value = n
+        saveSettings()
+    }
+
     fun loadModel() {
         val model = _selectedModel.value ?: return
         val backend = _selectedBackend.value ?: return
@@ -221,7 +250,13 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
             try {
                 // Unload any existing model first
                 inferenceService.unloadModel()
-                
+                inferenceService.setGenerationParameters(
+                    _selectedMaxTokens.value.coerceIn(1, model.contextWindowSize.coerceAtLeast(1)),
+                    null, null, null,
+                    _selectedNGpuLayers.value,
+                    _enableThinking.value
+                )
+
                 // Load the selected model with vision setting
                 val disableVision = !_visionEnabled.value || !modelSupportsVisionInput(model)
                 val success = inferenceService.loadModel(

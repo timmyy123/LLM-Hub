@@ -53,9 +53,20 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
     
+    private val _enableThinking = MutableStateFlow(true)
+    val enableThinking: StateFlow<Boolean> = _enableThinking.asStateFlow()
+
+    private val _selectedNGpuLayers = MutableStateFlow<Int?>(null)
+    val selectedNGpuLayers: StateFlow<Int?> = _selectedNGpuLayers.asStateFlow()
+    private val _selectedMaxTokens = MutableStateFlow(4096)
+    val selectedMaxTokens: StateFlow<Int> = _selectedMaxTokens.asStateFlow()
+    private val _selectedNpuDeviceId = MutableStateFlow<String?>(null)
+    val selectedNpuDeviceId: StateFlow<String?> = _selectedNpuDeviceId.asStateFlow()
+    private var pendingSavedModelName: String? = null
+
     init {
-        loadAvailableModels()
         loadSavedSettings()
+        loadAvailableModels()
     }
     
     private fun loadSavedSettings() {
@@ -66,6 +77,8 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
         } catch (_: IllegalArgumentException) {
             LlmInference.Backend.GPU
         }
+        _selectedNpuDeviceId.value = prefs.getString("npu_device_id", null)
+        _enableThinking.value = prefs.getBoolean("enable_thinking", true)
         
         // Restore writing mode
         val savedModeName = prefs.getString("selected_mode", WritingMode.FRIENDLY.name)
@@ -74,29 +87,24 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
         } catch (_: IllegalArgumentException) {
             WritingMode.FRIENDLY
         }
+
+        // Restore token and GPU layer settings
+        _selectedMaxTokens.value = prefs.getInt("max_tokens", 4096)
+        _selectedNGpuLayers.value = prefs.getInt("n_gpu_layers", 999).let { if (it == 999) null else it }
         
         // Restore selected model by name
-        val savedModelName = prefs.getString("selected_model_name", null)
-        if (savedModelName != null) {
-            viewModelScope.launch {
-                kotlinx.coroutines.delay(100)
-                val model = _availableModels.value.find { it.name == savedModelName }
-                if (model != null) {
-                    _selectedModel.value = model
-                    // If restored model doesn't support GPU, force CPU (saved backend may be GPU from another model)
-                    if (!model.supportsGpu && _selectedBackend.value == LlmInference.Backend.GPU) {
-                        _selectedBackend.value = LlmInference.Backend.CPU
-                    }
-                }
-            }
-        }
+        pendingSavedModelName = prefs.getString("selected_model_name", null)
     }
     
     private fun saveSettings() {
         prefs.edit().apply {
             putString("selected_model_name", _selectedModel.value?.name)
-            putString("selected_backend", _selectedBackend.value?.name)
+            putString("selected_backend", _selectedBackend.value?.name ?: prefs.getString("selected_backend", LlmInference.Backend.GPU.name))
+            putString("npu_device_id", _selectedNpuDeviceId.value)
             putString("selected_mode", _selectedMode.value.name)
+            putInt("max_tokens", _selectedMaxTokens.value)
+            putInt("n_gpu_layers", _selectedNGpuLayers.value ?: 999)
+            putBoolean("enable_thinking", _enableThinking.value)
             apply()
         }
     }
@@ -108,14 +116,21 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
                 .filter { it.category != "embedding" && !it.name.contains("Projector", ignoreCase = true) }
             _availableModels.value = available
             if (_selectedModel.value == null) {
-                available.firstOrNull()?.let {
+                val modelToSelect = pendingSavedModelName?.let { savedName ->
+                    available.find { it.name == savedName }
+                } ?: available.firstOrNull()
+                modelToSelect?.let {
                     _selectedModel.value = it
                     _selectedBackend.value = if (it.supportsGpu) {
                         _selectedBackend.value ?: LlmInference.Backend.GPU
                     } else {
                         LlmInference.Backend.CPU
                     }
+                    if (!it.supportsGpu) {
+                        _selectedNpuDeviceId.value = null
+                    }
                 }
+                pendingSavedModelName = null
             }
         }
     }
@@ -139,9 +154,6 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
         saveSettings()
     }
     
-    private val _selectedNpuDeviceId = MutableStateFlow<String?>(null)
-    val selectedNpuDeviceId: StateFlow<String?> = _selectedNpuDeviceId.asStateFlow()
-
     fun selectBackend(backend: LlmInference.Backend, deviceId: String? = null) {
         // Unload current model before switching backend
         if (_isModelLoaded.value) {
@@ -159,6 +171,37 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
         saveSettings()
     }
     
+    fun setEnableThinking(enabled: Boolean) {
+        _enableThinking.value = enabled
+        saveSettings()
+        applyGenerationParametersToService()
+    }
+
+    fun setMaxTokens(maxTokens: Int) {
+        val cap = _selectedModel.value?.contextWindowSize?.coerceAtLeast(1) ?: 4096
+        _selectedMaxTokens.value = maxTokens.coerceIn(1, cap)
+        saveSettings()
+        applyGenerationParametersToService()
+    }
+
+    fun setNGpuLayers(n: Int) {
+        _selectedNGpuLayers.value = n
+        saveSettings()
+        applyGenerationParametersToService()
+    }
+
+    private fun applyGenerationParametersToService() {
+        val model = _selectedModel.value ?: return
+        inferenceService.setGenerationParameters(
+            _selectedMaxTokens.value.coerceIn(1, model.contextWindowSize.coerceAtLeast(1)),
+            null,
+            null,
+            null,
+            _selectedNGpuLayers.value,
+            _enableThinking.value
+        )
+    }
+
     fun loadModel() {
         val model = _selectedModel.value ?: return
         val backend = _selectedBackend.value ?: return
@@ -175,7 +218,8 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
             try {
                 // Unload any existing model first
                 inferenceService.unloadModel()
-                
+                applyGenerationParametersToService()
+
                 // Load the selected model with text-only mode (disable vision and audio)
                 val success = inferenceService.loadModel(
                     model = model,
@@ -228,6 +272,7 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
             _errorMessage.value = null
             
             try {
+                applyGenerationParametersToService()
                 val prompt = buildPrompt(mode, inputText)
                 
                 // Use unique chatId for each session to avoid conflicts (like TranslatorViewModel)

@@ -78,7 +78,7 @@
     <string name="ai_thinking">AI is thinking...</string>
     <string name="thinking_label">Thinking</string>
     <string name="thinking_tokens">Thinking (%1$d tokens)</string>
-    <string name="version_number">Version 3.5.3</string>
+    <string name="version_number">Version 3.6.0</string>
     <string name="app_version">App Version</string>
     
     <!-- Terms of Service -->
@@ -206,6 +206,7 @@
     <string name="model_supports_vision">Supports vision</string>
     <string name="model_supports_multimodal">Supports multimodal</string>
     <string name="model_text_only">Text only</string>
+    <string name="not_loaded">Not Loaded</string>
     
     <!-- Chat Drawer -->
     <string name="drawer_title">LLM Hub</string>
@@ -217,12 +218,18 @@
     <string name="drawer_settings">Settings</string>
     
     <!-- Chat Management -->
+    <string name="dialog_rename_chat_title">Rename Chat</string>
+    <string name="chat_title">Chat Title</string>
+    <string name="more_options">More Options</string>
     <string name="dialog_delete_all_chats_title">Delete All Chats?</string>
     <string name="dialog_delete_all_chats_message">This will permanently delete all conversation history. This action cannot be undone.</string>
     <string name="dialog_delete_chat_title">Delete Chat?</string>
     <string name="dialog_delete_chat_message">Delete conversation \"%1$s\"?</string>
+    <string name="dialog_delete_creator_title">Delete creAItor?</string>
+    <string name="dialog_delete_creator_message">Delete creAItor \"%1$s\"?</string>
     <string name="action_delete_all">Delete All</string>
     <string name="action_delete">Delete</string>
+    <string name="action_rename">Rename</string>
     <string name="action_cancel">Cancel</string>
     <string name="content_description_delete_chat">Delete Chat</string>
     
@@ -401,6 +408,7 @@
     <string name="modality_options">Modality Options</string>
     <string name="enable_vision">Enable Vision (Image Support)</string>
     <string name="enable_audio">Enable Audio (Voice Input)</string>
+    <string name="enable_thinking">Enable Thinking</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 For stable performance on 7-8GB devices, consider disabling audio to save GPU memory. Vision is generally more stable.</string>
     
     <!-- General performance tip for all devices -->
@@ -449,7 +457,57 @@
     <string name="feature_scam_detector_desc">Analyze text, images, or URLs for potential scams</string>
     <string name="feature_image_generator">Image Generator</string>
     <string name="feature_image_generator_desc">Generate images from text prompts with AI</string>
+    <string name="feature_vibe_coder">Vibes</string>
+    <string name="feature_vibe_coder_desc">Generate HTML, JavaScript, and Python code with AI</string>
+    <string name="feature_creator_generation">creAItors</string>
+    <string name="feature_creator_generation_desc">Create your own custom AI personas</string>
+    <string name="drawer_my_creators">my creAItors</string>
     
+    <!-- Vibe Coder Screen -->
+    <string name="vibe_coder_title">Vibes</string>
+    <string name="vibe_coder_prompt_label">What would you like to code?</string>
+    <string name="vibe_coder_prompt_hint">Describe the code you want to generate...</string>
+    <string name="vibe_coder_generate">Generate Code</string>
+    <string name="vibe_coder_generating">Generating code...</string>
+    <string name="vibe_coder_generated_code">Generated Code</string>
+    <string name="vibe_coder_copy">Copy</string>
+    <string name="vibe_coder_preview">Preview</string>
+    <string name="vibe_coder_no_model">No model loaded. Please download and select a model first.</string>
+    <string name="vibe_coder_settings">Settings</string>
+    <string name="vibe_coder_backend_select">Select Backend</string>
+    <string name="vibe_coder_modification_mode">Modification Mode</string>
+    <string name="vibe_coder_refine">Refine Code</string>
+    <string name="vibe_coder_clear">New Project / Clear Context</string>
+    <string name="vibe_coder_planning">Planning architecture...</string>
+    <string name="vibe_coder_revising">Revising code...</string>
+
+    <!-- Creator Generation Screen -->
+    <string name="creator_screen_title">new creAItor</string>
+    <string name="creator_bring_to_life">Bring an AI to life</string>
+    <string name="creator_description">You have the power to bring a custom AI creAItor to life. Just describe how your creAItor will respond to any input, request, or idea. Once we generate your creAItor, you\'ll be able to use it in chat.</string>
+    <string name="creator_prompt_label">Describe your creAItor...</string>
+    <string name="creator_prompt_placeholder">e.g., summarize any topic as a rhyming poem of less than 10 lines</string>
+    <string name="creator_brewing">brewing magic...</string>
+    <string name="creator_generate_persona">Generate Persona</string>
+    <string name="creator_load_model_first">Please load a model first.</string>
+    <string name="creator_result_heading">Here is your new creAItor!</string>
+    <string name="creator_system_prompt_label">System Prompt (PCTF):</string>
+    <string name="creator_save_and_chat">Save &amp; Chat</string>
+
+    <!-- Kid Mode -->
+    <string name="kid_mode_title">Kid Mode</string>
+    <string name="kid_mode_enabled_status">Enabled - Safety guardrails active</string>
+    <string name="kid_mode_disabled_status">Disabled</string>
+    <string name="kid_mode_incorrect_pin">Incorrect PIN</string>
+    <string name="kid_mode_set_pin_title">Set Kid Mode PIN</string>
+    <string name="kid_mode_set_pin_body">Enter a 4-digit PIN to enable Kid Mode. You will need this PIN to disable it later.</string>
+    <string name="kid_mode_pin_label">4-Digit PIN</string>
+    <string name="kid_mode_pin_error">PIN must be 4 digits</string>
+    <string name="kid_mode_enable">Enable</string>
+    <string name="kid_mode_disable_title">Disable Kid Mode</string>
+    <string name="kid_mode_verify_body">Enter your 4-digit PIN to disable Kid Mode.</string>
+    <string name="kid_mode_disable">Disable</string>
+
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">Writing Aid</string>
     <string name="writing_aid_input_label">Enter your text</string>
@@ -639,6 +697,9 @@
     <string name="backend_cpu">CPU</string>
     <string name="backend_gpu">GPU</string>
     <string name="backend_npu">NPU (Hexagon)</string>
+    <string name="gpu_layers_label">GPU Layers: %1$d</string>
+    <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
+    <string name="thinking_toggle_label">Enable Thinking</string>
     <string name="gpu_not_supported">GPU not supported by this model</string>
     <string name="load_model">Load Model</string>
     <string name="model_loaded">Model loaded successfully</string>

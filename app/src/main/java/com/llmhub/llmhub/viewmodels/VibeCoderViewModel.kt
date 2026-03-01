@@ -1,0 +1,874 @@
+package com.llmhub.llmhub.viewmodels
+
+import android.app.Application
+import android.content.Context
+import android.util.Log
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.ModelAvailabilityProvider
+import com.google.mediapipe.tasks.genai.llminference.LlmInference
+import java.util.UUID
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+enum class CodeLanguage {
+    HTML, PYTHON, JAVASCRIPT, UNKNOWN
+}
+
+/**
+ * VibeCoderViewModel handles code generation using LLM inference.
+ * Users provide a prompt, and the model generates HTML/Python/JavaScript code.
+ */
+class VibeCoderViewModel(application: Application) : AndroidViewModel(application) {
+    
+    private val inferenceService = (application as com.llmhub.llmhub.LlmHubApplication).inferenceService
+    private val prefs = application.getSharedPreferences("vibe_coder_prefs", Context.MODE_PRIVATE)
+    
+    private var processingJob: Job? = null
+    
+    // Available models
+    private val _availableModels = MutableStateFlow<List<LLMModel>>(emptyList())
+    val availableModels: StateFlow<List<LLMModel>> = _availableModels.asStateFlow()
+    
+    // Model selection & backend
+    private val _selectedModel = MutableStateFlow<LLMModel?>(null)
+    val selectedModel: StateFlow<LLMModel?> = _selectedModel.asStateFlow()
+    
+    private val _selectedBackend = MutableStateFlow<LlmInference.Backend?>(null)
+    val selectedBackend: StateFlow<LlmInference.Backend?> = _selectedBackend.asStateFlow()
+    
+    // Optional selected NPU device id when user chooses NPU for GGUF
+    private val _selectedNpuDeviceId = MutableStateFlow<String?>(null)
+    val selectedNpuDeviceId: StateFlow<String?> = _selectedNpuDeviceId.asStateFlow()
+
+    private val _selectedNGpuLayers = MutableStateFlow<Int?>(null)
+
+    private val _selectedMaxTokens = MutableStateFlow(4096)
+    val selectedMaxTokens: StateFlow<Int> = _selectedMaxTokens.asStateFlow()
+
+    // Loading states
+    private val _isModelLoaded = MutableStateFlow(false)
+    val isModelLoaded: StateFlow<Boolean> = _isModelLoaded.asStateFlow()
+    
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+    
+    private val _isProcessing = MutableStateFlow(false)
+    val isProcessing: StateFlow<Boolean> = _isProcessing.asStateFlow()
+    
+    private val _isPlanning = MutableStateFlow(false)
+    val isPlanning: StateFlow<Boolean> = _isPlanning.asStateFlow()
+    
+    private var currentSpec: String = ""
+    
+    // Generated code & metadata
+    private val _generatedCode = MutableStateFlow("")
+    val generatedCode: StateFlow<String> = _generatedCode.asStateFlow()
+    
+    private val _codeLanguage = MutableStateFlow(CodeLanguage.UNKNOWN)
+    val codeLanguage: StateFlow<CodeLanguage> = _codeLanguage.asStateFlow()
+    
+    private val _promptInput = MutableStateFlow("")
+    val promptInput: StateFlow<String> = _promptInput.asStateFlow()
+    
+    // Error handling
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+    
+    private val _enableThinking = MutableStateFlow(true)
+    val enableThinking: StateFlow<Boolean> = _enableThinking.asStateFlow()
+
+    private var pendingSavedModelName: String? = null
+    
+    init {
+        loadSavedSettings()
+        loadAvailableModels()
+    }
+    
+    /**
+     * Load previously saved settings (model, backend)
+     */
+    private fun loadSavedSettings() {
+        pendingSavedModelName = prefs.getString("selected_model_name", null)
+    }
+
+    private fun restoreSettingsForModel(model: LLMModel) {
+        val savedTokens = prefs.getInt("max_tokens_${model.name}", minOf(4096, model.contextWindowSize.coerceAtLeast(1)))
+        _selectedMaxTokens.value = savedTokens.coerceIn(1, model.contextWindowSize.coerceAtLeast(1))
+
+        val savedBackendName = prefs.getString("selected_backend_${model.name}", prefs.getString("selected_backend", LlmInference.Backend.GPU.name))
+        val restoredBackend = try {
+            LlmInference.Backend.valueOf(savedBackendName ?: LlmInference.Backend.GPU.name)
+        } catch (_: IllegalArgumentException) {
+            LlmInference.Backend.GPU
+        }
+        _selectedBackend.value = if (model.supportsGpu) restoredBackend else LlmInference.Backend.CPU
+
+        _selectedNpuDeviceId.value = if (_selectedBackend.value == LlmInference.Backend.GPU) {
+            prefs.getString("selected_npu_device_id_${model.name}", prefs.getString("selected_npu_device_id", null))
+        } else {
+            null
+        }
+
+        _enableThinking.value = prefs.getBoolean("enable_thinking_${model.name}", prefs.getBoolean("enable_thinking", true))
+        _selectedNGpuLayers.value = prefs.getInt("n_gpu_layers_${model.name}", 999).let { if (it == 999) null else it }
+    }
+    
+    /**
+     * Save current model and backend preferences
+     */
+    private fun saveSettings() {
+        prefs.edit().apply {
+            putString("selected_model_name", _selectedModel.value?.name)
+            _selectedModel.value?.let { model ->
+                putString("selected_backend_${model.name}", _selectedBackend.value?.name)
+                putString("selected_npu_device_id_${model.name}", _selectedNpuDeviceId.value)
+                putInt("max_tokens_${model.name}", _selectedMaxTokens.value)
+                putBoolean("enable_thinking_${model.name}", _enableThinking.value)
+                putInt("n_gpu_layers_${model.name}", _selectedNGpuLayers.value ?: 999)
+            }
+            putString("selected_backend", _selectedBackend.value?.name)
+            putString("selected_npu_device_id", _selectedNpuDeviceId.value)
+            putBoolean("enable_thinking", _enableThinking.value)
+            apply()
+        }
+    }
+    
+    /**
+     * Load all available models from device
+     */
+    private fun loadAvailableModels() {
+        viewModelScope.launch {
+            val context = getApplication<Application>()
+            val available = ModelAvailabilityProvider.loadAvailableModels(context)
+                .filter { it.category != "embedding" && !it.name.contains("Projector", ignoreCase = true) }
+            _availableModels.value = available
+            if (_selectedModel.value == null) {
+                val modelToSelect = pendingSavedModelName?.let { savedName ->
+                    available.find { it.name == savedName }
+                } ?: available.firstOrNull()
+                modelToSelect?.let {
+                    _selectedModel.value = it
+                    restoreSettingsForModel(it)
+                }
+                pendingSavedModelName = null
+            }
+        }
+    }
+    
+    /**
+     * Select a different model for code generation
+     */
+    fun selectModel(model: LLMModel) {
+        if (_isModelLoaded.value) {
+            unloadModel()
+        }
+        
+        _selectedModel.value = model
+        _isModelLoaded.value = false
+        restoreSettingsForModel(model)
+
+        saveSettings()
+    }
+
+    fun setMaxTokens(maxTokens: Int) {
+        val cap = _selectedModel.value?.contextWindowSize?.coerceAtLeast(1) ?: 4096
+        _selectedMaxTokens.value = maxTokens.coerceIn(1, cap)
+        saveSettings()
+        applyGenerationParametersToService()
+    }
+
+    /**
+     * Select inference backend (GPU, CPU, etc.)
+     */
+    fun selectBackend(backend: LlmInference.Backend, deviceId: String? = null) {
+        if (_isModelLoaded.value) {
+            unloadModel()
+        }
+        
+        _selectedBackend.value = backend
+        _selectedNpuDeviceId.value = deviceId
+        _isModelLoaded.value = false
+        saveSettings()
+    }
+
+    fun setNGpuLayers(n: Int) {
+        _selectedNGpuLayers.value = n
+        saveSettings()
+        applyGenerationParametersToService()
+    }
+    
+    /**
+     * Load the selected model into memory
+     */
+    fun setEnableThinking(enabled: Boolean) {
+        _enableThinking.value = enabled
+        saveSettings()
+        applyGenerationParametersToService()
+    }
+
+    private fun applyGenerationParametersToService(
+        maxTokens: Int? = null,
+        topK: Int? = null,
+        topP: Float? = null,
+        temperature: Float? = null
+    ) {
+        val model = _selectedModel.value
+        val effectiveMaxTokens = when {
+            maxTokens != null && model != null -> maxTokens.coerceIn(1, model.contextWindowSize.coerceAtLeast(1))
+            maxTokens != null -> maxTokens
+            model != null -> _selectedMaxTokens.value.coerceIn(1, model.contextWindowSize.coerceAtLeast(1))
+            else -> _selectedMaxTokens.value
+        }
+
+        inferenceService.setGenerationParameters(
+            effectiveMaxTokens,
+            topK,
+            topP,
+            temperature,
+            _selectedNGpuLayers.value,
+            _enableThinking.value
+        )
+    }
+    
+    fun loadModel() {
+        val model = _selectedModel.value ?: return
+        val backend = _selectedBackend.value ?: return
+        
+        if (_isLoading.value || _isModelLoaded.value) {
+            return
+        }
+        
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
+            
+            try {
+                inferenceService.unloadModel()
+                applyGenerationParametersToService()
+
+                // Load model with text-only mode (vibe coder generates code as text)
+                val success = inferenceService.loadModel(
+                    model = model,
+                    preferredBackend = backend,
+                    disableVision = true,
+                    disableAudio = true,
+                    deviceId = _selectedNpuDeviceId.value
+                )
+                
+                if (success) {
+                    _isModelLoaded.value = true
+                } else {
+                    _errorMessage.value = "Failed to load model"
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Unknown error"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+    
+    /**
+     * Unload the current model from memory
+     */
+    fun unloadModel() {
+        viewModelScope.launch {
+            try {
+                cancelGenerationInternal()
+                inferenceService.unloadModel()
+                _isModelLoaded.value = false
+                _generatedCode.value = ""
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Failed to unload model"
+            }
+        }
+    }
+    
+    /**
+     * Update the prompt input text
+     */
+    fun updatePromptInput(text: String) {
+        _promptInput.value = text
+    }
+    
+    /**
+     * Generate code based on the user's prompt
+     */
+    fun generateCode(prompt: String) {
+        if (prompt.isBlank()) return
+        val model = _selectedModel.value ?: return
+        
+        if (!_isModelLoaded.value) {
+            _errorMessage.value = "Please load a model first"
+            return
+        }
+        
+        processingJob?.cancel()
+        
+        processingJob = viewModelScope.launch {
+            _isProcessing.value = true
+            _errorMessage.value = null
+            
+            // Determine if request is creative/game or utility/precise
+            val isCreative = prompt.contains("game", ignoreCase = true) || 
+                           prompt.contains("story", ignoreCase = true) ||
+                           prompt.contains("art", ignoreCase = true) ||
+                           prompt.contains("creative", ignoreCase = true)
+            
+            // Set optimized parameters based on intent:
+            // - Utility/Math/Code (default): 0.2 temperature for high precision
+            // - Games/Creative: 0.6 temperature for balanced creativity
+            val temperature = if (isCreative) 0.6f else 0.2f
+            
+            try {
+                // Step 1: Architect (Meta-Prompting) vs Direct Modification
+                // If we have existing code and the prompt implies a revision, we SKIP the architect
+                // and go straight to the coder with a "Modification Prompt".
+                // If it's a new project, we use the Architect to plan it first.
+                
+                val currentCode = _generatedCode.value
+                val isRevision = currentCode.isNotBlank() && !prompt.equals("new", ignoreCase = true)
+                
+                if (!isRevision) {
+                    _generatedCode.value = "" // Clear code only for new projects
+                } else {
+                    _generatedCode.value = "" // Clear the old code from the screen so user knows we are working
+                }
+                
+                var builtSpec = ""
+                
+                // Only run Architect if this is a NEW project
+                if (!isRevision) {
+                    _isPlanning.value = true
+                    try {
+                        // Adjust parameters for Architect (shorter output needed)
+                        applyGenerationParametersToService(
+                            maxTokens = 1024, // Architect only needs to write a short list
+                            topK = 40,
+                            topP = 0.95f,
+                            temperature = temperature
+                        )
+                        
+                        // Timeout for planning phase (3 minutes)
+                        val planResult = kotlinx.coroutines.withTimeoutOrNull(180_000L) {
+                            val specPrompt = buildSpecPrompt(prompt, "")
+                            val specChatId = "vibe-spec-${UUID.randomUUID()}"
+                            
+                            val specResponseFlow = inferenceService.generateResponseStreamWithSession(
+                                prompt = specPrompt,
+                                model = model,
+                                chatId = specChatId,
+                                images = emptyList(),
+                                audioData = null,
+                                webSearchEnabled = false
+                            )
+                            
+                            specResponseFlow.collect { token ->
+                                builtSpec += token
+                            }
+                            true // Return true on successful completion
+                        }
+                        
+                        if (planResult == null) {
+                            Log.w("VibeCoderVM", "Planning phase timed out after 3 minutes, using generated spec up to this point: $builtSpec")
+                        }
+                        
+                        // DEBUG: Log the Architect's generated requirements
+                        Log.d("VibeCoderVM", "Architect Requirements:\n$builtSpec")
+                        
+                        // CRITICAL: Explicitly reset the session between Architect and Coder phases
+                        try {
+                            inferenceService.resetChatSession("vibe-spec-handoff")
+                            kotlinx.coroutines.delay(200)
+                        } catch (e: Exception) {
+                            Log.w("VibeCoderVM", "Session reset between phases failed: ${e.message}")
+                        }
+                        
+                    } catch (e: Exception) {
+                         if (e is kotlinx.coroutines.CancellationException) {
+                             throw e // Ensure genuine cancellations to the job are not swallowed
+                         }
+                         Log.w("VibeCoderVM", "Planning phase failed: ${e.message}. Falling back to direct generation.")
+                         try {
+                            inferenceService.resetChatSession("vibe-spec-cleanup")
+                         } catch (resetEx: Exception) {
+                            Log.e("VibeCoderVM", "Failed to reset session after planning failure", resetEx)
+                         }
+                    }
+                    _isPlanning.value = false
+                }
+                
+                currentSpec = builtSpec
+                
+                // Configure parameters for the Coder phase (needs lots of output space for code)
+                applyGenerationParametersToService(
+                    maxTokens = 8192,
+                    topK = 40,
+                    topP = 0.95f,
+                    temperature = temperature
+                )
+                
+                // Step 2: Coder (Implementation or Modification)
+                val implementationPrompt = if (isRevision) {
+                    // Direct Modification Flow
+                    Log.d("VibeCoderVM", "Direct Modification Mode")
+                    buildModificationPrompt(prompt, currentCode)
+                } else if (builtSpec.isNotBlank()) {
+                    // Standard Flow (Architect -> Coder)
+                    buildImplementationPrompt(builtSpec)
+                } else {
+                    // Fallback Flow (Direct Prompt)
+                    buildPrompt(prompt)
+                }
+                
+                val codeChatId = "vibe-coder-${UUID.randomUUID()}"
+                
+                val responseFlow = inferenceService.generateResponseStreamWithSession(
+                    prompt = implementationPrompt,
+                    model = model,
+                    chatId = codeChatId,
+                    images = emptyList(),
+                    audioData = null,
+                    webSearchEnabled = false
+                )
+                
+                var responseText = ""
+                try {
+                    responseFlow.collect { token ->
+                        responseText += token
+                        _generatedCode.value = responseText
+
+                        // Early stopping: Check if we have two distinct sets of triple backticks
+                        val firstTick = responseText.indexOf("```")
+                        if (firstTick != -1) {
+                            val lastTick = responseText.lastIndexOf("```")
+                            if (lastTick > firstTick) {
+                                // Found a closing code block, stop generating
+                                throw kotlinx.coroutines.CancellationException("Code block complete")
+                            }
+                        }
+                    }
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    if (e.message == "Code block complete") {
+                        Log.d("VibeCoderVM", "Early stop: Code block complete")
+                        // Fall through to extraction
+                    } else {
+                        throw e
+                    }
+                }
+                
+                // Detect code language and extract code from response
+                detectAndExtractCode(responseText)
+                
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                Log.d("VibeCoderVM", "Generation cancelled")
+            } catch (e: Exception) {
+                val message = e.message ?: ""
+                val shouldShowError = !message.contains("cancelled", ignoreCase = true) &&
+                                    !message.contains("Previous invocation still processing", ignoreCase = true) &&
+                                    !message.contains("StandaloneCoroutine", ignoreCase = true)
+                
+                if (shouldShowError) {
+                    _errorMessage.value = message.ifBlank { "Generation failed" }
+                    Log.e("VibeCoderVM", "Generation error: $message", e)
+                } else {
+                    Log.d("VibeCoderVM", "Suppressed error: $message")
+                }
+            } finally {
+                // Reset parameters to defaults (null)
+                inferenceService.setGenerationParameters(null, null, null, null)
+                _isProcessing.value = false
+                _isPlanning.value = false
+                processingJob = null
+            }
+        }
+    }
+    
+    /**
+     * Detect code language and extract clean code from the response.
+     * Supports HTML, Python, JavaScript wrapped in markdown code blocks or XML tags.
+     * Handles edge cases where code block markers aren't perfectly formatted.
+     */
+    private fun detectAndExtractCode(response: String) {
+        // Try to extract from markdown code blocks with language hints (```html, ```python, etc.)
+        // Relaxed regex to allow immediate content after language tag (no newline required)
+        val htmlMatch = Regex("```(?:html|htm)\\s*([\\s\\S]*?)```", RegexOption.IGNORE_CASE).find(response)
+        if (htmlMatch != null) {
+            _generatedCode.value = htmlMatch.groupValues[1].trim()
+            _codeLanguage.value = CodeLanguage.HTML
+            return
+        }
+        
+        val pythonMatch = Regex("```(?:python|py)\\s*([\\s\\S]*?)```", RegexOption.IGNORE_CASE).find(response)
+        if (pythonMatch != null) {
+            _generatedCode.value = pythonMatch.groupValues[1].trim()
+            _codeLanguage.value = CodeLanguage.PYTHON
+            return
+        }
+        
+        val jsMatch = Regex("```(?:javascript|js)\\s*([\\s\\S]*?)```", RegexOption.IGNORE_CASE).find(response)
+        if (jsMatch != null) {
+            _generatedCode.value = jsMatch.groupValues[1].trim()
+            _codeLanguage.value = CodeLanguage.JAVASCRIPT
+            return
+        }
+        
+        // Fallback: Extract any content between ``` markers (handles malformed responses)
+        val genericMatch = Regex("```\\s*([\\s\\S]*?)```").find(response)
+        if (genericMatch != null) {
+            val extracted = genericMatch.groupValues[1].trim()
+            _generatedCode.value = extracted
+            // Detect language from content
+            when {
+                extracted.contains("<!DOCTYPE", ignoreCase = true) || extracted.contains("<html", ignoreCase = true) -> {
+                    _codeLanguage.value = CodeLanguage.HTML
+                }
+                extracted.contains("def ") || extracted.contains("import ") -> {
+                    _codeLanguage.value = CodeLanguage.PYTHON
+                }
+                extracted.contains("function ") || extracted.contains("const ") -> {
+                    _codeLanguage.value = CodeLanguage.JAVASCRIPT
+                }
+                else -> {
+                    _codeLanguage.value = CodeLanguage.UNKNOWN
+                }
+            }
+            return
+        }
+        
+        // If no code block is found, assume the entire response is code if it loosely fits a pattern
+        val isLikelyCode = response.contains("<!DOCTYPE", ignoreCase = true) || 
+                           response.contains("<html", ignoreCase = true) || 
+                           response.contains("def ") || 
+                           response.contains("function ")
+        
+        if (isLikelyCode && !response.contains("```")) {
+            _generatedCode.value = response.trim()
+        }
+        
+        // Try to extract from XML-like tags (fallback)
+        val xmlHtmlMatch = Regex("<code[^>]*>([\\s\\S]*?)</code>", RegexOption.IGNORE_CASE).find(response)
+        if (xmlHtmlMatch != null) {
+            val extracted = xmlHtmlMatch.groupValues[1].trim()
+            _generatedCode.value = extracted
+            _codeLanguage.value = CodeLanguage.HTML
+            return
+        }
+        
+        // Default detection based on content pattern
+        when {
+            response.contains("<!DOCTYPE html", ignoreCase = true) ||
+            response.contains("<html", ignoreCase = true) -> {
+                _codeLanguage.value = CodeLanguage.HTML
+            }
+            response.contains("def ", ignoreCase = true) ||
+            response.contains("import ", ignoreCase = true) ||
+            response.contains("python", ignoreCase = true) -> {
+                _codeLanguage.value = CodeLanguage.PYTHON
+            }
+            response.contains("function ", ignoreCase = true) ||
+            response.contains("const ", ignoreCase = true) ||
+            response.contains("var ", ignoreCase = true) ||
+            response.contains("javascript", ignoreCase = true) -> {
+                _codeLanguage.value = CodeLanguage.JAVASCRIPT
+            }
+            else -> {
+                _codeLanguage.value = CodeLanguage.UNKNOWN
+            }
+        }
+    }
+    
+    /**
+     * Cancel ongoing code generation
+     */
+    fun cancelGeneration() {
+        viewModelScope.launch {
+            cancelGenerationInternal()
+        }
+    }
+
+    /**
+     * Safe cleanup path when leaving Vibe screen:
+     * stop streaming generation first, then unload model.
+     */
+    fun stopAndUnloadOnExit() {
+        viewModelScope.launch {
+            try {
+                cancelGenerationInternal()
+                inferenceService.unloadModel()
+                _isModelLoaded.value = false
+            } catch (e: Exception) {
+                Log.w("VibeCoderVM", "stopAndUnloadOnExit failed: ${e.message}")
+            }
+        }
+    }
+
+    private suspend fun cancelGenerationInternal() {
+        val activeJob = processingJob
+        if (activeJob != null) {
+            activeJob.cancel()
+            try {
+                activeJob.cancelAndJoin()
+            } catch (_: Exception) {
+            }
+            processingJob = null
+        }
+        _isProcessing.value = false
+        _isPlanning.value = false
+        try {
+            inferenceService.setGenerationParameters(null, null, null, null)
+        } catch (_: Exception) {
+        }
+    }
+    
+    /**
+     * Clear generated code
+     */
+    fun clearCode() {
+        _generatedCode.value = ""
+        _codeLanguage.value = CodeLanguage.UNKNOWN
+        currentSpec = ""
+    }
+
+    /**
+     * Update generated code (user edits)
+     */
+    fun updateGeneratedCode(code: String) {
+        _generatedCode.value = code
+    }
+
+    /**
+     * Clear error message
+     */
+    fun clearError() {
+        _errorMessage.value = null
+    }
+    
+    /**
+     * Build the Architect Spec Prompt (Step 1)
+     * Simplified to a "Technical Assistant" role that generates a concise Requirements List.
+     */
+    private fun buildSpecPrompt(userRequest: String, currentCode: String): String {
+        val isRevision = currentCode.isNotBlank()
+        val systemInstructions = """
+            You are a helpful Technical Assistant.
+            Your goal is to expand the user's request into a clear, concise list of functional requirements.
+
+            CONTEXT:
+            ${if (isRevision) "The user wants to MODIFY existing code." else "This is a NEW project request."}
+
+            TASK:
+            1. Identify the core features needed.
+            2. List specific UI elements required (buttons, inputs, displays).
+            3. Define the basic logic flow (e.g., "User clicks -> Update Score").
+            4. Keep it brief and actionable.
+
+            OUTPUT FORMAT:
+            - Feature: [Description]
+            - UI: [Element]
+            - Logic: [Rule]
+
+            Output ONLY the list. Do not write code or introductions.
+            IMPORTANT: Respond in the same language as the user's request.
+        """.trimIndent()
+
+        val userPayload = buildString {
+            append("USER REQUEST:\n")
+            append(userRequest.trim())
+            if (isRevision) {
+                append("\n\nEXISTING CODE:\n")
+                append(currentCode)
+            }
+        }
+
+        return "system: $systemInstructions\n\nuser: $userPayload"
+    }
+
+    /**
+     * Build the Developer Implementation Prompt (Step 2)
+     */
+    /**
+     * Build the Developer Implementation Prompt (Step 2 - New Project)
+     */
+    private fun buildImplementationPrompt(requirements: String): String {
+        val systemInstructions = """
+            You are an expert developer who is adept at generating production-ready stand-alone apps and games.
+            **CRITICAL STACK RULE:** You MUST default to HTML/JS for ALL games and apps. HTML/JS is required because it runs natively in the user's view. Python cannot render UI or playable games in this environment, and should be a LAST RESORT used ONLY for pure math/charting tasks, backend/scripting tasks meant to be copied, or if the user explicitly asks for Python.
+
+            Your task is to generate clean, functional code based on provided requirements.
+
+            Think about how to meet these requirements for the best stand-alone functional code to delight the user.
+
+            CONSTRAINTS:
+            Generate code that is:
+            - Syntactically correct and ready to run
+            - Well-commented where appropriate
+            - Self-contained (no external dependencies)
+            
+            CRITICAL ANTI-PATTERNS (DO NOT DO THIS):
+            - NO BLOCKING LOOPS: Never use 'while' or 'for' loops to manage turns or wait for user input (e.g., `while(guesses < 7)`). This freezes the browser.
+            - NO ALERTS: Do not use `alert()` or `prompt()`. Use HTML elements for output and input.
+            - NO EXTERNAL RESOURCES: No external images, CSS, or JS files.
+            - TYPE SAFETY: Never compare `input.value` directly to a number. ALWAYS use `parseInt()` or `Number()` first.
+            - UI INTEGRITY: Do not overwrite elements that contain labels (e.g., `<div id="score">Score: 0</div>` -> `document.getElementById("score").textContent = 5`). This destroys the label. Use a child `<span>` for the value or include the label in the update.
+            
+            REQUIREMENTS FOR APPS/GAMES (HTML/JS):
+            - Create a complete, standalone Single Page Application (SPA).
+            - Game Loop: State must persist between events. Each button click = one update.
+            - ALWAYS include a "Reset" or "New" button to restart the application state.
+            - Games should maintain a functional game state (Score, Win/Loss messages, turn history, etc.) in the UI. Turn history would be a list of previous moves/actions so the user can track progress, and summarize the results when the game is won or lost.
+            - Ensure all interactive elements (buttons, inputs) are clearly visible and accessible.
+            - FUNCTIONAL UI: Ensure ALL UI elements (including SVGs, Canvas) are functional and wired to the script. Do NOT add decorative elements that do nothing.
+            - EVENT DRIVEN: Do NOT use blocking loops (while/for) to wait for user input. Use event listeners and state variables to handle user interactions asynchronously.
+            
+            REQUIREMENTS FOR UTILITY APPS (Calculators, Converters, Tools):
+            - Use clear, labeled forms with appropriate input types (number, text, etc.).
+            - Validate inputs before processing (show user-friendly error messages).
+            - clearly display results in a distinct output area.
+            - Ensure high precision for calculations.
+            
+            REQUIREMENTS FOR PYTHON:
+            - Create a functional script (no external dependencies).
+            - Since this runs in a text simulation check, use print() statements to simulate output/state.
+            - For object simulations (e.g., "Park Sim"), create classes and a main execution block that demonstrates the logic.
+            
+            IMPORTANT:
+            - If generating HTML/JavaScript, wrap it in a markdown code block: ```html
+            YOUR HTML CODE HERE
+            ```
+            - If generating Python, wrap it in a markdown code block: ```python
+            YOUR PYTHON CODE HERE
+            ```
+            - Respond ONLY with the production-ready stand-alone code in a markdown code block. DO NOT include explanations, warnings, or additional text before or after the code block.
+            IMPORTANT: All UI text, labels, button text, and messages in the generated code must be in the same language as the user's input.
+
+        """.trimIndent()
+
+        val userPayload = "REQUIREMENTS:\n${requirements.trim()}"
+        return "system: $systemInstructions\n\nuser: $userPayload"
+    }
+
+    /**
+     * Build the Developer Modification Prompt (Step 2 - Revision)
+     * Direct Code Modification skipping the Architect.
+     */
+    private fun buildModificationPrompt(userRequest: String, currentCode: String): String {
+        val systemInstructions = """
+            You are an expert developer. The user wants to MODIFY the existing code below.
+            
+            **CRITICAL STACK RULE:** You MUST keep or default to HTML/JS if generating UI-based code. Python cannot render UI in this environment and is ONLY for math/charting, back-end scripts, or if explicitly requested.
+            
+            EXISTING CODE:
+            ```
+            $currentCode
+            ```
+            
+            USER REQUEST: "$userRequest"
+            
+            TASK:
+            1. Analyze the existing code and the user's request.
+            2. Rewrite the FULL code to incorporate the changes.
+            3. Ensure the rest of the application remains functional.
+            
+            CRITICAL ANTI-PATTERNS (DO NOT DO THIS):
+            - NO BLOCKING LOOPS: Never use 'while' or 'for' loops to manage turns or wait for user input (e.g., `while(guesses < 7)`). This freezes the browser.
+            - NO ALERTS: Do not use `alert()` or `prompt()`. Use HTML elements for output and input.
+            - NO EXTERNAL RESOURCES: No external images, CSS, or JS files.
+            - TYPE SAFETY: Never compare `input.value` directly to a number. ALWAYS use `parseInt()` or `Number()` first.
+            - UI INTEGRITY: Do not overwrite elements that contain labels. Use a child `<span>` for the value.
+            
+            IMPORTANT:
+            - Wrap code in ```html or ```python blocks.
+            - Return the FULL modified code, not just a diff.
+            - No explanations.
+            IMPORTANT: All UI text, labels, button text, and messages in the generated code must be in the same language as the user's request.
+        """.trimIndent()
+
+        val userPayload = """
+            USER REQUEST:
+            ${userRequest.trim()}
+
+            EXISTING CODE:
+            $currentCode
+        """.trimIndent()
+
+        return "system: $systemInstructions\n\nuser: $userPayload"
+    }
+
+    /**
+     * Legacy Prompt Builder (Fallback for v0.4 behavior)
+     * Used when Planning Phase fails or times out.
+     */
+    private fun buildPrompt(userPrompt: String): String {
+        val systemInstructions = """
+            You are an expert developer who is adept at generating production-ready stand-alone apps and games.
+            **CRITICAL STACK RULE:** You MUST default to HTML/JS for ALL games and apps. HTML/JS is required because it runs natively in the user's view. Python cannot render UI or playable games in this environment, and should be a LAST RESORT used ONLY for pure math/charting tasks, backend/scripting tasks meant to be copied, or if the user explicitly asks for Python.
+
+            Your task is to generate clean, functional code based on the current user request.
+
+            Think about how to meet the user's request for the best stand-alone functional code to delight the user, considering the constraints and requirements that follow.
+
+            CONSTRAINTS:
+            Generate code that is:
+            - Syntactically correct and ready to run
+            - Well-commented where appropriate
+            - Self-contained (no external dependencies)
+            
+            CONSTRAINT: NO EXTERNAL RESOURCES
+            - Do NOT use external images (<img> src must be data URI or SVG directly in code).
+            - Do NOT use external scripts (CDNs) or CSS files.
+            - Use standard HTML5/CSS3/ES6+ features.
+            - For graphics, use inline SVG, Canvas API, or CSS shapes.
+            - Provide a professional, polished look.
+            
+            REQUIREMENTS FOR APPS/GAMES (HTML/JS):
+            - Create a complete, standalone Single Page Application (SPA).
+            - ALWAYS include a "Reset" or "New" button to restart the application state.
+            - Games should maintain a functional game state (Score, Win/Loss messages, turn history, etc.) in the UI. Turn history would be a list of previous moves/actions so the user can track progress, and summarize the results when the game is won or lost.
+            - Ensure all interactive elements (buttons, inputs) are clearly visible and accessible.
+            - FUNCTIONAL UI: Ensure ALL UI elements (including SVGs, Canvas) are functional and wired to the script. Do NOT add decorative elements that do nothing.
+            - EVENT DRIVEN: Do NOT use blocking loops (while/for) to wait for user input. Use event listeners and state variables to handle user interactions asynchronously.
+            
+            REQUIREMENTS FOR UTILITY APPS (Calculators, Converters, Tools):
+            - Use clear, labeled forms with appropriate input types (number, text, etc.).
+            - Validate inputs before processing (show user-friendly error messages).
+            - clearly display results in a distinct output area.
+            - Ensure high precision for calculations.
+            
+            REQUIREMENTS FOR PYTHON:
+            - Create a functional script (no external dependencies).
+            - Since this runs in a text simulation check, use print() statements to simulate output/state.
+            - For object simulations (e.g., "Park Sim"), create classes and a main execution block that demonstrates the logic.
+            
+            IMPORTANT:
+            - If generating HTML/JavaScript, wrap it in a markdown code block: ```html
+            YOUR HTML CODE HERE
+            ```
+            - If generating Python, wrap it in a markdown code block: ```python
+            YOUR PYTHON CODE HERE
+            ```
+            - Respond ONLY with the production-ready stand-alone code in a markdown code block. DO NOT include explanations, warnings, or additional text before or after the code block.
+            IMPORTANT: All UI text, labels, button text, and messages in the generated code must be in the same language as the user's input.
+
+        """.trimIndent()
+
+        return "system: $systemInstructions\n\nuser: ${userPrompt.trim()}"
+    }
+    
+    override fun onCleared() {
+        super.onCleared()
+        viewModelScope.launch {
+            try { inferenceService.unloadModel() } catch (_: Exception) {}
+            inferenceService.onCleared()
+        }
+    }
+}

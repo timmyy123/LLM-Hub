@@ -74,12 +74,14 @@ fun getLocalizedModelName(model: LLMModel): String {
 @Composable
 fun ChatScreen(
     chatId: String,
+    creatorId: String? = null,
     viewModelFactory: ChatViewModelFactory,
     onNavigateToSettings: () -> Unit,
     onNavigateToModels: () -> Unit,
     onNavigateToChat: (String) -> Unit,
+    onNavigateToCreatorChat: (String) -> Unit,
     onNavigateBack: () -> Unit,
-    drawerState: androidx.compose.material3.DrawerState
+    drawerState: DrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 ) {
     val viewModel: ChatViewModel = viewModel(
         key = "chat_$chatId",
@@ -136,8 +138,9 @@ fun ChatScreen(
     }
 
     // Initialize chat - only run once per chatId or when context changes
-    LaunchedEffect(chatId) {
-        viewModel.initializeChat(chatId, context)
+    // Initialize chat - only run once per chatId/creatorId or when context changes
+    LaunchedEffect(chatId, creatorId) {
+        viewModel.initializeChat(chatId, context, creatorId)
     }
     
     // Sync model state immediately to show icons
@@ -183,6 +186,12 @@ fun ChatScreen(
                     }
                     onNavigateToModels()
                 },
+                onNavigateToCreatorChat = { creatorId ->
+                    coroutineScope.launch {
+                        drawerState.close()
+                    }
+                    onNavigateToCreatorChat(creatorId)
+                },
                 onNavigateBack = {
                     coroutineScope.launch {
                         drawerState.close()
@@ -216,76 +225,45 @@ fun ChatScreen(
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis
                             )
-                            // Show model in header only when one is actually loaded (not just selected).
-                            currentlyLoadedModel?.let { model ->
-                                val currentModel = model
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
+                            // Determine which model we SHOULD be showing (target model)
+                            val targetModelName = selectedModel?.name ?: currentChat?.modelName
+                            val isTargetModelLoaded = targetModelName != null && currentlyLoadedModel?.name == targetModelName
+                            
+                            // Get model object for capabilities if available
+                            val targetModel = selectedModel ?: (if (isTargetModelLoaded) currentlyLoadedModel else null) 
+                                ?: availableModels.find { it.name == targetModelName }
+
+                            // Only show subtitle when model is actually loaded
+                            if (isTargetModelLoaded) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        text = getLocalizedModelName(model),
+                                        text = if (targetModel != null) getLocalizedModelName(targetModel) else targetModelName!!,
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
-                                    // Use the currently loaded model state to show icons
+                                    Spacer(modifier = Modifier.width(4.dp))
                                     if (viewModel.currentModelSupportsVision()) {
+                                        Icon(Icons.Default.RemoveRedEye, contentDescription = stringResource(R.string.vision_enabled), modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.primary)
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Icon(
-                                            Icons.Default.RemoveRedEye,
-                                            contentDescription = stringResource(R.string.vision_enabled),
-                                            modifier = Modifier.size(12.dp),
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
                                     }
-                                    if (currentModel?.supportsAudio == true && !viewModel.isAudioCurrentlyDisabled()) {
+                                    if (targetModel?.supportsAudio == true && !viewModel.isAudioCurrentlyDisabled()) {
+                                        Icon(Icons.Default.Mic, contentDescription = "Audio enabled", modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.primary)
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Icon(
-                                            Icons.Default.Mic,
-                                            contentDescription = "Audio enabled",
-                                            modifier = Modifier.size(12.dp),
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
                                     }
-                                    if (currentModel?.name?.contains("Thinking", ignoreCase = true) == true) {
+                                    if (targetModel?.name?.contains("Thinking", ignoreCase = true) == true) {
+                                        Icon(Icons.Default.Psychology, contentDescription = stringResource(R.string.thinking_label), modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.primary)
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Icon(
-                                            Icons.Default.Psychology,
-                                            contentDescription = stringResource(R.string.thinking_label),
-                                            modifier = Modifier.size(12.dp),
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
                                     }
                                     if (viewModel.isGpuBackendEnabled()) {
-                                        val isNpu = selectedNpuDeviceId?.startsWith("HTP", ignoreCase = true) == true
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Icon(
-                                            if (isNpu) Icons.Default.Bolt else Icons.Default.Speed,
-                                            contentDescription = if (isNpu) "NPU enabled" else "GPU enabled",
-                                            modifier = Modifier.size(12.dp),
-                                            tint = MaterialTheme.colorScheme.secondary
-                                        )
+                                        val isNpu = selectedNpuDeviceId?.startsWith("dev", ignoreCase = true) == true
+                                        Icon(if (isNpu) Icons.Default.Bolt else Icons.Default.Speed, contentDescription = if (isNpu) "NPU enabled" else "GPU enabled", modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.secondary)
                                     }
-                                    // RAG indicator removed from top bar
-                                    // Show RAG enabled indicator when embeddings are enabled
                                     if (isEmbeddingEnabled) {
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Box(
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(12.dp))
-                                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f))
-                                                .padding(horizontal = 8.dp, vertical = 4.dp),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(
-                                                text = stringResource(R.string.rag_enabled),
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.primary,
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.Medium,
-                                                textAlign = TextAlign.Center
-                                            )
+                                        Box(modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)).padding(horizontal = 8.dp, vertical = 4.dp), contentAlignment = Alignment.Center) {
+                                            Text(text = stringResource(R.string.rag_enabled), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center)
                                         }
                                     }
                                 }
@@ -293,15 +271,17 @@ fun ChatScreen(
                         }
                     },
                     navigationIcon = {
-                        IconButton(onClick = {
-                            coroutineScope.launch { drawerState.open() }
-                        }) {
+                        IconButton(
+                            onClick = { coroutineScope.launch { drawerState.open() } }
+                        ) {
                             Icon(
                                 imageVector = Icons.Default.Menu,
-                                contentDescription = "Menu"
+                                contentDescription = "Menu",
+                                tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     },
+
                     actions = {
                         // Settings button - opens bottom sheet for model selection and config
                         IconButton(
@@ -343,8 +323,12 @@ fun ChatScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 contentAlignment = Alignment.Center
                             ) {
+                                // Calculate target model status for welcome message
+                                val targetModelName = selectedModel?.name ?: currentChat?.modelName
+                                val isTargetModelLoaded = targetModelName != null && currentlyLoadedModel?.name == targetModelName
+                                
                                 WelcomeMessage(
-                                    currentModel = currentChat?.modelName ?: stringResource(R.string.no_model_selected),
+                                    currentModel = currentlyLoadedModel?.name,
                                     onNavigateToModels = onNavigateToModels,
                                     hasDownloadedModels = viewModel.hasDownloadedModels()
                                 )
@@ -465,8 +449,8 @@ fun ChatScreen(
             onBackendSelected = { backend, deviceId ->
                 viewModel.selectBackend(backend, deviceId)
             },
-            onLoadModel = { model, maxTokens, topK, topP, temperature, backend, disableVision, disableAudio ->
-                Log.d("ChatScreen", "Model configs confirmed: maxTokens=$maxTokens topK=$topK topP=$topP temperature=$temperature backend=$backend disableVision=$disableVision disableAudio=$disableAudio for model ${model.name}")
+            onLoadModel = { model, maxTokens, topK, topP, temperature, backend, deviceId, disableVision, disableAudio, nGpuLayers, enableThinking ->
+                Log.d("ChatScreen", "Model configs confirmed: maxTokens=$maxTokens topK=$topK topP=$topP temperature=$temperature backend=$backend deviceId=$deviceId disableVision=$disableVision disableAudio=$disableAudio nGpuLayers=$nGpuLayers enableThinking=$enableThinking for model ${model.name}")
                 
                 // Push generation parameters to inference service via ViewModel
                 viewModel.setGenerationParameters(maxTokens, topK, topP, temperature)
@@ -488,10 +472,10 @@ fun ChatScreen(
         )
     }
 }
-    
+
 @Composable
 private fun WelcomeMessage(
-    currentModel: String,
+    currentModel: String?,
     onNavigateToModels: () -> Unit,
     hasDownloadedModels: Boolean
 ) {
@@ -557,13 +541,13 @@ private fun WelcomeMessage(
                         style = MaterialTheme.typography.labelLarge
                     )
                 }
-            } else if (currentModel == stringResource(R.string.no_model_selected) || currentModel == stringResource(R.string.no_model_downloaded)) {
+            } else if (currentModel == null) {
                 Text(
-                    text = stringResource(R.string.ready_to_chat),
+                    text = stringResource(R.string.load_model_to_start),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                } else {
+            } else {
                     // Ensure the chip is horizontally centered even in landscape/tablet widths
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                         StatusChip(
