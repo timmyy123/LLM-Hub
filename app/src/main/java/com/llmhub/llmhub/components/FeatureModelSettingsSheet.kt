@@ -91,6 +91,14 @@ fun FeatureModelSettingsSheet(
     val defaultUseGpu = remember(selectedModel) {
         if (isPhi4Mini) false else selectedModel?.supportsGpu == true
     }
+    val canUseNpuForSelectedModel by remember(selectedModel, isPhi4Mini) {
+        derivedStateOf {
+            selectedModel?.supportsGpu == true &&
+                !isPhi4Mini &&
+                selectedModel?.modelFormat == "gguf" &&
+                DeviceInfo.isQualcommNpuSupported()
+        }
+    }
 
     var maxTokensValue by remember { mutableStateOf(minOf(initialMaxTokens.coerceAtLeast(1), baseMaxTokensCap.coerceAtLeast(1))) }
     var maxTokensText by remember { mutableStateOf(maxTokensValue.toString()) }
@@ -142,6 +150,17 @@ fun FeatureModelSettingsSheet(
         onMaxTokensChanged(capped)
         if (selectedModel != null) {
             useGpu = if (isPhi4Mini) false else useGpu
+        }
+    }
+
+    LaunchedEffect(selectedModel?.name, canSelectAccelerator, canUseNpuForSelectedModel) {
+        if (!canSelectAccelerator) {
+            useGpu = false
+            useNpu = false
+            return@LaunchedEffect
+        }
+        if (!canUseNpuForSelectedModel && useNpu) {
+            useNpu = false
         }
     }
 
@@ -335,7 +354,7 @@ fun FeatureModelSettingsSheet(
                                         }
                                     )
 
-                                    val showNpuOption = selectedModel?.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported()
+                                    val showNpuOption = canUseNpuForSelectedModel
                                     if (showNpuOption) {
                                         DropdownMenuItem(
                                             text = { Text(stringResource(R.string.backend_npu)) },

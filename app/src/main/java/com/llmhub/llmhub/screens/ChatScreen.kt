@@ -140,7 +140,7 @@ fun ChatScreen(
     // Initialize chat - only run once per chatId or when context changes
     // Initialize chat - only run once per chatId/creatorId or when context changes
     LaunchedEffect(chatId, creatorId) {
-        viewModel.initializeChat(chatId, context, creatorId)
+        viewModel.initializeChat(chatId, context)
     }
     
     // Sync model state immediately to show icons
@@ -453,10 +453,10 @@ fun ChatScreen(
                 Log.d("ChatScreen", "Model configs confirmed: maxTokens=$maxTokens topK=$topK topP=$topP temperature=$temperature backend=$backend deviceId=$deviceId disableVision=$disableVision disableAudio=$disableAudio nGpuLayers=$nGpuLayers enableThinking=$enableThinking for model ${model.name}")
                 
                 // Push generation parameters to inference service via ViewModel
-                viewModel.setGenerationParameters(maxTokens, topK, topP, temperature, nGpuLayers, enableThinking)
+                viewModel.setGenerationParameters(maxTokens, topK, topP, temperature)
                 
                 if (backend != null) {
-                    viewModel.switchModelWithBackend(model, backend, disableVision, disableAudio, deviceId)
+                    viewModel.switchModelWithBackend(model, backend, disableVision, disableAudio)
                 } else {
                     viewModel.switchModel(model)
                 }
