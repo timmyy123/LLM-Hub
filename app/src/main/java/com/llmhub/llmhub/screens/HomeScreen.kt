@@ -244,24 +244,37 @@ fun HomeScreen(
             // Use BoxWithConstraints sizes for robust orientation and rotation handling
             val isLandscapeLocal = maxWidth > maxHeight
 
-            // Columns: landscape -> 3, portrait -> 2 (both phone & tablet portrait keep 2 columns)
-            val columns = if (isLandscapeLocal) 3 else 2
-
-            // Decide how many rows to fit on screen: landscape 2 rows (3x2), tablet portrait 3 rows (2x3)
-            val headerEstimatedHeight = 0.dp
-            val rowsWanted: Int? = when {
-                isLandscapeLocal -> 2 // Show 3x2 in landscape
-                !isLandscapeLocal && maxWidth >= 600.dp -> 3 // Tablet portrait: 2x3
-                else -> null // Phone portrait: keep original scroll behavior
+            // ── Column count ──────────────────────────────────────────────────────────
+            // Tablet/foldable landscape : 4 columns  (4×2 = 8 cards, all visible)
+            // Phone landscape            : 3 columns  (scrollable, ~6 visible)
+            // Foldable/tablet portrait   : 3 columns  (3×3 = 9 slots, 8 cards fit)
+            // Phone portrait             : 2 columns  (2×4 = 8 cards, all visible)
+            val columns = when {
+                isLandscapeLocal && maxWidth >= 600.dp -> 4   // tablet/foldable landscape
+                isLandscapeLocal                       -> 3   // phone landscape
+                !isLandscapeLocal && maxWidth >= 600.dp -> 3  // foldable/tablet portrait
+                else                                   -> 2   // phone portrait
             }
 
-            // Calculate card height so all rows fit on screen when rowsWanted is set
+            // ── Rows to fit on-screen (drives card height calculation) ────────────────
+            // Phone portrait: 4 rows so 2×4 = 8 all visible
+            // Foldable/tablet portrait: 3 rows so 3×3 covers all 8
+            // Tablet/foldable landscape: 2 rows so 4×2 = 8 all visible
+            // Phone landscape: let it scroll naturally (null)
+            val rowsWanted: Int? = when {
+                isLandscapeLocal && maxWidth >= 600.dp  -> 2  // 4×2 all on-screen
+                isLandscapeLocal                        -> null // phone landscape, scrollable
+                !isLandscapeLocal && maxWidth >= 600.dp -> 3  // 3×3 all on-screen
+                else                                    -> 4  // phone portrait 2×4
+            }
+
+            // ── Card height so all rows fit without scrolling ─────────────────────────
+            val contentPaddingVertical = 32.dp  // top(16) + bottom(16)
             val cardHeight: Dp? = rowsWanted?.let { rows ->
-                val contentPaddingVertical = 32.dp // PaddingValues(16.dp) -> top+bottom
                 val verticalSpacing = 16.dp * (rows - 1)
-                val totalSpacing = contentPaddingVertical + headerEstimatedHeight + verticalSpacing
+                val totalSpacing = contentPaddingVertical + verticalSpacing
                 val calc = (maxHeight - totalSpacing) / rows
-                if (calc < 120.dp) 120.dp else calc
+                if (calc < 100.dp) 100.dp else calc
             }
 
             LazyVerticalGrid(

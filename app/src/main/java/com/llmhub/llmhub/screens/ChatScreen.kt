@@ -140,7 +140,7 @@ fun ChatScreen(
     // Initialize chat - only run once per chatId or when context changes
     // Initialize chat - only run once per chatId/creatorId or when context changes
     LaunchedEffect(chatId, creatorId) {
-        viewModel.initializeChat(chatId, context)
+        viewModel.initializeChat(chatId, context, creatorId)
     }
     
     // Sync model state immediately to show icons
