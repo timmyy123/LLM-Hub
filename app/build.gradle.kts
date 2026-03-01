@@ -49,7 +49,7 @@ android {
     }
 
     // Configure asset packs for install-time delivery
-    assetPacks += mutableSetOf(":qnn_pack")
+    assetPacks += mutableSetOf(":qnn_pack", ":sd_pack")
 
     buildTypes {
         release {
