@@ -30,4 +30,5 @@ rootProject.name = "Llm Hub"
 include(":app")
 include(":qnn_pack")
 include(":sd_pack")
+include(":nexa_npu_pack")
  
