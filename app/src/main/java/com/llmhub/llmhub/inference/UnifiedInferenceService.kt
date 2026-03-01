@@ -170,11 +170,11 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         return currentService.wasSessionRecentlyReset(chatId)
     }
 
-    override fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?, nGpuLayers: Int?) {
-        mediaPipeService.setGenerationParameters(maxTokens, topK, topP, temperature, nGpuLayers)
-        onnxService.setGenerationParameters(maxTokens, topK, topP, temperature, nGpuLayers)
+    override fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?, nGpuLayers: Int?, enableThinking: Boolean?) {
+        mediaPipeService.setGenerationParameters(maxTokens, topK, topP, temperature, nGpuLayers, enableThinking)
+        onnxService.setGenerationParameters(maxTokens, topK, topP, temperature, nGpuLayers, enableThinking)
         if ((nexaService as? com.llmhub.llmhub.inference.NexaInferenceService)?.isAvailable() == true) {
-            nexaService.setGenerationParameters(maxTokens, topK, topP, temperature, nGpuLayers)
+            nexaService.setGenerationParameters(maxTokens, topK, topP, temperature, nGpuLayers, enableThinking)
         }
     }
 

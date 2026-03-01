@@ -393,6 +393,7 @@
     <string name="modality_options">モダリティオプション</string>
     <string name="enable_vision">ビジョンを有効化（画像サポート）</string>
     <string name="enable_audio">音声を有効化（音声入力）</string>
+    <string name="enable_thinking">思考機能を有効化</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 7〜8GBデバイスで安定したパフォーマンスを得るには、GPUメモリを節約するために音声を無効化することを検討してください。ビジョンは一般的により安定しています。</string>
     
     <!-- General performance tip for all devices -->

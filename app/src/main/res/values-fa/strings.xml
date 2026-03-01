@@ -397,6 +397,7 @@
     <string name="modality_options">گزینه‌های حالت</string>
     <string name="enable_vision">فعال‌سازی بینایی (پشتیبانی تصویر)</string>
     <string name="enable_audio">فعال‌سازی صوت (ورودی صوتی)</string>
+    <string name="enable_thinking">فعال‌سازی تفکر</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 برای عملکرد پایدار در دستگاه‌های 7–8GB، غیرفعال کردن صوت به صرفه‌جویی در حافظه GPU کمک می‌کند. بینایی معمولاً پایدارتر است.</string>
 
     <!-- General performance tip for all devices -->

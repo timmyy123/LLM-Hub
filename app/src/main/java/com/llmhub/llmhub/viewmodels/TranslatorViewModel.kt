@@ -57,6 +57,9 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
     private val _loadError = MutableStateFlow<String?>(null)
     val loadError: StateFlow<String?> = _loadError.asStateFlow()
     
+    private val _enableThinking = MutableStateFlow(true)
+    val enableThinking: StateFlow<Boolean> = _enableThinking.asStateFlow()
+    
     // Modality toggles
     private val _visionEnabled = MutableStateFlow(false)
     val visionEnabled: StateFlow<Boolean> = _visionEnabled.asStateFlow()
@@ -279,6 +282,10 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
         _loadError.value = null
     }
     
+    fun setEnableThinking(enabled: Boolean) {
+        _enableThinking.value = enabled
+    }
+    
     fun loadModel() {
         val model = _selectedModel.value ?: return
         
@@ -295,6 +302,7 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
                 // Load model with appropriate modality settings
                 val disableVision = !_visionEnabled.value
                 val disableAudio = !_audioEnabled.value
+                inferenceService.setGenerationParameters(null, null, null, null, enableThinking = _enableThinking.value)
                 
                 inferenceService.loadModel(
                     model = model,

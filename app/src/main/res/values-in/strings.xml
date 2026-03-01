@@ -396,6 +396,7 @@
     <string name="modality_options">Opsi Modalitas</string>
     <string name="enable_vision">Aktifkan Visi (Dukungan Gambar)</string>
     <string name="enable_audio">Aktifkan Audio (Input Suara)</string>
+    <string name="enable_thinking">Aktifkan Pemikiran</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 Untuk kinerja yang stabil pada perangkat 7-8GB, pertimbangkan untuk menonaktifkan audio untuk menghemat memori GPU. Visi umumnya lebih stabil.</string>
     
     <!-- General performance tip for all devices -->

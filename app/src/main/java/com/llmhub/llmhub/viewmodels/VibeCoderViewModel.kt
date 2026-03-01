@@ -10,6 +10,7 @@ import com.llmhub.llmhub.data.ModelAvailabilityProvider
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -81,6 +82,9 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     // Error handling
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+    
+    private val _enableThinking = MutableStateFlow(true)
+    val enableThinking: StateFlow<Boolean> = _enableThinking.asStateFlow()
     
     init {
         loadAvailableModels()
@@ -206,6 +210,10 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     /**
      * Load the selected model into memory
      */
+    fun setEnableThinking(enabled: Boolean) {
+        _enableThinking.value = enabled
+    }
+    
     fun loadModel() {
         val model = _selectedModel.value ?: return
         val backend = _selectedBackend.value ?: return
@@ -225,7 +233,8 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                     null,
                     null,
                     null,
-                    _selectedNGpuLayers.value
+                    _selectedNGpuLayers.value,
+                    _enableThinking.value
                 )
 
                 // Load model with text-only mode (vibe coder generates code as text)
@@ -256,6 +265,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     fun unloadModel() {
         viewModelScope.launch {
             try {
+                cancelGenerationInternal()
                 inferenceService.unloadModel()
                 _isModelLoaded.value = false
                 _generatedCode.value = ""
@@ -563,9 +573,43 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
      * Cancel ongoing code generation
      */
     fun cancelGeneration() {
-        processingJob?.cancel()
-        processingJob = null
+        viewModelScope.launch {
+            cancelGenerationInternal()
+        }
+    }
+
+    /**
+     * Safe cleanup path when leaving Vibe screen:
+     * stop streaming generation first, then unload model.
+     */
+    fun stopAndUnloadOnExit() {
+        viewModelScope.launch {
+            try {
+                cancelGenerationInternal()
+                inferenceService.unloadModel()
+                _isModelLoaded.value = false
+            } catch (e: Exception) {
+                Log.w("VibeCoderVM", "stopAndUnloadOnExit failed: ${e.message}")
+            }
+        }
+    }
+
+    private suspend fun cancelGenerationInternal() {
+        val activeJob = processingJob
+        if (activeJob != null) {
+            activeJob.cancel()
+            try {
+                activeJob.cancelAndJoin()
+            } catch (_: Exception) {
+            }
+            processingJob = null
+        }
         _isProcessing.value = false
+        _isPlanning.value = false
+        try {
+            inferenceService.setGenerationParameters(null, null, null, null)
+        } catch (_: Exception) {
+        }
     }
     
     /**

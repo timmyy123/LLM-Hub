@@ -45,9 +45,14 @@ import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.DeviceInfo
 import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.ModelConfig
+import com.llmhub.llmhub.data.ModelPreferences
 import com.llmhub.llmhub.data.hasDownloadedVisionProjector
 import com.llmhub.llmhub.data.requiresExternalVisionProjector
 import com.llmhub.llmhub.inference.MediaPipeInferenceService
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,11 +67,13 @@ fun FeatureModelSettingsSheet(
     onModelSelected: (LLMModel) -> Unit,
     onBackendSelected: (LlmInference.Backend, String?) -> Unit,
     onMaxTokensChanged: (Int) -> Unit,
-    onLoadModel: (model: LLMModel, maxTokens: Int, backend: LlmInference.Backend?, deviceId: String?, nGpuLayers: Int) -> Unit,
+    onLoadModel: (model: LLMModel, maxTokens: Int, backend: LlmInference.Backend?, deviceId: String?, nGpuLayers: Int, enableThinking: Boolean) -> Unit,
     onUnloadModel: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val modelPrefs = ModelPreferences(context)
 
     var showModelMenu by remember { mutableStateOf(false) }
     var showBackendMenu by remember { mutableStateOf(false) }
@@ -98,6 +105,25 @@ fun FeatureModelSettingsSheet(
     }
     var useNpu by remember(initialSelectedNpuDeviceId) { mutableStateOf(initialSelectedNpuDeviceId != null) }
     var gpuLayers by remember { mutableStateOf(999) }
+    var enableThinking by remember { mutableStateOf(true) }
+
+    LaunchedEffect(selectedModel?.name) {
+        selectedModel?.let { model ->
+            val saved = modelPrefs.getModelConfig(model.name)
+            if (saved != null) {
+                gpuLayers = saved.nGpuLayers
+                enableThinking = saved.enableThinking
+            }
+        }
+    }
+
+    val isThinkingOrHarmonyModel by remember(selectedModel) {
+        derivedStateOf {
+            val name = selectedModel?.name?.lowercase() ?: ""
+            name.contains("thinking") || name.contains("reasoning") ||
+                name.contains("gpt-oss") || name.contains("gpt_oss")
+        }
+    }
 
     val selectedModelSupportsVisionInput by remember(selectedModel, context) {
         derivedStateOf {
@@ -351,7 +377,24 @@ fun FeatureModelSettingsSheet(
                                             if (useGpu) LlmInference.Backend.GPU else LlmInference.Backend.CPU
                                         } else null
                                         val deviceId = if (useNpu) "dev0" else null
-                                        onLoadModel(model, finalMax, backend, deviceId, gpuLayers)
+                                        scope.launch(Dispatchers.IO) {
+                                            try {
+                                                val cfg = ModelConfig(
+                                                    maxTokens = finalMax,
+                                                    topK = 64,
+                                                    topP = 0.95f,
+                                                    temperature = 1.0f,
+                                                    backend = backend?.name,
+                                                    deviceId = deviceId,
+                                                    disableVision = false,
+                                                    disableAudio = false,
+                                                    nGpuLayers = gpuLayers,
+                                                    enableThinking = enableThinking
+                                                )
+                                                modelPrefs.setModelConfig(model.name, cfg)
+                                            } catch (_: Exception) {}
+                                        }
+                                        onLoadModel(model, finalMax, backend, deviceId, gpuLayers, enableThinking)
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
@@ -458,6 +501,24 @@ fun FeatureModelSettingsSheet(
                                     onValueChange = { v -> gpuLayers = v.filter { it.isDigit() }.toIntOrNull()?.coerceIn(0, 999) ?: gpuLayers },
                                     modifier = Modifier.width(72.dp),
                                     singleLine = true
+                                )
+                            }
+                        }
+
+                        // Thinking toggle (show only for thinking/reasoning models)
+                        if (isThinkingOrHarmonyModel) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.enable_thinking),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Switch(
+                                    checked = enableThinking,
+                                    onCheckedChange = { enableThinking = it }
                                 )
                             }
                         }

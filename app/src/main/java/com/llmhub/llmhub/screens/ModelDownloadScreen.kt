@@ -333,7 +333,11 @@ private fun ModelFamilyCard(
                 )
                 
                 // Render all capability + hardware badges as a 2-column grid for vertical alignment
-                val hasThinking = variants.any { it.name.contains("Thinking", ignoreCase = true) }
+                val hasThinking = variants.any {
+                    it.name.contains("Thinking", ignoreCase = true) ||
+                    it.name.contains("gpt-oss", ignoreCase = true) ||
+                    it.name.contains("gpt_oss", ignoreCase = true)
+                }
                 val tertiaryColor = MaterialTheme.colorScheme.tertiary
                 val secondaryColor = MaterialTheme.colorScheme.secondary
                 val primaryColor = MaterialTheme.colorScheme.primary

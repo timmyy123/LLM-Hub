@@ -376,6 +376,7 @@
     <string name="modality_options">Опции Модальности</string>
     <string name="enable_vision">Включить Зрение (Поддержка Изображений)</string>
     <string name="enable_audio">Включить Аудио (Голосовой Ввод)</string>
+    <string name="enable_thinking">Включить Размышления</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 Для стабильной работы на устройствах 7-8ГБ, рассмотрите отключение аудио для экономии памяти GPU. Зрение обычно более стабильно.</string>
     
     <!-- General performance tip for all devices -->

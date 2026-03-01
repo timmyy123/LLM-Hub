@@ -67,7 +67,7 @@ fun VibeCoderScreen(
     // Unload model when truly leaving this screen (not when going to canvas preview)
     var navigatingToCanvas by remember { mutableStateOf(false) }
     DisposableEffect(Unit) {
-        onDispose { if (!navigatingToCanvas) viewModel.unloadModel() }
+        onDispose { if (!navigatingToCanvas) viewModel.stopAndUnloadOnExit() }
     }
 
     LaunchedEffect(imeVisible.value) {
@@ -94,6 +94,7 @@ fun VibeCoderScreen(
     val generatedCode by viewModel.generatedCode.collectAsState()
     val codeLanguage by viewModel.codeLanguage.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    val enableThinking by viewModel.enableThinking.collectAsState()
     
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
@@ -126,7 +127,10 @@ fun VibeCoderScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.vibe_coder_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = {
+                        viewModel.stopAndUnloadOnExit()
+                        onNavigateBack()
+                    }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
@@ -450,11 +454,12 @@ fun VibeCoderScreen(
             onModelSelected = { viewModel.selectModel(it) },
             onBackendSelected = { backend, deviceId -> viewModel.selectBackend(backend, deviceId) },
             onMaxTokensChanged = { viewModel.setMaxTokens(it) },
-            onLoadModel = { model, maxTokens, backend, deviceId, nGpuLayers ->
+            onLoadModel = { model, maxTokens, backend, deviceId, nGpuLayers, isThinkingEnabled ->
                 viewModel.selectModel(model)
                 viewModel.setMaxTokens(maxTokens)
                 if (backend != null) viewModel.selectBackend(backend, deviceId)
                 viewModel.setNGpuLayers(nGpuLayers)
+                viewModel.setEnableThinking(isThinkingEnabled)
                 viewModel.loadModel()
             },
             onUnloadModel = { viewModel.unloadModel() },

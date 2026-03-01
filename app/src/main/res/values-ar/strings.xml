@@ -395,6 +395,7 @@
     <string name="modality_options">خيارات الوسائط</string>
     <string name="enable_vision">تفعيل الرؤية (دعم الصور)</string>
     <string name="enable_audio">تفعيل الصوت (إدخال صوتي)</string>
+    <string name="enable_thinking">تفعيل التفكير</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 لأداء أكثر استقرارًا على أجهزة 7-8GB، فكّر في تعطيل الصوت لتوفير ذاكرة GPU. عادةً ما تكون الرؤية أكثر استقرارًا.</string>
 
     <!-- General performance tip for all devices -->

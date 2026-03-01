@@ -2537,10 +2537,10 @@ inferenceService.loadModel(currentModel!!, _selectedBackend.value, _selectedNpuD
         return isAudioDisabled
     }
 
-    fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?, nGpuLayers: Int? = null) {
+    fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?, nGpuLayers: Int? = null, enableThinking: Boolean? = null) {
         try {
-            inferenceService.setGenerationParameters(maxTokens, topK, topP, temperature, nGpuLayers)
-            Log.d("ChatViewModel", "Forwarded generation parameters to inference service: maxTokens=$maxTokens topK=$topK topP=$topP temperature=$temperature nGpuLayers=$nGpuLayers")
+            inferenceService.setGenerationParameters(maxTokens, topK, topP, temperature, nGpuLayers, enableThinking)
+            Log.d("ChatViewModel", "Forwarded generation parameters to inference service: maxTokens=$maxTokens topK=$topK topP=$topP temperature=$temperature nGpuLayers=$nGpuLayers enableThinking=$enableThinking")
         } catch (e: Exception) {
             Log.w("ChatViewModel", "Failed to set generation parameters: ${e.message}")
         }
