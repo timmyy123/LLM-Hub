@@ -396,6 +396,7 @@
     <string name="modality_options">모달리티 옵션</string>
     <string name="enable_vision">비전 활성화 (이미지 지원)</string>
     <string name="enable_audio">오디오 활성화 (음성 입력)</string>
+    <string name="enable_thinking">사고 활성화</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 7-8GB 기기에서 안정적인 성능을 위해 GPU 메모리를 절약하기 위해 오디오를 비활성화하는 것을 고려하세요. 비전은 일반적으로 더 안정적입니다.</string>
     
     <!-- General performance tip for all devices -->

@@ -397,6 +397,7 @@
     <string name="modality_options">Options de Modalité</string>
     <string name="enable_vision">Activer la Vision (Support d\'Images)</string>
     <string name="enable_audio">Activer l\'Audio (Entrée Vocale)</string>
+    <string name="enable_thinking">Activer la Réflexion</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 Pour des performances stables sur les appareils 7-8Go, envisagez de désactiver l\'audio pour économiser la mémoire GPU. La vision est généralement plus stable.</string>
     
     <!-- General performance tip for all devices -->

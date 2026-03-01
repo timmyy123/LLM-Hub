@@ -43,7 +43,7 @@ fun ChatSettingsSheet(
     isLoadingModel: Boolean,
     onModelSelected: (LLMModel) -> Unit,
     onBackendSelected: (LlmInference.Backend, String?) -> Unit,
-    onLoadModel: (model: LLMModel, maxTokens: Int, topK: Int, topP: Float, temperature: Float, backend: LlmInference.Backend?, deviceId: String?, disableVision: Boolean, disableAudio: Boolean, nGpuLayers: Int) -> Unit,
+    onLoadModel: (model: LLMModel, maxTokens: Int, topK: Int, topP: Float, temperature: Float, backend: LlmInference.Backend?, deviceId: String?, disableVision: Boolean, disableAudio: Boolean, nGpuLayers: Int, enableThinking: Boolean) -> Unit,
     onUnloadModel: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -109,12 +109,24 @@ fun ChatSettingsSheet(
 
     var disableVision by remember { mutableStateOf(isGemma3nModel) }
     var disableAudio by remember { mutableStateOf(isGemma3nModel) }
+    var enableThinking by remember { mutableStateOf(true) }
 
     val selectedModelSupportsVisionInput by remember(selectedModel, context) {
         derivedStateOf {
             selectedModel?.let { model ->
                 model.supportsVision &&
                     (!model.requiresExternalVisionProjector() || model.hasDownloadedVisionProjector(context))
+            } == true
+        }
+    }
+
+    val isThinkingOrHarmonyModel by remember(selectedModel) {
+        derivedStateOf {
+            selectedModel?.let { model ->
+                model.name.contains("Thinking", ignoreCase = true) ||
+                model.name.contains("Reasoning", ignoreCase = true) ||
+                model.name.contains("gpt-oss", ignoreCase = true) ||
+                model.name.contains("gpt_oss", ignoreCase = true)
             } == true
         }
     }
@@ -152,6 +164,7 @@ fun ChatSettingsSheet(
                     disableVision = saved.disableVision || !selectedModelSupportsVisionInput
                     disableAudio = saved.disableAudio
                     gpuLayers = saved.nGpuLayers
+                    enableThinking = saved.enableThinking
                 } else {
                     // Reset to defaults for new model
                     val effCap = if (selectedModelSupportsVisionInput && !newIsGemma3n) minOf(newBaseCap, 8192) else newBaseCap
@@ -165,6 +178,7 @@ fun ChatSettingsSheet(
                     useNpu = false
                     disableVision = newIsGemma3n || !selectedModelSupportsVisionInput
                     disableAudio = newIsGemma3n
+                    enableThinking = true
                 }
             } catch (e: Exception) {
                 // Reset to defaults on error
@@ -179,6 +193,7 @@ fun ChatSettingsSheet(
                 useNpu = false
                 disableVision = newIsGemma3n || !selectedModelSupportsVisionInput
                 disableAudio = newIsGemma3n
+                enableThinking = true
             }
         }
     }
@@ -493,13 +508,14 @@ fun ChatSettingsSheet(
                                                     deviceId = deviceId,
                                                     disableVision = disableVision,
                                                     disableAudio = disableAudio,
-                                                    nGpuLayers = gpuLayers
+                                                    nGpuLayers = gpuLayers,
+                                                    enableThinking = enableThinking
                                                 )
                                                 modelPrefs.setModelConfig(model.name, cfg)
                                             } catch (_: Exception) {}
                                         }
                                         
-                                        onLoadModel(model, finalMax, topK, topP, temperature, backend, deviceId, disableVision, disableAudio, gpuLayers)
+                                        onLoadModel(model, finalMax, topK, topP, temperature, backend, deviceId, disableVision, disableAudio, gpuLayers, enableThinking)
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
@@ -761,14 +777,32 @@ fun ChatSettingsSheet(
                                     )
                                 }
                             }
-                            
-                            // Performance tip
-                            Text(
-                                text = stringResource(R.string.gemma3n_performance_tip),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary
-                            )
                         }
+
+                        // Thinking toggle (visible for reasoning/thinking models and GPT-OSS Harmony)
+                        if (isThinkingOrHarmonyModel) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.enable_thinking),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Switch(
+                                    checked = enableThinking,
+                                    onCheckedChange = { enableThinking = it }
+                                )
+                            }
+                        }
+
+                        // Performance tip
+                        Text(
+                            text = stringResource(R.string.gemma3n_performance_tip),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                         
                         // Reset to Defaults button
                         TextButton(
@@ -797,6 +831,7 @@ fun ChatSettingsSheet(
                                     useNpu = false
                                     disableVision = newIsGemma3n || !selectedModelSupportsVisionInput
                                     disableAudio = newIsGemma3n
+                                    enableThinking = true
                                 }
                             },
                             modifier = Modifier.align(Alignment.End)

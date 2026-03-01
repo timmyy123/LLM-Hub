@@ -396,6 +396,7 @@
     <string name="modality_options">Opcje Modalności</string>
     <string name="enable_vision">Włącz Wizję (Obsługa Obrazów)</string>
     <string name="enable_audio">Włącz Dźwięk (Wejście Głosowe)</string>
+    <string name="enable_thinking">Włącz Myślenie</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 Dla stabilnej wydajności na urządzeniach 7-8GB, rozważ wyłączenie dźwięku, aby zaoszczędzić pamięć GPU. Wizja jest zazwyczaj bardziej stabilna.</string>
     
     <!-- General performance tip for all devices -->

@@ -397,6 +397,7 @@
     <string name="modality_options">אפשרויות מודליות</string>
     <string name="enable_vision">אפשר ראייה (תמונות)</string>
     <string name="enable_audio">אפשר אודיו (קול)</string>
+    <string name="enable_thinking">אפשר חשיבה</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 לביצועים יציבים במכשירי 7–8GB, שקול להשבית אודיו כדי לחסוך בזיכרון GPU. ראייה יציבה יותר בדרך כלל.</string>
 
     <!-- General performance tip for all devices -->

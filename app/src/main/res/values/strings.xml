@@ -408,6 +408,7 @@
     <string name="modality_options">Modality Options</string>
     <string name="enable_vision">Enable Vision (Image Support)</string>
     <string name="enable_audio">Enable Audio (Voice Input)</string>
+    <string name="enable_thinking">Enable Thinking</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 For stable performance on 7-8GB devices, consider disabling audio to save GPU memory. Vision is generally more stable.</string>
     
     <!-- General performance tip for all devices -->
@@ -698,6 +699,7 @@
     <string name="backend_npu">NPU (Hexagon)</string>
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
+    <string name="thinking_toggle_label">Enable Thinking</string>
     <string name="gpu_not_supported">GPU not supported by this model</string>
     <string name="load_model">Load Model</string>
     <string name="model_loaded">Model loaded successfully</string>

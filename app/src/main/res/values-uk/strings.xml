@@ -397,6 +397,7 @@
     <string name="modality_options">Параметри модальностей</string>
     <string name="enable_vision">Увімкнути зір (підтримка зображень)</string>
     <string name="enable_audio">Увімкнути аудіо (голосовий ввід)</string>
+    <string name="enable_thinking">Увімкнути мислення</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 Для стабільності на пристроях 7–8GB вимкніть аудіо, щоб заощадити пам\'ять GPU. Зір зазвичай стабільніший.</string>
 
     <!-- General performance tip for all devices -->

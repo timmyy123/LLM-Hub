@@ -70,6 +70,7 @@ class NexaInferenceService @Inject constructor(
     private var overrideTopP: Float? = null
     private var overrideTemperature: Float? = null
     private var overrideNGpuLayers: Int? = null
+    private var overrideEnableThinking: Boolean? = null  // null = follow model defaults
 
     // Thinking sentinel tokens (same values as OnnxInferenceService)
     private val SENTINEL_THINK = "\u200B\u200BTHINK\u200B\u200B"
@@ -674,9 +675,15 @@ class NexaInferenceService @Inject constructor(
         val isHarmonyModel = model.name.contains("gpt-oss", ignoreCase = true) ||
                              model.name.contains("gpt_oss", ignoreCase = true)
 
+        // Thinking toggle:
+        // - LFM-Thinking: /no_think is injected by formatPrompt into the formatted string.
+        // - GPT-OSS Harmony: an empty analysis prefill is injected after formatting in the
+        //   LLM generation path so template processing cannot strip it.
+        val thinkingEnabled = overrideEnableThinking ?: true
+
         // Reset per-generation Harmony state
         harmonyBuffer.clear()
-        harmonyState = HarmonyState.BEFORE_HEADER
+        harmonyState = if (!thinkingEnabled && isHarmonyModel) HarmonyState.IN_FINAL else HarmonyState.BEFORE_HEADER
 
         val job = launch(Dispatchers.IO) {
             try {
@@ -790,7 +797,11 @@ class NexaInferenceService @Inject constructor(
                 } else {
                     // === LLM path: text-only generation ===
                     val wrapper = llmWrapper!!
-                    val formattedPrompt = formatPrompt(effectivePrompt, model)
+                    var formattedPrompt = formatPrompt(effectivePrompt, model, thinkingEnabled)
+                    if (!thinkingEnabled && isHarmonyModel) {
+                        formattedPrompt = formattedPrompt.trimEnd() +
+                            "<|channel|>analysis<|message|><|end|><|start|>assistant<|channel|>final<|message|>"
+                    }
                     
                     val genConfig = GenerationConfig().apply {
                         try {
@@ -1078,7 +1089,29 @@ class NexaInferenceService @Inject constructor(
         return false
     }
 
-    private suspend fun formatPrompt(prompt: String, model: LLMModel): String {
+    /**
+     * Injects "/no_think" at the start of the last user turn in an already-formatted
+     * prompt string. Handles ChatML (<|im_start|>user\n) and INST ([INST]) formats.
+     * Falls back to prepending "/no_think " to the whole string if neither is found.
+     */
+    private fun injectNoThinkIntoFormatted(formatted: String): String {
+        // ChatML: <|im_start|>user\nCONTENT<|im_end|>
+        val chatMlMarker = "<|im_start|>user\n"
+        val lastChatMl = formatted.lastIndexOf(chatMlMarker)
+        if (lastChatMl >= 0) {
+            val insert = lastChatMl + chatMlMarker.length
+            return formatted.substring(0, insert) + "/no_think " + formatted.substring(insert)
+        }
+        // INST: [INST] CONTENT [/INST]
+        val lastInst = formatted.lastIndexOf("[INST]")
+        if (lastInst >= 0) {
+            val insert = lastInst + "[INST]".length + 1   // +1 for the space after [INST]
+            return formatted.substring(0, insert) + "/no_think " + formatted.substring(insert)
+        }
+        return "/no_think $formatted"
+    }
+
+    private suspend fun formatPrompt(prompt: String, model: LLMModel, thinkingEnabled: Boolean = true): String {
         val wrapper = llmWrapper ?: vlmWrapper
         if (wrapper == null) return prompt
         val llmWrap = llmWrapper ?: return prompt  // formatPrompt only works with LlmWrapper
@@ -1141,13 +1174,74 @@ class NexaInferenceService @Inject constructor(
             }
         }
 
-        // 2. Try SDK Template
+        // If no conversation structure found (no "user:"/"assistant:" markers), treat
+        // the prompt as either a system+user split (feature screens) or a bare user message.
+        // Feature screens (WritingAid, ScamDetector, Translator, etc.) build prompts as
+        // "instruction block\n\nX to process:\n{userInput}". Without splitting, GPT-OSS
+        // receives the entire instruction block as a user message and treats it as a
+        // meta-request rather than an instruction to execute — outputting the prompt text
+        // instead of the actual result. We detect common separators and split so that
+        // the instructions go into the system role and the user input goes into the user role.
+        if (messages.isEmpty()) {
+            // Vibe Coder style prompts often contain a large instruction block plus a
+            // dedicated USER REQUEST field. Split those into system+user roles so
+            // Harmony models execute the request instead of echoing meta-instructions.
+            val quotedReqRegex = Regex("""(?is)\bUSER REQUEST\s*:\s*\"([\s\S]*?)\"""")
+            val plainReqRegex = Regex("""(?im)^\s*User request\s*:\s*(.+)$""")
+            val quotedReqMatch = quotedReqRegex.find(cleanPrompt)
+            val plainReqMatch = plainReqRegex.find(cleanPrompt)
+            val reqMatch = quotedReqMatch ?: plainReqMatch
+
+            if (reqMatch != null) {
+                val userContent = reqMatch.groupValues.getOrNull(1)?.trim().orEmpty()
+                val systemContent = cleanPrompt.removeRange(reqMatch.range).trim()
+                if (userContent.isNotEmpty() && systemContent.isNotEmpty()) {
+                    messages.add(ChatMessage("system", systemContent))
+                    messages.add(ChatMessage("user", userContent))
+                }
+            }
+
+            val featureSeparators = listOf(
+                "Text to rewrite:\n",
+                "Content to analyze:\n",
+                "Text to translate:\n",
+                "Text to transcribe:\n",
+                "Text to process:\n"
+            )
+            val sep = featureSeparators.firstOrNull { cleanPrompt.contains(it) }
+            if (sep != null) {
+                val idx = cleanPrompt.indexOf(sep)
+                val instructions = cleanPrompt.substring(0, idx).trimEnd()
+                val userContent = (sep.trim() + " " + cleanPrompt.substring(idx + sep.length)).trim()
+                if (instructions.isNotEmpty() && userContent.isNotEmpty()) {
+                    messages.add(ChatMessage("system", instructions))
+                    messages.add(ChatMessage("user", userContent))
+                } else {
+                    messages.add(ChatMessage("user", cleanPrompt.trim()))
+                }
+            } else {
+                messages.add(ChatMessage("user", cleanPrompt.trim()))
+            }
+        }
+
         if (messages.isNotEmpty()) {
             try {
                 val result = llmWrap.applyChatTemplate(messages.toTypedArray(), null, false)
                 if (result.isSuccess) {
-                    result.getOrNull()?.formattedText?.let { 
-                        if (it.isNotEmpty()) return it 
+                    result.getOrNull()?.formattedText?.let {
+                        if (it.isNotEmpty()) {
+                            // Inject /no_think for LFM-Thinking models — done on the formatted
+                            // string after applyChatTemplate so it always lands in the user turn
+                            // regardless of template format, with no reflection needed.
+                            val isThinkingModelFmt = model.name.contains("Thinking", ignoreCase = true) ||
+                                                      model.name.contains("Reasoning", ignoreCase = true)
+                            val isHarmonyModelFmt  = model.name.contains("gpt-oss", ignoreCase = true) ||
+                                                     model.name.contains("gpt_oss", ignoreCase = true)
+                            if (!thinkingEnabled && isThinkingModelFmt && !isHarmonyModelFmt) {
+                                return injectNoThinkIntoFormatted(it)
+                            }
+                            return it
+                        }
                     }
                 }
             } catch (e: Exception) {}
@@ -1285,12 +1379,13 @@ class NexaInferenceService @Inject constructor(
     override fun getCurrentlyLoadedBackend(): LlmInference.Backend? = currentPreferredBackend
     override fun getMemoryWarningForImages(images: List<Bitmap>): String? = null
     override fun wasSessionRecentlyReset(chatId: String): Boolean = false
-    override fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?, nGpuLayers: Int?) {
+    override fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?, nGpuLayers: Int?, enableThinking: Boolean?) {
         overrideMaxTokens = maxTokens
         overrideTopK = topK
         overrideTopP = topP
         overrideTemperature = temperature
         overrideNGpuLayers = nGpuLayers
+        overrideEnableThinking = enableThinking
     }
     override fun isVisionCurrentlyDisabled(): Boolean = currentVisionDisabled
     override fun isAudioCurrentlyDisabled(): Boolean = currentAudioDisabled

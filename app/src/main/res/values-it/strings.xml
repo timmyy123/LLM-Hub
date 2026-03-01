@@ -396,6 +396,7 @@
     <string name="modality_options">Opzioni di Modalità</string>
     <string name="enable_vision">Abilita Visione (Supporto Immagini)</string>
     <string name="enable_audio">Abilita Audio (Input Vocale)</string>
+    <string name="enable_thinking">Abilita Pensiero</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 Per prestazioni stabili su dispositivi da 7-8GB, considera di disabilitare l\'audio per risparmiare memoria GPU. La visione è generalmente più stabile.</string>
     
     <!-- General performance tip for all devices -->

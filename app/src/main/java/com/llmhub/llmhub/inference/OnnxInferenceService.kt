@@ -72,6 +72,7 @@ class OnnxInferenceService @Inject constructor(
     private var thinkSentinelEmitted = false
     /** After we see </think> we stream answer tokens as plain text (no THINK sentinel). */
     private var inAnswerPhase = false
+    private var overrideEnableThinking: Boolean? = null  // null = always think (model default)
     private val SENTINEL_THINK = "\u200B\u200BTHINK\u200B\u200B"
     private val SENTINEL_ENDTHINK = "\u200B\u200BENDTHINK\u200B\u200B"
 
@@ -497,7 +498,19 @@ class OnnxInferenceService @Inject constructor(
                     throw Exception(error)
                 }
                 
-                val inputIds = currentTokenizer.encode(formattedPrompt)
+                val inputIds = currentTokenizer.encode(run {
+                    // Thinking toggle: when thinking is disabled for a Thinking model, inject
+                    // /no_think after the last <|im_start|>user\n marker in the formatted prompt.
+                    val isThinkingModelOnnx = model.name.contains("Thinking", ignoreCase = true) ||
+                        model.name.contains("Reasoning", ignoreCase = true)
+                    val thinkingEnabledOnnx = overrideEnableThinking ?: true
+                    if (!thinkingEnabledOnnx && isThinkingModelOnnx) {
+                        val marker = "<|im_start|>user\n"
+                        val idx = formattedPrompt.lastIndexOf(marker)
+                        if (idx >= 0) formattedPrompt.substring(0, idx + marker.length) + "/no_think " + formattedPrompt.substring(idx + marker.length)
+                        else formattedPrompt
+                    } else formattedPrompt
+                })
                 Log.d(TAG, "Tokenized prompt: ${inputIds.size} tokens")
                 
                 val maxNewTokens = overrideMaxTokens ?: 1024
@@ -1139,11 +1152,12 @@ class OnnxInferenceService @Inject constructor(
         else null
     override fun wasSessionRecentlyReset(chatId: String): Boolean = false
     
-    override fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?, nGpuLayers: Int?) {
+    override fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?, nGpuLayers: Int?, enableThinking: Boolean?) {
         overrideMaxTokens = maxTokens
         overrideTopK = topK
         overrideTopP = topP
         overrideTemperature = temperature
+        overrideEnableThinking = enableThinking
     }
     
     override fun isVisionCurrentlyDisabled(): Boolean = (ortVisionSession == null)

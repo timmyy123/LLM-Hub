@@ -58,6 +58,9 @@ class CreatorViewModel(
 
     private val _selectedNGpuLayers = MutableStateFlow<Int?>(null)
 
+    private val _enableThinking = MutableStateFlow(true)
+    val enableThinking: StateFlow<Boolean> = _enableThinking.asStateFlow()
+
     private val _selectedMaxTokens = MutableStateFlow(4096)
     val selectedMaxTokens: StateFlow<Int> = _selectedMaxTokens.asStateFlow()
 
@@ -181,6 +184,10 @@ class CreatorViewModel(
         _selectedNGpuLayers.value = n
     }
 
+    fun setEnableThinking(enabled: Boolean) {
+        _enableThinking.value = enabled
+    }
+
     fun loadModel() {
         val model = _selectedModel.value ?: return
         val backend = _selectedBackend.value ?: return
@@ -201,7 +208,8 @@ class CreatorViewModel(
                     null,
                     null,
                     null,
-                    _selectedNGpuLayers.value
+                    _selectedNGpuLayers.value,
+                    _enableThinking.value
                 )
 
                 val success = inferenceService.loadModel(
