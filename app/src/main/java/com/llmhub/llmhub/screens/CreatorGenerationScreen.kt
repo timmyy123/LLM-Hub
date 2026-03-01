@@ -57,6 +57,7 @@ fun CreatorGenerationScreen(
     
     var userPrompt by remember { mutableStateOf("") }
     var showSettingsSheet by remember { mutableStateOf(false) }
+    var navigatingBack by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
 
     // Keyboard handling
@@ -81,7 +82,7 @@ fun CreatorGenerationScreen(
 
     // Unload model when leaving this screen
     DisposableEffect(Unit) {
-        onDispose { viewModel.unloadModel() }
+        onDispose { if (!navigatingBack) viewModel.stopAndUnloadOnExit() }
     }
 
     LaunchedEffect(imeVisible.value) {
@@ -101,7 +102,11 @@ fun CreatorGenerationScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.creator_screen_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = {
+                        navigatingBack = true
+                        viewModel.stopAndUnloadOnExit()
+                        onNavigateBack()
+                    }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },

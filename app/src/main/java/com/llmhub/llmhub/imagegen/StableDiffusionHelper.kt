@@ -12,6 +12,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import org.json.JSONArray
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.TimeUnit
@@ -268,29 +269,11 @@ class StableDiffusionHelper(private val context: Context) {
                 return@withContext null
             }
             
-            // Parse response - handle potential SSE stream or raw JSON
-            val resultJson = try {
-                JSONObject(responseBody)
-            } catch (e: Exception) {
-                // If direct parsing fails, try to find the last data line from SSE stream
-                // Format: data: {...}
-                val lines = responseBody.split("\n")
-                var lastJson: JSONObject? = null
-                
-                for (line in lines) {
-                    if (line.startsWith("data: ")) {
-                        try {
-                            val jsonStr = line.substring(6)
-                            val jsonObj = JSONObject(jsonStr)
-                            // Check if this is the final result (has "image" field)
-                            if (jsonObj.has("image")) {
-                                lastJson = jsonObj
-                            }
-                        } catch (ignore: Exception) {}
-                    }
-                }
-                
-                lastJson ?: throw e // Rethrow original exception if no valid JSON found
+            // Parse response - supports raw JSON and SSE/mixed text payloads
+            val resultJson = parseGenerateResponse(responseBody)
+            if (resultJson == null) {
+                Log.e(TAG, "No valid JSON payload found in backend response. Body prefix: ${responseBody.take(200)}")
+                return@withContext null
             }
             
             val imageBase64 = resultJson.optString("image", "")
@@ -378,6 +361,64 @@ class StableDiffusionHelper(private val context: Context) {
     
     companion object {
         const val DEFAULT_NEGATIVE_PROMPT = "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry"
+    }
+
+    private fun parseGenerateResponse(responseBody: String): JSONObject? {
+        // 1) Raw JSON object
+        try {
+            return JSONObject(responseBody)
+        } catch (_: Exception) {}
+
+        // 2) JSON array (take first object)
+        try {
+            val arr = JSONArray(responseBody)
+            for (i in 0 until arr.length()) {
+                val obj = arr.optJSONObject(i)
+                if (obj != null) {
+                    if (obj.has("image")) return obj
+                }
+            }
+            if (arr.length() > 0) return arr.optJSONObject(0)
+        } catch (_: Exception) {}
+
+        // 3) SSE / mixed lines: event:..., data:..., plain text
+        var lastObject: JSONObject? = null
+        responseBody.lineSequence().forEach { rawLine ->
+            val line = rawLine.trim()
+            if (line.isEmpty()) return@forEach
+
+            val payload = when {
+                line.startsWith("data:", ignoreCase = true) -> line.substringAfter(':').trim()
+                line.startsWith("event:", ignoreCase = true) -> return@forEach
+                else -> line
+            }
+
+            if (payload.isEmpty() || payload.equals("[DONE]", ignoreCase = true) || payload.equals("event", ignoreCase = true)) {
+                return@forEach
+            }
+
+            // Try payload directly
+            try {
+                val obj = JSONObject(payload)
+                if (obj.has("image")) return obj
+                lastObject = obj
+                return@forEach
+            } catch (_: Exception) {}
+
+            // Try extracting embedded JSON fragment from the line
+            val start = payload.indexOf('{')
+            val end = payload.lastIndexOf('}')
+            if (start >= 0 && end > start) {
+                val candidate = payload.substring(start, end + 1)
+                try {
+                    val obj = JSONObject(candidate)
+                    if (obj.has("image")) return obj
+                    lastObject = obj
+                } catch (_: Exception) {}
+            }
+        }
+
+        return lastObject
     }
 }
 

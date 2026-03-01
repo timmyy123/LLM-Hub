@@ -527,6 +527,7 @@ class NexaInferenceService @Inject constructor(
                  vlmWrapper?.stopStream()
                  vlmWrapper?.destroy()
              } else {
+                 llmWrapper?.stopStream()
                  llmWrapper?.destroy()
              }
          } catch (e: Exception) {
