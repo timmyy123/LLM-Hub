@@ -85,6 +85,14 @@ fun ChatSettingsSheet(
     val defaultUseGpu = remember(selectedModel) { 
         if (isPhi4Mini) false else selectedModel?.supportsGpu == true
     }
+    val canUseNpuForSelectedModel by remember(selectedModel, isPhi4Mini) {
+        derivedStateOf {
+            selectedModel?.supportsGpu == true &&
+                !isPhi4Mini &&
+                selectedModel?.modelFormat == "gguf" &&
+                com.llmhub.llmhub.data.DeviceInfo.isQualcommNpuSupported()
+        }
+    }
     
     // Config state
     var maxTokensValue by remember { mutableStateOf(minOf(4096, baseMaxTokensCap)) }
@@ -195,6 +203,17 @@ fun ChatSettingsSheet(
                 disableAudio = newIsGemma3n
                 enableThinking = true
             }
+        }
+    }
+
+    LaunchedEffect(selectedModel?.name, canSelectAccelerator, canUseNpuForSelectedModel) {
+        if (!canSelectAccelerator) {
+            useGpu = false
+            useNpu = false
+            return@LaunchedEffect
+        }
+        if (!canUseNpuForSelectedModel && useNpu) {
+            useNpu = false
         }
     }
 
@@ -449,7 +468,7 @@ fun ChatSettingsSheet(
                                     )
 
                                     // NPU option for GGUF on Qualcomm Hexagon
-                                    val showNpuOption = selectedModel?.modelFormat == "gguf" && com.llmhub.llmhub.data.DeviceInfo.isQualcommNpuSupported()
+                                    val showNpuOption = canUseNpuForSelectedModel
                                     if (showNpuOption) {
                                         DropdownMenuItem(
                                             text = { Text(stringResource(R.string.backend_npu)) },
