@@ -1202,6 +1202,25 @@ class NexaInferenceService @Inject constructor(
                 }
             }
 
+            // Creator prompt pattern:
+            //   User Description: "..."
+            //   Structure your response EXACTLY...
+            // Split this into system instructions + user description to avoid generic outputs.
+            if (messages.isEmpty()) {
+                val creatorDescRegex = Regex(
+                    """(?is)\bUser Description\s*:\s*"([\s\S]*?)"\s*(?=\n+\s*Structure your response EXACTLY)"""
+                )
+                val creatorMatch = creatorDescRegex.find(cleanPrompt)
+                if (creatorMatch != null) {
+                    val userContent = creatorMatch.groupValues.getOrNull(1)?.trim().orEmpty()
+                    val systemContent = cleanPrompt.removeRange(creatorMatch.range).trim()
+                    if (userContent.isNotEmpty() && systemContent.isNotEmpty()) {
+                        messages.add(ChatMessage("system", systemContent))
+                        messages.add(ChatMessage("user", userContent))
+                    }
+                }
+            }
+
             val featureSeparators = listOf(
                 "Text to rewrite:\n",
                 "Content to analyze:\n",
