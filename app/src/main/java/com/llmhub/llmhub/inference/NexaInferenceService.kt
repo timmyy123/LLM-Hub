@@ -41,6 +41,14 @@ import com.llmhub.llmhub.websearch.WebSearchService
 import com.llmhub.llmhub.websearch.DuckDuckGoSearchService
 import com.llmhub.llmhub.websearch.SearchIntentDetector
 
+/** State machine states for parsing GPT-OSS Harmony format output. */
+private enum class HarmonyState {
+    BEFORE_HEADER,   // buffering until <|channel|>analysis<|message|>
+    IN_ANALYSIS,     // streaming thinking content; watching for <|end|>
+    IN_TRANSITION,   // silently consuming <|start|>assistant<|channel|>final<|message|>
+    IN_FINAL         // streaming final answer directly
+}
+
 @Singleton
 class NexaInferenceService @Inject constructor(
     private val context: Context
@@ -61,6 +69,16 @@ class NexaInferenceService @Inject constructor(
     private var overrideTopK: Int? = null
     private var overrideTopP: Float? = null
     private var overrideTemperature: Float? = null
+    private var overrideNGpuLayers: Int? = null
+    private var overrideEnableThinking: Boolean? = null  // null = follow model defaults
+
+    // Thinking sentinel tokens (same values as OnnxInferenceService)
+    private val SENTINEL_THINK = "\u200B\u200BTHINK\u200B\u200B"
+    private val SENTINEL_ENDTHINK = "\u200B\u200BENDTHINK\u200B\u200B"
+
+    // Harmony format state machine (GPT-OSS models: <|channel|>analysis<|message|>...<|end|>...final)
+    private val harmonyBuffer = StringBuilder()
+    private var harmonyState = HarmonyState.BEFORE_HEADER
     
     // Whether the Nexa native SDK and its JNI bindings successfully initialized on this device.
     // UnsatisfiedLinkError is an Error (not Exception), so catch Throwable to avoid crashing the app
@@ -92,7 +110,7 @@ class NexaInferenceService @Inject constructor(
      * - Returns Pair(allowed:Boolean, reason:String?) where reason is non-null when denied.
      * - This is defensive: it catches native/SELinux failures and returns a human-friendly reason.
      */
-    suspend fun probeNpuAvailability(deviceId: String = "HTP0"): Pair<Boolean, String?> {
+    suspend fun probeNpuAvailability(deviceId: String = "dev0"): Pair<Boolean, String?> {
         if (!nexaAvailable) {
             Log.w(TAG, "NPU probe: Nexa SDK unavailable")
             return Pair(false, "Nexa SDK unavailable on device")
@@ -232,7 +250,7 @@ class NexaInferenceService @Inject constructor(
 
         val backendsToTry = mutableListOf<String>()
         if (preferredBackend == LlmInference.Backend.GPU || preferredBackend == null) {
-            backendsToTry.add("GPUOpenCL")
+            backendsToTry.add("gpu")
         }
         backendsToTry.add("CPU")
 
@@ -241,86 +259,81 @@ class NexaInferenceService @Inject constructor(
                 Log.d(TAG, "Attempting load with $backendId...")
                 
                 // Cap context size to prevent OOM on mobile devices.
-                // GGUF models allocate KV cache proportional to nCtx;
-                // 130K+ tokens will exhaust RAM on any phone.
+                // GGUF models allocate KV cache proportional to nCtx.
                 // VLM models' memory cost grows with nCtx. Cap to 8192 for vision-enabled GGUF to keep allocations reasonable
-                // When vision is disabled, honor the user/model selected context window instead of forcing a cap.
-                val MAX_SAFE_CTX = if (model.supportsVision && !disableVision) 8192 else Int.MAX_VALUE
+                // For text models, determine maximum safe context based on total device RAM.
+                val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+                val memoryInfo = android.app.ActivityManager.MemoryInfo()
+                activityManager.getMemoryInfo(memoryInfo)
+                val totalRamGb = memoryInfo.totalMem.toDouble() / (1024 * 1024 * 1024)
+                
+                val MAX_SAFE_CTX = if (model.supportsVision && !disableVision) {
+                    8192
+                } else {
+                    when {
+                        totalRamGb >= 20.0 -> 131072 // e.g. 24GB devices (true heavyweights)
+                        totalRamGb >= 14.0 -> 65536  // e.g. 16GB devices
+                        totalRamGb >= 10.0 -> 32768  // e.g. 12GB devices
+                        totalRamGb >= 6.0 -> 16384   // e.g. 8GB devices
+                        else -> 8192                 // < 6GB devices
+                    }
+                }
+                
                 val rawCtx = overrideMaxTokens ?: model.contextWindowSize
-                val nCtx = if (disableVision) rawCtx else rawCtx.coerceAtMost(MAX_SAFE_CTX)
-                if (!disableVision && rawCtx != nCtx) {
-                    Log.w(TAG, "Capped nCtx from $rawCtx to $nCtx to prevent OOM")
+                val nCtx = rawCtx.coerceAtMost(MAX_SAFE_CTX)
+                if (rawCtx != nCtx) {
+                    Log.w(TAG, "Capped nCtx from $rawCtx to $nCtx to prevent OOM (Device RAM ~${String.format("%.1f", totalRamGb)}GB)")
                 }
                 // Determine device/plugin to use. If caller provided an explicit deviceId (e.g. "HTP0") prefer it
-                val userRequestedNpu = !deviceId.isNullOrBlank() && deviceId.startsWith("HTP", ignoreCase = true)
+                val userRequestedNpu = !deviceId.isNullOrBlank() && deviceId.startsWith("dev", ignoreCase = true)
                 var isNpuRequested = userRequestedNpu
 
-                // If an HTP device is requested (either explicitly by user or by auto-selection),
+                // If a dev (NPU/Hexagon) device is requested (either explicitly by user or by auto-selection),
                 // run a lightweight probe. Behavior differs based on intent:
                 // - explicit user request: fail fast (return false) if probe denies — do NOT fall back
-                // - automatic request: fall back to GPUOpenCL on probe denial
+                // - automatic request: fall back to gpu on probe denial
                 if (isNpuRequested) {
-                    val (allowed, reason) = probeNpuAvailability(deviceId ?: "HTP0")
+                    val (allowed, reason) = probeNpuAvailability(deviceId ?: "dev0")
                     if (!allowed) {
                         if (userRequestedNpu) {
                             // User explicitly asked for NPU — do not silently fall back. Return failure
                             Log.e(TAG, "NPU probe denied for explicit request deviceId=$deviceId; reason=$reason — refusing to load model")
                             return false
                         } else {
-                            Log.w(TAG, "NPU probe denied for deviceId=$deviceId; reason=$reason — falling back to GPUOpenCL")
+                            Log.w(TAG, "NPU probe denied for deviceId=$deviceId; reason=$reason — falling back to gpu")
                             isNpuRequested = false
                         }
                     } else {
-                        Log.i(TAG, "NPU probe allowed for deviceId=$deviceId — proceeding with HTP")
+                        Log.i(TAG, "NPU probe allowed for deviceId=$deviceId — proceeding with Hexagon")
                     }
                 }
 
                 val deviceToUse = when {
                     backendId == "CPU" -> null
-                    isNpuRequested -> deviceId // explicit Hexagon device like HTP0
-                    else -> "GPUOpenCL"
+                    isNpuRequested -> deviceId // explicit Hexagon device like dev0
+                    else -> "gpu"
                 }
 
-                // nGpuLayers > 0 is required to enable offloading to Hexagon (GGUF cpu_gpu path).
-                // Nexa docs provide examples that set `nGpuLayers = 999` to attempt offloading all layers for
-                // LLMs. The docs require `nGpuLayers > 0` for GGUF-on-Hexagon; they do not mandate a smaller
-                // value for VLMs. To match the Nexa documentation exactly, when an HTP device is requested
-                // we set `nGpuLayers = 999` (attempt full offload) for both LLM and VLM examples.
+                // nGpuLayers > 0 is required to enable offloading to GPU/Hexagon (GGUF cpu_gpu path).
+                // Nexa docs: device_id="gpu" for GPU, "dev0" for NPU/Hexagon.
+                // When the user has set a custom layer count via the slider, honour it; otherwise default 999.
                 val gpuLayers = when {
                     backendId == "CPU" -> 0
-                    isNpuRequested -> 999 // follow Nexa docs/examples: use 999 to attempt full offload
-                    else -> 999
+                    else -> overrideNGpuLayers ?: 999
                 }
 
-                val modelConfig = ModelConfig(nCtx = nCtx, nGpuLayers = gpuLayers).apply {
-                    val cls = this::class.java
-                    val fieldsToSet = mutableMapOf<String, Any>(
-                        "nCtx" to nCtx,
-                        "n_ctx" to nCtx,
-                        "maxTokens" to nCtx,
-                        "max_tokens" to nCtx
-                    )
-
-                    if (isNpuRequested) {
-                        Log.i(TAG, "NPU requested: deviceId=$deviceId -> setting nGpuLayers=$gpuLayers and plugin=cpu_gpu (per Nexa docs)")
-                    }
-
-                    // Enable Thinking mode if the model name suggests it
-                    if (model.name.contains("Thinking", ignoreCase = true) || 
-                        model.name.contains("Reasoning", ignoreCase = true)) {
-                        fieldsToSet["enable_thinking"] = true
-                        fieldsToSet["enableThinking"] = true
-                    }
-                    
-                    for ((fieldName, value) in fieldsToSet) {
-                        try {
-                            val field = cls.getDeclaredField(fieldName)
-                            field.isAccessible = true
-                            field.set(this, value)
-                            Log.d(TAG, "✓ Set ModelConfig.$fieldName = $value")
-                        } catch (e: Exception) {}
-                    }
+                if (isNpuRequested) {
+                    Log.i(TAG, "NPU requested: deviceId=$deviceId -> nGpuLayers=$gpuLayers plugin=cpu_gpu (per Nexa docs)")
                 }
+
+                val isThinkingModelForConfig = model.name.contains("Thinking", ignoreCase = true) ||
+                    model.name.contains("Reasoning", ignoreCase = true)
+
+                val modelConfig = ModelConfig(
+                    nCtx = nCtx,
+                    nGpuLayers = gpuLayers,
+                    enable_thinking = isThinkingModelForConfig
+                )
 
                 // Find mmproj path for VLM models (only when vision is enabled)
                 val mmprojPath = if (model.supportsVision && !disableVision) {
@@ -351,7 +364,7 @@ class NexaInferenceService @Inject constructor(
                         currentModel = model
                         currentPreferredBackend = if (backendId == "CPU") LlmInference.Backend.CPU else LlmInference.Backend.GPU
                         currentVisionDisabled = disableVision
-                        val resolvedBackend = if (!deviceToUse.isNullOrBlank() && deviceToUse.startsWith("HTP", ignoreCase = true)) {
+                        val resolvedBackend = if (!deviceToUse.isNullOrBlank() && deviceToUse.startsWith("dev", ignoreCase = true)) {
                             "NPU($deviceToUse)"
                         } else {
                             backendId
@@ -386,7 +399,7 @@ class NexaInferenceService @Inject constructor(
                         currentModel = model
                         currentPreferredBackend = if (backendId == "CPU") LlmInference.Backend.CPU else LlmInference.Backend.GPU
                         currentVisionDisabled = disableVision
-                        val resolvedBackend = if (!deviceToUse.isNullOrBlank() && deviceToUse.startsWith("HTP", ignoreCase = true)) {
+                        val resolvedBackend = if (!deviceToUse.isNullOrBlank() && deviceToUse.startsWith("dev", ignoreCase = true)) {
                             "NPU($deviceToUse)"
                         } else {
                             backendId
@@ -514,6 +527,7 @@ class NexaInferenceService @Inject constructor(
                  vlmWrapper?.stopStream()
                  vlmWrapper?.destroy()
              } else {
+                 llmWrapper?.stopStream()
                  llmWrapper?.destroy()
              }
          } catch (e: Exception) {
@@ -657,9 +671,21 @@ class NexaInferenceService @Inject constructor(
         val topKVal = overrideTopK ?: 40
         val topPVal = overrideTopP ?: 0.9f
         
-        val isThinkingModel = model.name.contains("Thinking", ignoreCase = true) || 
+        val isThinkingModel = model.name.contains("Thinking", ignoreCase = true) ||
                               model.name.contains("Reasoning", ignoreCase = true)
-        
+        val isHarmonyModel = model.name.contains("gpt-oss", ignoreCase = true) ||
+                             model.name.contains("gpt_oss", ignoreCase = true)
+
+        // Thinking toggle:
+        // - LFM-Thinking: /no_think is injected by formatPrompt into the formatted string.
+        // - GPT-OSS Harmony: an empty analysis prefill is injected after formatting in the
+        //   LLM generation path so template processing cannot strip it.
+        val thinkingEnabled = overrideEnableThinking ?: true
+
+        // Reset per-generation Harmony state
+        harmonyBuffer.clear()
+        harmonyState = if (!thinkingEnabled && isHarmonyModel) HarmonyState.IN_FINAL else HarmonyState.BEFORE_HEADER
+
         val job = launch(Dispatchers.IO) {
             try {
                 if (isVlmLoaded && vlmWrapper != null) {
@@ -749,12 +775,17 @@ class NexaInferenceService @Inject constructor(
                                         val totalMs = end - requestStart
                                         Log.i(TAG, "GEN[$requestId] VLM completed total=${totalMs}ms decode=${decodeMs}ms tokens=$tokenCount")
                                     }
-                                    handleStreamResult(streamResult, isThinkingModel)
+                                    handleStreamResult(streamResult, isThinkingModel, isHarmonyModel)
                                 }
                             }
                     } catch (t: Throwable) {
                         if (t is kotlinx.coroutines.CancellationException || t is java.util.concurrent.CancellationException) {
                             Log.d(TAG, "Nexa VLM generation cancelled; keeping Nexa backend available")
+                            try {
+                                vlmWrapper?.stopStream()
+                            } catch (e: Exception) {
+                                Log.w(TAG, "Failed to stop VLM stream on cancellation: ${e.message}")
+                            }
                             close()
                             return@launch
                         }
@@ -767,7 +798,11 @@ class NexaInferenceService @Inject constructor(
                 } else {
                     // === LLM path: text-only generation ===
                     val wrapper = llmWrapper!!
-                    val formattedPrompt = formatPrompt(effectivePrompt, model)
+                    var formattedPrompt = formatPrompt(effectivePrompt, model, thinkingEnabled)
+                    if (!thinkingEnabled && isHarmonyModel) {
+                        formattedPrompt = formattedPrompt.trimEnd() +
+                            "<|channel|>analysis<|message|><|end|><|start|>assistant<|channel|>final<|message|>"
+                    }
                     
                     val genConfig = GenerationConfig().apply {
                         try {
@@ -811,12 +846,17 @@ class NexaInferenceService @Inject constructor(
                                         val totalMs = end - requestStart
                                         Log.i(TAG, "GEN[$requestId] LLM completed total=${totalMs}ms decode=${decodeMs}ms tokens=$tokenCount")
                                     }
-                                    handleStreamResult(streamResult, isThinkingModel)
+                                    handleStreamResult(streamResult, isThinkingModel, isHarmonyModel)
                                 }
                             }
                     } catch (t: Throwable) {
                         if (t is kotlinx.coroutines.CancellationException || t is java.util.concurrent.CancellationException) {
                             Log.d(TAG, "Nexa LLM generation cancelled; keeping Nexa backend available")
+                            try {
+                                llmWrapper?.stopStream()
+                            } catch (e: Exception) {
+                                Log.w(TAG, "Failed to stop LLM stream on cancellation: ${e.message}")
+                            }
                             close()
                             return@launch
                         }
@@ -855,23 +895,26 @@ class NexaInferenceService @Inject constructor(
 
     /**
      * Handle a single stream result token, applying thinking tag normalization.
+     * For Harmony-format models (GPT-OSS), routes through [emitTokenForHarmony].
      */
     private fun kotlinx.coroutines.channels.ProducerScope<String>.handleStreamResult(
         streamResult: LlmStreamResult,
-        isThinkingModel: Boolean
+        isThinkingModel: Boolean,
+        isHarmonyModel: Boolean = false
     ) {
         when (streamResult) {
             is LlmStreamResult.Token -> {
-                var text = streamResult.text
-                if (isThinkingModel) {
-                    if (text.contains("<think>")) {
-                        text = text.replace("<think>", "\u200B\u200BTHINK\u200B\u200B")
+                val text = streamResult.text
+                when {
+                    isHarmonyModel -> emitTokenForHarmony(text) { trySend(it) }
+                    isThinkingModel -> {
+                        var t = text
+                        if (t.contains("<think>")) t = t.replace("<think>", SENTINEL_THINK)
+                        if (t.contains("</think>")) t = t.replace("</think>", SENTINEL_ENDTHINK)
+                        trySend(t)
                     }
-                    if (text.contains("</think>")) {
-                        text = text.replace("</think>", "\u200B\u200BENDTHINK\u200B\u200B")
-                    }
+                    else -> trySend(text)
                 }
-                trySend(text)
             }
             is LlmStreamResult.Completed -> close()
             is LlmStreamResult.Error -> {
@@ -883,6 +926,90 @@ class NexaInferenceService @Inject constructor(
                     Log.e(TAG, "VLM/LLM SDK Error (unable to extract error code)")
                 }
                 close(Exception("SDK Error"))
+            }
+        }
+    }
+
+    /**
+     * State-machine parser for GPT-OSS Harmony format output.
+     *
+     * Harmony output format:
+     *   <|channel|>analysis<|message|>THINKING_CONTENT<|end|><|start|>assistant<|channel|>final<|message|>FINAL_ANSWER
+     *
+     * States (harmonyState):
+     *   BEFORE_HEADER  — buffer silently until full analysis header arrives
+     *   IN_ANALYSIS    — emit SENTINEL_THINK once, stream analysis chars, hold `endTag.length-1`
+     *                    tail bytes to guard against partial tag splits across tokens
+     *   IN_TRANSITION  — buffer silently until the full final-answer header is consumed
+     *   IN_FINAL       — pass every new char straight through to the UI
+     */
+    private fun emitTokenForHarmony(tokenText: String, send: (String) -> Unit) {
+        harmonyBuffer.append(tokenText)
+
+        val analysisHeader = "<|channel|>analysis<|message|>"
+        val endTag         = "<|end|>"
+        val finalHeader    = "<|start|>assistant<|channel|>final<|message|>"
+
+        when (harmonyState) {
+            HarmonyState.BEFORE_HEADER -> {
+                val headerIdx = harmonyBuffer.indexOf(analysisHeader)
+                if (headerIdx >= 0) {
+                    // Discard everything up-to-and-including the header, keep the rest
+                    val afterHeader = harmonyBuffer.substring(headerIdx + analysisHeader.length)
+                    harmonyBuffer.setLength(0)
+                    harmonyBuffer.append(afterHeader)
+                    harmonyState = HarmonyState.IN_ANALYSIS
+                    // Emit SENTINEL_THINK immediately so the UI shows the thinking section
+                    send(SENTINEL_THINK)
+                    // Process any chars that arrived after the header in this same token
+                    if (harmonyBuffer.isNotEmpty()) emitTokenForHarmony("", send)
+                }
+                // else: header not yet complete — keep buffering
+            }
+
+            HarmonyState.IN_ANALYSIS -> {
+                val buf = harmonyBuffer.toString()
+                val endIdx = buf.indexOf(endTag)
+                if (endIdx >= 0) {
+                    // Flush content before <|end|>, then close the thinking section
+                    val chunk = buf.substring(0, endIdx)
+                    if (chunk.isNotEmpty()) send(chunk)
+                    send(SENTINEL_ENDTHINK)
+                    val remainder = buf.substring(endIdx + endTag.length)
+                    harmonyBuffer.setLength(0)
+                    harmonyBuffer.append(remainder)
+                    harmonyState = HarmonyState.IN_TRANSITION
+                    if (harmonyBuffer.isNotEmpty()) emitTokenForHarmony("", send)
+                } else {
+                    // No <|end|> yet — safely flush all but the last (endTag.length - 1) chars
+                    // so a tag split across token boundaries is never emitted prematurely.
+                    val safeLen = (buf.length - (endTag.length - 1)).coerceAtLeast(0)
+                    if (safeLen > 0) {
+                        send(buf.substring(0, safeLen))
+                        harmonyBuffer.delete(0, safeLen)
+                    }
+                }
+            }
+
+            HarmonyState.IN_TRANSITION -> {
+                val buf = harmonyBuffer.toString()
+                val finalIdx = buf.indexOf(finalHeader)
+                if (finalIdx >= 0) {
+                    val afterFinal = buf.substring(finalIdx + finalHeader.length)
+                    harmonyBuffer.setLength(0)
+                    harmonyBuffer.append(afterFinal)
+                    harmonyState = HarmonyState.IN_FINAL
+                    if (harmonyBuffer.isNotEmpty()) emitTokenForHarmony("", send)
+                }
+                // else: final-answer header not yet complete — keep buffering
+            }
+
+            HarmonyState.IN_FINAL -> {
+                // Emit everything in the buffer directly to the UI
+                if (harmonyBuffer.isNotEmpty()) {
+                    send(harmonyBuffer.toString())
+                    harmonyBuffer.setLength(0)
+                }
             }
         }
     }
@@ -963,7 +1090,29 @@ class NexaInferenceService @Inject constructor(
         return false
     }
 
-    private suspend fun formatPrompt(prompt: String, model: LLMModel): String {
+    /**
+     * Injects "/no_think" at the start of the last user turn in an already-formatted
+     * prompt string. Handles ChatML (<|im_start|>user\n) and INST ([INST]) formats.
+     * Falls back to prepending "/no_think " to the whole string if neither is found.
+     */
+    private fun injectNoThinkIntoFormatted(formatted: String): String {
+        // ChatML: <|im_start|>user\nCONTENT<|im_end|>
+        val chatMlMarker = "<|im_start|>user\n"
+        val lastChatMl = formatted.lastIndexOf(chatMlMarker)
+        if (lastChatMl >= 0) {
+            val insert = lastChatMl + chatMlMarker.length
+            return formatted.substring(0, insert) + "/no_think " + formatted.substring(insert)
+        }
+        // INST: [INST] CONTENT [/INST]
+        val lastInst = formatted.lastIndexOf("[INST]")
+        if (lastInst >= 0) {
+            val insert = lastInst + "[INST]".length + 1   // +1 for the space after [INST]
+            return formatted.substring(0, insert) + "/no_think " + formatted.substring(insert)
+        }
+        return "/no_think $formatted"
+    }
+
+    private suspend fun formatPrompt(prompt: String, model: LLMModel, thinkingEnabled: Boolean = true): String {
         val wrapper = llmWrapper ?: vlmWrapper
         if (wrapper == null) return prompt
         val llmWrap = llmWrapper ?: return prompt  // formatPrompt only works with LlmWrapper
@@ -978,15 +1127,37 @@ class NexaInferenceService @Inject constructor(
 
         if (cleanPrompt.contains("user: ") || cleanPrompt.contains("assistant: ")) {
             try {
+                var systemPromptText = ""
                 val segments = cleanPrompt.split("\n\n").filter { it.isNotBlank() }
+                
                 for (segment in segments) {
                     when {
-                        segment.startsWith("user: ") -> messages.add(ChatMessage("user", segment.removePrefix("user: ").trim()))
-                        segment.startsWith("assistant: ") -> messages.add(ChatMessage("assistant", segment.removePrefix("assistant: ").trim()))
+                        segment.startsWith("system: ") -> {
+                            val content = segment.removePrefix("system: ").trim()
+                            if (content.isNotEmpty()) {
+                                systemPromptText += content + "\n\n"
+                            }
+                        }
+                        segment.startsWith("user: ") -> {
+                            val content = segment.removePrefix("user: ").trim()
+                            if (messages.isEmpty() && systemPromptText.isNotEmpty()) {
+                                // Inject system prompt into the first user turn.
+                                // This solves issues with Gemma models and others that don't support a dedicated system role.
+                                messages.add(ChatMessage("user", systemPromptText + content))
+                                systemPromptText = "" // Clear it so we don't inject it again
+                            } else {
+                                messages.add(ChatMessage("user", content))
+                            }
+                        }
+                        segment.startsWith("assistant: ") -> {
+                            messages.add(ChatMessage("assistant", segment.removePrefix("assistant: ").trim()))
+                        }
                         else -> {
-                            if (messages.isEmpty()) messages.add(ChatMessage("system", segment.trim()))
-                            else {
-                                // Append to last message if unsure
+                            // If it doesn't have a marker, consider it a system prompt if at the very beginning
+                            if (messages.isEmpty()) {
+                                systemPromptText += segment.trim() + "\n\n"
+                            } else {
+                                // Append to the last message
                                 val last = messages.last()
                                 val role = try { last::class.java.getDeclaredField("role").apply { isAccessible = true }.get(last) as String } catch(e:Exception) { "user" }
                                 val content = try { last::class.java.getDeclaredField("content").apply { isAccessible = true }.get(last) as String } catch(e:Exception) { "" }
@@ -995,18 +1166,102 @@ class NexaInferenceService @Inject constructor(
                         }
                     }
                 }
+                // If there's STILL a system prompt but no user turn was found to attach it to, add it
+                if (systemPromptText.isNotEmpty()) {
+                    messages.add(0, ChatMessage("system", systemPromptText.trimEnd()))
+                }
             } catch (e: Exception) {
                 // Parsing failed, proceed with empty messages
             }
         }
 
-        // 2. Try SDK Template
+        // If no conversation structure found (no "user:"/"assistant:" markers), treat
+        // the prompt as either a system+user split (feature screens) or a bare user message.
+        // Feature screens (WritingAid, ScamDetector, Translator, etc.) build prompts as
+        // "instruction block\n\nX to process:\n{userInput}". Without splitting, GPT-OSS
+        // receives the entire instruction block as a user message and treats it as a
+        // meta-request rather than an instruction to execute — outputting the prompt text
+        // instead of the actual result. We detect common separators and split so that
+        // the instructions go into the system role and the user input goes into the user role.
+        if (messages.isEmpty()) {
+            // Vibe Coder style prompts often contain a large instruction block plus a
+            // dedicated USER REQUEST field. Split those into system+user roles so
+            // Harmony models execute the request instead of echoing meta-instructions.
+            val quotedReqRegex = Regex("""(?is)\bUSER REQUEST\s*:\s*\"([\s\S]*?)\"""")
+            val plainReqRegex = Regex("""(?im)^\s*User request\s*:\s*(.+)$""")
+            val quotedReqMatch = quotedReqRegex.find(cleanPrompt)
+            val plainReqMatch = plainReqRegex.find(cleanPrompt)
+            val reqMatch = quotedReqMatch ?: plainReqMatch
+
+            if (reqMatch != null) {
+                val userContent = reqMatch.groupValues.getOrNull(1)?.trim().orEmpty()
+                val systemContent = cleanPrompt.removeRange(reqMatch.range).trim()
+                if (userContent.isNotEmpty() && systemContent.isNotEmpty()) {
+                    messages.add(ChatMessage("system", systemContent))
+                    messages.add(ChatMessage("user", userContent))
+                }
+            }
+
+            // Creator prompt pattern:
+            //   User Description: "..."
+            //   Structure your response EXACTLY...
+            // Split this into system instructions + user description to avoid generic outputs.
+            if (messages.isEmpty()) {
+                val creatorDescRegex = Regex(
+                    """(?is)\bUser Description\s*:\s*"([\s\S]*?)"\s*(?=\n+\s*Structure your response EXACTLY)"""
+                )
+                val creatorMatch = creatorDescRegex.find(cleanPrompt)
+                if (creatorMatch != null) {
+                    val userContent = creatorMatch.groupValues.getOrNull(1)?.trim().orEmpty()
+                    val systemContent = cleanPrompt.removeRange(creatorMatch.range).trim()
+                    if (userContent.isNotEmpty() && systemContent.isNotEmpty()) {
+                        messages.add(ChatMessage("system", systemContent))
+                        messages.add(ChatMessage("user", userContent))
+                    }
+                }
+            }
+
+            val featureSeparators = listOf(
+                "Text to rewrite:\n",
+                "Content to analyze:\n",
+                "Text to translate:\n",
+                "Text to transcribe:\n",
+                "Text to process:\n"
+            )
+            val sep = featureSeparators.firstOrNull { cleanPrompt.contains(it) }
+            if (sep != null) {
+                val idx = cleanPrompt.indexOf(sep)
+                val instructions = cleanPrompt.substring(0, idx).trimEnd()
+                val userContent = (sep.trim() + " " + cleanPrompt.substring(idx + sep.length)).trim()
+                if (instructions.isNotEmpty() && userContent.isNotEmpty()) {
+                    messages.add(ChatMessage("system", instructions))
+                    messages.add(ChatMessage("user", userContent))
+                } else {
+                    messages.add(ChatMessage("user", cleanPrompt.trim()))
+                }
+            } else {
+                messages.add(ChatMessage("user", cleanPrompt.trim()))
+            }
+        }
+
         if (messages.isNotEmpty()) {
             try {
                 val result = llmWrap.applyChatTemplate(messages.toTypedArray(), null, false)
                 if (result.isSuccess) {
-                    result.getOrNull()?.formattedText?.let { 
-                        if (it.isNotEmpty()) return it 
+                    result.getOrNull()?.formattedText?.let {
+                        if (it.isNotEmpty()) {
+                            // Inject /no_think for LFM-Thinking models — done on the formatted
+                            // string after applyChatTemplate so it always lands in the user turn
+                            // regardless of template format, with no reflection needed.
+                            val isThinkingModelFmt = model.name.contains("Thinking", ignoreCase = true) ||
+                                                      model.name.contains("Reasoning", ignoreCase = true)
+                            val isHarmonyModelFmt  = model.name.contains("gpt-oss", ignoreCase = true) ||
+                                                     model.name.contains("gpt_oss", ignoreCase = true)
+                            if (!thinkingEnabled && isThinkingModelFmt && !isHarmonyModelFmt) {
+                                return injectNoThinkIntoFormatted(it)
+                            }
+                            return it
+                        }
                     }
                 }
             } catch (e: Exception) {}
@@ -1144,11 +1399,13 @@ class NexaInferenceService @Inject constructor(
     override fun getCurrentlyLoadedBackend(): LlmInference.Backend? = currentPreferredBackend
     override fun getMemoryWarningForImages(images: List<Bitmap>): String? = null
     override fun wasSessionRecentlyReset(chatId: String): Boolean = false
-    override fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?) {
+    override fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?, nGpuLayers: Int?, enableThinking: Boolean?) {
         overrideMaxTokens = maxTokens
         overrideTopK = topK
         overrideTopP = topP
         overrideTemperature = temperature
+        overrideNGpuLayers = nGpuLayers
+        overrideEnableThinking = enableThinking
     }
     override fun isVisionCurrentlyDisabled(): Boolean = currentVisionDisabled
     override fun isAudioCurrentlyDisabled(): Boolean = currentAudioDisabled

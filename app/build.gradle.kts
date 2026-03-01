@@ -1,7 +1,6 @@
 import java.util.Properties
 import java.io.FileInputStream
-import java.util.zip.ZipInputStream
-import java.util.zip.ZipOutputStream
+import java.util.zip.ZipFile
 import java.util.zip.ZipEntry
 
 // Load local.properties at the top-level so it's available everywhere
@@ -26,8 +25,8 @@ android {
         applicationId = "com.llmhub.llmhub"
         minSdk = 27
         targetSdk = 36
-        versionCode = 71
-        versionName = "3.5.4"
+        versionCode = 78
+        versionName = "3.6.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         val hfToken: String = localProperties.getProperty("HF_TOKEN", "")
@@ -36,6 +35,8 @@ android {
         // Enable 16KB page size support for Android 15+ compatibility
         // Required for Google Play Store submission starting Nov 1st, 2025
         ndk {
+            // Only package arm64-v8a — excludes x86/x86_64/armeabi-v7a slices from all dependency AARs (~150 MB saved).
+            abiFilters += setOf("arm64-v8a")
             // This helps with alignment but ultimate fix requires library maintainers
             // to rebuild native libraries with 16KB alignment
             debugSymbolLevel = "FULL"
@@ -49,7 +50,9 @@ android {
     }
 
     // Configure asset packs for install-time delivery
-    assetPacks += mutableSetOf(":qnn_pack")
+    // nexa_npu_pack delivers assets/npu/htp-files-v81/ and htp-files-v85/ (~230 MB)
+    // keeping the base module well under Play Store's 200 MB limit
+    assetPacks += mutableSetOf(":qnn_pack", ":sd_pack", ":nexa_npu_pack")
 
     buildTypes {
         release {
@@ -71,8 +74,10 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    kotlinOptions {
-        jvmTarget = "11"
+    kotlin {
+        compilerOptions {
+            jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11
+        }
     }
     buildFeatures {
         compose = true
@@ -111,14 +116,27 @@ android {
             // Pick only the architecture we need to reduce size and alignment issues
             // Prevent duplicate .so files from different MediaPipe tasks modules
             pickFirsts += setOf("**/libmediapipe_tasks_text_jni.so")
-            // Safety fallback — the stripOnnxFromNexa task removes Nexa's copy from the AAR,
-            // but if it hasn't run yet this prevents the build from failing on duplicate.
+            // Safety fallback — pickFirsts ensures Microsoft's ORT always wins over Nexa's bundled copy.
             pickFirsts += setOf("**/libonnxruntime.so")
             // Exclude DeepSeek OCR library to avoid 16KB page alignment issues
             excludes += setOf("**/libdeepseek-ocr.so")
+            // Exclude Nexa SDK's bundled stable-diffusion — app uses its own libstable_diffusion_core.so subprocess
+            excludes += setOf("**/libstable-diffusion.so")
         }
     }
     
+    // Prevent Play Store from removing unused language resources when generating app bundles.
+    // This ensures all supported languages packaged in `resourceConfigurations` remain
+    // available at runtime for per-app locale switching (AppCompat per-app locales).
+    bundle {
+        language {
+            // Keep all languages in the base APK rather than splitting them into configuration-specific
+            // APKs. When enabled, Play may remove some language resources from the installed split
+            // APK which prevents runtime calls to update the app locale from finding translations.
+            enableSplit = false
+        }
+    }
+
     // Removed externalNativeBuild - now using MediaPipe instead of native llama.cpp
 }
 
@@ -131,18 +149,6 @@ configurations.all {
     }
     // Exclude protobuf-javalite from all dependencies to prevent duplicate classes
     exclude(group = "com.google.protobuf", module = "protobuf-javalite")
-}
-
-// Prevent Play Store from removing unused language resources when generating app bundles.
-// This ensures all supported languages packaged in `resourceConfigurations` remain
-// available at runtime for per-app locale switching (AppCompat per-app locales).
-android.bundle {
-    language {
-        // Keep all languages in the base APK rather than splitting them into configuration-specific
-        // APKs. When enabled, Play may remove some language resources from the installed split
-        // APK which prevents runtime calls to update the app locale from finding translations.
-        enableSplit = false
-    }
 }
 
 dependencies {
@@ -184,6 +190,10 @@ dependencies {
     
     // DataStore for settings
     implementation("androidx.datastore:datastore-preferences:1.0.0")
+
+    // Security (EncryptedSharedPreferences)
+    // Use 1.1.0-alpha06 for MasterKey API support (replaces deprecated MasterKeys)
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
     // AppCompat for per-app locale APIs
     implementation("androidx.appcompat:appcompat:1.7.0")
@@ -241,7 +251,7 @@ dependencies {
     // Nexa bundles libonnxruntime.so directly in its AAR (6.5MB) which conflicts with
     // Microsoft's ORT JNI bridge. The task below strips it from the cached AAR so only
     // Microsoft's version ends up in the APK.
-    implementation("ai.nexa:core:0.0.22") {
+    implementation("ai.nexa:core:0.0.24") {
         exclude(group = "com.microsoft.onnxruntime")
     }
 
@@ -258,84 +268,102 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 }
 
-// ── Strip libonnxruntime.so from the Nexa SDK AAR ──────────────────────────────
-// Nexa SDK bundles its own libonnxruntime.so (an incompatible build) inside
-// jni/arm64-v8a/libonnxruntime.so.  When merged with Microsoft's
-// onnxruntime-android, pickFirsts randomly picks one — and if Nexa's wins the
-// JNI bridge crashes with "cannot locate symbol OrtGetApiBase".
-// This task physically strips the .so from the cached AAR so that only
-// Microsoft's copy ends up in the APK.
-fun stripNexaOnnxFromCache() {
-    val cacheDir = file("${System.getProperty("user.home")}/.gradle/caches/modules-2/files-2.1/ai.nexa/core/0.0.22")
-    if (!cacheDir.exists()) {
-        logger.warn("Nexa AAR cache dir not found – skipping libonnxruntime.so strip")
-        return
-    }
-    cacheDir.walkTopDown().filter { it.extension == "aar" }.forEach { aar ->
-        val marker = File(aar.parentFile, ".onnx_stripped")
-        if (marker.exists()) return@forEach          // already processed
+// ── Extract npu HTP assets from Nexa AAR into nexa_npu_pack ──────────────────
+// Nexa 0.0.24 bundles assets/npu/htp-files-v81/ (~67 MB) and htp-files-v85/
+// (~80 MB) inside its AAR. We extract them here (where Nexa is already a
+// resolved dependency) into the nexa_npu_pack asset pack source directory so
+// Play Asset Delivery can serve them at install time. This keeps the base
+// module well under Play Store's 200 MB compressed APK split limit.
+//
+// All assets/npu/ content is stripped from the base module via the hook below.
+// For APK sideloads, NPU falls back to NNAPI GPU / CPU automatically.
 
-        logger.lifecycle("Stripping libonnxruntime.so from ${aar.name}")
-        val tmp = File(aar.absolutePath + ".tmp")
-        aar.inputStream().buffered().use { fis ->
-            ZipInputStream(fis).use { zis ->
-                tmp.outputStream().buffered().use { fos ->
-                    ZipOutputStream(fos).use { zos ->
-                        var entry = zis.nextEntry
-                        while (entry != null) {
-                            if (entry.name.endsWith("libonnxruntime.so")) {
-                                logger.lifecycle("  removed: ${entry.name}")
-                            } else {
-                                zos.putNextEntry(ZipEntry(entry.name))
-                                zis.copyTo(zos)
-                                zos.closeEntry()
-                            }
-                            entry = zis.nextEntry
-                        }
+val nexaAarConfig by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+}
+dependencies { nexaAarConfig("ai.nexa:core:0.0.24@aar") }
+
+val npuPackAssetsDir = rootProject.file("nexa_npu_pack/src/main/assets/npu")
+
+val extractNexaNpuAssets by tasks.registering {
+    description = "Extracts npu/htp-files-v81/ and htp-files-v85/ from Nexa AAR into nexa_npu_pack"
+    group = "build setup"
+    inputs.files(nexaAarConfig)
+    outputs.dir(npuPackAssetsDir)
+    outputs.upToDateWhen {
+        npuPackAssetsDir.resolve("htp-files-v81").exists() &&
+        npuPackAssetsDir.resolve("htp-files-v85").exists()
+    }
+    doLast {
+        val aar = nexaAarConfig.singleFile
+        npuPackAssetsDir.deleteRecursively()
+        npuPackAssetsDir.mkdirs()
+        var extracted = 0
+        ZipFile(aar).use { zip ->
+            zip.entries().toList().asSequence()
+                .filter { !it.isDirectory && it.name.startsWith("assets/npu/htp-files-v") }
+                .forEach { entry ->
+                    // entry.name: "assets/npu/htp-files-v81/libFoo.so"
+                    // place as:   nexa_npu_pack/src/main/assets/npu/htp-files-v81/libFoo.so
+                    val rel = entry.name.removePrefix("assets/npu/")
+                    val target = npuPackAssetsDir.resolve(rel)
+                    target.parentFile.mkdirs()
+                    zip.getInputStream(entry).use { src ->
+                        target.outputStream().use { dst -> src.copyTo(dst) }
                     }
+                    extracted++
                 }
+        }
+        logger.lifecycle("extractNexaNpu: extracted $extracted files → ${npuPackAssetsDir.absolutePath}")
+    }
+}
+
+// Detect at configuration time whether this is an AAB bundle build or an APK build.
+// gradle.startParameter.taskNames contains the tasks requested (e.g. "bundleRelease" vs "assembleRelease").
+// For APK builds: npu/ must stay in base (no asset pack delivery mechanism).
+// For AAB builds: npu/ is delivered via nexa_npu_pack, so strip it from base.
+val isBundleBuild = gradle.startParameter.taskNames.any { it.contains("bundle", ignoreCase = true) }
+
+// Run extraction + wire dependency only during AAB bundle builds
+if (isBundleBuild) {
+    tasks.configureEach {
+        val n = name
+        if ((n.startsWith("merge") && n.contains("Assets", ignoreCase = true)) ||
+            (n.startsWith("assetPack") && n.contains("PreBundleTask", ignoreCase = true))
+        ) {
+            dependsOn(extractNexaNpuAssets)
+        }
+    }
+}
+
+// ── Strip ALL assets/npu/ from base module (AAB builds only) ─────────────────
+// npu HTP runtime libs are delivered via :nexa_npu_pack (install-time Play Asset
+// Delivery) for AAB. For APK sideloads, npu stays in base so NPU works normally.
+if (isBundleBuild) {
+    tasks.configureEach {
+        if (name.startsWith("merge") && name.contains("Assets", ignoreCase = true)) {
+            doLast {
+                // Delete everything under npu/ from the base module's merged assets
+                outputs.files.asFileTree.matching { include("npu/**") }
+                    .filter { it.isFile }
+                    .forEach { f ->
+                        logger.lifecycle("stripNpu: removed ${f.parentFile.name}/${f.name} from base module")
+                        f.delete()
+                    }
+                // Remove empty npu dirs (deepest first)
+                outputs.files.asFileTree.matching { include("npu/**") }
+                    .filter { it.isDirectory }
+                    .sortedByDescending { it.absolutePath.length }
+                    .forEach { it.delete() }
+                // Remove root npu/ dir if empty
+                outputs.files.asFileTree.matching { include("npu") }
+                    .filter { it.isDirectory && (it.listFiles()?.isEmpty() == true) }
+                    .forEach { it.delete() }
             }
         }
-        aar.delete()
-        tmp.renameTo(aar)
-        marker.createNewFile()
-    }
-
-    // Also strip any transformed cache copies (AGP transforms) that still include libonnxruntime.so
-    val transformsDir = file("${System.getProperty("user.home")}/.gradle/caches")
-    if (transformsDir.exists()) {
-        transformsDir.walkTopDown()
-            .filter { it.name == "libonnxruntime.so" && it.path.contains("/transformed/core-0.0.22/") }
-            .forEach { lib ->
-                logger.lifecycle("Removing transformed libonnxruntime.so: ${lib.path}")
-                try { lib.delete() } catch (_: Exception) { }
-            }
     }
 }
-
-tasks.register("stripOnnxFromNexa") {
-    inputs.files(
-        rootProject.file("build.gradle.kts"),
-        rootProject.file("settings.gradle.kts"),
-        project.file("build.gradle.kts")
-    )
-    outputs.file(layout.buildDirectory.file("stripOnnxFromNexa.marker"))
-    doLast {
-        stripNexaOnnxFromCache()
-        layout.buildDirectory.file("stripOnnxFromNexa.marker").get().asFile.writeText("ok")
-    }
-}
-
-// Run the strip task before any merge/packaging happens
-tasks.configureEach {
-    val isMergeTask = name.contains("merge", ignoreCase = true)
-    val isNativeTask = name.contains("JniLibFolders", ignoreCase = true) || name.contains("NativeLibs", ignoreCase = true)
-    if (isMergeTask && isNativeTask) {
-        dependsOn("stripOnnxFromNexa")
-    }
-}
-
-// Note: stripOnnxFromNexa only re-runs when Gradle files change (inputs/outputs).
 
 // ── Conditionally exclude qnnlibs from base module during AAB builds ──────────
 // When building an AAB, qnnlibs are delivered via asset pack (qnn_pack).
@@ -344,42 +372,56 @@ tasks.configureEach {
 
 val qnnlibsDir = project.file("src/main/assets/qnnlibs")
 val qnnlibsHiddenDir = project.file("src/main/assets/.qnnlibs_hidden")
+val cvtbaseDir = project.file("src/main/assets/cvtbase")
+val cvtbaseHiddenDir = project.file("src/main/assets/.cvtbase_hidden")
 
-tasks.register("hideQnnLibsForBundle") {
+tasks.register("hideAssetsForBundle") {
     doLast {
         if (qnnlibsDir.exists() && !qnnlibsHiddenDir.exists()) {
             logger.lifecycle("Hiding qnnlibs from base module for AAB build (will use asset pack)")
             qnnlibsDir.renameTo(qnnlibsHiddenDir)
         }
+        if (cvtbaseDir.exists() && !cvtbaseHiddenDir.exists()) {
+            logger.lifecycle("Hiding cvtbase from base module for AAB build (will use sd_pack)")
+            cvtbaseDir.renameTo(cvtbaseHiddenDir)
+        }
     }
 }
 
-tasks.register("restoreQnnLibsAfterBundle") {
+tasks.register("restoreAssetsAfterBundle") {
     doLast {
         if (qnnlibsHiddenDir.exists()) {
             logger.lifecycle("Restoring qnnlibs to app/src/main/assets")
             qnnlibsHiddenDir.renameTo(qnnlibsDir)
         }
+        if (cvtbaseHiddenDir.exists()) {
+            logger.lifecycle("Restoring cvtbase to app/src/main/assets")
+            cvtbaseHiddenDir.renameTo(cvtbaseDir)
+        }
     }
 }
 
-tasks.register("ensureQnnLibsForApk") {
+tasks.register("ensureAssetsForApk") {
     doLast {
         if (qnnlibsHiddenDir.exists() && !qnnlibsDir.exists()) {
             logger.lifecycle("Restoring qnnlibs for APK build")
             qnnlibsHiddenDir.renameTo(qnnlibsDir)
         }
+        if (cvtbaseHiddenDir.exists() && !cvtbaseDir.exists()) {
+            logger.lifecycle("Restoring cvtbase for APK build")
+            cvtbaseHiddenDir.renameTo(cvtbaseDir)
+        }
     }
 }
 
-// Hook into bundle tasks to exclude qnnlibs from base module
+// Hook into bundle tasks to hide base-module assets that are delivered via asset packs in AAB
 tasks.configureEach {
     if (name.startsWith("bundle") && name.contains("Release", ignoreCase = true)) {
-        dependsOn("hideQnnLibsForBundle")
-        finalizedBy("restoreQnnLibsAfterBundle")
+        dependsOn("hideAssetsForBundle")
+        finalizedBy("restoreAssetsAfterBundle")
     }
-    // Hook into assemble tasks to ensure qnnlibs are present for APK builds
+    // Hook into assemble tasks to ensure assets are present for APK builds
     if (name.startsWith("assemble") && name.contains("Release", ignoreCase = true)) {
-        dependsOn("ensureQnnLibsForApk")
+        dependsOn("ensureAssetsForApk")
     }
 }
