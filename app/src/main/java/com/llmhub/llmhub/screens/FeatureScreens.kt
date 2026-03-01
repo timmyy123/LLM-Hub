@@ -8,10 +8,12 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -27,7 +29,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
@@ -230,6 +234,14 @@ fun TranslatorScreen(
     val outputText by viewModel.outputText.collectAsState()
     val visionEnabled by viewModel.visionEnabled.collectAsState()
     val audioEnabled by viewModel.audioEnabled.collectAsState()
+    val enableThinking by viewModel.enableThinking.collectAsState()
+    val isThinkingOrHarmonyModelTranslator by remember(selectedModel) {
+        derivedStateOf {
+            val name = selectedModel?.name?.lowercase() ?: ""
+            name.contains("thinking") || name.contains("reasoning") ||
+                name.contains("gpt-oss") || name.contains("gpt_oss")
+        }
+    }
     
     // Clipboard manager
     val clipboardManager = LocalClipboardManager.current
@@ -505,6 +517,27 @@ fun TranslatorScreen(
                         onCheckedChange = { viewModel.toggleAudio(it) },
                         enabled = selectedModel?.supportsAudio == true
                     )
+                }
+                
+                // Thinking toggle (shown only for thinking/reasoning models)
+                if (isThinkingOrHarmonyModelTranslator) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.enable_thinking),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Switch(
+                            checked = enableThinking,
+                            onCheckedChange = { viewModel.setEnableThinking(it) }
+                        )
+                    }
                 }
                 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -1732,6 +1765,9 @@ fun ScamDetectorScreen(
     val inputImageUri by viewModel.inputImageUri.collectAsState()
     val outputText by viewModel.outputText.collectAsState()
     val loadError by viewModel.loadError.collectAsState()
+    val enableThinkingScam by viewModel.enableThinking.collectAsState()
+    val selectedMaxTokensScam by viewModel.selectedMaxTokens.collectAsState()
+    val selectedNGpuLayersScam by viewModel.selectedNGpuLayers.collectAsState()
     val modelSupportsVisionInput = selectedModel?.let { model ->
         model.supportsVision &&
             (!model.requiresExternalVisionProjector() || model.hasDownloadedVisionProjector(context))
@@ -1739,6 +1775,17 @@ fun ScamDetectorScreen(
     
     // Settings sheet state
     var showSettingsSheet by remember { mutableStateOf(false) }
+
+    // Slider local state for settings sheet
+    val baseMaxTokensCapScam by remember(selectedModel) {
+        derivedStateOf { selectedModel?.contextWindowSize?.coerceAtLeast(1) ?: 4096 }
+    }
+    var maxTokensValueScam by remember(selectedMaxTokensScam, baseMaxTokensCapScam) {
+        mutableStateOf(selectedMaxTokensScam.coerceIn(1, baseMaxTokensCapScam))
+    }
+    var maxTokensTextScam by remember(maxTokensValueScam) { mutableStateOf(maxTokensValueScam.toString()) }
+    var gpuLayersScam by remember(selectedNGpuLayersScam) { mutableStateOf(selectedNGpuLayersScam ?: 999) }
+    val isGgufScam by remember(selectedModel) { derivedStateOf { selectedModel?.modelFormat == "gguf" } }
     
     // TTS Service
     val ttsService = remember { com.llmhub.llmhub.ui.components.TtsService(context) }
@@ -1815,7 +1862,104 @@ fun ScamDetectorScreen(
                     filterMultimodalOnly = false
                 )
                 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Model config sliders
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = stringResource(R.string.model_configs_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                            Text(text = stringResource(R.string.max_tokens), style = MaterialTheme.typography.bodyMedium)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "$baseMaxTokensCapScam ${stringResource(R.string.max)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                            Slider(
+                                value = maxTokensValueScam.toFloat(),
+                                onValueChange = {
+                                    val v = it.toInt().coerceIn(1, baseMaxTokensCapScam)
+                                    maxTokensValueScam = v
+                                    maxTokensTextScam = v.toString()
+                                    viewModel.setMaxTokens(v)
+                                },
+                                valueRange = 1f..baseMaxTokensCapScam.toFloat(),
+                                modifier = Modifier.weight(1f).height(36.dp),
+                                thumb = {
+                                    SliderDefaults.Thumb(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        thumbSize = DpSize(24.dp, 24.dp)
+                                    )
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            OutlinedTextField(
+                                value = maxTokensTextScam,
+                                onValueChange = { input ->
+                                    val numeric = input.filter { it.isDigit() }
+                                    val v = (numeric.toIntOrNull() ?: 1).coerceIn(1, baseMaxTokensCapScam)
+                                    maxTokensTextScam = v.toString()
+                                    maxTokensValueScam = v
+                                    viewModel.setMaxTokens(v)
+                                },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                singleLine = true,
+                                modifier = Modifier.width(72.dp)
+                            )
+                        }
+
+                        // GPU Layers (GGUF only)
+                        if (isGgufScam) {
+                            Text(
+                                text = stringResource(R.string.gpu_layers_label, gpuLayersScam),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                                Slider(
+                                    value = gpuLayersScam.toFloat(),
+                                    onValueChange = {
+                                        gpuLayersScam = it.toInt()
+                                        viewModel.setNGpuLayers(gpuLayersScam)
+                                    },
+                                    valueRange = 0f..999f,
+                                    modifier = Modifier.weight(1f).height(28.dp),
+                                    thumb = {
+                                        SliderDefaults.Thumb(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            thumbSize = DpSize(24.dp, 24.dp)
+                                        )
+                                    }
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                OutlinedTextField(
+                                    value = gpuLayersScam.toString(),
+                                    onValueChange = { v ->
+                                        val n = v.filter { it.isDigit() }.toIntOrNull()?.coerceIn(0, 999) ?: gpuLayersScam
+                                        gpuLayersScam = n
+                                        viewModel.setNGpuLayers(n)
+                                    },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    singleLine = true,
+                                    modifier = Modifier.width(72.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
                 
                 if (modelSupportsVisionInput) {
                     // Vision toggle (show only when selected model has usable vision input)
@@ -1844,6 +1988,32 @@ fun ScamDetectorScreen(
                         )
                     }
 
+                    Spacer(modifier = Modifier.height(32.dp))
+                }
+
+                // Thinking toggle (shown only for thinking/reasoning models)
+                val isThinkingOrHarmonyModelScam = selectedModel?.name?.lowercase()?.let { name ->
+                    name.contains("thinking") || name.contains("reasoning") ||
+                        name.contains("gpt-oss") || name.contains("gpt_oss")
+                } == true
+                if (isThinkingOrHarmonyModelScam) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.enable_thinking),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Switch(
+                            checked = enableThinkingScam,
+                            onCheckedChange = { viewModel.setEnableThinking(it) }
+                        )
+                    }
                     Spacer(modifier = Modifier.height(32.dp))
                 }
             }

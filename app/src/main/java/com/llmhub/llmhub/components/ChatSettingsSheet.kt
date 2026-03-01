@@ -43,7 +43,7 @@ fun ChatSettingsSheet(
     isLoadingModel: Boolean,
     onModelSelected: (LLMModel) -> Unit,
     onBackendSelected: (LlmInference.Backend, String?) -> Unit,
-    onLoadModel: (model: LLMModel, maxTokens: Int, topK: Int, topP: Float, temperature: Float, backend: LlmInference.Backend?, disableVision: Boolean, disableAudio: Boolean) -> Unit,
+    onLoadModel: (model: LLMModel, maxTokens: Int, topK: Int, topP: Float, temperature: Float, backend: LlmInference.Backend?, deviceId: String?, disableVision: Boolean, disableAudio: Boolean, nGpuLayers: Int, enableThinking: Boolean) -> Unit,
     onUnloadModel: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -85,6 +85,14 @@ fun ChatSettingsSheet(
     val defaultUseGpu = remember(selectedModel) { 
         if (isPhi4Mini) false else selectedModel?.supportsGpu == true
     }
+    val canUseNpuForSelectedModel by remember(selectedModel, isPhi4Mini) {
+        derivedStateOf {
+            selectedModel?.supportsGpu == true &&
+                !isPhi4Mini &&
+                selectedModel?.modelFormat == "gguf" &&
+                com.llmhub.llmhub.data.DeviceInfo.isQualcommNpuSupported()
+        }
+    }
     
     // Config state
     var maxTokensValue by remember { mutableStateOf(minOf(4096, baseMaxTokensCap)) }
@@ -105,15 +113,28 @@ fun ChatSettingsSheet(
 
     // Track whether NPU (Hexagon GGUF) is selected — initial value comes from the caller
     var useNpu by remember(initialSelectedNpuDeviceId) { mutableStateOf(initialSelectedNpuDeviceId != null) }
+    var gpuLayers by remember { mutableStateOf(999) }
 
     var disableVision by remember { mutableStateOf(isGemma3nModel) }
     var disableAudio by remember { mutableStateOf(isGemma3nModel) }
+    var enableThinking by remember { mutableStateOf(true) }
 
     val selectedModelSupportsVisionInput by remember(selectedModel, context) {
         derivedStateOf {
             selectedModel?.let { model ->
                 model.supportsVision &&
                     (!model.requiresExternalVisionProjector() || model.hasDownloadedVisionProjector(context))
+            } == true
+        }
+    }
+
+    val isThinkingOrHarmonyModel by remember(selectedModel) {
+        derivedStateOf {
+            selectedModel?.let { model ->
+                model.name.contains("Thinking", ignoreCase = true) ||
+                model.name.contains("Reasoning", ignoreCase = true) ||
+                model.name.contains("gpt-oss", ignoreCase = true) ||
+                model.name.contains("gpt_oss", ignoreCase = true)
             } == true
         }
     }
@@ -147,8 +168,11 @@ fun ChatSettingsSheet(
                         "CPU" -> false
                         else -> newDefaultUseGpu
                     }
+                    useNpu = saved.deviceId == "dev0"
                     disableVision = saved.disableVision || !selectedModelSupportsVisionInput
                     disableAudio = saved.disableAudio
+                    gpuLayers = saved.nGpuLayers
+                    enableThinking = saved.enableThinking
                 } else {
                     // Reset to defaults for new model
                     val effCap = if (selectedModelSupportsVisionInput && !newIsGemma3n) minOf(newBaseCap, 8192) else newBaseCap
@@ -159,8 +183,10 @@ fun ChatSettingsSheet(
                     topP = 0.95f
                     temperature = 1.0f
                     useGpu = newDefaultUseGpu
+                    useNpu = false
                     disableVision = newIsGemma3n || !selectedModelSupportsVisionInput
                     disableAudio = newIsGemma3n
+                    enableThinking = true
                 }
             } catch (e: Exception) {
                 // Reset to defaults on error
@@ -172,9 +198,22 @@ fun ChatSettingsSheet(
                 topP = 0.95f
                 temperature = 1.0f
                 useGpu = newDefaultUseGpu
+                useNpu = false
                 disableVision = newIsGemma3n || !selectedModelSupportsVisionInput
                 disableAudio = newIsGemma3n
+                enableThinking = true
             }
+        }
+    }
+
+    LaunchedEffect(selectedModel?.name, canSelectAccelerator, canUseNpuForSelectedModel) {
+        if (!canSelectAccelerator) {
+            useGpu = false
+            useNpu = false
+            return@LaunchedEffect
+        }
+        if (!canUseNpuForSelectedModel && useNpu) {
+            useNpu = false
         }
     }
 
@@ -429,14 +468,14 @@ fun ChatSettingsSheet(
                                     )
 
                                     // NPU option for GGUF on Qualcomm Hexagon
-                                    val showNpuOption = selectedModel?.modelFormat == "gguf" && com.llmhub.llmhub.data.DeviceInfo.isQualcommNpuSupported()
+                                    val showNpuOption = canUseNpuForSelectedModel
                                     if (showNpuOption) {
                                         DropdownMenuItem(
                                             text = { Text(stringResource(R.string.backend_npu)) },
                                             onClick = {
                                                 useGpu = true
                                                 useNpu = true
-                                                onBackendSelected(LlmInference.Backend.GPU, "HTP0")
+                                                onBackendSelected(LlmInference.Backend.GPU, "dev0")
                                                 showBackendMenu = false
                                             },
                                             leadingIcon = { Icon(Icons.Default.Bolt, contentDescription = null) },
@@ -474,6 +513,7 @@ fun ChatSettingsSheet(
                                         val backend = if (canSelectAccelerator) {
                                             if (useGpu) LlmInference.Backend.GPU else LlmInference.Backend.CPU
                                         } else null
+                                        val deviceId = if (useNpu) "dev0" else null
                                         
                                         // Save config
                                         scope.launch(Dispatchers.IO) {
@@ -484,14 +524,17 @@ fun ChatSettingsSheet(
                                                     topP = topP,
                                                     temperature = temperature,
                                                     backend = backend?.name,
+                                                    deviceId = deviceId,
                                                     disableVision = disableVision,
-                                                    disableAudio = disableAudio
+                                                    disableAudio = disableAudio,
+                                                    nGpuLayers = gpuLayers,
+                                                    enableThinking = enableThinking
                                                 )
                                                 modelPrefs.setModelConfig(model.name, cfg)
                                             } catch (_: Exception) {}
                                         }
                                         
-                                        onLoadModel(model, finalMax, topK, topP, temperature, backend, disableVision, disableAudio)
+                                        onLoadModel(model, finalMax, topK, topP, temperature, backend, deviceId, disableVision, disableAudio, gpuLayers, enableThinking)
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
@@ -678,6 +721,38 @@ fun ChatSettingsSheet(
                             )
                         }
                         
+                        // GPU Layers (GGUF + GPU/NPU only)
+                        if (selectedModel?.modelFormat == "gguf" && (useGpu || useNpu)) {
+                            Text(
+                                text = stringResource(R.string.gpu_layers_label, gpuLayers),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Slider(
+                                    value = gpuLayers.toFloat(),
+                                    onValueChange = { gpuLayers = it.toInt() },
+                                    valueRange = 0f..999f,
+                                    modifier = Modifier.weight(1f).height(28.dp),
+                                    thumb = {
+                                        SliderDefaults.Thumb(
+                                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                            thumbSize = androidx.compose.ui.unit.DpSize(24.dp, 24.dp)
+                                        )
+                                    }
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                OutlinedTextField(
+                                    value = gpuLayers.toString(),
+                                    onValueChange = { v -> gpuLayers = v.filter { it.isDigit() }.toIntOrNull()?.coerceIn(0, 999) ?: gpuLayers },
+                                    modifier = Modifier.width(72.dp),
+                                    singleLine = true
+                                )
+                            }
+                        }
+
                         // Modality options (Vision/Audio toggles)
                         if (selectedModelSupportsVisionInput || selectedModel?.supportsAudio == true) {
                             Spacer(modifier = Modifier.height(4.dp))
@@ -721,14 +796,32 @@ fun ChatSettingsSheet(
                                     )
                                 }
                             }
-                            
-                            // Performance tip
-                            Text(
-                                text = stringResource(R.string.gemma3n_performance_tip),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary
-                            )
                         }
+
+                        // Thinking toggle (visible for reasoning/thinking models and GPT-OSS Harmony)
+                        if (isThinkingOrHarmonyModel) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.enable_thinking),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Switch(
+                                    checked = enableThinking,
+                                    onCheckedChange = { enableThinking = it }
+                                )
+                            }
+                        }
+
+                        // Performance tip
+                        Text(
+                            text = stringResource(R.string.gemma3n_performance_tip),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                         
                         // Reset to Defaults button
                         TextButton(
@@ -754,8 +847,10 @@ fun ChatSettingsSheet(
                                     topP = 0.95f
                                     temperature = 1.0f
                                     useGpu = newDefaultUseGpu
+                                    useNpu = false
                                     disableVision = newIsGemma3n || !selectedModelSupportsVisionInput
                                     disableAudio = newIsGemma3n
+                                    enableThinking = true
                                 }
                             },
                             modifier = Modifier.align(Alignment.End)

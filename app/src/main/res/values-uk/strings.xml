@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Common -->
     <string name="app_name">LLM Hub</string>
@@ -77,7 +77,7 @@
     <string name="ai_thinking">AI думає…</string>
     <string name="thinking_label">Міркування</string>
     <string name="thinking_tokens">Міркування (%1$d токенів)</string>
-    <string name="version_number">Версія 3.5.3</string>
+    <string name="version_number">Версія 3.6.0</string>
     <string name="app_version">Версія застосунку</string>
 
     <!-- Terms of Service -->
@@ -397,6 +397,7 @@
     <string name="modality_options">Параметри модальностей</string>
     <string name="enable_vision">Увімкнути зір (підтримка зображень)</string>
     <string name="enable_audio">Увімкнути аудіо (голосовий ввід)</string>
+    <string name="enable_thinking">Увімкнути мислення</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 Для стабільності на пристроях 7–8GB вимкніть аудіо, щоб заощадити пам\'ять GPU. Зір зазвичай стабільніший.</string>
 
     <!-- General performance tip for all devices -->
@@ -699,6 +700,67 @@
     <string name="model_not_loaded">Модель завантажено некоректно. Спробуйте іншу модель або перезапустіть застосунок.</string>
     <string name="no_response_produced">Відповіді не згенеровано. (Можливо: ліміт токенів або скидання сесії). Торкніться «Згенерувати знову».</string>
     <string name="prompt_too_long">Запит надто довгий. Скоротіть повідомлення та спробуйте ще раз.</string>
+    <!-- New Chat Management & Creator Strings -->
+    <string name="not_loaded">Не завантажено</string>
+    <string name="dialog_rename_chat_title">Перейменувати Чат</string>
+    <string name="chat_title">Заголовок Чату</string>
+    <string name="more_options">Більше Параметрів</string>
+    <string name="dialog_delete_creator_title">Видалити Персону?</string>
+    <string name="dialog_delete_creator_message">Видалити Персону \"%1\"?</string>
+    <string name="action_rename">Перейменувати</string>
+
+    <!-- Vibe Coder Feature -->
+    <string name="feature_vibe_coder">VibeCode</string>
+    <string name="feature_vibe_coder_desc">Генеруйте HTML, JavaScript та Python-код за допомогою ШІ</string>
+    <string name="feature_creator_generation">Персони</string>
+    <string name="feature_creator_generation_desc">Створюйте власні персоналізовані персони ШІ</string>
+    <string name="drawer_my_creators">мої Персони</string>
+    <string name="vibe_coder_title">VibeCode</string>
+    <string name="vibe_coder_prompt_label">Що ви хочете закодувати?</string>
+    <string name="vibe_coder_prompt_hint">Опишіть код, який хочете згенерувати...</string>
+    <string name="vibe_coder_generate">Генерувати Код</string>
+    <string name="vibe_coder_generating">Генерування коду...</string>
+    <string name="vibe_coder_generated_code">Згенерований Код</string>
+    <string name="vibe_coder_copy">Копіювати</string>
+    <string name="vibe_coder_preview">Попередній перегляд</string>
+    <string name="vibe_coder_no_model">Модель не завантажена. Будь ласка, спочатку завантажте та оберіть модель.</string>
+    <string name="vibe_coder_settings">Налаштування</string>
+    <string name="vibe_coder_backend_select">Вибрати Бекенд</string>
+
+    <!-- VibeCode additions -->
+    <string name="vibe_coder_modification_mode">Режим зміни</string>
+    <string name="vibe_coder_refine">Покращити код</string>
+    <string name="vibe_coder_clear">Новий проект / Очистити контекст</string>
+    <string name="vibe_coder_planning">Планування архітектури...</string>
+    <string name="vibe_coder_revising">Перегляд коду...</string>
+
+    <!-- Creator Generation Screen -->
+    <string name="creator_screen_title">Новий ІІ-персонаж</string>
+    <string name="creator_bring_to_life">Оживіть штучний інтелект</string>
+    <string name="creator_description">У вас є сила оживити власного ІІ-персонажа. Просто опишіть, як ваш персонаж реагуватиме на будь-який ввід, запит або ідею. Після створення персонажа ви зможете використовувати його в чаті.</string>
+    <string name="creator_prompt_label">Опишіть вашого ІІ-персонажа...</string>
+    <string name="creator_prompt_placeholder">напр., підсумуй будь-яку тему у вигляді рими менше ніж 10 рядків</string>
+    <string name="creator_brewing">творимо магію...</string>
+    <string name="creator_generate_persona">Створити персонажа</string>
+    <string name="creator_load_model_first">Будь ласка, спочатку завантажте модель.</string>
+    <string name="creator_result_heading">Ось ваш новий ІІ-персонаж!</string>
+    <string name="creator_system_prompt_label">Системний промпт (PCTF):</string>
+    <string name="creator_save_and_chat">Зберегти та спілкуватися</string>
+
+    <!-- Kid Mode -->
+    <string name="kid_mode_title">Дитячий режим</string>
+    <string name="kid_mode_enabled_status">Увімкнено - Засоби безпеки активні</string>
+    <string name="kid_mode_disabled_status">Вимкнено</string>
+    <string name="kid_mode_incorrect_pin">Невірний PIN</string>
+    <string name="kid_mode_set_pin_title">Встановити PIN дитячого режиму</string>
+    <string name="kid_mode_set_pin_body">Введіть 4-цифровий PIN для увімкнення дитячого режиму. Він знадобиться для вимкнення режиму пізніше.</string>
+    <string name="kid_mode_pin_label">4-цифровий PIN</string>
+    <string name="kid_mode_pin_error">PIN має складатися з 4 цифр</string>
+    <string name="kid_mode_enable">Увімкнути</string>
+    <string name="kid_mode_disable_title">Вимкнути дитячий режим</string>
+    <string name="kid_mode_verify_body">Введіть 4-цифровий PIN для вимкнення дитячого режиму.</string>
+    <string name="kid_mode_disable">Вимкнути</string>
+
+    <string name="gpu_layers_label">GPU Layers: %1$d</string>
+    <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
 </resources>
-
-

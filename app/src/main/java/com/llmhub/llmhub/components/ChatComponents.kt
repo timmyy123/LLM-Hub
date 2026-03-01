@@ -443,6 +443,18 @@ fun ThinkingAwareResultContent(
     val hasThinking = thinkingPart.isNotEmpty()
     val hasAnswer = answerPart.isNotEmpty()
     var thinkingExpanded by remember { mutableStateOf(true) }
+
+    // Auto behavior for all feature result views:
+    // - While model is still in thinking phase, keep panel open.
+    // - Once answer appears (thinking finished), auto-collapse panel.
+    LaunchedEffect(hasThinking, hasAnswer) {
+        if (hasThinking && !hasAnswer) {
+            thinkingExpanded = true
+        } else if (hasThinking && hasAnswer) {
+            thinkingExpanded = false
+        }
+    }
+
     Column(modifier = modifier.fillMaxWidth()) {
         if (hasThinking) {
             val estimatedTokens = (thinkingPart.length / 4).coerceAtLeast(1)
@@ -715,6 +727,13 @@ fun MessageBubble(
                         // Key by message id so user's collapse choice is preserved during streaming (don't re-open on every token)
                         var thinkingExpanded by remember(message.id) {
                             mutableStateOf(true)
+                        }
+                        LaunchedEffect(message.id, hasThinking, hasAnswer) {
+                            if (hasThinking && !hasAnswer) {
+                                thinkingExpanded = true
+                            } else if (hasThinking && hasAnswer) {
+                                thinkingExpanded = false
+                            }
                         }
                         Column(modifier = Modifier.fillMaxWidth()) {
                             if (hasThinking) {

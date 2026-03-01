@@ -21,15 +21,18 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
     private var currentModel: LLMModel? = null
 
     override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?, deviceId: String?): Boolean {
-        // Determine which service to use
-        val newService = when (model.modelFormat) {
+        // Determine which service to use initially
+        if (model.modelFormat == "gguf" && (nexaService as? com.llmhub.llmhub.inference.NexaInferenceService)?.isAvailable() != true) {
+            throw AllBackendsFailedException("GGUF models require the Nexa SDK which is not available on this device")
+        }
+        val targetService = when (model.modelFormat) {
             "onnx" -> onnxService
-            "gguf" -> if ((nexaService as? com.llmhub.llmhub.inference.NexaInferenceService)?.isAvailable() == true) nexaService else mediaPipeService
+            "gguf" -> nexaService
             else -> mediaPipeService
         }
 
         // Same service and same model already loaded with same backend: skip reload (honor user's CPU/GPU choice on next load)
-        if (currentService == newService) {
+        if (currentService == targetService) {
             val loaded = currentService.getCurrentlyLoadedModel()
             val currentBackend = currentService.getCurrentlyLoadedBackend()
             if (loaded?.name == model.name && (preferredBackend == null || preferredBackend == currentBackend)) {
@@ -39,14 +42,28 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         }
 
         // If switching services, unload the old one
-        if (currentService != newService && currentModel != null) {
+        if (currentService != targetService && currentModel != null) {
             currentService.unloadModel()
         }
 
-        currentService = newService
+        currentService = targetService
         currentModel = model
         
-        return currentService.loadModel(model, preferredBackend, deviceId)
+        try {
+            val success = currentService.loadModel(model, preferredBackend, deviceId)
+            if (!success) {
+                currentModel = null
+                throw AllBackendsFailedException("Backend ${currentService.javaClass.simpleName} failed to load model '${model.name}'")
+            }
+            return true
+        } catch (e: AllBackendsFailedException) {
+            currentModel = null
+            throw e
+        } catch (e: Exception) {
+            android.util.Log.e("UnifiedInferenceService", "Service ${currentService.javaClass.simpleName} failed to load model '${model.name}'", e)
+            currentModel = null
+            throw AllBackendsFailedException("Failed to load model '${model.name}': ${e.message}")
+        }
     }
 
     override suspend fun loadModel(
@@ -56,14 +73,17 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         disableAudio: Boolean,
         deviceId: String?
     ): Boolean {
-         val newService = when (model.modelFormat) {
+        if (model.modelFormat == "gguf" && (nexaService as? com.llmhub.llmhub.inference.NexaInferenceService)?.isAvailable() != true) {
+            throw AllBackendsFailedException("GGUF models require the Nexa SDK which is not available on this device")
+        }
+        val targetService = when (model.modelFormat) {
             "onnx" -> onnxService
-            "gguf" -> if ((nexaService as? com.llmhub.llmhub.inference.NexaInferenceService)?.isAvailable() == true) nexaService else mediaPipeService
+            "gguf" -> nexaService
             else -> mediaPipeService
         }
 
         // Same service and same model already loaded with same backend: skip reload (honor user's CPU/GPU choice on next load)
-        if (currentService == newService) {
+        if (currentService == targetService) {
             val loaded = currentService.getCurrentlyLoadedModel()
             val currentBackend = currentService.getCurrentlyLoadedBackend()
             if (loaded?.name == model.name && (preferredBackend == null || preferredBackend == currentBackend)) {
@@ -73,14 +93,28 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         }
 
         // If switching services, unload the old one
-        if (currentService != newService && currentModel != null) {
+        if (currentService != targetService && currentModel != null) {
             currentService.unloadModel()
         }
 
-        currentService = newService
+        currentService = targetService
         currentModel = model
         
-        return currentService.loadModel(model, preferredBackend, disableVision, disableAudio, deviceId)
+        try {
+            val success = currentService.loadModel(model, preferredBackend, disableVision, disableAudio, deviceId)
+            if (!success) {
+                currentModel = null
+                throw AllBackendsFailedException("Backend ${currentService.javaClass.simpleName} failed to load model '${model.name}'")
+            }
+            return true
+        } catch (e: AllBackendsFailedException) {
+            currentModel = null
+            throw e
+        } catch (e: Exception) {
+            android.util.Log.e("UnifiedInferenceService", "Service ${currentService.javaClass.simpleName} failed to load model '${model.name}'", e)
+            currentModel = null
+            throw AllBackendsFailedException("Failed to load model '${model.name}': ${e.message}")
+        }
     }
 
     override suspend fun unloadModel() {
@@ -136,11 +170,11 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         return currentService.wasSessionRecentlyReset(chatId)
     }
 
-    override fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?) {
-        mediaPipeService.setGenerationParameters(maxTokens, topK, topP, temperature)
-        onnxService.setGenerationParameters(maxTokens, topK, topP, temperature)
+    override fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?, nGpuLayers: Int?, enableThinking: Boolean?) {
+        mediaPipeService.setGenerationParameters(maxTokens, topK, topP, temperature, nGpuLayers, enableThinking)
+        onnxService.setGenerationParameters(maxTokens, topK, topP, temperature, nGpuLayers, enableThinking)
         if ((nexaService as? com.llmhub.llmhub.inference.NexaInferenceService)?.isAvailable() == true) {
-            nexaService.setGenerationParameters(maxTokens, topK, topP, temperature)
+            nexaService.setGenerationParameters(maxTokens, topK, topP, temperature, nGpuLayers, enableThinking)
         }
     }
 

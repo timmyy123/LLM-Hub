@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">LLM Hub</string>
     
@@ -78,7 +78,7 @@
     <string name="ai_thinking">L\'IA réfléchit...</string>
     <string name="thinking_label">Réflexion</string>
     <string name="thinking_tokens">Réflexion (%1$d jetons)</string>
-    <string name="version_number">Version 3.5.3</string>
+    <string name="version_number">Version 3.6.0</string>
     <string name="app_version">Version de l\'App</string>
     
     <!-- Terms of Service -->
@@ -397,6 +397,7 @@
     <string name="modality_options">Options de Modalité</string>
     <string name="enable_vision">Activer la Vision (Support d\'Images)</string>
     <string name="enable_audio">Activer l\'Audio (Entrée Vocale)</string>
+    <string name="enable_thinking">Activer la Réflexion</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 Pour des performances stables sur les appareils 7-8Go, envisagez de désactiver l\'audio pour économiser la mémoire GPU. La vision est généralement plus stable.</string>
     
     <!-- General performance tip for all devices -->
@@ -687,4 +688,67 @@
     <string name="language_persian">فارسی</string>
     <string name="language_ukrainian">Українська</string>
     <string name="language_hebrew">עברית</string>
+    <!-- New Chat Management & Creator Strings -->
+    <string name="not_loaded">Non chargé</string>
+    <string name="dialog_rename_chat_title">Renommer le Chat</string>
+    <string name="chat_title">Titre du Chat</string>
+    <string name="more_options">Plus d\'Options</string>
+    <string name="dialog_delete_creator_title">Supprimer la Persona?</string>
+    <string name="dialog_delete_creator_message">Supprimer la Persona \"%1\"?</string>
+    <string name="action_rename">Renommer</string>
+
+    <!-- Vibe Coder Feature -->
+    <string name="feature_vibe_coder">VibeCode</string>
+    <string name="feature_vibe_coder_desc">Générer du code HTML, JavaScript et Python avec l\'IA</string>
+    <string name="feature_creator_generation">Personas</string>
+    <string name="feature_creator_generation_desc">Créez vos propres personas d\'IA personnalisées</string>
+    <string name="drawer_my_creators">mes Personas</string>
+    <string name="vibe_coder_title">VibeCode</string>
+    <string name="vibe_coder_prompt_label">Que voulez-vous programmer?</string>
+    <string name="vibe_coder_prompt_hint">Décrivez le code que vous souhaitez générer...</string>
+    <string name="vibe_coder_generate">Générer le Code</string>
+    <string name="vibe_coder_generating">Génération du code...</string>
+    <string name="vibe_coder_generated_code">Code Généré</string>
+    <string name="vibe_coder_copy">Copier</string>
+    <string name="vibe_coder_preview">Aperçu</string>
+    <string name="vibe_coder_no_model">Aucun modèle chargé. Veuillez d\'abord télécharger et sélectionner un modèle.</string>
+    <string name="vibe_coder_settings">Paramètres</string>
+    <string name="vibe_coder_backend_select">Sélectionner le Backend</string>
+
+    <!-- VibeCode additions -->
+    <string name="vibe_coder_modification_mode">Mode Modification</string>
+    <string name="vibe_coder_refine">Affiner le Code</string>
+    <string name="vibe_coder_clear">Nouveau Projet / Effacer le Contexte</string>
+    <string name="vibe_coder_planning">Planification de l\'architecture...</string>
+    <string name="vibe_coder_revising">Révision du code...</string>
+
+    <!-- Creator Generation Screen -->
+    <string name="creator_screen_title">Nouveau Personnage IA</string>
+    <string name="creator_bring_to_life">Donnez vie à une IA</string>
+    <string name="creator_description">Vous avez le pouvoir de donner vie à un personnage IA personnalisé. Décrivez simplement comment votre personnage répondra à toute entrée, demande ou idée. Une fois votre personnage créé, vous pourrez l\'utiliser dans le chat.</string>
+    <string name="creator_prompt_label">Décrivez votre personnage IA...</string>
+    <string name="creator_prompt_placeholder">ex., résumez n\'importe quel sujet en poème rimé de moins de 10 lignes</string>
+    <string name="creator_brewing">la magie opère...</string>
+    <string name="creator_generate_persona">Générer un Personnage</string>
+    <string name="creator_load_model_first">Veuillez d\'abord charger un modèle.</string>
+    <string name="creator_result_heading">Voici votre nouveau personnage IA !</string>
+    <string name="creator_system_prompt_label">Invite Système (PCTF) :</string>
+    <string name="creator_save_and_chat">Sauvegarder et Chatter</string>
+
+    <!-- Kid Mode -->
+    <string name="kid_mode_title">Mode Enfant</string>
+    <string name="kid_mode_enabled_status">Activé - Protections de sécurité actives</string>
+    <string name="kid_mode_disabled_status">Désactivé</string>
+    <string name="kid_mode_incorrect_pin">Code PIN incorrect</string>
+    <string name="kid_mode_set_pin_title">Définir le PIN du Mode Enfant</string>
+    <string name="kid_mode_set_pin_body">Entrez un PIN à 4 chiffres pour activer le Mode Enfant. Vous aurez besoin de ce PIN pour le désactiver ultérieurement.</string>
+    <string name="kid_mode_pin_label">PIN à 4 Chiffres</string>
+    <string name="kid_mode_pin_error">Le PIN doit comporter 4 chiffres</string>
+    <string name="kid_mode_enable">Activer</string>
+    <string name="kid_mode_disable_title">Désactiver le Mode Enfant</string>
+    <string name="kid_mode_verify_body">Entrez votre PIN à 4 chiffres pour désactiver le Mode Enfant.</string>
+    <string name="kid_mode_disable">Désactiver</string>
+
+    <string name="gpu_layers_label">GPU Layers: %1$d</string>
+    <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
 </resources>
