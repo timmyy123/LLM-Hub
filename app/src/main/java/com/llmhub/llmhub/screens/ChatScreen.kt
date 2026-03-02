@@ -453,7 +453,7 @@ fun ChatScreen(
                 Log.d("ChatScreen", "Model configs confirmed: maxTokens=$maxTokens topK=$topK topP=$topP temperature=$temperature backend=$backend deviceId=$deviceId disableVision=$disableVision disableAudio=$disableAudio nGpuLayers=$nGpuLayers enableThinking=$enableThinking for model ${model.name}")
                 
                 // Push generation parameters to inference service via ViewModel
-                viewModel.setGenerationParameters(maxTokens, topK, topP, temperature)
+                viewModel.setGenerationParameters(maxTokens, topK, topP, temperature, nGpuLayers, enableThinking)
                 
                 if (backend != null) {
                     viewModel.switchModelWithBackend(model, backend, disableVision, disableAudio)
