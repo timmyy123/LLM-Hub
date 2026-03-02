@@ -322,6 +322,8 @@ class NexaInferenceService @Inject constructor(
                     else -> overrideNGpuLayers ?: 999
                 }
 
+                Log.i(TAG, "Load config: backend=$backendId deviceId=$deviceId nGpuLayers=$gpuLayers (override=$overrideNGpuLayers) nCtx=$nCtx enableThinking=$overrideEnableThinking")
+
                 if (isNpuRequested) {
                     Log.i(TAG, "NPU requested: deviceId=$deviceId -> nGpuLayers=$gpuLayers plugin=cpu_gpu (per Nexa docs)")
                 }

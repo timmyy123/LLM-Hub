@@ -454,8 +454,11 @@ fun ChatScreen(
                 
                 // Push generation parameters to inference service via ViewModel
                 viewModel.setGenerationParameters(maxTokens, topK, topP, temperature, nGpuLayers, enableThinking)
-                
+
+                // Always sync backend + deviceId so stale NPU device from a previous session
+                // doesn't override the user's current selection (e.g. GPU with deviceId=null)
                 if (backend != null) {
+                    viewModel.selectBackend(backend, deviceId)
                     viewModel.switchModelWithBackend(model, backend, disableVision, disableAudio)
                 } else {
                     viewModel.switchModel(model)
