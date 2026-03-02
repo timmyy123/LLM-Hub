@@ -659,12 +659,14 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
      */
     private fun buildSpecPrompt(userRequest: String, currentCode: String): String {
         val isRevision = currentCode.isNotBlank()
-        val systemInstructions = """
+        return """
             You are a helpful Technical Assistant.
             Your goal is to expand the user's request into a clear, concise list of functional requirements.
 
             CONTEXT:
-            ${if (isRevision) "The user wants to MODIFY existing code." else "This is a NEW project request."}
+            ${if (isRevision) "The user wants to MODIFY this existing code:\n$currentCode" else "This is a NEW project request."}
+
+            USER REQUEST: "$userRequest"
 
             TASK:
             1. Identify the core features needed.
@@ -680,17 +682,6 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             Output ONLY the list. Do not write code or introductions.
             IMPORTANT: Respond in the same language as the user's request.
         """.trimIndent()
-
-        val userPayload = buildString {
-            append("USER REQUEST:\n")
-            append(userRequest.trim())
-            if (isRevision) {
-                append("\n\nEXISTING CODE:\n")
-                append(currentCode)
-            }
-        }
-
-        return "system: $systemInstructions\n\nuser: $userPayload"
     }
 
     /**
@@ -700,11 +691,14 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
      * Build the Developer Implementation Prompt (Step 2 - New Project)
      */
     private fun buildImplementationPrompt(requirements: String): String {
-        val systemInstructions = """
+        return """
             You are an expert developer who is adept at generating production-ready stand-alone apps and games.
             **CRITICAL STACK RULE:** You MUST default to HTML/JS for ALL games and apps. HTML/JS is required because it runs natively in the user's view. Python cannot render UI or playable games in this environment, and should be a LAST RESORT used ONLY for pure math/charting tasks, backend/scripting tasks meant to be copied, or if the user explicitly asks for Python.
 
-            Your task is to generate clean, functional code based on provided requirements.
+            Your task is to generate clean, functional code based on the Requirements provided below.
+
+            REQUIREMENTS:
+            $requirements
 
             Think about how to meet these requirements for the best stand-alone functional code to delight the user.
 
@@ -750,11 +744,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             ```
             - Respond ONLY with the production-ready stand-alone code in a markdown code block. DO NOT include explanations, warnings, or additional text before or after the code block.
             IMPORTANT: All UI text, labels, button text, and messages in the generated code must be in the same language as the user's input.
-
         """.trimIndent()
-
-        val userPayload = "REQUIREMENTS:\n${requirements.trim()}"
-        return "system: $systemInstructions\n\nuser: $userPayload"
     }
 
     /**
@@ -762,7 +752,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
      * Direct Code Modification skipping the Architect.
      */
     private fun buildModificationPrompt(userRequest: String, currentCode: String): String {
-        val systemInstructions = """
+        return """
             You are an expert developer. The user wants to MODIFY the existing code below.
             
             **CRITICAL STACK RULE:** You MUST keep or default to HTML/JS if generating UI-based code. Python cannot render UI in this environment and is ONLY for math/charting, back-end scripts, or if explicitly requested.
@@ -792,16 +782,6 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             - No explanations.
             IMPORTANT: All UI text, labels, button text, and messages in the generated code must be in the same language as the user's request.
         """.trimIndent()
-
-        val userPayload = """
-            USER REQUEST:
-            ${userRequest.trim()}
-
-            EXISTING CODE:
-            $currentCode
-        """.trimIndent()
-
-        return "system: $systemInstructions\n\nuser: $userPayload"
     }
 
     /**
@@ -809,11 +789,13 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
      * Used when Planning Phase fails or times out.
      */
     private fun buildPrompt(userPrompt: String): String {
-        val systemInstructions = """
+        return """
             You are an expert developer who is adept at generating production-ready stand-alone apps and games.
             **CRITICAL STACK RULE:** You MUST default to HTML/JS for ALL games and apps. HTML/JS is required because it runs natively in the user's view. Python cannot render UI or playable games in this environment, and should be a LAST RESORT used ONLY for pure math/charting tasks, backend/scripting tasks meant to be copied, or if the user explicitly asks for Python.
 
             Your task is to generate clean, functional code based on the current user request.
+
+            User request: $userPrompt
 
             Think about how to meet the user's request for the best stand-alone functional code to delight the user, considering the constraints and requirements that follow.
 
@@ -858,10 +840,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             ```
             - Respond ONLY with the production-ready stand-alone code in a markdown code block. DO NOT include explanations, warnings, or additional text before or after the code block.
             IMPORTANT: All UI text, labels, button text, and messages in the generated code must be in the same language as the user's input.
-
         """.trimIndent()
-
-        return "system: $systemInstructions\n\nuser: ${userPrompt.trim()}"
     }
     
     override fun onCleared() {
