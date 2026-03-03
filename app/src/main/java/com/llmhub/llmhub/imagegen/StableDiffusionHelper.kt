@@ -217,10 +217,27 @@ class StableDiffusionHelper(private val context: Context) {
                 }
             }
             
+            val kidModeManager = com.llmhub.llmhub.utils.KidModeManager(context)
+            val isKidMode = kidModeManager.isKidModeEnabled.value
+            
+            var finalPrompt = prompt
+            var finalNegativePrompt = negativePrompt
+            
+            if (isKidMode) {
+                val lowerPrompt = prompt.lowercase()
+                val blockedWords = listOf("nsfw", "nude", "naked", "sex", "porn", "gore", "blood", "kill", "murder", "violence", "explicit","erotic", "hentai")
+                if (blockedWords.any { lowerPrompt.contains(it) }) {
+                    throw Exception("Kid Mode: Inappropriate content detected in prompt.")
+                }
+                
+                finalPrompt = "safe, family friendly, educational, $prompt"
+                finalNegativePrompt = "$negativePrompt, nsfw, nude, naked, sexually suggestive, explicit, gore, violence, blood, scary"
+            }
+
             // Build JSON request body
             val json = JSONObject().apply {
-                put("prompt", prompt)
-                put("negative_prompt", negativePrompt)
+                put("prompt", finalPrompt)
+                put("negative_prompt", finalNegativePrompt)
                 put("steps", steps)
                 put("cfg", cfg.toDouble())
                 if (seed != null) put("seed", seed)
