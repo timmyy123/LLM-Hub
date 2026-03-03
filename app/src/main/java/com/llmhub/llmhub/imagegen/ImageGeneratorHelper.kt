@@ -111,6 +111,8 @@ class ImageGeneratorHelper(private val context: Context) {
             }
             
             bitmap
+        } catch (e: SecurityException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to generate image: ${e.message}", e)
             null

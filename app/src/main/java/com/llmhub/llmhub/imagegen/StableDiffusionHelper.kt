@@ -227,7 +227,7 @@ class StableDiffusionHelper(private val context: Context) {
                 val lowerPrompt = prompt.lowercase()
                 val blockedWords = listOf("nsfw", "nude", "naked", "sex", "porn", "gore", "blood", "kill", "murder", "violence", "explicit","erotic", "hentai")
                 if (blockedWords.any { lowerPrompt.contains(it) }) {
-                    throw Exception("Kid Mode: Inappropriate content detected in prompt.")
+                    throw SecurityException("Kid Mode violation: can't generate that.")
                 }
                 
                 finalPrompt = "safe, family friendly, educational, $prompt"
@@ -366,6 +366,8 @@ class StableDiffusionHelper(private val context: Context) {
             }
             
             bitmap
+        } catch (e: SecurityException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to generate image: ${e.message}", e)
             null
