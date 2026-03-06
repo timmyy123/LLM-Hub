@@ -34,6 +34,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.GetApp
 import androidx.compose.material.icons.filled.ModelTraining
@@ -112,6 +113,8 @@ fun VibeCoderScreen(
     var chatPaneRatio by rememberSaveable { mutableStateOf(0.36f) }
     var showNewFileDialog by remember { mutableStateOf(false) }
     var newFileNameInput by rememberSaveable { mutableStateOf("") }
+    var pendingDeleteChatId by remember { mutableStateOf<String?>(null) }
+    var pendingDeleteFile by remember { mutableStateOf<Pair<String, String>?>(null) }
 
     val availableModels by viewModel.availableModels.collectAsState()
     val selectedModel by viewModel.selectedModel.collectAsState()
@@ -233,35 +236,50 @@ fun VibeCoderScreen(
             folderFiles = emptyList()
             return emptyList()
         }
-        val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, docId)
+        val files = mutableListOf<Pair<String, String>>()
         val proj = arrayOf(
             DocumentsContract.Document.COLUMN_DOCUMENT_ID,
             DocumentsContract.Document.COLUMN_DISPLAY_NAME,
             DocumentsContract.Document.COLUMN_MIME_TYPE
         )
-        val files = mutableListOf<Pair<String, String>>()
-        runCatching {
-            context.contentResolver.query(childrenUri, proj, null, null, null)?.use { cursor ->
-                val idIdx = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
-                val nameIdx = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
-                val mimeIdx = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_MIME_TYPE)
-                while (cursor.moveToNext()) {
-                    if (idIdx < 0 || nameIdx < 0 || mimeIdx < 0) continue
-                    val childDocId = cursor.getString(idIdx) ?: continue
-                    val name = cursor.getString(nameIdx) ?: continue
-                    val mime = cursor.getString(mimeIdx) ?: continue
-                    if (mime == DocumentsContract.Document.MIME_TYPE_DIR) continue
-                    val n = name.lowercase()
-                    val isCode = n.endsWith(".py") || n.endsWith(".js") || n.endsWith(".ts") || n.endsWith(".java") ||
-                        n.endsWith(".kt") || n.endsWith(".cs") || n.endsWith(".cpp") || n.endsWith(".cc") ||
-                        n.endsWith(".cxx") || n.endsWith(".go") || n.endsWith(".rs") || n.endsWith(".html") ||
-                        n.endsWith(".htm") || n.endsWith(".css")
-                    if (!isCode) continue
-                    val childUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, childDocId)
-                    files.add(Pair(childUri.toString(), name))
+
+        fun isQualifiedCodeFile(name: String): Boolean {
+            val n = name.lowercase()
+            val supportedExts = listOf(
+                "py", "js", "ts", "java", "kt", "cs", "cpp", "cc", "cxx", "c", "h",
+                "go", "rs", "html", "htm", "css", "php", "rb", "swift", "dart",
+                "lua", "sh", "bash", "zsh", "sql"
+            )
+            if (supportedExts.any { n.endsWith(".$it") }) return true
+            // Some providers coerce unknown text MIME names like "foo.java" into "foo.java.txt".
+            // Accept files that still contain a supported extension segment.
+            return supportedExts.any { n.contains(".$it.") }
+        }
+
+        fun scanFolder(folderDocId: String, pathPrefix: String) {
+            val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, folderDocId)
+            runCatching {
+                context.contentResolver.query(childrenUri, proj, null, null, null)?.use { cursor ->
+                    val idIdx = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
+                    val nameIdx = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
+                    val mimeIdx = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_MIME_TYPE)
+                    while (cursor.moveToNext()) {
+                        if (idIdx < 0 || nameIdx < 0 || mimeIdx < 0) continue
+                        val childDocId = cursor.getString(idIdx) ?: continue
+                        val name = cursor.getString(nameIdx) ?: continue
+                        val mime = cursor.getString(mimeIdx) ?: continue
+                        if (mime == DocumentsContract.Document.MIME_TYPE_DIR) {
+                            scanFolder(childDocId, "$pathPrefix$name/")
+                            continue
+                        }
+                        if (!isQualifiedCodeFile(name)) continue
+                        val childUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, childDocId)
+                        files.add(Pair(childUri.toString(), "$pathPrefix$name"))
+                    }
                 }
             }
         }
+        scanFolder(docId, "")
         files.sortBy { it.second.lowercase() }
         folderFiles = files
         return files
@@ -276,21 +294,70 @@ fun VibeCoderScreen(
             fileName.endsWith(".py", true) -> "text/x-python"
             fileName.endsWith(".js", true) -> "application/javascript"
             fileName.endsWith(".ts", true) -> "application/typescript"
+            fileName.endsWith(".java", true) -> "text/x-java-source"
+            fileName.endsWith(".kt", true) -> "text/x-kotlin"
+            fileName.endsWith(".cs", true) -> "text/x-csharp"
             fileName.endsWith(".html", true) || fileName.endsWith(".htm", true) -> "text/html"
             fileName.endsWith(".css", true) -> "text/css"
+            fileName.endsWith(".c", true) || fileName.endsWith(".h", true) ||
+                fileName.endsWith(".cpp", true) || fileName.endsWith(".cc", true) || fileName.endsWith(".cxx", true) -> "text/x-c"
+            fileName.endsWith(".go", true) -> "text/x-go"
+            fileName.endsWith(".rs", true) -> "text/x-rustsrc"
+            fileName.endsWith(".php", true) -> "application/x-httpd-php"
+            fileName.endsWith(".rb", true) -> "text/x-ruby"
+            fileName.endsWith(".swift", true) -> "text/x-swift"
+            fileName.endsWith(".dart", true) -> "application/dart"
+            fileName.endsWith(".lua", true) -> "text/x-lua"
+            fileName.endsWith(".sh", true) || fileName.endsWith(".bash", true) || fileName.endsWith(".zsh", true) -> "application/x-sh"
+            fileName.endsWith(".sql", true) -> "application/sql"
             else -> "text/plain"
         }
         val newUri = runCatching {
             DocumentsContract.createDocument(context.contentResolver, parentDocUri, mime, fileName)
         }.getOrNull()
         if (newUri != null) {
+            // Some providers coerce unknown source-code files to *.txt.
+            // Force the requested filename/extension when possible.
+            val actualName = runCatching {
+                context.contentResolver.query(newUri, null, null, null, null)?.use { cursor ->
+                    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (cursor.moveToFirst() && nameIndex >= 0) cursor.getString(nameIndex) else null
+                }
+            }.getOrNull()
+            val resolvedUri = if (!actualName.isNullOrBlank() && actualName != fileName) {
+                runCatching {
+                    DocumentsContract.renameDocument(context.contentResolver, newUri, fileName)
+                }.getOrNull() ?: newUri
+            } else {
+                newUri
+            }
             runCatching {
-                context.contentResolver.openOutputStream(newUri, "wt")?.use { os ->
+                context.contentResolver.openOutputStream(resolvedUri, "wt")?.use { os ->
                     os.write(ByteArray(0))
                     os.flush()
                 }
             }
-            loadFileFromUri(newUri.toString())
+            loadFileFromUri(resolvedUri.toString())
+            refreshFolderFiles(currentFolderUri)
+        }
+    }
+
+    fun deleteFileByUri(uriString: String) {
+        val uri = android.net.Uri.parse(uriString)
+        val ok = runCatching { DocumentsContract.deleteDocument(context.contentResolver, uri) }.getOrDefault(false)
+        if (!ok) {
+            viewModel.setError("Failed to delete file")
+            return
+        }
+        if (currentFileUri == uriString) {
+            val files = refreshFolderFiles(currentFolderUri)
+            val next = files.firstOrNull()?.first
+            if (next != null) {
+                loadFileFromUri(next)
+            } else {
+                viewModel.clearCurrentFileSession()
+            }
+        } else {
             refreshFolderFiles(currentFolderUri)
         }
     }
@@ -467,6 +534,7 @@ fun VibeCoderScreen(
                                 folderFiles = folderFiles,
                                 currentFileUri = currentFileUri,
                                 onSelectFolderFile = { uri -> loadFileFromUri(uri) },
+                                onDeleteFolderFile = { uri, name -> pendingDeleteFile = uri to name },
                                 onNewFile = {
                                     showNewFileDialog = true
                                 },
@@ -507,6 +575,7 @@ fun VibeCoderScreen(
                                     onHidePanel = { chatPaneVisible = false },
                                     onNewChat = { viewModel.createNewChatSession() },
                                     onSelectChat = { viewModel.selectChatSession(it) },
+                                    onDeleteChat = { pendingDeleteChatId = it },
                                     onEditPrompt = { id, text -> viewModel.editAndResendFromPrompt(id, text) },
                                     onSend = {
                                         val p = chatInput.trim()
@@ -547,6 +616,7 @@ fun VibeCoderScreen(
                             onHidePanel = null,
                             onNewChat = { viewModel.createNewChatSession() },
                             onSelectChat = { viewModel.selectChatSession(it) },
+                            onDeleteChat = { pendingDeleteChatId = it },
                             onEditPrompt = { id, text -> viewModel.editAndResendFromPrompt(id, text) },
                             onSend = {
                                 val p = chatInput.trim()
@@ -573,6 +643,7 @@ fun VibeCoderScreen(
                             folderFiles = folderFiles,
                             currentFileUri = currentFileUri,
                             onSelectFolderFile = { uri -> loadFileFromUri(uri) },
+                            onDeleteFolderFile = { uri, name -> pendingDeleteFile = uri to name },
                             onNewFile = {
                                 showNewFileDialog = true
                             },
@@ -652,6 +723,41 @@ fun VibeCoderScreen(
         )
     }
 
+    if (pendingDeleteChatId != null) {
+        AlertDialog(
+            onDismissRequest = { pendingDeleteChatId = null },
+            title = { Text("Delete chat?") },
+            text = { Text("This will permanently remove this chat session.") },
+            confirmButton = {
+                Button(onClick = {
+                    pendingDeleteChatId?.let { viewModel.deleteChatSession(it) }
+                    pendingDeleteChatId = null
+                }) { Text("Delete") }
+            },
+            dismissButton = {
+                Button(onClick = { pendingDeleteChatId = null }) { Text("Cancel") }
+            }
+        )
+    }
+
+    if (pendingDeleteFile != null) {
+        val (uri, name) = pendingDeleteFile!!
+        AlertDialog(
+            onDismissRequest = { pendingDeleteFile = null },
+            title = { Text("Delete file?") },
+            text = { Text("Delete `$name` from this folder?") },
+            confirmButton = {
+                Button(onClick = {
+                    deleteFileByUri(uri)
+                    pendingDeleteFile = null
+                }) { Text("Delete") }
+            },
+            dismissButton = {
+                Button(onClick = { pendingDeleteFile = null }) { Text("Cancel") }
+            }
+        )
+    }
+
 }
 
 @Composable
@@ -671,6 +777,7 @@ private fun ChatPane(
     onHidePanel: (() -> Unit)?,
     onNewChat: () -> Unit,
     onSelectChat: (String) -> Unit,
+    onDeleteChat: (String) -> Unit,
     onEditPrompt: (String, String) -> Unit,
     onSend: () -> Unit,
     onClearChat: () -> Unit
@@ -750,15 +857,28 @@ private fun ChatPane(
                 ) {
                     items(chatSessions) { s ->
                         val selected = s.id == activeChatSessionId
-                        Button(
-                            onClick = { onSelectChat(s.id) },
-                            modifier = Modifier.height(30.dp),
+                        Surface(
                             shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
-                            )
+                            color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
                         ) {
-                            Text(s.title, style = MaterialTheme.typography.labelSmall)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Button(
+                                    onClick = { onSelectChat(s.id) },
+                                    modifier = Modifier.height(30.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+                                    )
+                                ) {
+                                    Text(s.title, style = MaterialTheme.typography.labelSmall)
+                                }
+                                IconButton(
+                                    onClick = { onDeleteChat(s.id) },
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(Icons.Default.Close, contentDescription = "Delete chat", modifier = Modifier.size(14.dp))
+                                }
+                            }
                         }
                     }
                 }
@@ -892,6 +1012,7 @@ private fun EditorPane(
     folderFiles: List<Pair<String, String>>,
     currentFileUri: String?,
     onSelectFolderFile: (String) -> Unit,
+    onDeleteFolderFile: (String, String) -> Unit,
     onNewFile: () -> Unit,
     onSaveFile: () -> Unit,
     onCopy: () -> Unit,
@@ -961,15 +1082,28 @@ private fun EditorPane(
                 ) {
                     items(folderFiles) { item ->
                         val selected = item.first == currentFileUri
-                        Button(
-                            onClick = { onSelectFolderFile(item.first) },
-                            modifier = Modifier.height(30.dp),
+                        Surface(
                             shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
-                            )
+                            color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
                         ) {
-                            Text(item.second, style = MaterialTheme.typography.labelSmall)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Button(
+                                    onClick = { onSelectFolderFile(item.first) },
+                                    modifier = Modifier.height(30.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+                                    )
+                                ) {
+                                    Text(item.second, style = MaterialTheme.typography.labelSmall)
+                                }
+                                IconButton(
+                                    onClick = { onDeleteFolderFile(item.first, item.second) },
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(Icons.Default.Close, contentDescription = "Delete file", modifier = Modifier.size(14.dp))
+                                }
+                            }
                         }
                     }
                 }
