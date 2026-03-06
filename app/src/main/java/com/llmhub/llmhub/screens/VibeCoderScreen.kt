@@ -874,9 +874,19 @@ private fun ChatPane(
                 ) {
                     items(chatSessions) { s ->
                         val selected = s.id == activeChatSessionId
+                        val chipContainerColor = if (selected) {
+                            MaterialTheme.colorScheme.primaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.secondaryContainer
+                        }
+                        val chipContentColor = if (selected) {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.onSecondaryContainer
+                        }
                         Surface(
                             shape = RoundedCornerShape(16.dp),
-                            color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+                            color = chipContainerColor
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Button(
@@ -884,16 +894,26 @@ private fun ChatPane(
                                     modifier = Modifier.height(30.dp),
                                     shape = RoundedCornerShape(16.dp),
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+                                        containerColor = chipContainerColor,
+                                        contentColor = chipContentColor
                                     )
                                 ) {
-                                    Text(s.title, style = MaterialTheme.typography.labelSmall)
+                                    Text(
+                                        s.title,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = chipContentColor
+                                    )
                                 }
                                 IconButton(
                                     onClick = { onDeleteChat(s.id) },
                                     modifier = Modifier.size(24.dp)
                                 ) {
-                                    Icon(Icons.Default.Close, contentDescription = "Delete chat", modifier = Modifier.size(14.dp))
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = "Delete chat",
+                                        modifier = Modifier.size(14.dp),
+                                        tint = chipContentColor
+                                    )
                                 }
                             }
                         }
@@ -1118,9 +1138,19 @@ private fun EditorPane(
                 ) {
                     items(folderFiles) { item ->
                         val selected = item.first == currentFileUri
+                        val chipContainerColor = if (selected) {
+                            MaterialTheme.colorScheme.primaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.secondaryContainer
+                        }
+                        val chipContentColor = if (selected) {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.onSecondaryContainer
+                        }
                         Surface(
                             shape = RoundedCornerShape(16.dp),
-                            color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+                            color = chipContainerColor
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Button(
@@ -1128,16 +1158,26 @@ private fun EditorPane(
                                     modifier = Modifier.height(30.dp),
                                     shape = RoundedCornerShape(16.dp),
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+                                        containerColor = chipContainerColor,
+                                        contentColor = chipContentColor
                                     )
                                 ) {
-                                    Text(item.second, style = MaterialTheme.typography.labelSmall)
+                                    Text(
+                                        item.second,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = chipContentColor
+                                    )
                                 }
                                 IconButton(
                                     onClick = { onDeleteFolderFile(item.first, item.second) },
                                     modifier = Modifier.size(24.dp)
                                 ) {
-                                    Icon(Icons.Default.Close, contentDescription = "Delete file", modifier = Modifier.size(14.dp))
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = "Delete file",
+                                        modifier = Modifier.size(14.dp),
+                                        tint = chipContentColor
+                                    )
                                 }
                             }
                         }
