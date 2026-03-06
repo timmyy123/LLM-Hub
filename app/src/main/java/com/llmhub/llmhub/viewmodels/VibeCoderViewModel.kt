@@ -22,7 +22,25 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 enum class CodeLanguage {
-    HTML, PYTHON, JAVASCRIPT, UNKNOWN
+    HTML,
+    PYTHON,
+    JAVASCRIPT,
+    TYPESCRIPT,
+    JAVA,
+    KOTLIN,
+    CSHARP,
+    C,
+    CPP,
+    GO,
+    RUST,
+    SWIFT,
+    DART,
+    PHP,
+    RUBY,
+    LUA,
+    SHELL,
+    SQL,
+    UNKNOWN
 }
 
 enum class ProgrammingLanguage {
@@ -30,12 +48,20 @@ enum class ProgrammingLanguage {
     PYTHON,
     JAVASCRIPT,
     TYPESCRIPT,
-    JAVA,
-    KOTLIN,
-    CSHARP,
+    C,
     CPP,
+    CSHARP,
+    DART,
     GO,
-    RUST
+    LUA,
+    PHP,
+    RUBY,
+    RUST,
+    SHELL,
+    SQL,
+    SWIFT,
+    JAVA,
+    KOTLIN
 }
 
 data class VibeChatMessage(
@@ -358,6 +384,28 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         currentPromptMessageId = null
         saveSettings()
     }
+
+    fun deleteChatSession(sessionId: String) {
+        if (!chatSessionStore.containsKey(sessionId)) return
+        if (chatSessionStore.size <= 1) {
+            // Keep at least one session available.
+            clearChatSession()
+            return
+        }
+        chatSessionStore.remove(sessionId)
+        val nextId = if (_activeChatSessionId.value == sessionId) {
+            chatSessionStore.keys.firstOrNull()
+        } else {
+            _activeChatSessionId.value
+        }
+        _chatSessions.value = chatSessionStore.values.map { VibeChatSessionSummary(it.id, it.title) }
+        if (nextId != null) {
+            selectChatSession(nextId)
+        } else {
+            createNewChatSession()
+        }
+        saveSettings()
+    }
     
     /**
      * Load all available models from device
@@ -463,6 +511,16 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         _pendingProposal.value = null
         saveSettings()
         appendChat("assistant", "Started new file: $fileName")
+    }
+
+    fun clearCurrentFileSession() {
+        _currentFileUri.value = null
+        _currentFileName.value = null
+        _generatedCode.value = ""
+        _codeLanguage.value = CodeLanguage.UNKNOWN
+        _isDirty.value = false
+        _pendingProposal.value = null
+        saveSettings()
     }
 
     fun markSaved(fileUri: String, fileName: String) {
@@ -629,10 +687,25 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     private fun languageFromFileName(fileName: String?): CodeLanguage {
-        val n = fileName?.lowercase() ?: return CodeLanguage.UNKNOWN
+        val n = fileName?.lowercase()?.substringBeforeLast(".txt") ?: return CodeLanguage.UNKNOWN
         return when {
             n.contains(".py") -> CodeLanguage.PYTHON
-            n.contains(".js") || n.contains(".ts") -> CodeLanguage.JAVASCRIPT
+            n.contains(".js") -> CodeLanguage.JAVASCRIPT
+            n.contains(".ts") -> CodeLanguage.TYPESCRIPT
+            n.contains(".java") -> CodeLanguage.JAVA
+            n.contains(".kt") -> CodeLanguage.KOTLIN
+            n.contains(".cs") -> CodeLanguage.CSHARP
+            n.contains(".cpp") || n.contains(".cc") || n.contains(".cxx") -> CodeLanguage.CPP
+            n.contains(".c") || n.contains(".h") -> CodeLanguage.C
+            n.contains(".go") -> CodeLanguage.GO
+            n.contains(".rs") -> CodeLanguage.RUST
+            n.contains(".swift") -> CodeLanguage.SWIFT
+            n.contains(".dart") -> CodeLanguage.DART
+            n.contains(".php") -> CodeLanguage.PHP
+            n.contains(".rb") -> CodeLanguage.RUBY
+            n.contains(".lua") -> CodeLanguage.LUA
+            n.contains(".sh") || n.contains(".bash") || n.contains(".zsh") -> CodeLanguage.SHELL
+            n.contains(".sql") -> CodeLanguage.SQL
             n.contains(".html") || n.contains(".htm") || n.contains(".css") -> CodeLanguage.HTML
             else -> CodeLanguage.UNKNOWN
         }
@@ -644,6 +717,14 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             n.contains(".py") -> ProgrammingLanguage.PYTHON
             n.contains(".js") -> ProgrammingLanguage.JAVASCRIPT
             n.contains(".ts") -> ProgrammingLanguage.TYPESCRIPT
+            n.contains(".c") || n.contains(".h") -> ProgrammingLanguage.C
+            n.contains(".php") -> ProgrammingLanguage.PHP
+            n.contains(".rb") -> ProgrammingLanguage.RUBY
+            n.contains(".swift") -> ProgrammingLanguage.SWIFT
+            n.contains(".dart") -> ProgrammingLanguage.DART
+            n.contains(".lua") -> ProgrammingLanguage.LUA
+            n.contains(".sh") || n.contains(".bash") || n.contains(".zsh") -> ProgrammingLanguage.SHELL
+            n.contains(".sql") -> ProgrammingLanguage.SQL
             n.contains(".java") -> ProgrammingLanguage.JAVA
             n.contains(".kt") -> ProgrammingLanguage.KOTLIN
             n.contains(".cs") -> ProgrammingLanguage.CSHARP
@@ -663,6 +744,14 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             ProgrammingLanguage.PYTHON -> Triple("Python", "Build a runnable Python script using only standard library.", "python")
             ProgrammingLanguage.JAVASCRIPT -> Triple("JavaScript", "Build a runnable JavaScript program (no TypeScript).", "javascript")
             ProgrammingLanguage.TYPESCRIPT -> Triple("TypeScript", "Build a runnable TypeScript program with clear types.", "typescript")
+            ProgrammingLanguage.C -> Triple("C", "Build a runnable C program with int main().", "c")
+            ProgrammingLanguage.PHP -> Triple("PHP", "Build a runnable PHP script.", "php")
+            ProgrammingLanguage.RUBY -> Triple("Ruby", "Build a runnable Ruby script.", "ruby")
+            ProgrammingLanguage.SWIFT -> Triple("Swift", "Build a runnable Swift program.", "swift")
+            ProgrammingLanguage.DART -> Triple("Dart", "Build a runnable Dart program.", "dart")
+            ProgrammingLanguage.LUA -> Triple("Lua", "Build a runnable Lua script.", "lua")
+            ProgrammingLanguage.SHELL -> Triple("Shell", "Build a runnable POSIX shell script.", "sh")
+            ProgrammingLanguage.SQL -> Triple("SQL", "Build valid SQL statements with clear schema assumptions.", "sql")
             ProgrammingLanguage.JAVA -> Triple("Java", "Build a runnable Java program with a main method.", "java")
             ProgrammingLanguage.KOTLIN -> Triple("Kotlin", "Build a runnable Kotlin console program with a main function.", "kotlin")
             ProgrammingLanguage.CSHARP -> Triple("C#", "Build a runnable C# console app entry point.", "csharp")
@@ -827,7 +916,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                         CodeLanguage.HTML -> "html"
                         CodeLanguage.PYTHON -> "python"
                         CodeLanguage.JAVASCRIPT -> "javascript"
-                        CodeLanguage.UNKNOWN -> ""
+                        else -> ""
                     }
                     val fencedCode = if (chatLang.isNotBlank()) {
                         "```$chatLang\n$proposedCode\n```"
