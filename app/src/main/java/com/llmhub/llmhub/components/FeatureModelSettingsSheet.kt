@@ -1,6 +1,7 @@
 package com.llmhub.llmhub.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -69,7 +70,8 @@ fun FeatureModelSettingsSheet(
     onMaxTokensChanged: (Int) -> Unit,
     onLoadModel: (model: LLMModel, maxTokens: Int, backend: LlmInference.Backend?, deviceId: String?, nGpuLayers: Int, enableThinking: Boolean) -> Unit,
     onUnloadModel: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    extraModelConfigsContent: (@Composable ColumnScope.() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -541,6 +543,8 @@ fun FeatureModelSettingsSheet(
                                 )
                             }
                         }
+
+                        extraModelConfigsContent?.invoke(this)
                     }
                 }
             }
