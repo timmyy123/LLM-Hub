@@ -351,6 +351,10 @@ class NexaInferenceService @Inject constructor(
                     nGpuLayers = gpuLayers,
                     enable_thinking = isThinkingModelForConfig
                 )
+                Log.i(
+                    TAG,
+                    "Nexa create config: backend=$backendId plugin=$pluginToUse device=$deviceToUse requestedNGpuLayers=${overrideNGpuLayers ?: 999} appliedNGpuLayers=${modelConfig.nGpuLayers}"
+                )
 
                 // Find mmproj path for VLM models (only when vision is enabled)
                 val mmprojPath = if (model.supportsVision && !disableVision) {
@@ -381,6 +385,10 @@ class NexaInferenceService @Inject constructor(
                         currentModel = model
                         currentPreferredBackend = if (backendId == "CPU") LlmInference.Backend.CPU else LlmInference.Backend.GPU
                         currentVisionDisabled = disableVision
+                        Log.i(
+                            TAG,
+                            "Nexa applied config (VLM): backend=$backendId plugin=$pluginToUse device=$deviceToUse appliedNGpuLayers=${modelConfig.nGpuLayers}"
+                        )
                         val resolvedBackend = if (!deviceToUse.isNullOrBlank() && (
                             deviceToUse.startsWith("dev", ignoreCase = true) ||
                             deviceToUse.startsWith("htp", ignoreCase = true)
@@ -419,6 +427,10 @@ class NexaInferenceService @Inject constructor(
                         currentModel = model
                         currentPreferredBackend = if (backendId == "CPU") LlmInference.Backend.CPU else LlmInference.Backend.GPU
                         currentVisionDisabled = disableVision
+                        Log.i(
+                            TAG,
+                            "Nexa applied config (LLM): backend=$backendId plugin=$pluginToUse device=$deviceToUse appliedNGpuLayers=${modelConfig.nGpuLayers}"
+                        )
                         val resolvedBackend = if (!deviceToUse.isNullOrBlank() && (
                             deviceToUse.startsWith("dev", ignoreCase = true) ||
                             deviceToUse.startsWith("htp", ignoreCase = true)
