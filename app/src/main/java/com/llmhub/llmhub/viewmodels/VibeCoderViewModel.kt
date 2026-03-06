@@ -581,7 +581,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             return
         }
         _generatedCode.value = proposal.code
-        _codeLanguage.value = proposal.language
+        _codeLanguage.value = languageFromFileName(_currentFileName.value)
         _isDirty.value = true
         val changed = countChangedLines(before, proposal.code)
         _editCheckpoints.value = (listOf(
@@ -603,7 +603,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         prompt: String,
         promptMessageId: String?,
         proposedCode: String,
-        proposedLanguage: CodeLanguage
+        @Suppress("UNUSED_PARAMETER") proposedLanguage: CodeLanguage
     ) {
         val before = _generatedCode.value
         if (!isSafeFullFileUpdate(before, proposedCode)) {
@@ -615,7 +615,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         }
         _generatedCode.value = proposedCode
         val extLanguage = languageFromFileName(_currentFileName.value)
-        _codeLanguage.value = if (extLanguage != CodeLanguage.UNKNOWN) extLanguage else proposedLanguage
+        _codeLanguage.value = extLanguage
         _isDirty.value = true
         val changed = countChangedLines(before, proposedCode)
         _editCheckpoints.value = (listOf(
@@ -687,51 +687,49 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     private fun languageFromFileName(fileName: String?): CodeLanguage {
-        val n = fileName?.lowercase()?.substringBeforeLast(".txt") ?: return CodeLanguage.UNKNOWN
-        return when {
-            n.contains(".py") -> CodeLanguage.PYTHON
-            n.contains(".js") -> CodeLanguage.JAVASCRIPT
-            n.contains(".ts") -> CodeLanguage.TYPESCRIPT
-            n.contains(".java") -> CodeLanguage.JAVA
-            n.contains(".kt") -> CodeLanguage.KOTLIN
-            n.contains(".cs") -> CodeLanguage.CSHARP
-            n.contains(".cpp") || n.contains(".cc") || n.contains(".cxx") -> CodeLanguage.CPP
-            n.contains(".c") || n.contains(".h") -> CodeLanguage.C
-            n.contains(".go") -> CodeLanguage.GO
-            n.contains(".rs") -> CodeLanguage.RUST
-            n.contains(".swift") -> CodeLanguage.SWIFT
-            n.contains(".dart") -> CodeLanguage.DART
-            n.contains(".php") -> CodeLanguage.PHP
-            n.contains(".rb") -> CodeLanguage.RUBY
-            n.contains(".lua") -> CodeLanguage.LUA
-            n.contains(".sh") || n.contains(".bash") || n.contains(".zsh") -> CodeLanguage.SHELL
-            n.contains(".sql") -> CodeLanguage.SQL
-            n.contains(".html") || n.contains(".htm") || n.contains(".css") -> CodeLanguage.HTML
+        return when (normalizedExtension(fileName)) {
+            "py" -> CodeLanguage.PYTHON
+            "js" -> CodeLanguage.JAVASCRIPT
+            "ts" -> CodeLanguage.TYPESCRIPT
+            "java" -> CodeLanguage.JAVA
+            "kt" -> CodeLanguage.KOTLIN
+            "cs" -> CodeLanguage.CSHARP
+            "cpp", "cc", "cxx" -> CodeLanguage.CPP
+            "c", "h" -> CodeLanguage.C
+            "go" -> CodeLanguage.GO
+            "rs" -> CodeLanguage.RUST
+            "swift" -> CodeLanguage.SWIFT
+            "dart" -> CodeLanguage.DART
+            "php" -> CodeLanguage.PHP
+            "rb" -> CodeLanguage.RUBY
+            "lua" -> CodeLanguage.LUA
+            "sh", "bash", "zsh" -> CodeLanguage.SHELL
+            "sql" -> CodeLanguage.SQL
+            "html", "htm", "css" -> CodeLanguage.HTML
             else -> CodeLanguage.UNKNOWN
         }
     }
 
     private fun languagePromptConfig(): Triple<String, String, String>? {
-        val n = _currentFileName.value?.lowercase().orEmpty()
-        val selectedLanguage: ProgrammingLanguage? = when {
-            n.contains(".py") -> ProgrammingLanguage.PYTHON
-            n.contains(".js") -> ProgrammingLanguage.JAVASCRIPT
-            n.contains(".ts") -> ProgrammingLanguage.TYPESCRIPT
-            n.contains(".c") || n.contains(".h") -> ProgrammingLanguage.C
-            n.contains(".php") -> ProgrammingLanguage.PHP
-            n.contains(".rb") -> ProgrammingLanguage.RUBY
-            n.contains(".swift") -> ProgrammingLanguage.SWIFT
-            n.contains(".dart") -> ProgrammingLanguage.DART
-            n.contains(".lua") -> ProgrammingLanguage.LUA
-            n.contains(".sh") || n.contains(".bash") || n.contains(".zsh") -> ProgrammingLanguage.SHELL
-            n.contains(".sql") -> ProgrammingLanguage.SQL
-            n.contains(".java") -> ProgrammingLanguage.JAVA
-            n.contains(".kt") -> ProgrammingLanguage.KOTLIN
-            n.contains(".cs") -> ProgrammingLanguage.CSHARP
-            n.contains(".cpp") || n.contains(".cc") || n.contains(".cxx") -> ProgrammingLanguage.CPP
-            n.contains(".go") -> ProgrammingLanguage.GO
-            n.contains(".rs") -> ProgrammingLanguage.RUST
-            n.contains(".html") || n.contains(".htm") || n.contains(".css") -> ProgrammingLanguage.WEB
+        val selectedLanguage: ProgrammingLanguage? = when (normalizedExtension(_currentFileName.value)) {
+            "py" -> ProgrammingLanguage.PYTHON
+            "js" -> ProgrammingLanguage.JAVASCRIPT
+            "ts" -> ProgrammingLanguage.TYPESCRIPT
+            "c", "h" -> ProgrammingLanguage.C
+            "php" -> ProgrammingLanguage.PHP
+            "rb" -> ProgrammingLanguage.RUBY
+            "swift" -> ProgrammingLanguage.SWIFT
+            "dart" -> ProgrammingLanguage.DART
+            "lua" -> ProgrammingLanguage.LUA
+            "sh", "bash", "zsh" -> ProgrammingLanguage.SHELL
+            "sql" -> ProgrammingLanguage.SQL
+            "java" -> ProgrammingLanguage.JAVA
+            "kt" -> ProgrammingLanguage.KOTLIN
+            "cs" -> ProgrammingLanguage.CSHARP
+            "cpp", "cc", "cxx" -> ProgrammingLanguage.CPP
+            "go" -> ProgrammingLanguage.GO
+            "rs" -> ProgrammingLanguage.RUST
+            "html", "htm", "css" -> ProgrammingLanguage.WEB
             else -> null
         }
         if (selectedLanguage == null) return null
@@ -759,6 +757,14 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             ProgrammingLanguage.GO -> Triple("Go", "Build a runnable Go program with package main and func main().", "go")
             ProgrammingLanguage.RUST -> Triple("Rust", "Build a runnable Rust program with fn main().", "rust")
         }
+    }
+
+    private fun normalizedExtension(fileName: String?): String? {
+        val name = fileName?.substringAfterLast('/')?.trim()?.lowercase() ?: return null
+        val parts = name.split('.').filter { it.isNotBlank() }
+        if (parts.size < 2) return null
+        // Handle provider-coerced "foo.ext.txt": keep the intended extension.
+        return if (parts.last() == "txt" && parts.size >= 3) parts[parts.size - 2] else parts.last()
     }
 
     private fun applyGenerationParametersToService(
@@ -912,11 +918,26 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                 if (proposedCode.isNotBlank()) {
                     val changedLines = countChangedLines(currentCode, proposedCode)
                     applyAutoProposal(prompt, currentPromptMessageId, proposedCode, proposedLanguage)
-                    val chatLang = when (proposedLanguage) {
+                    val chatLang = when (languageFromFileName(_currentFileName.value)) {
                         CodeLanguage.HTML -> "html"
                         CodeLanguage.PYTHON -> "python"
                         CodeLanguage.JAVASCRIPT -> "javascript"
-                        else -> ""
+                        CodeLanguage.TYPESCRIPT -> "typescript"
+                        CodeLanguage.JAVA -> "java"
+                        CodeLanguage.KOTLIN -> "kotlin"
+                        CodeLanguage.CSHARP -> "csharp"
+                        CodeLanguage.C -> "c"
+                        CodeLanguage.CPP -> "cpp"
+                        CodeLanguage.GO -> "go"
+                        CodeLanguage.RUST -> "rust"
+                        CodeLanguage.SWIFT -> "swift"
+                        CodeLanguage.DART -> "dart"
+                        CodeLanguage.PHP -> "php"
+                        CodeLanguage.RUBY -> "ruby"
+                        CodeLanguage.LUA -> "lua"
+                        CodeLanguage.SHELL -> "sh"
+                        CodeLanguage.SQL -> "sql"
+                        CodeLanguage.UNKNOWN -> ""
                     }
                     val fencedCode = if (chatLang.isNotBlank()) {
                         "```$chatLang\n$proposedCode\n```"
@@ -996,11 +1017,11 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
      * Handles edge cases where code block markers aren't perfectly formatted.
      */
     private fun extractCodeAndLanguage(response: String): Pair<String, CodeLanguage> {
+        val fileLanguage = languageFromFileName(_currentFileName.value)
         val markerMatch = Regex("(?s)<<<FULL_FILE_START>>>\\s*(.*?)\\s*<<<FULL_FILE_END>>>").find(response)
         if (markerMatch != null) {
             val extracted = sanitizeExtractedCode(markerMatch.groupValues[1].trim())
-            val lang = detectLanguageFromContent(extracted)
-            return Pair(extracted, lang)
+            return Pair(extracted, fileLanguage)
         }
 
         // Try to extract from markdown code blocks with language hints (```html, ```python, etc.)
@@ -1008,27 +1029,26 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         val htmlMatch = Regex("```(?:html|htm)\\s*([\\s\\S]*?)```", RegexOption.IGNORE_CASE)
             .findAll(response).maxByOrNull { it.groupValues[1].length }
         if (htmlMatch != null) {
-            return Pair(sanitizeExtractedCode(htmlMatch.groupValues[1].trim()), CodeLanguage.HTML)
+            return Pair(sanitizeExtractedCode(htmlMatch.groupValues[1].trim()), fileLanguage)
         }
         
         val pythonMatch = Regex("```(?:python|py)\\s*([\\s\\S]*?)```", RegexOption.IGNORE_CASE)
             .findAll(response).maxByOrNull { it.groupValues[1].length }
         if (pythonMatch != null) {
-            return Pair(sanitizeExtractedCode(pythonMatch.groupValues[1].trim()), CodeLanguage.PYTHON)
+            return Pair(sanitizeExtractedCode(pythonMatch.groupValues[1].trim()), fileLanguage)
         }
         
         val jsMatch = Regex("```(?:javascript|js)\\s*([\\s\\S]*?)```", RegexOption.IGNORE_CASE)
             .findAll(response).maxByOrNull { it.groupValues[1].length }
         if (jsMatch != null) {
-            return Pair(sanitizeExtractedCode(jsMatch.groupValues[1].trim()), CodeLanguage.JAVASCRIPT)
+            return Pair(sanitizeExtractedCode(jsMatch.groupValues[1].trim()), fileLanguage)
         }
         
         // Fallback: Extract any content between ``` markers (handles malformed responses)
         val genericMatch = Regex("```\\s*([\\s\\S]*?)```").find(response)
         if (genericMatch != null) {
             val extracted = sanitizeExtractedCode(genericMatch.groupValues[1].trim())
-            // Detect language from content
-            return Pair(extracted, detectLanguageFromContent(extracted))
+            return Pair(extracted, fileLanguage)
         }
         
         // If no code block is found, assume the entire response is code if it loosely fits a pattern
@@ -1039,18 +1059,18 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         
         if (isLikelyCode && !response.contains("```")) {
             val extracted = sanitizeExtractedCode(response.trim())
-            return Pair(extracted, detectLanguageFromContent(extracted))
+            return Pair(extracted, fileLanguage)
         }
         
         // Try to extract from XML-like tags (fallback)
         val xmlHtmlMatch = Regex("<code[^>]*>([\\s\\S]*?)</code>", RegexOption.IGNORE_CASE).find(response)
         if (xmlHtmlMatch != null) {
             val extracted = sanitizeExtractedCode(xmlHtmlMatch.groupValues[1].trim())
-            return Pair(extracted, CodeLanguage.HTML)
+            return Pair(extracted, fileLanguage)
         }
 
         val cleaned = sanitizeExtractedCode(response.trim())
-        return Pair(cleaned, detectLanguageFromContent(cleaned))
+        return Pair(cleaned, fileLanguage)
     }
 
     private fun sanitizeExtractedCode(raw: String): String {
@@ -1076,15 +1096,6 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             .trim()
     }
 
-    private fun detectLanguageFromContent(content: String): CodeLanguage {
-        return when {
-            content.contains("<!DOCTYPE html", ignoreCase = true) || content.contains("<html", ignoreCase = true) -> CodeLanguage.HTML
-            content.contains("def ", ignoreCase = true) || content.contains("import ", ignoreCase = true) -> CodeLanguage.PYTHON
-            content.contains("function ", ignoreCase = true) || content.contains("const ", ignoreCase = true) || content.contains("var ", ignoreCase = true) -> CodeLanguage.JAVASCRIPT
-            else -> CodeLanguage.UNKNOWN
-        }
-    }
-    
     /**
      * Cancel ongoing code generation
      */

@@ -2,6 +2,8 @@ package com.llmhub.llmhub.screens
 
 import android.provider.OpenableColumns
 import android.provider.DocumentsContract
+import android.app.Activity
+import android.view.WindowManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -15,10 +17,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -29,6 +31,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -58,6 +61,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -65,6 +69,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -79,11 +84,13 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.layout.onSizeChanged
@@ -106,6 +113,7 @@ fun VibeCoderScreen(
     viewModel: VibeCoderViewModel = viewModel()
 ) {
     val context = LocalContext.current
+    val view = LocalView.current
     val clipboardManager = LocalClipboardManager.current
     var showSettingsSheet by remember { mutableStateOf(false) }
     var chatInput by rememberSaveable { mutableStateOf("") }
@@ -135,6 +143,17 @@ fun VibeCoderScreen(
     val currentFolderUri by viewModel.currentFolderUri.collectAsState()
     val isDirty by viewModel.isDirty.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+
+    DisposableEffect(view) {
+        val window = (view.context as? Activity)?.window
+        val originalSoftInputMode = window?.attributes?.softInputMode
+        window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
+        onDispose {
+            if (window != null && originalSoftInputMode != null) {
+                window.setSoftInputMode(originalSoftInputMode)
+            }
+        }
+    }
 
     val snackbarHostState = remember { SnackbarHostState() }
     var folderFiles by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
@@ -577,6 +596,7 @@ fun VibeCoderScreen(
                                     onSelectChat = { viewModel.selectChatSession(it) },
                                     onDeleteChat = { pendingDeleteChatId = it },
                                     onEditPrompt = { id, text -> viewModel.editAndResendFromPrompt(id, text) },
+                                    onStopGeneration = { viewModel.cancelGeneration() },
                                     onSend = {
                                         val p = chatInput.trim()
                                         if (p.isNotEmpty() && currentFileName != null) {
@@ -596,8 +616,7 @@ fun VibeCoderScreen(
                 } else {
                     Column(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .imePadding(),
+                            .fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         ChatPane(
@@ -618,6 +637,7 @@ fun VibeCoderScreen(
                             onSelectChat = { viewModel.selectChatSession(it) },
                             onDeleteChat = { pendingDeleteChatId = it },
                             onEditPrompt = { id, text -> viewModel.editAndResendFromPrompt(id, text) },
+                            onStopGeneration = { viewModel.cancelGeneration() },
                             onSend = {
                                 val p = chatInput.trim()
                                 if (p.isNotEmpty() && currentFileName != null) {
@@ -779,6 +799,7 @@ private fun ChatPane(
     onSelectChat: (String) -> Unit,
     onDeleteChat: (String) -> Unit,
     onEditPrompt: (String, String) -> Unit,
+    onStopGeneration: () -> Unit,
     onSend: () -> Unit,
     onClearChat: () -> Unit
 ) {
@@ -788,13 +809,15 @@ private fun ChatPane(
 
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
-            chatListState.animateScrollToItem(messages.lastIndex)
+            chatListState.scrollToItem(messages.lastIndex)
+            chatListState.scrollBy(100000f)
         }
     }
 
-    LaunchedEffect(messages.lastOrNull()?.text, isProcessing) {
-        if (messages.isNotEmpty() && isProcessing) {
-            chatListState.animateScrollToItem(messages.lastIndex)
+    LaunchedEffect(messages.lastOrNull()?.text) {
+        if (messages.isNotEmpty()) {
+            chatListState.scrollToItem(messages.lastIndex)
+            chatListState.scrollBy(100000f)
         }
     }
 
@@ -806,7 +829,6 @@ private fun ChatPane(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .imePadding()
                 .padding(12.dp)
         ) {
             Row(
@@ -969,8 +991,24 @@ private fun ChatPane(
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
                 value = input,
-                onValueChange = onInputChange,
-                modifier = Modifier.fillMaxWidth(),
+                onValueChange = { if (!isProcessing) onInputChange(it) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 56.dp),
+                textStyle = TextStyle(color = MaterialTheme.colorScheme.onSurface),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    disabledContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    cursorColor = MaterialTheme.colorScheme.primary
+                ),
                 placeholder = {
                     Text(
                         if (hasFileSession) "Ask AI to edit this file..."
@@ -978,13 +1016,16 @@ private fun ChatPane(
                     )
                 },
                 maxLines = 5,
-                enabled = !isProcessing && hasFileSession,
+                enabled = hasFileSession,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                keyboardActions = KeyboardActions(onSend = { onSend() }),
+                keyboardActions = KeyboardActions(onSend = { if (isProcessing) onStopGeneration() else onSend() }),
                 trailingIcon = {
-                    IconButton(onClick = onSend, enabled = input.isNotBlank() && !isProcessing && hasFileSession) {
+                    IconButton(
+                        onClick = { if (isProcessing) onStopGeneration() else onSend() },
+                        enabled = if (isProcessing) true else (input.isNotBlank() && hasFileSession)
+                    ) {
                         if (isProcessing) {
-                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                            Icon(Icons.Default.Close, contentDescription = "Stop generation")
                         } else {
                             Icon(Icons.Default.Send, contentDescription = "Send")
                         }
