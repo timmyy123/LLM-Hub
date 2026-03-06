@@ -208,7 +208,7 @@ fun VibeCoderScreen(
 
     fun saveToUri(uriString: String?, fileNameFallback: String = "untitled.txt") {
         if (uriString.isNullOrBlank()) {
-            viewModel.setError("No file selected. Create/open a file from the workspace folder first.")
+            viewModel.setError(context.getString(R.string.vibe_coder_no_file_selected_error))
             return
         }
         val uri = android.net.Uri.parse(uriString)
@@ -358,7 +358,7 @@ fun VibeCoderScreen(
         val uri = android.net.Uri.parse(uriString)
         val ok = runCatching { DocumentsContract.deleteDocument(context.contentResolver, uri) }.getOrDefault(false)
         if (!ok) {
-            viewModel.setError("Failed to delete file")
+            viewModel.setError(context.getString(R.string.vibe_coder_delete_file_error))
             return
         }
         if (currentFileUri == uriString) {
@@ -403,7 +403,7 @@ fun VibeCoderScreen(
         if (success) {
             viewModel.markSaved(uri, currentFileName ?: "untitled.txt")
         } else {
-            viewModel.setError("Autosave failed. Tap save again or reopen the file.")
+            viewModel.setError(context.getString(R.string.vibe_coder_autosave_failed))
         }
     }
 
@@ -494,13 +494,13 @@ fun VibeCoderScreen(
                 Icon(Icons.Default.FolderOpen, contentDescription = null, modifier = Modifier.size(72.dp))
                 Spacer(modifier = Modifier.height(14.dp))
                 Text(
-                    text = "Select a project folder first",
+                    text = stringResource(R.string.vibe_coder_select_folder_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(
-                    text = "Open a folder to enable multi-file scaffold and in-folder file creation.",
+                    text = stringResource(R.string.vibe_coder_select_folder_desc),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
@@ -509,7 +509,7 @@ fun VibeCoderScreen(
                 Button(onClick = { openFolderLauncher.launch(null) }) {
                     Icon(Icons.Default.FolderOpen, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Open Folder")
+                    Text(stringResource(R.string.vibe_coder_open_folder))
                 }
             }
         } else {
@@ -603,7 +603,7 @@ fun VibeCoderScreen(
                                 )
                             } else {
                                 IconButton(onClick = { chatPaneVisible = true }) {
-                                    Icon(Icons.Default.Chat, contentDescription = "Show chat")
+                                    Icon(Icons.Default.Chat, contentDescription = stringResource(R.string.vibe_coder_show_chat))
                                 }
                             }
                         }
@@ -703,28 +703,28 @@ fun VibeCoderScreen(
     if (showNewFileDialog) {
         AlertDialog(
             onDismissRequest = { showNewFileDialog = false },
-            title = { Text("Create file in workspace") },
+            title = { Text(stringResource(R.string.vibe_coder_create_file_title)) },
             text = {
                 OutlinedTextField(
                     value = newFileNameInput,
                     onValueChange = { newFileNameInput = it },
                     singleLine = true,
-                    placeholder = { Text("example.py or app.js") },
-                    label = { Text("File name with extension") }
+                    placeholder = { Text(stringResource(R.string.vibe_coder_file_name_placeholder)) },
+                    label = { Text(stringResource(R.string.vibe_coder_file_name_label)) }
                 )
             },
             confirmButton = {
                 Button(onClick = {
                     val name = newFileNameInput.trim()
                     if (name.isBlank() || !name.contains(".")) {
-                        viewModel.setError("Enter a valid file name with extension, e.g. main.py")
+                        viewModel.setError(context.getString(R.string.vibe_coder_file_name_error))
                         return@Button
                     }
                     createFileInCurrentFolder(name)
                     newFileNameInput = ""
                     showNewFileDialog = false
                 }) {
-                    Text("Create")
+                    Text(stringResource(R.string.vibe_coder_create))
                 }
             },
             dismissButton = {
@@ -732,7 +732,7 @@ fun VibeCoderScreen(
                     showNewFileDialog = false
                     newFileNameInput = ""
                 }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -741,16 +741,16 @@ fun VibeCoderScreen(
     if (pendingDeleteChatId != null) {
         AlertDialog(
             onDismissRequest = { pendingDeleteChatId = null },
-            title = { Text("Delete chat?") },
-            text = { Text("This will permanently remove this chat session.") },
+            title = { Text(stringResource(R.string.vibe_coder_delete_chat_title)) },
+            text = { Text(stringResource(R.string.vibe_coder_delete_chat_message)) },
             confirmButton = {
                 Button(onClick = {
                     pendingDeleteChatId?.let { viewModel.deleteChatSession(it) }
                     pendingDeleteChatId = null
-                }) { Text("Delete") }
+                }) { Text(stringResource(R.string.delete)) }
             },
             dismissButton = {
-                Button(onClick = { pendingDeleteChatId = null }) { Text("Cancel") }
+                Button(onClick = { pendingDeleteChatId = null }) { Text(stringResource(R.string.cancel)) }
             }
         )
     }
@@ -759,16 +759,16 @@ fun VibeCoderScreen(
         val (uri, name) = pendingDeleteFile!!
         AlertDialog(
             onDismissRequest = { pendingDeleteFile = null },
-            title = { Text("Delete file?") },
-            text = { Text("Delete `$name` from this folder?") },
+            title = { Text(stringResource(R.string.vibe_coder_delete_file_title)) },
+            text = { Text(stringResource(R.string.vibe_coder_delete_file_message, name)) },
             confirmButton = {
                 Button(onClick = {
                     deleteFileByUri(uri)
                     pendingDeleteFile = null
-                }) { Text("Delete") }
+                }) { Text(stringResource(R.string.delete)) }
             },
             dismissButton = {
-                Button(onClick = { pendingDeleteFile = null }) { Text("Cancel") }
+                Button(onClick = { pendingDeleteFile = null }) { Text(stringResource(R.string.cancel)) }
             }
         )
     }
@@ -831,7 +831,7 @@ private fun ChatPane(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "AI Chat",
+                    text = stringResource(R.string.vibe_coder_ai_chat),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -852,11 +852,11 @@ private fun ChatPane(
                 Spacer(modifier = Modifier.width(6.dp))
                 if (showHideButton && onHidePanel != null) {
                     IconButton(onClick = onHidePanel) {
-                        Icon(Icons.Default.Code, contentDescription = "Hide chat")
+                        Icon(Icons.Default.Code, contentDescription = stringResource(R.string.vibe_coder_hide_chat))
                     }
                 }
                 IconButton(onClick = onClearChat, enabled = messages.isNotEmpty() && !isProcessing) {
-                    Icon(Icons.Default.Clear, contentDescription = "Clear chat")
+                    Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.vibe_coder_clear_chat))
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -866,7 +866,7 @@ private fun ChatPane(
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 IconButton(onClick = onNewChat, enabled = !isProcessing) {
-                    Icon(Icons.Default.Add, contentDescription = "New chat")
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.vibe_coder_new_chat))
                 }
                 LazyRow(
                     modifier = Modifier.weight(1f),
@@ -910,7 +910,7 @@ private fun ChatPane(
                                 ) {
                                     Icon(
                                         Icons.Default.Close,
-                                        contentDescription = "Delete chat",
+                                        contentDescription = stringResource(R.string.vibe_coder_delete_chat_cd),
                                         modifier = Modifier.size(14.dp),
                                         tint = chipContentColor
                                     )
@@ -941,7 +941,7 @@ private fun ChatPane(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = if (isUser) "You" else "AI",
+                                    text = if (isUser) stringResource(R.string.vibe_coder_message_you) else stringResource(R.string.vibe_coder_message_ai),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -954,7 +954,7 @@ private fun ChatPane(
                                         },
                                         modifier = Modifier.size(20.dp)
                                     ) {
-                                        Icon(Icons.Default.Edit, contentDescription = "Edit and resend prompt", modifier = Modifier.size(14.dp))
+                                        Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.vibe_coder_edit_resend_prompt), modifier = Modifier.size(14.dp))
                                     }
                                 }
                             }
@@ -979,7 +979,7 @@ private fun ChatPane(
                                         },
                                         modifier = Modifier.weight(1f),
                                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-                                    ) { Text("Cancel") }
+                                    ) { Text(stringResource(R.string.cancel)) }
                                     Button(
                                         onClick = {
                                             onEditPrompt(msg.id, editingPromptText)
@@ -988,7 +988,7 @@ private fun ChatPane(
                                         },
                                         enabled = editingPromptText.isNotBlank() && !isProcessing,
                                         modifier = Modifier.weight(1f)
-                                    ) { Text("Resend") }
+                                    ) { Text(stringResource(R.string.vibe_coder_resend)) }
                                 }
                             } else if (isUser) {
                                 Text(text = msg.text, style = MaterialTheme.typography.bodyMedium)
@@ -1026,8 +1026,8 @@ private fun ChatPane(
                 ),
                 placeholder = {
                     Text(
-                        if (hasFileSession) "Ask AI to edit this file..."
-                        else "Create/Open a file first (.py, .js, .ts, ...)"
+                        if (hasFileSession) stringResource(R.string.vibe_coder_ask_ai_edit)
+                        else stringResource(R.string.vibe_coder_create_open_file_hint)
                     )
                 },
                 maxLines = 5,
@@ -1040,9 +1040,9 @@ private fun ChatPane(
                         enabled = if (isProcessing) true else (input.isNotBlank() && hasFileSession)
                     ) {
                         if (isProcessing) {
-                            Icon(Icons.Default.Close, contentDescription = "Stop generation")
+                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.vibe_coder_stop_generation))
                         } else {
-                            Icon(Icons.Default.Send, contentDescription = "Send")
+                            Icon(Icons.Default.Send, contentDescription = stringResource(R.string.send))
                         }
                     }
                 }
@@ -1091,7 +1091,7 @@ private fun EditorPane(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = currentFileName ?: "Code Editor",
+                    text = currentFileName ?: stringResource(R.string.vibe_coder_code_editor),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -1118,16 +1118,16 @@ private fun EditorPane(
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 IconButton(onClick = onOpenFolder) {
-                    Icon(Icons.Default.FolderOpen, contentDescription = "Open folder")
+                    Icon(Icons.Default.FolderOpen, contentDescription = stringResource(R.string.vibe_coder_open_folder))
                 }
                 IconButton(onClick = onNewFile) {
-                    Icon(Icons.Default.Add, contentDescription = "New file")
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.vibe_coder_new_file))
                 }
                 IconButton(onClick = onSaveFile) {
-                    Icon(Icons.Default.Save, contentDescription = "Save file")
+                    Icon(Icons.Default.Save, contentDescription = stringResource(R.string.vibe_coder_save_file))
                 }
                 IconButton(onClick = onCopy, enabled = shownCode.isNotBlank()) {
-                    Icon(Icons.Default.ContentCopy, contentDescription = "Copy code")
+                    Icon(Icons.Default.ContentCopy, contentDescription = stringResource(R.string.vibe_coder_copy_code))
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -1174,7 +1174,7 @@ private fun EditorPane(
                                 ) {
                                     Icon(
                                         Icons.Default.Close,
-                                        contentDescription = "Delete file",
+                                        contentDescription = stringResource(R.string.vibe_coder_delete_file_cd),
                                         modifier = Modifier.size(14.dp),
                                         tint = chipContentColor
                                     )
@@ -1209,9 +1209,9 @@ private fun EditorPane(
                         if (shownCode.isBlank()) {
                             Text(
                                 text = when {
-                                    !hasFileSession -> "Open or create a file to start editing."
-                                    isProcessing -> "AI is editing code..."
-                                    else -> "Write code here or ask AI in chat..."
+                                    !hasFileSession -> stringResource(R.string.vibe_coder_open_or_create_file)
+                                    isProcessing -> stringResource(R.string.vibe_coder_ai_editing)
+                                    else -> stringResource(R.string.vibe_coder_write_code_hint)
                                 },
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     fontFamily = FontFamily.Monospace,
@@ -1230,7 +1230,7 @@ private fun EditorPane(
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
                 ) {
-                    Text("Discard")
+                    Text(stringResource(R.string.vibe_coder_discard))
                 }
                 Spacer(modifier = Modifier.height(8.dp))
             }
