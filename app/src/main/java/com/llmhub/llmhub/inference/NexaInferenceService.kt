@@ -110,7 +110,7 @@ class NexaInferenceService @Inject constructor(
      * - Returns Pair(allowed:Boolean, reason:String?) where reason is non-null when denied.
      * - This is defensive: it catches native/SELinux failures and returns a human-friendly reason.
      */
-    suspend fun probeNpuAvailability(deviceId: String = "dev0"): Pair<Boolean, String?> {
+    suspend fun probeNpuAvailability(deviceId: String = "HTP0"): Pair<Boolean, String?> {
         if (!nexaAvailable) {
             Log.w(TAG, "NPU probe: Nexa SDK unavailable")
             return Pair(false, "Nexa SDK unavailable on device")
@@ -285,7 +285,10 @@ class NexaInferenceService @Inject constructor(
                     Log.w(TAG, "Capped nCtx from $rawCtx to $nCtx to prevent OOM (Device RAM ~${String.format("%.1f", totalRamGb)}GB)")
                 }
                 // Determine device/plugin to use. If caller provided an explicit deviceId (e.g. "HTP0") prefer it
-                val userRequestedNpu = !deviceId.isNullOrBlank() && deviceId.startsWith("dev", ignoreCase = true)
+                val userRequestedNpu = !deviceId.isNullOrBlank() && (
+                    deviceId.startsWith("dev", ignoreCase = true) ||
+                    deviceId.startsWith("htp", ignoreCase = true)
+                )
                 var isNpuRequested = userRequestedNpu
 
                 // If a dev (NPU/Hexagon) device is requested (either explicitly by user or by auto-selection),
@@ -293,7 +296,13 @@ class NexaInferenceService @Inject constructor(
                 // - explicit user request: fail fast (return false) if probe denies — do NOT fall back
                 // - automatic request: fall back to gpu on probe denial
                 if (isNpuRequested) {
-                    val (allowed, reason) = probeNpuAvailability(deviceId ?: "dev0")
+                    val normalizedNpuDeviceId = when {
+                        deviceId.isNullOrBlank() -> "HTP0"
+                        deviceId.startsWith("dev", ignoreCase = true) ->
+                            "HTP${deviceId.replaceFirst(Regex("(?i)^dev"), "")}"
+                        else -> deviceId
+                    }
+                    val (allowed, reason) = probeNpuAvailability(normalizedNpuDeviceId)
                     if (!allowed) {
                         if (userRequestedNpu) {
                             // User explicitly asked for NPU — do not silently fall back. Return failure
@@ -309,13 +318,19 @@ class NexaInferenceService @Inject constructor(
                 }
 
                 val deviceToUse = when {
-                    backendId == "CPU" -> null
-                    isNpuRequested -> deviceId // explicit Hexagon device like dev0
-                    else -> "gpu"
+                    backendId == "CPU" -> "cpu"
+                    isNpuRequested -> when {
+                        deviceId.isNullOrBlank() -> "HTP0"
+                        deviceId.startsWith("dev", ignoreCase = true) ->
+                            "HTP${deviceId.replaceFirst(Regex("(?i)^dev"), "")}"
+                        else -> deviceId
+                    }
+                    else -> "GPUOpenCL"
                 }
+                val pluginToUse = "cpu_gpu"
 
                 // nGpuLayers > 0 is required to enable offloading to GPU/Hexagon (GGUF cpu_gpu path).
-                // Nexa docs: device_id="gpu" for GPU, "dev0" for NPU/Hexagon.
+                // Nexa docs: device_id="GPUOpenCL" for GPU, "HTP0" for NPU/Hexagon, "cpu" for CPU.
                 // When the user has set a custom layer count via the slider, honour it; otherwise default 999.
                 val gpuLayers = when {
                     backendId == "CPU" -> 0
@@ -350,7 +365,7 @@ class NexaInferenceService @Inject constructor(
                         model_path = modelFile.absolutePath,
                         mmproj_path = mmprojPath,
                         config = modelConfig,
-                        plugin_id = "cpu_gpu",
+                        plugin_id = pluginToUse,
                         device_id = deviceToUse
                     )
 
@@ -366,7 +381,10 @@ class NexaInferenceService @Inject constructor(
                         currentModel = model
                         currentPreferredBackend = if (backendId == "CPU") LlmInference.Backend.CPU else LlmInference.Backend.GPU
                         currentVisionDisabled = disableVision
-                        val resolvedBackend = if (!deviceToUse.isNullOrBlank() && deviceToUse.startsWith("dev", ignoreCase = true)) {
+                        val resolvedBackend = if (!deviceToUse.isNullOrBlank() && (
+                            deviceToUse.startsWith("dev", ignoreCase = true) ||
+                            deviceToUse.startsWith("htp", ignoreCase = true)
+                        )) {
                             "NPU($deviceToUse)"
                         } else {
                             backendId
@@ -383,7 +401,7 @@ class NexaInferenceService @Inject constructor(
                         model_path = modelFile.absolutePath,
                         tokenizer_path = null,
                         config = modelConfig,
-                        plugin_id = "cpu_gpu",
+                        plugin_id = pluginToUse,
                         device_id = deviceToUse
                     )
 
@@ -401,7 +419,10 @@ class NexaInferenceService @Inject constructor(
                         currentModel = model
                         currentPreferredBackend = if (backendId == "CPU") LlmInference.Backend.CPU else LlmInference.Backend.GPU
                         currentVisionDisabled = disableVision
-                        val resolvedBackend = if (!deviceToUse.isNullOrBlank() && deviceToUse.startsWith("dev", ignoreCase = true)) {
+                        val resolvedBackend = if (!deviceToUse.isNullOrBlank() && (
+                            deviceToUse.startsWith("dev", ignoreCase = true) ||
+                            deviceToUse.startsWith("htp", ignoreCase = true)
+                        )) {
                             "NPU($deviceToUse)"
                         } else {
                             backendId
