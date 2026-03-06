@@ -170,6 +170,10 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     
     private val _promptInput = MutableStateFlow("")
     val promptInput: StateFlow<String> = _promptInput.asStateFlow()
+    private val _contextUsageFraction = MutableStateFlow(0f)
+    val contextUsageFraction: StateFlow<Float> = _contextUsageFraction.asStateFlow()
+    private val _contextUsageLabel = MutableStateFlow("0%")
+    val contextUsageLabel: StateFlow<String> = _contextUsageLabel.asStateFlow()
     
     // Error handling
     private val _errorMessage = MutableStateFlow<String?>(null)
@@ -185,6 +189,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     private data class SessionPayload(
         val id: String,
         var title: String,
+        var inferenceChatId: String,
         var messages: MutableList<VibeChatMessage>,
         var checkpoints: MutableList<EditCheckpoint>,
         var lastPrompt: String?
@@ -209,6 +214,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             _codeLanguage.value = languageFromFileName(_currentFileName.value)
         }
         loadPersistedChatSessions()
+        recalculateContextUsage()
     }
 
     private fun restoreSettingsForModel(model: LLMModel) {
@@ -274,6 +280,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             val obj = JSONObject()
             obj.put("id", s.id)
             obj.put("title", s.title)
+            obj.put("inferenceChatId", s.inferenceChatId)
             obj.put("lastPrompt", s.lastPrompt ?: JSONObject.NULL)
             val mArr = JSONArray()
             s.messages.forEach { m ->
@@ -312,6 +319,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                     val id = o.optString("id")
                     if (id.isBlank()) continue
                     val title = o.optString("title", "Chat")
+                    val inferenceChatId = o.optString("inferenceChatId", "vibe-coder-$id")
                     val lastPrompt = if (o.isNull("lastPrompt")) null else o.optString("lastPrompt")
                     val messages = mutableListOf<VibeChatMessage>()
                     val mArr = o.optJSONArray("messages") ?: JSONArray()
@@ -340,13 +348,13 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                             )
                         )
                     }
-                    chatSessionStore[id] = SessionPayload(id, title, messages, checkpoints, lastPrompt)
+                    chatSessionStore[id] = SessionPayload(id, title, inferenceChatId, messages, checkpoints, lastPrompt)
                 }
             }
         }
         if (chatSessionStore.isEmpty()) {
             val id = UUID.randomUUID().toString()
-            chatSessionStore[id] = SessionPayload(id, "Chat 1", mutableListOf(), mutableListOf(), null)
+            chatSessionStore[id] = SessionPayload(id, "Chat 1", "vibe-coder-$id", mutableListOf(), mutableListOf(), null)
         }
         _chatSessions.value = chatSessionStore.values.map { VibeChatSessionSummary(it.id, it.title) }
         val savedActive = prefs.getString("active_chat_session_id", null)
@@ -367,7 +375,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     fun createNewChatSession() {
         val index = chatSessionStore.size + 1
         val id = UUID.randomUUID().toString()
-        chatSessionStore[id] = SessionPayload(id, "Chat $index", mutableListOf(), mutableListOf(), null)
+        chatSessionStore[id] = SessionPayload(id, "Chat $index", "vibe-coder-$id", mutableListOf(), mutableListOf(), null)
         _chatSessions.value = chatSessionStore.values.map { VibeChatSessionSummary(it.id, it.title) }
         selectChatSession(id)
         saveSettings()
@@ -382,6 +390,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         _pendingProposal.value = null
         streamingAssistantMessageId = null
         currentPromptMessageId = null
+        recalculateContextUsage()
         saveSettings()
     }
 
@@ -440,6 +449,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         _selectedModel.value = model
         _isModelLoaded.value = false
         restoreSettingsForModel(model)
+        recalculateContextUsage()
 
         saveSettings()
     }
@@ -447,6 +457,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     fun setMaxTokens(maxTokens: Int) {
         val cap = _selectedModel.value?.contextWindowSize?.coerceAtLeast(1) ?: 4096
         _selectedMaxTokens.value = maxTokens.coerceIn(1, cap)
+        recalculateContextUsage()
         saveSettings()
         applyGenerationParametersToService()
     }
@@ -492,6 +503,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         _codeLanguage.value = languageFromFileName(fileName)
         _isDirty.value = false
         _pendingProposal.value = null
+        recalculateContextUsage()
         saveSettings()
         appendChat("assistant", "Opened $fileName")
     }
@@ -509,6 +521,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         _codeLanguage.value = languageFromFileName(fileName)
         _isDirty.value = false
         _pendingProposal.value = null
+        recalculateContextUsage()
         saveSettings()
         appendChat("assistant", "Started new file: $fileName")
     }
@@ -520,6 +533,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         _codeLanguage.value = CodeLanguage.UNKNOWN
         _isDirty.value = false
         _pendingProposal.value = null
+        recalculateContextUsage()
         saveSettings()
     }
 
@@ -532,6 +546,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
 
     private fun appendChat(role: String, text: String) {
         _chatMessages.value = _chatMessages.value + VibeChatMessage(role = role, text = text)
+        recalculateContextUsage()
         persistActiveSession()
     }
 
@@ -539,6 +554,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         val msg = VibeChatMessage(role = "assistant", text = "")
         streamingAssistantMessageId = msg.id
         _chatMessages.value = _chatMessages.value + msg
+        recalculateContextUsage()
     }
 
     private fun updateStreamingAssistant(text: String) {
@@ -546,6 +562,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         _chatMessages.value = _chatMessages.value.map { msg ->
             if (msg.id == id) msg.copy(text = text) else msg
         }
+        recalculateContextUsage()
     }
 
     private fun endStreamingAssistant(finalText: String) {
@@ -558,6 +575,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             if (msg.id == id) msg.copy(text = finalText) else msg
         }
         streamingAssistantMessageId = null
+        recalculateContextUsage()
         persistActiveSession()
     }
 
@@ -567,6 +585,8 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         streamingAssistantMessageId = null
         _editCheckpoints.value = emptyList()
         _lastUserPrompt.value = null
+        resetActiveInferenceSession()
+        recalculateContextUsage()
         persistActiveSession()
     }
 
@@ -583,6 +603,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         _generatedCode.value = proposal.code
         _codeLanguage.value = languageFromFileName(_currentFileName.value)
         _isDirty.value = true
+        recalculateContextUsage()
         val changed = countChangedLines(before, proposal.code)
         _editCheckpoints.value = (listOf(
             EditCheckpoint(
@@ -617,6 +638,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         val extLanguage = languageFromFileName(_currentFileName.value)
         _codeLanguage.value = extLanguage
         _isDirty.value = true
+        recalculateContextUsage()
         val changed = countChangedLines(before, proposedCode)
         _editCheckpoints.value = (listOf(
             EditCheckpoint(
@@ -646,6 +668,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         _isDirty.value = true
         _pendingProposal.value = null
         _editCheckpoints.value = _editCheckpoints.value.drop(1)
+        recalculateContextUsage()
         saveSettings()
         appendChat("assistant", "Reverted last edit (${cp.changedLines} changed lines).")
         persistActiveSession()
@@ -838,7 +861,6 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                 cancelGenerationInternal()
                 inferenceService.unloadModel()
                 _isModelLoaded.value = false
-                _generatedCode.value = ""
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "Failed to unload model"
             }
@@ -884,6 +906,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             _isProcessing.value = true
             _errorMessage.value = null
             val currentCode = _generatedCode.value
+            var codeChatId: String? = null
             
             try {
                 val coderMaxTokens = _selectedMaxTokens.value.coerceAtLeast(512)
@@ -895,7 +918,8 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                 )
                 val implementationPrompt = buildFileAwareEditPrompt(prompt, currentCode)
                 
-                val codeChatId = "vibe-coder-${UUID.randomUUID()}"
+                val activeSession = chatSessionStore[_activeChatSessionId.value]
+                codeChatId = activeSession?.inferenceChatId ?: "vibe-coder-${UUID.randomUUID()}"
                 beginStreamingAssistant()
                 
                 val responseFlow = inferenceService.generateResponseStreamWithSession(
@@ -912,49 +936,35 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                     responseText += token
                     updateStreamingAssistant(responseText)
                 }
+
+                // If MediaPipe reset the session during generation (typically token overflow),
+                // treat this response as invalid/partial and do NOT apply it to the editor.
+                if (codeChatId != null && inferenceService.wasSessionRecentlyReset(codeChatId)) {
+                    handleSessionResetDuringGeneration(codeChatId)
+                    return@launch
+                }
                 
                 // Parse generated code and auto-apply immediately.
                 val (proposedCode, proposedLanguage) = extractCodeAndLanguage(responseText)
-                if (proposedCode.isNotBlank()) {
-                    val changedLines = countChangedLines(currentCode, proposedCode)
+                if (proposedCode.isNotBlank() && isUsableGeneratedFile(proposedCode)) {
                     applyAutoProposal(prompt, currentPromptMessageId, proposedCode, proposedLanguage)
-                    val chatLang = when (languageFromFileName(_currentFileName.value)) {
-                        CodeLanguage.HTML -> "html"
-                        CodeLanguage.PYTHON -> "python"
-                        CodeLanguage.JAVASCRIPT -> "javascript"
-                        CodeLanguage.TYPESCRIPT -> "typescript"
-                        CodeLanguage.JAVA -> "java"
-                        CodeLanguage.KOTLIN -> "kotlin"
-                        CodeLanguage.CSHARP -> "csharp"
-                        CodeLanguage.C -> "c"
-                        CodeLanguage.CPP -> "cpp"
-                        CodeLanguage.GO -> "go"
-                        CodeLanguage.RUST -> "rust"
-                        CodeLanguage.SWIFT -> "swift"
-                        CodeLanguage.DART -> "dart"
-                        CodeLanguage.PHP -> "php"
-                        CodeLanguage.RUBY -> "ruby"
-                        CodeLanguage.LUA -> "lua"
-                        CodeLanguage.SHELL -> "sh"
-                        CodeLanguage.SQL -> "sql"
-                        CodeLanguage.UNKNOWN -> ""
-                    }
-                    val fencedCode = if (chatLang.isNotBlank()) {
-                        "```$chatLang\n$proposedCode\n```"
-                    } else {
-                        "```\n$proposedCode\n```"
-                    }
-                    endStreamingAssistant(
-                        "Updated `${_currentFileName.value}`.\nChanged lines: $changedLines\n\nModel output:\n$fencedCode"
-                    )
+                    // Keep the model's full final response (including thinking trace) in chat
+                    // so users can expand/collapse and inspect thinking history after completion.
+                    endStreamingAssistant(responseText.ifBlank { "Updated `${_currentFileName.value}`." })
                 } else {
-                    endStreamingAssistant("No usable code was produced. Try refining your prompt.")
+                    _errorMessage.value = "Model returned malformed/partial file. Nothing was applied."
+                    endStreamingAssistant(responseText.ifBlank { "No usable code was produced. Try refining your prompt." })
                 }
                 
             } catch (e: kotlinx.coroutines.CancellationException) {
                 Log.d("VibeCoderVM", "Generation cancelled")
                 endStreamingAssistant("Generation cancelled.")
             } catch (e: Exception) {
+                // If a reset happened while streaming, discard partial output and clear chat history.
+                if (codeChatId != null && inferenceService.wasSessionRecentlyReset(codeChatId)) {
+                    handleSessionResetDuringGeneration(codeChatId)
+                    return@launch
+                }
                 val message = e.message ?: ""
                 val shouldShowError = !message.contains("cancelled", ignoreCase = true) &&
                                     !message.contains("Previous invocation still processing", ignoreCase = true) &&
@@ -1093,7 +1103,39 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             .replace(Regex("(?m)^\\s*File\\s*:.*$"), "")
             .replace(Regex("(?m)^\\s*TARGET\\s+LANGUAGE\\s*:.*$"), "")
             .replace(Regex("(?m)^\\s*TARGET\\s+RULE\\s*:.*$"), "")
+            .replace("<<<FULL_FILE_START>>>", "")
+            .replace("<<<FULL_FILE_END>>>", "")
+            .replace("```", "")
             .trim()
+    }
+
+    private fun isUsableGeneratedFile(code: String): Boolean {
+        val c = code.trim()
+        if (c.isBlank()) return false
+        val lc = c.lowercase()
+        if (lc.contains("target language:") || lc.contains("target rule:") || lc.contains("instructions:")) return false
+        if (lc.contains("full_file_start") || lc.contains("full_file_end")) return false
+
+        val ext = normalizedExtension(_currentFileName.value)
+        return when (ext) {
+            "html", "htm" -> c.contains("<html", ignoreCase = true) || c.contains("<!doctype", ignoreCase = true) || c.contains("<body", ignoreCase = true)
+            "css" -> c.contains("{") && c.contains("}")
+            "py" -> c.contains("def ") || c.contains("class ") || c.contains("import ") || c.contains("print(")
+            "js", "ts" -> c.contains("function ") || c.contains("const ") || c.contains("let ") || c.contains("class ")
+            "java" -> c.contains("class ") || c.contains("public static void main")
+            "kt" -> c.contains("fun ") || c.contains("class ")
+            "c", "h", "cpp", "cc", "cxx" -> c.contains("#include") || c.contains("int main")
+            "go" -> c.contains("package main") || c.contains("func main")
+            "rs" -> c.contains("fn main")
+            "php" -> c.contains("<?php")
+            "rb" -> c.contains("def ") || c.contains("class ")
+            "swift" -> c.contains("import ") || c.contains("func ")
+            "dart" -> c.contains("void main") || c.contains("class ")
+            "lua" -> c.contains("function ") || c.contains("local ")
+            "sh", "bash", "zsh" -> c.startsWith("#!") || c.contains("echo ") || c.contains("if ")
+            "sql" -> c.contains("select ", ignoreCase = true) || c.contains("create ", ignoreCase = true) || c.contains("insert ", ignoreCase = true)
+            else -> c.length >= 20
+        }
     }
 
     /**
@@ -1147,6 +1189,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         _codeLanguage.value = CodeLanguage.UNKNOWN
         _isDirty.value = true
         _pendingProposal.value = null
+        recalculateContextUsage()
         currentSpec = ""
     }
 
@@ -1156,7 +1199,62 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     fun updateGeneratedCode(code: String) {
         _generatedCode.value = code
         _isDirty.value = true
+        recalculateContextUsage()
         saveSettings()
+    }
+
+    private fun shouldResetSessionBeforeMessage(newPrompt: String): Boolean {
+        val model = _selectedModel.value ?: return false
+        val history = _chatMessages.value.joinToString("\n") { "${it.role}: ${it.text}" }
+        val fileContent = _generatedCode.value
+        val estimatedTokens = ((history.length + fileContent.length + newPrompt.length) / 4).coerceAtLeast(0)
+        val maxTokens = _selectedMaxTokens.value.coerceAtMost(model.contextWindowSize.coerceAtLeast(1))
+        val reserveForResponse = (maxTokens / 3).coerceAtLeast(256)
+        val tokenThreshold = (maxTokens - reserveForResponse).coerceAtLeast(1)
+        Log.d("VibeCoderVM", "Token check: est=$estimatedTokens threshold=$tokenThreshold reserve=$reserveForResponse max=$maxTokens")
+        return estimatedTokens >= tokenThreshold
+    }
+
+    private fun resetActiveInferenceSession() {
+        val activeId = _activeChatSessionId.value ?: return
+        val session = chatSessionStore[activeId] ?: return
+        val oldChatId = session.inferenceChatId
+        session.inferenceChatId = "vibe-coder-${UUID.randomUUID()}"
+        saveSettings()
+        viewModelScope.launch {
+            runCatching { inferenceService.resetChatSession(oldChatId) }
+                .onFailure { Log.w("VibeCoderVM", "Failed to reset session $oldChatId: ${it.message}") }
+        }
+    }
+
+    private fun recalculateContextUsage() {
+        val model = _selectedModel.value
+        val maxTokens = if (model != null) {
+            _selectedMaxTokens.value.coerceAtMost(model.contextWindowSize.coerceAtLeast(1))
+        } else {
+            _selectedMaxTokens.value.coerceAtLeast(1)
+        }
+        val usedChars = _chatMessages.value.sumOf { it.text.length } + _generatedCode.value.length
+        val usedTokens = (usedChars / 4).coerceAtLeast(0)
+        val fraction = (usedTokens.toFloat() / maxTokens.toFloat()).coerceIn(0f, 1f)
+        _contextUsageFraction.value = fraction
+        _contextUsageLabel.value = "${(fraction * 100).toInt()}%"
+    }
+
+    private fun handleSessionResetDuringGeneration(chatId: String) {
+        Log.w("VibeCoderVM", "Session reset detected during generation for $chatId; discarding partial output")
+        streamingAssistantMessageId = null
+        currentPromptMessageId = null
+        _pendingProposal.value = null
+        _lastUserPrompt.value = null
+        _chatMessages.value = listOf(
+            VibeChatMessage(
+                role = "assistant",
+                text = "Session was reset due to context limit. Chat history was cleared; editor code was kept."
+            )
+        )
+        recalculateContextUsage()
+        persistActiveSession()
     }
 
     /**

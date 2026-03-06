@@ -72,7 +72,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -143,6 +142,8 @@ fun VibeCoderScreen(
     val currentFolderUri by viewModel.currentFolderUri.collectAsState()
     val isDirty by viewModel.isDirty.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    val contextUsage by viewModel.contextUsageFraction.collectAsState()
+    val contextLabel by viewModel.contextUsageLabel.collectAsState()
 
     DisposableEffect(view) {
         val window = (view.context as? Activity)?.window
@@ -158,14 +159,6 @@ fun VibeCoderScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var folderFiles by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
     var didAutoRestore by remember { mutableStateOf(false) }
-    val contextUsage by remember(chatMessages, generatedCode, chatInput, selectedMaxTokens) {
-        derivedStateOf {
-            val usedChars = chatMessages.sumOf { it.text.length } + generatedCode.length + chatInput.length
-            val usedTokens = (usedChars / 4).coerceAtLeast(0)
-            (usedTokens.toFloat() / selectedMaxTokens.coerceAtLeast(1).toFloat()).coerceIn(0f, 1f)
-        }
-    }
-
     LaunchedEffect(errorMessage) {
         errorMessage?.let {
             snackbarHostState.showSnackbar(it)
@@ -409,6 +402,8 @@ fun VibeCoderScreen(
         }.isSuccess
         if (success) {
             viewModel.markSaved(uri, currentFileName ?: "untitled.txt")
+        } else {
+            viewModel.setError("Autosave failed. Tap save again or reopen the file.")
         }
     }
 
@@ -588,7 +583,7 @@ fun VibeCoderScreen(
                                     isProcessing = isProcessing,
                                     hasFileSession = currentFileName != null,
                                     contextUsage = contextUsage,
-                                    contextLabel = "${(contextUsage * 100).toInt()}%",
+                                    contextLabel = contextLabel,
                                     showContextPercent = true,
                                     showHideButton = true,
                                     onHidePanel = { chatPaneVisible = false },
@@ -629,7 +624,7 @@ fun VibeCoderScreen(
                             isProcessing = isProcessing,
                             hasFileSession = currentFileName != null,
                             contextUsage = contextUsage,
-                            contextLabel = "${(contextUsage * 100).toInt()}%",
+                            contextLabel = contextLabel,
                             showContextPercent = true,
                             showHideButton = false,
                             onHidePanel = null,
@@ -981,7 +976,7 @@ private fun ChatPane(
                                 ThinkingAwareResultContent(
                                     content = msg.text,
                                     modifier = Modifier.fillMaxWidth(),
-                                    useMarkdownForAnswer = false
+                                    useMarkdownForAnswer = true
                                 )
                             }
                         }
