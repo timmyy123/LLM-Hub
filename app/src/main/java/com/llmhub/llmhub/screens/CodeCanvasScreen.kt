@@ -131,8 +131,8 @@ fun CodeCanvasScreen(
                     }
                 },
                 modifier = Modifier
-                    .fillMaxSize()
                     .padding(innerPadding)
+                    .fillMaxSize()
             )
         }
     }

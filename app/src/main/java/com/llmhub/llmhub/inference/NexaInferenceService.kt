@@ -953,14 +953,30 @@ class NexaInferenceService @Inject constructor(
             }
             is LlmStreamResult.Completed -> close()
             is LlmStreamResult.Error -> {
-                // Log detailed error information for debugging
-                try {
-                    val errorCode = streamResult::class.java.getDeclaredField("errorCode").apply { isAccessible = true }.get(streamResult)
-                    Log.e(TAG, "VLM/LLM SDK Error - Code: $errorCode")
-                } catch (e: Exception) {
-                    Log.e(TAG, "VLM/LLM SDK Error (unable to extract error code)")
-                }
-                close(Exception("SDK Error"))
+                // Log detailed SDK error fields (field names vary by Nexa SDK builds)
+                val cls = streamResult::class.java
+                val code = runCatching {
+                    cls.declaredFields.firstOrNull {
+                        it.name.equals("errorCode", true) ||
+                            it.name.equals("code", true) ||
+                            it.name.equals("errCode", true)
+                    }?.let {
+                        it.isAccessible = true
+                        it.get(streamResult)?.toString()
+                    }
+                }.getOrNull()
+                val message = runCatching {
+                    cls.declaredFields.firstOrNull {
+                        it.name.equals("message", true) ||
+                            it.name.equals("errorMessage", true) ||
+                            it.name.equals("msg", true)
+                    }?.let {
+                        it.isAccessible = true
+                        it.get(streamResult)?.toString()
+                    }
+                }.getOrNull()
+                Log.e(TAG, "VLM/LLM SDK Error - code=${code ?: "unknown"} message=${message ?: "unknown"} class=${cls.simpleName}")
+                close(Exception("SDK Error code=${code ?: "unknown"} message=${message ?: "unknown"}"))
             }
         }
     }
@@ -1219,9 +1235,9 @@ class NexaInferenceService @Inject constructor(
         // instead of the actual result. We detect common separators and split so that
         // the instructions go into the system role and the user input goes into the user role.
         if (messages.isEmpty()) {
-            // Vibe Coder style prompts often contain a large instruction block plus a
-            // dedicated USER REQUEST field. Split those into system+user roles so
-            // Harmony models execute the request instead of echoing meta-instructions.
+            // VibeCoder and other feature prompts often contain a large instruction block plus a
+            // dedicated USER REQUEST field. Split those into system+user roles so the model
+            // executes the request instead of echoing meta-instructions.
             val quotedReqRegex = Regex("""(?is)\bUSER REQUEST\s*:\s*\"([\s\S]*?)\"""")
             val plainReqRegex = Regex("""(?im)^\s*User request\s*:\s*(.+)$""")
             val quotedReqMatch = quotedReqRegex.find(cleanPrompt)

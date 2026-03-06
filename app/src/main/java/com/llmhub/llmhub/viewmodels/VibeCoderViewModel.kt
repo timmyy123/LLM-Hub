@@ -8,6 +8,8 @@ import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.ModelAvailabilityProvider
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
+import org.json.JSONArray
+import org.json.JSONObject
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelAndJoin
@@ -23,6 +25,47 @@ enum class CodeLanguage {
     HTML, PYTHON, JAVASCRIPT, UNKNOWN
 }
 
+enum class ProgrammingLanguage {
+    WEB,
+    PYTHON,
+    JAVASCRIPT,
+    TYPESCRIPT,
+    JAVA,
+    KOTLIN,
+    CSHARP,
+    CPP,
+    GO,
+    RUST
+}
+
+data class VibeChatMessage(
+    val id: String = UUID.randomUUID().toString(),
+    val role: String,
+    val text: String
+)
+
+data class CodeProposal(
+    val id: String = UUID.randomUUID().toString(),
+    val prompt: String,
+    val promptMessageId: String?,
+    val code: String,
+    val language: CodeLanguage
+)
+
+data class EditCheckpoint(
+    val id: String = UUID.randomUUID().toString(),
+    val prompt: String,
+    val promptMessageId: String?,
+    val beforeCode: String,
+    val afterCode: String,
+    val changedLines: Int
+)
+
+data class VibeChatSessionSummary(
+    val id: String,
+    val title: String
+)
+
 /**
  * VibeCoderViewModel handles code generation using LLM inference.
  * Users provide a prompt, and the model generates HTML/Python/JavaScript code.
@@ -33,6 +76,9 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     private val prefs = application.getSharedPreferences("vibe_coder_prefs", Context.MODE_PRIVATE)
     
     private var processingJob: Job? = null
+    private var streamingAssistantMessageId: String? = null
+    private var currentPromptMessageId: String? = null
+    private val chatSessionStore = mutableMapOf<String, SessionPayload>()
     
     // Available models
     private val _availableModels = MutableStateFlow<List<LLMModel>>(emptyList())
@@ -72,6 +118,26 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     // Generated code & metadata
     private val _generatedCode = MutableStateFlow("")
     val generatedCode: StateFlow<String> = _generatedCode.asStateFlow()
+    private val _currentFileUri = MutableStateFlow<String?>(null)
+    val currentFileUri: StateFlow<String?> = _currentFileUri.asStateFlow()
+    private val _currentFileName = MutableStateFlow<String?>(null)
+    val currentFileName: StateFlow<String?> = _currentFileName.asStateFlow()
+    private val _currentFolderUri = MutableStateFlow<String?>(null)
+    val currentFolderUri: StateFlow<String?> = _currentFolderUri.asStateFlow()
+    private val _isDirty = MutableStateFlow(false)
+    val isDirty: StateFlow<Boolean> = _isDirty.asStateFlow()
+    private val _chatMessages = MutableStateFlow<List<VibeChatMessage>>(emptyList())
+    val chatMessages: StateFlow<List<VibeChatMessage>> = _chatMessages.asStateFlow()
+    private val _pendingProposal = MutableStateFlow<CodeProposal?>(null)
+    val pendingProposal: StateFlow<CodeProposal?> = _pendingProposal.asStateFlow()
+    private val _editCheckpoints = MutableStateFlow<List<EditCheckpoint>>(emptyList())
+    val editCheckpoints: StateFlow<List<EditCheckpoint>> = _editCheckpoints.asStateFlow()
+    private val _lastUserPrompt = MutableStateFlow<String?>(null)
+    val lastUserPrompt: StateFlow<String?> = _lastUserPrompt.asStateFlow()
+    private val _chatSessions = MutableStateFlow<List<VibeChatSessionSummary>>(emptyList())
+    val chatSessions: StateFlow<List<VibeChatSessionSummary>> = _chatSessions.asStateFlow()
+    private val _activeChatSessionId = MutableStateFlow<String?>(null)
+    val activeChatSessionId: StateFlow<String?> = _activeChatSessionId.asStateFlow()
     
     private val _codeLanguage = MutableStateFlow(CodeLanguage.UNKNOWN)
     val codeLanguage: StateFlow<CodeLanguage> = _codeLanguage.asStateFlow()
@@ -85,8 +151,18 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     
     private val _enableThinking = MutableStateFlow(true)
     val enableThinking: StateFlow<Boolean> = _enableThinking.asStateFlow()
+    private val _preferredLanguage = MutableStateFlow(ProgrammingLanguage.WEB)
+    val preferredLanguage: StateFlow<ProgrammingLanguage> = _preferredLanguage.asStateFlow()
 
     private var pendingSavedModelName: String? = null
+
+    private data class SessionPayload(
+        val id: String,
+        var title: String,
+        var messages: MutableList<VibeChatMessage>,
+        var checkpoints: MutableList<EditCheckpoint>,
+        var lastPrompt: String?
+    )
     
     init {
         loadSavedSettings()
@@ -98,6 +174,15 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
      */
     private fun loadSavedSettings() {
         pendingSavedModelName = prefs.getString("selected_model_name", null)
+        _currentFileUri.value = prefs.getString("last_opened_file_uri", null)
+        _currentFileName.value = prefs.getString("last_opened_file_name", null)
+        _currentFolderUri.value = prefs.getString("last_opened_folder_uri", null)
+        _generatedCode.value = prefs.getString("last_draft_code", "") ?: ""
+        _isDirty.value = prefs.getBoolean("last_draft_dirty", false)
+        if (_generatedCode.value.isNotBlank() && _currentFileName.value != null) {
+            _codeLanguage.value = languageFromFileName(_currentFileName.value)
+        }
+        loadPersistedChatSessions()
     }
 
     private fun restoreSettingsForModel(model: LLMModel) {
@@ -120,6 +205,12 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
 
         _enableThinking.value = prefs.getBoolean("enable_thinking_${model.name}", prefs.getBoolean("enable_thinking", true))
         _selectedNGpuLayers.value = prefs.getInt("n_gpu_layers_${model.name}", 999).let { if (it == 999) null else it }
+        val savedLangName = prefs.getString("code_language_${model.name}", prefs.getString("code_language", ProgrammingLanguage.WEB.name))
+        _preferredLanguage.value = try {
+            ProgrammingLanguage.valueOf(savedLangName ?: ProgrammingLanguage.WEB.name)
+        } catch (_: Exception) {
+            ProgrammingLanguage.WEB
+        }
     }
     
     /**
@@ -134,12 +225,138 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                 putInt("max_tokens_${model.name}", _selectedMaxTokens.value)
                 putBoolean("enable_thinking_${model.name}", _enableThinking.value)
                 putInt("n_gpu_layers_${model.name}", _selectedNGpuLayers.value ?: 999)
+                putString("code_language_${model.name}", _preferredLanguage.value.name)
             }
             putString("selected_backend", _selectedBackend.value?.name)
             putString("selected_npu_device_id", _selectedNpuDeviceId.value)
             putBoolean("enable_thinking", _enableThinking.value)
+            putString("code_language", _preferredLanguage.value.name)
+            putString("last_opened_file_uri", _currentFileUri.value)
+            putString("last_opened_file_name", _currentFileName.value)
+            putString("last_opened_folder_uri", _currentFolderUri.value)
+            putString("last_draft_code", _generatedCode.value)
+            putBoolean("last_draft_dirty", _isDirty.value)
+            putString("active_chat_session_id", _activeChatSessionId.value)
+            putString("chat_sessions_json", serializeChatSessions())
             apply()
         }
+    }
+
+    private fun serializeChatSessions(): String {
+        val arr = JSONArray()
+        chatSessionStore.values.forEach { s ->
+            val obj = JSONObject()
+            obj.put("id", s.id)
+            obj.put("title", s.title)
+            obj.put("lastPrompt", s.lastPrompt ?: JSONObject.NULL)
+            val mArr = JSONArray()
+            s.messages.forEach { m ->
+                val mo = JSONObject()
+                mo.put("id", m.id)
+                mo.put("role", m.role)
+                mo.put("text", m.text)
+                mArr.put(mo)
+            }
+            obj.put("messages", mArr)
+            val cArr = JSONArray()
+            s.checkpoints.forEach { c ->
+                val co = JSONObject()
+                co.put("id", c.id)
+                co.put("prompt", c.prompt)
+                co.put("promptMessageId", c.promptMessageId ?: JSONObject.NULL)
+                co.put("beforeCode", c.beforeCode)
+                co.put("afterCode", c.afterCode)
+                co.put("changedLines", c.changedLines)
+                cArr.put(co)
+            }
+            obj.put("checkpoints", cArr)
+            arr.put(obj)
+        }
+        return arr.toString()
+    }
+
+    private fun loadPersistedChatSessions() {
+        chatSessionStore.clear()
+        val raw = prefs.getString("chat_sessions_json", null)
+        if (!raw.isNullOrBlank()) {
+            runCatching {
+                val arr = JSONArray(raw)
+                for (i in 0 until arr.length()) {
+                    val o = arr.getJSONObject(i)
+                    val id = o.optString("id")
+                    if (id.isBlank()) continue
+                    val title = o.optString("title", "Chat")
+                    val lastPrompt = if (o.isNull("lastPrompt")) null else o.optString("lastPrompt")
+                    val messages = mutableListOf<VibeChatMessage>()
+                    val mArr = o.optJSONArray("messages") ?: JSONArray()
+                    for (j in 0 until mArr.length()) {
+                        val mo = mArr.getJSONObject(j)
+                        messages.add(
+                            VibeChatMessage(
+                                id = mo.optString("id", UUID.randomUUID().toString()),
+                                role = mo.optString("role", "assistant"),
+                                text = mo.optString("text", "")
+                            )
+                        )
+                    }
+                    val checkpoints = mutableListOf<EditCheckpoint>()
+                    val cArr = o.optJSONArray("checkpoints") ?: JSONArray()
+                    for (j in 0 until cArr.length()) {
+                        val co = cArr.getJSONObject(j)
+                        checkpoints.add(
+                            EditCheckpoint(
+                                id = co.optString("id", UUID.randomUUID().toString()),
+                                prompt = co.optString("prompt", ""),
+                                promptMessageId = if (co.isNull("promptMessageId")) null else co.optString("promptMessageId"),
+                                beforeCode = co.optString("beforeCode", ""),
+                                afterCode = co.optString("afterCode", ""),
+                                changedLines = co.optInt("changedLines", 0)
+                            )
+                        )
+                    }
+                    chatSessionStore[id] = SessionPayload(id, title, messages, checkpoints, lastPrompt)
+                }
+            }
+        }
+        if (chatSessionStore.isEmpty()) {
+            val id = UUID.randomUUID().toString()
+            chatSessionStore[id] = SessionPayload(id, "Chat 1", mutableListOf(), mutableListOf(), null)
+        }
+        _chatSessions.value = chatSessionStore.values.map { VibeChatSessionSummary(it.id, it.title) }
+        val savedActive = prefs.getString("active_chat_session_id", null)
+        val active = if (savedActive != null && chatSessionStore.containsKey(savedActive)) savedActive else chatSessionStore.keys.first()
+        selectChatSession(active)
+    }
+
+    private fun persistActiveSession() {
+        val id = _activeChatSessionId.value ?: return
+        val s = chatSessionStore[id] ?: return
+        s.messages = _chatMessages.value.toMutableList()
+        s.checkpoints = _editCheckpoints.value.toMutableList()
+        s.lastPrompt = _lastUserPrompt.value
+        _chatSessions.value = chatSessionStore.values.map { VibeChatSessionSummary(it.id, it.title) }
+        saveSettings()
+    }
+
+    fun createNewChatSession() {
+        val index = chatSessionStore.size + 1
+        val id = UUID.randomUUID().toString()
+        chatSessionStore[id] = SessionPayload(id, "Chat $index", mutableListOf(), mutableListOf(), null)
+        _chatSessions.value = chatSessionStore.values.map { VibeChatSessionSummary(it.id, it.title) }
+        selectChatSession(id)
+        saveSettings()
+    }
+
+    fun selectChatSession(sessionId: String) {
+        val s = chatSessionStore[sessionId] ?: return
+        _activeChatSessionId.value = sessionId
+        _chatMessages.value = s.messages.toList()
+        _editCheckpoints.value = s.checkpoints.toList()
+        _lastUserPrompt.value = s.lastPrompt
+        _pendingProposal.value = null
+        streamingAssistantMessageId = null
+        currentPromptMessageId = null
+        saveSettings()
     }
     
     /**
@@ -213,6 +430,246 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         _enableThinking.value = enabled
         saveSettings()
         applyGenerationParametersToService()
+    }
+
+    fun setPreferredLanguage(language: ProgrammingLanguage) {
+        _preferredLanguage.value = language
+        saveSettings()
+    }
+
+    fun openEditorFile(fileUri: String, fileName: String, content: String) {
+        _currentFileUri.value = fileUri
+        _currentFileName.value = fileName
+        _generatedCode.value = content
+        _codeLanguage.value = languageFromFileName(fileName)
+        _isDirty.value = false
+        _pendingProposal.value = null
+        saveSettings()
+        appendChat("assistant", "Opened $fileName")
+    }
+
+    fun openFolder(folderUri: String) {
+        _currentFolderUri.value = folderUri
+        saveSettings()
+        appendChat("assistant", "Opened folder workspace")
+    }
+
+    fun createNewEditorFile(fileName: String) {
+        _currentFileUri.value = null
+        _currentFileName.value = fileName
+        _generatedCode.value = ""
+        _codeLanguage.value = languageFromFileName(fileName)
+        _isDirty.value = false
+        _pendingProposal.value = null
+        saveSettings()
+        appendChat("assistant", "Started new file: $fileName")
+    }
+
+    fun markSaved(fileUri: String, fileName: String) {
+        _currentFileUri.value = fileUri
+        _currentFileName.value = fileName
+        _isDirty.value = false
+        saveSettings()
+    }
+
+    private fun appendChat(role: String, text: String) {
+        _chatMessages.value = _chatMessages.value + VibeChatMessage(role = role, text = text)
+        persistActiveSession()
+    }
+
+    private fun beginStreamingAssistant() {
+        val msg = VibeChatMessage(role = "assistant", text = "")
+        streamingAssistantMessageId = msg.id
+        _chatMessages.value = _chatMessages.value + msg
+    }
+
+    private fun updateStreamingAssistant(text: String) {
+        val id = streamingAssistantMessageId ?: return
+        _chatMessages.value = _chatMessages.value.map { msg ->
+            if (msg.id == id) msg.copy(text = text) else msg
+        }
+    }
+
+    private fun endStreamingAssistant(finalText: String) {
+        val id = streamingAssistantMessageId
+        if (id == null) {
+            appendChat("assistant", finalText)
+            return
+        }
+        _chatMessages.value = _chatMessages.value.map { msg ->
+            if (msg.id == id) msg.copy(text = finalText) else msg
+        }
+        streamingAssistantMessageId = null
+        persistActiveSession()
+    }
+
+    fun clearChatSession() {
+        _chatMessages.value = emptyList()
+        _pendingProposal.value = null
+        streamingAssistantMessageId = null
+        _editCheckpoints.value = emptyList()
+        _lastUserPrompt.value = null
+        persistActiveSession()
+    }
+
+    fun applyPendingProposal() {
+        val proposal = _pendingProposal.value ?: return
+        val before = _generatedCode.value
+        if (!isSafeFullFileUpdate(before, proposal.code)) {
+            appendChat(
+                "assistant",
+                "Blocked apply: model output looks partial and would overwrite file. Please ask AI to return the complete file."
+            )
+            return
+        }
+        _generatedCode.value = proposal.code
+        _codeLanguage.value = proposal.language
+        _isDirty.value = true
+        val changed = countChangedLines(before, proposal.code)
+        _editCheckpoints.value = (listOf(
+            EditCheckpoint(
+                prompt = proposal.prompt,
+                promptMessageId = proposal.promptMessageId,
+                beforeCode = before,
+                afterCode = proposal.code,
+                changedLines = changed
+            )
+        ) + _editCheckpoints.value).take(30)
+        _pendingProposal.value = null
+        saveSettings()
+        appendChat("assistant", "Applied proposed changes to editor.")
+        persistActiveSession()
+    }
+
+    private fun applyAutoProposal(
+        prompt: String,
+        promptMessageId: String?,
+        proposedCode: String,
+        proposedLanguage: CodeLanguage
+    ) {
+        val before = _generatedCode.value
+        if (!isSafeFullFileUpdate(before, proposedCode)) {
+            appendChat(
+                "assistant",
+                "Blocked apply: model output looks partial and would overwrite file. Please ask AI to return the complete file."
+            )
+            return
+        }
+        _generatedCode.value = proposedCode
+        val extLanguage = languageFromFileName(_currentFileName.value)
+        _codeLanguage.value = if (extLanguage != CodeLanguage.UNKNOWN) extLanguage else proposedLanguage
+        _isDirty.value = true
+        val changed = countChangedLines(before, proposedCode)
+        _editCheckpoints.value = (listOf(
+            EditCheckpoint(
+                prompt = prompt,
+                promptMessageId = promptMessageId,
+                beforeCode = before,
+                afterCode = proposedCode,
+                changedLines = changed
+            )
+        ) + _editCheckpoints.value).take(30)
+        _pendingProposal.value = null
+        saveSettings()
+        appendChat("assistant", "Applied AI edit automatically. Use Discard to revert.")
+        persistActiveSession()
+    }
+
+    fun discardPendingProposal() {
+        if (_pendingProposal.value != null) {
+            _pendingProposal.value = null
+            appendChat("assistant", "Discarded proposed changes.")
+        }
+    }
+
+    fun revertLastCheckpoint() {
+        val cp = _editCheckpoints.value.firstOrNull() ?: return
+        _generatedCode.value = cp.beforeCode
+        _isDirty.value = true
+        _pendingProposal.value = null
+        _editCheckpoints.value = _editCheckpoints.value.drop(1)
+        saveSettings()
+        appendChat("assistant", "Reverted last edit (${cp.changedLines} changed lines).")
+        persistActiveSession()
+    }
+
+    fun resendLastPrompt() {
+        val last = _lastUserPrompt.value ?: return
+        generateCode(last)
+    }
+
+    fun editAndResendFromPrompt(promptMessageId: String, newPrompt: String) {
+        val edited = newPrompt.trim()
+        if (edited.isBlank()) return
+
+        val currentMessages = _chatMessages.value
+        val promptIndex = currentMessages.indexOfFirst { it.id == promptMessageId && it.role == "user" }
+        if (promptIndex < 0) return
+
+        // Remove the selected prompt and everything after it.
+        // The edited prompt will be re-added as a fresh user message by generateCode().
+        _chatMessages.value = currentMessages.take(promptIndex)
+
+        _pendingProposal.value = null
+        streamingAssistantMessageId = null
+
+        val idx = _editCheckpoints.value.indexOfFirst { it.promptMessageId == promptMessageId }
+        if (idx >= 0) {
+            val checkpoint = _editCheckpoints.value[idx]
+            _generatedCode.value = checkpoint.beforeCode
+            _isDirty.value = true
+            _pendingProposal.value = null
+            _editCheckpoints.value = _editCheckpoints.value.drop(idx + 1)
+            appendChat("assistant", "Branched from selected prompt checkpoint and regenerated.")
+            saveSettings()
+        }
+
+        persistActiveSession()
+        generateCode(edited)
+    }
+
+    private fun languageFromFileName(fileName: String?): CodeLanguage {
+        val n = fileName?.lowercase() ?: return CodeLanguage.UNKNOWN
+        return when {
+            n.contains(".py") -> CodeLanguage.PYTHON
+            n.contains(".js") || n.contains(".ts") -> CodeLanguage.JAVASCRIPT
+            n.contains(".html") || n.contains(".htm") || n.contains(".css") -> CodeLanguage.HTML
+            else -> CodeLanguage.UNKNOWN
+        }
+    }
+
+    private fun languagePromptConfig(): Triple<String, String, String>? {
+        val n = _currentFileName.value?.lowercase().orEmpty()
+        val selectedLanguage: ProgrammingLanguage? = when {
+            n.contains(".py") -> ProgrammingLanguage.PYTHON
+            n.contains(".js") -> ProgrammingLanguage.JAVASCRIPT
+            n.contains(".ts") -> ProgrammingLanguage.TYPESCRIPT
+            n.contains(".java") -> ProgrammingLanguage.JAVA
+            n.contains(".kt") -> ProgrammingLanguage.KOTLIN
+            n.contains(".cs") -> ProgrammingLanguage.CSHARP
+            n.contains(".cpp") || n.contains(".cc") || n.contains(".cxx") -> ProgrammingLanguage.CPP
+            n.contains(".go") -> ProgrammingLanguage.GO
+            n.contains(".rs") -> ProgrammingLanguage.RUST
+            n.contains(".html") || n.contains(".htm") || n.contains(".css") -> ProgrammingLanguage.WEB
+            else -> null
+        }
+        if (selectedLanguage == null) return null
+        return when (selectedLanguage) {
+            ProgrammingLanguage.WEB -> Triple(
+                "Web App (HTML/CSS/JS)",
+                "Build a single self-contained HTML file with embedded CSS and JavaScript.",
+                "html"
+            )
+            ProgrammingLanguage.PYTHON -> Triple("Python", "Build a runnable Python script using only standard library.", "python")
+            ProgrammingLanguage.JAVASCRIPT -> Triple("JavaScript", "Build a runnable JavaScript program (no TypeScript).", "javascript")
+            ProgrammingLanguage.TYPESCRIPT -> Triple("TypeScript", "Build a runnable TypeScript program with clear types.", "typescript")
+            ProgrammingLanguage.JAVA -> Triple("Java", "Build a runnable Java program with a main method.", "java")
+            ProgrammingLanguage.KOTLIN -> Triple("Kotlin", "Build a runnable Kotlin console program with a main function.", "kotlin")
+            ProgrammingLanguage.CSHARP -> Triple("C#", "Build a runnable C# console app entry point.", "csharp")
+            ProgrammingLanguage.CPP -> Triple("C++", "Build a runnable modern C++ program (C++17 style).", "cpp")
+            ProgrammingLanguage.GO -> Triple("Go", "Build a runnable Go program with package main and func main().", "go")
+            ProgrammingLanguage.RUST -> Triple("Rust", "Build a runnable Rust program with fn main().", "rust")
+        }
     }
 
     private fun applyGenerationParametersToService(
@@ -311,126 +768,40 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             _errorMessage.value = "Please load a model first"
             return
         }
+        if (_currentFileName.value.isNullOrBlank()) {
+            _errorMessage.value = "Create or open a file first (e.g. .py, .js, .ts)"
+            return
+        }
+        if (languagePromptConfig() == null) {
+            _errorMessage.value = "Unsupported or unknown file extension. Use a code file like .py, .js, .ts, .java, .kt, .go, .rs, .cpp, .cs, .html"
+            return
+        }
+        val normalizedPrompt = prompt.trim()
+        val userMsg = VibeChatMessage(role = "user", text = normalizedPrompt)
+        _chatMessages.value = _chatMessages.value + userMsg
+        currentPromptMessageId = userMsg.id
+        _lastUserPrompt.value = normalizedPrompt
+        persistActiveSession()
         
         processingJob?.cancel()
         
         processingJob = viewModelScope.launch {
             _isProcessing.value = true
             _errorMessage.value = null
-            
-            // Determine if request is creative/game or utility/precise
-            val isCreative = prompt.contains("game", ignoreCase = true) || 
-                           prompt.contains("story", ignoreCase = true) ||
-                           prompt.contains("art", ignoreCase = true) ||
-                           prompt.contains("creative", ignoreCase = true)
-            
-            // Set optimized parameters based on intent:
-            // - Utility/Math/Code (default): 0.2 temperature for high precision
-            // - Games/Creative: 0.6 temperature for balanced creativity
-            val temperature = if (isCreative) 0.6f else 0.2f
+            val currentCode = _generatedCode.value
             
             try {
-                // Step 1: Architect (Meta-Prompting) vs Direct Modification
-                // If we have existing code and the prompt implies a revision, we SKIP the architect
-                // and go straight to the coder with a "Modification Prompt".
-                // If it's a new project, we use the Architect to plan it first.
-                
-                val currentCode = _generatedCode.value
-                val isRevision = currentCode.isNotBlank() && !prompt.equals("new", ignoreCase = true)
-                
-                if (!isRevision) {
-                    _generatedCode.value = "" // Clear code only for new projects
-                } else {
-                    _generatedCode.value = "" // Clear the old code from the screen so user knows we are working
-                }
-                
-                var builtSpec = ""
-                
-                // Only run Architect if this is a NEW project
-                if (!isRevision) {
-                    _isPlanning.value = true
-                    try {
-                        // Adjust parameters for Architect (shorter output needed)
-                        applyGenerationParametersToService(
-                            maxTokens = 1024, // Architect only needs to write a short list
-                            topK = 40,
-                            topP = 0.95f,
-                            temperature = temperature
-                        )
-                        
-                        // Timeout for planning phase (3 minutes)
-                        val planResult = kotlinx.coroutines.withTimeoutOrNull(180_000L) {
-                            val specPrompt = buildSpecPrompt(prompt, "")
-                            val specChatId = "vibe-spec-${UUID.randomUUID()}"
-                            
-                            val specResponseFlow = inferenceService.generateResponseStreamWithSession(
-                                prompt = specPrompt,
-                                model = model,
-                                chatId = specChatId,
-                                images = emptyList(),
-                                audioData = null,
-                                webSearchEnabled = false
-                            )
-                            
-                            specResponseFlow.collect { token ->
-                                builtSpec += token
-                            }
-                            true // Return true on successful completion
-                        }
-                        
-                        if (planResult == null) {
-                            Log.w("VibeCoderVM", "Planning phase timed out after 3 minutes, using generated spec up to this point: $builtSpec")
-                        }
-                        
-                        // DEBUG: Log the Architect's generated requirements
-                        Log.d("VibeCoderVM", "Architect Requirements:\n$builtSpec")
-                        
-                        // CRITICAL: Explicitly reset the session between Architect and Coder phases
-                        try {
-                            inferenceService.resetChatSession("vibe-spec-handoff")
-                            kotlinx.coroutines.delay(200)
-                        } catch (e: Exception) {
-                            Log.w("VibeCoderVM", "Session reset between phases failed: ${e.message}")
-                        }
-                        
-                    } catch (e: Exception) {
-                         if (e is kotlinx.coroutines.CancellationException) {
-                             throw e // Ensure genuine cancellations to the job are not swallowed
-                         }
-                         Log.w("VibeCoderVM", "Planning phase failed: ${e.message}. Falling back to direct generation.")
-                         try {
-                            inferenceService.resetChatSession("vibe-spec-cleanup")
-                         } catch (resetEx: Exception) {
-                            Log.e("VibeCoderVM", "Failed to reset session after planning failure", resetEx)
-                         }
-                    }
-                    _isPlanning.value = false
-                }
-                
-                currentSpec = builtSpec
-                
-                // Configure parameters for the Coder phase (needs lots of output space for code)
+                val coderMaxTokens = _selectedMaxTokens.value.coerceAtLeast(512)
                 applyGenerationParametersToService(
-                    maxTokens = 8192,
+                    maxTokens = coderMaxTokens,
                     topK = 40,
                     topP = 0.95f,
-                    temperature = temperature
+                    temperature = 0.2f
                 )
-                
-                // Step 2: Coder (Implementation or Modification)
-                val implementationPrompt = if (isRevision) {
-                    // Direct Modification Flow
-                    Log.d("VibeCoderVM", "Direct Modification Mode")
-                    buildModificationPrompt(prompt, currentCode)
-                } else if (builtSpec.isNotBlank()) {
-                    // Standard Flow (Architect -> Coder)
-                    buildImplementationPrompt(builtSpec)
-                } else {
-                    // Fallback Flow (Direct Prompt)
-                    buildPrompt(prompt)
-                }
+                val implementationPrompt = buildFileAwareEditPrompt(prompt, currentCode)
                 
                 val codeChatId = "vibe-coder-${UUID.randomUUID()}"
+                beginStreamingAssistant()
                 
                 val responseFlow = inferenceService.generateResponseStreamWithSession(
                     prompt = implementationPrompt,
@@ -442,35 +813,37 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                 )
                 
                 var responseText = ""
-                try {
-                    responseFlow.collect { token ->
-                        responseText += token
-                        _generatedCode.value = responseText
-
-                        // Early stopping: Check if we have two distinct sets of triple backticks
-                        val firstTick = responseText.indexOf("```")
-                        if (firstTick != -1) {
-                            val lastTick = responseText.lastIndexOf("```")
-                            if (lastTick > firstTick) {
-                                // Found a closing code block, stop generating
-                                throw kotlinx.coroutines.CancellationException("Code block complete")
-                            }
-                        }
-                    }
-                } catch (e: kotlinx.coroutines.CancellationException) {
-                    if (e.message == "Code block complete") {
-                        Log.d("VibeCoderVM", "Early stop: Code block complete")
-                        // Fall through to extraction
-                    } else {
-                        throw e
-                    }
+                responseFlow.collect { token ->
+                    responseText += token
+                    updateStreamingAssistant(responseText)
                 }
                 
-                // Detect code language and extract code from response
-                detectAndExtractCode(responseText)
+                // Parse generated code and auto-apply immediately.
+                val (proposedCode, proposedLanguage) = extractCodeAndLanguage(responseText)
+                if (proposedCode.isNotBlank()) {
+                    val changedLines = countChangedLines(currentCode, proposedCode)
+                    applyAutoProposal(prompt, currentPromptMessageId, proposedCode, proposedLanguage)
+                    val chatLang = when (proposedLanguage) {
+                        CodeLanguage.HTML -> "html"
+                        CodeLanguage.PYTHON -> "python"
+                        CodeLanguage.JAVASCRIPT -> "javascript"
+                        CodeLanguage.UNKNOWN -> ""
+                    }
+                    val fencedCode = if (chatLang.isNotBlank()) {
+                        "```$chatLang\n$proposedCode\n```"
+                    } else {
+                        "```\n$proposedCode\n```"
+                    }
+                    endStreamingAssistant(
+                        "Updated `${_currentFileName.value}`.\nChanged lines: $changedLines\n\nModel output:\n$fencedCode"
+                    )
+                } else {
+                    endStreamingAssistant("No usable code was produced. Try refining your prompt.")
+                }
                 
             } catch (e: kotlinx.coroutines.CancellationException) {
                 Log.d("VibeCoderVM", "Generation cancelled")
+                endStreamingAssistant("Generation cancelled.")
             } catch (e: Exception) {
                 val message = e.message ?: ""
                 val shouldShowError = !message.contains("cancelled", ignoreCase = true) &&
@@ -479,6 +852,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                 
                 if (shouldShowError) {
                     _errorMessage.value = message.ifBlank { "Generation failed" }
+                    endStreamingAssistant("Generation failed: ${_errorMessage.value}")
                     Log.e("VibeCoderVM", "Generation error: $message", e)
                 } else {
                     Log.d("VibeCoderVM", "Suppressed error: $message")
@@ -492,57 +866,80 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             }
         }
     }
+
+    private fun countChangedLines(oldCode: String, newCode: String): Int {
+        val a = oldCode.lines()
+        val b = newCode.lines()
+        val max = maxOf(a.size, b.size)
+        var changed = 0
+        for (i in 0 until max) {
+            val av = a.getOrNull(i).orEmpty()
+            val bv = b.getOrNull(i).orEmpty()
+            if (av != bv) changed++
+        }
+        return changed
+    }
+
+    private fun isSafeFullFileUpdate(currentCode: String, proposedCode: String): Boolean {
+        if (currentCode.isBlank()) return proposedCode.isNotBlank()
+        if (proposedCode.isBlank()) return false
+        val currLen = currentCode.trim().length
+        val nextLen = proposedCode.trim().length
+        if (currLen < 200) return true
+        val ratio = nextLen.toDouble() / currLen.toDouble()
+        if (ratio >= 0.60) return true
+
+        val n = (_currentFileName.value ?: "").lowercase()
+        return when {
+            n.endsWith(".html") || n.endsWith(".htm") ->
+                proposedCode.contains("<html", true) || proposedCode.contains("<!doctype", true)
+            n.endsWith(".py") ->
+                proposedCode.contains("def ") || proposedCode.contains("class ") || proposedCode.contains("import ")
+            n.endsWith(".js") || n.endsWith(".ts") ->
+                proposedCode.contains("function ") || proposedCode.contains("const ") || proposedCode.contains("let ") || proposedCode.contains("class ")
+            else -> false
+        }
+    }
     
     /**
      * Detect code language and extract clean code from the response.
      * Supports HTML, Python, JavaScript wrapped in markdown code blocks or XML tags.
      * Handles edge cases where code block markers aren't perfectly formatted.
      */
-    private fun detectAndExtractCode(response: String) {
+    private fun extractCodeAndLanguage(response: String): Pair<String, CodeLanguage> {
+        val markerMatch = Regex("(?s)<<<FULL_FILE_START>>>\\s*(.*?)\\s*<<<FULL_FILE_END>>>").find(response)
+        if (markerMatch != null) {
+            val extracted = sanitizeExtractedCode(markerMatch.groupValues[1].trim())
+            val lang = detectLanguageFromContent(extracted)
+            return Pair(extracted, lang)
+        }
+
         // Try to extract from markdown code blocks with language hints (```html, ```python, etc.)
         // Relaxed regex to allow immediate content after language tag (no newline required)
-        val htmlMatch = Regex("```(?:html|htm)\\s*([\\s\\S]*?)```", RegexOption.IGNORE_CASE).find(response)
+        val htmlMatch = Regex("```(?:html|htm)\\s*([\\s\\S]*?)```", RegexOption.IGNORE_CASE)
+            .findAll(response).maxByOrNull { it.groupValues[1].length }
         if (htmlMatch != null) {
-            _generatedCode.value = htmlMatch.groupValues[1].trim()
-            _codeLanguage.value = CodeLanguage.HTML
-            return
+            return Pair(sanitizeExtractedCode(htmlMatch.groupValues[1].trim()), CodeLanguage.HTML)
         }
         
-        val pythonMatch = Regex("```(?:python|py)\\s*([\\s\\S]*?)```", RegexOption.IGNORE_CASE).find(response)
+        val pythonMatch = Regex("```(?:python|py)\\s*([\\s\\S]*?)```", RegexOption.IGNORE_CASE)
+            .findAll(response).maxByOrNull { it.groupValues[1].length }
         if (pythonMatch != null) {
-            _generatedCode.value = pythonMatch.groupValues[1].trim()
-            _codeLanguage.value = CodeLanguage.PYTHON
-            return
+            return Pair(sanitizeExtractedCode(pythonMatch.groupValues[1].trim()), CodeLanguage.PYTHON)
         }
         
-        val jsMatch = Regex("```(?:javascript|js)\\s*([\\s\\S]*?)```", RegexOption.IGNORE_CASE).find(response)
+        val jsMatch = Regex("```(?:javascript|js)\\s*([\\s\\S]*?)```", RegexOption.IGNORE_CASE)
+            .findAll(response).maxByOrNull { it.groupValues[1].length }
         if (jsMatch != null) {
-            _generatedCode.value = jsMatch.groupValues[1].trim()
-            _codeLanguage.value = CodeLanguage.JAVASCRIPT
-            return
+            return Pair(sanitizeExtractedCode(jsMatch.groupValues[1].trim()), CodeLanguage.JAVASCRIPT)
         }
         
         // Fallback: Extract any content between ``` markers (handles malformed responses)
         val genericMatch = Regex("```\\s*([\\s\\S]*?)```").find(response)
         if (genericMatch != null) {
-            val extracted = genericMatch.groupValues[1].trim()
-            _generatedCode.value = extracted
+            val extracted = sanitizeExtractedCode(genericMatch.groupValues[1].trim())
             // Detect language from content
-            when {
-                extracted.contains("<!DOCTYPE", ignoreCase = true) || extracted.contains("<html", ignoreCase = true) -> {
-                    _codeLanguage.value = CodeLanguage.HTML
-                }
-                extracted.contains("def ") || extracted.contains("import ") -> {
-                    _codeLanguage.value = CodeLanguage.PYTHON
-                }
-                extracted.contains("function ") || extracted.contains("const ") -> {
-                    _codeLanguage.value = CodeLanguage.JAVASCRIPT
-                }
-                else -> {
-                    _codeLanguage.value = CodeLanguage.UNKNOWN
-                }
-            }
-            return
+            return Pair(extracted, detectLanguageFromContent(extracted))
         }
         
         // If no code block is found, assume the entire response is code if it loosely fits a pattern
@@ -552,38 +949,50 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                            response.contains("function ")
         
         if (isLikelyCode && !response.contains("```")) {
-            _generatedCode.value = response.trim()
+            val extracted = sanitizeExtractedCode(response.trim())
+            return Pair(extracted, detectLanguageFromContent(extracted))
         }
         
         // Try to extract from XML-like tags (fallback)
         val xmlHtmlMatch = Regex("<code[^>]*>([\\s\\S]*?)</code>", RegexOption.IGNORE_CASE).find(response)
         if (xmlHtmlMatch != null) {
-            val extracted = xmlHtmlMatch.groupValues[1].trim()
-            _generatedCode.value = extracted
-            _codeLanguage.value = CodeLanguage.HTML
-            return
+            val extracted = sanitizeExtractedCode(xmlHtmlMatch.groupValues[1].trim())
+            return Pair(extracted, CodeLanguage.HTML)
         }
-        
-        // Default detection based on content pattern
-        when {
-            response.contains("<!DOCTYPE html", ignoreCase = true) ||
-            response.contains("<html", ignoreCase = true) -> {
-                _codeLanguage.value = CodeLanguage.HTML
-            }
-            response.contains("def ", ignoreCase = true) ||
-            response.contains("import ", ignoreCase = true) ||
-            response.contains("python", ignoreCase = true) -> {
-                _codeLanguage.value = CodeLanguage.PYTHON
-            }
-            response.contains("function ", ignoreCase = true) ||
-            response.contains("const ", ignoreCase = true) ||
-            response.contains("var ", ignoreCase = true) ||
-            response.contains("javascript", ignoreCase = true) -> {
-                _codeLanguage.value = CodeLanguage.JAVASCRIPT
-            }
-            else -> {
-                _codeLanguage.value = CodeLanguage.UNKNOWN
-            }
+
+        val cleaned = sanitizeExtractedCode(response.trim())
+        return Pair(cleaned, detectLanguageFromContent(cleaned))
+    }
+
+    private fun sanitizeExtractedCode(raw: String): String {
+        val lines = raw.lines()
+        val startIndex = lines.indexOfFirst { line ->
+            val t = line.trimStart()
+            t.startsWith("<") ||
+                t.startsWith("#!") ||
+                t.startsWith("import ") ||
+                t.startsWith("from ") ||
+                t.startsWith("def ") ||
+                t.startsWith("class ") ||
+                t.startsWith("function ") ||
+                t.startsWith("const ") ||
+                t.startsWith("let ") ||
+                t.startsWith("var ")
+        }
+        val trimmed = if (startIndex > 0) lines.drop(startIndex).joinToString("\n") else raw
+        return trimmed
+            .replace(Regex("(?m)^\\s*File\\s*:.*$"), "")
+            .replace(Regex("(?m)^\\s*TARGET\\s+LANGUAGE\\s*:.*$"), "")
+            .replace(Regex("(?m)^\\s*TARGET\\s+RULE\\s*:.*$"), "")
+            .trim()
+    }
+
+    private fun detectLanguageFromContent(content: String): CodeLanguage {
+        return when {
+            content.contains("<!DOCTYPE html", ignoreCase = true) || content.contains("<html", ignoreCase = true) -> CodeLanguage.HTML
+            content.contains("def ", ignoreCase = true) || content.contains("import ", ignoreCase = true) -> CodeLanguage.PYTHON
+            content.contains("function ", ignoreCase = true) || content.contains("const ", ignoreCase = true) || content.contains("var ", ignoreCase = true) -> CodeLanguage.JAVASCRIPT
+            else -> CodeLanguage.UNKNOWN
         }
     }
     
@@ -636,6 +1045,8 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     fun clearCode() {
         _generatedCode.value = ""
         _codeLanguage.value = CodeLanguage.UNKNOWN
+        _isDirty.value = true
+        _pendingProposal.value = null
         currentSpec = ""
     }
 
@@ -644,6 +1055,8 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
      */
     fun updateGeneratedCode(code: String) {
         _generatedCode.value = code
+        _isDirty.value = true
+        saveSettings()
     }
 
     /**
@@ -651,6 +1064,10 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
      */
     fun clearError() {
         _errorMessage.value = null
+    }
+
+    fun setError(message: String) {
+        _errorMessage.value = message
     }
     
     /**
@@ -691,59 +1108,23 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
      * Build the Developer Implementation Prompt (Step 2 - New Project)
      */
     private fun buildImplementationPrompt(requirements: String): String {
+        val config = languagePromptConfig()
+            ?: throw IllegalStateException("Unsupported file extension for code generation")
+        val (languageName, targetRule, fenceLanguage) = config
         return """
-            You are an expert developer who is adept at generating production-ready stand-alone apps and games.
-            **CRITICAL STACK RULE:** You MUST default to HTML/JS for ALL games and apps. HTML/JS is required because it runs natively in the user's view. Python cannot render UI or playable games in this environment, and should be a LAST RESORT used ONLY for pure math/charting tasks, backend/scripting tasks meant to be copied, or if the user explicitly asks for Python.
-
-            Your task is to generate clean, functional code based on the Requirements provided below.
-
+            You are a senior software engineer.
+            Produce exactly what the user asked for as working code.
             REQUIREMENTS:
             $requirements
 
-            Think about how to meet these requirements for the best stand-alone functional code to delight the user.
+            TARGET LANGUAGE: $languageName
+            TARGET RULE: $targetRule
 
-            CONSTRAINTS:
-            Generate code that is:
-            - Syntactically correct and ready to run
-            - Well-commented where appropriate
-            - Self-contained (no external dependencies)
-            
-            CRITICAL ANTI-PATTERNS (DO NOT DO THIS):
-            - NO BLOCKING LOOPS: Never use 'while' or 'for' loops to manage turns or wait for user input (e.g., `while(guesses < 7)`). This freezes the browser.
-            - NO ALERTS: Do not use `alert()` or `prompt()`. Use HTML elements for output and input.
-            - NO EXTERNAL RESOURCES: No external images, CSS, or JS files.
-            - TYPE SAFETY: Never compare `input.value` directly to a number. ALWAYS use `parseInt()` or `Number()` first.
-            - UI INTEGRITY: Do not overwrite elements that contain labels (e.g., `<div id="score">Score: 0</div>` -> `document.getElementById("score").textContent = 5`). This destroys the label. Use a child `<span>` for the value or include the label in the update.
-            
-            REQUIREMENTS FOR APPS/GAMES (HTML/JS):
-            - Create a complete, standalone Single Page Application (SPA).
-            - Game Loop: State must persist between events. Each button click = one update.
-            - ALWAYS include a "Reset" or "New" button to restart the application state.
-            - Games should maintain a functional game state (Score, Win/Loss messages, turn history, etc.) in the UI. Turn history would be a list of previous moves/actions so the user can track progress, and summarize the results when the game is won or lost.
-            - Ensure all interactive elements (buttons, inputs) are clearly visible and accessible.
-            - FUNCTIONAL UI: Ensure ALL UI elements (including SVGs, Canvas) are functional and wired to the script. Do NOT add decorative elements that do nothing.
-            - EVENT DRIVEN: Do NOT use blocking loops (while/for) to wait for user input. Use event listeners and state variables to handle user interactions asynchronously.
-            
-            REQUIREMENTS FOR UTILITY APPS (Calculators, Converters, Tools):
-            - Use clear, labeled forms with appropriate input types (number, text, etc.).
-            - Validate inputs before processing (show user-friendly error messages).
-            - clearly display results in a distinct output area.
-            - Ensure high precision for calculations.
-            
-            REQUIREMENTS FOR PYTHON:
-            - Create a functional script (no external dependencies).
-            - Since this runs in a text simulation check, use print() statements to simulate output/state.
-            - For object simulations (e.g., "Park Sim"), create classes and a main execution block that demonstrates the logic.
-            
-            IMPORTANT:
-            - If generating HTML/JavaScript, wrap it in a markdown code block: ```html
-            YOUR HTML CODE HERE
-            ```
-            - If generating Python, wrap it in a markdown code block: ```python
-            YOUR PYTHON CODE HERE
-            ```
-            - Respond ONLY with the production-ready stand-alone code in a markdown code block. DO NOT include explanations, warnings, or additional text before or after the code block.
-            IMPORTANT: All UI text, labels, button text, and messages in the generated code must be in the same language as the user's input.
+            RULES:
+            - Return only code in one markdown code block fenced as ```$fenceLanguage
+            - No explanations.
+            - Language in UI/messages must match user language.
+            - Include reset behavior where stateful interactions exist.
         """.trimIndent()
     }
 
@@ -752,35 +1133,36 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
      * Direct Code Modification skipping the Architect.
      */
     private fun buildModificationPrompt(userRequest: String, currentCode: String): String {
+        val config = languagePromptConfig()
+            ?: throw IllegalStateException("Unsupported file extension for code generation")
+        val (languageName, targetRule, fenceLanguage) = config
+        // Keep prompt size bounded to avoid context overflow during refine mode.
+        val maxChars = 12_000
+        val trimmedCode = if (currentCode.length > maxChars) {
+            currentCode.take(maxChars) + "\n\n/* ... truncated for prompt size ... */"
+        } else {
+            currentCode
+        }
         return """
-            You are an expert developer. The user wants to MODIFY the existing code below.
-            
-            **CRITICAL STACK RULE:** You MUST keep or default to HTML/JS if generating UI-based code. Python cannot render UI in this environment and is ONLY for math/charting, back-end scripts, or if explicitly requested.
-            
+            You are a senior software engineer.
+            Rewrite the full code to satisfy the user's modification request.
             EXISTING CODE:
             ```
-            $currentCode
+            $trimmedCode
             ```
             
             USER REQUEST: "$userRequest"
-            
-            TASK:
-            1. Analyze the existing code and the user's request.
-            2. Rewrite the FULL code to incorporate the changes.
-            3. Ensure the rest of the application remains functional.
-            
-            CRITICAL ANTI-PATTERNS (DO NOT DO THIS):
-            - NO BLOCKING LOOPS: Never use 'while' or 'for' loops to manage turns or wait for user input (e.g., `while(guesses < 7)`). This freezes the browser.
-            - NO ALERTS: Do not use `alert()` or `prompt()`. Use HTML elements for output and input.
-            - NO EXTERNAL RESOURCES: No external images, CSS, or JS files.
-            - TYPE SAFETY: Never compare `input.value` directly to a number. ALWAYS use `parseInt()` or `Number()` first.
-            - UI INTEGRITY: Do not overwrite elements that contain labels. Use a child `<span>` for the value.
-            
-            IMPORTANT:
-            - Wrap code in ```html or ```python blocks.
-            - Return the FULL modified code, not just a diff.
+
+            TARGET LANGUAGE: $languageName
+            TARGET RULE: $targetRule
+
+            RULES:
+            - Return the full updated code, not a diff.
+            - Return only code in one markdown code block fenced as ```$fenceLanguage
             - No explanations.
-            IMPORTANT: All UI text, labels, button text, and messages in the generated code must be in the same language as the user's request.
+            - Preserve existing behavior unless user asked to change it.
+            - Keep text/output language aligned with user request.
+            - If input code was truncated, infer missing parts conservatively and output a complete working file.
         """.trimIndent()
     }
 
@@ -789,57 +1171,61 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
      * Used when Planning Phase fails or times out.
      */
     private fun buildPrompt(userPrompt: String): String {
+        val config = languagePromptConfig()
+            ?: throw IllegalStateException("Unsupported file extension for code generation")
+        val (languageName, targetRule, fenceLanguage) = config
         return """
-            You are an expert developer who is adept at generating production-ready stand-alone apps and games.
-            **CRITICAL STACK RULE:** You MUST default to HTML/JS for ALL games and apps. HTML/JS is required because it runs natively in the user's view. Python cannot render UI or playable games in this environment, and should be a LAST RESORT used ONLY for pure math/charting tasks, backend/scripting tasks meant to be copied, or if the user explicitly asks for Python.
-
-            Your task is to generate clean, functional code based on the current user request.
+            You are a senior software engineer.
+            Generate code that directly fulfills the user's request.
 
             User request: $userPrompt
 
-            Think about how to meet the user's request for the best stand-alone functional code to delight the user, considering the constraints and requirements that follow.
+            TARGET LANGUAGE: $languageName
+            TARGET RULE: $targetRule
 
-            CONSTRAINTS:
-            Generate code that is:
-            - Syntactically correct and ready to run
-            - Well-commented where appropriate
-            - Self-contained (no external dependencies)
-            
-            CONSTRAINT: NO EXTERNAL RESOURCES
-            - Do NOT use external images (<img> src must be data URI or SVG directly in code).
-            - Do NOT use external scripts (CDNs) or CSS files.
-            - Use standard HTML5/CSS3/ES6+ features.
-            - For graphics, use inline SVG, Canvas API, or CSS shapes.
-            - Provide a professional, polished look.
-            
-            REQUIREMENTS FOR APPS/GAMES (HTML/JS):
-            - Create a complete, standalone Single Page Application (SPA).
-            - ALWAYS include a "Reset" or "New" button to restart the application state.
-            - Games should maintain a functional game state (Score, Win/Loss messages, turn history, etc.) in the UI. Turn history would be a list of previous moves/actions so the user can track progress, and summarize the results when the game is won or lost.
-            - Ensure all interactive elements (buttons, inputs) are clearly visible and accessible.
-            - FUNCTIONAL UI: Ensure ALL UI elements (including SVGs, Canvas) are functional and wired to the script. Do NOT add decorative elements that do nothing.
-            - EVENT DRIVEN: Do NOT use blocking loops (while/for) to wait for user input. Use event listeners and state variables to handle user interactions asynchronously.
-            
-            REQUIREMENTS FOR UTILITY APPS (Calculators, Converters, Tools):
-            - Use clear, labeled forms with appropriate input types (number, text, etc.).
-            - Validate inputs before processing (show user-friendly error messages).
-            - clearly display results in a distinct output area.
-            - Ensure high precision for calculations.
-            
-            REQUIREMENTS FOR PYTHON:
-            - Create a functional script (no external dependencies).
-            - Since this runs in a text simulation check, use print() statements to simulate output/state.
-            - For object simulations (e.g., "Park Sim"), create classes and a main execution block that demonstrates the logic.
-            
-            IMPORTANT:
-            - If generating HTML/JavaScript, wrap it in a markdown code block: ```html
-            YOUR HTML CODE HERE
+            RULES:
+            - Return only code in one markdown code block fenced as ```$fenceLanguage
+            - No explanations.
+            - Keep UI/messages in the user's language.
+            - For interactive apps, include clear state and reset behavior.
+        """.trimIndent()
+    }
+
+    private fun buildFileAwareEditPrompt(userPrompt: String, currentCode: String): String {
+        val config = languagePromptConfig()
+            ?: throw IllegalStateException("Unsupported file extension for code generation")
+        val (languageName, targetRule, fenceLanguage) = config
+        val fileName = _currentFileName.value ?: "untitled"
+        val codeSection = if (currentCode.isBlank()) {
+            "FILE_IS_EMPTY"
+        } else {
+            currentCode.take(20_000)
+        }
+        return """
+            You are an expert coding assistant working on a real file.
+            FILE: $fileName
+            TARGET LANGUAGE: $languageName
+            TARGET RULE: $targetRule
+
+            USER REQUEST:
+            $userPrompt
+
+            CURRENT FILE CONTENT:
+            ```$fenceLanguage
+            $codeSection
             ```
-            - If generating Python, wrap it in a markdown code block: ```python
-            YOUR PYTHON CODE HERE
-            ```
-            - Respond ONLY with the production-ready stand-alone code in a markdown code block. DO NOT include explanations, warnings, or additional text before or after the code block.
-            IMPORTANT: All UI text, labels, button text, and messages in the generated code must be in the same language as the user's input.
+
+            INSTRUCTIONS:
+            - Produce the FULL updated file content.
+            - Do not return partial snippets or patch hunks.
+            - Wrap the final full file between markers:
+              <<<FULL_FILE_START>>>
+              [full file content]
+              <<<FULL_FILE_END>>>
+            - Respect the FILE extension/language exactly.
+            - If file is empty, create a complete starter implementation for this request.
+            - Do not output explanations.
+            - Output only one fenced code block using ```$fenceLanguage.
         """.trimIndent()
     }
     
