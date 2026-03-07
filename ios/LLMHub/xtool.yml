@@ -1,2 +1,3 @@
 version: 1
 bundleID: com.example.LLMHub
+iconPath: Sources/LLMHub/Icon.png

@@ -1,82 +1,596 @@
 import SwiftUI
 
-struct ChatScreen: View {
-    @State private var messageText = ""
-    @AppStorage("enableTokenStreaming") private var enableStreaming: Bool = true
-    @AppStorage("showResultStatus") private var showStatus: Bool = true
-    @State private var resultStatus = "5.32 tok/s • 42 tokens • 8.1s"
-    
-    var body: some View {
-        VStack {
-            if showStatus {
-                HStack {
-                    Image(systemName: "bolt.fill")
-                        .foregroundColor(.green)
-                    Text("Result Status: \(resultStatus)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                .padding(.top, 8)
+// MARK: - Data Models
+struct ChatMessage: Identifiable, Equatable, Sendable {
+    let id: UUID
+    var content: String
+    let isFromUser: Bool
+    let timestamp: Date
+    var isGenerating: Bool
+
+    init(id: UUID = UUID(), content: String, isFromUser: Bool, timestamp: Date = Date(), isGenerating: Bool = false) {
+        self.id = id
+        self.content = content
+        self.isFromUser = isFromUser
+        self.timestamp = timestamp
+        self.isGenerating = isGenerating
+    }
+}
+
+struct ChatSession: Identifiable, Sendable {
+    let id: UUID
+    var title: String
+    var messages: [ChatMessage]
+    let createdAt: Date
+
+    init(id: UUID = UUID(), title: String = "New Chat", messages: [ChatMessage] = [], createdAt: Date = Date()) {
+        self.id = id
+        self.title = title
+        self.messages = messages
+        self.createdAt = createdAt
+    }
+}
+
+// MARK: - Chat ViewModel
+@MainActor
+class ChatViewModel: ObservableObject {
+    @Published var messages: [ChatMessage] = []
+    @Published var inputText: String = ""
+    @Published var isGenerating: Bool = false
+    @Published var tokensPerSecond: Double = 0
+    @Published var totalTokens: Int = 0
+    @Published var selectedModelName: String = "No model loaded"
+    @Published var chatSessions: [ChatSession] = []
+    @Published var currentSessionId: UUID = UUID()
+
+    private var streamingTask: Task<Void, Never>?
+
+    init() {
+        // Add a default session
+        let session = ChatSession(title: "New Chat")
+        chatSessions = [session]
+        currentSessionId = session.id
+    }
+
+    func sendMessage() {
+        guard !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        guard !isGenerating else { return }
+
+        let userMsg = ChatMessage(content: inputText, isFromUser: true)
+        messages.append(userMsg)
+        inputText = ""
+
+        // Placeholder AI response - streaming simulation
+        let aiMsg = ChatMessage(content: "", isFromUser: false, isGenerating: true)
+        messages.append(aiMsg)
+        isGenerating = true
+
+        streamingTask = Task {
+            let fakeResponse = "I'm LLM Hub running on your iPhone! This is a placeholder response. To enable real AI responses, please download a model from the Models screen and load it into the chat."
+            var current = ""
+            let startTime = Date()
+            var tokenCount = 0
+
+            for char in fakeResponse {
+                if Task.isCancelled { break }
+                try? await Task.sleep(nanoseconds: 20_000_000)
+                current += String(char)
+                tokenCount += 1
                 
-                Divider()
-            }
-            
-            ScrollView {
-                VStack(alignment: .leading, spacing: 15) {
-                    ChatBubble(message: "Hello! I am Gemma 3 running directly on your iPhone using MLX. How can I help you?", isUser: false)
-                }
-                .padding()
-            }
-            
-            Spacer()
-            
-            HStack {
-                TextField("Type a message...", text: $messageText)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .padding(.horizontal)
+                let capturedCurrent = current
+                let capturedTokenCount = tokenCount
                 
-                Button(action: {
-                    // Start generation
-                }) {
-                    Image(systemName: "paperplane.fill")
-                        .foregroundColor(.white)
-                        .padding(10)
-                        .background(Color.blue)
-                        .clipShape(Circle())
+                await MainActor.run {
+                    if let idx = self.messages.indices.last, !self.messages[idx].isFromUser {
+                        self.messages[idx].content = capturedCurrent
+                        self.totalTokens = capturedTokenCount
+                        let elapsed = Date().timeIntervalSince(startTime)
+                        self.tokensPerSecond = elapsed > 0 ? Double(capturedTokenCount) / elapsed : 0
+                    }
                 }
-                .padding(.trailing)
             }
-            .padding(.bottom, 10)
+            
+            await MainActor.run {
+                if let idx = self.messages.indices.last, !self.messages[idx].isFromUser {
+                    self.messages[idx].isGenerating = false
+                }
+                self.isGenerating = false
+            }
         }
-        .navigationTitle("AI Chat")
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: {
-                    // Open model config
-                }) {
-                    Image(systemName: "slider.horizontal.3")
-                }
+    }
+
+    func stopGeneration() {
+        streamingTask?.cancel()
+        streamingTask = nil
+        if let idx = messages.indices.last, !messages[idx].isFromUser {
+            messages[idx].isGenerating = false
+        }
+        isGenerating = false
+    }
+
+    func copyMessage(_ message: ChatMessage) {
+        UIPasteboard.general.string = message.content
+    }
+
+    func newChat() {
+        let session = ChatSession(title: "New Chat")
+        chatSessions.insert(session, at: 0)
+        currentSessionId = session.id
+        messages = []
+        isGenerating = false
+        streamingTask?.cancel()
+    }
+
+    func deleteSession(_ id: UUID) {
+        chatSessions.removeAll { $0.id == id }
+        if currentSessionId == id {
+            if let first = chatSessions.first {
+                currentSessionId = first.id
+                messages = first.messages
+            } else {
+                newChat()
             }
         }
     }
 }
 
-struct ChatBubble: View {
-    var message: String
-    var isUser: Bool
-    
+// MARK: - Message Bubble
+struct MessageBubble: View {
+    let message: ChatMessage
+    let onCopy: () -> Void
+    @State private var isCopied = false
+    @State private var showActions = false
+
     var body: some View {
-        HStack {
-            if isUser { Spacer() }
-            
-            Text(message)
-                .padding(12)
-                .background(isUser ? Color.blue : Color.gray.opacity(0.2))
-                .foregroundColor(isUser ? .white : .primary)
-                .cornerRadius(15)
-                .frame(maxWidth: 250, alignment: isUser ? .trailing : .leading)
-            
-            if !isUser { Spacer() }
+        HStack(alignment: .bottom, spacing: 8) {
+            if message.isFromUser { Spacer(minLength: 40) }
+
+            if !message.isFromUser {
+                Image(systemName: "cpu")
+                    .font(.system(size: 16))
+                    .foregroundColor(.white)
+                    .frame(width: 28, height: 28)
+                    .background(Color.indigo.gradient)
+                    .clipShape(Circle())
+            }
+
+            VStack(alignment: message.isFromUser ? .trailing : .leading, spacing: 4) {
+                if !message.isFromUser {
+                    Text("AI")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.leading, 4)
+                }
+
+                ZStack(alignment: .bottomTrailing) {
+                    Text(message.content.isEmpty && message.isGenerating ? "●●●" : (message.content.isEmpty ? " " : message.content))
+                        .font(.body)
+                        .foregroundColor(message.isFromUser ? .white : .primary)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 18)
+                                .fill(message.isFromUser
+                                      ? LinearGradient(colors: [Color.indigo, Color.purple], startPoint: .topLeading, endPoint: .bottomTrailing)
+                                      : LinearGradient(colors: [Color(.secondarySystemBackground)], startPoint: .top, endPoint: .bottom))
+                        )
+                        .contentShape(RoundedRectangle(cornerRadius: 18))
+                        .onLongPressGesture {
+                            showActions = true
+                        }
+
+                    if message.isGenerating {
+                        TypingIndicator()
+                            .padding(10)
+                    }
+                }
+
+                Text(message.timestamp, style: .time)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 4)
+            }
+
+            if !message.isFromUser { Spacer(minLength: 40) }
+            if message.isFromUser {
+                Image(systemName: "person.crop.circle.fill")
+                    .font(.system(size: 28))
+                    .foregroundColor(.indigo.opacity(0.7))
+            }
         }
+        .confirmationDialog("Message Options", isPresented: $showActions) {
+            Button("Copy Message") {
+                onCopy()
+                isCopied = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) { isCopied = false }
+            }
+            Button("Cancel", role: .cancel) {}
+        }
+    }
+}
+
+// MARK: - Typing Indicator
+struct TypingIndicator: View {
+    @State private var phase = 0.0
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(0..<3) { i in
+                Circle()
+                    .fill(Color.secondary)
+                    .frame(width: 6, height: 6)
+                    .scaleEffect(1.0 + 0.4 * sin(phase + Double(i) * .pi / 1.5))
+            }
+        }
+        .onAppear {
+            withAnimation(.linear(duration: 1).repeatForever(autoreverses: false)) {
+                phase = .pi * 2
+            }
+        }
+    }
+}
+
+// MARK: - Drawer Panel
+struct ChatDrawerPanel: View {
+    @ObservedObject var vm: ChatViewModel
+    let onClose: () -> Void
+    let onNavigateToModels: () -> Void
+    let onNavigateToSettings: () -> Void
+    @State private var showDeleteAllAlert = false
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    Button {
+                        vm.newChat()
+                        onClose()
+                    } label: {
+                        Label("New Chat", systemImage: "plus.bubble.fill")
+                            .foregroundColor(.indigo)
+                            .fontWeight(.semibold)
+                    }
+                }
+
+                Section("Recent Chats") {
+                    if vm.chatSessions.isEmpty {
+                        Text("No chats yet")
+                            .foregroundColor(.secondary)
+                            .font(.subheadline)
+                    } else {
+                        ForEach(vm.chatSessions) { session in
+                            Button {
+                                vm.currentSessionId = session.id
+                                onClose()
+                            } label: {
+                                HStack {
+                                    Image(systemName: "bubble.left.fill")
+                                        .foregroundColor(.indigo.opacity(0.7))
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(session.title)
+                                            .foregroundColor(.primary)
+                                            .lineLimit(1)
+                                        Text(session.createdAt, style: .relative)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    Spacer()
+                                    if session.id == vm.currentSessionId {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundColor(.indigo)
+                                    }
+                                }
+                            }
+                            .swipeActions(edge: .trailing) {
+                                Button(role: .destructive) {
+                                    vm.deleteSession(session.id)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Section {
+                    Button {
+                        onNavigateToModels()
+                        onClose()
+                    } label: {
+                        Label("Download Models", systemImage: "square.and.arrow.down")
+                    }
+                    Button {
+                        onNavigateToSettings()
+                        onClose()
+                    } label: {
+                        Label("Settings", systemImage: "gearshape")
+                    }
+                    if !vm.chatSessions.isEmpty {
+                        Button(role: .destructive) {
+                            showDeleteAllAlert = true
+                        } label: {
+                            Label("Clear All Chats", systemImage: "trash")
+                        }
+                    }
+                }
+            }
+            .navigationTitle("LLM Hub")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done", action: onClose)
+                }
+            }
+        }
+        .alert("Delete All Chats?", isPresented: $showDeleteAllAlert) {
+            Button("Delete All", role: .destructive) {
+                vm.chatSessions.removeAll()
+                vm.newChat()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will permanently delete all conversation history. This action cannot be undone.")
+        }
+    }
+}
+
+// MARK: - Model Selector Sheet
+struct ModelSelectorSheet: View {
+    @ObservedObject var vm: ChatViewModel
+    let onNavigateToModels: () -> Void
+    @Environment(\.dismiss) var dismiss
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                if downloadedModels.isEmpty {
+                    Image(systemName: "cpu.fill")
+                        .font(.system(size: 48))
+                        .foregroundStyle(.linearGradient(colors: [.indigo, .purple], startPoint: .top, endPoint: .bottom))
+
+                    Text("No Models Downloaded")
+                        .font(.title2.bold())
+
+                    Text("Download models from the AI Models store to start chatting on-device.")
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal)
+
+                    Button {
+                        onNavigateToModels()
+                        dismiss()
+                    } label: {
+                        Label("Go to Models Store", systemImage: "square.and.arrow.down")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(.indigo.gradient)
+                            .foregroundColor(.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                    }
+                    .padding(.horizontal)
+                } else {
+                    List {
+                        Section("Downloaded Models") {
+                            ForEach(downloadedModels) { model in
+                                Button {
+                                    vm.selectedModelName = model.name
+                                    dismiss()
+                                } label: {
+                                    HStack {
+                                        Image(systemName: "cpu")
+                                            .foregroundColor(.indigo)
+                                        VStack(alignment: .leading) {
+                                            Text(model.name)
+                                                .font(.headline)
+                                            Text(model.sizeLabel)
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        }
+                                        Spacer()
+                                        if vm.selectedModelName == model.name {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .foregroundColor(.indigo)
+                                        }
+                                    }
+                                }
+                                .foregroundColor(.primary)
+                            }
+                        }
+                    }
+                }
+
+                Spacer()
+            }
+            .padding(.top, downloadedModels.isEmpty ? 32 : 0)
+            .navigationTitle("Select Model")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private var downloadedModels: [AIModel] {
+        let modelsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("models")
+        return ModelData.models.filter { model in
+            let weightsFile = modelsDir.appendingPathComponent(model.id).appendingPathComponent("model.safetensors")
+            return FileManager.default.fileExists(atPath: weightsFile.path)
+        }
+    }
+}
+
+// MARK: - ChatScreen
+struct ChatScreen: View {
+    @StateObject private var vm = ChatViewModel()
+    var onNavigateToSettings: () -> Void
+    var onNavigateToModels: () -> Void
+    var onNavigateBack: () -> Void
+
+    @State private var showDrawer = false
+    @State private var showModelSelector = false
+    @State private var copiedMessageId: UUID? = nil
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Status bar
+            if !vm.messages.isEmpty {
+                HStack(spacing: 12) {
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(vm.isGenerating ? Color.orange : Color.green)
+                            .frame(width: 8, height: 8)
+                        Text(vm.isGenerating ? "Generating..." : "Ready")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    if vm.totalTokens > 0 {
+                        Label("\(vm.totalTokens) tokens • \(String(format: "%.1f", vm.tokensPerSecond)) tok/s",
+                              systemImage: "bolt.fill")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(.thinMaterial)
+            }
+
+            // Messages
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: 12) {
+                        if vm.messages.isEmpty {
+                            emptyState
+                        } else {
+                            ForEach(vm.messages) { msg in
+                                MessageBubble(message: msg) {
+                                    vm.copyMessage(msg)
+                                    copiedMessageId = msg.id
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                        copiedMessageId = nil
+                                    }
+                                }
+                                .id(msg.id)
+                                .padding(.horizontal, 12)
+                            }
+                        }
+                    }
+                    .padding(.vertical, 12)
+                }
+                .onChange(of: vm.messages.count) { _, _ in
+                    if let last = vm.messages.last {
+                        withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
+                    }
+                }
+            }
+
+            // Toast for copy
+            if let _ = copiedMessageId {
+                Text("Message copied")
+                    .font(.caption)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Capsule())
+                    .transition(.scale.combined(with: .opacity))
+            }
+
+            Divider()
+
+            // Input field
+            HStack(spacing: 10) {
+                TextField("Type a message...", text: $vm.inputText, axis: .vertical)
+                    .lineLimit(1...5)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(Color(.secondarySystemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 22))
+                    .onSubmit { vm.sendMessage() }
+
+                Button {
+                    if vm.isGenerating {
+                        vm.stopGeneration()
+                    } else {
+                        vm.sendMessage()
+                    }
+                } label: {
+                    Image(systemName: vm.isGenerating ? "stop.circle.fill" : "arrow.up.circle.fill")
+                        .font(.system(size: 34))
+                        .foregroundStyle(vm.isGenerating ? .red : .indigo)
+                }
+                .disabled(!vm.isGenerating && vm.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(.background)
+        }
+        .navigationTitle(vm.chatSessions.first(where: { $0.id == vm.currentSessionId })?.title ?? "Chat")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                HStack(spacing: 8) {
+                    Button {
+                        onNavigateBack()
+                    } label: {
+                        Image(systemName: "chevron.left")
+                        Text("back", bundle: .module)
+                    }
+                    
+                    Button {
+                        showDrawer = true
+                    } label: {
+                        Image(systemName: "sidebar.left")
+                    }
+                }
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                HStack(spacing: 12) {
+                    Button {
+                        showModelSelector = true
+                    } label: {
+                        Image(systemName: "chip.fill") // Replaced with chip.fill to better match typical AI/Logic icon
+                    }
+                    Button {
+                        onNavigateToSettings()
+                    } label: {
+                        Image(systemName: "gearshape")
+                    }
+                    Button {
+                        vm.newChat()
+                    } label: {
+                        Image(systemName: "square.and.pencil")
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showDrawer) {
+            ChatDrawerPanel(
+                vm: vm,
+                onClose: { showDrawer = false },
+                onNavigateToModels: onNavigateToModels,
+                onNavigateToSettings: onNavigateToSettings
+            )
+        }
+        .sheet(isPresented: $showModelSelector) {
+            ModelSelectorSheet(vm: vm, onNavigateToModels: onNavigateToModels)
+        }
+    }
+
+    var emptyState: some View {
+        VStack(spacing: 20) {
+            Spacer(minLength: 60)
+            Image(systemName: "brain.head.profile")
+                .font(.system(size: 64))
+                .foregroundStyle(.linearGradient(colors: [.indigo, .purple], startPoint: .top, endPoint: .bottom))
+            Text("welcome_to_llm_hub", bundle: .module)
+                .font(.title2.bold())
+            Text("start_chatting", bundle: .module)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding(.horizontal, 32)
     }
 }
