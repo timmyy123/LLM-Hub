@@ -1,0 +1,775 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="multimodal">Мультимодальный</string>
+    <string name="text_only">Только текст</string>
+    <string name="currently_loaded">Текущая загрузка</string>
+    <string name="select_model">Выбрать модель</string>
+    <string name="unload_model">Выгрузить модель</string>
+    <string name="reload_model">Перезагрузить модель</string>
+    <string name="vision_models_description">Модели, понимающие текст, изображения и аудио</string>
+    <string name="embedding_models">Модели Эмбеддингов</string>
+    <string name="embedding_models_description">Модели для текстовых эмбеддингов и семантического поиска</string>
+    <string name="embedding_model">Модель Эмбеддингов</string>
+    <string name="select_embedding_model">Выбрать Модель Эмбеддингов</string>
+    <string name="no_embedding_model_selected">Модель эмбеддингов не выбрана</string>
+    <string name="disable_embeddings">Отключить эмбеддинги</string>
+    <string name="reload_models_notice">Необходима перезагрузка моделей</string>
+    <string name="embedding_enabled">Эмбеддинги включены</string>
+    <string name="memory">Память (Глобальный контекст)</string>
+    <string name="memory_description_enabled">Разрешить ИИ обращаться к вашей загруженной глобальной памяти через RAG</string>
+    <string name="memory_requires_rag">Требуется включенный RAG/эмбеддинги</string>
+    <string name="manage_memory">Управление памятью</string>
+    <string name="manage_memory_subtitle">Загрузите или вставьте документы в глобальную память</string>
+    <string name="paste_or_upload_to_memory">Вставьте текст или загрузите документ, чтобы добавить его в глобальную память.</string>
+    <string name="paste_memory_placeholder">Вставьте ваши заметки, документы или знания здесь...</string>
+    <string name="upload_file">Загрузить</string>
+    <string name="save_to_memory">Сохранить</string>
+    <string name="import_chat_history">Импортировать историю чата</string>
+    <string name="select_chats_to_import">Выберите чаты для импорта в память</string>
+    <string name="import_selected_chats">Импортировать выбранные</string>
+    <string name="chat_imported_to_memory">История чата импортирована в память</string>
+    <string name="no_chats_selected">Чаты не выбраны</string>
+    <string name="edit_memory">Редактировать память</string>
+    <string name="memory_content">Содержимое памяти</string>
+    <string name="save_changes">Сохранить изменения</string>
+    <string name="done">Готово</string>
+    <string name="global_memory_uploaded_by">Загружено в глобальную память</string>
+    <string name="global_memory_pasted_by">Вставлено в глобальную память</string>
+    <string name="memory_upload_success">Файл сохранён в глобальной памяти</string>
+    <string name="memory_upload_failed">Не удалось сохранить файл в памяти (RAG может быть отключён)</string>
+    <string name="memory_upload_unsupported_type">Тип файла не поддерживается для памяти. В память можно добавлять только текстовые документы (PDF, DOC, TXT и т.д.).</string>
+    <string name="memory_save_success">Текст сохранён в глобальной памяти</string>
+    <string name="memory_save_failed">Не удалось сохранить текст в памяти (RAG может быть отключён)</string>
+    <string name="saved_memories">Сохранённые записи</string>
+    <string name="clear_all">Очистить всё</string>
+    <string name="confirm_replace_memory_title">Заменить существующую память?</string>
+    <string name="confirm_replace_memory_message">У вас уже есть глобальная память. Замена удалит существующую память и её embeddings. Продолжить?</string>
+    <string name="confirm_replace_action">Заменить</string>
+    <string name="memory_processing">Обработка памяти…</string>
+    <string name="reembedding_memory_in_progress">Пере-встраивание (re-embedding) глобальной памяти для новой модели эмбеддингов…</string>
+    <string name="reembedding_memory_done">Глобальная память пере-встроена</string>
+    <string name="embedding_disabled">Эмбеддинги отключены</string>
+    <string name="embedding_status_enabled">Статус эмбеддингов: включены</string>
+    <string name="embedding_status_disabled">Статус эмбеддингов: отключены</string>
+    <string name="rag_enabled">RAG включен</string>
+    <string name="embedding_settings_changed_title">Настройки Эмбеддингов Изменены</string>
+    <string name="embedding_settings_changed_message">Пожалуйста, выгрузите и перезагрузите модели, чтобы изменения эмбеддингов вступили в силу.</string>
+    <string name="reload_models">Перезагрузить Модели</string>
+    <string name="dismiss">Отклонить</string>
+    <!-- GPU string removed (duplicate); localized version retained later in file -->
+    <string name="app_name">LLM Hub</string>
+    
+    <!-- Common -->
+    <string name="ok">ОК</string>
+    <string name="cancel">Отмена</string>
+    <string name="close">Закрыть</string>
+    <string name="save">Сохранить</string>
+    <string name="delete">Удалить</string>
+    <string name="send">Отправить</string>
+    <string name="copy">Копировать</string>
+    <string name="loading">Загрузка</string>
+    <string name="error">Ошибка</string>
+    <string name="retry">Повторить</string>
+    <string name="download">Скачать</string>
+    <string name="vision">Зрение</string>
+    
+    <!-- Chat -->
+    <string name="welcome_to_llm_hub">Добро пожаловать в LLM Hub!</string>
+    <string name="no_models_downloaded">Модели ещё не загружены</string>
+    <!-- Отображается, когда нет сохранённой глобальной памяти для RAG -->
+    <string name="no_memories">Памяти пока нет</string>
+    <string name="download_a_model">Скачать Модель</string>
+    <string name="ready_to_chat">Готов к общению! Пожалуйста, выберите модель выше.</string>
+    <string name="start_chatting">Начните общение, набрав сообщение ниже!</string>
+    <string name="type_a_message">Введите сообщение...</string>
+    <string name="loading_model_format">Загрузка %1$s</string>
+    <string name="please_wait_model_initialize">Пожалуйста, подождите пока модель инициализируется...</string>
+    <string name="initializing_neural_network">Инициализация нейронной сети...</string>
+    <string name="attached_image">Прикреплённое изображение</string>
+    <string name="shared_a_file">Поделился файлом</string>
+    <string name="copy_message">Копировать сообщение</string>
+    <string name="regenerate_response">Перегенерировать ответ</string>
+    <string name="cancel_generation">Отменить генерацию</string>
+    <string name="image_attachment">Вложение Изображения</string>
+    <string name="save_image">Сохранить изображение</string>
+    <string name="tap_image_toggle_controls">Нажмите на изображение для переключения элементов управления</string>
+    <string name="translating_tap_to_cancel">Идёт перевод (нажмите, чтобы отменить)</string>
+    <string name="transcribing_tap_to_cancel">Идёт транскрипция (нажмите, чтобы отменить)</string>
+    <string name="vision_enabled">Зрение включено</string>
+    <string name="message_copied">Сообщение скопировано</string>
+    <string name="tokens_per_second_format">%1$d токенов • %2$.1f ток/сек</string>
+    <string name="context_multimodal_format">%1$dk контекста • %2$s</string>
+    
+    <!-- About Screen -->
+    <string name="about_llm_hub">О LLM Hub</string>
+    <string name="about_description">LLM Hub - это Android-приложение с открытым исходным кодом, которое приносит мощь Больших Языковых Моделей прямо на ваше мобильное устройство. Испытайте ИИ-разговоры с передовыми моделями как Gemma, Llama и Phi - все работают локально на вашем телефоне для максимальной конфиденциальности и доступности офлайн.</string>
+    <string name="key_features">Ключевые Особенности</string>
+    <string name="feature_multiple_models">🤖 Множественные LLM Модели: Gemma-3, Llama-3.2, Phi-4, и Gemma-3n</string>
+    <string name="feature_on_device">📱 Локальная Обработка: Полная конфиденциальность, интернет не требуется</string>
+    <string name="feature_vision_support">🖼️ Поддержка Зрения: Мультимодальные модели, понимающие изображения</string>
+        <string name="feature_gpu_acceleration">⚡ Ускорение GPU: Оптимизированная производительность на поддерживаемых устройствах</string>
+    <string name="feature_offline_usage">💾 Автономное Использование: Общайтесь без подключения к интернету</string>
+    <string name="feature_privacy_first">🔒 Конфиденциальность Прежде Всего: Ваши разговоры никогда не покидают устройство</string>
+    <string name="feature_modern_ui">🎨 Современный Интерфейс: Чистый, интуитивный интерфейс Material Design</string>
+    <string name="developer_info">Информация о Разработчике</string>
+    <string name="about_developer_info">Этот проект разрабатывается энтузиастом, увлеченным тем, чтобы сделать ИИ-технологии более доступными для всех. Ваши отзывы и вклад всегда приветствуются!</string>
+    <string name="tech_stack">Технологический Стек</string>
+    <string name="about_tech_stack">LLM Hub построен с использованием современных технологий разработки Android: Kotlin, Jetpack Compose, Material Design 3, и библиотеки llama.cpp для эффективного вывода на устройстве.</string>
+    <string name="tech_kotlin_compose">🏗️ Построено с Kotlin и Jetpack Compose</string>
+    <string name="tech_mediapipe_litert">🧠 Работает на MediaPipe и LiteRT</string>
+    <string name="tech_quantization">🚀 Оптимизировано с квантованием INT4/INT8</string>
+    <string name="tech_gpu_acceleration">⚡ Ускорение GPU через LiteRT XNNPACK</string>
+    <string name="tech_models_source">🔗 Модели от HuggingFace и Google</string>
+    <string name="contact_support">Контакт и Поддержка</string>
+    <string name="contact_email">Контактный Email:</string>
+    <string name="source_code">Исходный Код:</string>
+    <string name="github_repository">GitHub Репозиторий</string>
+    <string name="acknowledgments">Благодарности</string>
+    <string name="acknowledgments_text">Особая благодарность Google, Meta, Microsoft, IBM, и сообществу HuggingFace за предоставление невероятных LLM-моделей, которые питают это приложение. Этот проект также опирается на удивительную работу сообщества разработчиков Android и экосистемы открытого исходного кода.</string>
+    <string name="sd_models_credit">Модели генерации изображений работают на основе реализаций Stable Diffusion от xororz с использованием бэкендов Qualcomm QNN (NPU) и Alibaba MNN (CPU).</string>
+    <string name="nexa_sdk_credit">Вывод моделей GGUF работает на основе Nexa SDK.</string>
+    <string name="version_number">Версия 3.6.1</string>
+    <string name="ai_thinking">ИИ думает...</string>
+    <string name="thinking_label">Размышление</string>
+    <string name="thinking_tokens">Размышление (%1$d токенов)</string>
+    <string name="app_version">Версия Приложения</string>
+    
+    <!-- Terms of Service -->
+    <string name="terms_of_service">Условия Обслуживания</string>
+    <string name="tos_last_updated">Последнее обновление: 16 июля 2025</string>
+    <string name="tos_welcome_text">Добро пожаловать в LLM Hub. Используя наше приложение, вы соглашаетесь быть связанными этими Условиями Обслуживания. Пожалуйста, внимательно прочитайте их.</string>
+    <string name="tos_welcome">Добро пожаловать в LLM Hub. Используя наше приложение, вы соглашаетесь быть связанными этими Условиями Обслуживания. Пожалуйста, внимательно прочитайте их.</string>
+    <string name="tos_acceptance_title">1. Принятие Условий</string>
+    <string name="tos_acceptance_text">Скачивая, устанавливая или используя LLM Hub, вы подтверждаете, что прочитали, поняли и соглашаетесь быть связанными этими Условиями Обслуживания. Если вы не согласны с этими условиями, пожалуйста, не используйте приложение.</string>
+    <string name="tos_app_description_title">2. Описание Приложения</string>
+    <string name="tos_app_description_text">LLM Hub - это Android-приложение с открытым исходным кодом, которое предоставляет доступ к Большим Языковым Моделям (LLMs) для ИИ-разговоров на устройстве. Приложение обрабатывает все данные локально на вашем устройстве и не передаёт личную информацию на внешние серверы.</string>
+    <string name="tos_user_responsibilities_title">3. Обязанности Пользователя</string>
+    <string name="tos_user_responsibilities_text">Вы соглашаетесь использовать LLM Hub ответственно и в соответствии с применимыми законами. Вы ответственны за:\n\n• Использование приложения только в законных целях\n• Не попытки реверс-инжиниринга или модификации приложения\n• Не использование приложения для генерации вредного, незаконного или оскорбительного контента\n• Уважение прав интеллектуальной собственности третьих лиц\n• Обеспечение соответствия вашего устройства минимальным требованиям для правильной работы</string>
+    <string name="tos_privacy_data_title">4. Конфиденциальность и Данные</string>
+    <string name="tos_privacy_data_text">LLM Hub разработан с учётом конфиденциальности:\n\n• Все разговоры и обработка данных происходят локально на вашем устройстве\n• Никакие личные данные не передаются на внешние серверы\n• История чата хранится локально и может быть удалена в любое время\n• Загрузки моделей выполняются напрямую из официальных репозиториев (HuggingFace, Google)\n• Приложение не собирает аналитические данные или данные об использовании</string>
+    <string name="tos_disclaimer_title">5. Отказ от Гарантий</string>
+    <string name="tos_disclaimer_text">LLM Hub предоставляется \"как есть\" без гарантий любого рода. Мы не гарантируем точность, надёжность или доступность приложения или его сгенерированного контента. Использование ИИ-моделей может производить непредсказуемые результаты.</string>
+    <string name="tos_limitation_liability_title">6. Ограничение Ответственности</string>
+    <string name="tos_limitation_liability_text">Ни в коем случае разработчики не несут ответственности за косвенные, случайные, особые или последующие ущербы, возникающие от использования LLM Hub. Ваше использование приложения происходит на ваш собственный риск.</string>
+    <string name="tos_model_usage_title">7. Использование Моделей и Лицензирование</string>
+    <string name="tos_model_usage_text">ИИ-модели, доступные через LLM Hub, подчинены их соответствующим лицензиям и условиям использования. Пользователи ответственны за соблюдение специфических требований лицензирования модели при использовании скачанных моделей.</string>
+    <string name="tos_open_source_title">8. Лицензия Открытого Исходного Кода</string>
+    <string name="tos_open_source_text">LLM Hub - это программное обеспечение с открытым исходным кодом. Исходный код доступен под лицензией MIT, которая разрешает использование, модификацию и распространение в соответствии с условиями лицензии. Сторонние библиотеки и модели могут иметь разные условия лицензии.</string>
+    <string name="tos_changes_title">9. Изменения в Условиях</string>
+    <string name="tos_changes_text">Мы можем обновлять эти Условия Обслуживания время от времени. Пользователи будут уведомлены о значительных изменениях через обновления приложения. Продолжение использования приложения после изменений означает принятие новых условий.</string>
+    <string name="tos_contact_title">10. Контактная Информация</string>
+    <string name="tos_contact_text">По вопросам об этих Условиях Обслуживания, пожалуйста, свяжитесь с нами по адресу timmyboy0623@gmail.com</string>
+    
+    <!-- Navigation -->
+    <string name="chat">Чат</string>
+    <string name="models">Модели</string>
+    <string name="settings">Настройки</string>
+    <string name="about">О программе</string>
+    
+    <!-- Settings -->
+    <string name="appearance">Внешний вид</string>
+    <string name="features">Функции</string>
+    <string name="information">Информация</string>
+    <string name="source_code_section">Исходный Код</string>
+    <string name="download_models">Скачать Модели</string>
+    <string name="browse_download_models">Просмотреть и скачать LLM модели</string>
+    <string name="web_search">Веб-поиск</string>
+    <string name="web_search_enabled">Получать актуальную информацию из интернета</string>
+    <string name="web_search_disabled">Использовать только офлайн знания</string>
+    <string name="web_search_description_enabled">Получать актуальную информацию из интернета</string>
+    <string name="web_search_description_disabled">Использовать только офлайн знания</string>
+    <string name="theme">Тема</string>
+    <string name="language">Язык</string>
+    <string name="light_theme">Светлая</string>
+    <string name="dark_theme">Тёмная</string>
+    <string name="system_default_theme">По умолчанию</string>
+    <string name="theme_light">Светлая</string>
+    <string name="theme_dark">Тёмная</string>
+    <string name="theme_system">По умолчанию</string>
+    <string name="system_default_language">По умолчанию</string>
+    <string name="system_default">По умолчанию</string>
+    <string name="choose_theme">Выбрать Тему</string>
+    <string name="choose_language">Выбрать Язык</string>
+    <string name="select_language">Выбрать Язык</string>
+    <string name="app_information_contact">Информация о приложении и контакты</string>
+    <string name="app_info_contact">Информация о приложении и контакты</string>
+    <string name="legal_terms_conditions">Правовые условия</string>
+    <string name="github_repository_desc">Посмотреть исходный код и внести вклад</string>
+    <string name="view_source_contribute">Посмотреть исходный код и внести вклад</string>
+    <string name="back">Назад</string>
+    
+    <!-- Language Names -->
+    <string name="language_english">English</string>
+    <string name="language_spanish">Español</string>
+    <string name="language_portuguese">Português</string>
+    <string name="language_german">Deutsch</string>
+    <string name="language_french">Français</string>
+    <string name="language_russian">Русский</string>
+    <string name="language_italian">Italiano</string>
+    <string name="language_turkish">Türkçe</string>
+    <string name="language_polish">Polski</string>
+    <string name="language_arabic">العربية</string>
+    <string name="language_japanese">日本語</string>
+    <string name="language_indonesian">Indonesia</string>
+    <string name="language_korean">한국어</string>
+    
+    <!-- Errors and Messages -->
+    <string name="failed_to_load_image">Не удалось загрузить изображение</string>
+    <string name="model_loading_error">Ошибка загрузки модели</string>
+    <string name="message_send_error">Ошибка отправки сообщения</string>
+    <string name="file_save_error">Ошибка сохранения файла</string>
+    <string name="file_save_success">Файл успешно сохранён</string>
+    
+    <!-- Accessibility -->
+    <string name="content_description_ai_bot">ИИ Бот</string>
+    <string name="content_description_smart_toy">Умная Игрушка</string>
+    <string name="content_description_email">Email</string>
+    <string name="content_description_code">Исходный Код</string>
+    <string name="content_description_image">Изображение</string>
+    <string name="content_description_download">Скачать</string>
+    <string name="content_description_stop">Остановить</string>
+    <string name="content_description_refresh">Обновить</string>
+    <string name="content_description_copy">Копировать</string>
+    <string name="content_description_speed">Скорость</string>
+    <string name="content_description_check">Проверить</string>
+    <string name="content_description_eye">Зрение включено</string>
+    <string name="content_description_attach_image">Прикрепить изображение</string>
+    <string name="content_description_back">Назад</string>
+    
+    <!-- Model Information -->
+    <string name="no_model_selected">Модель не выбрана</string>
+    <string name="no_model_downloaded">Модель не загружена</string>
+    <string name="model_supports_vision">Поддерживает зрение</string>
+    <string name="model_text_only">Только текст</string>
+    
+    <!-- Chat Drawer -->
+    <string name="drawer_title">LLM Hub</string>
+    <string name="drawer_new_chat">Новый Чат</string>
+    <string name="drawer_recent_chats">Недавние Чаты</string>
+    <string name="drawer_no_chats">Пока нет чатов</string>
+    <string name="drawer_download_models">Скачать Модели</string>
+    <string name="drawer_clear_all_chats">Очистить Все Чаты</string>
+    <string name="drawer_settings">Настройки</string>
+    
+    <!-- Chat Management -->
+    <string name="dialog_delete_all_chats_title">Удалить Все Чаты?</string>
+    <string name="dialog_delete_all_chats_message">Это навсегда удалит всю историю разговоров. Это действие нельзя отменить.</string>
+    <string name="dialog_delete_chat_title">Удалить Чат?</string>
+    <string name="dialog_delete_chat_message">Удалить разговор \"%1$s\"?</string>
+    <string name="action_delete_all">Удалить Все</string>
+    <string name="action_delete">Удалить</string>
+    <string name="action_cancel">Отмена</string>
+    <string name="content_description_delete_chat">Удалить Чат</string>
+    
+    <!-- Time Formatting -->
+    <string name="time_yesterday">Вчера</string>
+    <string name="time_hours_ago">%1$d ч назад</string>
+    <string name="time_minutes_ago">%1$d мин назад</string>
+    <string name="time_just_now">Только что</string>
+    
+    <!-- Model Download Screen -->
+    <string name="ai_models">Модели ИИ</string>
+    <string name="download_ai_models">Скачать Модели ИИ</string>
+    <string name="choose_text_multimodal_models">Выберите между текстовыми или мультимодальными моделями</string>
+    <string name="text_models">Текстовые Модели</string>
+    <string name="text_models_description">Модели оптимизированные для генерации текста и разговора</string>
+    <string name="vision_models">Мультимодальные Модели</string>
+    <string name="gpu">ГПУ</string>
+    <string name="variant">вариант</string>
+    <string name="variants">варианты</string>
+    <string name="expand">Развернуть</string>
+    <string name="collapse">Свернуть</string>
+    <string name="downloaded">Скачано</string>
+    <string name="downloading">Скачивание...</string>
+    <string name="extracting">Извлечение...</string>
+    <string name="extracting_model">Извлечение модели...</string>
+    <string name="not_downloaded">Не скачано</string>
+    <string name="partial">Частично</string>
+    <string name="paused">Приостановлено</string>
+    <string name="paused_downloaded_format">Приостановлено: %1$s скачано</string>
+    <string name="continue_download">Продолжить</string>
+    <string name="pause_download">Пауза</string>
+    <string name="resume_download">Возобновить</string>    <string name="ram_requirement_format">%1$dГБ ОЗУ</string>
+    
+    <!-- File Attachments -->
+    <string name="attach_file">Прикрепить файл</string>
+    <string name="attach_image">Прикрепить изображение</string>
+    <string name="attach_document">Прикрепить документ</string>
+    <string name="attach_text_file">Прикрепить текстовый файл</string>
+    <string name="file_attachment">Прикреплённый файл</string>
+    <string name="file_too_large">Файл слишком большой</string>
+    <string name="unsupported_file_type">Неподдерживаемый тип файла</string>
+    <string name="file_processing_error">Ошибка обработки файла</string>
+    <string name="could_not_read_file">Не удалось прочитать файл</string>
+    <string name="file_preview">Предварительный просмотр файла</string>
+    <string name="remove_attachment">Удалить вложение</string>
+    <string name="keep_attachment">Оставить вложение</string>
+    <string name="preview_not_available">Предварительный просмотр недоступен</string>
+    
+    <!-- File Type Categories -->
+    <string name="images">Изображения</string>
+    <string name="documents">Документы</string>
+    <string name="text_files">Текстовые Файлы</string>
+    <string name="images_description">JPG, PNG, GIF, WebP</string>
+    <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
+    <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
+    <string name="text_file">Текстовый Файл</string>
+    <string name="tap_to_preview">Нажмите для просмотра</string>
+    <string name="text_file_tap_to_preview">Текстовый Файл • Нажмите для просмотра</string>
+    <string name="read_this">прочитай это</string>
+    
+    <!-- Audio Recording -->
+    <string name="audio_recording">Запись Звука</string>
+    <string name="audio_description">Записать голосовое сообщение</string>
+    <string name="record_voice_message">Записать голосовое сообщение</string>
+    <string name="recording">Запись…</string>
+    <string name="tap_to_stop">Нажмите чтобы остановить</string>
+    <string name="ready_to_send">Готово к отправке</string>
+    <string name="audio_recorded">Звук записан</string>
+    <string name="audio_file">Аудиофайл</string>
+    <string name="tap_to_play">Нажмите для воспроизведения</string>
+    <string name="max_recording_reached">Достигнута максимальная длительность записи (30 секунд)</string>
+    <string name="remaining">осталось</string>
+    
+    <!-- Text-to-Speech -->
+    <string name="auto_readout">Автоматическое Озвучивание</string>
+    <string name="auto_readout_description">Автоматически озвучивать ответы ИИ после отправки сообщения</string>
+    
+    <!-- Multimodal Support -->
+    <string name="model_supports_multimodal">Зрение+Аудио+Текст</string>
+    <string name="multimodal_format">%1$s+%2$s+Текст</string>
+    
+    <!-- Gemma-3n specific GPU requirements -->
+    <string name="gemma3n_e2b_gpu_requires_6gb">Требуется минимум 6ГБ RAM для GPU</string>
+    <string name="gemma3n_e4b_gpu_requires_8gb">Устройства с 8ГБ или менее RAM не могут загрузить эту модель с GPU</string>
+    <string name="audio_support">Поддержка Аудио</string>
+    <string name="vision_audio_text">Зрение+Аудио+Текст</string>
+    <string name="vision_text">Зрение+Текст</string>
+    <string name="audio_text">Аудио+Текст</string>
+    <string name="shared_file">Поделился файлом</string>
+    <string name="audio_message">Аудио Сообщение</string>
+    <string name="image_message">Изображение Сообщение</string>
+    <string name="model_configs_title">Конфигурация модели</string>
+    <string name="max_tokens">Максимум токенов</string>
+    <string name="top_k">TopK</string>
+    <string name="top_p">TopP</string>
+    <string name="temperature">Температура</string>
+    <string name="choose_accelerator">Выберите ускоритель</string>
+    <string name="max">макс</string>
+    
+    <!-- GPU with Vision Disabled for Gemma-3n E4B -->
+    <string name="gpu_vision_disabled_title">ГПУ с Отключёнными Зрением+Аудио</string>
+    <string name="gpu_vision_disabled_description">Из-за ограничений ОЗУ, функции зрения и аудио будут отключены для включения ускорения ГПУ</string>
+    <string name="gpu_with_vision_disabled">ГПУ (Зрение+Аудио Отключены)</string>
+    <string name="gemma3n_e4b_gpu_vision_warning">Для устройств с 7-8ГБ ОЗУ, ускорение ГПУ требует отключения функций зрения. Прикрепления изображений и аудио ввод будут недоступны.</string>
+    <string name="vision_disabled_for_gpu">Зрение отключено для ускорения ГПУ</string>
+    <string name="vision_disabled_no_images">Функции зрения отключены для этой конфигурации модели. Прикрепления изображений недоступны.</string>
+    <string name="ram_limit_gpu_vision_disabled">Из-за лимита ОЗУ (%1$.1fГБ), зрение и аудио должны быть отключены для использования ГПУ</string>
+    
+    <!-- GPU with Audio Only Disabled for Gemma-3n E4B on 8GB devices -->
+    <string name="gpu_with_audio_disabled">ГПУ (Аудио Отключено)</string>
+    <string name="gemma3n_e4b_gpu_audio_warning">Для устройств с 7-8ГБ ОЗУ, ускорение ГПУ требует отключения функций аудио. Аудио ввод будет недоступен, но прикрепления изображений поддерживаются.</string>
+    <string name="audio_disabled_for_gpu">Аудио отключено для ускорения ГПУ</string>
+    <string name="audio_disabled_no_audio">Функции аудио отключены для этой конфигурации модели. Аудио ввод недоступен, но прикрепления изображений поддерживаются.</string>
+    
+    <!-- Separate modality toggles -->
+    <string name="modality_options">Опции Модальности</string>
+    <string name="enable_vision">Включить Зрение (Поддержка Изображений)</string>
+    <string name="enable_audio">Включить Аудио (Голосовой Ввод)</string>
+    <string name="enable_thinking">Включить Размышления</string>
+    <string name="gemma3n_e4b_modality_suggestion">💡 Для стабильной работы на устройствах 7-8ГБ, рассмотрите отключение аудио для экономии памяти GPU. Зрение обычно более стабильно.</string>
+    
+    <!-- General performance tip for all devices -->
+    <string name="gemma3n_performance_tip">💡 Если вы сталкиваетесь с сбоями или низкой производительностью из-за ограничений RAM, попробуйте переключиться на CPU бэкенд или отключить функции зрения/аудио.</string>
+    <string name="reset_to_defaults">Сбросить</string>
+    
+    <!-- External Model Import -->
+    <string name="import_external_model">Импорт Внешней Модели</string>
+    <string name="model_name">Имя Модели</string>
+    <string name="select">Выбрать</string>
+    <string name="select_model_file">Выбрать Файл Модели</string>
+    <string name="supports_vision">Поддерживает Зрение</string>
+    <string name="supports_audio">Поддерживает Аудио</string>
+    <string name="supports_gpu">Поддерживает ГПУ</string>
+    <string name="model_format">Формат Модели</string>
+    <string name="context_window_size">Размер Контекстного Окна</string>
+    <string name="import_model">Импортировать Модель</string>
+    <string name="model_name_required">Имя модели обязательно</string>
+    <string name="model_name_already_exists">Модель с именем \"%1$s\" уже существует. Пожалуйста, используйте другое имя или сначала удалите существующую модель.</string>
+    <string name="context_window_size_invalid">Введите корректный размер контекстного окна</string>
+    <string name="please_fix_errors">Исправьте ошибки выше</string>
+    <string name="remove">Удалить</string>
+    <string name="ready_to_use">Готов к использованию</string>
+    <string name="unsupported_file_format">Неподдерживаемый формат файла. Пожалуйста, выберите файл .task, .litertlm или .zip.</string>
+    <string name="download_models_from_litert_community">Вы можете скачать совместимые LLM модели с:</string>
+    <string name="litert_community_link">LiteRT Community на Hugging Face</string>
+    <string name="download_image_models_from">Вы можете скачать совместимые модели изображений с:</string>
+    <string name="sd_models_link">Модели Stable Diffusion на Hugging Face</string>
+    <string name="supports_npu">Поддержка NPU</string>
+    <string name="import_model_warning">⚠️ Важно: Пожалуйста, прочитайте README модели на Hugging Face перед импортом. Введите правильные возможности (зрение, аудио, GPU) и размер контекстного окна, как указано в документации модели. Неправильные настройки могут привести к тому, что модель не будет работать должным образом. Важно: GGUF-модели с поддержкой зрения требуют Vision Projector (mmproj). Импортируйте файл проектора, чтобы включить ввод изображений.</string>
+    
+    <!-- Home Screen -->
+    <string name="home_welcome">Добро пожаловать в LLM Hub</string>
+    <string name="home_subtitle">Раскройте силу ИИ в вашем кармане — приватно, быстро и офлайн!</string>
+    
+    <!-- Feature Cards -->
+    <string name="feature_ai_chat">ИИ Чат</string>
+    <string name="feature_ai_chat_desc">Многоэтапные беседы с моделями ИИ</string>
+    <string name="feature_writing_aid">Помощник в письме</string>
+    <string name="feature_writing_aid_desc">Грамматика, стиль, перефразирование и настройка тона</string>
+    <string name="feature_translator">Переводчик</string>
+    <string name="feature_translator_desc">Переводите текст конфиденциально с помощью мультимодальных моделей</string>
+    <string name="feature_transcriber">Транскрибатор</string>
+    <string name="feature_transcriber_desc">Транскрибируйте голос или аудио в текст офлайн</string>
+    <string name="feature_scam_detector">Детектор Мошенничества</string>
+    <string name="feature_scam_detector_desc">Анализируйте текст, изображения или URL на наличие возможных мошенничеств</string>
+    <string name="feature_image_generator">Генератор Изображений</string>
+    <string name="feature_image_generator_desc">Создавайте изображения из текстовых описаний с помощью ИИ</string>
+    
+    <!-- Writing Aid Screen -->
+    <string name="writing_aid_title">Помощник в письме</string>
+    <string name="writing_aid_input_label">Введите ваш текст</string>
+    <string name="writing_aid_input_hint">Введите или вставьте текст, который хотите улучшить...</string>
+    <string name="writing_aid_input_hint_no_model">Загрузите модель для начала</string>
+    <string name="writing_aid_mode_grammar">Проверка грамматики</string>
+    <string name="writing_aid_mode_paraphrase">Перефразировать</string>
+    <string name="writing_aid_mode_tone">Изменить тон</string>
+    <string name="writing_aid_mode_email">Ответ по Email</string>
+    <string name="writing_aid_mode_sms">Ответ по SMS</string>
+    <string name="writing_aid_tone_friendly">Дружелюбный</string>
+    <string name="writing_aid_tone_professional">Профессиональный</string>
+    <string name="writing_aid_tone_concise">Краткий</string>
+    <string name="writing_aid_select_mode">Выберите тон</string>
+    <string name="writing_aid_process">Обработать</string>
+    <string name="processing_tap_to_cancel">Обработка (нажмите для отмены)</string>
+    <string name="writing_aid_result">Результат</string>
+    <string name="writing_aid_no_model">Модель не загружена. Пожалуйста, сначала загрузите и выберите модель.</string>
+    
+    <!-- Translator Screen -->
+    <string name="translator_title">Офлайн переводчик</string>
+    <string name="translator_input_label">Текст для перевода</string>
+    <string name="translator_input_hint">Введите текст для перевода...</string>
+    <string name="load_model_to_start">Загрузите модель для начала</string>
+    <string name="translator_source_lang">Исходный язык</string>
+    <string name="translator_target_lang">Целевой язык</string>
+    <string name="translator_auto_detect">Автоопределение</string>
+    <string name="translator_translate">Перевести</string>
+    <string name="translator_result">Перевод</string>
+    <string name="translator_requires_gemma3n">Эта функция требует модель Gemma-3n. Пожалуйста, загрузите её с экрана Модели.</string>
+    
+    <!-- Transcriber Screen -->
+    <string name="transcriber_title">Офлайн транскрибатор</string>
+    <string name="transcriber_record">Записать аудио</string>
+    <string name="transcriber_upload">Загрузить аудио</string>
+    <string name="transcriber_transcribe">Транскрибировать</string>
+    <string name="transcriber_result">Транскрипция</string>
+    <string name="transcriber_recording">Запись...</string>
+    <string name="transcriber_stop">Остановить запись</string>
+    <string name="transcriber_requires_gemma3n">Эта функция требует модель Gemma-3n с поддержкой аудио. Пожалуйста, загрузите её с экрана Модели.</string>
+    
+    <!-- Scam Detector Screen -->
+    <string name="scam_detector_title">Детектор Мошенничества</string>
+    <string name="scam_detector_input_label">Введите содержимое для анализа</string>
+    <string name="scam_detector_input_hint">Вставьте текст, загрузите изображение или введите URL для анализа на мошенничество...</string>
+    <string name="scam_detector_url_hint">Введите URL для анализа</string>
+    <string name="scam_detector_analyze">Анализировать</string>
+    <string name="scam_detector_analyzing">Анализ (нажмите для отмены)</string>
+    <string name="scam_detector_result">Результат Анализа</string>
+    <string name="scam_detector_no_model">Модель не загружена. Пожалуйста, сначала загрузите и выберите модель.</string>
+    <string name="scam_detector_load_model">Загрузить Модель</string>
+    <string name="scam_detector_load_model_desc">Пожалуйста, загрузите модель, чтобы начать анализ контента</string>
+    <string name="scam_detector_enable_vision">Включить Зрение</string>
+    <string name="scam_detector_vision_desc">Анализировать изображения на мошенничество</string>
+    <string name="scam_detector_fetching_url">Получение содержимого URL...</string>
+
+    <!-- Image Generator Screen -->
+    <string name="image_generator_title">Генератор Изображений</string>
+    <string name="image_generator_subtitle">Создавайте изображения из текстовых описаний с помощью ИИ</string>
+    <string name="image_generator_prompt_label">Описание Изображения</string>
+    <string name="image_generator_prompt_hint">Опишите изображение, которое хотите создать...</string>
+    <string name="image_generator_generate">Создать Изображение</string>
+    <string name="image_generator_generating">Создание изображения...</string>
+    <string name="image_generator_iterations">Итерации</string>
+    <string name="image_generator_seed">Начальное значение</string>
+    <string name="image_generator_random_seed">Случайное Значение</string>
+    <string name="image_generator_save">Сохранить Изображение</string>
+    <string name="image_generator_download_model">Сначала Загрузите Модель</string>
+    <string name="image_generator_download_model_desc">Загрузите модель генерации изображений, чтобы начать создание изображений</string>
+    <string name="image_generator_model_not_available">Модель генерации изображений недоступна</string>
+    <string name="image_generator_error">Не удалось создать изображение</string>
+    <string name="image_generator_success">Изображение успешно создано</string>
+    <string name="image_generator_saved">Изображение сохранено в галерее</string>
+    <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
+    <string name="image_generation_model">Модель Генерации Изображений</string>
+    <string name="image_generation_models">Модели Генерации Изображений</string>
+    <string name="image_generation_models_description">ИИ-модели для генерации изображений из текста</string>
+    <string name="image_generator_load_model_title">Загрузите модель для начала</string>
+    <string name="image_generator_load_model_desc">Пожалуйста, загрузите модель Stable Diffusion, чтобы начать генерацию изображений.</string>
+    <string name="image_generator_no_models">Нет доступных моделей</string>
+    <string name="image_generator_load_model">Загрузить модель</string>
+    <string name="image_generator_loading_model">Загрузка...</string>
+    <string name="image_generator_failed_load">Не удалось загрузить модель</string>
+    <string name="image_generator_variation">Генерация варианта %1$d...</string>
+    <string name="image_generator_swipe_more">Проведите здесь, чтобы создать ещё</string>
+    <string name="image_generator_info">Генерация изображений использует модель Stable Diffusion v1.5, работающую на устройстве. Генерация может занять 1-2 минуты в зависимости от вашего устройства.</string>
+    <string name="image_generator_img2img">Изображение в Изображение</string>
+    <string name="image_generator_img2img_desc">Преобразовать существующее изображение</string>
+    <string name="image_generator_select_image">Выбрать входное изображение</string>
+    <string name="image_generator_change_image">Изменить входное изображение</string>
+    <string name="image_generator_denoise_strength">Сила шумоподавления: %.2f</string>
+    <string name="image_generator_denoise_strength_desc">Выше = больше изменений во входном изображении</string>
+    <string name="image_generator_input_image">Входное изображение</string>
+    <string name="image_generator_use_gpu">Использовать ускорение GPU</string>
+    <string name="image_generator_use_gpu_desc">Более быстрая генерация (требуется поддержка OpenCL)</string>
+
+    <!-- Common Feature Strings -->
+    <string name="feature_no_model_title">Модель недоступна</string>
+    <string name="feature_download_model">Загрузить модели</string>
+    <string name="feature_processing">Обработка...</string>
+    <string name="feature_error">Произошла ошибка</string>
+    <string name="feature_copy_result">Копировать результат</string>
+    <string name="feature_share_result">Поделиться результатом</string>
+    <string name="feature_clear">Очистить</string>
+    
+    <!-- Language Names for Translator (Gemma-3n Supported Languages) - Alphabetically Ordered -->
+    <string name="lang_english">Английский</string>
+    <string name="lang_afrikaans">Африкаанс</string>
+    <string name="lang_amharic">Амхарский</string>
+    <string name="lang_arabic">Арабский</string>
+    <string name="lang_armenian">Армянский</string>
+    <string name="lang_azerbaijani">Азербайджанский</string>
+    <string name="lang_basque">Баскский</string>
+    <string name="lang_bengali">Бенгальский</string>
+    <string name="lang_bulgarian">Болгарский</string>
+    <string name="lang_burmese">Бирманский</string>
+    <string name="lang_catalan">Каталанский</string>
+    <string name="lang_chinese">Китайский (Упрощённый)</string>
+    <string name="lang_chinese_traditional">Китайский (Традиционный)</string>
+    <string name="lang_croatian">Хорватский</string>
+    <string name="lang_czech">Чешский</string>
+    <string name="lang_danish">Датский</string>
+    <string name="lang_dutch">Нидерландский</string>
+    <string name="lang_estonian">Эстонский</string>
+    <string name="lang_filipino">Филиппинский (Тагальский)</string>
+    <string name="lang_finnish">Финский</string>
+    <string name="lang_french">Французский</string>
+    <string name="lang_galician">Галисийский</string>
+    <string name="lang_georgian">Грузинский</string>
+    <string name="lang_german">Немецкий</string>
+    <string name="lang_greek">Греческий</string>
+    <string name="lang_gujarati">Гуджарати</string>
+    <string name="lang_hausa">Хауса</string>
+    <string name="lang_hebrew">Иврит</string>
+    <string name="lang_hindi">Хинди</string>
+    <string name="lang_hungarian">Венгерский</string>
+    <string name="lang_icelandic">Исландский</string>
+    <string name="lang_igbo">Игбо</string>
+    <string name="lang_indonesian">Индонезийский</string>
+    <string name="lang_italian">Итальянский</string>
+    <string name="lang_japanese">Японский</string>
+    <string name="lang_kannada">Каннада</string>
+    <string name="lang_kazakh">Казахский</string>
+    <string name="lang_khmer">Кхмерский</string>
+    <string name="lang_korean">Корейский</string>
+    <string name="lang_lao">Лаосский</string>
+    <string name="lang_latvian">Латышский</string>
+    <string name="lang_lithuanian">Литовский</string>
+    <string name="lang_malay">Малайский</string>
+    <string name="lang_malayalam">Малаялам</string>
+    <string name="lang_marathi">Маратхи</string>
+    <string name="lang_nepali">Непальский</string>
+    <string name="lang_norwegian">Норвежский</string>
+    <string name="lang_pashto">Пушту</string>
+    <string name="lang_persian">Персидский (Фарси)</string>
+    <string name="lang_polish">Польский</string>
+    <string name="lang_portuguese">Португальский</string>
+    <string name="lang_punjabi">Панджаби</string>
+    <string name="lang_romanian">Румынский</string>
+    <string name="lang_russian">Русский</string>
+    <string name="lang_serbian">Сербский</string>
+    <string name="lang_sindhi">Синдхи</string>
+    <string name="lang_sinhala">Сингальский</string>
+    <string name="lang_slovak">Словацкий</string>
+    <string name="lang_slovenian">Словенский</string>
+    <string name="lang_somali">Сомалийский</string>
+    <string name="lang_spanish">Испанский</string>
+    <string name="lang_swahili">Суахили</string>
+    <string name="lang_swedish">Шведский</string>
+    <string name="lang_tamil">Тамильский</string>
+    <string name="lang_telugu">Телугу</string>
+    <string name="lang_thai">Тайский</string>
+    <string name="lang_turkish">Турецкий</string>
+    <string name="lang_ukrainian">Украинский</string>
+    <string name="lang_urdu">Урду</string>
+    <string name="lang_uzbek">Узбекский</string>
+    <string name="lang_vietnamese">Вьетнамский</string>
+    <string name="lang_yoruba">Йоруба</string>
+    <string name="lang_zulu">Зулу</string>
+    
+    <!-- Model Selection -->
+    <string name="feature_settings_title">Настройки</string>
+    <string name="select_model_title">Выбрать модель</string>
+    <string name="no_models_available">Нет доступных моделей</string>
+    <string name="download_models_first">Пожалуйста, сначала загрузите модели</string>
+    <string name="select_backend">Выбрать бэкенд</string>
+    <string name="backend_cpu">ЦП</string>
+    <string name="backend_gpu">ГП</string>
+    <string name="gpu_not_supported">ГП не поддерживается этой моделью</string>
+    <string name="load_model">Загрузить модель</string>
+    <string name="model_loaded">Модель успешно загружена</string>
+    <string name="model_loading">Загрузка модели…</string>
+    <string name="model_load_failed">Не удалось загрузить модель</string>
+    <string name="multimodal_models_only">Поддерживаются только мультимодальные (Gemma-3n) модели</string>
+    <string name="text_models_only">Поддерживаются только текстовые модели</string>
+    
+    <!-- Audio Features -->
+    <string name="enable_audio_input">Включить аудиовход</string>
+    <string name="audio_input_enabled">Аудиовход включен</string>
+    <string name="audio_input_disabled">Аудиовход выключен</string>
+    <string name="record_audio">Записать аудио</string>
+    
+    <!-- Auto-detect Language -->
+    <string name="lang_auto_detect">Автоопределение</string>
+    <string name="auto_detecting_language">Определение языка…</string>
+    <string name="language_detected">Обнаружен язык: %1$s</string>
+    
+    <!-- Feature-specific Processing -->
+    <string name="processing">Обработка…</string>
+    <string name="translating">Перевод…</string>
+    <string name="transcribing">Транскрипция…</string>
+    <string name="analyzing_code">Анализ кода…</string>
+    <string name="processing_text">Обработка текста…</string>
+
+    <!-- Vision Features -->
+    <string name="input_options">Input Options</string>
+    <string name="enable_vision_input">Enable vision input</string>
+    <string name="translate_from_image">Translate text from image</string>
+    <string name="speak_to_translate">Speak to translate</string>
+    <string name="select_image">Select Image</string>
+    <string name="change_image">Change Image</string>
+    
+    <!-- Translator Settings -->
+    <string name="translator_enable_vision">Включить Зрение</string>
+    <string name="translator_vision_description">Перевести текст с изображений</string>
+    <string name="translator_enable_audio">Включить Аудио</string>
+    <string name="translator_audio_description">Перевести аудиозаписи</string>
+    
+    <!-- Web Search Messages -->
+    <string name="web_searching">🔍 Поиск в интернете...</string>
+    <string name="web_search_found_results">✅ Найдено %1$d результатов. Анализ...</string>
+    <string name="web_search_no_results">❌ Текущие результаты поиска не найдены. Предоставление ответа на основе обучающих данных...</string>
+    <string name="web_search_failed">❌ Поиск в интернете не удался: %1$s. Предоставление ответа на основе обучающих данных...</string>
+    
+    <!-- Vision Model Error Messages -->
+    <string name="vision_chat_cannot_open">🚫 **Невозможно открыть этот чат**\n\nЭтот разговор содержит изображения, но у вас сейчас загружена **только текстовая модель**:\n\n📱 **Текущая модель:** %1$s\n🖼️ **Этот чат:** Содержит изображения\n\n---\n\n## 🎯 Как исправить:\n\n1. **📥 Скачать модель зрения**\n   - Перейдите в \"Скачать модели\"\n   - Найдите модели, отмеченные 🖼️ или \"Зрение+Текст\"\n   - Попробуйте: **Gemma-3n E2B (Зрение+Текст)**\n\n2. **🔄 Переключиться на модель зрения**\n   - Загрузите скачанную модель зрения\n   - Модели зрения могут обрабатывать как текст, так и изображения\n\n3. **✅ Вернуться к этому чату**\n   - После загрузки модели зрения этот чат будет работать идеально!\n\n---\n\n💡 **Профессиональный совет:** Модели зрения могут делать всё, что делают текстовые модели, плюс обрабатывать изображения!</string>
+    <string name="vision_image_cannot_send">🖼️ **Невозможно отправить изображения**\n\nВы пытаетесь отправить изображение, но текущая модель **только текстовая**:\n\n📱 **Текущая модель:** %1$s\n\n---\n\n## 🎯 Чтобы отправить изображения:\n\n1. **📥 Скачать модель зрения**\n   - Нажмите меню → \"Скачать модели\"\n   - Найдите модели 🖼️ **Зрение+Текст**\n   - Рекомендуется: **Gemma-3n E2B (Зрение+Текст)**\n\n2. **🔄 Сменить модели**\n   - Загрузите скачанную модель зрения\n   - Модели зрения обрабатывают и текст, и изображения\n\n3. **✅ Попробовать снова**\n   - После загрузки вы сможете свободно отправлять изображения!\n\n---\n\n💡 **Профессиональный совет:** Модели зрения могут делать всё, что делают текстовые модели, плюс понимать изображения!</string>
+    
+    <!-- Model Error Messages -->
+    <string name="please_download_model">Пожалуйста, скачайте модель, чтобы начать общение.</string>
+    <string name="model_not_loaded">Модель загружена неправильно. Попробуйте переключиться на другую модель или перезапустить приложение.</string>
+    <string name="no_response_produced">Ответ не сгенерирован. (Возможно: лимит токенов или сброс сессии). Нажмите Регенерировать.</string>
+    <string name="prompt_too_long">Сообщение слишком длинное. Пожалуйста, сократите ваше сообщение и попробуйте снова.</string>
+    <string name="language_persian">فارسی</string>
+    <string name="language_ukrainian">Українська</string>
+    <string name="language_hebrew">עברית</string>
+    <!-- New Chat Management & Creator Strings -->
+    <string name="not_loaded">Не загружено</string>
+    <string name="dialog_rename_chat_title">Переименовать Чат</string>
+    <string name="chat_title">Название Чата</string>
+    <string name="more_options">Дополнительные параметры</string>
+    <string name="dialog_delete_creator_title">Удалить Персону?</string>
+    <string name="dialog_delete_creator_message">Удалить Персону \"%1\"?</string>
+    <string name="action_rename">Переименовать</string>
+
+    <!-- Vibe Coder Feature -->
+    <string name="feature_vibe_coder">VibeCode</string>
+    <string name="feature_vibe_coder_desc">Создавайте HTML, JavaScript и Python-код с помощью ИИ</string>
+    <string name="feature_creator_generation">Персоны</string>
+    <string name="feature_creator_generation_desc">Создавайте собственные пользовательские персоны ИИ</string>
+    <string name="drawer_my_creators">мои Персоны</string>
+    <string name="vibe_coder_title">VibeCode</string>
+    <string name="vibe_coder_prompt_label">Что вы хотите написать?</string>
+    <string name="vibe_coder_prompt_hint">Опишите код, который хотите сгенерировать...</string>
+    <string name="vibe_coder_generate">Генерировать Код</string>
+    <string name="vibe_coder_generating">Генерация кода...</string>
+    <string name="vibe_coder_generated_code">Сгенерированный Код</string>
+    <string name="vibe_coder_copy">Копировать</string>
+    <string name="vibe_coder_preview">Предпросмотр</string>
+    <string name="vibe_coder_no_model">Модель не загружена. Пожалуйста, сначала скачайте и выберите модель.</string>
+    <string name="vibe_coder_settings">Настройки</string>
+    <string name="vibe_coder_backend_select">Выбрать Бэкенд</string>
+
+    <!-- VibeCode additions -->
+    <string name="vibe_coder_modification_mode">Режим изменения</string>
+    <string name="vibe_coder_refine">Улучшить код</string>
+    <string name="vibe_coder_clear">Новый проект / Очистить контекст</string>
+    <string name="vibe_coder_planning">Планирование архитектуры...</string>
+    <string name="vibe_coder_revising">Исправление кода...</string>
+    <string name="vibe_coder_select_folder_title">Сначала выберите папку проекта</string>
+    <string name="vibe_coder_select_folder_desc">Откройте папку для включения работы с несколькими файлами и создания файлов в папке.</string>
+    <string name="vibe_coder_open_folder">Открыть папку</string>
+    <string name="vibe_coder_show_chat">Показать чат</string>
+    <string name="vibe_coder_ai_chat">ИИ-чат</string>
+    <string name="vibe_coder_hide_chat">Скрыть чат</string>
+    <string name="vibe_coder_clear_chat">Очистить чат</string>
+    <string name="vibe_coder_new_chat">Новый чат</string>
+    <string name="vibe_coder_delete_chat_cd">Удалить чат</string>
+    <string name="vibe_coder_message_you">Вы</string>
+    <string name="vibe_coder_message_ai">ИИ</string>
+    <string name="vibe_coder_edit_resend_prompt">Редактировать и отправить повторно</string>
+    <string name="vibe_coder_resend">Повторно отправить</string>
+    <string name="vibe_coder_ask_ai_edit">Попросите ИИ отредактировать этот файл...</string>
+    <string name="vibe_coder_create_open_file_hint">Сначала создайте/откройте файл (.py, .js, .ts, ...)</string>
+    <string name="vibe_coder_stop_generation">Остановить генерацию</string>
+    <string name="vibe_coder_code_editor">Редактор кода</string>
+    <string name="vibe_coder_new_file">Новый файл</string>
+    <string name="vibe_coder_save_file">Сохранить файл</string>
+    <string name="vibe_coder_copy_code">Копировать код</string>
+    <string name="vibe_coder_delete_file_cd">Удалить файл</string>
+    <string name="vibe_coder_open_or_create_file">Откройте или создайте файл для начала редактирования.</string>
+    <string name="vibe_coder_ai_editing">ИИ редактирует код...</string>
+    <string name="vibe_coder_write_code_hint">Напишите код здесь или спросите ИИ в чате...</string>
+    <string name="vibe_coder_discard">Отменить</string>
+    <string name="vibe_coder_create_file_title">Создать файл в рабочей области</string>
+    <string name="vibe_coder_file_name_placeholder">пример.py или app.js</string>
+    <string name="vibe_coder_file_name_label">Имя файла с расширением</string>
+    <string name="vibe_coder_file_name_error">Введите допустимое имя файла с расширением, например main.py</string>
+    <string name="vibe_coder_create">Создать</string>
+    <string name="vibe_coder_delete_chat_title">Удалить чат?</string>
+    <string name="vibe_coder_delete_chat_message">Эта сессия чата будет удалена навсегда.</string>
+    <string name="vibe_coder_delete_file_title">Удалить файл?</string>
+    <string name="vibe_coder_delete_file_message">Удалить \'%1$s\' из этой папки?</string>
+    <string name="vibe_coder_no_file_selected_error">Файл не выбран. Сначала создайте/откройте файл из рабочей папки.</string>
+    <string name="vibe_coder_delete_file_error">Не удалось удалить файл</string>
+    <string name="vibe_coder_autosave_failed">Автосохранение не выполнено. Нажмите сохранить ещё раз или откройте файл заново.</string>
+
+    <!-- Creator Generation Screen -->
+    <string name="creator_screen_title">Новый ИИ-персонаж</string>
+    <string name="creator_bring_to_life">Оживите искусственный интеллект</string>
+    <string name="creator_description">У вас есть возможность оживить пользовательский ИИ-персонаж. Просто опишите, как ваш персонаж будет реагировать на любые входные данные, запросы или идеи. После создания персонажа вы сможете использовать его в чате.</string>
+    <string name="creator_prompt_label">Опишите вашего ИИ-персонажа...</string>
+    <string name="creator_prompt_placeholder">напр., суммируй любую тему в виде рифмованного стихотворения менее 10 строк</string>
+    <string name="creator_brewing">творим магию...</string>
+    <string name="creator_generate_persona">Создать персонажа</string>
+    <string name="creator_load_model_first">Пожалуйста, сначала загрузите модель.</string>
+    <string name="creator_result_heading">Вот ваш новый ИИ-персонаж!</string>
+    <string name="creator_system_prompt_label">Системный промпт (PCTF):</string>
+    <string name="creator_save_and_chat">Сохранить и общаться</string>
+
+    <!-- Kid Mode -->
+    <string name="kid_mode_title">Детский режим</string>
+    <string name="kid_mode_enabled_status">Включён - Защита безопасности активна</string>
+    <string name="kid_mode_disabled_status">Выключен</string>
+    <string name="kid_mode_incorrect_pin">Неверный PIN</string>
+    <string name="kid_mode_set_pin_title">Задать PIN детского режима</string>
+    <string name="kid_mode_set_pin_body">Введите 4-значный PIN для включения детского режима. Этот PIN понадобится для его отключения.</string>
+    <string name="kid_mode_pin_label">4-значный PIN</string>
+    <string name="kid_mode_pin_error">PIN должен состоять из 4 цифр</string>
+    <string name="kid_mode_enable">Включить</string>
+    <string name="kid_mode_disable_title">Отключить детский режим</string>
+    <string name="kid_mode_verify_body">Введите 4-значный PIN для отключения детского режима.</string>
+    <string name="kid_mode_disable">Отключить</string>
+
+    <string name="gpu_layers_label">GPU Layers: %1$d</string>
+    <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
+</resources>
