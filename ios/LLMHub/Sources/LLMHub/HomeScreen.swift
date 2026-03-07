@@ -1,106 +1,127 @@
 import SwiftUI
 
 struct FeatureCard {
-    let title: String
-    let description: String
+    let titleKey: LocalizedStringKey
+    let descriptionKey: LocalizedStringKey
     let iconSystemName: String
     let gradient: [Color]
     let route: String
 }
 
 struct HomeScreen: View {
-    let features = [
-        FeatureCard(title: "AI Chat", description: "Chat with AI models directly on your device", iconSystemName: "bubble.left.and.bubble.right.fill", gradient: [Color(hex: "667eea"), Color(hex: "764ba2")], route: "chat"),
-        FeatureCard(title: "Writing Aid", description: "Improve or rewrite your text anywhere", iconSystemName: "pencil.line", gradient: [Color(hex: "f093fb"), Color(hex: "f5576c")], route: "writing_aid"),
-        FeatureCard(title: "Translator", description: "Offline translation across languages", iconSystemName: "network", gradient: [Color(hex: "4facfe"), Color(hex: "00f2fe")], route: "translator"),
-        FeatureCard(title: "Transcriber", description: "Accurate voice-to-text conversion", iconSystemName: "mic.fill", gradient: [Color(hex: "43e97b"), Color(hex: "38f9d7")], route: "transcriber"),
-        FeatureCard(title: "Scam Detector", description: "Analyze suspicious messages and links", iconSystemName: "shield.fill", gradient: [Color(hex: "fa709a"), Color(hex: "fee140")], route: "scam_detector"),
-        FeatureCard(title: "Image Generator", description: "Create images from text descriptions", iconSystemName: "paintpalette.fill", gradient: [Color(hex: "6a11cb"), Color(hex: "2575fc")], route: "image_generator"),
-        FeatureCard(title: "Vibe Coder", description: "Describe what you want it to code", iconSystemName: "chevron.left.slash.chevron.right", gradient: [Color(hex: "f794a4"), Color(hex: "fdd6bd")], route: "vibe_coder"),
-        FeatureCard(title: "Creator Generation", description: "Generate creator-focused content", iconSystemName: "sparkles", gradient: [Color(hex: "8EC5FC"), Color(hex: "E0C3FC")], route: "creator_generation")
-    ]
-    
+    var onNavigateToChat: () -> Void
+    var onNavigateToModels: () -> Void
+    var onNavigateToSettings: () -> Void
+
+    var features: [FeatureCard] {
+        [
+            FeatureCard(titleKey: "feature_ai_chat", descriptionKey: "feature_ai_chat_desc", iconSystemName: "bubble.left.and.bubble.right.fill", gradient: [Color(hex: "667eea"), Color(hex: "764ba2")], route: "chat"),
+            FeatureCard(titleKey: "feature_writing_aid", descriptionKey: "feature_writing_aid_desc", iconSystemName: "pencil.line", gradient: [Color(hex: "f093fb"), Color(hex: "f5576c")], route: "writing_aid"),
+            FeatureCard(titleKey: "feature_translator", descriptionKey: "feature_translator_desc", iconSystemName: "network", gradient: [Color(hex: "4facfe"), Color(hex: "00f2fe")], route: "translator"),
+            FeatureCard(titleKey: "feature_transcriber", descriptionKey: "feature_transcriber_desc", iconSystemName: "mic.fill", gradient: [Color(hex: "43e97b"), Color(hex: "38f9d7")], route: "transcriber"),
+            FeatureCard(titleKey: "feature_scam_detector", descriptionKey: "feature_scam_detector_desc", iconSystemName: "shield.fill", gradient: [Color(hex: "fa709a"), Color(hex: "fee140")], route: "scam_detector"),
+            FeatureCard(titleKey: "feature_image_generator", descriptionKey: "feature_image_generator_desc", iconSystemName: "paintpalette.fill", gradient: [Color(hex: "6a11cb"), Color(hex: "2575fc")], route: "image_generator"),
+            FeatureCard(titleKey: "feature_vibe_coder", descriptionKey: "feature_vibe_coder_desc", iconSystemName: "chevron.left.slash.chevron.right", gradient: [Color(hex: "f794a4"), Color(hex: "fdd6bd")], route: "vibe_coder"),
+            FeatureCard(titleKey: "feature_creator_generation", descriptionKey: "feature_creator_generation_desc", iconSystemName: "sparkles", gradient: [Color(hex: "8EC5FC"), Color(hex: "E0C3FC")], route: "creator_generation")
+        ]
+    }
+
     let columns = [
-        GridItem(.flexible(), spacing: 16),
-        GridItem(.flexible(), spacing: 16)
+        GridItem(.flexible(), spacing: 14),
+        GridItem(.flexible(), spacing: 14)
     ]
-    
+
     var body: some View {
         ScrollView {
-            LazyVGrid(columns: columns, spacing: 16) {
-                ForEach(features, id: \.title) { feature in
-                    NavigationLink(destination: destination(for: feature.route)) {
-                        FeatureCardView(feature: feature)
+            VStack(spacing: 20) {
+                // Subtitle removed
+
+                LazyVGrid(columns: columns, spacing: 14) {
+                    ForEach(features, id: \.route) { feature in
+                        Button {
+                            if feature.route == "chat" {
+                                onNavigateToChat()
+                            }
+                            // Other routes: coming soon
+                        } label: {
+                            FeatureCardView(feature: feature)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(PlainButtonStyle())
                 }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 20)
             }
-            .padding(16)
         }
-        .navigationTitle("LLM Hub")
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                NavigationLink(destination: ModelDownloadScreen()) {
-                    Image(systemName: "arrow.down.circle")
-                }
+            ToolbarItem(placement: .navigationBarLeading) {
+                Text("LLM Hub")
+                    .font(.title2.bold())
+                    .padding(.leading, 8)
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                NavigationLink(destination: SettingsScreen()) {
-                    Image(systemName: "gearshape")
+                HStack(spacing: 14) {
+                    Button {
+                        onNavigateToModels()
+                    } label: {
+                        Image(systemName: "arrow.down.circle")
+                            .font(.system(size: 18))
+                    }
+                    Button {
+                        onNavigateToSettings()
+                    } label: {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 18))
+                    }
                 }
             }
-        }
-    }
-    
-    @ViewBuilder
-    private func destination(for route: String) -> some View {
-        if route == "chat" {
-            ChatScreen()
-        } else {
-            Text("Coming Soon: \(route)")
         }
     }
 }
 
 struct FeatureCardView: View {
     let feature: FeatureCard
-    
+
     var body: some View {
         VStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .fill(Color.white.opacity(0.3))
+                    .fill(Color.white.opacity(0.25))
                     .frame(width: 56, height: 56)
-                
+
                 Image(systemName: feature.iconSystemName)
-                    .font(.system(size: 28))
+                    .font(.system(size: 26))
                     .foregroundColor(.white)
             }
-            
+
             VStack(spacing: 4) {
-                Text(feature.title)
+                Text(feature.titleKey, bundle: .module)
                     .font(.headline)
                     .fontWeight(.bold)
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
-                
-                Text(feature.description)
+
+                Text(feature.descriptionKey, bundle: .module)
                     .font(.caption)
-                    .foregroundColor(.white.opacity(0.8))
+                    .foregroundColor(.white.opacity(0.85))
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
             }
         }
-        .padding()
+        .padding(14)
         .frame(maxWidth: .infinity, alignment: .center)
-        .frame(height: 160)
+        .frame(height: 155)
         .background(
-            LinearGradient(gradient: Gradient(colors: feature.gradient.map { $0.opacity(0.9) }),
-                           startPoint: .topLeading,
-                           endPoint: .bottomTrailing)
+            LinearGradient(
+                gradient: Gradient(colors: feature.gradient),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
         )
-        .cornerRadius(24)
-        .shadow(radius: 4)
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .shadow(color: feature.gradient.first?.opacity(0.4) ?? .clear, radius: 8, x: 0, y: 4)
     }
 }
 
@@ -111,21 +132,11 @@ extension Color {
         Scanner(string: hex).scanHexInt64(&int)
         let a, r, g, b: UInt64
         switch hex.count {
-        case 3: // RGB (12-bit)
-            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
-        case 6: // RGB (24-bit)
-            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        case 8: // ARGB (32-bit)
-            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
-        default:
-            (a, r, g, b) = (1, 1, 1, 0)
+        case 3: (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+        case 6: (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        case 8: (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        default: (a, r, g, b) = (1, 1, 1, 0)
         }
-        self.init(
-            .sRGB,
-            red: Double(r) / 255,
-            green: Double(g) / 255,
-            blue:  Double(b) / 255,
-            opacity: Double(a) / 255
-        )
+        self.init(.sRGB, red: Double(r) / 255, green: Double(g) / 255, blue: Double(b) / 255, opacity: Double(a) / 255)
     }
 }

@@ -4,6 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "LLMHub",
+    defaultLocalization: "en",
     platforms: [
         .iOS(.v17),
         .macOS(.v14),
@@ -25,6 +26,9 @@ let package = Package(
                 .product(name: "MLXRandom", package: "mlx-swift"),
                 .product(name: "MLXNN", package: "mlx-swift"),
                 .product(name: "MLXOptimizers", package: "mlx-swift")
+            ],
+            resources: [
+                .process("Icon.png")
             ]
         ),
     ]
