@@ -84,7 +84,7 @@
 "tos_privacy_data_title" = "4. Datenschutz und Daten";
 "tos_privacy_data_text" = "LLM Hub wurde mit Blick auf den Datenschutz entwickelt:\n\n• Alle Gespräche und Datenverarbeitung erfolgen lokal auf Ihrem Gerät\n• Keine persönlichen Daten werden an externe Server übertragen\n• Der Chat-Verlauf wird lokal gespeichert und kann jederzeit gelöscht werden\n• Model-Downloads werden direkt von offiziellen Repositories durchgeführt (HuggingFace, Google)\n• Die Anwendung sammelt keine Analyse- oder Nutzungsdaten";
 "tos_disclaimer_title" = "5. Gewährleistungsausschluss";
-"tos_disclaimer_text" = "LLM Hub wird \\"wie besehen\\" ohne Gewährleistungen jeglicher Art bereitgestellt. Wir garantieren nicht die Genauigkeit, Zuverlässigkeit oder Verfügbarkeit der Anwendung oder ihres generierten Inhalts. Die Verwendung von KI-Modellen kann unvorhersagbare Ergebnisse produzieren.";
+"tos_disclaimer_text" = "LLM Hub wird \"wie besehen\" ohne Gewährleistungen jeglicher Art bereitgestellt. Wir garantieren nicht die Genauigkeit, Zuverlässigkeit oder Verfügbarkeit der Anwendung oder ihres generierten Inhalts. Die Verwendung von KI-Modellen kann unvorhersagbare Ergebnisse produzieren.";
 "tos_limitation_liability_title" = "6. Haftungsbeschränkung";
 "tos_limitation_liability_text" = "In keinem Fall sind die Entwickler für indirekte, zufällige, besondere oder Folgeschäden haftbar, die aus der Verwendung von LLM Hub entstehen. Ihre Nutzung der Anwendung erfolgt auf eigenes Risiko.";
 "tos_model_usage_title" = "7. Modellnutzung und Lizenzierung";
@@ -175,7 +175,7 @@
 "dialog_delete_all_chats_title" = "Alle Chats löschen?";
 "dialog_delete_all_chats_message" = "Dies wird dauerhaft den gesamten Unterhaltungsverlauf löschen. Diese Aktion kann nicht rückgängig gemacht werden.";
 "dialog_delete_chat_title" = "Chat löschen?";
-"dialog_delete_chat_message" = "Unterhaltung \\"%1$@\\" löschen?";
+"dialog_delete_chat_message" = "Unterhaltung \"%1$@\" löschen?";
 "action_delete_all" = "Alle löschen";
 "action_delete" = "Löschen";
 "action_cancel" = "Abbrechen";
@@ -342,7 +342,7 @@
 "context_window_size" = "Kontextfenster-Größe";
 "import_model" = "Modell Importieren";
 "model_name_required" = "Modellname ist erforderlich";
-"model_name_already_exists" = "Ein Modell namens \\"%1$@\\" existiert bereits. Bitte verwenden Sie einen anderen Namen oder löschen Sie zuerst das vorhandene Modell.";
+"model_name_already_exists" = "Ein Modell namens \"%1$@\" existiert bereits. Bitte verwenden Sie einen anderen Namen oder löschen Sie zuerst das vorhandene Modell.";
 "context_window_size_invalid" = "Geben Sie eine gültige Kontextfenster-Größe ein";
 "please_fix_errors" = "Bitte korrigieren Sie die Fehler oben";
 "remove" = "Entfernen";
@@ -574,8 +574,8 @@
 "web_search_found_results" = "✅ %1$d Ergebnisse gefunden. Analysiere...";
 "web_search_no_results" = "❌ Keine aktuellen Suchergebnisse gefunden. Antworte basierend auf Trainingsdaten...";
 "web_search_failed" = "❌ Websuche fehlgeschlagen: %1$@. Antworte basierend auf Trainingsdaten...";
-"vision_chat_cannot_open" = "🚫 **Chat kann nicht geöffnet werden**\n\nDiese Unterhaltung enthält Bilder, aber Sie haben derzeit ein **Nur-Text-Modell** geladen:\n\n📱 **Aktuelles Modell:** %1$@\n🖼️ **Dieser Chat:** Enthält Bilder\n\n---\n\n## 🎯 So beheben Sie das:\n\n1. **📥 Vision-Modell herunterladen**\n   - Gehen Sie zu \\"Modelle herunterladen\\"\n   - Suchen Sie nach Modellen mit 🖼️ oder \\"Vision+Text\\"\n   - Versuchen Sie: **Gemma-3n E2B (Vision+Text)**\n\n2. **🔄 Zu Vision-Modell wechseln**\n   - Laden Sie das heruntergeladene Vision-Modell\n   - Vision-Modelle können sowohl Text als auch Bilder verarbeiten\n\n3. **✅ Zu diesem Chat zurückkehren**\n   - Sobald ein Vision-Modell geladen ist, funktioniert dieser Chat perfekt!\n\n---\n\n💡 **Pro-Tipp:** Vision-Modelle können alles, was Text-Modelle können, plus Bilder verstehen!";
-"vision_image_cannot_send" = "🖼️ **Bilder können nicht gesendet werden**\n\nSie versuchen ein Bild zu senden, aber das aktuelle Modell ist **Nur-Text**:\n\n📱 **Aktuelles Modell:** %1$@\n\n---\n\n## 🎯 Um Bilder zu senden:\n\n1. **📥 Vision-Modell herunterladen**\n   - Tippen Sie auf das Menü → \\"Modelle herunterladen\\"\n   - Suchen Sie nach 🖼️ **Vision+Text** Modellen\n   - Empfohlen: **Gemma-3n E2B (Vision+Text)**\n\n2. **🔄 Modelle wechseln**\n   - Laden Sie das heruntergeladene Vision-Modell\n   - Vision-Modelle verarbeiten sowohl Text als auch Bilder\n\n3. **✅ Erneut versuchen**\n   - Sobald geladen, können Sie Bilder frei senden!\n\n---\n\n💡 **Pro-Tipp:** Vision-Modelle können alles, was Text-Modelle können, plus Bilder verstehen!";
+"vision_chat_cannot_open" = "🚫 **Chat kann nicht geöffnet werden**\n\nDiese Unterhaltung enthält Bilder, aber Sie haben derzeit ein **Nur-Text-Modell** geladen:\n\n📱 **Aktuelles Modell:** %1$@\n🖼️ **Dieser Chat:** Enthält Bilder\n\n---\n\n## 🎯 So beheben Sie das:\n\n1. **📥 Vision-Modell herunterladen**\n   - Gehen Sie zu \"Modelle herunterladen\"\n   - Suchen Sie nach Modellen mit 🖼️ oder \"Vision+Text\"\n   - Versuchen Sie: **Gemma-3n E2B (Vision+Text)**\n\n2. **🔄 Zu Vision-Modell wechseln**\n   - Laden Sie das heruntergeladene Vision-Modell\n   - Vision-Modelle können sowohl Text als auch Bilder verarbeiten\n\n3. **✅ Zu diesem Chat zurückkehren**\n   - Sobald ein Vision-Modell geladen ist, funktioniert dieser Chat perfekt!\n\n---\n\n💡 **Pro-Tipp:** Vision-Modelle können alles, was Text-Modelle können, plus Bilder verstehen!";
+"vision_image_cannot_send" = "🖼️ **Bilder können nicht gesendet werden**\n\nSie versuchen ein Bild zu senden, aber das aktuelle Modell ist **Nur-Text**:\n\n📱 **Aktuelles Modell:** %1$@\n\n---\n\n## 🎯 Um Bilder zu senden:\n\n1. **📥 Vision-Modell herunterladen**\n   - Tippen Sie auf das Menü → \"Modelle herunterladen\"\n   - Suchen Sie nach 🖼️ **Vision+Text** Modellen\n   - Empfohlen: **Gemma-3n E2B (Vision+Text)**\n\n2. **🔄 Modelle wechseln**\n   - Laden Sie das heruntergeladene Vision-Modell\n   - Vision-Modelle verarbeiten sowohl Text als auch Bilder\n\n3. **✅ Erneut versuchen**\n   - Sobald geladen, können Sie Bilder frei senden!\n\n---\n\n💡 **Pro-Tipp:** Vision-Modelle können alles, was Text-Modelle können, plus Bilder verstehen!";
 "please_download_model" = "Bitte laden Sie ein Modell herunter, um zu chatten.";
 "model_not_loaded" = "Modell nicht korrekt geladen. Bitte versuchen Sie, zu einem anderen Modell zu wechseln oder die App neu zu starten.";
 "no_response_produced" = "Keine Antwort erzeugt. (Möglich: Token-Limit oder Session-Reset). Tippen Sie auf Regenerieren.";
@@ -588,7 +588,7 @@
 "chat_title" = "Chat-Titel";
 "more_options" = "Weitere Optionen";
 "dialog_delete_creator_title" = "Persona löschen?";
-"dialog_delete_creator_message" = "Persona \\"%1\\" löschen?";
+"dialog_delete_creator_message" = "Persona \"%1\" löschen?";
 "action_rename" = "Umbenennen";
 "feature_vibe_coder" = "VibeCode";
 "feature_vibe_coder_desc" = "HTML, JavaScript und Python-Code mit KI generieren";

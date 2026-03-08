@@ -59,7 +59,7 @@ public struct AIModel: Identifiable, Codable, Sendable {
     public let id: String
     public let name: String
     public let description: String
-    public let repoId: String // Hugging Face repo ID (e.g. mlx-community/gemma-3n-E2B-it-4bit)
+    public let repoId: String // Hugging Face repo ID
     public let category: ModelCategory
     public let sizeBytes: Int64
     public let source: String
@@ -117,14 +117,14 @@ public struct AIModel: Identifiable, Codable, Sendable {
 
 public struct ModelData {
     public static let models: [AIModel] = [
-        // --- Multimodal Models (User's priority) ---
+        // --- Multimodal Models ---
         AIModel(
             name: "Gemma-3n E2B (4-bit)",
-            description: "Google's powerful multimodal model for text and vision. Optimized for efficiency. (MLX 4-bit)",
+            description: "",
             repoId: "mlx-community/gemma-3n-E2B-it-4bit",
             category: .multimodal,
             sizeBytes: 4460000000,
-            source: "Google via MLX Community",
+            source: "Google",
             supportsVision: true,
             supportsAudio: false,
             requirements: ModelRequirements(minRamGB: 8, recommendedRamGB: 12),
@@ -136,18 +136,17 @@ public struct ModelData {
                 "tokenizer_config.json",
                 "model.safetensors",
                 "chat_template.jinja",
-                "special_tokens_map.json",
                 "preprocessor_config.json",
                 "processor_config.json"
             ]
         ),
         AIModel(
             name: "Gemma-3n E4B (4-bit)",
-            description: "Larger multimodal model from Google. High performance for vision and text tasks.",
+            description: "",
             repoId: "mlx-community/gemma-3n-E4B-it-4bit",
             category: .multimodal,
             sizeBytes: 5860000000, 
-            source: "Google via MLX Community",
+            source: "Google",
             supportsVision: true,
             supportsAudio: true,
             requirements: ModelRequirements(minRamGB: 12, recommendedRamGB: 16),
@@ -161,22 +160,19 @@ public struct ModelData {
                 "model-00002-of-00002.safetensors",
                 "model.safetensors.index.json",
                 "chat_template.jinja",
-                "special_tokens_map.json",
                 "preprocessor_config.json",
                 "processor_config.json"
             ]
         ),
 
-
-
         // --- Text Models ---
         AIModel(
             name: "Gemma-3 1B (4-bit)",
-            description: "Ultra-compact and efficient language model from Google.",
+            description: "",
             repoId: "mlx-community/gemma-3-1b-it-4bit",
             category: .text,
             sizeBytes: 733000000,
-            source: "Google via MLX Community",
+            source: "Google",
             requirements: ModelRequirements(minRamGB: 2, recommendedRamGB: 4),
             contextWindowSize: 2048,
             modelFormat: .mlx,
@@ -184,35 +180,16 @@ public struct ModelData {
                 "config.json",
                 "tokenizer.json",
                 "tokenizer_config.json",
-                "model.safetensors",
-                "chat_template.jinja"
-            ]
-        ),
-        AIModel(
-            name: "Phi-4 Mini (4-bit)",
-            description: "Microsoft's efficient small language model with high performance.",
-            repoId: "mlx-community/phi-4-mini-instruct-4bit",
-            category: .text,
-            sizeBytes: 2160000000,
-            source: "Microsoft via MLX Community",
-            requirements: ModelRequirements(minRamGB: 4, recommendedRamGB: 6),
-            contextWindowSize: 4096,
-            modelFormat: .mlx,
-            files: [
-                "config.json",
-                "tokenizer.json",
-                "tokenizer_config.json",
-                "model.safetensors",
-                "generation_config.json"
+                "model.safetensors"
             ]
         ),
         AIModel(
             name: "Llama-3.2 3B (4-bit)",
-            description: "Meta's most capable small model for mobile devices.",
+            description: "",
             repoId: "mlx-community/Llama-3.2-3B-Instruct-4bit",
             category: .text,
             sizeBytes: 1810000000,
-            source: "Meta via MLX Community",
+            source: "Meta",
             requirements: ModelRequirements(minRamGB: 4, recommendedRamGB: 8),
             contextWindowSize: 4096,
             modelFormat: .mlx,
@@ -223,7 +200,5 @@ public struct ModelData {
                 "model.safetensors"
             ]
         )
-
     ]
 }
-

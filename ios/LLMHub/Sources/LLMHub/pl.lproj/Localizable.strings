@@ -85,7 +85,7 @@
 "tos_privacy_data_title" = "4. Prywatność i Dane";
 "tos_privacy_data_text" = "LLM Hub został zaprojektowany z myślą o prywatności:\n\n• Wszystkie rozmowy i przetwarzanie danych odbywają się lokalnie na Twoim urządzeniu\n• Dane osobowe nie są przesyłane na zewnętrzne serwery\n• Historia czatu jest przechowywana lokalnie i może być usunięta w dowolnym momencie\n• Pobieranie modeli odbywa się bezpośrednio z oficjalnych repozytoriów (HuggingFace, Google)\n• Aplikacja nie zbiera danych analitycznych ani użytkowych";
 "tos_disclaimer_title" = "5. Zrzeczenie się Gwarancji";
-"tos_disclaimer_text" = "LLM Hub jest dostarczany \\"jak jest\\" bez żadnych gwarancji. Nie gwarantujemy dokładności, niezawodności ani dostępności aplikacji lub generowanych przez nią treści. Użycie modeli AI może prowadzić do nieprzewidywalnych rezultatów.";
+"tos_disclaimer_text" = "LLM Hub jest dostarczany \"jak jest\" bez żadnych gwarancji. Nie gwarantujemy dokładności, niezawodności ani dostępności aplikacji lub generowanych przez nią treści. Użycie modeli AI może prowadzić do nieprzewidywalnych rezultatów.";
 "tos_limitation_liability_title" = "6. Ograniczenie Odpowiedzialności";
 "tos_limitation_liability_text" = "W żadnym wypadku deweloperzy nie ponoszą odpowiedzialności za jakiekolwiek pośrednie, przypadkowe, specjalne lub wynikowe szkody wynikające z użycia LLM Hub. Używasz aplikacji na własne ryzyko.";
 "tos_model_usage_title" = "7. Użycie Modelu i Licencjonowanie";
@@ -191,7 +191,7 @@
 "dialog_delete_all_chats_title" = "Usunąć Wszystkie Czaty?";
 "dialog_delete_all_chats_message" = "Spowoduje to trwałe usunięcie całej historii rozmów. Ta czynność jest nieodwracalna.";
 "dialog_delete_chat_title" = "Usunąć Czat?";
-"dialog_delete_chat_message" = "Usunąć rozmowę \\"%1$@\\"?";
+"dialog_delete_chat_message" = "Usunąć rozmowę \"%1$@\"?";
 "action_delete_all" = "Usuń Wszystko";
 "action_delete" = "Usuń";
 "action_cancel" = "Anuluj";
@@ -359,7 +359,7 @@
 "context_window_size" = "Rozmiar Okna Kontekstowego";
 "import_model" = "Importuj Model";
 "model_name_required" = "Nazwa modelu jest wymagana";
-"model_name_already_exists" = "Model o nazwie \\"%1$@\\" już istnieje. Użyj innej nazwy lub najpierw usuń istniejący model.";
+"model_name_already_exists" = "Model o nazwie \"%1$@\" już istnieje. Użyj innej nazwy lub najpierw usuń istniejący model.";
 "context_window_size_invalid" = "Proszę wprowadzić prawidłowy rozmiar okna kontekstowego";
 "please_fix_errors" = "Proszę naprawić powyższe błędy";
 "remove" = "Usuń";
@@ -602,8 +602,8 @@
 "web_search_found_results" = "✅ Znaleziono %1$d wyników. Analizowanie...";
 "web_search_no_results" = "❌ Nie znaleziono aktualnych wyników wyszukiwania. Dostarczanie odpowiedzi na podstawie danych treningowych...";
 "web_search_failed" = "❌ Wyszukiwanie w sieci nie powiodło się: %1$@. Dostarczanie odpowiedzi na podstawie danych treningowych...";
-"vision_chat_cannot_open" = "🚫 **Nie można otworzyć tego czatu**\n\nTa rozmowa zawiera obrazy, ale obecnie masz załadowany **model tylko tekstowy**:\n\n📱 **Aktualny model:** %1$@\n🖼️ **Ten czat:** Zawiera obrazy\n\n---\n\n## 🎯 Jak to naprawić:\n\n1. **📥 Pobierz model wizyjny**\n   - Przejdź do \\"Pobierz modele\\"\n   - Szukaj modeli oznaczonych 🖼️ lub \\"Wizja+Tekst\\"\n   - Spróbuj: **Gemma-3n E2B (Wizja+Tekst)**\n\n2. **🔄 Przełącz na model wizyjny**\n   - Załaduj pobrany model wizyjny\n   - Modele wizyjne mogą obsługiwać zarówno tekst, jak i obrazy\n\n3. **✅ Wróć do tego czatu**\n   - Po załadowaniu modelu wizyjnego ten czat będzie działał doskonale!\n\n---\n\n💡 **Wskazówka pro:** Modele wizyjne mogą robić wszystko, co modele tekstowe, plus obsługiwać obrazy!";
-"vision_image_cannot_send" = "🖼️ **Nie można wysłać obrazów**\n\nPróbujesz wysłać obraz, ale aktualny model to **tylko tekst**:\n\n📱 **Aktualny model:** %1$@\n\n---\n\n## 🎯 Aby wysłać obrazy:\n\n1. **📥 Pobierz model wizyjny**\n   - Dotknij menu → \\"Pobierz modele\\"\n   - Szukaj modeli 🖼️ **Wizja+Tekst**\n   - Zalecany: **Gemma-3n E2B (Wizja+Tekst)**\n\n2. **🔄 Zmień modele**\n   - Załaduj pobrany model wizyjny\n   - Modele wizyjne obsługują zarówno tekst, jak i obrazy\n\n3. **✅ Spróbuj ponownie**\n   - Po załadowaniu możesz swobodnie wysyłać obrazy!\n\n---\n\n💡 **Wskazówka pro:** Modele wizyjne mogą robić wszystko, co modele tekstowe, plus rozumieć obrazy!";
+"vision_chat_cannot_open" = "🚫 **Nie można otworzyć tego czatu**\n\nTa rozmowa zawiera obrazy, ale obecnie masz załadowany **model tylko tekstowy**:\n\n📱 **Aktualny model:** %1$@\n🖼️ **Ten czat:** Zawiera obrazy\n\n---\n\n## 🎯 Jak to naprawić:\n\n1. **📥 Pobierz model wizyjny**\n   - Przejdź do \"Pobierz modele\"\n   - Szukaj modeli oznaczonych 🖼️ lub \"Wizja+Tekst\"\n   - Spróbuj: **Gemma-3n E2B (Wizja+Tekst)**\n\n2. **🔄 Przełącz na model wizyjny**\n   - Załaduj pobrany model wizyjny\n   - Modele wizyjne mogą obsługiwać zarówno tekst, jak i obrazy\n\n3. **✅ Wróć do tego czatu**\n   - Po załadowaniu modelu wizyjnego ten czat będzie działał doskonale!\n\n---\n\n💡 **Wskazówka pro:** Modele wizyjne mogą robić wszystko, co modele tekstowe, plus obsługiwać obrazy!";
+"vision_image_cannot_send" = "🖼️ **Nie można wysłać obrazów**\n\nPróbujesz wysłać obraz, ale aktualny model to **tylko tekst**:\n\n📱 **Aktualny model:** %1$@\n\n---\n\n## 🎯 Aby wysłać obrazy:\n\n1. **📥 Pobierz model wizyjny**\n   - Dotknij menu → \"Pobierz modele\"\n   - Szukaj modeli 🖼️ **Wizja+Tekst**\n   - Zalecany: **Gemma-3n E2B (Wizja+Tekst)**\n\n2. **🔄 Zmień modele**\n   - Załaduj pobrany model wizyjny\n   - Modele wizyjne obsługują zarówno tekst, jak i obrazy\n\n3. **✅ Spróbuj ponownie**\n   - Po załadowaniu możesz swobodnie wysyłać obrazy!\n\n---\n\n💡 **Wskazówka pro:** Modele wizyjne mogą robić wszystko, co modele tekstowe, plus rozumieć obrazy!";
 "please_download_model" = "Pobierz model, aby rozpocząć czatowanie.";
 "model_not_loaded" = "Model nie został poprawnie załadowany. Spróbuj przełączyć na inny model lub uruchom ponownie aplikację.";
 "no_response_produced" = "Nie wygenerowano odpowiedzi. (Możliwe: limit tokenów lub reset sesji). Dotknij Regeneruj.";
@@ -616,7 +616,7 @@
 "chat_title" = "Tytuł Czatu";
 "more_options" = "Więcej Opcji";
 "dialog_delete_creator_title" = "Usunąć Personę?";
-"dialog_delete_creator_message" = "Usunąć Personę \\"%1\\"?";
+"dialog_delete_creator_message" = "Usunąć Personę \"%1\"?";
 "action_rename" = "Zmień Nazwę";
 "feature_vibe_coder" = "VibeCode";
 "feature_vibe_coder_desc" = "Generuj kod HTML, JavaScript i Python za pomocą AI";

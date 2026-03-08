@@ -360,7 +360,7 @@
 "context_window_size" = "Dimensione Finestra di Contesto";
 "import_model" = "Importa Modello";
 "model_name_required" = "Il nome del modello è obbligatorio";
-"model_name_already_exists" = "Esiste già un modello chiamato \\"%1$@\\". Utilizza un nome diverso o elimina prima il modello esistente.";
+"model_name_already_exists" = "Esiste già un modello chiamato \"%1$@\". Utilizza un nome diverso o elimina prima il modello esistente.";
 "context_window_size_invalid" = "Inserisci una dimensione valida della finestra di contesto";
 "please_fix_errors" = "Correggi gli errori sopra";
 "remove" = "Rimuovi";
@@ -592,8 +592,8 @@
 "web_search_found_results" = "✅ Trovati %1$d risultati. Analisi in corso...";
 "web_search_no_results" = "❌ Nessun risultato di ricerca attuale trovato. Fornendo risposta basata sui dati di addestramento...";
 "web_search_failed" = "❌ Ricerca web fallita: %1$@. Fornendo risposta basata sui dati di addestramento...";
-"vision_chat_cannot_open" = "🚫 **Impossibile aprire questa chat**\n\nQuesta conversazione contiene immagini, ma hai attualmente un **modello solo testo** caricato:\n\n📱 **Modello attuale:** %1$@\n🖼️ **Questa chat:** Contiene immagini\n\n---\n\n## 🎯 Come risolvere:\n\n1. **📥 Scarica un modello di visione**\n   - Vai a \\"Scarica modelli\\"\n   - Cerca modelli contrassegnati con 🖼️ o \\"Visione+Testo\\"\n   - Prova: **Gemma-3n E2B (Visione+Testo)**\n\n2. **🔄 Passa al modello di visione**\n   - Carica il modello di visione che hai scaricato\n   - I modelli di visione possono gestire sia testo che immagini\n\n3. **✅ Torna a questa chat**\n   - Una volta caricato un modello di visione, questa chat funzionerà perfettamente!\n\n---\n\n💡 **Suggerimento pro:** I modelli di visione possono fare tutto quello che fanno i modelli di testo, più gestire le immagini!";
-"vision_image_cannot_send" = "🖼️ **Impossibile inviare immagini**\n\nStai cercando di inviare un'immagine, ma il modello attuale è **solo testo**:\n\n📱 **Modello attuale:** %1$@\n\n---\n\n## 🎯 Per inviare immagini:\n\n1. **📥 Scarica un modello di visione**\n   - Tocca il menu → \\"Scarica modelli\\"\n   - Cerca modelli 🖼️ **Visione+Testo**\n   - Consigliato: **Gemma-3n E2B (Visione+Testo)**\n\n2. **🔄 Cambia modelli**\n   - Carica il modello di visione che hai scaricato\n   - I modelli di visione gestiscono sia testo che immagini\n\n3. **✅ Riprova**\n   - Una volta caricato, puoi inviare immagini liberamente!\n\n---\n\n💡 **Suggerimento pro:** I modelli di visione possono fare tutto quello che fanno i modelli di testo, più capire le immagini!";
+"vision_chat_cannot_open" = "🚫 **Impossibile aprire questa chat**\n\nQuesta conversazione contiene immagini, ma hai attualmente un **modello solo testo** caricato:\n\n📱 **Modello attuale:** %1$@\n🖼️ **Questa chat:** Contiene immagini\n\n---\n\n## 🎯 Come risolvere:\n\n1. **📥 Scarica un modello di visione**\n   - Vai a \"Scarica modelli\"\n   - Cerca modelli contrassegnati con 🖼️ o \"Visione+Testo\"\n   - Prova: **Gemma-3n E2B (Visione+Testo)**\n\n2. **🔄 Passa al modello di visione**\n   - Carica il modello di visione che hai scaricato\n   - I modelli di visione possono gestire sia testo che immagini\n\n3. **✅ Torna a questa chat**\n   - Una volta caricato un modello di visione, questa chat funzionerà perfettamente!\n\n---\n\n💡 **Suggerimento pro:** I modelli di visione possono fare tutto quello che fanno i modelli di testo, più gestire le immagini!";
+"vision_image_cannot_send" = "🖼️ **Impossibile inviare immagini**\n\nStai cercando di inviare un'immagine, ma il modello attuale è **solo testo**:\n\n📱 **Modello attuale:** %1$@\n\n---\n\n## 🎯 Per inviare immagini:\n\n1. **📥 Scarica un modello di visione**\n   - Tocca il menu → \"Scarica modelli\"\n   - Cerca modelli 🖼️ **Visione+Testo**\n   - Consigliato: **Gemma-3n E2B (Visione+Testo)**\n\n2. **🔄 Cambia modelli**\n   - Carica il modello di visione che hai scaricato\n   - I modelli di visione gestiscono sia testo che immagini\n\n3. **✅ Riprova**\n   - Una volta caricato, puoi inviare immagini liberamente!\n\n---\n\n💡 **Suggerimento pro:** I modelli di visione possono fare tutto quello che fanno i modelli di testo, più capire le immagini!";
 "please_download_model" = "Scarica un modello per iniziare a chattare.";
 "model_not_loaded" = "Modello non caricato correttamente. Prova a passare a un modello diverso o riavvia l'app.";
 "no_response_produced" = "Nessuna risposta prodotta. (Possibile: limite token o reset sessione). Tocca Rigenera.";
@@ -606,7 +606,7 @@
 "chat_title" = "Titolo Chat";
 "more_options" = "Altre Opzioni";
 "dialog_delete_creator_title" = "Eliminare Persona?";
-"dialog_delete_creator_message" = "Eliminare Persona \\"%1\\"?";
+"dialog_delete_creator_message" = "Eliminare Persona \"%1\"?";
 "action_rename" = "Rinomina";
 "feature_vibe_coder" = "VibeCode";
 "feature_vibe_coder_desc" = "Genera codice HTML, JavaScript e Python con l'IA";

@@ -85,7 +85,7 @@
 "tos_privacy_data_title" = "4. Gizlilik ve Veriler";
 "tos_privacy_data_text" = "LLM Hub gizlilik düşünülerek tasarlanmıştır:\n\n• Tüm konuşmalar ve veri işleme cihazınızda yerel olarak gerçekleşir\n• Kişisel veriler harici sunuculara iletilmez\n• Sohbet geçmişi yerel olarak saklanır ve istediğiniz zaman silinebilir\n• Model indirmeleri resmi depolardan (HuggingFace, Google) doğrudan gerçekleştirilir\n• Uygulama analitik veya kullanım verisi toplamaz";
 "tos_disclaimer_title" = "5. Garanti Reddi";
-"tos_disclaimer_text" = "LLM Hub herhangi bir garanti olmaksızın \\"olduğu gibi\\" sağlanmaktadır. Uygulamanın veya üretilen içeriğin doğruluğunu, güvenilirliğini veya kullanılabilirliğini garanti etmiyoruz. Yapay zeka modellerinin kullanımı öngörülemeyen sonuçlar üretebilir.";
+"tos_disclaimer_text" = "LLM Hub herhangi bir garanti olmaksızın \"olduğu gibi\" sağlanmaktadır. Uygulamanın veya üretilen içeriğin doğruluğunu, güvenilirliğini veya kullanılabilirliğini garanti etmiyoruz. Yapay zeka modellerinin kullanımı öngörülemeyen sonuçlar üretebilir.";
 "tos_limitation_liability_title" = "6. Sorumluluk Sınırlaması";
 "tos_limitation_liability_text" = "LLM Hub'ın kullanımından kaynaklanan herhangi bir dolaylı, tesadüfi, özel veya sonuç olarak ortaya çıkan zararlardan geliştiriciler hiçbir durumda sorumlu tutulamaz. Uygulamayı kullanımınız kendi riskiniz altındadır.";
 "tos_model_usage_title" = "7. Model Kullanımı ve Lisanslama";
@@ -191,7 +191,7 @@
 "dialog_delete_all_chats_title" = "Tüm Sohbetler Silinsin mi?";
 "dialog_delete_all_chats_message" = "Bu, tüm konuşma geçmişini kalıcı olarak silecektir. Bu eylem geri alınamaz.";
 "dialog_delete_chat_title" = "Sohbet Silinsin mi?";
-"dialog_delete_chat_message" = "\\"%1$@\\" konuşması silinsin mi?";
+"dialog_delete_chat_message" = "\"%1$@\" konuşması silinsin mi?";
 "action_delete_all" = "Tümünü Sil";
 "action_delete" = "Sil";
 "action_cancel" = "İptal";
@@ -359,7 +359,7 @@
 "context_window_size" = "Bağlam Penceresi Boyutu";
 "import_model" = "Modeli İçe Aktar";
 "model_name_required" = "Model adı gereklidir";
-"model_name_already_exists" = "\\"%1$@\\" adlı bir model zaten mevcut. Lütfen farklı bir isim kullanın veya önce mevcut modeli silin.";
+"model_name_already_exists" = "\"%1$@\" adlı bir model zaten mevcut. Lütfen farklı bir isim kullanın veya önce mevcut modeli silin.";
 "context_window_size_invalid" = "Lütfen geçerli bir bağlam penceresi boyutu girin";
 "please_fix_errors" = "Lütfen yukarıdaki hataları düzeltin";
 "remove" = "Kaldır";
@@ -602,8 +602,8 @@
 "web_search_found_results" = "✅ %1$d sonuç bulundu. Analiz ediliyor...";
 "web_search_no_results" = "❌ Güncel arama sonucu bulunamadı. Eğitim verilerine dayalı yanıt sağlanıyor...";
 "web_search_failed" = "❌ Web araması başarısız: %1$@. Eğitim verilerine dayalı yanıt sağlanıyor...";
-"vision_chat_cannot_open" = "🚫 **Bu sohbet açılamıyor**\n\nBu konuşma görüntüler içeriyor, ancak şu anda **sadece metin modeli** yüklü:\n\n📱 **Mevcut model:** %1$@\n🖼️ **Bu sohbet:** Görüntüler içeriyor\n\n---\n\n## 🎯 Nasıl düzeltilir:\n\n1. **📥 Görü modeli indir**\n   - \\"Modelleri İndir\\"e git\n   - 🖼️ veya \\"Görü+Metin\\" ile işaretlenmiş modelleri ara\n   - Dene: **Gemma-3n E2B (Görü+Metin)**\n\n2. **🔄 Görü modeline geç**\n   - İndirdiğin görü modelini yükle\n   - Görü modelleri hem metin hem de görüntüleri işleyebilir\n\n3. **✅ Bu sohbete dön**\n   - Görü modeli yüklendikten sonra bu sohbet mükemmel çalışacak!\n\n---\n\n💡 **Pro ipucu:** Görü modelleri metin modellerinin yapabileceği her şeyi yapabilir, artı görüntüleri işleyebilir!";
-"vision_image_cannot_send" = "🖼️ **Görüntüler gönderilemiyor**\n\nBir görüntü göndermeye çalışıyorsun, ancak mevcut model **sadece metin**:\n\n📱 **Mevcut model:** %1$@\n\n---\n\n## 🎯 Görüntü göndermek için:\n\n1. **📥 Görü modeli indir**\n   - Menüye dokun → \\"Modelleri İndir\\"\n   - 🖼️ **Görü+Metin** modellerini ara\n   - Önerilen: **Gemma-3n E2B (Görü+Metin)**\n\n2. **🔄 Modelleri değiştir**\n   - İndirdiğin görü modelini yükle\n   - Görü modelleri hem metin hem de görüntüleri işler\n\n3. **✅ Tekrar dene**\n   - Yüklendikten sonra görüntüleri özgürce gönderebilirsin!\n\n---\n\n💡 **Pro ipucu:** Görü modelleri metin modellerinin yapabileceği her şeyi yapabilir, artı görüntüleri anlayabilir!";
+"vision_chat_cannot_open" = "🚫 **Bu sohbet açılamıyor**\n\nBu konuşma görüntüler içeriyor, ancak şu anda **sadece metin modeli** yüklü:\n\n📱 **Mevcut model:** %1$@\n🖼️ **Bu sohbet:** Görüntüler içeriyor\n\n---\n\n## 🎯 Nasıl düzeltilir:\n\n1. **📥 Görü modeli indir**\n   - \"Modelleri İndir\"e git\n   - 🖼️ veya \"Görü+Metin\" ile işaretlenmiş modelleri ara\n   - Dene: **Gemma-3n E2B (Görü+Metin)**\n\n2. **🔄 Görü modeline geç**\n   - İndirdiğin görü modelini yükle\n   - Görü modelleri hem metin hem de görüntüleri işleyebilir\n\n3. **✅ Bu sohbete dön**\n   - Görü modeli yüklendikten sonra bu sohbet mükemmel çalışacak!\n\n---\n\n💡 **Pro ipucu:** Görü modelleri metin modellerinin yapabileceği her şeyi yapabilir, artı görüntüleri işleyebilir!";
+"vision_image_cannot_send" = "🖼️ **Görüntüler gönderilemiyor**\n\nBir görüntü göndermeye çalışıyorsun, ancak mevcut model **sadece metin**:\n\n📱 **Mevcut model:** %1$@\n\n---\n\n## 🎯 Görüntü göndermek için:\n\n1. **📥 Görü modeli indir**\n   - Menüye dokun → \"Modelleri İndir\"\n   - 🖼️ **Görü+Metin** modellerini ara\n   - Önerilen: **Gemma-3n E2B (Görü+Metin)**\n\n2. **🔄 Modelleri değiştir**\n   - İndirdiğin görü modelini yükle\n   - Görü modelleri hem metin hem de görüntüleri işler\n\n3. **✅ Tekrar dene**\n   - Yüklendikten sonra görüntüleri özgürce gönderebilirsin!\n\n---\n\n💡 **Pro ipucu:** Görü modelleri metin modellerinin yapabileceği her şeyi yapabilir, artı görüntüleri anlayabilir!";
 "please_download_model" = "Sohbet etmeye başlamak için lütfen bir model indirin.";
 "model_not_loaded" = "Model düzgün yüklenmedi. Lütfen farklı bir modele geçmeyi deneyin veya uygulamayı yeniden başlatın.";
 "no_response_produced" = "Yanıt üretilmedi. (Muhtemel: token sınırı veya oturum sıfırlama). Yeniden Oluştur'a dokunun.";
@@ -616,7 +616,7 @@
 "chat_title" = "Sohbet Başlığı";
 "more_options" = "Daha Fazla Seçenek";
 "dialog_delete_creator_title" = "Persona Silinsin mi?";
-"dialog_delete_creator_message" = "Persona \\"%1\\" silinsin mi?";
+"dialog_delete_creator_message" = "Persona \"%1\" silinsin mi?";
 "action_rename" = "Yeniden Adlandır";
 "feature_vibe_coder" = "VibeCode";
 "feature_vibe_coder_desc" = "AI ile HTML, JavaScript ve Python kodu oluşturun";
