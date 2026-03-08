@@ -120,14 +120,27 @@ final class AppSettings: ObservableObject {
     }
 
     var localizationBundle: Bundle {
-        if let path = Bundle.module.path(forResource: activeLocalizationCode, ofType: "lproj"),
+        let code = activeLocalizationCode
+        // Try finding lproj directly in module bundle
+        if let path = Bundle.module.path(forResource: code, ofType: "lproj"),
            let bundle = Bundle(path: path) {
+            return bundle
+        }
+        // Fallback to searching subdirectories
+        if let url = Bundle.module.url(forResource: "Localizable", withExtension: "strings", subdirectory: nil, localization: code),
+           let bundleURL = (url.deletingLastPathComponent()).absoluteURL as URL?,
+           let bundle = Bundle(url: bundleURL) {
             return bundle
         }
         return Bundle.module
     }
 
     func localized(_ key: String) -> String {
-        localizationBundle.localizedString(forKey: key, value: nil, table: nil)
+        let localizedValue = localizationBundle.localizedString(forKey: key, value: nil, table: nil)
+        if localizedValue == key {
+            // Last resort: search main bundle
+            return NSLocalizedString(key, bundle: Bundle.main, comment: "")
+        }
+        return localizedValue
     }
 }

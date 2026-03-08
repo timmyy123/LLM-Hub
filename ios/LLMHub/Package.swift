@@ -28,7 +28,23 @@ let package = Package(
                 .product(name: "MLXOptimizers", package: "mlx-swift")
             ],
             resources: [
-                .process("Icon.png")
+                .process("Icon.png"),
+                .process("en.lproj"),
+                .process("ar.lproj"),
+                .process("de.lproj"),
+                .process("es.lproj"),
+                .process("fa.lproj"),
+                .process("fr.lproj"),
+                .process("he.lproj"),
+                .process("id.lproj"),
+                .process("it.lproj"),
+                .process("ja.lproj"),
+                .process("ko.lproj"),
+                .process("pl.lproj"),
+                .process("pt.lproj"),
+                .process("ru.lproj"),
+                .process("tr.lproj"),
+                .process("uk.lproj")
             ]
         ),
     ]

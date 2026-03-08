@@ -18,7 +18,7 @@
 "ready_to_chat" = "Pronto para conversar! Por favor selecione um modelo acima.";
 "start_chatting" = "Comece a conversar digitando uma mensagem abaixo!";
 "type_a_message" = "Digite uma mensagem...";
-"loading_model_format" = "Carregando %@";
+"loading_model_format" = "Carregando %1$@";
 "please_wait_model_initialize" = "Aguarde enquanto o modelo inicializa...";
 "initializing_neural_network" = "Inicializando rede neural...";
 "attached_image" = "Imagem anexada";
@@ -31,8 +31,8 @@
 "tap_image_toggle_controls" = "Toque na imagem para alternar controles";
 "vision_enabled" = "Visão habilitada";
 "message_copied" = "Mensagem copiada";
-"tokens_per_second_format" = "%@ tokens • %@1f tok/seg";
-"context_multimodal_format" = "%@k contexto • %@";
+"tokens_per_second_format" = "%1$d tokens • %2$.1f tok/seg";
+"context_multimodal_format" = "%1$dk contexto • %2$@";
 "multimodal" = "Multimodal";
 "text_only" = "Apenas texto";
 "currently_loaded" = "Atualmente carregado";
@@ -68,9 +68,8 @@
 "nexa_sdk_credit" = "A inferência de modelos GGUF é fornecida pelo Nexa SDK.";
 "ai_thinking" = "A IA está pensando...";
 "thinking_label" = "Pensamento";
-"thinking_tokens" = "Pensamento (%@ tokens)";
+"thinking_tokens" = "Pensamento (%1$d tokens)";
 "version_number" = "Versão 3.6.1";
-"version_format" = "Versão %@";
 "app_version" = "Versão do App";
 "chat" = "Chat";
 "models" = "Modelos";
@@ -152,14 +151,14 @@
 "dialog_delete_all_chats_title" = "Excluir Todos os Chats?";
 "dialog_delete_all_chats_message" = "Isso excluirá permanentemente todo o histórico de conversas. Esta ação não pode ser desfeita.";
 "dialog_delete_chat_title" = "Excluir Chat?";
-"dialog_delete_chat_message" = "Excluir conversa \"%@\"?";
+"dialog_delete_chat_message" = "Excluir conversa \\"%1$@\\"?";
 "action_delete_all" = "Excluir Tudo";
 "action_delete" = "Excluir";
 "action_cancel" = "Cancelar";
 "content_description_delete_chat" = "Excluir Chat";
 "time_yesterday" = "Ontem";
-"time_hours_ago" = "%@ h atrás";
-"time_minutes_ago" = "%@ min atrás";
+"time_hours_ago" = "%1$d h atrás";
+"time_minutes_ago" = "%1$d min atrás";
 "time_just_now" = "Agora mesmo";
 "terms_of_service" = "Termos de Serviço";
 "tos_last_updated" = "Última atualização: 16 de julho de 2025";
@@ -236,11 +235,11 @@
 "not_downloaded" = "Não baixado";
 "partial" = "Parcial";
 "paused" = "Pausado";
-"paused_downloaded_format" = "Pausado: %@ baixado";
+"paused_downloaded_format" = "Pausado: %1$@ baixado";
 "continue_download" = "Continuar";
 "pause_download" = "Pausar";
 "resume_download" = "Retomar";
-"ram_requirement_format" = "%@GB RAM";
+"ram_requirement_format" = "%1$dGB RAM";
 "attach_file" = "Anexar arquivo";
 "attach_image" = "Anexar imagem";
 "attach_document" = "Anexar documento";
@@ -280,7 +279,7 @@
 "translating_tap_to_cancel" = "Traduzindo (toque para cancelar)";
 "transcribing_tap_to_cancel" = "Transcrevendo (toque para cancelar)";
 "model_supports_multimodal" = "Visão+Áudio+Texto";
-"multimodal_format" = "%@+%@+Texto";
+"multimodal_format" = "%1$@+%2$@+Texto";
 "gemma3n_e2b_gpu_requires_6gb" = "Requer pelo menos 6GB RAM para GPU";
 "gemma3n_e4b_gpu_requires_8gb" = "Dispositivos com 8GB ou menos RAM não podem carregar este modelo com GPU";
 "audio_support" = "Suporte de Áudio";
@@ -304,7 +303,7 @@
 "gemma3n_e4b_gpu_vision_warning" = "Para dispositivos com 7-8GB RAM, a aceleração GPU requer desabilitar recursos de visão e áudio. Anexos de imagem e entrada de áudio não estarão disponíveis.";
 "vision_disabled_for_gpu" = "Visão e áudio desabilitadas para aceleração GPU";
 "vision_disabled_no_images" = "Os recursos de visão e áudio estão desabilitados para esta configuração de modelo. Anexos de imagem e entrada de áudio não estão disponíveis.";
-"ram_limit_gpu_vision_disabled" = "Devido ao limite de RAM (%@1fGB), a visão e áudio devem ser desabilitadas para usar GPU";
+"ram_limit_gpu_vision_disabled" = "Devido ao limite de RAM (%1$.1fGB), a visão e áudio devem ser desabilitadas para usar GPU";
 "gpu_with_audio_disabled" = "GPU (Áudio Desabilitado)";
 "gemma3n_e4b_gpu_audio_warning" = "Para dispositivos com 7-8GB RAM, a aceleração GPU requer desabilitar recursos de áudio. Entrada de áudio não estará disponível, mas anexos de imagem são suportados.";
 "audio_disabled_for_gpu" = "Áudio desabilitado para aceleração GPU";
@@ -326,7 +325,7 @@
 "context_window_size" = "Tamanho da Janela de Contexto";
 "import_model" = "Importar Modelo";
 "model_name_required" = "Nome do modelo é obrigatório";
-"model_name_already_exists" = "Já existe um modelo chamado \"%@\". Por favor, use um nome diferente ou exclua o modelo existente primeiro.";
+"model_name_already_exists" = "Já existe um modelo chamado \\"%1$@\\". Por favor, use um nome diferente ou exclua o modelo existente primeiro.";
 "context_window_size_invalid" = "Digite um tamanho válido da janela de contexto";
 "please_fix_errors" = "Corrija os erros acima";
 "remove" = "Remover";
@@ -426,7 +425,7 @@
 "image_generator_load_model" = "Carregar Modelo";
 "image_generator_loading_model" = "Carregando...";
 "image_generator_failed_load" = "Falha ao carregar modelo";
-"image_generator_variation" = "Gerando variação %@...";
+"image_generator_variation" = "Gerando variação %1$d...";
 "image_generator_swipe_more" = "Deslize aqui para gerar mais";
 "image_generator_info" = "A geração de imagens usa o modelo Stable Diffusion v1.5 executado no dispositivo. A geração pode levar de 1 a 2 minutos dependendo do seu dispositivo.";
 "image_generator_img2img" = "Imagem para Imagem";
@@ -538,7 +537,7 @@
 "record_audio" = "Gravar áudio";
 "lang_auto_detect" = "Detectar automaticamente";
 "auto_detecting_language" = "Detectando idioma…";
-"language_detected" = "Idioma detectado: %@";
+"language_detected" = "Idioma detectado: %1$@";
 "processing" = "Processando…";
 "translating" = "Traduzindo…";
 "transcribing" = "Transcrevendo…";
@@ -555,11 +554,11 @@
 "translator_enable_audio" = "Ativar Áudio";
 "translator_audio_description" = "Traduzir gravações de áudio";
 "web_searching" = "🔍 Pesquisando na web...";
-"web_search_found_results" = "✅ Encontrados %@ resultados. Analisando...";
+"web_search_found_results" = "✅ Encontrados %1$d resultados. Analisando...";
 "web_search_no_results" = "❌ Nenhum resultado de pesquisa atual encontrado. Fornecendo resposta baseada em dados de treinamento...";
-"web_search_failed" = "❌ Pesquisa na web falhou: %@. Fornecendo resposta baseada em dados de treinamento...";
-"vision_chat_cannot_open" = "🚫 **Não é possível abrir este chat**\n\nEsta conversa contém imagens, mas você atualmente tem um **modelo apenas de texto** carregado:\n\n📱 **Modelo atual:** %@\n🖼️ **Este chat:** Contém imagens\n\n---\n\n## 🎯 Como corrigir:\n\n1. **📥 Baixar um modelo de visão**\n   - Vá para \"Baixar modelos\"\n   - Procure por modelos marcados com 🖼️ ou \"Visão+Texto\"\n   - Tente: **Gemma-3n E2B (Visão+Texto)**\n\n2. **🔄 Mudar para modelo de visão**\n   - Carregue o modelo de visão que você baixou\n   - Modelos de visão podem lidar com texto E imagens\n\n3. **✅ Voltar a este chat**\n   - Uma vez que um modelo de visão seja carregado, este chat funcionará perfeitamente!\n\n---\n\n💡 **Dica profissional:** Modelos de visão podem fazer tudo que modelos de texto fazem, mais lidar com imagens!";
-"vision_image_cannot_send" = "🖼️ **Não é possível enviar imagens**\n\nVocê está tentando enviar uma imagem, mas o modelo atual é **apenas texto**:\n\n📱 **Modelo atual:** %@\n\n---\n\n## 🎯 Para enviar imagens:\n\n1. **📥 Baixar um modelo de visão**\n   - Toque no menu → \"Baixar modelos\"\n   - Procure por modelos 🖼️ **Visão+Texto**\n   - Recomendado: **Gemma-3n E2B (Visão+Texto)**\n\n2. **🔄 Trocar modelos**\n   - Carregue o modelo de visão que você baixou\n   - Modelos de visão lidam com texto e imagens\n\n3. **✅ Tentar novamente**\n   - Uma vez carregado, você pode enviar imagens livremente!\n\n---\n\n💡 **Dica profissional:** Modelos de visão podem fazer tudo que modelos de texto fazem, mais entender imagens!";
+"web_search_failed" = "❌ Pesquisa na web falhou: %1$@. Fornecendo resposta baseada em dados de treinamento...";
+"vision_chat_cannot_open" = "🚫 **Não é possível abrir este chat**\n\nEsta conversa contém imagens, mas você atualmente tem um **modelo apenas de texto** carregado:\n\n📱 **Modelo atual:** %1$@\n🖼️ **Este chat:** Contém imagens\n\n---\n\n## 🎯 Como corrigir:\n\n1. **📥 Baixar um modelo de visão**\n   - Vá para \\"Baixar modelos\\"\n   - Procure por modelos marcados com 🖼️ ou \\"Visão+Texto\\"\n   - Tente: **Gemma-3n E2B (Visão+Texto)**\n\n2. **🔄 Mudar para modelo de visão**\n   - Carregue o modelo de visão que você baixou\n   - Modelos de visão podem lidar com texto E imagens\n\n3. **✅ Voltar a este chat**\n   - Uma vez que um modelo de visão seja carregado, este chat funcionará perfeitamente!\n\n---\n\n💡 **Dica profissional:** Modelos de visão podem fazer tudo que modelos de texto fazem, mais lidar com imagens!";
+"vision_image_cannot_send" = "🖼️ **Não é possível enviar imagens**\n\nVocê está tentando enviar uma imagem, mas o modelo atual é **apenas texto**:\n\n📱 **Modelo atual:** %1$@\n\n---\n\n## 🎯 Para enviar imagens:\n\n1. **📥 Baixar um modelo de visão**\n   - Toque no menu → \\"Baixar modelos\\"\n   - Procure por modelos 🖼️ **Visão+Texto**\n   - Recomendado: **Gemma-3n E2B (Visão+Texto)**\n\n2. **🔄 Trocar modelos**\n   - Carregue o modelo de visão que você baixou\n   - Modelos de visão lidam com texto e imagens\n\n3. **✅ Tentar novamente**\n   - Uma vez carregado, você pode enviar imagens livremente!\n\n---\n\n💡 **Dica profissional:** Modelos de visão podem fazer tudo que modelos de texto fazem, mais entender imagens!";
 "please_download_model" = "Por favor baixe um modelo para começar a conversar.";
 "model_not_loaded" = "Modelo não carregado corretamente. Tente trocar para um modelo diferente ou reiniciar o aplicativo.";
 "no_response_produced" = "Nenhuma resposta produzida. (Possível: limite de tokens ou reset de sessão). Toque em Regenerar.";
@@ -572,7 +571,7 @@
 "chat_title" = "Título do Chat";
 "more_options" = "Mais Opções";
 "dialog_delete_creator_title" = "Excluir Persona?";
-"dialog_delete_creator_message" = "Excluir Persona \"%1\"?";
+"dialog_delete_creator_message" = "Excluir Persona \\"%1\\"?";
 "action_rename" = "Renomear";
 "feature_vibe_coder" = "VibeCode";
 "feature_vibe_coder_desc" = "Gere código HTML, JavaScript e Python com IA";
@@ -628,7 +627,7 @@
 "vibe_coder_delete_chat_title" = "Excluir chat?";
 "vibe_coder_delete_chat_message" = "Esta sessão de chat será removida permanentemente.";
 "vibe_coder_delete_file_title" = "Excluir arquivo?";
-"vibe_coder_delete_file_message" = "Excluir \\'%@\\' desta pasta?";
+"vibe_coder_delete_file_message" = "Excluir '%1$@' desta pasta?";
 "vibe_coder_no_file_selected_error" = "Nenhum arquivo selecionado. Crie/abra primeiro um arquivo da pasta de trabalho.";
 "vibe_coder_delete_file_error" = "Falha ao excluir arquivo";
 "vibe_coder_autosave_failed" = "Falha no salvamento automático. Toque em salvar novamente ou reabra o arquivo.";
@@ -655,5 +654,5 @@
 "kid_mode_disable_title" = "Desativar Modo Infantil";
 "kid_mode_verify_body" = "Digite seu PIN de 4 dígitos para desativar o Modo Infantil.";
 "kid_mode_disable" = "Desativar";
-"gpu_layers_label" = "GPU Layers: %@";
+"gpu_layers_label" = "GPU Layers: %1$d";
 "gpu_layers_hint" = "Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers";

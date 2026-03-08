@@ -19,7 +19,8 @@ class ModelDownloadViewModel: ObservableObject {
 
     func refreshStatuses() {
         // Check filesystem for existing models
-        let modelsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("models")
+        guard let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+        let modelsDir = documentsDir.appendingPathComponent("models")
         
         for model in ModelData.models {
             let modelDir = modelsDir.appendingPathComponent(model.id)
@@ -50,12 +51,20 @@ class ModelDownloadViewModel: ObservableObject {
         }
     }
 
+    private var downloadTasks: [String: Task<Void, Never>] = [:]
+
     func startDownload(_ model: AIModel) {
-        downloadStates[model.id] = .downloading(progress: 0, downloaded: "0 MB", speed: "0 KB/s")
+        // Cancel existing task if any
+        downloadTasks[model.id]?.cancel()
         
-        Task {
-            let modelsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("models")
+        let task = Task {
+            guard let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+            let modelsDir = documentsDir.appendingPathComponent("models")
             let destinationDir = modelsDir.appendingPathComponent(model.id)
+            
+            await MainActor.run {
+                downloadStates[model.id] = .downloading(progress: 0, downloaded: "0 MB", speed: "0 KB/s")
+            }
             
             do {
                 try await ModelDownloader.shared.downloadModel(
@@ -74,6 +83,11 @@ class ModelDownloadViewModel: ObservableObject {
                 
                 await MainActor.run {
                     self.downloadStates[model.id] = .downloaded
+                    self.downloadTasks.removeValue(forKey: model.id)
+                }
+            } catch is CancellationError {
+                await MainActor.run {
+                    self.downloadStates[model.id] = .paused
                 }
             } catch {
                 await MainActor.run {
@@ -81,10 +95,13 @@ class ModelDownloadViewModel: ObservableObject {
                 }
             }
         }
+        downloadTasks[model.id] = task
     }
 
     func pauseDownload(_ id: String) {
-        // Future: implement pause in ModelDownloader
+        downloadTasks[id]?.cancel()
+        downloadTasks.removeValue(forKey: id)
+        downloadStates[id] = .paused
     }
 
     func resumeDownload(_ id: String) {
@@ -94,9 +111,13 @@ class ModelDownloadViewModel: ObservableObject {
     }
 
     func deleteModel(_ id: String) {
+        downloadTasks[id]?.cancel()
+        downloadTasks.removeValue(forKey: id)
+        
         let model = models.first(where: { $0.id == id })
         if let model = model {
-            let modelsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("models")
+            guard let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+            let modelsDir = documentsDir.appendingPathComponent("models")
             let destinationDir = modelsDir.appendingPathComponent(model.id)
             try? FileManager.default.removeItem(at: destinationDir)
             downloadStates[id] = .notDownloaded
@@ -146,7 +167,7 @@ struct ModelRowView: View {
                                 .foregroundColor(.secondary)
                             Text("•")
                                 .foregroundColor(.secondary)
-                            Text(String(format: settings.localized("ram_requirement_format"), model.requirements.minRamGB))
+                            Text(String(format: settings.localized("ram_requirement_format"), Int(model.requirements.minRamGB)))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
@@ -220,27 +241,44 @@ struct ModelRowView: View {
                     // Action buttons
                     HStack(spacing: 10) {
                         switch state {
-                        case .notDownloaded, .error:
+                        case .notDownloaded:
                             Button(action: onDownload) {
-                                Label(settings.localized("download"), systemImage: "square.and.arrow.down")
+                                Label(settings.localized("download"), systemImage: "arrow.down.circle.fill")
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 10)
                                     .background(.indigo.gradient)
                                     .foregroundColor(.white)
                                     .clipShape(RoundedRectangle(cornerRadius: 10))
                             }
+                        case .error:
+                            Button(action: onDownload) {
+                                Label(settings.localized("retry"), systemImage: "arrow.clockwise")
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                                    .background(.red.gradient)
+                                    .foregroundColor(.white)
+                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                            }
                         case .downloading:
                             Button(action: onPause) {
-                                Label(settings.localized("cancel"), systemImage: "xmark.circle")
+                                Label(settings.localized("pause_download"), systemImage: "pause.circle.fill")
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 10)
                                     .background(.orange.gradient)
                                     .foregroundColor(.white)
                                     .clipShape(RoundedRectangle(cornerRadius: 10))
                             }
+                            Button(action: onDelete) {
+                                Image(systemName: "xmark")
+                                    .padding(.vertical, 10)
+                                    .padding(.horizontal, 14)
+                                    .background(Color.red.opacity(0.1))
+                                    .foregroundColor(.red)
+                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                            }
                         case .paused:
                             Button(action: onResume) {
-                                Label(settings.localized("retry"), systemImage: "play.fill")
+                                Label(settings.localized("resume_download"), systemImage: "play.circle.fill")
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 10)
                                     .background(.green.gradient)
@@ -248,10 +286,10 @@ struct ModelRowView: View {
                                     .clipShape(RoundedRectangle(cornerRadius: 10))
                             }
                             Button(action: onDelete) {
-                                Label(settings.localized("delete"), systemImage: "trash")
+                                Image(systemName: "trash")
                                     .padding(.vertical, 10)
                                     .padding(.horizontal, 14)
-                                    .background(.red.opacity(0.1))
+                                    .background(Color.red.opacity(0.1))
                                     .foregroundColor(.red)
                                     .clipShape(RoundedRectangle(cornerRadius: 10))
                             }
@@ -369,18 +407,7 @@ struct ModelDownloadScreen: View {
             }
             .background(.thinMaterial)
 
-            // Search
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(.secondary)
-                TextField(settings.localized("download_ai_models"), text: $vm.searchText)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(Color(.secondarySystemBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+
 
             // Category description
             HStack {
@@ -427,16 +454,14 @@ struct ModelDownloadScreen: View {
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle(settings.localized("ai_models"))
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
                     onNavigateBack()
                 } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "chevron.left")
-                        Text(settings.localized("back"))
-                    }
+                    Image(systemName: "arrow.left")
+                        .font(.headline)
                 }
             }
         }

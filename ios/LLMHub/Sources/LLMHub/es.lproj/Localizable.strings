@@ -18,7 +18,7 @@
 "ready_to_chat" = "¡Listo para chatear! Por favor selecciona un modelo arriba.";
 "start_chatting" = "¡Comienza a chatear escribiendo un mensaje abajo!";
 "type_a_message" = "Escribe un mensaje...";
-"loading_model_format" = "Cargando %@";
+"loading_model_format" = "Cargando %1$@";
 "please_wait_model_initialize" = "Espera mientras el modelo se inicializa...";
 "initializing_neural_network" = "Inicializando red neuronal...";
 "attached_image" = "Imagen adjunta";
@@ -31,8 +31,8 @@
 "tap_image_toggle_controls" = "Toca la imagen para alternar controles";
 "vision_enabled" = "Visión habilitada";
 "message_copied" = "Mensaje copiado";
-"tokens_per_second_format" = "%@ tokens • %@1f tok/seg";
-"context_multimodal_format" = "%@k contexto • %@";
+"tokens_per_second_format" = "%1$d tokens • %2$.1f tok/seg";
+"context_multimodal_format" = "%1$dk contexto • %2$@";
 "multimodal" = "Multimodal";
 "text_only" = "Solo texto";
 "currently_loaded" = "Actualmente cargado";
@@ -68,9 +68,8 @@
 "nexa_sdk_credit" = "La inferencia de modelos GGUF es proporcionada por Nexa SDK.";
 "ai_thinking" = "La IA está pensando...";
 "thinking_label" = "Pensamiento";
-"thinking_tokens" = "Pensamiento (%@ tokens)";
+"thinking_tokens" = "Pensamiento (%1$d tokens)";
 "version_number" = "Versión 3.6.1";
-"version_format" = "Versión %@";
 "app_version" = "Versión de la App";
 "terms_of_service" = "Términos de Servicio";
 "tos_last_updated" = "Última actualización: 16 de julio de 2025";
@@ -85,7 +84,7 @@
 "tos_privacy_data_title" = "4. Privacidad y Datos";
 "tos_privacy_data_text" = "LLM Hub está diseñado pensando en la privacidad:\n\n• Todas las conversaciones y procesamiento de datos ocurren localmente en tu dispositivo\n• Ningún dato personal se transmite a servidores externos\n• El historial de chat se almacena localmente y puede eliminarse en cualquier momento\n• Las descargas de modelos se realizan directamente desde repositorios oficiales (HuggingFace, Google)\n• La aplicación no recopila datos de análisis o uso";
 "tos_disclaimer_title" = "5. Descargo de Garantías";
-"tos_disclaimer_text" = "LLM Hub se proporciona \"tal como está\" sin garantías de ningún tipo. No garantizamos la precisión, confiabilidad o disponibilidad de la aplicación o su contenido generado. El uso de modelos de IA puede producir resultados impredecibles.";
+"tos_disclaimer_text" = "LLM Hub se proporciona \\"tal como está\\" sin garantías de ningún tipo. No garantizamos la precisión, confiabilidad o disponibilidad de la aplicación o su contenido generado. El uso de modelos de IA puede producir resultados impredecibles.";
 "tos_limitation_liability_title" = "6. Limitación de Responsabilidad";
 "tos_limitation_liability_text" = "En ningún caso los desarrolladores serán responsables de daños indirectos, incidentales, especiales o consecuentes que surjan del uso de LLM Hub. El uso de la aplicación es bajo tu propio riesgo.";
 "tos_model_usage_title" = "7. Uso de Modelos y Licencias";
@@ -176,14 +175,14 @@
 "dialog_delete_all_chats_title" = "¿Eliminar Todos los Chats?";
 "dialog_delete_all_chats_message" = "Esto eliminará permanentemente todo el historial de conversaciones. Esta acción no se puede deshacer.";
 "dialog_delete_chat_title" = "¿Eliminar Chat?";
-"dialog_delete_chat_message" = "¿Eliminar conversación \"%@\"?";
+"dialog_delete_chat_message" = "¿Eliminar conversación \\"%1$@\\"?";
 "action_delete_all" = "Eliminar Todo";
 "action_delete" = "Eliminar";
 "action_cancel" = "Cancelar";
 "content_description_delete_chat" = "Eliminar Chat";
 "time_yesterday" = "Ayer";
-"time_hours_ago" = "hace %@ h";
-"time_minutes_ago" = "hace %@ min";
+"time_hours_ago" = "hace %1$d h";
+"time_minutes_ago" = "hace %1$d min";
 "time_just_now" = "Ahora mismo";
 "ai_models" = "Modelos de IA";
 "download_ai_models" = "Descargar Modelos de IA";
@@ -253,11 +252,11 @@
 "not_downloaded" = "No descargado";
 "partial" = "Parcial";
 "paused" = "Pausado";
-"paused_downloaded_format" = "Pausado: %@ descargado";
+"paused_downloaded_format" = "Pausado: %1$@ descargado";
 "continue_download" = "Continuar";
 "pause_download" = "Pausa";
 "resume_download" = "Reanudar";
-"ram_requirement_format" = "%@GB RAM";
+"ram_requirement_format" = "%1$dGB RAM";
 "attach_file" = "Adjuntar archivo";
 "attach_image" = "Adjuntar imagen";
 "attach_document" = "Adjuntar documento";
@@ -297,7 +296,7 @@
 "translating_tap_to_cancel" = "Traduciendo (toca para cancelar)";
 "transcribing_tap_to_cancel" = "Transcribiendo (toca para cancelar)";
 "model_supports_multimodal" = "Visión+Audio+Texto";
-"multimodal_format" = "%@+%@+Texto";
+"multimodal_format" = "%1$@+%2$@+Texto";
 "gemma3n_e2b_gpu_requires_6gb" = "Requiere al menos 6GB RAM para GPU";
 "gemma3n_e4b_gpu_requires_8gb" = "Dispositivos con 8GB o menos RAM no pueden cargar este modelo con GPU";
 "audio_support" = "Soporte de Audio";
@@ -320,7 +319,7 @@
 "gemma3n_e4b_gpu_vision_warning" = "Para dispositivos con 7-8GB RAM, la aceleración GPU requiere deshabilitar funciones de visión y audio. Los adjuntos de imagen y entrada de audio no estarán disponibles.";
 "vision_disabled_for_gpu" = "Visión y audio deshabilitadas para aceleración GPU";
 "vision_disabled_no_images" = "Las funciones de visión y audio están deshabilitadas para esta configuración de modelo. Los adjuntos de imagen y entrada de audio no están disponibles.";
-"ram_limit_gpu_vision_disabled" = "Debido al límite de RAM (%@1fGB), la visión y audio deben deshabilitarse para usar GPU";
+"ram_limit_gpu_vision_disabled" = "Debido al límite de RAM (%1$.1fGB), la visión y audio deben deshabilitarse para usar GPU";
 "gpu_with_audio_disabled" = "GPU (Audio Deshabilitado)";
 "gemma3n_e4b_gpu_audio_warning" = "Para dispositivos con 7-8GB RAM, la aceleración GPU requiere deshabilitar funciones de audio. La entrada de audio no estará disponible, pero los adjuntos de imagen son compatibles.";
 "audio_disabled_for_gpu" = "Audio deshabilitado para aceleración GPU";
@@ -342,7 +341,7 @@
 "context_window_size" = "Tamaño de Ventana de Contexto";
 "import_model" = "Importar Modelo";
 "model_name_required" = "El nombre del modelo es requerido";
-"model_name_already_exists" = "Ya existe un modelo llamado \"%@\". Por favor usa un nombre diferente o elimina el modelo existente primero.";
+"model_name_already_exists" = "Ya existe un modelo llamado \\"%1$@\\". Por favor usa un nombre diferente o elimina el modelo existente primero.";
 "context_window_size_invalid" = "Ingresa un tamaño válido de ventana de contexto";
 "please_fix_errors" = "Corrige los errores arriba";
 "remove" = "Eliminar";
@@ -442,7 +441,7 @@
 "image_generator_load_model" = "Cargar Modelo";
 "image_generator_loading_model" = "Cargando...";
 "image_generator_failed_load" = "Error al cargar el modelo";
-"image_generator_variation" = "Generando variación %@...";
+"image_generator_variation" = "Generando variación %1$d...";
 "image_generator_swipe_more" = "Desliza aquí para generar más";
 "image_generator_info" = "La generación de imágenes utiliza el modelo Stable Diffusion v1.5 ejecutándose en el dispositivo. La generación puede tomar 1-2 minutos dependiendo de tu dispositivo.";
 "image_generator_img2img" = "Imagen a Imagen";
@@ -554,7 +553,7 @@
 "record_audio" = "Grabar audio";
 "lang_auto_detect" = "Detectar automáticamente";
 "auto_detecting_language" = "Detectando idioma…";
-"language_detected" = "Idioma detectado: %@";
+"language_detected" = "Idioma detectado: %1$@";
 "processing" = "Procesando…";
 "translating" = "Traduciendo…";
 "transcribing" = "Transcribiendo…";
@@ -571,11 +570,11 @@
 "translator_enable_audio" = "Habilitar Audio";
 "translator_audio_description" = "Traducir grabaciones de audio";
 "web_searching" = "🔍 Buscando en la web...";
-"web_search_found_results" = "✅ Encontrados %@ resultados. Analizando...";
+"web_search_found_results" = "✅ Encontrados %1$d resultados. Analizando...";
 "web_search_no_results" = "❌ No se encontraron resultados de búsqueda actuales. Proporcionando respuesta basada en datos de entrenamiento...";
-"web_search_failed" = "❌ Búsqueda web falló: %@. Proporcionando respuesta basada en datos de entrenamiento...";
-"vision_chat_cannot_open" = "🚫 **No se puede abrir este chat**\n\nEsta conversación contiene imágenes, pero actualmente tienes un **modelo de solo texto** cargado:\n\n📱 **Modelo actual:** %@\n🖼️ **Este chat:** Contiene imágenes\n\n---\n\n## 🎯 Cómo solucionarlo:\n\n1. **📥 Descargar un modelo de visión**\n   - Ve a \"Descargar modelos\"\n   - Busca modelos marcados con 🖼️ o \"Visión+Texto\"\n   - Prueba: **Gemma-3n E2B (Visión+Texto)**\n\n2. **🔄 Cambiar a modelo de visión**\n   - Carga el modelo de visión que descargaste\n   - Los modelos de visión pueden manejar tanto texto como imágenes\n\n3. **✅ Volver a este chat**\n   - Una vez que se cargue un modelo de visión, este chat funcionará perfectamente!\n\n---\n\n💡 **Consejo profesional:** Los modelos de visión pueden hacer todo lo que hacen los modelos de texto, ¡más manejar imágenes!";
-"vision_image_cannot_send" = "🖼️ **No se pueden enviar imágenes**\n\nEstás intentando enviar una imagen, pero el modelo actual es **solo texto**:\n\n📱 **Modelo actual:** %@\n\n---\n\n## 🎯 Para enviar imágenes:\n\n1. **📥 Descargar un modelo de visión**\n   - Toca el menú → \"Descargar modelos\"\n   - Busca modelos 🖼️ **Visión+Texto**\n   - Recomendado: **Gemma-3n E2B (Visión+Texto)**\n\n2. **🔄 Cambiar modelos**\n   - Carga el modelo de visión que descargaste\n   - Los modelos de visión manejan tanto texto como imágenes\n\n3. **✅ Intentar de nuevo**\n   - Una vez cargado, ¡puedes enviar imágenes libremente!\n\n---\n\n💡 **Consejo profesional:** Los modelos de visión pueden hacer todo lo que hacen los modelos de texto, ¡más entender imágenes!";
+"web_search_failed" = "❌ Búsqueda web falló: %1$@. Proporcionando respuesta basada en datos de entrenamiento...";
+"vision_chat_cannot_open" = "🚫 **No se puede abrir este chat**\n\nEsta conversación contiene imágenes, pero actualmente tienes un **modelo de solo texto** cargado:\n\n📱 **Modelo actual:** %1$@\n🖼️ **Este chat:** Contiene imágenes\n\n---\n\n## 🎯 Cómo solucionarlo:\n\n1. **📥 Descargar un modelo de visión**\n   - Ve a \\"Descargar modelos\\"\n   - Busca modelos marcados con 🖼️ o \\"Visión+Texto\\"\n   - Prueba: **Gemma-3n E2B (Visión+Texto)**\n\n2. **🔄 Cambiar a modelo de visión**\n   - Carga el modelo de visión que descargaste\n   - Los modelos de visión pueden manejar tanto texto como imágenes\n\n3. **✅ Volver a este chat**\n   - Una vez que se cargue un modelo de visión, este chat funcionará perfectamente!\n\n---\n\n💡 **Consejo profesional:** Los modelos de visión pueden hacer todo lo que hacen los modelos de texto, ¡más manejar imágenes!";
+"vision_image_cannot_send" = "🖼️ **No se pueden enviar imágenes**\n\nEstás intentando enviar una imagen, pero el modelo actual es **solo texto**:\n\n📱 **Modelo actual:** %1$@\n\n---\n\n## 🎯 Para enviar imágenes:\n\n1. **📥 Descargar un modelo de visión**\n   - Toca el menú → \\"Descargar modelos\\"\n   - Busca modelos 🖼️ **Visión+Texto**\n   - Recomendado: **Gemma-3n E2B (Visión+Texto)**\n\n2. **🔄 Cambiar modelos**\n   - Carga el modelo de visión que descargaste\n   - Los modelos de visión manejan tanto texto como imágenes\n\n3. **✅ Intentar de nuevo**\n   - Una vez cargado, ¡puedes enviar imágenes libremente!\n\n---\n\n💡 **Consejo profesional:** Los modelos de visión pueden hacer todo lo que hacen los modelos de texto, ¡más entender imágenes!";
 "please_download_model" = "Por favor descarga un modelo para comenzar a chatear.";
 "model_not_loaded" = "Modelo no cargado correctamente. Por favor intenta cambiar a un modelo diferente o reiniciar la aplicación.";
 "no_response_produced" = "No se produjo respuesta. (Posible: límite de tokens o reinicio de sesión). Toca Regenerar.";
@@ -588,7 +587,7 @@
 "chat_title" = "Título del Chat";
 "more_options" = "Más Opciones";
 "dialog_delete_creator_title" = "¿Eliminar Persona?";
-"dialog_delete_creator_message" = "¿Eliminar Persona \"%1\"?";
+"dialog_delete_creator_message" = "¿Eliminar Persona \\"%1\\"?";
 "action_rename" = "Renombrar";
 "feature_vibe_coder" = "VibeCode";
 "feature_vibe_coder_desc" = "Genera código HTML, JavaScript y Python con IA";
@@ -644,7 +643,7 @@
 "vibe_coder_delete_chat_title" = "¿Eliminar chat?";
 "vibe_coder_delete_chat_message" = "Esta sesión de chat se eliminará permanentemente.";
 "vibe_coder_delete_file_title" = "¿Eliminar archivo?";
-"vibe_coder_delete_file_message" = "¿Eliminar \\'%@\\' de esta carpeta?";
+"vibe_coder_delete_file_message" = "¿Eliminar '%1$@' de esta carpeta?";
 "vibe_coder_no_file_selected_error" = "No hay archivo seleccionado. Crea/abre primero un archivo desde la carpeta de trabajo.";
 "vibe_coder_delete_file_error" = "Error al eliminar el archivo";
 "vibe_coder_autosave_failed" = "Error en guardado automático. Toca guardar de nuevo o reabre el archivo.";
@@ -671,5 +670,5 @@
 "kid_mode_disable_title" = "Desactivar Modo Infantil";
 "kid_mode_verify_body" = "Ingresa tu PIN de 4 dígitos para desactivar el Modo Infantil.";
 "kid_mode_disable" = "Desactivar";
-"gpu_layers_label" = "GPU Layers: %@";
+"gpu_layers_label" = "GPU Layers: %1$d";
 "gpu_layers_hint" = "Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers";
