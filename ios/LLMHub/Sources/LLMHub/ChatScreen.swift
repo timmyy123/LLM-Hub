@@ -524,38 +524,17 @@ struct ChatScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                HStack(spacing: 8) {
-                    Button {
-                        onNavigateBack()
-                    } label: {
-                        Image(systemName: "chevron.left")
-                        Text(settings.localized("back"))
-                    }
-
-                    Button {
-                        showDrawer = true
-                    } label: {
-                        Image(systemName: "sidebar.left")
-                    }
+                Button {
+                    showDrawer = true
+                } label: {
+                    Image(systemName: "line.3.horizontal")
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: 12) {
-                    Button {
-                        showModelSelector = true
-                    } label: {
-                        Image(systemName: "chip.fill")
-                    }
-                    Button {
-                        onNavigateToSettings()
-                    } label: {
-                        Image(systemName: "gearshape")
-                    }
-                    Button {
-                        vm.newChat()
-                    } label: {
-                        Image(systemName: "square.and.pencil")
-                    }
+                Button {
+                    showModelSelector = true
+                } label: {
+                    Image(systemName: "slider.horizontal.3")
                 }
             }
         }
@@ -575,15 +554,52 @@ struct ChatScreen: View {
     var emptyState: some View {
         VStack(spacing: 20) {
             Spacer(minLength: 60)
-            Image(systemName: "brain.head.profile")
-                .font(.system(size: 64))
-                .foregroundStyle(.linearGradient(colors: [.indigo, .purple], startPoint: .top, endPoint: .bottom))
+            if let uiImage = UIImage(named: "Icon") {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 80, height: 80)
+                    .cornerRadius(16)
+            } else {
+                Image(systemName: "cpu")
+                    .font(.system(size: 64))
+                    .foregroundStyle(.linearGradient(colors: [.indigo, .purple], startPoint: .top, endPoint: .bottom))
+            }
+            
             Text(settings.localized("welcome_to_llm_hub"))
                 .font(.title2.bold())
-            Text(settings.localized("start_chatting"))
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
+                
+            if downloadedModels.isEmpty {
+                Text(settings.localized("no_models_downloaded"))
+                    .foregroundColor(.secondary)
+                Button {
+                    onNavigateToModels()
+                } label: {
+                    Label(settings.localized("download_a_model"), systemImage: "arrow.down.circle")
+                }
+                .buttonStyle(.borderedProminent)
+            } else if vm.selectedModelName == settings.localized("no_model_selected") {
+                Text(settings.localized("load_model_to_start"))
+                    .foregroundColor(.secondary)
+            } else {
+                Text(vm.selectedModelName)
+                    .font(.caption)
+                    .padding(.horizontal, 12).padding(.vertical, 6)
+                    .background(Color.secondary.opacity(0.2))
+                    .clipShape(Capsule())
+                Text(settings.localized("start_chatting"))
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
         }
         .padding(.horizontal, 32)
+    }
+    
+    private var downloadedModels: [AIModel] {
+        let modelsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("models")
+        return ModelData.models.filter { model in
+            let weightsFile = modelsDir.appendingPathComponent(model.id).appendingPathComponent("model.safetensors")
+            return FileManager.default.fileExists(atPath: weightsFile.path)
+        }
     }
 }

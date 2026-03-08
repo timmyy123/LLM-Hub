@@ -86,7 +86,7 @@
 "tos_privacy_data_title" = "4. Privacy and Data";
 "tos_privacy_data_text" = "LLM Hub is designed with privacy in mind:\n\n• All conversations and data processing occur locally on your device\n• No personal data is transmitted to external servers\n• Chat history is stored locally and can be deleted at any time\n• Model downloads are performed directly from official repositories (HuggingFace, Google)\n• The application does not collect analytics or usage data";
 "tos_disclaimer_title" = "5. Disclaimer of Warranties";
-"tos_disclaimer_text" = "LLM Hub is provided "as is" without warranties of any kind. We do not guarantee the accuracy, reliability, or availability of the application or its generated content. Use of AI models may produce unpredictable results.";
+"tos_disclaimer_text" = "LLM Hub is provided \"as is\" without warranties of any kind. We do not guarantee the accuracy, reliability, or availability of the application or its generated content. Use of AI models may produce unpredictable results.";
 "tos_limitation_liability_title" = "6. Limitation of Liability";
 "tos_limitation_liability_text" = "In no event shall the developers be liable for any indirect, incidental, special, or consequential damages arising from the use of LLM Hub. Your use of the application is at your own risk.";
 "tos_model_usage_title" = "7. Model Usage and Licensing";
@@ -199,9 +199,9 @@
 "dialog_delete_all_chats_title" = "Delete All Chats?";
 "dialog_delete_all_chats_message" = "This will permanently delete all conversation history. This action cannot be undone.";
 "dialog_delete_chat_title" = "Delete Chat?";
-"dialog_delete_chat_message" = "Delete conversation "%@"?";
+"dialog_delete_chat_message" = "Delete conversation \"%@\"?";
 "dialog_delete_creator_title" = "Delete creAItor?";
-"dialog_delete_creator_message" = "Delete creAItor "%@"?";
+"dialog_delete_creator_message" = "Delete creAItor \"%@\"?";
 "action_delete_all" = "Delete All";
 "action_delete" = "Delete";
 "action_rename" = "Rename";
@@ -371,7 +371,7 @@
 "context_window_size" = "Context Window Size";
 "import_model" = "Import Model";
 "model_name_required" = "Model name is required";
-"model_name_already_exists" = "A model named "%@" already exists. Please use a different name or delete the existing model first.";
+"model_name_already_exists" = "A model named \"%@\" already exists. Please use a different name or delete the existing model first.";
 "context_window_size_invalid" = "Please enter a valid context window size";
 "please_fix_errors" = "Please fix the errors above";
 "remove" = "Remove";
@@ -699,8 +699,8 @@
 "web_search_found_results" = "✅ Found %@ results. Analyzing...";
 "web_search_no_results" = "❌ No current search results found. Providing response based on training data...";
 "web_search_failed" = "❌ Web search failed: %@. Providing response based on training data...";
-"vision_chat_cannot_open" = "🚫 **Cannot Open This Chat**\n\nThis conversation contains images, but you currently have a **text-only model** loaded:\n\n📱 **Current Model:** %@\n🖼️ **This Chat:** Contains images\n\n---\n\n## 🎯 How to Fix This:\n\n1. **📥 Download a Vision Model**\n   - Go to "Download Models"\n   - Look for models marked with 🖼️ or "Vision+Text"\n   - Try: **Gemma-3n E2B (Vision+Text)**\n\n2. **🔄 Switch to Vision Model**\n   - Load the vision model you downloaded\n   - Vision models can handle both text AND images\n\n3. **✅ Return to This Chat**\n   - Once a vision model is loaded, this chat will work perfectly!\n\n---\n\n💡 **Pro Tip:** Vision models can do everything text models can do, plus handle images!";
-"vision_image_cannot_send" = "🖼️ **Cannot Send Images**\n\nYou\\'re trying to send an image, but the current model is **text-only**:\n\n📱 **Current Model:** %@\n\n---\n\n## 🎯 To Send Images:\n\n1. **📥 Download a Vision Model**\n   - Tap the menu → "Download Models"\n   - Look for 🖼️ **Vision+Text** models\n   - Recommended: **Gemma-3n E2B (Vision+Text)**\n\n2. **🔄 Switch Models**\n   - Load the vision model you downloaded\n   - Vision models handle both text AND images\n\n3. **✅ Try Again**\n   - Once loaded, you can send images freely!\n\n---\n\n💡 **Pro Tip:** Vision models can do everything text models can do, plus understand images!";
+"vision_chat_cannot_open" = "🚫 **Cannot Open This Chat**\n\nThis conversation contains images, but you currently have a **text-only model** loaded:\n\n📱 **Current Model:** %@\n🖼️ **This Chat:** Contains images\n\n---\n\n## 🎯 How to Fix This:\n\n1. **📥 Download a Vision Model**\n   - Go to \"Download Models\"\n   - Look for models marked with 🖼️ or \"Vision+Text\"\n   - Try: **Gemma-3n E2B (Vision+Text)**\n\n2. **🔄 Switch to Vision Model**\n   - Load the vision model you downloaded\n   - Vision models can handle both text AND images\n\n3. **✅ Return to This Chat**\n   - Once a vision model is loaded, this chat will work perfectly!\n\n---\n\n💡 **Pro Tip:** Vision models can do everything text models can do, plus handle images!";
+"vision_image_cannot_send" = "🖼️ **Cannot Send Images**\n\nYou\\'re trying to send an image, but the current model is **text-only**:\n\n📱 **Current Model:** %@\n\n---\n\n## 🎯 To Send Images:\n\n1. **📥 Download a Vision Model**\n   - Tap the menu → \"Download Models\"\n   - Look for 🖼️ **Vision+Text** models\n   - Recommended: **Gemma-3n E2B (Vision+Text)**\n\n2. **🔄 Switch Models**\n   - Load the vision model you downloaded\n   - Vision models handle both text AND images\n\n3. **✅ Try Again**\n   - Once loaded, you can send images freely!\n\n---\n\n💡 **Pro Tip:** Vision models can do everything text models can do, plus understand images!";
 "please_download_model" = "Please download a model to start chatting.";
 "model_not_loaded" = "Model not properly loaded. Please try switching to a different model or restart the app.";
 "no_response_produced" = "No response produced. (Possible: token limit or session reset). Tap Regenerate.";
