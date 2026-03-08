@@ -33,7 +33,7 @@ struct SettingsScreen: View {
                     icon: "paintpalette.fill",
                     iconColor: .purple,
                     titleKey: "theme",
-                    subtitleString: settings.theme.displayName
+                    subtitleString: settings.localized(settings.theme.displayNameKey)
                 ) {
                     showThemeDialog = true
                 }
@@ -42,7 +42,7 @@ struct SettingsScreen: View {
                     icon: "globe",
                     iconColor: .blue,
                     titleKey: "language",
-                    subtitleString: settings.selectedLanguage.displayName
+                    subtitleString: settings.localized(settings.selectedLanguage.displayNameKey)
                 ) {
                     showLanguageDialog = true
                 }
@@ -90,7 +90,7 @@ struct SettingsScreen: View {
                 HStack {
                     Spacer()
                     VStack(spacing: 4) {
-                        Text(String(format: String(localized: "version_format", bundle: .module), "3.6.1"))
+                        Text(String(format: settings.localized("version_format"), "3.6.1"))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -100,7 +100,7 @@ struct SettingsScreen: View {
             }
         }
         .listStyle(.insetGrouped)
-        .navigationTitle("Settings")
+        .navigationTitle(settings.localized("feature_settings_title"))
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
@@ -109,26 +109,26 @@ struct SettingsScreen: View {
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "chevron.left")
-                        Text("Back")
+                        Text(settings.localized("back"))
                     }
                 }
             }
         }
         // Theme Dialog
-        .confirmationDialog("Choose Theme", isPresented: $showThemeDialog, titleVisibility: .visible) {
+        .confirmationDialog(settings.localized("choose_theme"), isPresented: $showThemeDialog, titleVisibility: .visible) {
             ForEach(AppTheme.allCases) { theme in
                 Button {
                     settings.theme = theme
                 } label: {
                     HStack {
-                        Text(theme.displayName)
+                        Text(settings.localized(theme.displayNameKey))
                         if settings.theme == theme {
                             Image(systemName: "checkmark")
                         }
                     }
                 }
             }
-            Button("Cancel", role: .cancel) {}
+            Button(settings.localized("cancel"), role: .cancel) {}
         }
         // Language Dialog
         .sheet(isPresented: $showLanguageDialog) {
@@ -151,7 +151,7 @@ struct LanguagePickerSheet: View {
                     dismiss()
                 } label: {
                     HStack {
-                        Text(lang.displayName)
+                        Text(settings.localized(lang.displayNameKey))
                             .foregroundColor(.primary)
                             .environment(\.layoutDirection, lang.isRTL ? .rightToLeft : .leftToRight)
                         Spacer()
@@ -163,11 +163,11 @@ struct LanguagePickerSheet: View {
                 }
             }
         }
-        .navigationTitle("Select Language")
+        .navigationTitle(settings.localized("select_language"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
-                Button("Done") { dismiss() }
+                Button(settings.localized("done")) { dismiss() }
             }
         }
     }
@@ -177,13 +177,14 @@ struct LanguagePickerSheet: View {
 // MARK: - Reusable Components
 
 struct SectionHeader: View {
-    let titleKey: LocalizedStringKey
+    @EnvironmentObject var settings: AppSettings
+    let titleKey: String
     let icon: String
 
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: icon)
-            Text(titleKey, bundle: .module)
+            Text(settings.localized(titleKey))
         }
 
         .font(.footnote.bold())
@@ -193,10 +194,11 @@ struct SectionHeader: View {
 }
 
 struct SettingsRow: View {
+    @EnvironmentObject var settings: AppSettings
     let icon: String
     let iconColor: Color
-    let titleKey: LocalizedStringKey
-    var subtitleKey: LocalizedStringKey? = nil
+    let titleKey: String
+    var subtitleKey: String? = nil
     var subtitleString: String? = nil
     let action: () -> Void
 
@@ -213,11 +215,11 @@ struct SettingsRow: View {
                     }
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(titleKey, bundle: .module)
+                    Text(settings.localized(titleKey))
                         .font(.subheadline)
                         .foregroundColor(.primary)
                     if let sk = subtitleKey {
-                        Text(sk, bundle: .module)
+                        Text(settings.localized(sk))
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .lineLimit(1)

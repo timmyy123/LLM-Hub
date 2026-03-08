@@ -70,6 +70,7 @@
 "thinking_label" = "Pensamento";
 "thinking_tokens" = "Pensamento (%@ tokens)";
 "version_number" = "Versão 3.6.1";
+"version_format" = "Versão %@";
 "app_version" = "Versão do App";
 "chat" = "Chat";
 "models" = "Modelos";

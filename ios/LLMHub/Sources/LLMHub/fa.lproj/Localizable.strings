@@ -71,6 +71,7 @@
 "thinking_label" = "تفکر";
 "thinking_tokens" = "تفکر (%@ توکن)";
 "version_number" = "نسخه 3.6.1";
+"version_format" = "نسخه %@";
 "app_version" = "نسخه برنامه";
 "terms_of_service" = "شرایط خدمات";
 "tos_last_updated" = "آخرین بروزرسانی: 16 ژوئیه 2025";

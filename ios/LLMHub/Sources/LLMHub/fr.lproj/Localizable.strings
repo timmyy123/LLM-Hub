@@ -70,6 +70,7 @@
 "thinking_label" = "Réflexion";
 "thinking_tokens" = "Réflexion (%@ jetons)";
 "version_number" = "Version 3.6.1";
+"version_format" = "Version %@";
 "app_version" = "Version de l\\'App";
 "terms_of_service" = "Conditions d\\'Utilisation";
 "tos_last_updated" = "Dernière mise à jour : 16 juillet 2025";

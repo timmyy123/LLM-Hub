@@ -71,6 +71,7 @@
 "thinking_label" = "التفكير";
 "thinking_tokens" = "التفكير (%@ رموز)";
 "version_number" = "الإصدار 3.6.1";
+"version_format" = "الإصدار %@";
 "app_version" = "إصدار التطبيق";
 "terms_of_service" = "شروط الخدمة";
 "tos_last_updated" = "آخر تحديث: 16 يوليو 2025";

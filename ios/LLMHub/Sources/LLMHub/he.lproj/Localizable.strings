@@ -71,6 +71,7 @@
 "thinking_label" = "חשיבה";
 "thinking_tokens" = "חשיבה (%@ אסימונים)";
 "version_number" = "גרסה 3.6.1";
+"version_format" = "גרסה %@";
 "app_version" = "גרסת אפליקציה";
 "terms_of_service" = "תנאי שימוש";
 "tos_last_updated" = "עודכן לאחרונה: 16 ביולי 2025";

@@ -1,14 +1,15 @@
 import SwiftUI
 
 struct FeatureCard {
-    let titleKey: LocalizedStringKey
-    let descriptionKey: LocalizedStringKey
+    let titleKey: String
+    let descriptionKey: String
     let iconSystemName: String
     let gradient: [Color]
     let route: String
 }
 
 struct HomeScreen: View {
+    @EnvironmentObject var settings: AppSettings
     var onNavigateToChat: () -> Void
     var onNavigateToModels: () -> Void
     var onNavigateToSettings: () -> Void
@@ -57,7 +58,7 @@ struct HomeScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Text("LLM Hub")
+                Text(settings.localized("app_name"))
                     .font(.title2.bold())
                     .padding(.leading, 8)
             }
@@ -82,6 +83,7 @@ struct HomeScreen: View {
 }
 
 struct FeatureCardView: View {
+    @EnvironmentObject var settings: AppSettings
     let feature: FeatureCard
 
     var body: some View {
@@ -97,13 +99,13 @@ struct FeatureCardView: View {
             }
 
             VStack(spacing: 4) {
-                Text(feature.titleKey, bundle: .module)
+                Text(settings.localized(feature.titleKey))
                     .font(.headline)
                     .fontWeight(.bold)
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
 
-                Text(feature.descriptionKey, bundle: .module)
+                Text(settings.localized(feature.descriptionKey))
                     .font(.caption)
                     .foregroundColor(.white.opacity(0.85))
                     .multilineTextAlignment(.center)
