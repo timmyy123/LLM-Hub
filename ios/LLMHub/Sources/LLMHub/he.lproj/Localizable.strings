@@ -362,7 +362,7 @@
 "context_window_size" = "גודל חלון ההקשר";
 "import_model" = "ייבא מודל";
 "model_name_required" = "נדרש שם מודל";
-"model_name_already_exists" = "מודל בשם \\"%1$@\\" כבר קיים. אנא השתמש בשם אחר או מחק תחילה את המודל הקיים.";
+"model_name_already_exists" = "מודל בשם \"%1$@\" כבר קיים. אנא השתמש בשם אחר או מחק תחילה את המודל הקיים.";
 "context_window_size_invalid" = "הזן גודל חלון הקשר חוקי";
 "please_fix_errors" = "אנא תקן את השגיאות למעלה";
 "remove" = "הסר";
@@ -616,7 +616,7 @@
 "chat_title" = "כותרת הצ'אט";
 "more_options" = "אפשרויות נוספות";
 "dialog_delete_creator_title" = "מחק פרסונה?";
-"dialog_delete_creator_message" = "למחוק פרסונה \\"%1\\"?";
+"dialog_delete_creator_message" = "למחוק פרסונה \"%1\"?";
 "action_rename" = "שנה שם";
 "feature_vibe_coder" = "VibeCode";
 "feature_vibe_coder_desc" = "הפק קוד HTML, JavaScript ו-Python עם AI";

@@ -119,28 +119,36 @@ final class AppSettings: ObservableObject {
         return selectedLanguage.rawValue
     }
 
-    var localizationBundle: Bundle {
-        let code = activeLocalizationCode
-        // Try finding lproj directly in module bundle
-        if let path = Bundle.module.path(forResource: code, ofType: "lproj"),
-           let bundle = Bundle(path: path) {
-            return bundle
-        }
-        // Fallback to searching subdirectories
-        if let url = Bundle.module.url(forResource: "Localizable", withExtension: "strings", subdirectory: nil, localization: code),
-           let bundleURL = (url.deletingLastPathComponent()).absoluteURL as URL?,
-           let bundle = Bundle(url: bundleURL) {
-            return bundle
-        }
-        return Bundle.module
-    }
-
     func localized(_ key: String) -> String {
-        let localizedValue = localizationBundle.localizedString(forKey: key, value: nil, table: nil)
-        if localizedValue == key {
-            // Last resort: search main bundle
-            return NSLocalizedString(key, bundle: Bundle.main, comment: "")
+        let code = activeLocalizationCode
+        
+        // 1. Gather all bundles to check
+        var bundlesToCheck: [Bundle] = [Bundle.module, Bundle.main]
+        bundlesToCheck.append(contentsOf: Bundle.allBundles)
+        
+        // 2. Try target language in all bundles
+        for bundle in bundlesToCheck {
+            if let path = bundle.path(forResource: code, ofType: "lproj"),
+               let langBundle = Bundle(path: path) {
+                let val = langBundle.localizedString(forKey: key, value: nil, table: "Localizable")
+                if val != key { 
+                    return val 
+                }
+            }
         }
-        return localizedValue
+        
+        // 3. Fallback to English in all bundles
+        for bundle in bundlesToCheck {
+            if let path = bundle.path(forResource: "en", ofType: "lproj"),
+               let enBundle = Bundle(path: path) {
+                let val = enBundle.localizedString(forKey: key, value: nil, table: "Localizable")
+                if val != key { 
+                    return val 
+                }
+            }
+        }
+        
+        // 4. Ultimate fallback
+        return NSLocalizedString(key, comment: "")
     }
 }

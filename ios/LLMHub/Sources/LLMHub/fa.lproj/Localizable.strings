@@ -362,7 +362,7 @@
 "context_window_size" = "اندازه پنجره زمینه";
 "import_model" = "وارد کردن مدل";
 "model_name_required" = "نام مدل الزامی است";
-"model_name_already_exists" = "مدلی با نام \\"%1$@\\" از قبل وجود دارد. لطفاً از نام دیگری استفاده کنید یا ابتدا مدل موجود را حذف کنید.";
+"model_name_already_exists" = "مدلی با نام \"%1$@\" از قبل وجود دارد. لطفاً از نام دیگری استفاده کنید یا ابتدا مدل موجود را حذف کنید.";
 "context_window_size_invalid" = "لطفاً یک اندازه معتبر برای پنجره زمینه وارد کنید";
 "please_fix_errors" = "لطفاً خطاهای بالا را برطرف کنید";
 "remove" = "حذف";
@@ -616,7 +616,7 @@
 "chat_title" = "عنوان چت";
 "more_options" = "گزینه‌های بیشتر";
 "dialog_delete_creator_title" = "حذف پرسونا؟";
-"dialog_delete_creator_message" = "پرسونای \\"%1\\" حذف شود؟";
+"dialog_delete_creator_message" = "پرسونای \"%1\" حذف شود؟";
 "action_rename" = "تغییر نام";
 "feature_vibe_coder" = "VibeCode";
 "feature_vibe_coder_desc" = "تولید کد HTML، JavaScript و Python با هوش مصنوعی";

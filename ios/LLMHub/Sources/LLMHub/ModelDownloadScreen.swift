@@ -18,21 +18,33 @@ class ModelDownloadViewModel: ObservableObject {
     }
 
     func refreshStatuses() {
-        // Check filesystem for existing models
         guard let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
         let modelsDir = documentsDir.appendingPathComponent("models")
         
-        for model in ModelData.models {
+        for model in models {
             let modelDir = modelsDir.appendingPathComponent(model.id)
-            let weightsFile = modelDir.appendingPathComponent("model.safetensors")
-            if FileManager.default.fileExists(atPath: weightsFile.path) {
-                downloadStates[model.id] = .downloaded
+            var allExist = true
+            
+            if model.files.isEmpty {
+                allExist = false
             } else {
-                // If it's currently downloading in this session, don't overwrite with notDownloaded
+                for fileName in model.files {
+                    let filePath = modelDir.appendingPathComponent(fileName)
+                    if !FileManager.default.fileExists(atPath: filePath.path) {
+                        allExist = false
+                        break
+                    }
+                }
+            }
+            
+            if allExist {
+                self.downloadStates[model.id] = .downloaded
+            } else {
+                // If it's currently downloading in this session, don't overwrite
                 if case .downloading = downloadStates[model.id] {
                     continue
                 }
-                downloadStates[model.id] = .notDownloaded
+                self.downloadStates[model.id] = .notDownloaded
             }
         }
     }
@@ -86,6 +98,10 @@ class ModelDownloadViewModel: ObservableObject {
                     self.downloadTasks.removeValue(forKey: model.id)
                 }
             } catch is CancellationError {
+                await MainActor.run {
+                    self.downloadStates[model.id] = .paused
+                }
+            } catch let error as URLError where error.code == .cancelled {
                 await MainActor.run {
                     self.downloadStates[model.id] = .paused
                 }
@@ -222,10 +238,9 @@ struct ModelRowView: View {
                     Divider()
                         .padding(.horizontal, 16)
 
-                    Text(model.description)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 16)
+
+                    // Model description removed per user request
+
 
                     HStack(spacing: 6) {
                         Image(systemName: "link")
@@ -364,7 +379,7 @@ struct StatusBadge: View {
         case .downloading: return settings.localized("downloading")
         case .paused: return settings.localized("paused")
         case .downloaded: return settings.localized("downloaded")
-        case .error: return settings.localized("error")
+        case .error(let msg): return "\(settings.localized("error")): \(msg)"
         }
     }
 
@@ -409,21 +424,9 @@ struct ModelDownloadScreen: View {
 
 
 
-            // Category description
-            HStack {
-                Image(systemName: vm.selectedCategory.icon)
-                    .foregroundColor(.indigo)
-                Text(settings.localized(vm.selectedCategory.descriptionKey))
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                Spacer()
-            }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 8)
-
             // Model list
             ScrollView {
-                LazyVStack(spacing: 10) {
+                LazyVStack(spacing: 12) {
                     if vm.filteredModels.isEmpty {
                         VStack(spacing: 16) {
                             Image(systemName: "magnifyingglass")
@@ -449,6 +452,7 @@ struct ModelDownloadScreen: View {
                     }
                 }
                 .padding(.horizontal, 16)
+                .padding(.top, 24)
                 .padding(.bottom, 24)
             }
         }

@@ -28,17 +28,27 @@ public actor ModelDownloader {
         var downloadedBytesPerFile: [String: Int64] = [:]
         let startTime = Date()
         
-        try FileManager.default.createDirectory(at: destinationDir, withIntermediateDirectories: true)
+        // Ensure clean destination
+        if !FileManager.default.fileExists(atPath: destinationDir.path) {
+            try FileManager.default.createDirectory(at: destinationDir, withIntermediateDirectories: true)
+        }
         
         for fileName in model.files {
-            guard let fileURL = URL(string: "https://huggingface.co/\(model.repoId)/resolve/main/\(fileName)") else { continue }
+            // Encode repoId and fileName separately to avoid corrupting URL structure
+            // Use urlPathAllowed but carefully since repoId has a slash
+            let encodedRepoId = model.repoId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? model.repoId
+            let encodedFileName = fileName.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? fileName
+            let urlString = "https://huggingface.co/\(encodedRepoId)/resolve/main/\(encodedFileName)"
+            
+            guard let fileURL = URL(string: urlString) else { continue }
+            
             let destinationFileURL = destinationDir.appendingPathComponent(fileName)
             
-            // Check if file already exists
+            // Check if file exists and is already downloaded fully
             if FileManager.default.fileExists(atPath: destinationFileURL.path) {
-                let attributes = try FileManager.default.attributesOfItem(atPath: destinationFileURL.path)
-                let fileSize = attributes[.size] as? Int64 ?? 0
-                if fileSize > 0 {
+                if let attrs = try? FileManager.default.attributesOfItem(atPath: destinationFileURL.path),
+                   let fileSize = attrs[.size] as? Int64,
+                   fileSize > 0 {
                     downloadedBytesPerFile[fileName] = fileSize
                     let currentTotal = downloadedBytesPerFile.values.reduce(0, +)
                     let elapsed = Date().timeIntervalSince(startTime)
@@ -48,33 +58,49 @@ public actor ModelDownloader {
                 }
             }
             
-            // Real-time download
-            var request = URLRequest(url: fileURL)
+            var request = URLRequest(url: fileURL, cachePolicy: .reloadIgnoringLocalCacheData)
             if let token = hfToken, !token.isEmpty {
                 request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
             }
             
             let (bytes, response) = try await urlSession.bytes(for: request)
-            guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
-                throw NSError(domain: "ModelDownloader", code: 1, userInfo: [NSLocalizedDescriptionKey: "Download failed"])
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw NSError(domain: "ModelDownloader", code: -1, userInfo: [NSLocalizedDescriptionKey: "No Response"])
             }
             
-            // Create empty file
+            // Critical 404/403 Handling
+            if !(200...299).contains(httpResponse.statusCode) {
+                // Ignore missing optional files (like chat_template.jinja in some older MLX repos)
+                if httpResponse.statusCode == 404 && fileName == "chat_template.jinja" {
+                    continue
+                }
+                
+                let reason = HTTPURLResponse.localizedString(forStatusCode: httpResponse.statusCode)
+                throw NSError(domain: "ModelDownloader", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "HTTP \(httpResponse.statusCode): \(reason)"])
+            }
+            
+            // Efficient Buffered Write
             if FileManager.default.fileExists(atPath: destinationFileURL.path) {
-                try FileManager.default.removeItem(at: destinationFileURL)
+                try? FileManager.default.removeItem(at: destinationFileURL)
             }
             FileManager.default.createFile(atPath: destinationFileURL.path, contents: nil)
             let fileHandle = try FileHandle(forWritingTo: destinationFileURL)
             defer { try? fileHandle.close() }
             
-            var byteCount: Int64 = 0
+            var byteCountPerFile: Int64 = 0
+            var buffer = Data()
+            let chunkSize = 64 * 1024 // 64KB buffer
+            
             for try await byte in bytes {
-                try fileHandle.write(contentsOf: [byte])
-                byteCount += 1
+                buffer.append(byte)
+                byteCountPerFile += 1
                 
-                // Update progress every 1MB
-                if byteCount % (1024 * 1024) == 0 {
-                    downloadedBytesPerFile[fileName] = byteCount
+                if buffer.count >= chunkSize {
+                    try fileHandle.write(contentsOf: buffer)
+                    buffer.removeAll(keepingCapacity: true)
+                    
+                    // Periodic Progress Update
+                    downloadedBytesPerFile[fileName] = byteCountPerFile
                     let currentTotal = downloadedBytesPerFile.values.reduce(0, +)
                     let elapsed = Date().timeIntervalSince(startTime)
                     let speed = elapsed > 0 ? Double(currentTotal) / elapsed : 0
@@ -82,7 +108,12 @@ public actor ModelDownloader {
                 }
             }
             
-            downloadedBytesPerFile[fileName] = byteCount
+            if !buffer.isEmpty {
+                try fileHandle.write(contentsOf: buffer)
+                buffer.removeAll()
+            }
+            
+            downloadedBytesPerFile[fileName] = byteCountPerFile
             let currentTotal = downloadedBytesPerFile.values.reduce(0, +)
             let elapsed = Date().timeIntervalSince(startTime)
             let speed = elapsed > 0 ? Double(currentTotal) / elapsed : 0

@@ -84,7 +84,7 @@
 "tos_privacy_data_title" = "4. Privacidad y Datos";
 "tos_privacy_data_text" = "LLM Hub está diseñado pensando en la privacidad:\n\n• Todas las conversaciones y procesamiento de datos ocurren localmente en tu dispositivo\n• Ningún dato personal se transmite a servidores externos\n• El historial de chat se almacena localmente y puede eliminarse en cualquier momento\n• Las descargas de modelos se realizan directamente desde repositorios oficiales (HuggingFace, Google)\n• La aplicación no recopila datos de análisis o uso";
 "tos_disclaimer_title" = "5. Descargo de Garantías";
-"tos_disclaimer_text" = "LLM Hub se proporciona \\"tal como está\\" sin garantías de ningún tipo. No garantizamos la precisión, confiabilidad o disponibilidad de la aplicación o su contenido generado. El uso de modelos de IA puede producir resultados impredecibles.";
+"tos_disclaimer_text" = "LLM Hub se proporciona \"tal como está\" sin garantías de ningún tipo. No garantizamos la precisión, confiabilidad o disponibilidad de la aplicación o su contenido generado. El uso de modelos de IA puede producir resultados impredecibles.";
 "tos_limitation_liability_title" = "6. Limitación de Responsabilidad";
 "tos_limitation_liability_text" = "En ningún caso los desarrolladores serán responsables de daños indirectos, incidentales, especiales o consecuentes que surjan del uso de LLM Hub. El uso de la aplicación es bajo tu propio riesgo.";
 "tos_model_usage_title" = "7. Uso de Modelos y Licencias";
@@ -175,7 +175,7 @@
 "dialog_delete_all_chats_title" = "¿Eliminar Todos los Chats?";
 "dialog_delete_all_chats_message" = "Esto eliminará permanentemente todo el historial de conversaciones. Esta acción no se puede deshacer.";
 "dialog_delete_chat_title" = "¿Eliminar Chat?";
-"dialog_delete_chat_message" = "¿Eliminar conversación \\"%1$@\\"?";
+"dialog_delete_chat_message" = "¿Eliminar conversación \"%1$@\"?";
 "action_delete_all" = "Eliminar Todo";
 "action_delete" = "Eliminar";
 "action_cancel" = "Cancelar";
@@ -341,7 +341,7 @@
 "context_window_size" = "Tamaño de Ventana de Contexto";
 "import_model" = "Importar Modelo";
 "model_name_required" = "El nombre del modelo es requerido";
-"model_name_already_exists" = "Ya existe un modelo llamado \\"%1$@\\". Por favor usa un nombre diferente o elimina el modelo existente primero.";
+"model_name_already_exists" = "Ya existe un modelo llamado \"%1$@\". Por favor usa un nombre diferente o elimina el modelo existente primero.";
 "context_window_size_invalid" = "Ingresa un tamaño válido de ventana de contexto";
 "please_fix_errors" = "Corrige los errores arriba";
 "remove" = "Eliminar";
@@ -573,8 +573,8 @@
 "web_search_found_results" = "✅ Encontrados %1$d resultados. Analizando...";
 "web_search_no_results" = "❌ No se encontraron resultados de búsqueda actuales. Proporcionando respuesta basada en datos de entrenamiento...";
 "web_search_failed" = "❌ Búsqueda web falló: %1$@. Proporcionando respuesta basada en datos de entrenamiento...";
-"vision_chat_cannot_open" = "🚫 **No se puede abrir este chat**\n\nEsta conversación contiene imágenes, pero actualmente tienes un **modelo de solo texto** cargado:\n\n📱 **Modelo actual:** %1$@\n🖼️ **Este chat:** Contiene imágenes\n\n---\n\n## 🎯 Cómo solucionarlo:\n\n1. **📥 Descargar un modelo de visión**\n   - Ve a \\"Descargar modelos\\"\n   - Busca modelos marcados con 🖼️ o \\"Visión+Texto\\"\n   - Prueba: **Gemma-3n E2B (Visión+Texto)**\n\n2. **🔄 Cambiar a modelo de visión**\n   - Carga el modelo de visión que descargaste\n   - Los modelos de visión pueden manejar tanto texto como imágenes\n\n3. **✅ Volver a este chat**\n   - Una vez que se cargue un modelo de visión, este chat funcionará perfectamente!\n\n---\n\n💡 **Consejo profesional:** Los modelos de visión pueden hacer todo lo que hacen los modelos de texto, ¡más manejar imágenes!";
-"vision_image_cannot_send" = "🖼️ **No se pueden enviar imágenes**\n\nEstás intentando enviar una imagen, pero el modelo actual es **solo texto**:\n\n📱 **Modelo actual:** %1$@\n\n---\n\n## 🎯 Para enviar imágenes:\n\n1. **📥 Descargar un modelo de visión**\n   - Toca el menú → \\"Descargar modelos\\"\n   - Busca modelos 🖼️ **Visión+Texto**\n   - Recomendado: **Gemma-3n E2B (Visión+Texto)**\n\n2. **🔄 Cambiar modelos**\n   - Carga el modelo de visión que descargaste\n   - Los modelos de visión manejan tanto texto como imágenes\n\n3. **✅ Intentar de nuevo**\n   - Una vez cargado, ¡puedes enviar imágenes libremente!\n\n---\n\n💡 **Consejo profesional:** Los modelos de visión pueden hacer todo lo que hacen los modelos de texto, ¡más entender imágenes!";
+"vision_chat_cannot_open" = "🚫 **No se puede abrir este chat**\n\nEsta conversación contiene imágenes, pero actualmente tienes un **modelo de solo texto** cargado:\n\n📱 **Modelo actual:** %1$@\n🖼️ **Este chat:** Contiene imágenes\n\n---\n\n## 🎯 Cómo solucionarlo:\n\n1. **📥 Descargar un modelo de visión**\n   - Ve a \"Descargar modelos\"\n   - Busca modelos marcados con 🖼️ o \"Visión+Texto\"\n   - Prueba: **Gemma-3n E2B (Visión+Texto)**\n\n2. **🔄 Cambiar a modelo de visión**\n   - Carga el modelo de visión que descargaste\n   - Los modelos de visión pueden manejar tanto texto como imágenes\n\n3. **✅ Volver a este chat**\n   - Una vez que se cargue un modelo de visión, este chat funcionará perfectamente!\n\n---\n\n💡 **Consejo profesional:** Los modelos de visión pueden hacer todo lo que hacen los modelos de texto, ¡más manejar imágenes!";
+"vision_image_cannot_send" = "🖼️ **No se pueden enviar imágenes**\n\nEstás intentando enviar una imagen, pero el modelo actual es **solo texto**:\n\n📱 **Modelo actual:** %1$@\n\n---\n\n## 🎯 Para enviar imágenes:\n\n1. **📥 Descargar un modelo de visión**\n   - Toca el menú → \"Descargar modelos\"\n   - Busca modelos 🖼️ **Visión+Texto**\n   - Recomendado: **Gemma-3n E2B (Visión+Texto)**\n\n2. **🔄 Cambiar modelos**\n   - Carga el modelo de visión que descargaste\n   - Los modelos de visión manejan tanto texto como imágenes\n\n3. **✅ Intentar de nuevo**\n   - Una vez cargado, ¡puedes enviar imágenes libremente!\n\n---\n\n💡 **Consejo profesional:** Los modelos de visión pueden hacer todo lo que hacen los modelos de texto, ¡más entender imágenes!";
 "please_download_model" = "Por favor descarga un modelo para comenzar a chatear.";
 "model_not_loaded" = "Modelo no cargado correctamente. Por favor intenta cambiar a un modelo diferente o reiniciar la aplicación.";
 "no_response_produced" = "No se produjo respuesta. (Posible: límite de tokens o reinicio de sesión). Toca Regenerar.";
@@ -587,7 +587,7 @@
 "chat_title" = "Título del Chat";
 "more_options" = "Más Opciones";
 "dialog_delete_creator_title" = "¿Eliminar Persona?";
-"dialog_delete_creator_message" = "¿Eliminar Persona \\"%1\\"?";
+"dialog_delete_creator_message" = "¿Eliminar Persona \"%1\"?";
 "action_rename" = "Renombrar";
 "feature_vibe_coder" = "VibeCode";
 "feature_vibe_coder_desc" = "Genera código HTML, JavaScript y Python con IA";
