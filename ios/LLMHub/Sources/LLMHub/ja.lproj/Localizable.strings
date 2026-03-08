@@ -360,7 +360,7 @@
 "context_window_size" = "コンテキストウィンドウサイズ";
 "import_model" = "モデルをインポート";
 "model_name_required" = "モデル名は必須です";
-"model_name_already_exists" = ""%@"という名前のモデルは既に存在します。別の名前を使用するか、既存のモデルを先に削除してください。";
+"model_name_already_exists" = "\"%@\"という名前のモデルは既に存在します。別の名前を使用するか、既存のモデルを先に削除してください。";
 "context_window_size_invalid" = "有効なコンテキストウィンドウサイズを入力してください";
 "please_fix_errors" = "上記のエラーを修正してください";
 "remove" = "削除";

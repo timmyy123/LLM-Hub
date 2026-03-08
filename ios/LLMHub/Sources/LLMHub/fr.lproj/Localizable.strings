@@ -85,7 +85,7 @@
 "tos_privacy_data_title" = "4. Confidentialité et Données";
 "tos_privacy_data_text" = "LLM Hub est conçu avec la confidentialité à l\\'esprit.";
 "tos_disclaimer_title" = "5. Déni de Garanties";
-"tos_disclaimer_text" = "LLM Hub est fourni "tel quel" sans garanties d\\'aucune sorte.";
+"tos_disclaimer_text" = "LLM Hub est fourni \"tel quel\" sans garanties d\\'aucune sorte.";
 "tos_limitation_liability_title" = "6. Limitation de Responsabilité";
 "tos_limitation_liability_text" = "En aucun cas les développeurs ne seront responsables de dommages indirects, incidents, spéciaux ou consécutifs.";
 "tos_model_usage_title" = "7. Utilisation des Modèles et Licences";
@@ -180,7 +180,7 @@
 "dialog_delete_all_chats_title" = "Supprimer Tous les Chats?";
 "dialog_delete_all_chats_message" = "Ceci supprimera définitivement tout l\\'historique des conversations.";
 "dialog_delete_chat_title" = "Supprimer le Chat?";
-"dialog_delete_chat_message" = "Supprimer la conversation "%@"?";
+"dialog_delete_chat_message" = "Supprimer la conversation \"%@\"?";
 "action_delete_all" = "Tout Supprimer";
 "action_delete" = "Supprimer";
 "action_cancel" = "Annuler";
@@ -358,7 +358,7 @@
 "context_window_size" = "Taille de Fenêtre de Contexte";
 "import_model" = "Importer Modèle";
 "model_name_required" = "Le nom du modèle est requis";
-"model_name_already_exists" = "Un modèle nommé "%@" existe déjà. Veuillez utiliser un nom différent ou supprimer d\\'abord le modèle existant.";
+"model_name_already_exists" = "Un modèle nommé \"%@\" existe déjà. Veuillez utiliser un nom différent ou supprimer d\\'abord le modèle existant.";
 "context_window_size_invalid" = "Entrez une taille de fenêtre de contexte valide";
 "please_fix_errors" = "Corrigez les erreurs ci-dessus";
 "remove" = "Supprimer";
@@ -590,8 +590,8 @@
 "web_search_found_results" = "✅ %@ résultats trouvés. Analyse en cours...";
 "web_search_no_results" = "❌ Aucun résultat de recherche actuel trouvé. Fourniture d\\'une réponse basée sur les données d\\'entraînement...";
 "web_search_failed" = "❌ Recherche web échouée: %@. Fourniture d\\'une réponse basée sur les données d\\'entraînement...";
-"vision_chat_cannot_open" = "🚫 **Impossible d\\'ouvrir ce chat**\n\nCette conversation contient des images, mais vous avez actuellement un **modèle texte uniquement** chargé:\n\n📱 **Modèle actuel:** %@\n🖼️ **Ce chat:** Contient des images\n\n---\n\n## 🎯 Comment résoudre ce problème:\n\n1. **📥 Télécharger un modèle de vision**\n   - Allez à "Télécharger des modèles"\n   - Cherchez des modèles marqués avec 🖼️ ou "Vision+Texte"\n   - Essayez: **Gemma-3n E2B (Vision+Texte)**\n\n2. **🔄 Passer au modèle de vision**\n   - Chargez le modèle de vision que vous avez téléchargé\n   - Les modèles de vision peuvent gérer à la fois le texte ET les images\n\n3. **✅ Revenir à ce chat**\n   - Une fois qu\\'un modèle de vision est chargé, ce chat fonctionnera parfaitement!\n\n---\n\n💡 **Conseil pro:** Les modèles de vision peuvent faire tout ce que font les modèles de texte, plus gérer les images!";
-"vision_image_cannot_send" = "🖼️ **Impossible d\\'envoyer des images**\n\nVous essayez d\\'envoyer une image, mais le modèle actuel est **texte uniquement**:\n\n📱 **Modèle actuel:** %@\n\n---\n\n## 🎯 Pour envoyer des images:\n\n1. **📥 Télécharger un modèle de vision**\n   - Appuyez sur le menu → "Télécharger des modèles"\n   - Cherchez des modèles 🖼️ **Vision+Texte**\n   - Recommandé: **Gemma-3n E2B (Vision+Texte)**\n\n2. **🔄 Changer de modèles**\n   - Chargez le modèle de vision que vous avez téléchargé\n   - Les modèles de vision gèrent à la fois le texte et les images\n\n3. **✅ Réessayer**\n   - Une fois chargé, vous pouvez envoyer des images librement!\n\n---\n\n💡 **Conseil pro:** Les modèles de vision peuvent faire tout ce que font les modèles de texte, plus comprendre les images!";
+"vision_chat_cannot_open" = "🚫 **Impossible d\\'ouvrir ce chat**\n\nCette conversation contient des images, mais vous avez actuellement un **modèle texte uniquement** chargé:\n\n📱 **Modèle actuel:** %@\n🖼️ **Ce chat:** Contient des images\n\n---\n\n## 🎯 Comment résoudre ce problème:\n\n1. **📥 Télécharger un modèle de vision**\n   - Allez à \"Télécharger des modèles\"\n   - Cherchez des modèles marqués avec 🖼️ ou \"Vision+Texte\"\n   - Essayez: **Gemma-3n E2B (Vision+Texte)**\n\n2. **🔄 Passer au modèle de vision**\n   - Chargez le modèle de vision que vous avez téléchargé\n   - Les modèles de vision peuvent gérer à la fois le texte ET les images\n\n3. **✅ Revenir à ce chat**\n   - Une fois qu\\'un modèle de vision est chargé, ce chat fonctionnera parfaitement!\n\n---\n\n💡 **Conseil pro:** Les modèles de vision peuvent faire tout ce que font les modèles de texte, plus gérer les images!";
+"vision_image_cannot_send" = "🖼️ **Impossible d\\'envoyer des images**\n\nVous essayez d\\'envoyer une image, mais le modèle actuel est **texte uniquement**:\n\n📱 **Modèle actuel:** %@\n\n---\n\n## 🎯 Pour envoyer des images:\n\n1. **📥 Télécharger un modèle de vision**\n   - Appuyez sur le menu → \"Télécharger des modèles\"\n   - Cherchez des modèles 🖼️ **Vision+Texte**\n   - Recommandé: **Gemma-3n E2B (Vision+Texte)**\n\n2. **🔄 Changer de modèles**\n   - Chargez le modèle de vision que vous avez téléchargé\n   - Les modèles de vision gèrent à la fois le texte et les images\n\n3. **✅ Réessayer**\n   - Une fois chargé, vous pouvez envoyer des images librement!\n\n---\n\n💡 **Conseil pro:** Les modèles de vision peuvent faire tout ce que font les modèles de texte, plus comprendre les images!";
 "please_download_model" = "Veuillez télécharger un modèle pour commencer à discuter.";
 "model_not_loaded" = "Modèle non chargé correctement. Veuillez essayer de passer à un modèle différent ou redémarrer l\\'application.";
 "no_response_produced" = "Aucune réponse produite. (Possible: limite de tokens ou réinitialisation de session). Appuyez sur Régénérer.";
@@ -604,7 +604,7 @@
 "chat_title" = "Titre du Chat";
 "more_options" = "Plus d\\'Options";
 "dialog_delete_creator_title" = "Supprimer la Persona?";
-"dialog_delete_creator_message" = "Supprimer la Persona "%1"?";
+"dialog_delete_creator_message" = "Supprimer la Persona \"%1\"?";
 "action_rename" = "Renommer";
 "feature_vibe_coder" = "VibeCode";
 "feature_vibe_coder_desc" = "Générer du code HTML, JavaScript et Python avec l\\'IA";

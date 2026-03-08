@@ -195,7 +195,7 @@
 "dialog_delete_all_chats_title" = "Видалити всі чати?";
 "dialog_delete_all_chats_message" = "Це назавжди видалить усю історію розмов. Дію не можна скасувати.";
 "dialog_delete_chat_title" = "Видалити чат?";
-"dialog_delete_chat_message" = "Видалити розмову "%@"?";
+"dialog_delete_chat_message" = "Видалити розмову \"%@\"?";
 "action_delete_all" = "Видалити все";
 "action_delete" = "Видалити";
 "action_cancel" = "Скасувати";
@@ -363,7 +363,7 @@
 "context_window_size" = "Розмір вікна контексту";
 "import_model" = "Імпортувати модель";
 "model_name_required" = "Потрібна назва моделі";
-"model_name_already_exists" = "Модель з іменем "%@" вже існує. Будь ласка, використовуйте інше ім\\'я або спочатку видаліть існуючу модель.";
+"model_name_already_exists" = "Модель з іменем \"%@\" вже існує. Будь ласка, використовуйте інше ім\\'я або спочатку видаліть існуючу модель.";
 "context_window_size_invalid" = "Введіть коректний розмір вікна контексту";
 "please_fix_errors" = "Будь ласка, виправте помилки вище";
 "remove" = "Видалити";
@@ -617,7 +617,7 @@
 "chat_title" = "Заголовок Чату";
 "more_options" = "Більше Параметрів";
 "dialog_delete_creator_title" = "Видалити Персону?";
-"dialog_delete_creator_message" = "Видалити Персону "%1"?";
+"dialog_delete_creator_message" = "Видалити Персону \"%1\"?";
 "action_rename" = "Перейменувати";
 "feature_vibe_coder" = "VibeCode";
 "feature_vibe_coder_desc" = "Генеруйте HTML, JavaScript та Python-код за допомогою ШІ";

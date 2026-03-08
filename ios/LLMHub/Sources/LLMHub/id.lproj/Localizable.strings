@@ -86,7 +86,7 @@
 "tos_privacy_data_title" = "4. Privasi dan Data";
 "tos_privacy_data_text" = "LLM Hub dirancang dengan mengutamakan privasi:\n\n• Semua percakapan dan pemrosesan data terjadi secara lokal di perangkat Anda\n• Tidak ada data pribadi yang dikirim ke server eksternal\n• Riwayat obrolan disimpan secara lokal dan dapat dihapus kapan saja\n• Pengunduhan model dilakukan langsung dari repositori resmi (HuggingFace, Google)\n• Aplikasi tidak mengumpulkan analitik atau data penggunaan";
 "tos_disclaimer_title" = "5. Penafian Jaminan";
-"tos_disclaimer_text" = "LLM Hub disediakan "sebagaimana adanya" tanpa jaminan apa pun. Kami tidak menjamin keakuratan, keandalan, atau ketersediaan aplikasi atau konten yang dihasilkannya. Penggunaan model AI dapat menghasilkan hasil yang tidak terduga.";
+"tos_disclaimer_text" = "LLM Hub disediakan \"sebagaimana adanya\" tanpa jaminan apa pun. Kami tidak menjamin keakuratan, keandalan, atau ketersediaan aplikasi atau konten yang dihasilkannya. Penggunaan model AI dapat menghasilkan hasil yang tidak terduga.";
 "tos_limitation_liability_title" = "6. Batasan Tanggung Jawab";
 "tos_limitation_liability_text" = "Dalam hal apa pun pengembang tidak akan bertanggung jawab atas kerusakan tidak langsung, insidental, khusus, atau konsekuensial yang timbul dari penggunaan LLM Hub. Penggunaan aplikasi adalah risiko Anda sendiri.";
 "tos_model_usage_title" = "7. Penggunaan Model dan Lisensi";
@@ -192,7 +192,7 @@
 "dialog_delete_all_chats_title" = "Hapus Semua Obrolan?";
 "dialog_delete_all_chats_message" = "Ini akan menghapus semua riwayat percakapan secara permanen. Tindakan ini tidak dapat dibatalkan.";
 "dialog_delete_chat_title" = "Hapus Obrolan?";
-"dialog_delete_chat_message" = "Hapus percakapan "%@"?";
+"dialog_delete_chat_message" = "Hapus percakapan \"%@\"?";
 "action_delete_all" = "Hapus Semua";
 "action_delete" = "Hapus";
 "action_cancel" = "Batal";
@@ -360,7 +360,7 @@
 "context_window_size" = "Ukuran Jendela Konteks";
 "import_model" = "Impor Model";
 "model_name_required" = "Nama model diperlukan";
-"model_name_already_exists" = "Model bernama "%@" sudah ada. Silakan gunakan nama lain atau hapus model yang ada terlebih dahulu.";
+"model_name_already_exists" = "Model bernama \"%@\" sudah ada. Silakan gunakan nama lain atau hapus model yang ada terlebih dahulu.";
 "context_window_size_invalid" = "Harap masukkan ukuran jendela konteks yang valid";
 "please_fix_errors" = "Harap perbaiki kesalahan di atas";
 "remove" = "Hapus";
@@ -603,8 +603,8 @@
 "web_search_found_results" = "✅ Ditemukan %@ hasil. Menganalisis...";
 "web_search_no_results" = "❌ Tidak ditemukan hasil pencarian terkini. Memberikan respons berdasarkan data pelatihan...";
 "web_search_failed" = "❌ Pencarian web gagal: %@. Memberikan respons berdasarkan data pelatihan...";
-"vision_chat_cannot_open" = "🚫 **Tidak Dapat Membuka Chat Ini**\n\nPercakapan ini berisi gambar, tetapi Anda saat ini memiliki **model teks saja** yang dimuat:\n\n📱 **Model Saat Ini:** %@\n🖼️ **Chat Ini:** Berisi gambar\n\n---\n\n## 🎯 Cara Memperbaikinya:\n\n1. **📥 Unduh Model Visi**\n   - Pergi ke "Unduh Model"\n   - Cari model yang ditandai dengan 🖼️ atau "Visi+Teks"\n   - Coba: **Gemma-3n E2B (Visi+Teks)**\n\n2. **🔄 Beralih ke Model Visi**\n   - Muat model visi yang Anda unduh\n   - Model visi dapat menangani teks DAN gambar\n\n3. **✅ Kembali ke Chat Ini**\n   - Setelah model visi dimuat, chat ini akan berfungsi dengan sempurna!\n\n---\n\n💡 **Tips Pro:** Model visi dapat melakukan semua yang dilakukan model teks, plus menangani gambar!";
-"vision_image_cannot_send" = "🖼️ **Tidak Dapat Mengirim Gambar**\n\nAnda mencoba mengirim gambar, tetapi model saat ini adalah **teks saja**:\n\n📱 **Model Saat Ini:** %@\n\n---\n\n## 🎯 Untuk Mengirim Gambar:\n\n1. **📥 Unduh Model Visi**\n   - Ketuk menu → "Unduh Model"\n   - Cari model 🖼️ **Visi+Teks**\n   - Direkomendasikan: **Gemma-3n E2B (Visi+Teks)**\n\n2. **🔄 Ganti Model**\n   - Muat model visi yang Anda unduh\n   - Model visi menangani teks dan gambar\n\n3. **✅ Coba Lagi**\n   - Setelah dimuat, Anda dapat mengirim gambar dengan bebas!\n\n---\n\n💡 **Tips Pro:** Model visi dapat melakukan semua yang dilakukan model teks, plus memahami gambar!";
+"vision_chat_cannot_open" = "🚫 **Tidak Dapat Membuka Chat Ini**\n\nPercakapan ini berisi gambar, tetapi Anda saat ini memiliki **model teks saja** yang dimuat:\n\n📱 **Model Saat Ini:** %@\n🖼️ **Chat Ini:** Berisi gambar\n\n---\n\n## 🎯 Cara Memperbaikinya:\n\n1. **📥 Unduh Model Visi**\n   - Pergi ke \"Unduh Model\"\n   - Cari model yang ditandai dengan 🖼️ atau \"Visi+Teks\"\n   - Coba: **Gemma-3n E2B (Visi+Teks)**\n\n2. **🔄 Beralih ke Model Visi**\n   - Muat model visi yang Anda unduh\n   - Model visi dapat menangani teks DAN gambar\n\n3. **✅ Kembali ke Chat Ini**\n   - Setelah model visi dimuat, chat ini akan berfungsi dengan sempurna!\n\n---\n\n💡 **Tips Pro:** Model visi dapat melakukan semua yang dilakukan model teks, plus menangani gambar!";
+"vision_image_cannot_send" = "🖼️ **Tidak Dapat Mengirim Gambar**\n\nAnda mencoba mengirim gambar, tetapi model saat ini adalah **teks saja**:\n\n📱 **Model Saat Ini:** %@\n\n---\n\n## 🎯 Untuk Mengirim Gambar:\n\n1. **📥 Unduh Model Visi**\n   - Ketuk menu → \"Unduh Model\"\n   - Cari model 🖼️ **Visi+Teks**\n   - Direkomendasikan: **Gemma-3n E2B (Visi+Teks)**\n\n2. **🔄 Ganti Model**\n   - Muat model visi yang Anda unduh\n   - Model visi menangani teks dan gambar\n\n3. **✅ Coba Lagi**\n   - Setelah dimuat, Anda dapat mengirim gambar dengan bebas!\n\n---\n\n💡 **Tips Pro:** Model visi dapat melakukan semua yang dilakukan model teks, plus memahami gambar!";
 "please_download_model" = "Silakan unduh model untuk mulai mengobrol.";
 "model_not_loaded" = "Model tidak dimuat dengan benar. Silakan coba beralih ke model yang berbeda atau restart aplikasi.";
 "no_response_produced" = "Tidak ada respons yang dihasilkan. (Kemungkinan: batas token atau reset sesi). Ketuk Regenerate.";
@@ -617,7 +617,7 @@
 "chat_title" = "Judul Obrolan";
 "more_options" = "Lebih Banyak Opsi";
 "dialog_delete_creator_title" = "Hapus Persona?";
-"dialog_delete_creator_message" = "Hapus Persona "%1"?";
+"dialog_delete_creator_message" = "Hapus Persona \"%1\"?";
 "action_rename" = "Ganti Nama";
 "feature_vibe_coder" = "VibeCode";
 "feature_vibe_coder_desc" = "Hasilkan kode HTML, JavaScript, dan Python dengan AI";
