@@ -85,19 +85,7 @@ struct SettingsScreen: View {
                 SectionHeader(titleKey: "source_code_section", icon: "curlybraces")
             }
 
-            // Version footer
-            Section {
-                HStack {
-                    Spacer()
-                    VStack(spacing: 4) {
-                        Text(String(format: settings.localized("version_format"), "3.6.1"))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    Spacer()
-                }
-                .listRowBackground(Color.clear)
-            }
+
         }
         .listStyle(.insetGrouped)
         .navigationTitle(settings.localized("feature_settings_title"))

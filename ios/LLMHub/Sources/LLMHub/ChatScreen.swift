@@ -227,6 +227,7 @@ struct ChatDrawerPanel: View {
     @EnvironmentObject var settings: AppSettings
     @ObservedObject var vm: ChatViewModel
     let onClose: () -> Void
+    let onNavigateBack: () -> Void
     let onNavigateToModels: () -> Void
     let onNavigateToSettings: () -> Void
     @State private var showDeleteAllAlert = false
@@ -287,14 +288,18 @@ struct ChatDrawerPanel: View {
 
                 Section {
                     Button {
-                        onNavigateToModels()
                         onClose()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                            onNavigateToModels()
+                        }
                     } label: {
                         Label(settings.localized("drawer_download_models"), systemImage: "square.and.arrow.down")
                     }
                     Button {
-                        onNavigateToSettings()
                         onClose()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                            onNavigateToSettings()
+                        }
                     } label: {
                         Label(settings.localized("drawer_settings"), systemImage: "gearshape")
                     }
@@ -310,6 +315,17 @@ struct ChatDrawerPanel: View {
             .navigationTitle(settings.localized("drawer_title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    // Back arrow to Home - same as Android drawer's ArrowBack
+                    Button {
+                        onClose()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                            onNavigateBack()
+                        }
+                    } label: {
+                        Image(systemName: "arrow.left")
+                    }
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(settings.localized("done"), action: onClose)
                 }
@@ -407,7 +423,8 @@ struct ModelSelectorSheet: View {
     }
 
     private var downloadedModels: [AIModel] {
-        let modelsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("models")
+        guard let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return [] }
+        let modelsDir = documentsDir.appendingPathComponent("models")
         return ModelData.models.filter { model in
             let weightsFile = modelsDir.appendingPathComponent(model.id).appendingPathComponent("model.safetensors")
             return FileManager.default.fileExists(atPath: weightsFile.path)
@@ -542,6 +559,7 @@ struct ChatScreen: View {
             ChatDrawerPanel(
                 vm: vm,
                 onClose: { showDrawer = false },
+                onNavigateBack: onNavigateBack,
                 onNavigateToModels: onNavigateToModels,
                 onNavigateToSettings: onNavigateToSettings
             )
@@ -596,7 +614,8 @@ struct ChatScreen: View {
     }
     
     private var downloadedModels: [AIModel] {
-        let modelsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("models")
+        guard let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return [] }
+        let modelsDir = documentsDir.appendingPathComponent("models")
         return ModelData.models.filter { model in
             let weightsFile = modelsDir.appendingPathComponent(model.id).appendingPathComponent("model.safetensors")
             return FileManager.default.fileExists(atPath: weightsFile.path)

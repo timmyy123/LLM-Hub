@@ -25,75 +25,68 @@ public actor ModelDownloader {
         onProgress: @Sendable @escaping (DownloadUpdate) -> Void
     ) async throws {
         let totalSize = model.sizeBytes
-        var downloadedSoFar: Int64 = 0
+        var downloadedBytesPerFile: [String: Int64] = [:]
         let startTime = Date()
         
-        // Ensure destination exists
         try FileManager.default.createDirectory(at: destinationDir, withIntermediateDirectories: true)
         
         for fileName in model.files {
-            let fileURL = URL(string: "https://huggingface.co/\(model.repoId)/resolve/main/\(fileName)")!
+            guard let fileURL = URL(string: "https://huggingface.co/\(model.repoId)/resolve/main/\(fileName)") else { continue }
             let destinationFileURL = destinationDir.appendingPathComponent(fileName)
             
-            // Check if file already exists and is complete
+            // Check if file already exists
             if FileManager.default.fileExists(atPath: destinationFileURL.path) {
                 let attributes = try FileManager.default.attributesOfItem(atPath: destinationFileURL.path)
                 let fileSize = attributes[.size] as? Int64 ?? 0
-                
-                // This is a simple check. A better one would be to compare with remote content-length.
-                // But for now, if it's there, we skip it to save time in this demo/context.
                 if fileSize > 0 {
-                    downloadedSoFar += fileSize
+                    downloadedBytesPerFile[fileName] = fileSize
+                    let currentTotal = downloadedBytesPerFile.values.reduce(0, +)
+                    let elapsed = Date().timeIntervalSince(startTime)
+                    let speed = elapsed > 0 ? Double(currentTotal) / elapsed : 0
+                    onProgress(DownloadUpdate(bytesDownloaded: currentTotal, totalBytes: totalSize, speedBytesPerSecond: speed))
                     continue
                 }
             }
             
-            // Download the file
-            try await downloadFile(
-                from: fileURL,
-                to: destinationFileURL,
-                hfToken: hfToken
-            )
+            // Real-time download
+            var request = URLRequest(url: fileURL)
+            if let token = hfToken, !token.isEmpty {
+                request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            }
             
-            // Report progress after each file
-            let attributes = try FileManager.default.attributesOfItem(atPath: destinationFileURL.path)
-            let fileSize = attributes[.size] as? Int64 ?? 0
-            downloadedSoFar += fileSize
+            let (bytes, response) = try await urlSession.bytes(for: request)
+            guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+                throw NSError(domain: "ModelDownloader", code: 1, userInfo: [NSLocalizedDescriptionKey: "Download failed"])
+            }
             
+            // Create empty file
+            if FileManager.default.fileExists(atPath: destinationFileURL.path) {
+                try FileManager.default.removeItem(at: destinationFileURL)
+            }
+            FileManager.default.createFile(atPath: destinationFileURL.path, contents: nil)
+            let fileHandle = try FileHandle(forWritingTo: destinationFileURL)
+            defer { try? fileHandle.close() }
+            
+            var byteCount: Int64 = 0
+            for try await byte in bytes {
+                try fileHandle.write(contentsOf: [byte])
+                byteCount += 1
+                
+                // Update progress every 1MB
+                if byteCount % (1024 * 1024) == 0 {
+                    downloadedBytesPerFile[fileName] = byteCount
+                    let currentTotal = downloadedBytesPerFile.values.reduce(0, +)
+                    let elapsed = Date().timeIntervalSince(startTime)
+                    let speed = elapsed > 0 ? Double(currentTotal) / elapsed : 0
+                    onProgress(DownloadUpdate(bytesDownloaded: currentTotal, totalBytes: totalSize, speedBytesPerSecond: speed))
+                }
+            }
+            
+            downloadedBytesPerFile[fileName] = byteCount
+            let currentTotal = downloadedBytesPerFile.values.reduce(0, +)
             let elapsed = Date().timeIntervalSince(startTime)
-            let speed = elapsed > 0 ? Double(downloadedSoFar) / elapsed : 0
-            onProgress(DownloadUpdate(
-                bytesDownloaded: downloadedSoFar,
-                totalBytes: totalSize,
-                speedBytesPerSecond: speed
-            ))
+            let speed = elapsed > 0 ? Double(currentTotal) / elapsed : 0
+            onProgress(DownloadUpdate(bytesDownloaded: currentTotal, totalBytes: totalSize, speedBytesPerSecond: speed))
         }
-    }
-    
-    private func downloadFile(
-        from url: URL,
-        to destination: URL,
-        hfToken: String?
-    ) async throws {
-        var request = URLRequest(url: url)
-        if let token = hfToken, !token.isEmpty {
-            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
-        
-        // Note: URLSession.download(for:delegate:) is better for backgrounding,
-        // but for a simple reactive UI we can use bytes(for:delegate:) or similar.
-        // However, and for large files, we should use a proper delegate-based download.
-        
-        let (localURL, response) = try await urlSession.download(for: request)
-        
-        guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
-            throw NSError(domain: "ModelDownloader", code: 1, userInfo: [NSLocalizedDescriptionKey: "Download failed with status code \((response as? HTTPURLResponse)?.statusCode ?? 0)"])
-        }
-        
-        // Move the file to destination
-        if FileManager.default.fileExists(atPath: destination.path) {
-            try FileManager.default.removeItem(at: destination)
-        }
-        try FileManager.default.moveItem(at: localURL, to: destination)
     }
 }

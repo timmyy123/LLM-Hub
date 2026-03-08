@@ -19,11 +19,15 @@ public class ModelManager: ObservableObject {
     
     private init() {
         let fileManager = FileManager.default
-        let documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
-        modelsDirectory = documentsDirectory.appendingPathComponent("models", isDirectory: true)
-        
-        if !fileManager.fileExists(atPath: modelsDirectory.path) {
-            try? fileManager.createDirectory(at: modelsDirectory, withIntermediateDirectories: true)
+        if let documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first {
+            modelsDirectory = documentsDirectory.appendingPathComponent("models", isDirectory: true)
+            
+            if !fileManager.fileExists(atPath: modelsDirectory.path) {
+                try? fileManager.createDirectory(at: modelsDirectory, withIntermediateDirectories: true)
+            }
+        } else {
+            // Fallback to a temp directory or handle error
+            modelsDirectory = fileManager.temporaryDirectory.appendingPathComponent("models")
         }
         
         refreshStatuses()
