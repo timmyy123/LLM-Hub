@@ -70,6 +70,7 @@
 "thinking_label" = "Denken";
 "thinking_tokens" = "Denken (%@ Tokens)";
 "version_number" = "Version 3.6.1";
+"version_format" = "Version %@";
 "app_version" = "App-Version";
 "terms_of_service" = "Nutzungsbedingungen";
 "tos_last_updated" = "Zuletzt aktualisiert: 16. Juli 2025";

@@ -23,7 +23,7 @@ struct ChatSession: Identifiable, Sendable {
     var messages: [ChatMessage]
     let createdAt: Date
 
-    init(id: UUID = UUID(), title: String = "New Chat", messages: [ChatMessage] = [], createdAt: Date = Date()) {
+    init(id: UUID = UUID(), title: String = "", messages: [ChatMessage] = [], createdAt: Date = Date()) {
         self.id = id
         self.title = title
         self.messages = messages
@@ -39,15 +39,14 @@ class ChatViewModel: ObservableObject {
     @Published var isGenerating: Bool = false
     @Published var tokensPerSecond: Double = 0
     @Published var totalTokens: Int = 0
-    @Published var selectedModelName: String = "No model loaded"
+    @Published var selectedModelName: String = AppSettings.shared.localized("no_model_selected")
     @Published var chatSessions: [ChatSession] = []
     @Published var currentSessionId: UUID = UUID()
 
     private var streamingTask: Task<Void, Never>?
 
     init() {
-        // Add a default session
-        let session = ChatSession(title: "New Chat")
+        let session = ChatSession(title: AppSettings.shared.localized("drawer_new_chat"))
         chatSessions = [session]
         currentSessionId = session.id
     }
@@ -60,13 +59,12 @@ class ChatViewModel: ObservableObject {
         messages.append(userMsg)
         inputText = ""
 
-        // Placeholder AI response - streaming simulation
         let aiMsg = ChatMessage(content: "", isFromUser: false, isGenerating: true)
         messages.append(aiMsg)
         isGenerating = true
 
         streamingTask = Task {
-            let fakeResponse = "I'm LLM Hub running on your iPhone! This is a placeholder response. To enable real AI responses, please download a model from the Models screen and load it into the chat."
+            let fakeResponse = AppSettings.shared.localized("please_download_model")
             var current = ""
             let startTime = Date()
             var tokenCount = 0
@@ -76,10 +74,10 @@ class ChatViewModel: ObservableObject {
                 try? await Task.sleep(nanoseconds: 20_000_000)
                 current += String(char)
                 tokenCount += 1
-                
+
                 let capturedCurrent = current
                 let capturedTokenCount = tokenCount
-                
+
                 await MainActor.run {
                     if let idx = self.messages.indices.last, !self.messages[idx].isFromUser {
                         self.messages[idx].content = capturedCurrent
@@ -89,7 +87,7 @@ class ChatViewModel: ObservableObject {
                     }
                 }
             }
-            
+
             await MainActor.run {
                 if let idx = self.messages.indices.last, !self.messages[idx].isFromUser {
                     self.messages[idx].isGenerating = false
@@ -113,7 +111,7 @@ class ChatViewModel: ObservableObject {
     }
 
     func newChat() {
-        let session = ChatSession(title: "New Chat")
+        let session = ChatSession(title: AppSettings.shared.localized("drawer_new_chat"))
         chatSessions.insert(session, at: 0)
         currentSessionId = session.id
         messages = []
@@ -136,6 +134,7 @@ class ChatViewModel: ObservableObject {
 
 // MARK: - Message Bubble
 struct MessageBubble: View {
+    @EnvironmentObject var settings: AppSettings
     let message: ChatMessage
     let onCopy: () -> Void
     @State private var isCopied = false
@@ -155,13 +154,6 @@ struct MessageBubble: View {
             }
 
             VStack(alignment: message.isFromUser ? .trailing : .leading, spacing: 4) {
-                if !message.isFromUser {
-                    Text("AI")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.leading, 4)
-                }
-
                 ZStack(alignment: .bottomTrailing) {
                     Text(message.content.isEmpty && message.isGenerating ? "●●●" : (message.content.isEmpty ? " " : message.content))
                         .font(.body)
@@ -198,13 +190,13 @@ struct MessageBubble: View {
                     .foregroundColor(.indigo.opacity(0.7))
             }
         }
-        .confirmationDialog("Message Options", isPresented: $showActions) {
-            Button("Copy Message") {
+        .confirmationDialog(settings.localized("more_options"), isPresented: $showActions) {
+            Button(settings.localized("copy_message")) {
                 onCopy()
                 isCopied = true
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2) { isCopied = false }
             }
-            Button("Cancel", role: .cancel) {}
+            Button(settings.localized("cancel"), role: .cancel) {}
         }
     }
 }
@@ -232,6 +224,7 @@ struct TypingIndicator: View {
 
 // MARK: - Drawer Panel
 struct ChatDrawerPanel: View {
+    @EnvironmentObject var settings: AppSettings
     @ObservedObject var vm: ChatViewModel
     let onClose: () -> Void
     let onNavigateToModels: () -> Void
@@ -246,15 +239,15 @@ struct ChatDrawerPanel: View {
                         vm.newChat()
                         onClose()
                     } label: {
-                        Label("New Chat", systemImage: "plus.bubble.fill")
+                        Label(settings.localized("drawer_new_chat"), systemImage: "plus.bubble.fill")
                             .foregroundColor(.indigo)
                             .fontWeight(.semibold)
                     }
                 }
 
-                Section("Recent Chats") {
+                Section(settings.localized("drawer_recent_chats")) {
                     if vm.chatSessions.isEmpty {
-                        Text("No chats yet")
+                        Text(settings.localized("drawer_no_chats"))
                             .foregroundColor(.secondary)
                             .font(.subheadline)
                     } else {
@@ -285,7 +278,7 @@ struct ChatDrawerPanel: View {
                                 Button(role: .destructive) {
                                     vm.deleteSession(session.id)
                                 } label: {
-                                    Label("Delete", systemImage: "trash")
+                                    Label(settings.localized("action_delete"), systemImage: "trash")
                                 }
                             }
                         }
@@ -297,45 +290,46 @@ struct ChatDrawerPanel: View {
                         onNavigateToModels()
                         onClose()
                     } label: {
-                        Label("Download Models", systemImage: "square.and.arrow.down")
+                        Label(settings.localized("drawer_download_models"), systemImage: "square.and.arrow.down")
                     }
                     Button {
                         onNavigateToSettings()
                         onClose()
                     } label: {
-                        Label("Settings", systemImage: "gearshape")
+                        Label(settings.localized("drawer_settings"), systemImage: "gearshape")
                     }
                     if !vm.chatSessions.isEmpty {
                         Button(role: .destructive) {
                             showDeleteAllAlert = true
                         } label: {
-                            Label("Clear All Chats", systemImage: "trash")
+                            Label(settings.localized("drawer_clear_all_chats"), systemImage: "trash")
                         }
                     }
                 }
             }
-            .navigationTitle("LLM Hub")
+            .navigationTitle(settings.localized("drawer_title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done", action: onClose)
+                    Button(settings.localized("done"), action: onClose)
                 }
             }
         }
-        .alert("Delete All Chats?", isPresented: $showDeleteAllAlert) {
-            Button("Delete All", role: .destructive) {
+        .alert(settings.localized("dialog_delete_all_chats_title"), isPresented: $showDeleteAllAlert) {
+            Button(settings.localized("action_delete_all"), role: .destructive) {
                 vm.chatSessions.removeAll()
                 vm.newChat()
             }
-            Button("Cancel", role: .cancel) {}
+            Button(settings.localized("action_cancel"), role: .cancel) {}
         } message: {
-            Text("This will permanently delete all conversation history. This action cannot be undone.")
+            Text(settings.localized("dialog_delete_all_chats_message"))
         }
     }
 }
 
 // MARK: - Model Selector Sheet
 struct ModelSelectorSheet: View {
+    @EnvironmentObject var settings: AppSettings
     @ObservedObject var vm: ChatViewModel
     let onNavigateToModels: () -> Void
     @Environment(\.dismiss) var dismiss
@@ -348,10 +342,10 @@ struct ModelSelectorSheet: View {
                         .font(.system(size: 48))
                         .foregroundStyle(.linearGradient(colors: [.indigo, .purple], startPoint: .top, endPoint: .bottom))
 
-                    Text("No Models Downloaded")
+                    Text(settings.localized("no_models_downloaded"))
                         .font(.title2.bold())
 
-                    Text("Download models from the AI Models store to start chatting on-device.")
+                    Text(settings.localized("download_models_first"))
                         .multilineTextAlignment(.center)
                         .foregroundColor(.secondary)
                         .padding(.horizontal)
@@ -360,7 +354,7 @@ struct ModelSelectorSheet: View {
                         onNavigateToModels()
                         dismiss()
                     } label: {
-                        Label("Go to Models Store", systemImage: "square.and.arrow.down")
+                        Label(settings.localized("feature_download_model"), systemImage: "square.and.arrow.down")
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(.indigo.gradient)
@@ -370,7 +364,7 @@ struct ModelSelectorSheet: View {
                     .padding(.horizontal)
                 } else {
                     List {
-                        Section("Downloaded Models") {
+                        Section(settings.localized("downloaded")) {
                             ForEach(downloadedModels) { model in
                                 Button {
                                     vm.selectedModelName = model.name
@@ -402,11 +396,11 @@ struct ModelSelectorSheet: View {
                 Spacer()
             }
             .padding(.top, downloadedModels.isEmpty ? 32 : 0)
-            .navigationTitle("Select Model")
+            .navigationTitle(settings.localized("select_model_title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(settings.localized("cancel")) { dismiss() }
                 }
             }
         }
@@ -423,6 +417,7 @@ struct ModelSelectorSheet: View {
 
 // MARK: - ChatScreen
 struct ChatScreen: View {
+    @EnvironmentObject var settings: AppSettings
     @StateObject private var vm = ChatViewModel()
     var onNavigateToSettings: () -> Void
     var onNavigateToModels: () -> Void
@@ -434,20 +429,21 @@ struct ChatScreen: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Status bar
             if !vm.messages.isEmpty {
                 HStack(spacing: 12) {
                     HStack(spacing: 6) {
                         Circle()
                             .fill(vm.isGenerating ? Color.orange : Color.green)
                             .frame(width: 8, height: 8)
-                        Text(vm.isGenerating ? "Generating..." : "Ready")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                        if vm.isGenerating {
+                            Text(settings.localized("thinking_label"))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
                     }
                     Spacer()
                     if vm.totalTokens > 0 {
-                        Label("\(vm.totalTokens) tokens • \(String(format: "%.1f", vm.tokensPerSecond)) tok/s",
+                        Label(String(format: settings.localized("tokens_per_second_format"), vm.totalTokens, vm.tokensPerSecond),
                               systemImage: "bolt.fill")
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -458,7 +454,6 @@ struct ChatScreen: View {
                 .background(.thinMaterial)
             }
 
-            // Messages
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(spacing: 12) {
@@ -487,9 +482,8 @@ struct ChatScreen: View {
                 }
             }
 
-            // Toast for copy
             if let _ = copiedMessageId {
-                Text("Message copied")
+                Text(settings.localized("message_copied"))
                     .font(.caption)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
@@ -500,9 +494,8 @@ struct ChatScreen: View {
 
             Divider()
 
-            // Input field
             HStack(spacing: 10) {
-                TextField("Type a message...", text: $vm.inputText, axis: .vertical)
+                TextField(settings.localized("type_a_message"), text: $vm.inputText, axis: .vertical)
                     .lineLimit(1...5)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
@@ -527,7 +520,7 @@ struct ChatScreen: View {
             .padding(.vertical, 10)
             .background(.background)
         }
-        .navigationTitle(vm.chatSessions.first(where: { $0.id == vm.currentSessionId })?.title ?? "Chat")
+        .navigationTitle(vm.chatSessions.first(where: { $0.id == vm.currentSessionId })?.title ?? settings.localized("chat"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
@@ -536,9 +529,9 @@ struct ChatScreen: View {
                         onNavigateBack()
                     } label: {
                         Image(systemName: "chevron.left")
-                        Text("back", bundle: .module)
+                        Text(settings.localized("back"))
                     }
-                    
+
                     Button {
                         showDrawer = true
                     } label: {
@@ -551,7 +544,7 @@ struct ChatScreen: View {
                     Button {
                         showModelSelector = true
                     } label: {
-                        Image(systemName: "chip.fill") // Replaced with chip.fill to better match typical AI/Logic icon
+                        Image(systemName: "chip.fill")
                     }
                     Button {
                         onNavigateToSettings()
@@ -585,9 +578,9 @@ struct ChatScreen: View {
             Image(systemName: "brain.head.profile")
                 .font(.system(size: 64))
                 .foregroundStyle(.linearGradient(colors: [.indigo, .purple], startPoint: .top, endPoint: .bottom))
-            Text("welcome_to_llm_hub", bundle: .module)
+            Text(settings.localized("welcome_to_llm_hub"))
                 .font(.title2.bold())
-            Text("start_chatting", bundle: .module)
+            Text(settings.localized("start_chatting"))
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
         }

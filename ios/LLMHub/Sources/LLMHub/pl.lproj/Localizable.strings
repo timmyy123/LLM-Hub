@@ -71,6 +71,7 @@
 "thinking_label" = "Myślenie";
 "thinking_tokens" = "Myślenie (%@ tokenów)";
 "version_number" = "Wersja 3.6.1";
+"version_format" = "Wersja %@";
 "app_version" = "Wersja Aplikacji";
 "terms_of_service" = "Warunki Usługi";
 "tos_last_updated" = "Ostatnia aktualizacja: 16 lipca 2025";

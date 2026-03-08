@@ -106,6 +106,7 @@ class ModelDownloadViewModel: ObservableObject {
 
 // MARK: - Model Row View
 struct ModelRowView: View {
+    @EnvironmentObject var settings: AppSettings
     let model: AIModel
     let state: DownloadState
     let isExpanded: Bool
@@ -145,7 +146,7 @@ struct ModelRowView: View {
                                 .foregroundColor(.secondary)
                             Text("•")
                                 .foregroundColor(.secondary)
-                            Text(model.ramLabel)
+                            Text(String(format: settings.localized("ram_requirement_format"), model.requirements.minRamGB))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
@@ -153,12 +154,12 @@ struct ModelRowView: View {
                         // Capability badges
                         HStack(spacing: 4) {
                             if model.supportsVision {
-                                capabilityBadge(String(localized: "vision", bundle: .module), color: .purple)
+                                capabilityBadge(settings.localized("vision"), color: .purple)
                             }
                             if model.supportsAudio {
-                                capabilityBadge(String(localized: "audio", bundle: .module), color: .orange)
+                                capabilityBadge(settings.localized("audio"), color: .orange)
                             }
-                            capabilityBadge(String(localized: "text", bundle: .module), color: .indigo)
+                            capabilityBadge(settings.localized("text_only"), color: .indigo)
                         }
                     }
 
@@ -181,7 +182,7 @@ struct ModelRowView: View {
                         .tint(.indigo)
                         .padding(.horizontal, 16)
                     HStack {
-                        Text("Downloading... \(downloaded) / \(model.sizeLabel) (\(speed))")
+                        Text("\(settings.localized("downloading")) \(downloaded) / \(model.sizeLabel) (\(speed))")
                             .font(.caption)
                             .foregroundColor(.secondary)
                         Spacer()
@@ -221,7 +222,7 @@ struct ModelRowView: View {
                         switch state {
                         case .notDownloaded, .error:
                             Button(action: onDownload) {
-                                Label(String(localized: "download", bundle: .module), systemImage: "square.and.arrow.down")
+                                Label(settings.localized("download"), systemImage: "square.and.arrow.down")
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 10)
                                     .background(.indigo.gradient)
@@ -230,7 +231,7 @@ struct ModelRowView: View {
                             }
                         case .downloading:
                             Button(action: onPause) {
-                                Label(String(localized: "cancel", bundle: .module), systemImage: "xmark.circle")
+                                Label(settings.localized("cancel"), systemImage: "xmark.circle")
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 10)
                                     .background(.orange.gradient)
@@ -239,7 +240,7 @@ struct ModelRowView: View {
                             }
                         case .paused:
                             Button(action: onResume) {
-                                Label(String(localized: "retry", bundle: .module), systemImage: "play.fill")
+                                Label(settings.localized("retry"), systemImage: "play.fill")
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 10)
                                     .background(.green.gradient)
@@ -247,7 +248,7 @@ struct ModelRowView: View {
                                     .clipShape(RoundedRectangle(cornerRadius: 10))
                             }
                             Button(action: onDelete) {
-                                Label(String(localized: "delete", bundle: .module), systemImage: "trash")
+                                Label(settings.localized("delete"), systemImage: "trash")
                                     .padding(.vertical, 10)
                                     .padding(.horizontal, 14)
                                     .background(.red.opacity(0.1))
@@ -256,7 +257,7 @@ struct ModelRowView: View {
                             }
                         case .downloaded:
                             Button(action: {}) {
-                                Label(String(localized: "reload_model", bundle: .module), systemImage: "play.circle.fill")
+                                Label(settings.localized("reload_model"), systemImage: "play.circle.fill")
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 10)
                                     .background(.green.gradient)
@@ -305,6 +306,7 @@ struct ModelRowView: View {
 
 // MARK: - Status Badge
 struct StatusBadge: View {
+    @EnvironmentObject var settings: AppSettings
     let state: DownloadState
 
     var body: some View {
@@ -320,11 +322,11 @@ struct StatusBadge: View {
 
     private var label: String {
         switch state {
-        case .notDownloaded:   return "Not downloaded"
-        case .downloading:     return "Downloading..."
-        case .paused:          return "Paused"
-        case .downloaded:      return "Downloaded"
-        case .error:           return "Error"
+        case .notDownloaded: return settings.localized("not_downloaded")
+        case .downloading: return settings.localized("downloading")
+        case .paused: return settings.localized("paused")
+        case .downloaded: return settings.localized("downloaded")
+        case .error: return settings.localized("error")
         }
     }
 
@@ -341,6 +343,7 @@ struct StatusBadge: View {
 
 // MARK: - ModelDownloadScreen
 struct ModelDownloadScreen: View {
+    @EnvironmentObject var settings: AppSettings
     @StateObject private var vm = ModelDownloadViewModel()
     var onNavigateBack: () -> Void
 
@@ -370,7 +373,7 @@ struct ModelDownloadScreen: View {
             HStack {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.secondary)
-                TextField("Search models...", text: $vm.searchText)
+                TextField(settings.localized("download_ai_models"), text: $vm.searchText)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
@@ -383,7 +386,7 @@ struct ModelDownloadScreen: View {
             HStack {
                 Image(systemName: vm.selectedCategory.icon)
                     .foregroundColor(.indigo)
-                Text(vm.selectedCategory.description)
+                Text(settings.localized(vm.selectedCategory.descriptionKey))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                 Spacer()
@@ -399,7 +402,7 @@ struct ModelDownloadScreen: View {
                             Image(systemName: "magnifyingglass")
                                 .font(.system(size: 48))
                                 .foregroundColor(.secondary.opacity(0.5))
-                            Text("No models found")
+                            Text(settings.localized("no_models_available"))
                                 .foregroundColor(.secondary)
                         }
                         .padding(.top, 60)
@@ -423,7 +426,7 @@ struct ModelDownloadScreen: View {
             }
         }
         .background(Color(.systemGroupedBackground))
-        .navigationTitle("AI Models")
+        .navigationTitle(settings.localized("ai_models"))
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
@@ -432,7 +435,7 @@ struct ModelDownloadScreen: View {
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "chevron.left")
-                        Text("Back")
+                        Text(settings.localized("back"))
                     }
                 }
             }
@@ -445,6 +448,7 @@ struct ModelDownloadScreen: View {
 
 // MARK: - Category Tab
 struct CategoryTab: View {
+    @EnvironmentObject var settings: AppSettings
     let category: ModelCategory
     let isSelected: Bool
     let count: Int
@@ -455,7 +459,7 @@ struct CategoryTab: View {
             HStack(spacing: 6) {
                 Image(systemName: category.icon)
                     .font(.subheadline)
-                Text(category.rawValue)
+                Text(settings.localized(category.titleKey))
                     .font(.subheadline.bold())
                 Text("\(count)")
                     .font(.caption)
@@ -474,3 +478,4 @@ struct CategoryTab: View {
         .buttonStyle(.plain)
     }
 }
+

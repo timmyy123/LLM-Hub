@@ -71,6 +71,7 @@
 "thinking_label" = "Міркування";
 "thinking_tokens" = "Міркування (%@ токенів)";
 "version_number" = "Версія 3.6.1";
+"version_format" = "Версія %@";
 "app_version" = "Версія застосунку";
 "terms_of_service" = "Умови надання послуг";
 "tos_last_updated" = "Останнє оновлення: 16 липня 2025";

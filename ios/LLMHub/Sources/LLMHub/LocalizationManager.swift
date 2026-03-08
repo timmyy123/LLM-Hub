@@ -23,25 +23,25 @@ enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
 
     var id: String { rawValue }
 
-    var displayName: String {
+    var displayNameKey: String {
         switch self {
-        case .systemDefault: return "System Default"
-        case .english:    return "English"
-        case .arabic:     return "العربية"
-        case .german:     return "Deutsch"
-        case .spanish:    return "Español"
-        case .persian:    return "فارسی"
-        case .french:     return "Français"
-        case .hebrew:     return "עברית"
-        case .indonesian: return "Indonesia"
-        case .italian:    return "Italiano"
-        case .japanese:   return "日本語"
-        case .korean:     return "한국어"
-        case .polish:     return "Polski"
-        case .portuguese: return "Português"
-        case .russian:    return "Русский"
-        case .turkish:    return "Türkçe"
-        case .ukrainian:  return "Українська"
+        case .systemDefault: return "system_default_language"
+        case .english: return "language_english"
+        case .arabic: return "language_arabic"
+        case .german: return "language_german"
+        case .spanish: return "language_spanish"
+        case .persian: return "language_persian"
+        case .french: return "language_french"
+        case .hebrew: return "language_hebrew"
+        case .indonesian: return "language_indonesian"
+        case .italian: return "language_italian"
+        case .japanese: return "language_japanese"
+        case .korean: return "language_korean"
+        case .polish: return "language_polish"
+        case .portuguese: return "language_portuguese"
+        case .russian: return "language_russian"
+        case .turkish: return "language_turkish"
+        case .ukrainian: return "language_ukrainian"
         }
     }
 
@@ -67,18 +67,18 @@ enum AppTheme: String, CaseIterable, Identifiable, Sendable {
 
     var id: String { rawValue }
 
-    var displayName: String {
+    var displayNameKey: String {
         switch self {
-        case .light:  return "Light"
-        case .dark:   return "Dark"
-        case .system: return "System Default"
+        case .light: return "theme_light"
+        case .dark: return "theme_dark"
+        case .system: return "theme_system"
         }
     }
 
     var colorScheme: ColorScheme? {
         switch self {
-        case .light:  return .light
-        case .dark:   return .dark
+        case .light: return .light
+        case .dark: return .dark
         case .system: return nil
         }
     }
@@ -109,5 +109,25 @@ final class AppSettings: ObservableObject {
         theme = AppTheme(rawValue: themeRaw) ?? .system
         streamingEnabled = UserDefaults.standard.bool(forKey: "streaming_enabled")
         showResultStatus = UserDefaults.standard.object(forKey: "show_result_status") as? Bool ?? true
+    }
+
+    private var activeLocalizationCode: String {
+        if selectedLanguage == .systemDefault {
+            let preferred = Locale.preferredLanguages.first ?? "en"
+            return preferred.components(separatedBy: "-").first ?? "en"
+        }
+        return selectedLanguage.rawValue
+    }
+
+    var localizationBundle: Bundle {
+        if let path = Bundle.module.path(forResource: activeLocalizationCode, ofType: "lproj"),
+           let bundle = Bundle(path: path) {
+            return bundle
+        }
+        return Bundle.module
+    }
+
+    func localized(_ key: String) -> String {
+        localizationBundle.localizedString(forKey: key, value: nil, table: nil)
     }
 }

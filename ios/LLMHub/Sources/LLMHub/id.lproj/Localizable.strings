@@ -71,6 +71,7 @@
 "thinking_label" = "Pemikiran";
 "thinking_tokens" = "Pemikiran (%@ token)";
 "version_number" = "Versi 3.6.1";
+"version_format" = "Versi %@";
 "app_version" = "Versi Aplikasi";
 "terms_of_service" = "Ketentuan Layanan";
 "tos_last_updated" = "Terakhir diperbarui: 16 Juli 2025";

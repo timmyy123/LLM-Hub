@@ -119,6 +119,7 @@
 "sd_models_credit" = "Модели генерации изображений работают на основе реализаций Stable Diffusion от xororz с использованием бэкендов Qualcomm QNN (NPU) и Alibaba MNN (CPU).";
 "nexa_sdk_credit" = "Вывод моделей GGUF работает на основе Nexa SDK.";
 "version_number" = "Версия 3.6.1";
+"version_format" = "Версия %@";
 "ai_thinking" = "ИИ думает...";
 "thinking_label" = "Размышление";
 "thinking_tokens" = "Размышление (%@ токенов)";

@@ -31,12 +31,21 @@ public enum ModelCategory: String, Codable, CaseIterable, Sendable {
         }
     }
 
-    public var description: String {
+    public var titleKey: String {
         switch self {
-        case .text:      return "Models optimized for text generation and conversation"
-        case .multimodal: return "Models that can understand text, images, and audio"
-        case .embedding: return "Models for text embeddings and semantic search"
-        case .imageGeneration: return "Models for generating images from text"
+        case .text: return "text_models"
+        case .multimodal: return "vision_models"
+        case .embedding: return "embedding_models"
+        case .imageGeneration: return "image_generation_models"
+        }
+    }
+
+    public var descriptionKey: String {
+        switch self {
+        case .text: return "text_models_description"
+        case .multimodal: return "vision_models_description"
+        case .embedding: return "embedding_models_description"
+        case .imageGeneration: return "image_generation_models_description"
         }
     }
 }

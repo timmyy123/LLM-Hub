@@ -70,6 +70,7 @@
 "thinking_label" = "Pensamiento";
 "thinking_tokens" = "Pensamiento (%@ tokens)";
 "version_number" = "Versión 3.6.1";
+"version_format" = "Versión %@";
 "app_version" = "Versión de la App";
 "terms_of_service" = "Términos de Servicio";
 "tos_last_updated" = "Última actualización: 16 de julio de 2025";
