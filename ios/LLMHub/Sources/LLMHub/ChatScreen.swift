@@ -1,99 +1,156 @@
 import SwiftUI
 
-// MARK: - Data Models
-struct ChatMessage: Identifiable, Equatable, Sendable {
-    let id: UUID
-    var content: String
-    let isFromUser: Bool
-    let timestamp: Date
-    var isGenerating: Bool
-
-    init(id: UUID = UUID(), content: String, isFromUser: Bool, timestamp: Date = Date(), isGenerating: Bool = false) {
-        self.id = id
-        self.content = content
-        self.isFromUser = isFromUser
-        self.timestamp = timestamp
-        self.isGenerating = isGenerating
-    }
-}
-
-struct ChatSession: Identifiable, Sendable {
-    let id: UUID
-    var title: String
-    var messages: [ChatMessage]
-    let createdAt: Date
-
-    init(id: UUID = UUID(), title: String = "", messages: [ChatMessage] = [], createdAt: Date = Date()) {
-        self.id = id
-        self.title = title
-        self.messages = messages
-        self.createdAt = createdAt
-    }
-}
-
 // MARK: - Chat ViewModel
 @MainActor
 class ChatViewModel: ObservableObject {
-    @Published var messages: [ChatMessage] = []
     @Published var inputText: String = ""
     @Published var isGenerating: Bool = false
     @Published var tokensPerSecond: Double = 0
     @Published var totalTokens: Int = 0
     @Published var selectedModelName: String = AppSettings.shared.localized("no_model_selected")
-    @Published var chatSessions: [ChatSession] = []
-    @Published var currentSessionId: UUID = UUID()
+    @Published var isBackendLoading: Bool = false
+    
+    // Config Properties (Persisted)
+    @AppStorage("chat_max_tokens") var maxTokens: Double = 2048
+    @AppStorage("chat_top_k") var topK: Double = 64
+    @AppStorage("chat_top_p") var topP: Double = 0.95
+    @AppStorage("chat_temperature") var temperature: Double = 1.0
+    @AppStorage("chat_selected_backend") var selectedBackend: String = "GPU"
+    @AppStorage("chat_enable_vision") var enableVision: Bool = true
+    @AppStorage("chat_enable_audio") var enableAudio: Bool = true
+    @AppStorage("chat_enable_thinking") var enableThinking: Bool = true
 
-    private var streamingTask: Task<Void, Never>?
+    private let chatStore = ChatStore.shared
+    private let llmBackend = LLMBackend.shared
+    @Published var currentSessionId: UUID = UUID()
+    
+    // Compute current title from sessionId
+    var currentTitle: String {
+        get { chatStore.chatSessions.first(where: { $0.id == currentSessionId })?.title ?? "" }
+        set {
+            if let index = chatStore.chatSessions.firstIndex(where: { $0.id == currentSessionId }) {
+                chatStore.chatSessions[index].title = newValue
+                chatStore.saveSessions()
+            }
+        }
+    }
+
+    var chatSessions: [ChatSession] { chatStore.chatSessions }
+    
+    var messages: [ChatMessage] {
+        get {
+            chatStore.chatSessions.first(where: { $0.id == currentSessionId })?.messages ?? []
+        }
+        set {
+            if let index = chatStore.chatSessions.firstIndex(where: { $0.id == currentSessionId }) {
+                chatStore.chatSessions[index].messages = newValue
+                chatStore.saveSessions()
+                objectWillChange.send()
+            }
+        }
+    }
 
     init() {
-        let session = ChatSession(title: AppSettings.shared.localized("drawer_new_chat"))
-        chatSessions = [session]
-        currentSessionId = session.id
+        if let first = chatStore.chatSessions.first {
+            currentSessionId = first.id
+        } else {
+            newChat()
+        }
+    }
+
+    var loadedModelName: String? { llmBackend.currentlyLoadedModel }
+
+    func loadModelIfNecessary(force: Bool = false) async {
+        guard selectedModelName != AppSettings.shared.localized("no_model_selected") else { return }
+        if !force && llmBackend.currentlyLoadedModel == selectedModelName { return }
+        
+        guard let model = ModelData.models.first(where: { $0.name == selectedModelName }) else { return }
+        
+        isBackendLoading = true
+        defer { isBackendLoading = false }
+        
+        // Push parameters to backend
+        llmBackend.maxTokens = Int(maxTokens)
+        llmBackend.topK = Int(topK)
+        llmBackend.topP = Float(topP)
+        llmBackend.temperature = Float(temperature)
+        llmBackend.enableVision = enableVision
+        llmBackend.enableAudio = enableAudio
+        llmBackend.enableThinking = enableThinking
+        llmBackend.selectedBackend = selectedBackend
+        
+        do {
+            try await llmBackend.loadModel(model)
+        } catch {
+            print("Failed to load model: \(error)")
+        }
+    }
+
+    func unloadModel() {
+        llmBackend.isLoaded = false
+        llmBackend.currentlyLoadedModel = nil
     }
 
     func sendMessage() {
-        guard !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        let input = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !input.isEmpty else { return }
         guard !isGenerating else { return }
 
-        let userMsg = ChatMessage(content: inputText, isFromUser: true)
+        let userMsg = ChatMessage(content: input, isFromUser: true)
         messages.append(userMsg)
         inputText = ""
+
+        // Auto-update title if it's "New Chat"
+        if currentTitle == AppSettings.shared.localized("drawer_new_chat") {
+            currentTitle = String(input.prefix(20))
+        }
 
         let aiMsg = ChatMessage(content: "", isFromUser: false, isGenerating: true)
         messages.append(aiMsg)
         isGenerating = true
 
         streamingTask = Task {
-            let fakeResponse = AppSettings.shared.localized("please_download_model")
-            var current = ""
-            let startTime = Date()
-            var tokenCount = 0
-
-            for char in fakeResponse {
-                if Task.isCancelled { break }
-                try? await Task.sleep(nanoseconds: 20_000_000)
-                current += String(char)
-                tokenCount += 1
-
-                let capturedCurrent = current
-                let capturedTokenCount = tokenCount
-
-                await MainActor.run {
-                    if let idx = self.messages.indices.last, !self.messages[idx].isFromUser {
-                        self.messages[idx].content = capturedCurrent
-                        self.totalTokens = capturedTokenCount
-                        let elapsed = Date().timeIntervalSince(startTime)
-                        self.tokensPerSecond = elapsed > 0 ? Double(capturedTokenCount) / elapsed : 0
+            await loadModelIfNecessary()
+            
+            do {
+                if !llmBackend.isLoaded {
+                    // Fail if still not loaded
+                    let msg = AppSettings.shared.localized("please_download_model")
+                    await updateLastAIMessage(content: msg, isGenerating: false)
+                    await MainActor.run { self.isGenerating = false }
+                    return
+                }
+                
+                try await llmBackend.generate(prompt: input) { [weak self] content, tokens, tps in
+                    Task { @MainActor [weak self] in
+                        guard let self = self else { return }
+                        self.updateLastAIMessageSync(content: content, tokens: tokens, tps: tps)
                     }
                 }
+            } catch {
+                await updateLastAIMessage(content: "Error: \(error.localizedDescription)", isGenerating: false)
             }
-
+            
             await MainActor.run {
-                if let idx = self.messages.indices.last, !self.messages[idx].isFromUser {
-                    self.messages[idx].isGenerating = false
-                }
                 self.isGenerating = false
             }
+        }
+    }
+
+    private func updateLastAIMessage(content: String, isGenerating: Bool) async {
+        await MainActor.run {
+            updateLastAIMessageSync(content: content, isGenerating: isGenerating)
+        }
+    }
+
+    private func updateLastAIMessageSync(content: String, tokens: Int = 0, tps: Double = 0, isGenerating: Bool = true) {
+        if let idx = messages.indices.last, !messages[idx].isFromUser {
+            var msgs = self.messages
+            msgs[idx].content = content
+            msgs[idx].isGenerating = isGenerating
+            self.totalTokens = tokens
+            self.tokensPerSecond = tps
+            self.messages = msgs
         }
     }
 
@@ -112,24 +169,24 @@ class ChatViewModel: ObservableObject {
 
     func newChat() {
         let session = ChatSession(title: AppSettings.shared.localized("drawer_new_chat"))
-        chatSessions.insert(session, at: 0)
+        chatStore.addSession(session)
         currentSessionId = session.id
-        messages = []
-        isGenerating = false
-        streamingTask?.cancel()
+        objectWillChange.send()
     }
 
     func deleteSession(_ id: UUID) {
-        chatSessions.removeAll { $0.id == id }
+        chatStore.deleteSession(id: id)
         if currentSessionId == id {
             if let first = chatSessions.first {
                 currentSessionId = first.id
-                messages = first.messages
             } else {
                 newChat()
             }
         }
+        objectWillChange.send()
     }
+
+    private var streamingTask: Task<Void, Never>?
 }
 
 // MARK: - Message Bubble
@@ -264,7 +321,7 @@ struct ChatDrawerPanel: View {
                                         Text(session.title)
                                             .foregroundColor(.primary)
                                             .lineLimit(1)
-                                        Text(session.createdAt, style: .relative)
+                                        Text(session.createdAt, style: .date)
                                             .font(.caption)
                                             .foregroundColor(.secondary)
                                     }
@@ -333,7 +390,7 @@ struct ChatDrawerPanel: View {
         }
         .alert(settings.localized("dialog_delete_all_chats_title"), isPresented: $showDeleteAllAlert) {
             Button(settings.localized("action_delete_all"), role: .destructive) {
-                vm.chatSessions.removeAll()
+                ChatStore.shared.clearAll()
                 vm.newChat()
             }
             Button(settings.localized("action_cancel"), role: .cancel) {}
@@ -343,94 +400,6 @@ struct ChatDrawerPanel: View {
     }
 }
 
-// MARK: - Model Selector Sheet
-struct ModelSelectorSheet: View {
-    @EnvironmentObject var settings: AppSettings
-    @ObservedObject var vm: ChatViewModel
-    let onNavigateToModels: () -> Void
-    @Environment(\.dismiss) var dismiss
-
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 24) {
-                if downloadedModels.isEmpty {
-                    Image(systemName: "cpu.fill")
-                        .font(.system(size: 48))
-                        .foregroundStyle(.linearGradient(colors: [.indigo, .purple], startPoint: .top, endPoint: .bottom))
-
-                    Text(settings.localized("no_models_downloaded"))
-                        .font(.title2.bold())
-
-                    Text(settings.localized("download_models_first"))
-                        .multilineTextAlignment(.center)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal)
-
-                    Button {
-                        onNavigateToModels()
-                        dismiss()
-                    } label: {
-                        Label(settings.localized("feature_download_model"), systemImage: "square.and.arrow.down")
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(.indigo.gradient)
-                            .foregroundColor(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                    }
-                    .padding(.horizontal)
-                } else {
-                    List {
-                        Section(settings.localized("downloaded")) {
-                            ForEach(downloadedModels) { model in
-                                Button {
-                                    vm.selectedModelName = model.name
-                                    dismiss()
-                                } label: {
-                                    HStack {
-                                        Image(systemName: "cpu")
-                                            .foregroundColor(.indigo)
-                                        VStack(alignment: .leading) {
-                                            Text(model.name)
-                                                .font(.headline)
-                                            Text(model.sizeLabel)
-                                                .font(.caption)
-                                                .foregroundColor(.secondary)
-                                        }
-                                        Spacer()
-                                        if vm.selectedModelName == model.name {
-                                            Image(systemName: "checkmark.circle.fill")
-                                                .foregroundColor(.indigo)
-                                        }
-                                    }
-                                }
-                                .foregroundColor(.primary)
-                            }
-                        }
-                    }
-                }
-
-                Spacer()
-            }
-            .padding(.top, downloadedModels.isEmpty ? 32 : 0)
-            .navigationTitle(settings.localized("select_model_title"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(settings.localized("cancel")) { dismiss() }
-                }
-            }
-        }
-    }
-
-    private var downloadedModels: [AIModel] {
-        guard let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return [] }
-        let modelsDir = documentsDir.appendingPathComponent("models")
-        return ModelData.models.filter { model in
-            let weightsFile = modelsDir.appendingPathComponent(model.id).appendingPathComponent("model.safetensors")
-            return FileManager.default.fileExists(atPath: weightsFile.path)
-        }
-    }
-}
 
 // MARK: - ChatScreen
 struct ChatScreen: View {
@@ -441,22 +410,27 @@ struct ChatScreen: View {
     var onNavigateBack: () -> Void
 
     @State private var showDrawer = false
-    @State private var showModelSelector = false
+    @State private var showSettings = false
     @State private var copiedMessageId: UUID? = nil
 
     var body: some View {
         VStack(spacing: 0) {
             if !vm.messages.isEmpty {
                 HStack(spacing: 12) {
-                    HStack(spacing: 6) {
-                        Circle()
-                            .fill(vm.isGenerating ? Color.orange : Color.green)
-                            .frame(width: 8, height: 8)
-                        if vm.isGenerating {
-                            Text(settings.localized("thinking_label"))
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                    Button {
+                        showSettings = true
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text(vm.selectedModelName)
+                                .font(.caption.bold())
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 8, weight: .bold))
                         }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(vm.isBackendLoading ? .orange.opacity(0.2) : .indigo.opacity(0.1))
+                        .foregroundColor(vm.isBackendLoading ? .orange : .indigo)
+                        .clipShape(Capsule())
                     }
                     Spacer()
                     if vm.totalTokens > 0 {
@@ -549,11 +523,14 @@ struct ChatScreen: View {
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
-                    showModelSelector = true
+                    showSettings = true
                 } label: {
-                    Image(systemName: "slider.horizontal.3")
+                    Image(systemName: "tune")
                 }
             }
+        }
+        .sheet(isPresented: $showSettings) {
+             ChatSettingsSheet(vm: vm)
         }
         .sheet(isPresented: $showDrawer) {
             ChatDrawerPanel(
@@ -563,9 +540,6 @@ struct ChatScreen: View {
                 onNavigateToModels: onNavigateToModels,
                 onNavigateToSettings: onNavigateToSettings
             )
-        }
-        .sheet(isPresented: $showModelSelector) {
-            ModelSelectorSheet(vm: vm, onNavigateToModels: onNavigateToModels)
         }
     }
 
