@@ -1,0 +1,9 @@
+﻿{
+    "model_name":  "Stable Diffusion v1.5 (MediaPipe)",
+    "total_size_bytes":  2223661056,
+    "files":  {
+
+              },
+    "base_url":  "https://huggingface.co/cutie26/sd-v1-5-mediapipe-image-generator/resolve/main/",
+    "version":  "1.0"
+}

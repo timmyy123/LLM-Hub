@@ -1,0 +1,803 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Common -->
+    <string name="app_name">LLM Hub</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Скасувати</string>
+    <string name="close">Закрити</string>
+    <string name="save">Зберегти</string>
+    <string name="delete">Видалити</string>
+    <string name="send">Надіслати</string>
+    <string name="copy">Копіювати</string>
+    <string name="loading">Завантаження</string>
+    <string name="error">Помилка</string>
+    <string name="retry">Спробувати ще раз</string>
+    <string name="download">Завантажити</string>
+    <string name="vision">Зір</string>
+
+    <!-- Chat -->
+    <string name="welcome_to_llm_hub">Ласкаво просимо до LLM Hub!</string>
+    <string name="no_models_downloaded">Ще не завантажено жодної моделі</string>
+    <string name="no_memories">Пам\'ятей поки немає</string>
+    <string name="download_a_model">Завантажити модель</string>
+    <string name="ready_to_chat">Готові до чату! Будь ласка, виберіть модель вище.</string>
+    <string name="start_chatting">Почніть чат, набравши повідомлення нижче!</string>
+    <string name="type_a_message">Введіть повідомлення…</string>
+    <string name="loading_model_format">Завантаження %1$s</string>
+    <string name="please_wait_model_initialize">Будь ласка, зачекайте, поки модель ініціалізується…</string>
+    <string name="initializing_neural_network">Ініціалізація нейромережі…</string>
+    <string name="attached_image">Прикріплене зображення</string>
+    <string name="shared_a_file">Поділився файлом</string>
+    <string name="copy_message">Копіювати повідомлення</string>
+    <string name="regenerate_response">Згенерувати відповідь знову</string>
+    <string name="cancel_generation">Скасувати генерацію</string>
+    <string name="image_attachment">Вкладення зображення</string>
+    <string name="save_image">Зберегти зображення</string>
+    <string name="tap_image_toggle_controls">Торкніться зображення, щоб перемкнути елементи керування</string>
+    <string name="vision_enabled">Зір увімкнено</string>
+    <string name="message_copied">Повідомлення скопійовано</string>
+    <string name="tokens_per_second_format">%1$d токенів • %2$.1f ток/с</string>
+    <string name="context_multimodal_format">%1$dk контекст • %2$s</string>
+    <string name="multimodal_format">%1$s мультимодальний</string>
+    <string name="multimodal">Мультимодальний</string>
+    <string name="text_only">Лише текст</string>
+    <string name="currently_loaded">Зараз завантажено</string>
+    <string name="select_model">Вибрати модель</string>
+    <string name="unload_model">Вивантажити модель</string>
+    <string name="reload_model">Перезавантажити модель</string>
+
+    <!-- About Screen -->
+    <string name="about_llm_hub">Про LLM Hub</string>
+    <string name="about_description">LLM Hub — це Android-застосунок з відкритим кодом, який приносить потужність великих мовних моделей безпосередньо на ваш пристрій. Спілкуйтеся з AI-моделями найвищого рівня, як-от Gemma, Llama та Phi — усе локально на телефоні для максимальної приватності та офлайн-доступності.</string>
+    <string name="key_features">Ключові можливості</string>
+    <string name="feature_multiple_models">🤖 Кілька моделей LLM: Gemma-3, Llama-3.2, Phi-4 і Gemma-3n</string>
+    <string name="feature_on_device">📱 Обробка на пристрої: повна приватність, без інтернету</string>
+    <string name="feature_vision_support">🖼️ Підтримка зору: мультимодальні моделі, що розуміють зображення</string>
+    <string name="feature_gpu_acceleration">⚡ Прискорення GPU: оптимальна продуктивність на сумісних пристроях</string>
+    <string name="feature_offline_usage">💾 Офлайн-режим: чат без підключення до інтернету</string>
+    <string name="feature_privacy_first">🔒 Приватність передусім: ваші розмови не покидають пристрій</string>
+    <string name="feature_modern_ui">🎨 Сучасний інтерфейс: чистий та інтуїтивний Material Design</string>
+    <string name="developer_info">Інформація для розробників</string>
+    <string name="about_developer_info">Проєкт розробляє ентузіаст, який прагне зробити технології AI доступнішими для всіх. Ваш зворотний зв\'язок і внески завжди вітаються!</string>
+    <string name="tech_stack">Технологічний стек</string>
+    <string name="about_tech_stack">LLM Hub створено з використанням сучасних технологій Android-розробки: Kotlin, Jetpack Compose, Material Design 3 та бібліотеки llama.cpp для ефективного локального інференсу.</string>
+    <string name="tech_kotlin_compose">🏗️ Побудовано з Kotlin і Jetpack Compose</string>
+    <string name="tech_mediapipe_litert">🧠 Працює на MediaPipe і LiteRT</string>
+    <string name="tech_quantization">🚀 Оптимізовано квантизацією INT4/INT8</string>
+    <string name="tech_gpu_acceleration">⚡ Прискорення GPU через LiteRT XNNPACK</string>
+    <string name="tech_models_source">🔗 Моделі з HuggingFace і Google</string>
+    <string name="contact_support">Контакти та підтримка</string>
+    <string name="contact_email">Е-пошта для зв\'язку:</string>
+    <string name="source_code">Вихідний код:</string>
+    <string name="github_repository">Репозиторій GitHub</string>
+    <string name="acknowledgments">Подяки</string>
+    <string name="acknowledgments_text">Окрема подяка компаніям Google, Meta, Microsoft, IBM та спільноті HuggingFace за неймовірні LLM-моделі, що живлять цей застосунок. Проєкт також спирається на чудову роботу спільноти Android-розробників і екосистему відкритого коду.</string>
+    <string name="sd_models_credit">Моделі генерації зображень працюють на основі реалізацій Stable Diffusion від xororz з використанням бекендів Qualcomm QNN (NPU) та Alibaba MNN (CPU).</string>
+    <string name="nexa_sdk_credit">Виведення моделей GGUF працює на основі Nexa SDK.</string>
+    <string name="ai_thinking">AI думає…</string>
+    <string name="thinking_label">Міркування</string>
+    <string name="thinking_tokens">Міркування (%1$d токенів)</string>
+    <string name="version_number">Версія 3.6.1</string>
+    <string name="app_version">Версія застосунку</string>
+
+    <!-- Terms of Service -->
+    <string name="terms_of_service">Умови надання послуг</string>
+    <string name="tos_last_updated">Останнє оновлення: 16 липня 2025</string>
+    <string name="tos_welcome_text">Ласкаво просимо до LLM Hub. Користуючись застосунком, ви погоджуєтеся з цими умовами. Уважно прочитайте їх.</string>
+    <string name="tos_welcome">Ласкаво просимо до LLM Hub. Користуючись застосунком, ви погоджуєтеся з цими умовами. Уважно прочитайте їх.</string>
+    <string name="tos_acceptance_title">1. Прийняття умов</string>
+    <string name="tos_acceptance_text">Завантажуючи, встановлюючи чи використовуючи LLM Hub, ви підтверджуєте, що прочитали, зрозуміли і погоджуєтеся з умовами. Якщо ні — не використовуйте застосунок.</string>
+    <string name="tos_app_description_title">2. Опис застосунку</string>
+    <string name="tos_app_description_text">LLM Hub надає доступ до великих мовних моделей (LLM) для локальних AI-чатів. Обробка відбувається локально, персональні дані не надсилаються на сервери.</string>
+    <string name="tos_user_responsibilities_title">3. Обов\'язки користувача</string>
+    <string name="tos_user_responsibilities_text">Використовуйте застосунок відповідально та згідно із законом; поважайте права інтелектуальної власності третіх осіб.</string>
+    <string name="tos_privacy_data_title">4. Конфіденційність і дані</string>
+    <string name="tos_privacy_data_text">Усі розмови й обробка даних відбуваються локально. Історія чатів зберігається локально й може бути видалена. Аналітика не збирається.</string>
+    <string name="tos_disclaimer_title">5. Відмова від гарантій</string>
+    <string name="tos_disclaimer_text">LLM Hub надається «як є» без будь-яких гарантій. Точність, надійність і доступність не гарантуються; результати моделей можуть бути непередбачуваними.</string>
+    <string name="tos_limitation_liability_title">6. Обмеження відповідальності</string>
+    <string name="tos_limitation_liability_text">Розробники не несуть відповідальності за непрямі чи супутні збитки, що виникають унаслідок використання.</string>
+    <string name="tos_model_usage_title">7. Використання та ліцензування моделей</string>
+    <string name="tos_model_usage_text">Моделі підпорядковуються своїм ліцензіям. Користувачі мають дотримуватися відповідних умов ліцензування.</string>
+    <string name="tos_open_source_title">8. Ліцензія відкритого коду</string>
+    <string name="tos_open_source_text">LLM Hub — відкритий код під ліцензією MIT. Бібліотеки та моделі третіх сторін можуть мати інші умови.</string>
+    <string name="tos_changes_title">9. Зміни умов</string>
+    <string name="tos_changes_text">Час від часу умови можуть оновлюватися; подальше використання означає згоду з новими умовами.</string>
+    <string name="tos_contact_title">10. Контактна інформація</string>
+    <string name="tos_contact_text">Із запитаннями щодо умов звертайтесь: timmyboy0623@gmail.com</string>
+
+    <!-- Navigation -->
+    <string name="chat">Чат</string>
+    <string name="models">Моделі</string>
+    <string name="settings">Налаштування</string>
+    <string name="about">Про застосунок</string>
+
+    <!-- Settings -->
+    <string name="appearance">Вигляд</string>
+    <string name="features">Можливості</string>
+    <string name="information">Інформація</string>
+    <string name="source_code_section">Вихідний код</string>
+    <string name="download_models">Завантажити моделі</string>
+    <string name="browse_download_models">Перегляд і завантаження моделей LLM</string>
+    <string name="embedding_model">Embedding-модель</string>
+    <string name="select_embedding_model">Вибрати embedding-модель</string>
+    <string name="no_embedding_model_selected">Embedding-модель не вибрано</string>
+    <string name="disable_embeddings">Вимкнути embeddings</string>
+    <string name="embedding_settings_changed_title">Налаштування embeddings змінено</string>
+    <string name="embedding_settings_changed_message">Щоб застосувати зміни, вивантажте й перезавантажте моделі.</string>
+    <string name="reload_models">Перезавантажити моделі</string>
+    <string name="dismiss">Закрити</string>
+    <string name="reload_models_notice">Потрібно перезавантажити моделі, щоб застосувати</string>
+    <string name="embedding_enabled">Embeddings увімкнено</string>
+    <string name="embedding_disabled">Embeddings вимкнено</string>
+    <string name="embedding_status_enabled">Стан embeddings: увімкнено</string>
+    <string name="embedding_status_disabled">Стан embeddings: вимкнено</string>
+    <string name="rag_enabled">RAG увімкнено</string>
+    <string name="web_search">Веб-пошук</string>
+    <string name="web_search_enabled">Отримувати актуальну інформацію з мережі</string>
+    <string name="web_search_disabled">Використовувати лише офлайн-знання</string>
+    <string name="web_search_description_enabled">Отримувати актуальну інформацію з мережі</string>
+    <string name="web_search_description_disabled">Використовувати лише офлайн-знання</string>
+    <string name="theme">Тема</string>
+    <string name="language">Мова</string>
+    <string name="light_theme">Світла</string>
+    <string name="dark_theme">Темна</string>
+    <string name="system_default_theme">Типова системна</string>
+    <string name="theme_light">Світла</string>
+    <string name="theme_dark">Темна</string>
+    <string name="theme_system">Системна</string>
+    <string name="system_default_language">Системна типова</string>
+    <string name="system_default">Системна типова</string>
+    <string name="choose_theme">Вибрати тему</string>
+    <string name="choose_language">Вибрати мову</string>
+    <string name="select_language">Вибрати мову</string>
+    <string name="app_information_contact">Інформація про застосунок і контакти</string>
+    <string name="app_info_contact">Інформація про застосунок і контакти</string>
+    <string name="legal_terms_conditions">Правові умови</string>
+    <string name="github_repository_desc">Переглянути вихідний код і зробити внесок</string>
+    <string name="view_source_contribute">Переглянути вихідний код і зробити внесок</string>
+    <string name="back">Назад</string>
+
+    <!-- Language Names -->
+    <string name="language_english">English</string>
+    <string name="language_spanish">Español</string>
+    <string name="language_portuguese">Português</string>
+    <string name="language_german">Deutsch</string>
+    <string name="language_french">Français</string>
+    <string name="language_russian">Русский</string>
+    <string name="language_italian">Italiano</string>
+    <string name="language_turkish">Türkçe</string>
+    <string name="language_polish">Polski</string>
+    <string name="language_arabic">العربية</string>
+    <string name="language_japanese">日本語</string>
+    <string name="language_indonesian">Indonesia</string>
+    <string name="language_korean">한국어</string>
+    <string name="language_persian">فارسی</string>
+    <string name="language_ukrainian">Українська</string>
+    <string name="language_hebrew">עברית</string>
+
+    <!-- Errors and Messages -->
+    <string name="failed_to_load_image">Не вдалося завантажити зображення</string>
+    <string name="model_loading_error">Помилка завантаження моделі</string>
+    <string name="message_send_error">Помилка надсилання повідомлення</string>
+    <string name="file_save_error">Помилка збереження файлу</string>
+    <string name="file_save_success">Файл успішно збережено</string>
+
+    <!-- Accessibility -->
+    <string name="content_description_ai_bot">AI-бот</string>
+    <string name="content_description_smart_toy">Розумна іграшка</string>
+    <string name="content_description_email">Е-пошта</string>
+    <string name="content_description_code">Вихідний код</string>
+    <string name="content_description_image">Зображення</string>
+    <string name="content_description_download">Завантажити</string>
+    <string name="content_description_stop">Зупинити</string>
+    <string name="content_description_refresh">Оновити</string>
+    <string name="content_description_copy">Копіювати</string>
+    <string name="content_description_speed">Швидкість</string>
+    <string name="content_description_check">Позначити</string>
+    <string name="content_description_eye">Зір увімкнено</string>
+    <string name="content_description_attach_image">Приєднати зображення</string>
+    <string name="content_description_back">Назад</string>
+
+    <!-- Model Information -->
+    <string name="no_model_selected">Модель не вибрано</string>
+    <string name="no_model_downloaded">Модель не завантажено</string>
+    <string name="model_supports_vision">Підтримує зір</string>
+    <string name="model_supports_multimodal">Підтримує мультимодальність</string>
+    <string name="model_text_only">Лише текст</string>
+
+    <!-- Chat Drawer -->
+    <string name="drawer_title">LLM Hub</string>
+    <string name="drawer_new_chat">Новий чат</string>
+    <string name="drawer_recent_chats">Нещодавні чати</string>
+    <string name="drawer_no_chats">Чатів ще немає</string>
+    <string name="drawer_download_models">Завантажити моделі</string>
+    <string name="drawer_clear_all_chats">Очистити всі чати</string>
+    <string name="drawer_settings">Налаштування</string>
+
+    <!-- Chat Management -->
+    <string name="dialog_delete_all_chats_title">Видалити всі чати?</string>
+    <string name="dialog_delete_all_chats_message">Це назавжди видалить усю історію розмов. Дію не можна скасувати.</string>
+    <string name="dialog_delete_chat_title">Видалити чат?</string>
+    <string name="dialog_delete_chat_message">Видалити розмову "%1$s"?</string>
+    <string name="action_delete_all">Видалити все</string>
+    <string name="action_delete">Видалити</string>
+    <string name="action_cancel">Скасувати</string>
+    <string name="content_description_delete_chat">Видалити чат</string>
+
+    <!-- Time Formatting -->
+    <string name="time_yesterday">Учора</string>
+    <string name="time_hours_ago">%1$d год тому</string>
+    <string name="time_minutes_ago">%1$d хв тому</string>
+    <string name="time_just_now">Щойно</string>
+
+    <!-- Model Download Screen -->
+    <string name="ai_models">AI-моделі</string>
+    <string name="download_ai_models">Завантажити AI-моделі</string>
+    <string name="choose_text_multimodal_models">Обирайте між текстовими та мультимодальними моделями</string>
+    <string name="text_models">Текстові моделі</string>
+    <string name="text_models_description">Моделі, оптимізовані для генерації тексту та розмов</string>
+    <string name="vision_models">Мультимодальні Моделі</string>
+    <string name="vision_models_description">Моделі, що розуміють текст, зображення та аудіо</string>
+    <string name="embedding_models">Embedding-моделі</string>
+    <string name="embedding_models_description">Моделі для embedding-ів тексту та семантичного пошуку</string>
+    <string name="gpu">GPU</string>
+    <string name="variant">варіант</string>
+    <string name="variants">варіанти</string>
+    <string name="expand">Розгорнути</string>
+    <string name="collapse">Згорнути</string>
+    <string name="downloaded">Завантажено</string>
+    <string name="downloading">Завантаження…</string>
+    <string name="extracting">Розпаковка...</string>
+    <string name="extracting_model">Розпаковка моделі...</string>
+    <string name="not_downloaded">Не завантажено</string>
+    <string name="partial">Частково</string>
+    <string name="paused">Призупинено</string>
+    <string name="paused_downloaded_format">Призупинено: %1$s завантажено</string>
+    <string name="continue_download">Продовжити</string>
+    <string name="pause_download">Пауза</string>
+    <string name="resume_download">Відновити</string>
+    <string name="clear">Очистити</string>
+    <string name="ram_requirement_format">%1$dGB RAM</string>
+
+    <!-- File Attachments -->
+    <string name="attach_file">Приєднати файл</string>
+    <string name="attach_image">Приєднати зображення</string>
+    <string name="attach_document">Приєднати документ</string>
+    <string name="attach_text_file">Приєднати текстовий файл</string>
+    <string name="file_attachment">Вкладення файлу</string>
+    <string name="file_too_large">Файл завеликий</string>
+    <string name="unsupported_file_type">Непідтримуваний тип файлу</string>
+    <string name="file_processing_error">Помилка обробки файлу</string>
+    <string name="could_not_read_file">Не вдалося прочитати файл</string>
+    <string name="file_preview">Попередній перегляд</string>
+    <string name="remove_attachment">Видалити</string>
+    <string name="keep_attachment">Залишити</string>
+    <string name="preview_not_available">Попередній перегляд недоступний</string>
+
+    <!-- File Type Categories -->
+    <string name="images">Зображення</string>
+    <string name="documents">Документи</string>
+    <string name="text_files">Текстові файли</string>
+    <string name="images_description">JPG, PNG, GIF, WebP</string>
+    <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
+    <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
+    <string name="text_file">Текстовий файл</string>
+    <string name="tap_to_preview">Торкніться для перегляду</string>
+    <string name="text_file_tap_to_preview">Текстовий файл • торкніться для перегляду</string>
+    <string name="read_this">Прочитай це</string>
+
+    <!-- Audio Input -->
+    <string name="audio_recording">Запис аудіо</string>
+    <string name="audio_description">Записати голосове повідомлення</string>
+    <string name="record_voice_message">Записати голосове повідомлення</string>
+    <string name="recording">Запис…</string>
+    <string name="audio_recorded">Аудіо записано</string>
+    <string name="ready_to_send">Готово до надсилання</string>
+    <string name="tap_to_stop">Торкніться, щоб зупинити</string>
+    <string name="stop_recording">Зупинити запис</string>
+    <string name="remove_audio">Видалити аудіо</string>
+    <string name="audio_enabled">Аудіо увімкнено</string>
+    <string name="audio">Аудіо</string>
+    <string name="audio_file">Аудіофайл</string>
+    <string name="tap_to_play">Торкніться для відтворення</string>
+    <string name="max_recording_reached">Досягнуто максимальну тривалість запису (30 секунд)</string>
+    <string name="remaining">залишилось</string>
+
+    <!-- Image actions -->
+    <string name="image_copied_clipboard">Зображення скопійовано з чату</string>
+    <string name="image_copied_to_clipboard">Зображення скопійовано в буфер</string>
+    <string name="failed_to_copy_image">Не вдалося скопіювати зображення</string>
+    <string name="failed_to_copy_image_with_error">Не вдалося скопіювати зображення: %1$s</string>
+    <string name="image_saved_to_gallery">Зображення збережено до галереї</string>
+    <string name="failed_to_save_image">Не вдалося зберегти зображення</string>
+    <string name="failed_to_save_image_with_error">Не вдалося зберегти зображення: %1$s</string>
+
+    <!-- RAG (Document Chat) -->
+    <string name="searching_documents">Пошук документів…</string>
+    <string name="using_document_context_format">Використання контексту з %1$d частин документа</string>
+    <string name="documents_available_format">Доступно документів: %1$d</string>
+    <string name="ai_can_reference_documents">AI може посилатися на ваші документи у відповідях</string>
+    <string name="document_chat_enabled">Чат з документами увімкнено</string>
+    <string name="semantic_search_active">Семантичний пошук активний</string>
+    <string name="memory">Пам\'ять (глобальний контекст)</string>
+    <string name="memory_description_enabled">Дозвольте AI посилатися на завантажену глобальну пам\'ять через RAG</string>
+    <string name="memory_requires_rag">Потрібно увімкнути RAG/embeddings</string>
+    <string name="manage_memory">Керувати пам\'яттю</string>
+    <string name="manage_memory_subtitle">Завантажуйте або вставляйте документи до глобальної пам\'яті</string>
+    <string name="paste_or_upload_to_memory">Вставте текст або завантажте документ, щоб додати до глобальної пам\'яті.</string>
+    <string name="paste_memory_placeholder">Вставте сюди нотатки, документи або знання…</string>
+    <string name="upload_file">Завантажити</string>
+    <string name="save_to_memory">Зберегти</string>
+    <string name="import_chat_history">Імпорт історії чатів</string>
+    <string name="select_chats_to_import">Виберіть чати для імпорту до пам\'яті</string>
+    <string name="import_selected_chats">Імпортувати вибрані</string>
+    <string name="chat_imported_to_memory">Історію чату імпортовано до пам\'яті</string>
+    <string name="no_chats_selected">Чати не вибрано</string>
+    <string name="edit_memory">Редагувати пам\'ять</string>
+    <string name="memory_content">Вміст пам\'яті</string>
+    <string name="save_changes">Зберегти зміни</string>
+    <string name="done">Готово</string>
+    <string name="global_memory_uploaded_by">Завантажено до глобальної пам\'яті</string>
+    <string name="global_memory_pasted_by">Вставлено до глобальної пам\'яті</string>
+    <string name="memory_upload_success">Файл збережено до глобальної пам\'яті</string>
+    <string name="memory_upload_failed">Не вдалося зберегти файл до пам\'яті (можливо, RAG вимкнено)</string>
+    <string name="memory_upload_unsupported_type">Непідтримуваний тип файлу для пам\'яті. Додавайте лише текстові документи (PDF, DOC, TXT тощо).</string>
+    <string name="memory_save_success">Текст збережено до глобальної пам\'яті</string>
+    <string name="memory_save_failed">Не вдалося зберегти текст до пам\'яті (можливо, RAG вимкнено)</string>
+    <string name="saved_memories">Збережені пам\'яті</string>
+    <string name="clear_all">Очистити все</string>
+
+    <!-- Text-to-Speech -->
+    <string name="auto_readout">Автоматичне озвучення</string>
+    <string name="auto_readout_description">Автоматично озвучувати відповіді AI після надсилання запиту</string>
+    <string name="memory_cleared">Усі пам\'яті очищено</string>
+    <string name="confirm_replace_memory_title">Замінити наявну пам\'ять?</string>
+    <string name="confirm_replace_memory_message">У вас уже є глобальна пам\'ять. Заміна видалить наявну пам\'ять та її embeddings. Продовжити?</string>
+    <string name="confirm_replace_action">Замінити</string>
+    <string name="memory_processing">Обробка пам\'яті…</string>
+    <string name="reembedding_memory_in_progress">Повторне створення embeddings для глобальної пам\'яті…</string>
+    <string name="reembedding_memory_done">Embeddings для пам\'яті оновлено</string>
+
+    <!-- Gemma-3n specific GPU requirements -->
+    <string name="gemma3n_e2b_gpu_requires_6gb">Потрібно щонайменше 6GB RAM для GPU</string>
+    <string name="gemma3n_e4b_gpu_requires_8gb">На пристроях з 8GB RAM або менше цю модель не можна завантажити з GPU</string>
+    <string name="audio_support">Підтримка аудіо</string>
+    <string name="vision_audio_text">Зір+Аудіо+Текст</string>
+    <string name="vision_text">Зір+Текст</string>
+    <string name="audio_text">Аудіо+Текст</string>
+    <string name="shared_file">Поділився файлом</string>
+    <string name="audio_message">Аудіоповідомлення</string>
+    <string name="image_message">Зображення-повідомлення</string>
+    <string name="model_configs_title">Конфігурації моделі</string>
+    <string name="reset_to_defaults">Скинути</string>
+    <string name="max_tokens">Макс. токенів</string>
+    <string name="top_k">TopK</string>
+    <string name="top_p">TopP</string>
+    <string name="temperature">Temperature</string>
+    <string name="choose_accelerator">Вибрати акселератор</string>
+    <string name="max">макс</string>
+
+    <!-- GPU with Vision+Audio Disabled for Gemma-3n E4B -->
+    <string name="gpu_vision_disabled_title">GPU з вимкненими зором і аудіо</string>
+    <string name="gpu_vision_disabled_description">Через обмеження RAM функції зору й аудіо буде вимкнено для увімкнення прискорення GPU</string>
+    <string name="gpu_with_vision_disabled">GPU (зір+аудіо вимкнено)</string>
+    <string name="gemma3n_e4b_gpu_vision_warning">Для пристроїв із 7–8GB RAM для прискорення GPU потрібно вимкнути зір і аудіо. Вкладення зображень та аудіоввід будуть недоступні.</string>
+    <string name="vision_disabled_for_gpu">Зір і аудіо вимкнено для прискорення GPU</string>
+    <string name="vision_disabled_no_images">Для цієї конфігурації моделі зір і аудіо вимкнені. Вкладення зображень та аудіоввід недоступні.</string>
+    <string name="ram_limit_gpu_vision_disabled">Через обмеження RAM (%.1fGB) для використання GPU потрібно вимкнути зір і аудіо</string>
+
+    <!-- GPU with Audio Only Disabled for Gemma-3n E4B on 8GB devices -->
+    <string name="gpu_with_audio_disabled">GPU (аудіо вимкнено)</string>
+    <string name="gemma3n_e4b_gpu_audio_warning">Для пристроїв із 7–8GB RAM для прискорення GPU потрібно вимкнути аудіо. Аудіоввід недоступний, але вкладення зображень підтримується.</string>
+    <string name="audio_disabled_for_gpu">Аудіо вимкнено для GPU</string>
+    <string name="audio_disabled_no_audio">Для цієї конфігурації моделі функції аудіо вимкнені. Аудіоввід недоступний, але вкладення зображень підтримується.</string>
+
+    <!-- Separate modality toggles -->
+    <string name="modality_options">Параметри модальностей</string>
+    <string name="enable_vision">Увімкнути зір (підтримка зображень)</string>
+    <string name="enable_audio">Увімкнути аудіо (голосовий ввід)</string>
+    <string name="enable_thinking">Увімкнути мислення</string>
+    <string name="gemma3n_e4b_modality_suggestion">💡 Для стабільності на пристроях 7–8GB вимкніть аудіо, щоб заощадити пам\'ять GPU. Зір зазвичай стабільніший.</string>
+
+    <!-- General performance tip for all devices -->
+    <string name="gemma3n_performance_tip">💡 Якщо через обмеження RAM застосунок падає або працює повільно, перейдіть на CPU або вимкніть зір/аудіо.</string>
+
+    <!-- External Model Import -->
+    <string name="import_external_model">Імпорт зовнішньої моделі</string>
+    <string name="model_name">Назва моделі</string>
+    <string name="select">Вибрати</string>
+    <string name="select_model_file">Вибрати файл моделі</string>
+    <string name="supports_vision">Підтримує зір</string>
+    <string name="supports_audio">Підтримує аудіо</string>
+    <string name="supports_gpu">Підтримує GPU</string>
+    <string name="model_format">Формат моделі</string>
+    <string name="context_window_size">Розмір вікна контексту</string>
+    <string name="import_model">Імпортувати модель</string>
+    <string name="model_name_required">Потрібна назва моделі</string>
+    <string name="model_name_already_exists">Модель з іменем \"%1$s\" вже існує. Будь ласка, використовуйте інше ім\'я або спочатку видаліть існуючу модель.</string>
+    <string name="context_window_size_invalid">Введіть коректний розмір вікна контексту</string>
+    <string name="please_fix_errors">Будь ласка, виправте помилки вище</string>
+    <string name="remove">Видалити</string>
+    <string name="ready_to_use">Готово до використання</string>
+    <string name="unsupported_file_format">Непідтримуваний формат файлу. Будь ласка, виберіть файл .task, .litertlm або .zip.</string>
+    <string name="download_models_from_litert_community">Сумісні LLM моделі можна завантажити з:</string>
+    <string name="litert_community_link">LiteRT Community на Hugging Face</string>
+    <string name="download_image_models_from">Ви можете завантажити сумісні моделі зображень з:</string>
+    <string name="sd_models_link">Моделі Stable Diffusion на Hugging Face</string>
+    <string name="supports_npu">Підтримка NPU</string>
+    <string name="import_model_warning">⚠️ Важливо: перед імпортом прочитайте README моделі на Hugging Face. Вкажіть правильні можливості (зір, аудіо, GPU) і розмір контексту згідно з документацією моделі. Важливо: GGUF-моделі з підтримкою зору вимагають Vision Projector (mmproj). Імпортуйте файл проєктора, щоб увімкнути введення зображень.</string>
+
+    <!-- Home Screen -->
+    <string name="home_welcome">Ласкаво просимо до LLM Hub</string>
+    <string name="home_subtitle">Відкрийте силу AI у своїй кишені — приватно, швидко й офлайн!</string>
+
+    <!-- Feature Cards -->
+    <string name="feature_ai_chat">AI-чат</string>
+    <string name="feature_ai_chat_desc">Багатокрокові розмови з AI-моделями</string>
+    <string name="feature_writing_aid">Помічник письма</string>
+    <string name="feature_writing_aid_desc">Граматика, стиль, перефразування, налаштування тону</string>
+    <string name="feature_translator">Перекладач</string>
+    <string name="feature_translator_desc">Конфіденційний переклад тексту мультимодальними моделями</string>
+    <string name="feature_transcriber">Транскрибатор</string>
+    <string name="feature_transcriber_desc">Офлайн транскрибування голосу чи аудіо в текст</string>
+    <string name="feature_scam_detector">Виявлення шахрайства</string>
+    <string name="feature_scam_detector_desc">Аналіз тексту, зображень або URL на можливе шахрайство</string>
+    <string name="feature_image_generator">Генератор Зображень</string>
+    <string name="feature_image_generator_desc">Створюйте зображення з текстових описів за допомогою ШІ</string>
+
+    <!-- Writing Aid Screen -->
+    <string name="writing_aid_title">Помічник письма</string>
+    <string name="writing_aid_input_label">Введіть ваш текст</string>
+    <string name="writing_aid_input_hint">Введіть або вставте текст, який хочете покращити…</string>
+    <string name="writing_aid_input_hint_no_model">Завантажте модель, щоб почати</string>
+    <string name="writing_aid_mode_grammar">Перевірка граматики</string>
+    <string name="writing_aid_mode_paraphrase">Перефразувати</string>
+    <string name="writing_aid_mode_tone">Налаштувати тон</string>
+    <string name="writing_aid_mode_email">Відповідь на email</string>
+    <string name="writing_aid_mode_sms">Відповідь на SMS</string>
+    <string name="writing_aid_tone_friendly">Дружній</string>
+    <string name="writing_aid_tone_professional">Професійний</string>
+    <string name="writing_aid_tone_concise">Лаконічний</string>
+    <string name="writing_aid_select_mode">Вибрати тон</string>
+    <string name="writing_aid_process">Обробити</string>
+    <string name="processing_tap_to_cancel">Обробка (торкніться, щоб скасувати)</string>
+    <string name="writing_aid_result">Результат</string>
+    <string name="writing_aid_no_model">Модель не завантажено. Будь ласка, спершу завантажте й виберіть модель.</string>
+
+    <!-- Translator Screen -->
+    <string name="translator_title">Офлайн-перекладач</string>
+    <string name="translator_input_label">Текст для перекладу</string>
+    <string name="translator_input_hint">Введіть текст для перекладу…</string>
+    <string name="load_model_to_start">Завантажте модель, щоб почати</string>
+    <string name="translator_source_lang">Мова джерела</string>
+    <string name="translator_target_lang">Цільова мова</string>
+    <string name="translator_auto_detect">Автовизначення</string>
+    <string name="translator_translate">Перекласти</string>
+    <string name="translator_result">Переклад</string>
+    <string name="translator_requires_gemma3n">Ця функція потребує модель Gemma-3n. Завантажте її на екрані моделей.</string>
+
+    <!-- Transcriber Screen -->
+    <string name="transcriber_title">Офлайн-транскрибатор</string>
+    <string name="transcriber_record">Записати аудіо</string>
+    <string name="transcriber_upload">Завантажити аудіо</string>
+    <string name="transcriber_transcribe">Транскрибувати</string>
+    <string name="transcriber_result">Транскрипція</string>
+    <string name="transcriber_recording">Запис…</string>
+    <string name="transcriber_stop">Зупинити запис</string>
+    <string name="transcriber_requires_gemma3n">Ця функція потребує Gemma-3n з підтримкою аудіо. Завантажте на екрані моделей.</string>
+
+    <!-- Scam Detector Screen -->
+    <string name="scam_detector_title">Виявлення шахрайства</string>
+    <string name="scam_detector_input_label">Введіть вміст для аналізу</string>
+    <string name="scam_detector_input_hint">Вставте текст, завантажте зображення або введіть URL для аналізу на шахрайство…</string>
+    <string name="scam_detector_url_hint">Введіть URL для аналізу</string>
+    <string name="scam_detector_analyze">Аналізувати</string>
+    <string name="scam_detector_analyzing">Аналіз (торкніться, щоб скасувати)</string>
+    <string name="scam_detector_result">Результат аналізу</string>
+    <string name="scam_detector_no_model">Модель не завантажено. Будь ласка, спершу завантажте й виберіть модель.</string>
+    <string name="scam_detector_load_model">Завантажити модель</string>
+    <string name="scam_detector_load_model_desc">Щоб почати аналіз, завантажте модель</string>
+    <string name="scam_detector_enable_vision">Увімкнути зір</string>
+    <string name="scam_detector_vision_desc">Аналізувати зображення на шахрайство</string>
+    <string name="scam_detector_fetching_url">Отримання вмісту URL…</string>
+    <!-- Image Generator Screen -->
+    <string name="image_generator_title">Генератор Зображень</string>
+    <string name="image_generator_subtitle">Створюйте зображення з текстових описів за допомогою ШІ</string>
+    <string name="image_generator_prompt_label">Опис Зображення</string>
+    <string name="image_generator_prompt_hint">Опишіть зображення, яке хочете створити...</string>
+    <string name="image_generator_generate">Створити Зображення</string>
+    <string name="image_generator_generating">Створення зображення...</string>
+    <string name="image_generator_iterations">Ітерації</string>
+    <string name="image_generator_seed">Початкове значення</string>
+    <string name="image_generator_random_seed">Випадкове Значення</string>
+    <string name="image_generator_save">Зберегти Зображення</string>
+    <string name="image_generator_download_model">Спочатку Завантажте Модель</string>
+    <string name="image_generator_download_model_desc">Завантажте модель генерації зображень, щоб почати створення зображень</string>
+    <string name="image_generator_model_not_available">Модель генерації зображень недоступна</string>
+    <string name="image_generator_error">Не вдалося створити зображення</string>
+    <string name="image_generator_success">Зображення успішно створено</string>
+    <string name="image_generator_saved">Зображення збережено в галереї</string>
+    <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
+    <string name="image_generation_model">Модель Генерації Зображень</string>
+    <string name="image_generation_models">Моделі Генерації Зображень</string>
+    <string name="image_generation_models_description">ШІ-моделі для генерації зображень з тексту</string>
+    <string name="image_generator_load_model_title">Завантажте модель для початку</string>
+    <string name="image_generator_load_model_desc">Будь ласка, завантажте модель Stable Diffusion, щоб почати генерувати зображення.</string>
+    <string name="image_generator_no_models">Немає доступних моделей</string>
+    <string name="image_generator_load_model">Завантажити модель</string>
+    <string name="image_generator_loading_model">Завантаження…</string>
+    <string name="image_generator_failed_load">Не вдалося завантажити модель</string>
+    <string name="image_generator_variation">Генерація варіанту %1$d…</string>
+    <string name="image_generator_swipe_more">Проведіть тут, щоб створити більше</string>
+    <string name="image_generator_info">Генерація зображень використовує модель Stable Diffusion v1.5, що працює на пристрої. Генерація може зайняти 1-2 хвилини залежно від вашого пристрою.</string>
+    <string name="image_generator_img2img">Зображення в Зображення</string>
+    <string name="image_generator_img2img_desc">Трансформувати існуюче зображення</string>
+    <string name="image_generator_select_image">Вибрати Вхідне Зображення</string>
+    <string name="image_generator_change_image">Змінити Вхідне Зображення</string>
+    <string name="image_generator_denoise_strength">Сила Шумозаглушення: %.2f</string>
+    <string name="image_generator_denoise_strength_desc">Вище = більше змін у вхідному зображенні</string>
+    <string name="image_generator_input_image">Вхідне зображення</string>
+    <string name="image_generator_use_gpu">Використовувати прискорення GPU</string>
+    <string name="image_generator_use_gpu_desc">Швидше генерування (потрібна підтримка OpenCL)</string>
+    <!-- Common Feature Strings -->
+    <string name="feature_no_model_title">Немає доступної моделі</string>
+    <string name="feature_download_model">Завантажити моделі</string>
+    <string name="feature_processing">Обробка…</string>
+    <string name="feature_error">Сталася помилка</string>
+    <string name="feature_copy_result">Копіювати результат</string>
+    <string name="feature_share_result">Поділитися результатом</string>
+    <string name="feature_clear">Очистити</string>
+
+    <!-- Language Names for Translator (Gemma-3n Supported Languages) - Alphabetically Ordered -->
+    <string name="lang_english">Англійська</string>
+    <string name="lang_afrikaans">Африкаанс</string>
+    <string name="lang_amharic">Амхарська</string>
+    <string name="lang_arabic">Арабська</string>
+    <string name="lang_armenian">Вірменська</string>
+    <string name="lang_azerbaijani">Азербайджанська</string>
+    <string name="lang_basque">Баскська</string>
+    <string name="lang_bengali">Бенгальська</string>
+    <string name="lang_bulgarian">Болгарська</string>
+    <string name="lang_burmese">Бірманська</string>
+    <string name="lang_catalan">Каталонська</string>
+    <string name="lang_chinese">Китайська (спрощена)</string>
+    <string name="lang_chinese_traditional">Китайська (традиційна)</string>
+    <string name="lang_croatian">Хорватська</string>
+    <string name="lang_czech">Чеська</string>
+    <string name="lang_danish">Данська</string>
+    <string name="lang_dutch">Нідерландська</string>
+    <string name="lang_estonian">Естонська</string>
+    <string name="lang_filipino">Філіппінська (тагалог)</string>
+    <string name="lang_finnish">Фінська</string>
+    <string name="lang_french">Французька</string>
+    <string name="lang_galician">Галісійська</string>
+    <string name="lang_georgian">Грузинська</string>
+    <string name="lang_german">Німецька</string>
+    <string name="lang_greek">Грецька</string>
+    <string name="lang_gujarati">Гуджараті</string>
+    <string name="lang_hausa">Хауса</string>
+    <string name="lang_hebrew">Іврит</string>
+    <string name="lang_hindi">Гінді</string>
+    <string name="lang_hungarian">Угорська</string>
+    <string name="lang_icelandic">Ісландська</string>
+    <string name="lang_igbo">Ігбо</string>
+    <string name="lang_indonesian">Індонезійська</string>
+    <string name="lang_italian">Італійська</string>
+    <string name="lang_japanese">Японська</string>
+    <string name="lang_kannada">Каннада</string>
+    <string name="lang_kazakh">Казахська</string>
+    <string name="lang_khmer">Кхмерська</string>
+    <string name="lang_korean">Корейська</string>
+    <string name="lang_lao">Лаоська</string>
+    <string name="lang_latvian">Латвійська</string>
+    <string name="lang_lithuanian">Литовська</string>
+    <string name="lang_malay">Малайська</string>
+    <string name="lang_malayalam">Малаялам</string>
+    <string name="lang_marathi">Мараті</string>
+    <string name="lang_nepali">Непальська</string>
+    <string name="lang_norwegian">Норвезька</string>
+    <string name="lang_pashto">Пушту</string>
+    <string name="lang_persian">Перська (фарсі)</string>
+    <string name="lang_polish">Польська</string>
+    <string name="lang_portuguese">Португальська</string>
+    <string name="lang_punjabi">Панджабі</string>
+    <string name="lang_romanian">Румунська</string>
+    <string name="lang_russian">Російська</string>
+    <string name="lang_serbian">Сербська</string>
+    <string name="lang_sindhi">Сіндхі</string>
+    <string name="lang_sinhala">Сінгальська</string>
+    <string name="lang_slovak">Словацька</string>
+    <string name="lang_slovenian">Словенська</string>
+    <string name="lang_somali">Сомалійська</string>
+    <string name="lang_spanish">Іспанська</string>
+    <string name="lang_swahili">Свахілі</string>
+    <string name="lang_swedish">Шведська</string>
+    <string name="lang_tamil">Тамільська</string>
+    <string name="lang_telugu">Телугу</string>
+    <string name="lang_thai">Тайська</string>
+    <string name="lang_turkish">Турецька</string>
+    <string name="lang_ukrainian">Українська</string>
+    <string name="lang_urdu">Урду</string>
+    <string name="lang_uzbek">Узбецька</string>
+    <string name="lang_vietnamese">В\'єтнамська</string>
+    <string name="lang_yoruba">Йоруба</string>
+    <string name="lang_zulu">Зулу</string>
+
+    <!-- Model Selection -->
+    <string name="feature_settings_title">Налаштування</string>
+    <string name="select_model_title">Вибрати модель</string>
+    <string name="no_models_available">Немає доступних моделей</string>
+    <string name="download_models_first">Спочатку завантажте моделі</string>
+    <string name="select_backend">Вибрати бекенд</string>
+    <string name="backend_cpu">CPU</string>
+    <string name="backend_gpu">GPU</string>
+    <string name="gpu_not_supported">Ця модель не підтримує GPU</string>
+    <string name="load_model">Завантажити модель</string>
+    <string name="model_loaded">Модель успішно завантажено</string>
+    <string name="model_loading">Завантаження моделі…</string>
+    <string name="model_load_failed">Не вдалося завантажити модель</string>
+    <string name="multimodal_models_only">Підтримуються лише мультимодальні моделі (Gemma-3n)</string>
+    <string name="text_models_only">Підтримуються лише текстові моделі</string>
+
+    <!-- Audio Features -->
+    <string name="enable_audio_input">Увімкнути голосовий ввід</string>
+    <string name="audio_input_enabled">Голосовий ввід увімкнено</string>
+    <string name="audio_input_disabled">Голосовий ввід вимкнено</string>
+    <string name="record_audio">Записати аудіо</string>
+
+    <!-- Auto-detect Language -->
+    <string name="lang_auto_detect">Автовизначення</string>
+    <string name="auto_detecting_language">Визначення мови…</string>
+    <string name="language_detected">Визначено мову: %1$s</string>
+
+    <!-- Feature-specific Processing -->
+    <string name="processing">Обробка…</string>
+    <string name="translating">Переклад…</string>
+    <string name="translating_tap_to_cancel">Переклад (торкніться, щоб скасувати)</string>
+    <string name="transcribing">Транскрибування…</string>
+    <string name="transcribing_tap_to_cancel">Транскрибування (торкніться, щоб скасувати)</string>
+    <string name="analyzing_code">Аналіз коду…</string>
+    <string name="processing_text">Обробка тексту…</string>
+
+    <!-- Vision Features -->
+    <string name="input_options">Параметри вводу</string>
+    <string name="enable_vision_input">Увімкнути ввід зображень</string>
+    <string name="translate_from_image">Перекласти текст із зображення</string>
+    <string name="speak_to_translate">Говоріть для перекладу</string>
+    <string name="select_image">Вибрати зображення</string>
+    <string name="change_image">Змінити зображення</string>
+    <string name="transcription_result">Транскрипція</string>
+
+    <!-- Translator Settings -->
+    <string name="translator_enable_vision">Увімкнути зір</string>
+    <string name="translator_vision_description">Переклад тексту із зображень</string>
+    <string name="translator_enable_audio">Увімкнути аудіо</string>
+    <string name="translator_audio_description">Переклад аудіозаписів</string>
+
+    <!-- Backend Selection -->
+    <string name="choose_backend_for_gemma">Вибрати бекенд для моделі Gemma</string>
+    <string name="gpu_backend">GPU (рекомендовано)</string>
+    <string name="cpu_backend">CPU (альтернатива)</string>
+    <string name="gpu_backend_description">Швидша обробка за допомогою GPU пристрою</string>
+    <string name="cpu_backend_description">Повільніше, але стабільніше</string>
+    <string name="backend_selection_hint">Якщо виникають збої з GPU, спробуйте бекенд CPU</string>
+    <string name="not_available">Недоступно</string>
+    <string name="gpu_disabled_low_memory">GPU недоступний для цієї моделі на пристроях із %1$dGB RAM або менше</string>
+
+    <!-- Web Search Messages -->
+    <string name="web_searching">🔍 Пошук у мережі…</string>
+    <string name="web_search_found_results">✅ Знайдено результатів: %1$d. Аналіз…</string>
+    <string name="web_search_no_results">❌ Актуальних результатів не знайдено. Відповідаю на основі офлайн-знань…</string>
+    <string name="web_search_failed">❌ Помилка веб-пошуку: %1$s. Відповідаю на основі офлайн-знань…</string>
+
+    <!-- Vision Model Error Messages -->
+    <string name="vision_chat_cannot_open">🚫 **Не можна відкрити цей чат**\n\nЦя розмова містить зображення, але зараз завантажено **текстову модель**:\n\n📱 **Поточна модель:** %1$s\n🖼️ **Цей чат:** містить зображення\n\n---\n\n## 🎯 Як виправити:\n\n1. **📥 Завантажте модель із зором**\n   - Перейдіть до «Завантажити моделі»\n   - Шукайте моделі з 🖼️ або «Vision+Text»\n   - Спробуйте: **Gemma-3n E2B (Vision+Text)**\n\n2. **🔄 Перемкніться на модель із зором**\n   - Завантажте модель із зором\n   - Такі моделі обробляють і текст, і зображення\n\n3. **✅ Поверніться до цього чату**\n   - Після завантаження модель працюватиме коректно!\n\n---\n\n💡 **Порада:** Моделі із зором роблять усе, що й текстові, та ще й розуміють зображення!</string>
+    <string name="vision_image_cannot_send">🖼️ **Не можна надіслати зображення**\n\nВи намагаєтеся надіслати зображення, але поточна модель — **лише текст**:\n\n📱 **Поточна модель:** %1$s\n\n---\n\n## 🎯 Щоб надсилати зображення:\n\n1. **📥 Завантажте модель із зором**\n   - Меню → «Завантажити моделі»\n   - Шукайте 🖼️ **Vision+Text**\n   - Рекомендовано: **Gemma-3n E2B (Vision+Text)**\n\n2. **🔄 Перемкніть модель**\n   - Завантажте модель із зором\n   - Такі моделі обробляють і текст, і зображення\n\n3. **✅ Спробуйте знову**\n   - Після завантаження можна вільно надсилати зображення!\n\n---\n\n💡 **Порада:** Моделі із зором також розуміють зображення!</string>
+
+    <!-- Model Error Messages -->
+    <string name="please_download_model">Будь ласка, завантажте модель, щоб почати чат.</string>
+    <string name="model_not_loaded">Модель завантажено некоректно. Спробуйте іншу модель або перезапустіть застосунок.</string>
+    <string name="no_response_produced">Відповіді не згенеровано. (Можливо: ліміт токенів або скидання сесії). Торкніться «Згенерувати знову».</string>
+    <string name="prompt_too_long">Запит надто довгий. Скоротіть повідомлення та спробуйте ще раз.</string>
+    <!-- New Chat Management & Creator Strings -->
+    <string name="not_loaded">Не завантажено</string>
+    <string name="dialog_rename_chat_title">Перейменувати Чат</string>
+    <string name="chat_title">Заголовок Чату</string>
+    <string name="more_options">Більше Параметрів</string>
+    <string name="dialog_delete_creator_title">Видалити Персону?</string>
+    <string name="dialog_delete_creator_message">Видалити Персону \"%1\"?</string>
+    <string name="action_rename">Перейменувати</string>
+
+    <!-- Vibe Coder Feature -->
+    <string name="feature_vibe_coder">VibeCode</string>
+    <string name="feature_vibe_coder_desc">Генеруйте HTML, JavaScript та Python-код за допомогою ШІ</string>
+    <string name="feature_creator_generation">Персони</string>
+    <string name="feature_creator_generation_desc">Створюйте власні персоналізовані персони ШІ</string>
+    <string name="drawer_my_creators">мої Персони</string>
+    <string name="vibe_coder_title">VibeCode</string>
+    <string name="vibe_coder_prompt_label">Що ви хочете закодувати?</string>
+    <string name="vibe_coder_prompt_hint">Опишіть код, який хочете згенерувати...</string>
+    <string name="vibe_coder_generate">Генерувати Код</string>
+    <string name="vibe_coder_generating">Генерування коду...</string>
+    <string name="vibe_coder_generated_code">Згенерований Код</string>
+    <string name="vibe_coder_copy">Копіювати</string>
+    <string name="vibe_coder_preview">Попередній перегляд</string>
+    <string name="vibe_coder_no_model">Модель не завантажена. Будь ласка, спочатку завантажте та оберіть модель.</string>
+    <string name="vibe_coder_settings">Налаштування</string>
+    <string name="vibe_coder_backend_select">Вибрати Бекенд</string>
+
+    <!-- VibeCode additions -->
+    <string name="vibe_coder_modification_mode">Режим зміни</string>
+    <string name="vibe_coder_refine">Покращити код</string>
+    <string name="vibe_coder_clear">Новий проект / Очистити контекст</string>
+    <string name="vibe_coder_planning">Планування архітектури...</string>
+    <string name="vibe_coder_revising">Перегляд коду...</string>
+    <string name="vibe_coder_select_folder_title">Спочатку оберіть папку проекту</string>
+    <string name="vibe_coder_select_folder_desc">Відкрийте папку для роботи з кількома файлами та створення файлів у папці.</string>
+    <string name="vibe_coder_open_folder">Відкрити папку</string>
+    <string name="vibe_coder_show_chat">Показати чат</string>
+    <string name="vibe_coder_ai_chat">ШІ-чат</string>
+    <string name="vibe_coder_hide_chat">Приховати чат</string>
+    <string name="vibe_coder_clear_chat">Очистити чат</string>
+    <string name="vibe_coder_new_chat">Новий чат</string>
+    <string name="vibe_coder_delete_chat_cd">Видалити чат</string>
+    <string name="vibe_coder_message_you">Ви</string>
+    <string name="vibe_coder_message_ai">ШІ</string>
+    <string name="vibe_coder_edit_resend_prompt">Редагувати та надіслати повторно</string>
+    <string name="vibe_coder_resend">Надіслати повторно</string>
+    <string name="vibe_coder_ask_ai_edit">Попросіть ШІ відредагувати цей файл...</string>
+    <string name="vibe_coder_create_open_file_hint">Спочатку створіть/відкрийте файл (.py, .js, .ts, ...)</string>
+    <string name="vibe_coder_stop_generation">Зупинити генерацію</string>
+    <string name="vibe_coder_code_editor">Редактор коду</string>
+    <string name="vibe_coder_new_file">Новий файл</string>
+    <string name="vibe_coder_save_file">Зберегти файл</string>
+    <string name="vibe_coder_copy_code">Копіювати код</string>
+    <string name="vibe_coder_delete_file_cd">Видалити файл</string>
+    <string name="vibe_coder_open_or_create_file">Відкрийте або створіть файл для початку редагування.</string>
+    <string name="vibe_coder_ai_editing">ШІ редагує код...</string>
+    <string name="vibe_coder_write_code_hint">Напишіть код тут або запитайте ШІ в чаті...</string>
+    <string name="vibe_coder_discard">Скасувати</string>
+    <string name="vibe_coder_create_file_title">Створити файл у робочій області</string>
+    <string name="vibe_coder_file_name_placeholder">приклад.py або app.js</string>
+    <string name="vibe_coder_file_name_label">Назва файлу з розширенням</string>
+    <string name="vibe_coder_file_name_error">Введіть дійсну назву файлу з розширенням, напр. main.py</string>
+    <string name="vibe_coder_create">Створити</string>
+    <string name="vibe_coder_delete_chat_title">Видалити чат?</string>
+    <string name="vibe_coder_delete_chat_message">Цей сеанс чату буде видалено назавжди.</string>
+    <string name="vibe_coder_delete_file_title">Видалити файл?</string>
+    <string name="vibe_coder_delete_file_message">Видалити \'%1$s\' з цієї папки?</string>
+    <string name="vibe_coder_no_file_selected_error">Файл не вибраний. Спочатку створіть/відкрийте файл із робочої папки.</string>
+    <string name="vibe_coder_delete_file_error">Не вдалося видалити файл</string>
+    <string name="vibe_coder_autosave_failed">Автозбереження не вдалося. Натисніть зберегти ще раз або відкрийте файл заново.</string>
+
+    <!-- Creator Generation Screen -->
+    <string name="creator_screen_title">Новий ІІ-персонаж</string>
+    <string name="creator_bring_to_life">Оживіть штучний інтелект</string>
+    <string name="creator_description">У вас є сила оживити власного ІІ-персонажа. Просто опишіть, як ваш персонаж реагуватиме на будь-який ввід, запит або ідею. Після створення персонажа ви зможете використовувати його в чаті.</string>
+    <string name="creator_prompt_label">Опишіть вашого ІІ-персонажа...</string>
+    <string name="creator_prompt_placeholder">напр., підсумуй будь-яку тему у вигляді рими менше ніж 10 рядків</string>
+    <string name="creator_brewing">творимо магію...</string>
+    <string name="creator_generate_persona">Створити персонажа</string>
+    <string name="creator_load_model_first">Будь ласка, спочатку завантажте модель.</string>
+    <string name="creator_result_heading">Ось ваш новий ІІ-персонаж!</string>
+    <string name="creator_system_prompt_label">Системний промпт (PCTF):</string>
+    <string name="creator_save_and_chat">Зберегти та спілкуватися</string>
+
+    <!-- Kid Mode -->
+    <string name="kid_mode_title">Дитячий режим</string>
+    <string name="kid_mode_enabled_status">Увімкнено - Засоби безпеки активні</string>
+    <string name="kid_mode_disabled_status">Вимкнено</string>
+    <string name="kid_mode_incorrect_pin">Невірний PIN</string>
+    <string name="kid_mode_set_pin_title">Встановити PIN дитячого режиму</string>
+    <string name="kid_mode_set_pin_body">Введіть 4-цифровий PIN для увімкнення дитячого режиму. Він знадобиться для вимкнення режиму пізніше.</string>
+    <string name="kid_mode_pin_label">4-цифровий PIN</string>
+    <string name="kid_mode_pin_error">PIN має складатися з 4 цифр</string>
+    <string name="kid_mode_enable">Увімкнути</string>
+    <string name="kid_mode_disable_title">Вимкнути дитячий режим</string>
+    <string name="kid_mode_verify_body">Введіть 4-цифровий PIN для вимкнення дитячого режиму.</string>
+    <string name="kid_mode_disable">Вимкнути</string>
+
+    <string name="gpu_layers_label">GPU Layers: %1$d</string>
+    <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
+</resources>
