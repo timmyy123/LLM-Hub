@@ -51,8 +51,8 @@ class ChatViewModel: ObservableObject {
     }
 
     init() {
-        if let first = chatStore.chatSessions.first {
-            currentSessionId = first.id
+        if let empty = chatStore.chatSessions.first(where: { $0.messages.isEmpty }) {
+            currentSessionId = empty.id
         } else {
             newChat()
         }
@@ -525,7 +525,7 @@ struct ChatScreen: View {
                 Button {
                     showSettings = true
                 } label: {
-                    Image(systemName: "tune")
+                    Image(systemName: "slider.horizontal.3")
                 }
             }
         }

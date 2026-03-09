@@ -2,6 +2,10 @@ import Foundation
 import MLX
 import MLXNN
 import MLXRandom
+import MLXLLM
+import MLXLMCommon
+import Hub
+import Tokenizers
 
 @MainActor
 class LLMBackend: ObservableObject {
@@ -9,6 +13,7 @@ class LLMBackend: ObservableObject {
     
     @Published var isLoaded: Bool = false
     @Published var currentlyLoadedModel: String? = nil
+    @Published var isBackendLoading: Bool = false
     
     // Generation Parameters
     var maxTokens: Int = 2048
@@ -18,17 +23,22 @@ class LLMBackend: ObservableObject {
     var enableVision: Bool = true
     var enableAudio: Bool = true
     var enableThinking: Bool = true
-    var selectedBackend: String = "GPU"
+    
+    // MLX Model Container
+    private var modelContainer: ModelContainer?
     
     private init() {}
     
     func loadModel(_ model: AIModel) async throws {
-        // 1. Verify files exist
+        isBackendLoading = true
+        defer { isBackendLoading = false }
+        
         let fileManager = FileManager.default
         let documentsDir = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
         let modelsDir = documentsDir.appendingPathComponent("models")
         let modelDir = modelsDir.appendingPathComponent(model.id)
         
+        // 1. Verify files exist
         for file in model.files {
             let path = modelDir.appendingPathComponent(file).path
             if !fileManager.fileExists(atPath: path) {
@@ -36,39 +46,46 @@ class LLMBackend: ObservableObject {
             }
         }
         
-        // 2. Mock model loading period
-        // Real logic: weights = loadSafetensors(path: ...); model = Llama(config); model.loadWeights(weights)
-        try await Task.sleep(nanoseconds: 1_000_000_000)
-        
-        // Proof of MLX functionality: simple tensor computation
-        let a = MLXRandom.normal([32, 32])
-        let b = MLXRandom.normal([32, 32])
-        _ = a.matmul(b)
+        // 2. Load with MLX LLM
+        let modelConfiguration = ModelConfiguration(directory: modelDir)
+        let hub = HubApi()
+        let factory = LLMModelFactory.shared
+        self.modelContainer = try await factory.loadContainer(hub: hub, configuration: modelConfiguration)
         
         isLoaded = true
         currentlyLoadedModel = model.name
     }
     
+    func unloadModel() {
+        modelContainer = nil
+        isLoaded = false
+        currentlyLoadedModel = nil
+    }
+    
     func generate(prompt: String, onUpdate: @escaping (String, Int, Double) -> Void) async throws {
-        guard isLoaded else { throw NSError(domain: "LLMBackend", code: 403, userInfo: [NSLocalizedDescriptionKey: "Model not loaded"]) }
+        guard let container = self.modelContainer else { 
+            throw NSError(domain: "LLMBackend", code: 403, userInfo: [NSLocalizedDescriptionKey: "Model not loaded"]) 
+        }
         
-        // Realistic "AI-ish" generator that uses the model name to show it's "real"
-        let modelName = currentlyLoadedModel ?? "Unknown Model"
-        let response = "[Analysis by \(modelName)]: I have received your message: \"\(prompt)\". I am currently running on-device using the MLX framework."
+        let input = LMInput(text: prompt)
+        let params = GenerateParameters(maxTokens: self.maxTokens, temperature: self.temperature, topP: self.topP)
         
         let startTime = Date()
-        var current = ""
+        var currentOutput = ""
         var tokens = 0
         
-        for char in response {
+        for await item in try MLXLMCommon.generate(input: input, parameters: params, context: container.context) {
             if Task.isCancelled { break }
-            try? await Task.sleep(nanoseconds: 30_000_000)
-            current += String(char)
-            tokens += 1
-            
-            let elapsed = Date().timeIntervalSince(startTime)
-            let tps = elapsed > 0 ? Double(tokens) / elapsed : 0
-            onUpdate(current, tokens, tps)
+            switch item {
+            case .chunk(let text):
+                currentOutput += text
+                tokens += 1
+                let elapsed = Date().timeIntervalSince(startTime)
+                let tps = elapsed > 0 ? Double(tokens) / elapsed : 0
+                onUpdate(currentOutput, tokens, tps)
+            case .info, .toolCall:
+                break
+            }
         }
     }
 }

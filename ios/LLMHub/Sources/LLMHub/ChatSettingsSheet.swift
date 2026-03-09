@@ -14,17 +14,21 @@ struct ChatSettingsSheet: View {
                     VStack(spacing: 20) {
                         // Model Selection Header
                         VStack(spacing: 16) {
-                            HStack {
-                                Image(systemName: "cpu")
-                                    .font(.title2)
+                            HStack(alignment: .center, spacing: 14) {
+                                Image(systemName: "chip.fill")
+                                    .font(.system(size: 26))
                                     .foregroundColor(.indigo)
-                                VStack(alignment: .leading, spacing: 4) {
+                                    .frame(width: 32)
+                                
+                                VStack(alignment: .leading, spacing: 2) {
                                     Text(settings.localized("select_model_title"))
                                         .font(.headline)
                                     Text(settings.localized("select_model"))
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                 }
+                                .padding(.vertical, 4)
+                                
                                 Spacer()
                                 
                                 Picker("", selection: $vm.selectedModelName) {
@@ -37,7 +41,10 @@ struct ChatSettingsSheet: View {
                                 }
                                 .pickerStyle(.menu)
                                 .accentColor(.indigo)
+                                .labelsHidden()
                             }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
                             
                             if currentModel != nil {
                                 Divider()
@@ -50,10 +57,6 @@ struct ChatSettingsSheet: View {
                                         Text("✅ " + settings.localized("ready_to_chat"))
                                             .font(.caption.bold())
                                             .foregroundColor(.green)
-                                    } else {
-                                        Text("🚦 " + settings.localized("reload_models_notice"))
-                                            .font(.caption.bold())
-                                            .foregroundColor(.orange)
                                     }
                                 }
                             }
@@ -85,23 +88,31 @@ struct ChatSettingsSheet: View {
                         .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
 
                         // Modality Toggle Tiles
-                        VStack(alignment: .leading, spacing: 16) {
-                            HStack {
-                                Image(systemName: "sparkles")
-                                    .foregroundColor(.indigo)
-                                Text(settings.localized("modality_options"))
-                                    .font(.headline)
+                        if let model = currentModel, (model.supportsVision || model.supportsAudio || model.supportsThinking) {
+                            VStack(alignment: .leading, spacing: 16) {
+                                HStack {
+                                    Image(systemName: "sparkles")
+                                        .foregroundColor(.indigo)
+                                    Text(settings.localized("modality_options"))
+                                        .font(.headline)
+                                }
+                                .padding(.bottom, 4)
+                                
+                                if model.supportsVision {
+                                    ToggleTile(title: settings.localized("enable_vision"), isOn: $vm.enableVision, icon: "eye.fill")
+                                }
+                                if model.supportsAudio {
+                                    ToggleTile(title: settings.localized("enable_audio"), isOn: $vm.enableAudio, icon: "mic.fill")
+                                }
+                                if model.supportsThinking {
+                                    ToggleTile(title: settings.localized("enable_thinking"), isOn: $vm.enableThinking, icon: "brain")
+                                }
                             }
-                            .padding(.bottom, 4)
-                            
-                            ToggleTile(title: settings.localized("enable_vision"), isOn: $vm.enableVision, icon: "eye.fill")
-                            ToggleTile(title: settings.localized("enable_audio"), isOn: $vm.enableAudio, icon: "mic.fill")
-                            ToggleTile(title: settings.localized("enable_thinking"), isOn: $vm.enableThinking, icon: "brain")
+                            .padding()
+                            .background(Color(uiColor: .secondarySystemGroupedBackground))
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
                         }
-                        .padding()
-                        .background(Color(uiColor: .secondarySystemGroupedBackground))
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                        .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
                         
                         // Action Buttons
                         VStack(spacing: 12) {
