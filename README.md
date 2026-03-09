@@ -2,6 +2,8 @@
 
 **LLM Hub** is an open-source Android app for on-device LLM chat and image generation. It's optimized for mobile usage (CPU/GPU/NPU acceleration) and supports multiple model formats so you can run powerful models locally and privately.
 
+> **🍎 iOS:** An iOS version is currently in early development. ETA pending — waiting on Mac hardware to complete the build.
+
 ## Download
 
 <a href="https://play.google.com/store/apps/details?id=com.llmhub.llmhub">
@@ -47,7 +49,7 @@ Activate this in Settings under Kid Mode. Set a PIN, and the mode will remain in
 - **Model-Level Guardrails**: Automatically activates strict safety protocols at the model inference layer across **all** tools (Chat, Writing Aid, Image Gen, etc.).
 - **Peace of Mind**: Ensures all generated content is age-appropriate without compromising the privacy benefits of on-device processing.
 
-### �🔐 Privacy First
+### 🔐 Privacy First
 - **100% on-device processing** - no internet required for inference
 - **Zero data collection** - conversations never leave your device
 - **No accounts, no tracking** - completely private
@@ -86,7 +88,7 @@ GGUF Compatibility Notes
 - In this app, the GGUF NPU option is intentionally shown only for Snapdragon 8 Gen 4-class devices.
 
 Importing models
-- Settings → Download Models → Import Model → choose `.task`, `.litertlm`, `.mnn`, `.gguf`, or `.onnx`
+- Settings → Download Models → Import Model → choose `.task`, `.litertlm`, `.qnn`, `.gguf`, or `.mnn`
 - The full model list and download links live in `app/src/.../data/ModelData.kt` (do not exhaustively list variants in the README)
 
 Technology

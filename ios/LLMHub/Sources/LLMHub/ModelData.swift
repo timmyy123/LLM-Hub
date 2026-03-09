@@ -65,6 +65,7 @@ public struct AIModel: Identifiable, Codable, Sendable {
     public let source: String
     public let supportsVision: Bool
     public let supportsAudio: Bool
+    public let supportsThinking: Bool
     public let supportsGpu: Bool
     public let requirements: ModelRequirements
     public let contextWindowSize: Int
@@ -81,6 +82,7 @@ public struct AIModel: Identifiable, Codable, Sendable {
         source: String,
         supportsVision: Bool = false,
         supportsAudio: Bool = false,
+        supportsThinking: Bool = false,
         supportsGpu: Bool = true,
         requirements: ModelRequirements,
         contextWindowSize: Int = 2048,
@@ -96,6 +98,7 @@ public struct AIModel: Identifiable, Codable, Sendable {
         self.source = source
         self.supportsVision = supportsVision
         self.supportsAudio = supportsAudio
+        self.supportsThinking = supportsThinking
         self.supportsGpu = supportsGpu
         self.requirements = requirements
         self.contextWindowSize = contextWindowSize
