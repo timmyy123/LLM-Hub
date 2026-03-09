@@ -2,7 +2,11 @@
 
 **LLM Hub** is an open-source Android app for on-device LLM chat and image generation. It's optimized for mobile usage (CPU/GPU/NPU acceleration) and supports multiple model formats so you can run powerful models locally and privately.
 
-> **🍎 iOS:** An iOS version is currently in early development. ETA pending — waiting on Mac hardware to complete the build.
+> **🍎 iOS version is coming!** I'm actively working on it and would love to bring LLM Hub to iPhone and iPad. The only thing standing in the way is hardware — I need to save up ~$1,000 for a Mac and an Apple Developer account.
+>
+> If you've enjoyed the app and want to help make iOS happen, consider **[sponsoring me on GitHub](https://github.com/sponsors/timmyy123)** — even a small amount goes a long way. 💙
+>
+> **Early sponsor perk:** The iOS app will be a paid App Store release, but anyone who sponsors before launch gets a free redemption code on me. Just include your GitHub username or email in your sponsor note and I'll make sure you're taken care of when it ships!
 
 ## Download
 
