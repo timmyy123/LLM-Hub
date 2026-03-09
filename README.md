@@ -15,13 +15,16 @@
 
 <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;">
    <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
-      <img src="assets/screenshots/Screenshot_20260214_201455.png" alt="AI Models" style="width:300px;height:auto;border-radius:8px;display:block;" />
+      <img src="android/assets/screenshots/Screenshot_20251007_041833_LLM%20Hub.jpg" alt="AI Models" style="width:300px;height:auto;border-radius:8px;display:block;" />
    </figure>
    <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
-      <img src="assets/screenshots/Screenshot_20251007_042114_LLM%20Hub.jpg" alt="AI Features" style="width:300px;height:auto;border-radius:8px;display:block;" />
+      <img src="android/assets/screenshots/Screenshot_20260214_201455.png" alt="AI Features" style="width:300px;height:auto;border-radius:8px;display:block;" />
    </figure>
    <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
-      <img src="assets/screenshots/Screenshot_20251007_042146_LLM%20Hub.jpg" alt="Chat Interface" style="width:300px;height:auto;border-radius:8px;display:block;" />
+      <img src="android/assets/screenshots/Screenshot_20251007_042114_LLM%20Hub.jpg" alt="Chat Interface" style="width:300px;height:auto;border-radius:8px;display:block;" />
+   </figure>
+   <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
+      <img src="android/assets/screenshots/Screenshot_20251007_042146_LLM%20Hub.jpg" alt="Chat Interface 2" style="width:300px;height:auto;border-radius:8px;display:block;" />
    </figure>
 </div>
 
