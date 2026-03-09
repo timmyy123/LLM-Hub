@@ -1,0 +1,809 @@
+<resources>
+    <string name="app_name">LLM Hub</string>
+    
+    <!-- Common -->
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="close">Close</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="send">Send</string>
+    <string name="copy">Copy</string>
+    <string name="loading">Loading</string>
+    <string name="error">Error</string>
+    <string name="retry">Retry</string>
+    <string name="download">Download</string>
+    <string name="vision">Vision</string>
+    
+    <!-- Chat -->
+    <string name="welcome_to_llm_hub">Welcome to LLM Hub!</string>
+    <string name="no_models_downloaded">No models downloaded yet</string>
+    <!-- Displayed when there are no saved global memories for RAG -->
+    <string name="no_memories">No memories yet</string>
+    <string name="download_a_model">Download a Model</string>
+    <string name="ready_to_chat">Ready to chat! Please select a model above.</string>
+    <string name="start_chatting">Start chatting by typing a message below!</string>
+    <string name="type_a_message">Type a message...</string>
+    <string name="loading_model_format">Loading %1$s</string>
+    <string name="please_wait_model_initialize">Please wait while the model initializes...</string>
+    <string name="initializing_neural_network">Initializing neural network...</string>
+    <string name="attached_image">Attached image</string>
+    <string name="shared_a_file">Shared a file</string>
+    <string name="copy_message">Copy message</string>
+    <string name="regenerate_response">Regenerate response</string>
+    <string name="cancel_generation">Cancel generation</string>
+    <string name="image_attachment">Image Attachment</string>
+    <string name="save_image">Save image</string>
+    <string name="tap_image_toggle_controls">Tap image to toggle controls</string>
+    <string name="vision_enabled">Vision enabled</string>
+    <string name="message_copied">Message copied</string>
+    <string name="tokens_per_second_format">%1$d tokens • %2$.1f tok/sec</string>
+    <string name="context_multimodal_format">%1$dk context • %2$s</string>
+    <string name="multimodal_format">%1$s multimodal</string>
+    <string name="multimodal">Multimodal</string>
+    <string name="text_only">Text only</string>
+    <string name="currently_loaded">Currently loaded</string>
+    <string name="select_model">Select model</string>
+    <string name="unload_model">Unload Model</string>
+    <string name="reload_model">Reload Model</string>
+    
+    <!-- About Screen -->
+    <string name="about_llm_hub">About LLM Hub</string>
+    <string name="about_description">LLM Hub is an open-source Android application that brings the power of Large Language Models directly to your mobile device. Experience AI conversations with state-of-the-art models like Gemma, Llama, and Phi - all running locally on your phone for maximum privacy and offline accessibility.</string>
+    <string name="key_features">Key Features</string>
+    <string name="feature_multiple_models">🤖 Multiple LLM Models: Gemma-3, Llama-3.2, Phi-4, and Gemma-3n</string>
+    <string name="feature_on_device">📱 On-Device Processing: Complete privacy, no internet required</string>
+    <string name="feature_vision_support">🖼️ Vision Support: Multimodal models that understand images</string>
+    <string name="feature_gpu_acceleration">⚡ GPU Acceleration: Optimized performance on supported devices</string>
+    <string name="feature_offline_usage">💾 Offline Usage: Chat without internet connection</string>
+    <string name="feature_privacy_first">🔒 Privacy First: Your conversations never leave your device</string>
+    <string name="feature_modern_ui">🎨 Modern UI: Clean, intuitive Material Design interface</string>
+    <string name="developer_info">Developer Info</string>
+    <string name="about_developer_info">This project is developed by an enthusiast passionate about making AI technology more accessible to everyone. Your feedback and contributions are always welcome!</string>
+    <string name="tech_stack">Tech Stack</string>
+    <string name="about_tech_stack">LLM Hub is built using modern Android development technologies: Kotlin, Jetpack Compose, Material Design 3, and the llama.cpp library for efficient on-device inference.</string>
+    <string name="tech_kotlin_compose">🏗️ Built with Kotlin &amp; Jetpack Compose</string>
+    <string name="tech_mediapipe_litert">🧠 Powered by MediaPipe &amp; LiteRT</string>
+    <string name="tech_quantization">🚀 Optimized with INT4/INT8 quantization</string>
+    <string name="tech_gpu_acceleration">⚡ GPU acceleration via LiteRT XNNPACK</string>
+    <string name="tech_models_source">🔗 Models from HuggingFace &amp; Google</string>
+    <string name="contact_support">Contact &amp; Support</string>
+    <string name="contact_email">Contact Email:</string>
+    <string name="source_code">Source Code:</string>
+    <string name="github_repository">GitHub Repository</string>
+    <string name="acknowledgments">Acknowledgments</string>
+    <string name="acknowledgments_text">Special thanks to Google, Meta, Microsoft, IBM, and the HuggingFace community for providing the incredible LLM models that power this application. This project also relies on the amazing work of the Android development community and the open-source ecosystem.</string>
+    <string name="sd_models_credit">Image generation models are powered by xororz\'s Stable Diffusion implementations using Qualcomm QNN (NPU) and Alibaba MNN (CPU) backends.</string>
+    <string name="nexa_sdk_credit">GGUF model inference is powered by Nexa SDK.</string>
+    <string name="ai_thinking">AI is thinking...</string>
+    <string name="thinking_label">Thinking</string>
+    <string name="thinking_tokens">Thinking (%1$d tokens)</string>
+    <string name="version_number">Version 3.6.1</string>
+    <string name="app_version">App Version</string>
+    
+    <!-- Terms of Service -->
+    <string name="terms_of_service">Terms of Service</string>
+    <string name="tos_last_updated">Last updated: July 16, 2025</string>
+    <string name="tos_welcome_text">Welcome to LLM Hub. By using our application, you agree to be bound by these Terms of Service. Please read them carefully.</string>
+    <string name="tos_welcome">Welcome to LLM Hub. By using our application, you agree to be bound by these Terms of Service. Please read them carefully.</string>
+    <string name="tos_acceptance_title">1. Acceptance of Terms</string>
+    <string name="tos_acceptance_text">By downloading, installing, or using LLM Hub, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the application.</string>
+    <string name="tos_app_description_title">2. Application Description</string>
+    <string name="tos_app_description_text">LLM Hub is an open-source Android application that provides access to Large Language Models (LLMs) for on-device AI conversations. The app processes all data locally on your device and does not transmit personal information to external servers.</string>
+    <string name="tos_user_responsibilities_title">3. User Responsibilities</string>
+    <string name="tos_user_responsibilities_text">You agree to use LLM Hub responsibly and in accordance with applicable laws. You are responsible for:\n\n• Using the application for lawful purposes only\n• Not attempting to reverse engineer or modify the application\n• Not using the application to generate harmful, illegal, or offensive content\n• Respecting the intellectual property rights of third parties\n• Ensuring your device meets the minimum requirements for proper operation</string>
+    <string name="tos_privacy_data_title">4. Privacy and Data</string>
+    <string name="tos_privacy_data_text">LLM Hub is designed with privacy in mind:\n\n• All conversations and data processing occur locally on your device\n• No personal data is transmitted to external servers\n• Chat history is stored locally and can be deleted at any time\n• Model downloads are performed directly from official repositories (HuggingFace, Google)\n• The application does not collect analytics or usage data</string>
+    <string name="tos_disclaimer_title">5. Disclaimer of Warranties</string>
+    <string name="tos_disclaimer_text">LLM Hub is provided "as is" without warranties of any kind. We do not guarantee the accuracy, reliability, or availability of the application or its generated content. Use of AI models may produce unpredictable results.</string>
+    <string name="tos_limitation_liability_title">6. Limitation of Liability</string>
+    <string name="tos_limitation_liability_text">In no event shall the developers be liable for any indirect, incidental, special, or consequential damages arising from the use of LLM Hub. Your use of the application is at your own risk.</string>
+    <string name="tos_model_usage_title">7. Model Usage and Licensing</string>
+    <string name="tos_model_usage_text">The AI models available through LLM Hub are subject to their respective licenses and terms of use. Users are responsible for complying with model-specific licensing requirements when using downloaded models.</string>
+    <string name="tos_open_source_title">8. Open Source License</string>
+    <string name="tos_open_source_text">LLM Hub is open-source software. The source code is available under the MIT License, which permits use, modification, and distribution subject to the license terms. Third-party libraries and models may have different license terms.</string>
+    <string name="tos_changes_title">9. Changes to Terms</string>
+    <string name="tos_changes_text">We may update these Terms of Service from time to time. Users will be notified of significant changes through app updates. Continued use of the application after changes constitutes acceptance of the new terms.</string>
+    <string name="tos_contact_title">10. Contact Information</string>
+    <string name="tos_contact_text">For questions about these Terms of Service, please contact us at timmyboy0623@gmail.com</string>
+    
+    <!-- Navigation -->
+    <string name="chat">Chat</string>
+    <string name="models">Models</string>
+    <string name="settings">Settings</string>
+    <string name="about">About</string>
+    
+    <!-- Settings -->
+    <string name="appearance">Appearance</string>
+    <string name="features">Features</string>
+    <string name="information">Information</string>
+    <string name="source_code_section">Source Code</string>
+    <string name="download_models">Download Models</string>
+    <string name="browse_download_models">Browse and download LLM models</string>
+    <string name="embedding_model">Embedding Model</string>
+    <string name="select_embedding_model">Select Embedding Model</string>
+    <string name="no_embedding_model_selected">No embedding model selected</string>
+    <string name="disable_embeddings">Disable embeddings</string>
+    <string name="embedding_settings_changed_title">Embedding Settings Changed</string>
+    <string name="embedding_settings_changed_message">Please unload and reload your models for the embedding changes to take effect.</string>
+    <string name="reload_models">Reload Models</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="reload_models_notice">Need reloading models to take effect</string>
+    <string name="embedding_enabled">Embeddings enabled</string>
+    <string name="embedding_disabled">Embeddings disabled</string>
+    <string name="embedding_status_enabled">Embedding status: enabled</string>
+    <string name="embedding_status_disabled">Embedding status: disabled</string>
+    <string name="rag_enabled">RAG enabled</string>
+    <string name="web_search">Web Search</string>
+    <string name="web_search_enabled">Get current information from the web</string>
+    <string name="web_search_disabled">Use offline knowledge only</string>
+    <string name="web_search_description_enabled">Get current information from the web</string>
+    <string name="web_search_description_disabled">Use offline knowledge only</string>
+    <string name="theme">Theme</string>
+    <string name="language">Language</string>
+    <string name="light_theme">Light</string>
+    <string name="dark_theme">Dark</string>
+    <string name="system_default_theme">System Default</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_system">System Default</string>
+    <string name="system_default_language">System Default</string>
+    <string name="system_default">System Default</string>
+    <string name="choose_theme">Choose Theme</string>
+    <string name="choose_language">Choose Language</string>
+    <string name="select_language">Select Language</string>
+    <string name="app_information_contact">App information and contact</string>
+    <string name="app_info_contact">App information and contact</string>
+    <string name="legal_terms_conditions">Legal terms and conditions</string>
+    <string name="github_repository_desc">View source code and contribute</string>
+    <string name="view_source_contribute">View source code and contribute</string>
+    <string name="back">Back</string>
+    
+    <!-- Language Names -->
+    <string name="language_english">English</string>
+    <string name="language_spanish">Español</string>
+    <string name="language_portuguese">Português</string>
+    <string name="language_german">Deutsch</string>
+    <string name="language_french">Français</string>
+    <string name="language_russian">Русский</string>
+    <string name="language_italian">Italiano</string>
+    <string name="language_turkish">Türkçe</string>
+    <string name="language_polish">Polski</string>
+    <string name="language_arabic">العربية</string>
+    <string name="language_japanese">日本語</string>
+    <string name="language_indonesian">Indonesia</string>
+    <string name="language_korean">한국어</string>
+    <string name="language_persian">فارسی</string>
+    <string name="language_ukrainian">Українська</string>
+    <string name="language_hebrew">עברית</string>
+    
+    <!-- Errors and Messages -->
+    <string name="failed_to_load_image">Failed to load image</string>
+    <string name="model_loading_error">Error loading model</string>
+    <string name="message_send_error">Error sending message</string>
+    <string name="file_save_error">Error saving file</string>
+    <string name="file_save_success">File saved successfully</string>
+    
+    <!-- Accessibility -->
+    <string name="content_description_ai_bot">AI Bot</string>
+    <string name="content_description_smart_toy">Smart Toy</string>
+    <string name="content_description_email">Email</string>
+    <string name="content_description_code">Source Code</string>
+    <string name="content_description_image">Image</string>
+    <string name="content_description_download">Download</string>
+    <string name="content_description_stop">Stop</string>
+    <string name="content_description_refresh">Refresh</string>
+    <string name="content_description_copy">Copy</string>
+    <string name="content_description_speed">Speed</string>
+    <string name="content_description_check">Check</string>
+    <string name="content_description_eye">Vision enabled</string>
+    <string name="content_description_attach_image">Attach image</string>
+    <string name="content_description_back">Back</string>
+    
+    <!-- Model Information -->
+    <string name="no_model_selected">No model selected</string>
+    <string name="no_model_downloaded">No model downloaded</string>
+    <string name="model_supports_vision">Supports vision</string>
+    <string name="model_supports_multimodal">Supports multimodal</string>
+    <string name="model_text_only">Text only</string>
+    <string name="not_loaded">Not Loaded</string>
+    
+    <!-- Chat Drawer -->
+    <string name="drawer_title">LLM Hub</string>
+    <string name="drawer_new_chat">New Chat</string>
+    <string name="drawer_recent_chats">Recent Chats</string>
+    <string name="drawer_no_chats">No chats yet</string>
+    <string name="drawer_download_models">Download Models</string>
+    <string name="drawer_clear_all_chats">Clear All Chats</string>
+    <string name="drawer_settings">Settings</string>
+    
+    <!-- Chat Management -->
+    <string name="dialog_rename_chat_title">Rename Chat</string>
+    <string name="chat_title">Chat Title</string>
+    <string name="more_options">More Options</string>
+    <string name="dialog_delete_all_chats_title">Delete All Chats?</string>
+    <string name="dialog_delete_all_chats_message">This will permanently delete all conversation history. This action cannot be undone.</string>
+    <string name="dialog_delete_chat_title">Delete Chat?</string>
+    <string name="dialog_delete_chat_message">Delete conversation \"%1$s\"?</string>
+    <string name="dialog_delete_creator_title">Delete creAItor?</string>
+    <string name="dialog_delete_creator_message">Delete creAItor \"%1$s\"?</string>
+    <string name="action_delete_all">Delete All</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_rename">Rename</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="content_description_delete_chat">Delete Chat</string>
+    
+    <!-- Time Formatting -->
+    <string name="time_yesterday">Yesterday</string>
+    <string name="time_hours_ago">%1$d hr ago</string>
+    <string name="time_minutes_ago">%1$d min ago</string>
+    <string name="time_just_now">Just now</string>
+    
+    <!-- Model Download Screen -->
+    <string name="ai_models">AI Models</string>
+    <string name="download_ai_models">Download AI Models</string>
+    <string name="choose_text_multimodal_models">Choose from text-only or multimodal models</string>
+    <string name="text_models">Text Models</string>
+    <string name="text_models_description">Models optimized for text generation and conversation</string>
+    <string name="vision_models">Multimodal Models</string>
+    <string name="vision_models_description">Models that can understand text, images, and audio</string>
+    <string name="embedding_models">Embedding Models</string>
+    <string name="embedding_models_description">Models for text embeddings and semantic search</string>
+    <string name="gpu">GPU</string>
+    <string name="variant">variant</string>
+    <string name="variants">variants</string>
+    <string name="expand">Expand</string>
+    <string name="collapse">Collapse</string>
+    <string name="downloaded">Downloaded</string>
+    <string name="downloading">Downloading...</string>
+    <string name="extracting">Extracting...</string>
+    <string name="extracting_model">Extracting model...</string>
+    <string name="not_downloaded">Not downloaded</string>
+    <string name="partial">Partial</string>
+    <string name="paused">Paused</string>
+    <string name="paused_downloaded_format">Paused: %1$s downloaded</string>
+    <string name="partial_downloaded_format">Partial: %1$s downloaded</string>
+    <string name="continue_download">Continue</string>
+    <string name="pause_download">Pause</string>
+    <string name="resume_download">Resume</string>
+    <string name="clear">Clear</string>
+    <string name="ram_requirement_format">%1$dGB RAM</string>
+    
+    <!-- File Attachments -->
+    <string name="attach_file">Attach file</string>
+    <string name="attach_image">Attach image</string>
+    <string name="attach_document">Attach document</string>
+    <string name="attach_text_file">Attach text file</string>
+    <string name="file_attachment">File attachment</string>
+    <string name="file_too_large">File too large</string>
+    <string name="unsupported_file_type">Unsupported file type</string>
+    <string name="file_processing_error">File processing error</string>
+    <string name="could_not_read_file">Could not read file</string>
+    <string name="file_preview">File Preview</string>
+    <string name="remove_attachment">Remove</string>
+    <string name="keep_attachment">Keep</string>
+    <string name="preview_not_available">Preview not available</string>
+    
+    <!-- File Type Categories -->
+    <string name="images">Images</string>
+    <string name="documents">Documents</string>
+    <string name="text_files">Text Files</string>
+    <string name="images_description">JPG, PNG, GIF, WebP</string>
+    <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
+    <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
+    <string name="text_file">Text File</string>
+    <string name="tap_to_preview">Tap to preview</string>
+    <string name="text_file_tap_to_preview">Text File • Tap to preview</string>
+    <string name="read_this">Read this</string>
+    
+    
+    <!-- Audio Input -->
+    <string name="audio_recording">Audio Recording</string>
+    <string name="audio_description">Record voice message</string>
+    <string name="record_voice_message">Record voice message</string>
+    <string name="recording">Recording…</string>
+    <string name="audio_recorded">Audio Recorded</string>
+    <string name="ready_to_send">Ready to send</string>
+    <string name="tap_to_stop">Tap to stop</string>
+    <string name="stop_recording">Stop recording</string>
+    <string name="remove_audio">Remove audio</string>
+    <string name="audio_enabled">Audio enabled</string>
+    <string name="audio">Audio</string>
+    <string name="audio_file">Audio File</string>
+    <string name="tap_to_play">Tap to play</string>
+    <string name="max_recording_reached">Maximum recording duration reached (30 seconds)</string>
+    <string name="remaining">remaining</string>
+    
+    <!-- Image actions -->
+    <string name="image_copied_clipboard">Image copied from chat</string>
+    <string name="image_copied_to_clipboard">Image copied to clipboard</string>
+    <string name="failed_to_copy_image">Failed to copy image</string>
+    <string name="failed_to_copy_image_with_error">Failed to copy image: %1$s</string>
+    <string name="image_saved_to_gallery">Image saved to gallery</string>
+    <string name="failed_to_save_image">Failed to save image</string>
+    <string name="failed_to_save_image_with_error">Failed to save image: %1$s</string>
+    
+    <!-- RAG (Document Chat) -->
+    <string name="searching_documents">Searching documents…</string>
+    <string name="using_document_context_format">Using context from %1$d document sections</string>
+    <string name="documents_available_format">%1$d documents available</string>
+    <string name="ai_can_reference_documents">AI can reference your documents in responses</string>
+    <string name="document_chat_enabled">Document chat enabled</string>
+    <string name="semantic_search_active">Semantic search active</string>
+    <string name="memory">Memory (Global Context)</string>
+    <string name="memory_description_enabled">Allow AI to reference your uploaded global memory via RAG</string>
+    <string name="memory_requires_rag">Requires RAG/embeddings to be enabled</string>
+    <string name="manage_memory">Manage Memory</string>
+    <string name="manage_memory_subtitle">Upload or paste documents to global memory</string>
+    <string name="paste_or_upload_to_memory">Paste text or upload a document to add it to global memory.</string>
+    <string name="paste_memory_placeholder">Paste your notes, documents, or knowledge here...</string>
+    <string name="upload_file">Upload</string>
+    <string name="save_to_memory">Save</string>
+    <string name="import_chat_history">Import Chat History</string>
+    <string name="select_chats_to_import">Select chats to import into memory</string>
+    <string name="import_selected_chats">Import Selected</string>
+    <string name="chat_imported_to_memory">Chat history imported to memory</string>
+    <string name="no_chats_selected">No chats selected</string>
+    <string name="edit_memory">Edit Memory</string>
+    <string name="memory_content">Memory content</string>
+    <string name="save_changes">Save Changes</string>
+    <string name="done">Done</string>
+    <string name="global_memory_uploaded_by">Uploaded to global memory</string>
+    <string name="global_memory_pasted_by">Pasted into global memory</string>
+    <string name="memory_upload_success">File saved to global memory</string>
+    <string name="memory_upload_failed">Failed to save file to memory (RAG may be disabled)</string>
+    <string name="memory_upload_unsupported_type">File type not supported for memory. Only text documents (PDF, DOC, TXT, etc.) can be added to memory.</string>
+    <string name="memory_save_success">Text saved to global memory</string>
+    <string name="memory_save_failed">Failed to save text to memory (RAG may be disabled)</string>
+    <string name="saved_memories">Saved memories</string>
+    <string name="clear_all">Clear All</string>
+    
+    <!-- Text-to-Speech -->
+    <string name="auto_readout">Auto Readout</string>
+    <string name="auto_readout_description">Automatically read AI responses aloud after sending a prompt</string>
+    
+    <string name="memory_cleared">All memories cleared</string>
+    <string name="confirm_replace_memory_title">Replace existing memory?</string>
+    <string name="confirm_replace_memory_message">You already have a global memory. Replacing it will delete the existing memory and its embeddings. Continue?</string>
+    <string name="confirm_replace_action">Replace</string>
+    <string name="memory_processing">Processing memory…</string>
+    <string name="reembedding_memory_in_progress">Re-embedding global memory for new embedding model…</string>
+    <string name="reembedding_memory_done">Global memory re-embedded</string>
+    
+    <!-- Gemma-3n specific GPU requirements -->
+    <string name="gemma3n_e2b_gpu_requires_6gb">Requires at least 6GB RAM for GPU</string>
+    <string name="gemma3n_e4b_gpu_requires_8gb">Devices with 8GB or less RAM can\'t load this model with GPU</string>
+    <string name="audio_support">Audio Support</string>
+    <string name="vision_audio_text">Vision+Audio+Text</string>
+    <string name="vision_text">Vision+Text</string>
+    <string name="audio_text">Audio+Text</string>
+    <string name="shared_file">Shared a file</string>
+    <string name="audio_message">Audio Message</string>
+    <string name="image_message">Image Message</string>
+    <string name="model_configs_title">Model configs</string>
+    <string name="reset_to_defaults">Reset</string>
+    <string name="max_tokens">Max tokens</string>
+    <string name="top_k">TopK</string>
+    <string name="top_p">TopP</string>
+    <string name="temperature">Temperature</string>
+    <string name="choose_accelerator">Choose accelerator</string>
+    <string name="max">max</string>
+    
+    <!-- GPU with Vision+Audio Disabled for Gemma-3n E4B -->
+    <string name="gpu_vision_disabled_title">GPU with Vision+Audio Disabled</string>
+    <string name="gpu_vision_disabled_description">Due to RAM limitations, vision and audio features will be disabled to enable GPU acceleration</string>
+    <string name="gpu_with_vision_disabled">GPU (Vision+Audio Disabled)</string>
+    <string name="gemma3n_e4b_gpu_vision_warning">For devices with 7-8GB RAM, GPU acceleration requires disabling vision and audio features. Image attachments and audio input will not be available.</string>
+    <string name="vision_disabled_for_gpu">Vision and audio disabled for GPU acceleration</string>
+    <string name="vision_disabled_no_images">Vision and audio features are disabled for this model configuration. Image attachments and audio input are not available.</string>
+    <string name="ram_limit_gpu_vision_disabled">Due to RAM limit (%.1fGB), vision and audio must be disabled to use GPU</string>
+    
+    <!-- GPU with Audio Only Disabled for Gemma-3n E4B on 8GB devices -->
+    <string name="gpu_with_audio_disabled">GPU (Audio Disabled)</string>
+    <string name="gemma3n_e4b_gpu_audio_warning">For devices with 7-8GB RAM, GPU acceleration requires disabling audio features. Audio input will not be available, but image attachments are supported.</string>
+    <string name="audio_disabled_for_gpu">Audio disabled for GPU acceleration</string>
+    <string name="audio_disabled_no_audio">Audio features are disabled for this model configuration. Audio input is not available, but image attachments are supported.</string>
+    
+    <!-- Separate modality toggles -->
+    <string name="modality_options">Modality Options</string>
+    <string name="enable_vision">Enable Vision (Image Support)</string>
+    <string name="enable_audio">Enable Audio (Voice Input)</string>
+    <string name="enable_thinking">Enable Thinking</string>
+    <string name="gemma3n_e4b_modality_suggestion">💡 For stable performance on 7-8GB devices, consider disabling audio to save GPU memory. Vision is generally more stable.</string>
+    
+    <!-- General performance tip for all devices -->
+    <string name="gemma3n_performance_tip">💡 If you experience crashing or low performance due to RAM limitations, try switching to CPU backend or disabling vision/audio features.</string>
+    
+    <!-- External Model Import -->
+    <string name="import_external_model">Import External Model</string>
+    <string name="model_name">Model Name</string>
+    <string name="select">Select</string>
+    <string name="select_model_file">Select Model File</string>
+
+    <string name="supports_vision">Supports Vision</string>
+    <string name="supports_audio">Supports Audio</string>
+    <string name="supports_gpu">Supports GPU</string>
+    <string name="model_format">Model Format</string>
+    <string name="context_window_size">Context Window Size</string>
+    <string name="import_model">Import Model</string>
+    <string name="model_name_required">Model name is required</string>
+    <string name="model_name_already_exists">A model named \"%1$s\" already exists. Please use a different name or delete the existing model first.</string>
+    <string name="context_window_size_invalid">Please enter a valid context window size</string>
+    <string name="please_fix_errors">Please fix the errors above</string>
+    <string name="remove">Remove</string>
+    <string name="ready_to_use">Ready to use</string>
+    <string name="unsupported_file_format">Unsupported file format. Please select a .task, .litertlm, or .zip file.</string>
+    <string name="download_models_from_litert_community">You can download compatible LLM models from:</string>
+    <string name="litert_community_link">LiteRT Community on Hugging Face</string>
+    <string name="download_image_models_from">You can download compatible image models from:</string>
+    <string name="sd_models_link">Stable Diffusion models on Hugging Face</string>
+    <string name="supports_npu">Supports NPU</string>
+    <string name="import_model_warning">⚠️ Important: Please read the model\'s README on Hugging Face before importing. Enter the correct capabilities (vision, audio, GPU) and context window size as specified in the model documentation. Incorrect settings may cause the model to not work properly. Important: Vision GGUF models require a Vision Projector (mmproj). Import the projector file to enable image input.</string>
+    
+    <!-- Home Screen -->
+    <string name="home_welcome">Welcome to LLM Hub</string>
+    <string name="home_subtitle">Unlock the power of AI in your pocket — private, fast, and offline!</string>
+    
+    <!-- Feature Cards -->
+    <string name="feature_ai_chat">AI Chat</string>
+    <string name="feature_ai_chat_desc">Multi-turn conversations with AI models</string>
+    <string name="feature_writing_aid">Writing Aid</string>
+    <string name="feature_writing_aid_desc">Grammar, style, paraphrasing, and tone adjustment</string>
+    <string name="feature_translator">Translator</string>
+    <string name="feature_translator_desc">Translate text privately using multimodal models</string>
+    <string name="feature_transcriber">Transcriber</string>
+    <string name="feature_transcriber_desc">Transcribe voice or audio to text offline</string>
+    <string name="feature_scam_detector">Scam Detector</string>
+    <string name="feature_scam_detector_desc">Analyze text, images, or URLs for potential scams</string>
+    <string name="feature_image_generator">Image Generator</string>
+    <string name="feature_image_generator_desc">Generate images from text prompts with AI</string>
+    <string name="feature_vibe_coder">Vibes</string>
+    <string name="feature_vibe_coder_desc">Generate HTML, JavaScript, and Python code with AI</string>
+    <string name="feature_creator_generation">creAItors</string>
+    <string name="feature_creator_generation_desc">Create your own custom AI personas</string>
+    <string name="drawer_my_creators">my creAItors</string>
+    
+    <!-- Vibe Coder Screen -->
+    <string name="vibe_coder_title">Vibes</string>
+    <string name="vibe_coder_prompt_label">What would you like to code?</string>
+    <string name="vibe_coder_prompt_hint">Describe the code you want to generate...</string>
+    <string name="vibe_coder_generate">Generate Code</string>
+    <string name="vibe_coder_generating">Generating code...</string>
+    <string name="vibe_coder_generated_code">Generated Code</string>
+    <string name="vibe_coder_copy">Copy</string>
+    <string name="vibe_coder_preview">Code Preview</string>
+    <string name="vibe_coder_no_model">No model loaded. Please download and select a model first.</string>
+    <string name="vibe_coder_settings">Settings</string>
+    <string name="vibe_coder_backend_select">Select Backend</string>
+    <string name="vibe_coder_modification_mode">Modification Mode</string>
+    <string name="vibe_coder_refine">Refine Code</string>
+    <string name="vibe_coder_clear">New Project / Clear Context</string>
+    <string name="vibe_coder_planning">Planning architecture...</string>
+    <string name="vibe_coder_revising">Revising code...</string>
+    <string name="vibe_coder_select_folder_title">Select a project folder first</string>
+    <string name="vibe_coder_select_folder_desc">Open a folder to enable multi-file scaffold and in-folder file creation.</string>
+    <string name="vibe_coder_open_folder">Open Folder</string>
+    <string name="vibe_coder_show_chat">Show chat</string>
+    <string name="vibe_coder_ai_chat">AI Chat</string>
+    <string name="vibe_coder_hide_chat">Hide chat</string>
+    <string name="vibe_coder_clear_chat">Clear chat</string>
+    <string name="vibe_coder_new_chat">New chat</string>
+    <string name="vibe_coder_delete_chat_cd">Delete chat</string>
+    <string name="vibe_coder_message_you">You</string>
+    <string name="vibe_coder_message_ai">AI</string>
+    <string name="vibe_coder_edit_resend_prompt">Edit and resend prompt</string>
+    <string name="vibe_coder_resend">Resend</string>
+    <string name="vibe_coder_ask_ai_edit">Ask AI to edit this file…</string>
+    <string name="vibe_coder_create_open_file_hint">Create/Open a file first (.py, .js, .ts, …)</string>
+    <string name="vibe_coder_stop_generation">Stop generation</string>
+    <string name="vibe_coder_code_editor">Code Editor</string>
+    <string name="vibe_coder_new_file">New file</string>
+    <string name="vibe_coder_save_file">Save file</string>
+    <string name="vibe_coder_copy_code">Copy code</string>
+    <string name="vibe_coder_delete_file_cd">Delete file</string>
+    <string name="vibe_coder_open_or_create_file">Open or create a file to start editing.</string>
+    <string name="vibe_coder_ai_editing">AI is editing code…</string>
+    <string name="vibe_coder_write_code_hint">Write code here or ask AI in chat…</string>
+    <string name="vibe_coder_discard">Discard</string>
+    <string name="vibe_coder_create_file_title">Create file in workspace</string>
+    <string name="vibe_coder_file_name_placeholder">example.py or app.js</string>
+    <string name="vibe_coder_file_name_label">File name with extension</string>
+    <string name="vibe_coder_file_name_error">Enter a valid file name with extension, e.g. main.py</string>
+    <string name="vibe_coder_create">Create</string>
+    <string name="vibe_coder_delete_chat_title">Delete chat?</string>
+    <string name="vibe_coder_delete_chat_message">This will permanently remove this chat session.</string>
+    <string name="vibe_coder_delete_file_title">Delete file?</string>
+    <string name="vibe_coder_delete_file_message">Delete \'%1$s\' from this folder?</string>
+    <string name="vibe_coder_no_file_selected_error">No file selected. Create/open a file from the workspace folder first.</string>
+    <string name="vibe_coder_delete_file_error">Failed to delete file</string>
+    <string name="vibe_coder_autosave_failed">Autosave failed. Tap save again or reopen the file.</string>
+
+    <!-- Creator Generation Screen -->
+    <string name="creator_screen_title">new creAItor</string>
+    <string name="creator_bring_to_life">Bring an AI to life</string>
+    <string name="creator_description">You have the power to bring a custom AI creAItor to life. Just describe how your creAItor will respond to any input, request, or idea. Once we generate your creAItor, you\'ll be able to use it in chat.</string>
+    <string name="creator_prompt_label">Describe your creAItor...</string>
+    <string name="creator_prompt_placeholder">e.g., summarize any topic as a rhyming poem of less than 10 lines</string>
+    <string name="creator_brewing">brewing magic...</string>
+    <string name="creator_generate_persona">Generate Persona</string>
+    <string name="creator_load_model_first">Please load a model first.</string>
+    <string name="creator_result_heading">Here is your new creAItor!</string>
+    <string name="creator_system_prompt_label">System Prompt (PCTF):</string>
+    <string name="creator_save_and_chat">Save &amp; Chat</string>
+
+    <!-- Kid Mode -->
+    <string name="kid_mode_title">Kid Mode</string>
+    <string name="kid_mode_enabled_status">Enabled - Safety guardrails active</string>
+    <string name="kid_mode_disabled_status">Disabled</string>
+    <string name="kid_mode_incorrect_pin">Incorrect PIN</string>
+    <string name="kid_mode_set_pin_title">Set Kid Mode PIN</string>
+    <string name="kid_mode_set_pin_body">Enter a 4-digit PIN to enable Kid Mode. You will need this PIN to disable it later.</string>
+    <string name="kid_mode_pin_label">4-Digit PIN</string>
+    <string name="kid_mode_pin_error">PIN must be 4 digits</string>
+    <string name="kid_mode_enable">Enable</string>
+    <string name="kid_mode_disable_title">Disable Kid Mode</string>
+    <string name="kid_mode_verify_body">Enter your 4-digit PIN to disable Kid Mode.</string>
+    <string name="kid_mode_disable">Disable</string>
+
+    <!-- Writing Aid Screen -->
+    <string name="writing_aid_title">Writing Aid</string>
+    <string name="writing_aid_input_label">Enter your text</string>
+    <string name="writing_aid_input_hint">Type or paste the text you want to improve...</string>
+    <string name="writing_aid_input_hint_no_model">Load a model to start</string>
+    <string name="writing_aid_mode_grammar">Grammar Check</string>
+    <string name="writing_aid_mode_paraphrase">Paraphrase</string>
+    <string name="writing_aid_mode_tone">Adjust Tone</string>
+    <string name="writing_aid_mode_email">Email Reply</string>
+    <string name="writing_aid_mode_sms">SMS Reply</string>
+    <string name="writing_aid_tone_friendly">Friendly</string>
+    <string name="writing_aid_tone_professional">Professional</string>
+    <string name="writing_aid_tone_concise">Concise</string>
+    <string name="writing_aid_select_mode">Select Tone</string>
+    <string name="writing_aid_process">Process</string>
+    <string name="processing_tap_to_cancel">Processing (tap to cancel)</string>
+    <string name="writing_aid_result">Result</string>
+    <string name="writing_aid_no_model">No model loaded. Please download and select a model first.</string>
+    
+    <!-- Translator Screen -->
+    <string name="translator_title">Offline Translator</string>
+    <string name="translator_input_label">Text to translate</string>
+    <string name="translator_input_hint">Enter text to translate...</string>
+    <string name="load_model_to_start">Load a model to start</string>
+    <string name="translator_source_lang">Source Language</string>
+    <string name="translator_target_lang">Target Language</string>
+    <string name="translator_auto_detect">Auto Detect</string>
+    <string name="translator_translate">Translate</string>
+    <string name="translator_result">Translation</string>
+    <string name="translator_requires_gemma3n">This feature requires a Gemma-3n model. Please download one from the Models screen.</string>
+    
+    <!-- Transcriber Screen -->
+    <string name="transcriber_title">Offline Transcriber</string>
+    <string name="transcriber_record">Record Audio</string>
+    <string name="transcriber_upload">Upload Audio</string>
+    <string name="transcriber_transcribe">Transcribe</string>
+    <string name="transcriber_result">Transcription</string>
+    <string name="transcriber_recording">Recording...</string>
+    <string name="transcriber_stop">Stop Recording</string>
+    <string name="transcriber_requires_gemma3n">This feature requires a Gemma-3n model with audio support. Please download one from the Models screen.</string>
+    
+    <!-- Scam Detector Screen -->
+    <string name="scam_detector_title">Scam Detector</string>
+    <string name="scam_detector_input_label">Enter content to analyze</string>
+    <string name="scam_detector_input_hint">Paste text, upload image, or enter URL to analyze for scams...</string>
+    <string name="scam_detector_url_hint">Enter URL to analyze</string>
+    <string name="scam_detector_analyze">Analyze</string>
+    <string name="scam_detector_analyzing">Analyzing (tap to cancel)</string>
+    <string name="scam_detector_result">Analysis Result</string>
+    <string name="scam_detector_no_model">No model loaded. Please download and select a model first.</string>
+    <string name="scam_detector_load_model">Load Model</string>
+    <string name="scam_detector_load_model_desc">Please load a model to start analyzing content</string>
+    <string name="scam_detector_enable_vision">Enable Vision</string>
+    <string name="scam_detector_vision_desc">Analyze images for scams</string>
+    <string name="scam_detector_fetching_url">Fetching URL content...</string>
+    
+    <!-- Image Generator Screen -->
+    <string name="image_generator_title">Image Generator</string>
+    <string name="image_generator_subtitle">Generate images from text prompts using Absolute Reality SD1.5</string>
+    <string name="image_generator_prompt_label">Image Description</string>
+    <string name="image_generator_prompt_hint">Describe the image you want to generate...</string>
+    <string name="image_generator_generate">Generate Image</string>
+    <string name="image_generator_generating">Generating image...</string>
+    <string name="image_generator_iterations">Steps</string>
+    <string name="image_generator_seed">Seed</string>
+    <string name="image_generator_random_seed">Random Seed</string>
+    <string name="image_generator_save">Save Image</string>
+    <string name="image_generator_download_model">Download Model First</string>
+    <string name="image_generator_download_model_desc">Download Absolute Reality (NPU or CPU) model from the Models screen to start creating images</string>
+    <string name="image_generator_model_not_available">Image generation model not available</string>
+    <string name="image_generator_error">Failed to generate image</string>
+    <string name="image_generation_models">Image Generation Models</string>
+    <string name="image_generation_models_description">Stable Diffusion models for text-to-image generation</string>
+    <string name="image_generator_success">Image generated successfully</string>
+    <string name="image_generator_saved">Image saved to gallery</string>
+    <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
+    <string name="image_generation_model">Image Generation Model</string>
+    <string name="image_generator_load_model_title">Load Model to Start</string>
+    <string name="image_generator_load_model_desc">Please load a Stable Diffusion model to start generating images.</string>
+    <string name="image_generator_no_models">No models available</string>
+    <string name="image_generator_load_model">Load Model</string>
+    <string name="image_generator_loading_model">Loading...</string>
+    <string name="image_generator_failed_load">Failed to load model</string>
+    <string name="image_generator_variation">Generating variation %1$d...</string>
+    <string name="image_generator_swipe_more">Swipe here to generate more</string>
+    <string name="image_generator_info">Image generation uses the Stable Diffusion v1.5 model running on-device. Generation may take 1-2 minutes depending on your device.</string>
+    <string name="image_generator_img2img">Image-to-Image</string>
+    <string name="image_generator_img2img_desc">Transform an existing image</string>
+    <string name="image_generator_select_image">Select Input Image</string>
+    <string name="image_generator_change_image">Change Input Image</string>
+    <string name="image_generator_denoise_strength">Denoise Strength: %.2f</string>
+    <string name="image_generator_denoise_strength_desc">Higher = more changes to input image</string>
+    <string name="image_generator_input_image">Input image</string>
+    <string name="image_generator_use_gpu">Use GPU Acceleration</string>
+    <string name="image_generator_use_gpu_desc">Faster generation (requires OpenCL support)</string>
+    
+    <!-- Common Feature Strings -->
+    <string name="feature_no_model_title">No Model Available</string>
+    <string name="feature_download_model">Download Models</string>
+    <string name="feature_processing">Processing...</string>
+    <string name="feature_error">An error occurred</string>
+    <string name="feature_copy_result">Copy Result</string>
+    <string name="feature_share_result">Share Result</string>
+    <string name="feature_clear">Clear</string>
+    
+    <!-- Language Names for Translator (Gemma-3n Supported Languages) - Alphabetically Ordered -->
+    <string name="lang_english">English</string>
+    <string name="lang_afrikaans">Afrikaans</string>
+    <string name="lang_amharic">Amharic</string>
+    <string name="lang_arabic">Arabic</string>
+    <string name="lang_armenian">Armenian</string>
+    <string name="lang_azerbaijani">Azerbaijani</string>
+    <string name="lang_basque">Basque</string>
+    <string name="lang_bengali">Bengali</string>
+    <string name="lang_bulgarian">Bulgarian</string>
+    <string name="lang_burmese">Burmese</string>
+    <string name="lang_catalan">Catalan</string>
+    <string name="lang_chinese">Chinese (Simplified)</string>
+    <string name="lang_chinese_traditional">Chinese (Traditional)</string>
+    <string name="lang_croatian">Croatian</string>
+    <string name="lang_czech">Czech</string>
+    <string name="lang_danish">Danish</string>
+    <string name="lang_dutch">Dutch</string>
+    <string name="lang_estonian">Estonian</string>
+    <string name="lang_filipino">Filipino (Tagalog)</string>
+    <string name="lang_finnish">Finnish</string>
+    <string name="lang_french">French</string>
+    <string name="lang_galician">Galician</string>
+    <string name="lang_georgian">Georgian</string>
+    <string name="lang_german">German</string>
+    <string name="lang_greek">Greek</string>
+    <string name="lang_gujarati">Gujarati</string>
+    <string name="lang_hausa">Hausa</string>
+    <string name="lang_hebrew">Hebrew</string>
+    <string name="lang_hindi">Hindi</string>
+    <string name="lang_hungarian">Hungarian</string>
+    <string name="lang_icelandic">Icelandic</string>
+    <string name="lang_igbo">Igbo</string>
+    <string name="lang_indonesian">Indonesian</string>
+    <string name="lang_italian">Italian</string>
+    <string name="lang_japanese">Japanese</string>
+    <string name="lang_kannada">Kannada</string>
+    <string name="lang_kazakh">Kazakh</string>
+    <string name="lang_khmer">Khmer</string>
+    <string name="lang_korean">Korean</string>
+    <string name="lang_lao">Lao</string>
+    <string name="lang_latvian">Latvian</string>
+    <string name="lang_lithuanian">Lithuanian</string>
+    <string name="lang_malay">Malay</string>
+    <string name="lang_malayalam">Malayalam</string>
+    <string name="lang_marathi">Marathi</string>
+    <string name="lang_nepali">Nepali</string>
+    <string name="lang_norwegian">Norwegian</string>
+    <string name="lang_pashto">Pashto</string>
+    <string name="lang_persian">Persian (Farsi)</string>
+    <string name="lang_polish">Polish</string>
+    <string name="lang_portuguese">Portuguese</string>
+    <string name="lang_punjabi">Punjabi</string>
+    <string name="lang_romanian">Romanian</string>
+    <string name="lang_russian">Russian</string>
+    <string name="lang_serbian">Serbian</string>
+    <string name="lang_sindhi">Sindhi</string>
+    <string name="lang_sinhala">Sinhala</string>
+    <string name="lang_slovak">Slovak</string>
+    <string name="lang_slovenian">Slovenian</string>
+    <string name="lang_somali">Somali</string>
+    <string name="lang_spanish">Spanish</string>
+    <string name="lang_swahili">Swahili</string>
+    <string name="lang_swedish">Swedish</string>
+    <string name="lang_tamil">Tamil</string>
+    <string name="lang_telugu">Telugu</string>
+    <string name="lang_thai">Thai</string>
+    <string name="lang_turkish">Turkish</string>
+    <string name="lang_ukrainian">Ukrainian</string>
+    <string name="lang_urdu">Urdu</string>
+    <string name="lang_uzbek">Uzbek</string>
+    <string name="lang_vietnamese">Vietnamese</string>
+    <string name="lang_yoruba">Yoruba</string>
+    <string name="lang_zulu">Zulu</string>
+    
+    <!-- Model Selection -->
+    <string name="feature_settings_title">Settings</string>
+    <string name="select_model_title">Select Model</string>
+    <string name="no_models_available">No models available</string>
+    <string name="download_models_first">Please download models first</string>
+    <string name="select_backend">Select Backend</string>
+    <string name="backend_cpu">CPU</string>
+    <string name="backend_gpu">GPU</string>
+    <string name="backend_npu">NPU (Hexagon)</string>
+    <string name="gpu_layers_label">GPU Layers: %1$d</string>
+    <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
+    <string name="thinking_toggle_label">Enable Thinking</string>
+    <string name="gpu_not_supported">GPU not supported by this model</string>
+    <string name="load_model">Load Model</string>
+    <string name="model_loaded">Model loaded successfully</string>
+    <string name="model_loading">Loading model…</string>
+    <string name="model_load_failed">Failed to load model</string>
+    <string name="multimodal_models_only">Only multimodal (Gemma-3n) models supported</string>
+    <string name="text_models_only">Text-only models supported</string>
+    
+    <!-- Audio Features -->
+    <string name="enable_audio_input">Enable audio input</string>
+    <string name="audio_input_enabled">Audio input enabled</string>
+    <string name="audio_input_disabled">Audio input disabled</string>
+    <string name="record_audio">Record audio</string>
+    
+    <!-- Auto-detect Language -->
+    <string name="lang_auto_detect">Auto-detect</string>
+    <string name="auto_detecting_language">Detecting language…</string>
+    <string name="language_detected">Language detected: %1$s</string>
+    
+    <!-- Feature-specific Processing -->
+    <string name="processing">Processing…</string>
+    <string name="translating">Translating…</string>
+    <string name="translating_tap_to_cancel">Translating (tap to cancel)</string>
+    <string name="transcribing">Transcribing…</string>
+    <string name="transcribing_tap_to_cancel">Transcribing (tap to cancel)</string>
+    <string name="analyzing_code">Analyzing code…</string>
+    <string name="processing_text">Processing text…</string>
+    
+    <!-- Vision Features -->
+    <string name="input_options">Input Options</string>
+    <string name="enable_vision_input">Enable vision input</string>
+    <string name="translate_from_image">Translate text from image</string>
+    <string name="speak_to_translate">Speak to translate</string>
+    <string name="select_image">Select Image</string>
+    <string name="change_image">Change Image</string>
+    <string name="transcription_result">Transcription</string>
+    
+    <!-- Translator Settings -->
+    <string name="translator_enable_vision">Enable Vision</string>
+    <string name="translator_vision_description">Translate text from images</string>
+    <string name="translator_enable_audio">Enable Audio</string>
+    <string name="translator_audio_description">Translate audio recordings</string>
+    
+    <!-- Backend Selection -->
+    <string name="choose_backend_for_gemma">Choose processing backend for Gemma model</string>
+    <string name="gpu_backend">GPU (Recommended)</string>
+    <string name="cpu_backend">CPU (Alternative)</string>
+    <string name="gpu_backend_description">Faster processing using device GPU</string>
+    <string name="cpu_backend_description">Slower but more stable processing</string>
+    <string name="backend_selection_hint">If the app crashes or doesn\'t work properly with GPU, try the CPU backend</string>
+    <string name="not_available">Not available</string>
+    <string name="gpu_disabled_low_memory">GPU not available for this model on devices with %1$dGB RAM or less</string>
+    
+    <!-- Web Search Messages -->
+    <string name="web_searching">🔍 Searching the web...</string>
+    <string name="web_search_found_results">✅ Found %1$d results. Analyzing...</string>
+    <string name="web_search_no_results">❌ No current search results found. Providing response based on training data...</string>
+    <string name="web_search_failed">❌ Web search failed: %1$s. Providing response based on training data...</string>
+    
+    <!-- Vision Model Error Messages -->
+    <string name="vision_chat_cannot_open">🚫 **Cannot Open This Chat**\n\nThis conversation contains images, but you currently have a **text-only model** loaded:\n\n📱 **Current Model:** %1$s\n🖼️ **This Chat:** Contains images\n\n---\n\n## 🎯 How to Fix This:\n\n1. **📥 Download a Vision Model**\n   - Go to \"Download Models\"\n   - Look for models marked with 🖼️ or \"Vision+Text\"\n   - Try: **Gemma-3n E2B (Vision+Text)**\n\n2. **🔄 Switch to Vision Model**\n   - Load the vision model you downloaded\n   - Vision models can handle both text AND images\n\n3. **✅ Return to This Chat**\n   - Once a vision model is loaded, this chat will work perfectly!\n\n---\n\n💡 **Pro Tip:** Vision models can do everything text models can do, plus handle images!</string>
+    <string name="vision_image_cannot_send">🖼️ **Cannot Send Images**\n\nYou\'re trying to send an image, but the current model is **text-only**:\n\n📱 **Current Model:** %1$s\n\n---\n\n## 🎯 To Send Images:\n\n1. **📥 Download a Vision Model**\n   - Tap the menu → \"Download Models\"\n   - Look for 🖼️ **Vision+Text** models\n   - Recommended: **Gemma-3n E2B (Vision+Text)**\n\n2. **🔄 Switch Models**\n   - Load the vision model you downloaded\n   - Vision models handle both text AND images\n\n3. **✅ Try Again**\n   - Once loaded, you can send images freely!\n\n---\n\n💡 **Pro Tip:** Vision models can do everything text models can do, plus understand images!</string>
+    
+    <!-- Model Error Messages -->
+    <string name="please_download_model">Please download a model to start chatting.</string>
+    <string name="model_not_loaded">Model not properly loaded. Please try switching to a different model or restart the app.</string>
+    <string name="no_response_produced">No response produced. (Possible: token limit or session reset). Tap Regenerate.</string>
+    <string name="prompt_too_long">Prompt is too long. Please shorten your message and try again.</string>
+</resources>
+

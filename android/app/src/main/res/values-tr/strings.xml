@@ -1,0 +1,802 @@
+﻿<resources>
+    <string name="app_name">LLM Hub</string>
+    
+    <!-- Common -->
+    <string name="ok">Tamam</string>
+    <string name="cancel">İptal</string>
+    <string name="close">Kapat</string>
+    <string name="save">Kaydet</string>
+    <string name="delete">Sil</string>
+    <string name="send">Gönder</string>
+    <string name="copy">Kopyala</string>
+    <string name="loading">Yükleniyor</string>
+    <string name="error">Hata</string>
+    <string name="retry">Tekrar Dene</string>
+    <string name="download">İndir</string>
+    <string name="vision">Görsel</string>
+    
+    <!-- Chat -->
+    <string name="welcome_to_llm_hub">LLM Hub\'a Hoş Geldiniz!</string>
+    <string name="no_models_downloaded">Henüz indirilmiş model yok</string>
+    <!-- Displayed when there are no saved global memories for RAG -->
+    <string name="no_memories">Henüz anı yok</string>
+    <string name="download_a_model">Bir Model İndir</string>
+    <string name="ready_to_chat">Sohbete hazır! Lütfen yukarıdan bir model seçin.</string>
+    <string name="start_chatting">Aşağıdan bir mesaj yazarak sohbete başlayın!</string>
+    <string name="type_a_message">Bir mesaj yazın...</string>
+    <string name="loading_model_format">%1$s yükleniyor</string>
+    <string name="please_wait_model_initialize">Model başlatılırken lütfen bekleyin...</string>
+    <string name="initializing_neural_network">Sinir ağı başlatılıyor...</string>
+    <string name="attached_image">Ekli görsel</string>
+    <string name="shared_a_file">Bir dosya paylaşıldı</string>
+    <string name="copy_message">Mesajı kopyala</string>
+    <string name="regenerate_response">Yanıtı yeniden oluştur</string>
+    <string name="cancel_generation">Oluşturmayı iptal et</string>
+    <string name="image_attachment">Görsel Eki</string>
+    <string name="save_image">Görseli kaydet</string>
+    <string name="tap_image_toggle_controls">Kontrolleri değiştirmek için görsele dokunun</string>
+    <string name="vision_enabled">Görsel etkin</string>
+    <string name="message_copied">Mesaj kopyalandı</string>
+    <string name="tokens_per_second_format">%1$d token • %2$.1f token/sn</string>
+    <string name="context_multimodal_format">%1$dk bağlam • %2$s</string>
+    <string name="multimodal_format">%1$s çoklu ortam</string>
+    <string name="multimodal">Çoklu ortam</string>
+    <string name="text_only">Yalnızca metin</string>
+    <string name="currently_loaded">Şu anda yüklü</string>
+    <string name="select_model">Model seç</string>
+    <string name="unload_model">Modeli Kaldır</string>
+    <string name="reload_model">Modeli Yeniden Yükle</string>
+    
+    <!-- About Screen -->
+    <string name="about_llm_hub">LLM Hub Hakkında</string>
+    <string name="about_description">LLM Hub, Büyük Dil Modellerinin gücünü doğrudan mobil cihazınıza getiren açık kaynaklı bir Android uygulamasıdır. Gemma, Llama ve Phi gibi son teknoloji modellerle yapay zeka konuşmaları yaşayın - hepsi maksimum gizlilik ve çevrimdışı erişilebilirlik için telefonunuzda yerel olarak çalışıyor.</string>
+    <string name="key_features">Temel Özellikler</string>
+    <string name="feature_multiple_models">🤖 Çoklu LLM Modelleri: Gemma-3, Llama-3.2, Phi-4 ve Gemma-3n</string>
+    <string name="feature_on_device">📱 Cihaz Üzerinde İşleme: Tam gizlilik, internet gerekmiyor</string>
+    <string name="feature_vision_support">🖼️ Görsel Desteği: Görselleri anlayan çoklu ortam modelleri</string>
+    <string name="feature_gpu_acceleration">⚡ GPU Hızlandırma: Desteklenen cihazlarda optimize edilmiş performans</string>
+    <string name="feature_offline_usage">💾 Çevrimdışı Kullanım: İnternet bağlantısı olmadan sohbet edin</string>
+    <string name="feature_privacy_first">🔒 Önce Gizlilik: Konuşmalarınız asla cihazınızdan ayrılmaz</string>
+    <string name="feature_modern_ui">🎨 Modern Arayüz: Temiz, sezgisel Material Design arayüzü</string>
+    <string name="developer_info">Geliştirici Bilgisi</string>
+    <string name="about_developer_info">Bu proje, yapay zeka teknolojisini herkes için daha erişilebilir hale getirmeye tutkulu bir meraklı tarafından geliştirilmiştir. Geri bildiriminiz ve katkılarınız her zaman beklenir!</string>
+    <string name="tech_stack">Teknoloji Yığını</string>
+    <string name="about_tech_stack">LLM Hub, modern Android geliştirme teknolojileri kullanılarak oluşturulmuştur: Kotlin, Jetpack Compose, Material Design 3 ve cihaz üzerinde verimli çıkarım için llama.cpp kütüphanesi.</string>
+    <string name="tech_kotlin_compose">🏗️ Kotlin ve Jetpack Compose ile geliştirildi</string>
+    <string name="tech_mediapipe_litert">🧠 MediaPipe ve LiteRT tarafından destekleniyor</string>
+    <string name="tech_quantization">🚀 INT4/INT8 kuantalama ile optimize edildi</string>
+    <string name="tech_gpu_acceleration">⚡ LiteRT XNNPACK ile GPU hızlandırma</string>
+    <string name="tech_models_source">🔗 HuggingFace ve Google\'dan modeller</string>
+    <string name="contact_support">İletişim ve Destek</string>
+    <string name="contact_email">İletişim E-postası:</string>
+    <string name="source_code">Kaynak Kodu</string>
+    <string name="github_repository">GitHub Deposu</string>
+    <string name="acknowledgments">Teşekkürler</string>
+    <string name="acknowledgments_text">Bu uygulamayı destekleyen inanılmaz LLM modellerini sağladıkları için Google, Meta, Microsoft, IBM ve HuggingFace topluluğuna özel teşekkürler. Bu proje ayrıca Android geliştirme topluluğunun ve açık kaynak ekosisteminin harika çalışmalarına dayanmaktadır.</string>
+    <string name="sd_models_credit">Görüntü oluşturma modelleri, Qualcomm QNN (NPU) ve Alibaba MNN (CPU) arka uçlarını kullanan xororz\'un Stable Diffusion uygulamaları tarafından desteklenmektedir.</string>
+    <string name="nexa_sdk_credit">GGUF model çıkarımı Nexa SDK tarafından desteklenmektedir.</string>
+    <string name="ai_thinking">Yapay zeka düşünüyor...</string>
+    <string name="thinking_label">Düşünme</string>
+    <string name="thinking_tokens">Düşünme (%1$d token)</string>
+    <string name="version_number">Sürüm 3.6.1</string>
+    <string name="app_version">Uygulama Sürümü</string>
+    
+    <!-- Terms of Service -->
+    <string name="terms_of_service">Hizmet Şartları</string>
+    <string name="tos_last_updated">Son güncelleme: 16 Temmuz 2025</string>
+    <string name="tos_welcome_text">LLM Hub\'a hoş geldiniz. Uygulamamızı kullanarak, bu Hizmet Şartlarına bağlı kalmayı kabul etmiş olursunuz. Lütfen bunları dikkatlice okuyun.</string>
+    <string name="tos_welcome">LLM Hub\'a hoş geldiniz. Uygulamamızı kullanarak, bu Hizmet Şartlarına bağlı kalmayı kabul etmiş olursunuz. Lütfen bunları dikkatlice okuyun.</string>
+    <string name="tos_acceptance_title">1. Şartların Kabulü</string>
+    <string name="tos_acceptance_text">LLM Hub\'ı indirerek, yükleyerek veya kullanarak, bu Hizmet Şartlarını okuduğunuzu, anladığınızı ve bunlara bağlı kalmayı kabul ettiğinizi onaylarsınız. Bu şartları kabul etmiyorsanız, lütfen uygulamayı kullanmayın.</string>
+    <string name="tos_app_description_title">2. Uygulama Açıklaması</string>
+    <string name="tos_app_description_text">LLM Hub, cihaz üzerinde yapay zeka konuşmaları için Büyük Dil Modellerine (LLM\'ler) erişim sağlayan açık kaynaklı bir Android uygulamasıdır. Uygulama tüm verileri cihazınızda yerel olarak işler ve kişisel bilgileri harici sunuculara iletmez.</string>
+    <string name="tos_user_responsibilities_title">3. Kullanıcı Sorumlulukları</string>
+    <string name="tos_user_responsibilities_text">LLM Hub\'ı sorumlu bir şekilde ve geçerli yasalara uygun olarak kullanmayı kabul edersiniz. Sorumlusunuz:\n\n• Uygulamayı yalnızca yasal amaçlar için kullanmaktan\n• Uygulamayı tersine mühendislik yapmaya veya değiştirmeye çalışmamaktan\n• Uygulamayı zararlı, yasa dışı veya saldırgan içerik oluşturmak için kullanmamaktan\n• Üçüncü tarafların fikri mülkiyet haklarına saygı göstermekten\n• Cihazınızın düzgün çalışması için minimum gereksinimleri karşıladığından emin olmaktan</string>
+    <string name="tos_privacy_data_title">4. Gizlilik ve Veriler</string>
+    <string name="tos_privacy_data_text">LLM Hub gizlilik düşünülerek tasarlanmıştır:\n\n• Tüm konuşmalar ve veri işleme cihazınızda yerel olarak gerçekleşir\n• Kişisel veriler harici sunuculara iletilmez\n• Sohbet geçmişi yerel olarak saklanır ve istediğiniz zaman silinebilir\n• Model indirmeleri resmi depolardan (HuggingFace, Google) doğrudan gerçekleştirilir\n• Uygulama analitik veya kullanım verisi toplamaz</string>
+    <string name="tos_disclaimer_title">5. Garanti Reddi</string>
+    <string name="tos_disclaimer_text">LLM Hub herhangi bir garanti olmaksızın \"olduğu gibi\" sağlanmaktadır. Uygulamanın veya üretilen içeriğin doğruluğunu, güvenilirliğini veya kullanılabilirliğini garanti etmiyoruz. Yapay zeka modellerinin kullanımı öngörülemeyen sonuçlar üretebilir.</string>
+    <string name="tos_limitation_liability_title">6. Sorumluluk Sınırlaması</string>
+    <string name="tos_limitation_liability_text">LLM Hub\'ın kullanımından kaynaklanan herhangi bir dolaylı, tesadüfi, özel veya sonuç olarak ortaya çıkan zararlardan geliştiriciler hiçbir durumda sorumlu tutulamaz. Uygulamayı kullanımınız kendi riskiniz altındadır.</string>
+    <string name="tos_model_usage_title">7. Model Kullanımı ve Lisanslama</string>
+    <string name="tos_model_usage_text">LLM Hub aracılığıyla kullanılabilen yapay zeka modelleri kendi lisanslarına ve kullanım şartlarına tabidir. Kullanıcılar, indirilen modelleri kullanırken modele özgü lisans gereksinimlerine uymaktan sorumludur.</string>
+    <string name="tos_open_source_title">8. Açık Kaynak Lisansı</string>
+    <string name="tos_open_source_text">LLM Hub açık kaynaklı bir yazılımdır. Kaynak kodu, lisans şartlarına tabi olarak kullanıma, değişikliğe ve dağıtıma izin veren MIT Lisansı altında mevcuttur. Üçüncü taraf kütüphaneler ve modeller farklı lisans şartlarına sahip olabilir.</string>
+    <string name="tos_changes_title">9. Şartlardaki Değişiklikler</string>
+    <string name="tos_changes_text">Bu Hizmet Şartlarını zaman zaman güncelleyebiliriz. Kullanıcılar, uygulama güncellemeleri aracılığıyla önemli değişikliklerden haberdar edilecektir. Değişikliklerden sonra uygulamayı kullanmaya devam etmek, yeni şartların kabulü anlamına gelir.</string>
+    <string name="tos_contact_title">10. İletişim Bilgileri</string>
+    <string name="tos_contact_text">Bu Hizmet Şartları hakkında sorularınız için lütfen bizimle timmyboy0623@gmail.com adresinden iletişime geçin</string>
+    
+    <!-- Navigation -->
+    <string name="chat">Sohbet</string>
+    <string name="models">Modeller</string>
+    <string name="settings">Ayarlar</string>
+    <string name="about">Hakkında</string>
+    
+    <!-- Settings -->
+    <string name="appearance">Görünüm</string>
+    <string name="features">Özellikler</string>
+    <string name="information">Bilgi</string>
+    <string name="source_code_section">Kaynak Kodu</string>
+    <string name="download_models">Modelleri İndir</string>
+    <string name="browse_download_models">LLM modellerine göz atın ve indirin</string>
+    <string name="embedding_model">Gömme Modeli</string>
+    <string name="select_embedding_model">Gömme Modeli Seç</string>
+    <string name="no_embedding_model_selected">Gömme modeli seçilmedi</string>
+    <string name="disable_embeddings">Gömmeleri devre dışı bırak</string>
+    <string name="embedding_settings_changed_title">Gömme Ayarları Değişti</string>
+    <string name="embedding_settings_changed_message">Gömme değişikliklerinin etkili olması için lütfen modellerinizi kaldırın ve yeniden yükleyin.</string>
+    <string name="reload_models">Modelleri Yeniden Yükle</string>
+    <string name="dismiss">Kapat</string>
+    <string name="reload_models_notice">Etkili olması için modellerin yeniden yüklenmesi gerekiyor</string>
+    <string name="embedding_enabled">Gömmeler etkin</string>
+    <string name="embedding_disabled">Gömmeler devre dışı</string>
+    <string name="embedding_status_enabled">Gömme durumu: etkin</string>
+    <string name="embedding_status_disabled">Gömme durumu: devre dışı</string>
+    <string name="rag_enabled">RAG etkin</string>
+    <string name="web_search">Web Araması</string>
+    <string name="web_search_enabled">Web\'den güncel bilgiler alın</string>
+    <string name="web_search_disabled">Yalnızca çevrimdışı bilgi kullanın</string>
+    <string name="web_search_description_enabled">Web\'den güncel bilgiler alın</string>
+    <string name="web_search_description_disabled">Yalnızca çevrimdışı bilgi kullanın</string>
+    <string name="theme">Tema</string>
+    <string name="language">Dil</string>
+    <string name="light_theme">Açık</string>
+    <string name="dark_theme">Koyu</string>
+    <string name="system_default_theme">Sistem Varsayılanı</string>
+    <string name="theme_light">Açık</string>
+    <string name="theme_dark">Koyu</string>
+    <string name="theme_system">Sistem Varsayılanı</string>
+    <string name="system_default_language">Sistem Varsayılanı</string>
+    <string name="system_default">Sistem Varsayılanı</string>
+    <string name="choose_theme">Tema Seç</string>
+    <string name="choose_language">Dil Seç</string>
+    <string name="select_language">Dil Seçin</string>
+    <string name="app_information_contact">Uygulama bilgisi ve iletişim</string>
+    <string name="app_info_contact">Uygulama bilgisi ve iletişim</string>
+    <string name="legal_terms_conditions">Yasal şartlar ve koşullar</string>
+    <string name="github_repository_desc">Kaynak kodunu görüntüleyin ve katkıda bulunun</string>
+    <string name="view_source_contribute">Kaynak kodunu görüntüleyin ve katkıda bulunun</string>
+    <string name="back">Geri</string>
+    
+    <!-- Language Names -->
+    <string name="language_english">English</string>
+    <string name="language_spanish">Español</string>
+    <string name="language_portuguese">Português</string>
+    <string name="language_german">Deutsch</string>
+    <string name="language_french">Français</string>
+    <string name="language_russian">Русский</string>
+    <string name="language_italian">Italiano</string>
+    <string name="language_turkish">Türkçe</string>
+    <string name="language_polish">Polski</string>
+    <string name="language_arabic">العربية</string>
+    <string name="language_japanese">日本語</string>
+    <string name="language_indonesian">Indonesia</string>
+    <string name="language_korean">한국어</string>
+    
+    <!-- Errors and Messages -->
+    <string name="failed_to_load_image">Görsel yüklenemedi</string>
+    <string name="model_loading_error">Model yükleme hatası</string>
+    <string name="message_send_error">Mesaj gönderme hatası</string>
+    <string name="file_save_error">Dosya kaydetme hatası</string>
+    <string name="file_save_success">Dosya başarıyla kaydedildi</string>
+    
+    <!-- Accessibility -->
+    <string name="content_description_ai_bot">Yapay Zeka Botu</string>
+    <string name="content_description_smart_toy">Akıllı Oyuncak</string>
+    <string name="content_description_email">E-posta</string>
+    <string name="content_description_code">Kaynak Kodu</string>
+    <string name="content_description_image">Görsel</string>
+    <string name="content_description_download">İndir</string>
+    <string name="content_description_stop">Durdur</string>
+    <string name="content_description_refresh">Yenile</string>
+    <string name="content_description_copy">Kopyala</string>
+    <string name="content_description_speed">Hız</string>
+    <string name="content_description_check">Kontrol</string>
+    <string name="content_description_eye">Görsel etkin</string>
+    <string name="content_description_attach_image">Görsel ekle</string>
+    <string name="content_description_back">Geri</string>
+    
+    <!-- Model Information -->
+    <string name="no_model_selected">Model seçilmedi</string>
+    <string name="no_model_downloaded">Model indirilmedi</string>
+    <string name="model_supports_vision">Görseli destekler</string>
+    <string name="model_supports_multimodal">Çoklu ortamı destekler</string>
+    <string name="model_text_only">Yalnızca metin</string>
+    
+    <!-- Chat Drawer -->
+    <string name="drawer_title">LLM Hub</string>
+    <string name="drawer_new_chat">Yeni Sohbet</string>
+    <string name="drawer_recent_chats">Son Sohbetler</string>
+    <string name="drawer_no_chats">Henüz sohbet yok</string>
+    <string name="drawer_download_models">Modelleri İndir</string>
+    <string name="drawer_clear_all_chats">Tüm Sohbetleri Temizle</string>
+    <string name="drawer_settings">Ayarlar</string>
+    
+    <!-- Chat Management -->
+    <string name="dialog_delete_all_chats_title">Tüm Sohbetler Silinsin mi?</string>
+    <string name="dialog_delete_all_chats_message">Bu, tüm konuşma geçmişini kalıcı olarak silecektir. Bu eylem geri alınamaz.</string>
+    <string name="dialog_delete_chat_title">Sohbet Silinsin mi?</string>
+    <string name="dialog_delete_chat_message">\"%1$s\" konuşması silinsin mi?</string>
+    <string name="action_delete_all">Tümünü Sil</string>
+    <string name="action_delete">Sil</string>
+    <string name="action_cancel">İptal</string>
+    <string name="content_description_delete_chat">Sohbeti Sil</string>
+    
+    <!-- Time Formatting -->
+    <string name="time_yesterday">Dün</string>
+    <string name="time_hours_ago">%1$d saat önce</string>
+    <string name="time_minutes_ago">%1$d dakika önce</string>
+    <string name="time_just_now">Az önce</string>
+    
+    <!-- Model Download Screen -->
+    <string name="ai_models">Yapay Zeka Modelleri</string>
+    <string name="download_ai_models">Yapay Zeka Modellerini İndir</string>
+    <string name="choose_text_multimodal_models">Yalnızca metin veya çoklu ortam modellerinden seçin</string>
+    <string name="text_models">Metin Modelleri</string>
+    <string name="text_models_description">Metin oluşturma ve konuşma için optimize edilmiş modeller</string>
+    <string name="vision_models">Çok Modlu Modeller</string>
+    <string name="vision_models_description">Metin, görsel ve sesi anlayabilen modeller</string>
+    <string name="embedding_models">Gömme Modelleri</string>
+    <string name="embedding_models_description">Metin gömmeleri ve anlamsal arama için modeller</string>
+    <string name="gpu">GPU</string>
+    <string name="variant">varyant</string>
+    <string name="variants">varyantlar</string>
+    <string name="expand">Genişlet</string>
+    <string name="collapse">Daralt</string>
+    <string name="downloaded">İndirildi</string>
+    <string name="downloading">İndiriliyor...</string>
+    <string name="extracting">Çıkarılıyor...</string>
+    <string name="extracting_model">Model çıkarılıyor...</string>
+    <string name="not_downloaded">İndirilmedi</string>
+    <string name="partial">Kısmi</string>
+    <string name="paused">Duraklatıldı</string>
+    <string name="paused_downloaded_format">Duraklatıldı: %1$s indirildi</string>
+    <string name="continue_download">Devam Et</string>
+    <string name="pause_download">Duraklat</string>
+    <string name="resume_download">Devam Et</string>
+    <string name="clear">Temizle</string>
+    <string name="ram_requirement_format">%1$dGB RAM</string>
+    
+    <!-- File Attachments -->
+    <string name="attach_file">Dosya ekle</string>
+    <string name="attach_image">Görsel ekle</string>
+    <string name="attach_document">Belge ekle</string>
+    <string name="attach_text_file">Metin dosyası ekle</string>
+    <string name="file_attachment">Dosya eki</string>
+    <string name="file_too_large">Dosya çok büyük</string>
+    <string name="unsupported_file_type">Desteklenmeyen dosya türü</string>
+    <string name="file_processing_error">Dosya işleme hatası</string>
+    <string name="could_not_read_file">Dosya okunamadı</string>
+    <string name="file_preview">Dosya Önizlemesi</string>
+    <string name="remove_attachment">Kaldır</string>
+    <string name="keep_attachment">Tut</string>
+    <string name="preview_not_available">Önizleme mevcut değil</string>
+    
+    <!-- File Type Categories -->
+    <string name="images">Görseller</string>
+    <string name="documents">Belgeler</string>
+    <string name="text_files">Metin Dosyaları</string>
+    <string name="images_description">JPG, PNG, GIF, WebP</string>
+    <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
+    <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
+    <string name="text_file">Metin Dosyası</string>
+    <string name="tap_to_preview">Önizlemek için dokunun</string>
+    <string name="text_file_tap_to_preview">Metin Dosyası • Önizlemek için dokunun</string>
+    <string name="read_this">Bunu oku</string>
+    
+    <!-- Audio Input -->
+    <string name="audio_recording">Ses Kaydı</string>
+    <string name="audio_description">Sesli mesaj kaydet</string>
+    <string name="record_voice_message">Sesli mesaj kaydet</string>
+    <string name="recording">Kaydediliyor…</string>
+    <string name="audio_recorded">Ses Kaydedildi</string>
+    <string name="ready_to_send">Göndermeye hazır</string>
+    <string name="tap_to_stop">Durdurmak için dokunun</string>
+    <string name="stop_recording">Kaydı durdur</string>
+    <string name="remove_audio">Sesi kaldır</string>
+    <string name="audio_enabled">Ses etkin</string>
+    <string name="audio">Ses</string>
+    <string name="audio_file">Ses Dosyası</string>
+    <string name="tap_to_play">Oynatmak için dokunun</string>
+    <string name="max_recording_reached">Maksimum kayıt süresine ulaşıldı (30 saniye)</string>
+    <string name="remaining">kalan</string>
+
+    <!-- Text-to-Speech -->
+    <string name="auto_readout">Otomatik Okuma</string>
+    <string name="auto_readout_description">Mesaj gönderdikten sonra AI yanıtlarını otomatik olarak sesli oku</string>
+
+    <!-- Image actions -->
+    <string name="image_copied_clipboard">Görsel sohbetten kopyalandı</string>
+    <string name="image_copied_to_clipboard">Görsel panoya kopyalandı</string>
+    <string name="failed_to_copy_image">Görsel kopyalanamadı</string>
+    <string name="failed_to_copy_image_with_error">Görsel kopyalanamadı: %1$s</string>
+    <string name="image_saved_to_gallery">Görsel galeriye kaydedildi</string>
+    <string name="failed_to_save_image">Görsel kaydedilemedi</string>
+    <string name="failed_to_save_image_with_error">Görsel kaydedilemedi: %1$s</string>
+    
+    <!-- RAG (Document Chat) -->
+    <string name="searching_documents">Belgeler aranıyor…</string>
+    <string name="using_document_context_format">%1$d belge bölümünden bağlam kullanılıyor</string>
+    <string name="documents_available_format">%1$d belge mevcut</string>
+    <string name="ai_can_reference_documents">Yapay zeka yanıtlarda belgelerinize başvurabilir</string>
+    <string name="document_chat_enabled">Belge sohbeti etkin</string>
+    <string name="semantic_search_active">Anlamsal arama etkin</string>
+    <string name="memory">Bellek (Genel Bağlam)</string>
+    <string name="memory_description_enabled">Yapay zekanın RAG aracılığıyla yüklediğiniz genel belleğe başvurmasına izin verin</string>
+    <string name="memory_requires_rag">RAG/gömmelerin etkin olmasını gerektirir</string>
+    <string name="manage_memory">Belleği Yönet</string>
+    <string name="manage_memory_subtitle">Genel belleğe belge yükleyin veya yapıştırın</string>
+    <string name="paste_or_upload_to_memory">Genel belleğe eklemek için metin yapıştırın veya belge yükleyin.</string>
+    <string name="paste_memory_placeholder">Notlarınızı, belgelerinizi veya bilgilerinizi buraya yapıştırın...</string>
+    <string name="upload_file">Yükle</string>
+    <string name="save_to_memory">Belleğe Kaydet</string>
+    <string name="import_chat_history">Sohbet Geçmişini İçe Aktar</string>
+    <string name="select_chats_to_import">Belleğe aktarılacak sohbetleri seçin</string>
+    <string name="import_selected_chats">Seçilenleri İçe Aktar</string>
+    <string name="chat_imported_to_memory">Sohbet geçmişi belleğe aktarıldı</string>
+    <string name="no_chats_selected">Sohbet seçilmedi</string>
+    <string name="edit_memory">Belleği Düzenle</string>
+    <string name="memory_content">Bellek içeriği</string>
+    <string name="save_changes">Değişiklikleri Kaydet</string>
+    <string name="done">Tamam</string>
+    <string name="global_memory_uploaded_by">Genel belleğe yüklendi</string>
+    <string name="global_memory_pasted_by">Genel belleğe yapıştırıldı</string>
+    <string name="memory_upload_success">Dosya genel belleğe kaydedildi</string>
+    <string name="memory_upload_failed">Dosya belleğe kaydedilemedi (RAG devre dışı olabilir)</string>
+    <string name="memory_upload_unsupported_type">Dosya türü bellek için desteklenmiyor. Yalnızca metin belgeleri (PDF, DOC, TXT, vb.) belleğe eklenebilir.</string>
+    <string name="memory_save_success">Metin genel belleğe kaydedildi</string>
+    <string name="memory_save_failed">Metin belleğe kaydedilemedi (RAG devre dışı olabilir)</string>
+    <string name="saved_memories">Kaydedilen anılar</string>
+    <string name="clear_all">Tümünü Temizle</string>
+    <string name="memory_cleared">Tüm anılar temizlendi</string>
+    <string name="confirm_replace_memory_title">Mevcut bellek değiştirilsin mi?</string>
+    <string name="confirm_replace_memory_message">Zaten bir genel belleğiniz var. Değiştirmek, mevcut belleği ve gömülerini silecektir. Devam edilsin mi?</string>
+    <string name="confirm_replace_action">Değiştir</string>
+    <string name="memory_processing">Bellek işleniyor…</string>
+    <string name="reembedding_memory_in_progress">Yeni gömme modeli için genel bellek yeniden gömülüyor…</string>
+    <string name="reembedding_memory_done">Genel bellek yeniden gömüldü</string>
+    
+    <!-- Gemma-3n specific GPU requirements -->
+    <string name="gemma3n_e2b_gpu_requires_6gb">GPU için en az 6GB RAM gerektirir</string>
+    <string name="gemma3n_e4b_gpu_requires_8gb">8GB veya daha az RAM\'e sahip cihazlar bu modeli GPU ile yükleyemez</string>
+    <string name="audio_support">Ses Desteği</string>
+    <string name="vision_audio_text">Görsel+Ses+Metin</string>
+    <string name="vision_text">Görsel+Metin</string>
+    <string name="audio_text">Ses+Metin</string>
+    <string name="shared_file">Bir dosya paylaşıldı</string>
+    <string name="audio_message">Ses Mesajı</string>
+    <string name="image_message">Görsel Mesajı</string>
+    <string name="model_configs_title">Model yapılandırmaları</string>
+    <string name="reset_to_defaults">Sıfırla</string>
+    <string name="max_tokens">Maks token</string>
+    <string name="top_k">TopK</string>
+    <string name="top_p">TopP</string>
+    <string name="temperature">Sıcaklık</string>
+    <string name="choose_accelerator">Hızlandırıcı seç</string>
+    <string name="max">maks</string>
+    
+    <!-- GPU with Vision+Audio Disabled for Gemma-3n E4B -->
+    <string name="gpu_vision_disabled_title">GPU ile Görsel+Ses Devre Dışı</string>
+    <string name="gpu_vision_disabled_description">RAM sınırlamaları nedeniyle, GPU hızlandırmayı etkinleştirmek için görsel ve ses özellikleri devre dışı bırakılacak</string>
+    <string name="gpu_with_vision_disabled">GPU (Görsel+Ses Devre Dışı)</string>
+    <string name="gemma3n_e4b_gpu_vision_warning">7-8GB RAM\'e sahip cihazlarda, GPU hızlandırma, görsel ve ses özelliklerinin devre dışı bırakılmasını gerektirir. Görsel ekleri ve ses girişi kullanılamayacaktır.</string>
+    <string name="vision_disabled_for_gpu">GPU hızlandırma için görsel ve ses devre dışı</string>
+    <string name="vision_disabled_no_images">Bu model yapılandırması için görsel ve ses özellikleri devre dışıdır. Görsel ekleri ve ses girişi kullanılamaz.</string>
+    <string name="ram_limit_gpu_vision_disabled">RAM sınırı nedeniyle (%.1fGB), GPU kullanmak için görsel ve ses devre dışı bırakılmalıdır</string>
+    
+    <!-- GPU with Audio Only Disabled for Gemma-3n E4B on 8GB devices -->
+    <string name="gpu_with_audio_disabled">GPU (Ses Devre Dışı)</string>
+    <string name="gemma3n_e4b_gpu_audio_warning">7-8GB RAM\'e sahip cihazlarda, GPU hızlandırma ses özelliklerinin devre dışı bırakılmasını gerektirir. Ses girişi kullanılamayacaktır, ancak görsel ekleri desteklenmektedir.</string>
+    <string name="audio_disabled_for_gpu">GPU hızlandırma için ses devre dışı</string>
+    <string name="audio_disabled_no_audio">Bu model yapılandırması için ses özellikleri devre dışıdır. Ses girişi kullanılamaz, ancak görsel ekleri desteklenmektedir.</string>
+    
+    <!-- Separate modality toggles -->
+    <string name="modality_options">Modalite Seçenekleri</string>
+    <string name="enable_vision">Görseli Etkinleştir (Görsel Desteği)</string>
+    <string name="enable_audio">Sesi Etkinleştir (Ses Girişi)</string>
+    <string name="enable_thinking">Düşünceyi Etkinleştir</string>
+    <string name="gemma3n_e4b_modality_suggestion">💡 7-8GB cihazlarda kararlı performans için, GPU belleğinden tasarruf etmek üzere sesi devre dışı bırakmayı düşünün. Görsel genellikle daha kararlıdır.</string>
+    
+    <!-- General performance tip for all devices -->
+    <string name="gemma3n_performance_tip">💡 RAM sınırlamaları nedeniyle çökme veya düşük performans yaşıyorsanız, CPU arka ucuna geçmeyi veya görsel/ses özelliklerini devre dışı bırakmayı deneyin.</string>
+    
+    <!-- External Model Import -->
+    <string name="import_external_model">Harici Model İçe Aktar</string>
+    <string name="model_name">Model Adı</string>
+    <string name="select">Seç</string>
+    <string name="select_model_file">Model Dosyası Seç</string>
+    <string name="supports_vision">Görseli Destekler</string>
+    <string name="supports_audio">Sesi Destekler</string>
+    <string name="supports_gpu">GPU\'yu Destekler</string>
+    <string name="model_format">Model Formatı</string>
+    <string name="context_window_size">Bağlam Penceresi Boyutu</string>
+    <string name="import_model">Modeli İçe Aktar</string>
+    <string name="model_name_required">Model adı gereklidir</string>    <string name="model_name_already_exists">\"%1$s\" adlı bir model zaten mevcut. Lütfen farklı bir isim kullanın veya önce mevcut modeli silin.</string>    <string name="context_window_size_invalid">Lütfen geçerli bir bağlam penceresi boyutu girin</string>
+    <string name="please_fix_errors">Lütfen yukarıdaki hataları düzeltin</string>
+    <string name="remove">Kaldır</string>
+    <string name="ready_to_use">Kullanıma hazır</string>
+    <string name="unsupported_file_format">Desteklenmeyen dosya formatı. Lütfen .task, .litertlm veya .zip dosyası seçin.</string>
+    <string name="download_models_from_litert_community">Uyumlu LLM modellerini şuradan indirebilirsiniz:</string>
+    <string name="litert_community_link">Hugging Face\'te LiteRT Topluluğu</string>
+    <string name="download_image_models_from">Uyumlu görüntü modellerini şuradan indirebilirsiniz:</string>
+    <string name="sd_models_link">Hugging Face\'te Stable Diffusion modelleri</string>
+    <string name="supports_npu">NPU\'yu Destekler</string>
+    <string name="import_model_warning">⚠️ Önemli: İçe aktarmadan önce lütfen modelin README\'sini Hugging Face\'te okuyun. Doğru yetenekleri (görsel, ses, GPU) ve model belgelerinde belirtildiği şekilde bağlam penceresi boyutunu girin. Yanlış ayarlar modelin düzgün çalışmamasına neden olabilir. Önemli: Görsel destekli GGUF modelleri Vision Projector (mmproj) gerektirir. Görüntü girişi etkinleştirmek için projector dosyasını içe aktarın.</string>
+    
+    <!-- Home Screen -->
+    <string name="home_welcome">LLM Hub\'a Hoş Geldiniz</string>
+    <string name="home_subtitle">Cebinizde yapay zekanın gücünün kilidini açın — özel, hızlı ve çevrimdışı!</string>
+    
+    <!-- Feature Cards -->
+    <string name="feature_ai_chat">Yapay Zeka Sohbeti</string>
+    <string name="feature_ai_chat_desc">Yapay zeka modelleriyle çok turlu konuşmalar</string>
+    <string name="feature_writing_aid">Yazma Yardımcısı</string>
+    <string name="feature_writing_aid_desc">Dilbilgisi, stil, parafraz ve ton ayarlama</string>
+    <string name="feature_translator">Çevirmen</string>
+    <string name="feature_translator_desc">Çoklu ortam modellerini kullanarak metni özel olarak çevirin</string>
+    <string name="feature_transcriber">Transkripsiyon</string>
+    <string name="feature_transcriber_desc">Sesi veya sesi çevrimdışı olarak metne dönüştürün</string>
+    <string name="feature_scam_detector">Dolandırıcılık Dedektörü</string>
+    <string name="feature_scam_detector_desc">Potansiyel dolandırıcılıklar için metin, görsel veya URL analiz edin</string>
+    <string name="feature_image_generator">Görsel Oluşturucu</string>
+    <string name="feature_image_generator_desc">AI ile metin açıklamalarından görseller oluşturun</string>
+    
+    <!-- Writing Aid Screen -->
+    <string name="writing_aid_title">Yazma Yardımcısı</string>
+    <string name="writing_aid_input_label">Metninizi girin</string>
+    <string name="writing_aid_input_hint">İyileştirmek istediğiniz metni yazın veya yapıştırın...</string>
+    <string name="writing_aid_input_hint_no_model">Başlamak için bir model yükleyin</string>
+    <string name="writing_aid_mode_grammar">Dilbilgisi Kontrolü</string>
+    <string name="writing_aid_mode_paraphrase">Parafraz</string>
+    <string name="writing_aid_mode_tone">Tonu Ayarla</string>
+    <string name="writing_aid_mode_email">E-posta Yanıtı</string>
+    <string name="writing_aid_mode_sms">SMS Yanıtı</string>
+    <string name="writing_aid_tone_friendly">Arkadaşça</string>
+    <string name="writing_aid_tone_professional">Profesyonel</string>
+    <string name="writing_aid_tone_concise">Özlü</string>
+    <string name="writing_aid_select_mode">Ton Seç</string>
+    <string name="writing_aid_process">İşle</string>
+    <string name="processing_tap_to_cancel">İşleniyor (iptal etmek için dokunun)</string>
+    <string name="writing_aid_result">Sonuç</string>
+    <string name="writing_aid_no_model">Model yüklü değil. Lütfen önce bir model indirin ve seçin.</string>
+    
+    <!-- Translator Screen -->
+    <string name="translator_title">Çevrimdışı Çevirmen</string>
+    <string name="translator_input_label">Çevrilecek metin</string>
+    <string name="translator_input_hint">Çevrilecek metni girin...</string>
+    <string name="load_model_to_start">Başlamak için bir model yükleyin</string>
+    <string name="translator_source_lang">Kaynak Dil</string>
+    <string name="translator_target_lang">Hedef Dil</string>
+    <string name="translator_auto_detect">Otomatik Algıla</string>
+    <string name="translator_translate">Çevir</string>
+    <string name="translator_result">Çeviri</string>
+    <string name="translator_requires_gemma3n">Bu özellik bir Gemma-3n modeli gerektirir. Lütfen Modeller ekranından bir tane indirin.</string>
+    
+    <!-- Transcriber Screen -->
+    <string name="transcriber_title">Çevrimdışı Transkripsiyon</string>
+    <string name="transcriber_record">Ses Kaydet</string>
+    <string name="transcriber_upload">Ses Yükle</string>
+    <string name="transcriber_transcribe">Transkript Et</string>
+    <string name="transcriber_result">Transkripsiyon</string>
+    <string name="transcriber_recording">Kaydediliyor...</string>
+    <string name="transcriber_stop">Kaydı Durdur</string>
+    <string name="transcriber_requires_gemma3n">Bu özellik ses desteği olan bir Gemma-3n modeli gerektirir. Lütfen Modeller ekranından bir tane indirin.</string>
+    
+    <!-- Scam Detector Screen -->
+    <string name="scam_detector_title">Dolandırıcılık Dedektörü</string>
+    <string name="scam_detector_input_label">Analiz edilecek içeriği girin</string>
+    <string name="scam_detector_input_hint">Dolandırıcılık analizi için metin yapıştırın, görsel yükleyin veya URL girin...</string>
+    <string name="scam_detector_url_hint">Analiz edilecek URL\'yi girin</string>
+    <string name="scam_detector_analyze">Analiz Et</string>
+    <string name="scam_detector_analyzing">Analiz ediliyor (iptal etmek için dokunun)</string>
+    <string name="scam_detector_result">Analiz Sonucu</string>
+    <string name="scam_detector_no_model">Model yüklü değil. Lütfen önce bir model indirin ve seçin.</string>
+    <string name="scam_detector_load_model">Model Yükle</string>
+    <string name="scam_detector_load_model_desc">İçeriği analiz etmeye başlamak için lütfen bir model yükleyin</string>
+    <string name="scam_detector_enable_vision">Görseli Etkinleştir</string>
+    <string name="scam_detector_vision_desc">Dolandırıcılıklar için görselleri analiz edin</string>
+    <string name="scam_detector_fetching_url">URL içeriği getiriliyor...</string>
+    
+    <!-- Image Generator Screen -->
+    <string name="image_generator_title">Görsel Oluşturucu</string>
+    <string name="image_generator_subtitle">AI kullanarak metin açıklamalarından görseller oluşturun</string>
+    <string name="image_generator_prompt_label">Görsel Açıklaması</string>
+    <string name="image_generator_prompt_hint">Oluşturmak istediğiniz görseli açıklayın...</string>
+    <string name="image_generator_generate">Görsel Oluştur</string>
+    <string name="image_generator_generating">Görsel oluşturuluyor...</string>
+    <string name="image_generator_iterations">Yinelemeler</string>
+    <string name="image_generator_seed">Tohum</string>
+    <string name="image_generator_random_seed">Rastgele Tohum</string>
+    <string name="image_generator_save">Görseli Kaydet</string>
+    <string name="image_generator_download_model">Önce Model İndirin</string>
+    <string name="image_generator_download_model_desc">Görsel oluşturmaya başlamak için görsel oluşturma modelini indirin</string>
+    <string name="image_generator_model_not_available">Görsel oluşturma modeli mevcut değil</string>
+    <string name="image_generator_error">Görsel oluşturulamadı</string>
+    <string name="image_generator_success">Görsel başarıyla oluşturuldu</string>
+    <string name="image_generator_saved">Görsel galeriye kaydedildi</string>
+    <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
+    <string name="image_generation_model">Görsel Oluşturma Modeli</string>
+    <string name="image_generation_models">Görsel Oluşturma Modelleri</string>
+    <string name="image_generation_models_description">Metinden görsel oluşturmak için AI modelleri</string>
+    <string name="image_generator_load_model_title">Başlamak için Model Yükle</string>
+    <string name="image_generator_load_model_desc">Görsel oluşturmaya başlamak için lütfen bir Stable Diffusion modeli yükleyin.</string>
+    <string name="image_generator_no_models">Kullanılabilir model yok</string>
+    <string name="image_generator_load_model">Model Yükle</string>
+    <string name="image_generator_loading_model">Yükleniyor...</string>
+    <string name="image_generator_failed_load">Model yüklenemedi</string>
+    <string name="image_generator_variation">Varyasyon %1$d oluşturuluyor...</string>
+    <string name="image_generator_swipe_more">Daha fazla oluşturmak için buraya kaydırın</string>
+    <string name="image_generator_info">Görsel oluşturma, cihazda çalışan Stable Diffusion v1.5 modelini kullanır. Oluşturma, cihazınıza bağlı olarak 1-2 dakika sürebilir.</string>    <string name="image_generator_img2img">Görüntüden Görüntüye</string>
+    <string name="image_generator_img2img_desc">Mevcut bir görüntüyü dönüştür</string>
+    <string name="image_generator_select_image">Giriş Görüntüsü Seç</string>
+    <string name="image_generator_change_image">Giriş Görüntüsünü Değiştir</string>
+    <string name="image_generator_denoise_strength">Gürültü Azaltma Gücü: %.2f</string>
+    <string name="image_generator_denoise_strength_desc">Daha yüksek = giriş görüntüsünde daha fazla değişiklik</string>
+    <string name="image_generator_input_image">Giriş görüntüsü</string>    
+    <string name="image_generator_use_gpu">GPU Hızlandırma Kullan</string>
+    <string name="image_generator_use_gpu_desc">Daha hızlı oluşturma (OpenCL desteği gerektirir)</string>
+    <!-- Common Feature Strings -->
+    <string name="feature_no_model_title">Model Yok</string>
+    <string name="feature_download_model">Modelleri İndir</string>
+    <string name="feature_processing">İşleniyor...</string>
+    <string name="feature_error">Bir hata oluştu</string>
+    <string name="feature_copy_result">Sonucu Kopyala</string>
+    <string name="feature_share_result">Sonucu Paylaş</string>
+    <string name="feature_clear">Temizle</string>
+    
+    <!-- Language Names for Translator (Gemma-3n Supported Languages) - Alphabetically Ordered -->
+    <string name="lang_english">İngilizce</string>
+    <string name="lang_afrikaans">Afrikaanca</string>
+    <string name="lang_amharic">Amharca</string>
+    <string name="lang_arabic">Arapça</string>
+    <string name="lang_armenian">Ermenice</string>
+    <string name="lang_azerbaijani">Azerice</string>
+    <string name="lang_basque">Baskça</string>
+    <string name="lang_bengali">Bengalce</string>
+    <string name="lang_bulgarian">Bulgarca</string>
+    <string name="lang_burmese">Birmanca</string>
+    <string name="lang_catalan">Katalanca</string>
+    <string name="lang_chinese">Çince (Basitleştirilmiş)</string>
+    <string name="lang_chinese_traditional">Çince (Geleneksel)</string>
+    <string name="lang_croatian">Hırvatça</string>
+    <string name="lang_czech">Çekçe</string>
+    <string name="lang_danish">Danca</string>
+    <string name="lang_dutch">Flemenkçe</string>
+    <string name="lang_estonian">Estonca</string>
+    <string name="lang_filipino">Filipince (Tagalogca)</string>
+    <string name="lang_finnish">Fince</string>
+    <string name="lang_french">Fransızca</string>
+    <string name="lang_galician">Galiçyaca</string>
+    <string name="lang_georgian">Gürcüce</string>
+    <string name="lang_german">Almanca</string>
+    <string name="lang_greek">Yunanca</string>
+    <string name="lang_gujarati">Guceratça</string>
+    <string name="lang_hausa">Hausaca</string>
+    <string name="lang_hebrew">İbranice</string>
+    <string name="lang_hindi">Hintçe</string>
+    <string name="lang_hungarian">Macarca</string>
+    <string name="lang_icelandic">İzlandaca</string>
+    <string name="lang_igbo">İgboca</string>
+    <string name="lang_indonesian">Endonezce</string>
+    <string name="lang_italian">İtalyanca</string>
+    <string name="lang_japanese">Japonca</string>
+    <string name="lang_kannada">Kannada</string>
+    <string name="lang_kazakh">Kazakça</string>
+    <string name="lang_khmer">Kmerce</string>
+    <string name="lang_korean">Korece</string>
+    <string name="lang_lao">Laoca</string>
+    <string name="lang_latvian">Letonca</string>
+    <string name="lang_lithuanian">Litvanca</string>
+    <string name="lang_malay">Malayca</string>
+    <string name="lang_malayalam">Malayalamca</string>
+    <string name="lang_marathi">Marati</string>
+    <string name="lang_nepali">Nepalce</string>
+    <string name="lang_norwegian">Norveççe</string>
+    <string name="lang_pashto">Peştuca</string>
+    <string name="lang_persian">Farsça (Farsça)</string>
+    <string name="lang_polish">Lehçe</string>
+    <string name="lang_portuguese">Portekizce</string>
+    <string name="lang_punjabi">Pencapça</string>
+    <string name="lang_romanian">Rumence</string>
+    <string name="lang_russian">Rusça</string>
+    <string name="lang_serbian">Sırpça</string>
+    <string name="lang_sindhi">Sintçe</string>
+    <string name="lang_sinhala">Seylanca</string>
+    <string name="lang_slovak">Slovakça</string>
+    <string name="lang_slovenian">Slovence</string>
+    <string name="lang_somali">Somalice</string>
+    <string name="lang_spanish">İspanyolca</string>
+    <string name="lang_swahili">Svahilice</string>
+    <string name="lang_swedish">İsveççe</string>
+    <string name="lang_tamil">Tamilce</string>
+    <string name="lang_telugu">Teluguca</string>
+    <string name="lang_thai">Tayca</string>
+    <string name="lang_turkish">Türkçe</string>
+    <string name="lang_ukrainian">Ukraynaca</string>
+    <string name="lang_urdu">Urduca</string>
+    <string name="lang_uzbek">Özbekçe</string>
+    <string name="lang_vietnamese">Vietnamca</string>
+    <string name="lang_yoruba">Yorubaca</string>
+    <string name="lang_zulu">Zuluca</string>
+    
+    <!-- Model Selection -->
+    <string name="feature_settings_title">Ayarlar</string>
+    <string name="select_model_title">Model Seç</string>
+    <string name="no_models_available">Kullanılabilir model yok</string>
+    <string name="download_models_first">Lütfen önce modelleri indirin</string>
+    <string name="select_backend">Arka Uç Seç</string>
+    <string name="backend_cpu">CPU</string>
+    <string name="backend_gpu">GPU</string>
+    <string name="gpu_not_supported">Bu model GPU\'yu desteklemiyor</string>
+    <string name="load_model">Model Yükle</string>
+    <string name="model_loaded">Model başarıyla yüklendi</string>
+    <string name="model_loading">Model yükleniyor…</string>
+    <string name="model_load_failed">Model yüklenemedi</string>
+    <string name="multimodal_models_only">Yalnızca çoklu ortam (Gemma-3n) modelleri desteklenir</string>
+    <string name="text_models_only">Yalnızca metin modelleri desteklenir</string>
+    
+    <!-- Audio Features -->
+    <string name="enable_audio_input">Ses girişini etkinleştir</string>
+    <string name="audio_input_enabled">Ses girişi etkin</string>
+    <string name="audio_input_disabled">Ses girişi devre dışı</string>
+    <string name="record_audio">Ses kaydet</string>
+    
+    <!-- Auto-detect Language -->
+    <string name="lang_auto_detect">Otomatik algıla</string>
+    <string name="auto_detecting_language">Dil algılanıyor…</string>
+    <string name="language_detected">Dil algılandı: %1$s</string>
+    
+    <!-- Feature-specific Processing -->
+    <string name="processing">İşleniyor…</string>
+    <string name="translating">Çevriliyor…</string>
+    <string name="translating_tap_to_cancel">Çevriliyor (iptal etmek için dokunun)</string>
+    <string name="transcribing">Transkript ediliyor…</string>
+    <string name="transcribing_tap_to_cancel">Transkript ediliyor (iptal etmek için dokunun)</string>
+    <string name="analyzing_code">Kod analiz ediliyor…</string>
+    <string name="processing_text">Metin işleniyor…</string>
+    
+    <!-- Vision Features -->
+    <string name="input_options">Giriş Seçenekleri</string>
+    <string name="enable_vision_input">Görsel girişini etkinleştir</string>
+    <string name="translate_from_image">Görselden metin çevir</string>
+    <string name="speak_to_translate">Çevirmek için konuşun</string>
+    <string name="select_image">Görsel Seç</string>
+    <string name="change_image">Görseli Değiştir</string>
+    <string name="transcription_result">Transkripsiyon</string>
+    
+    <!-- Translator Settings -->
+    <string name="translator_enable_vision">Görseli Etkinleştir</string>
+    <string name="translator_vision_description">Görsellerden metin çevirin</string>
+    <string name="translator_enable_audio">Sesi Etkinleştir</string>
+    <string name="translator_audio_description">Ses kayıtlarını çevirin</string>
+    
+    <!-- Backend Selection -->
+    <string name="choose_backend_for_gemma">Gemma modeli için işleme arka ucunu seçin</string>
+    <string name="gpu_backend">GPU (Önerilir)</string>
+    <string name="cpu_backend">CPU (Alternatif)</string>
+    <string name="gpu_backend_description">Cihaz GPU\'sunu kullanarak daha hızlı işleme</string>
+    <string name="cpu_backend_description">Daha yavaş ama daha kararlı işleme</string>
+    <string name="backend_selection_hint">Uygulama GPU ile çökerse veya düzgün çalışmazsa, CPU arka ucunu deneyin</string>
+    <string name="not_available">Mevcut değil</string>
+    <string name="gpu_disabled_low_memory">%1$dGB veya daha az RAM\'e sahip cihazlarda bu model için GPU kullanılamaz</string>
+    
+    <!-- Web Search Messages -->
+    <string name="web_searching">🔍 Web\'de aranıyor...</string>
+    <string name="web_search_found_results">✅ %1$d sonuç bulundu. Analiz ediliyor...</string>
+    <string name="web_search_no_results">❌ Güncel arama sonucu bulunamadı. Eğitim verilerine dayalı yanıt sağlanıyor...</string>
+    <string name="web_search_failed">❌ Web araması başarısız: %1$s. Eğitim verilerine dayalı yanıt sağlanıyor...</string>
+    
+    <!-- Vision Model Error Messages -->
+    <string name="vision_chat_cannot_open">🚫 **Bu sohbet açılamıyor**\n\nBu konuşma görüntüler içeriyor, ancak şu anda **sadece metin modeli** yüklü:\n\n📱 **Mevcut model:** %1$s\n🖼️ **Bu sohbet:** Görüntüler içeriyor\n\n---\n\n## 🎯 Nasıl düzeltilir:\n\n1. **📥 Görü modeli indir**\n   - \"Modelleri İndir\"e git\n   - 🖼️ veya \"Görü+Metin\" ile işaretlenmiş modelleri ara\n   - Dene: **Gemma-3n E2B (Görü+Metin)**\n\n2. **🔄 Görü modeline geç**\n   - İndirdiğin görü modelini yükle\n   - Görü modelleri hem metin hem de görüntüleri işleyebilir\n\n3. **✅ Bu sohbete dön**\n   - Görü modeli yüklendikten sonra bu sohbet mükemmel çalışacak!\n\n---\n\n💡 **Pro ipucu:** Görü modelleri metin modellerinin yapabileceği her şeyi yapabilir, artı görüntüleri işleyebilir!</string>
+    <string name="vision_image_cannot_send">🖼️ **Görüntüler gönderilemiyor**\n\nBir görüntü göndermeye çalışıyorsun, ancak mevcut model **sadece metin**:\n\n📱 **Mevcut model:** %1$s\n\n---\n\n## 🎯 Görüntü göndermek için:\n\n1. **📥 Görü modeli indir**\n   - Menüye dokun → \"Modelleri İndir\"\n   - 🖼️ **Görü+Metin** modellerini ara\n   - Önerilen: **Gemma-3n E2B (Görü+Metin)**\n\n2. **🔄 Modelleri değiştir**\n   - İndirdiğin görü modelini yükle\n   - Görü modelleri hem metin hem de görüntüleri işler\n\n3. **✅ Tekrar dene**\n   - Yüklendikten sonra görüntüleri özgürce gönderebilirsin!\n\n---\n\n💡 **Pro ipucu:** Görü modelleri metin modellerinin yapabileceği her şeyi yapabilir, artı görüntüleri anlayabilir!</string>
+    
+    <!-- Model Error Messages -->
+    <string name="please_download_model">Sohbet etmeye başlamak için lütfen bir model indirin.</string>
+    <string name="model_not_loaded">Model düzgün yüklenmedi. Lütfen farklı bir modele geçmeyi deneyin veya uygulamayı yeniden başlatın.</string>
+    <string name="no_response_produced">Yanıt üretilmedi. (Muhtemel: token sınırı veya oturum sıfırlama). Yeniden Oluştur\'a dokunun.</string>
+    <string name="prompt_too_long">Mesaj çok uzun. Lütfen mesajınızı kısaltın ve tekrar deneyin.</string>
+    <string name="language_persian">فارسی</string>
+    <string name="language_ukrainian">Українська</string>
+    <string name="language_hebrew">עברית</string>
+    <!-- New Chat Management & Creator Strings -->
+    <string name="not_loaded">Yüklenmedi</string>
+    <string name="dialog_rename_chat_title">Sohbeti Yeniden Adlandır</string>
+    <string name="chat_title">Sohbet Başlığı</string>
+    <string name="more_options">Daha Fazla Seçenek</string>
+    <string name="dialog_delete_creator_title">Persona Silinsin mi?</string>
+    <string name="dialog_delete_creator_message">Persona \"%1\" silinsin mi?</string>
+    <string name="action_rename">Yeniden Adlandır</string>
+
+    <!-- Vibe Coder Feature -->
+    <string name="feature_vibe_coder">VibeCode</string>
+    <string name="feature_vibe_coder_desc">AI ile HTML, JavaScript ve Python kodu oluşturun</string>
+    <string name="feature_creator_generation">Personalar</string>
+    <string name="feature_creator_generation_desc">Kendi özel AI personalarınızı oluşturun</string>
+    <string name="drawer_my_creators">Personalarım</string>
+    <string name="vibe_coder_title">VibeCode</string>
+    <string name="vibe_coder_prompt_label">Ne kodlamak istersiniz?</string>
+    <string name="vibe_coder_prompt_hint">Oluşturmak istediğiniz kodu açıklayın...</string>
+    <string name="vibe_coder_generate">Kod Oluştur</string>
+    <string name="vibe_coder_generating">Kod oluşturuluyor...</string>
+    <string name="vibe_coder_generated_code">Oluşturulan Kod</string>
+    <string name="vibe_coder_copy">Kopyala</string>
+    <string name="vibe_coder_preview">Önizleme</string>
+    <string name="vibe_coder_no_model">Yüklü model yok. Lütfen önce bir model indirin ve seçin.</string>
+    <string name="vibe_coder_settings">Ayarlar</string>
+    <string name="vibe_coder_backend_select">Backend Seç</string>
+
+    <!-- VibeCode additions -->
+    <string name="vibe_coder_modification_mode">Değişiklik Modu</string>
+    <string name="vibe_coder_refine">Kodu İyileştir</string>
+    <string name="vibe_coder_clear">Yeni Proje / Bağlamı Temizle</string>
+    <string name="vibe_coder_planning">Mimari planlanıyor...</string>
+    <string name="vibe_coder_revising">Kod revize ediliyor...</string>
+    <string name="vibe_coder_select_folder_title">Önce bir proje klasörü seçin</string>
+    <string name="vibe_coder_select_folder_desc">Çok dosyalı yapı ve klasör içi dosya oluşturmayı etkinleştirmek için bir klasör açın.</string>
+    <string name="vibe_coder_open_folder">Klasör Aç</string>
+    <string name="vibe_coder_show_chat">Sohbeti göster</string>
+    <string name="vibe_coder_ai_chat">Yapay Zeka Sohbeti</string>
+    <string name="vibe_coder_hide_chat">Sohbeti gizle</string>
+    <string name="vibe_coder_clear_chat">Sohbeti temizle</string>
+    <string name="vibe_coder_new_chat">Yeni sohbet</string>
+    <string name="vibe_coder_delete_chat_cd">Sohbeti sil</string>
+    <string name="vibe_coder_message_you">Siz</string>
+    <string name="vibe_coder_message_ai">YZ</string>
+    <string name="vibe_coder_edit_resend_prompt">Mesajı düzenle ve yeniden gönder</string>
+    <string name="vibe_coder_resend">Yeniden gönder</string>
+    <string name="vibe_coder_ask_ai_edit">Yapay zekadan bu dosyayı düzenlemesini isteyin...</string>
+    <string name="vibe_coder_create_open_file_hint">Önce bir dosya oluşturun/açın (.py, .js, .ts, ...)</string>
+    <string name="vibe_coder_stop_generation">Oluşturmayı durdur</string>
+    <string name="vibe_coder_code_editor">Kod Düzenleyici</string>
+    <string name="vibe_coder_new_file">Yeni dosya</string>
+    <string name="vibe_coder_save_file">Dosyayı kaydet</string>
+    <string name="vibe_coder_copy_code">Kodu kopyala</string>
+    <string name="vibe_coder_delete_file_cd">Dosyayı sil</string>
+    <string name="vibe_coder_open_or_create_file">Düzenlemeye başlamak için bir dosya açın veya oluşturun.</string>
+    <string name="vibe_coder_ai_editing">Yapay zeka kodu düzenliyor...</string>
+    <string name="vibe_coder_write_code_hint">Buraya kod yazın veya sohbette yapay zekaya sorun...</string>
+    <string name="vibe_coder_discard">Sil</string>
+    <string name="vibe_coder_create_file_title">Çalışma alanında dosya oluştur</string>
+    <string name="vibe_coder_file_name_placeholder">örnek.py veya app.js</string>
+    <string name="vibe_coder_file_name_label">Uzantılı dosya adı</string>
+    <string name="vibe_coder_file_name_error">Uzantılı geçerli bir dosya adı girin, örn. main.py</string>
+    <string name="vibe_coder_create">Oluştur</string>
+    <string name="vibe_coder_delete_chat_title">Sohbet silinsin mi?</string>
+    <string name="vibe_coder_delete_chat_message">Bu sohbet oturumu kalıcı olarak kaldırılacak.</string>
+    <string name="vibe_coder_delete_file_title">Dosya silinsin mi?</string>
+    <string name="vibe_coder_delete_file_message">\'%1$s\' bu klasörden silinsin mi?</string>
+    <string name="vibe_coder_no_file_selected_error">Dosya seçilmedi. Önce çalışma klasöründen bir dosya oluşturun/açın.</string>
+    <string name="vibe_coder_delete_file_error">Dosya silinemedi</string>
+    <string name="vibe_coder_autosave_failed">Otomatik kaydetme başarısız. Kaydet\'e tekrar dokunun veya dosyayı yeniden açın.</string>
+
+    <!-- Creator Generation Screen -->
+    <string name="creator_screen_title">Yeni AI Karakteri</string>
+    <string name="creator_bring_to_life">Bir AI\'ya hayat verin</string>
+    <string name="creator_description">Özel bir AI karakterini hayata geçirme gücüne sahipsiniz. Karakterinizin herhangi bir girdi, istek veya fikre nasıl yanıt vereceğini açıklamanız yeterli. Karakteriniz oluşturulduktan sonra sohbette kullanabilirsiniz.</string>
+    <string name="creator_prompt_label">AI karakterinizi tanımlayın...</string>
+    <string name="creator_prompt_placeholder">örn., herhangi bir konuyu 10 satırdan kısa kafiyeli şiir olarak özetle</string>
+    <string name="creator_brewing">sihir hazırlanıyor...</string>
+    <string name="creator_generate_persona">Karakter Oluştur</string>
+    <string name="creator_load_model_first">Lütfen önce bir model yükleyin.</string>
+    <string name="creator_result_heading">Yeni AI karakteriniz hazır!</string>
+    <string name="creator_system_prompt_label">Sistem Yönergesi (PCTF):</string>
+    <string name="creator_save_and_chat">Kaydet ve Sohbet Et</string>
+
+    <!-- Kid Mode -->
+    <string name="kid_mode_title">Çocuk Modu</string>
+    <string name="kid_mode_enabled_status">Etkin - Güvenlik korumaları aktif</string>
+    <string name="kid_mode_disabled_status">Devre dışı</string>
+    <string name="kid_mode_incorrect_pin">Yanlış PIN</string>
+    <string name="kid_mode_set_pin_title">Çocuk Modu PIN Belirle</string>
+    <string name="kid_mode_set_pin_body">Çocuk Modunu etkinleştirmek için 4 haneli bir PIN girin. Daha sonra devre dışı bırakmak için bu PIN gerekli olacak.</string>
+    <string name="kid_mode_pin_label">4 Haneli PIN</string>
+    <string name="kid_mode_pin_error">PIN 4 haneli olmalıdır</string>
+    <string name="kid_mode_enable">Etkinleştir</string>
+    <string name="kid_mode_disable_title">Çocuk Modunu Devre Dışı Bırak</string>
+    <string name="kid_mode_verify_body">Çocuk Modunu devre dışı bırakmak için 4 haneli PIN\'inizi girin.</string>
+    <string name="kid_mode_disable">Devre Dışı Bırak</string>
+
+    <string name="gpu_layers_label">GPU Layers: %1$d</string>
+    <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
+</resources>

@@ -1,0 +1,383 @@
+package com.llmhub.llmhub.viewmodels
+
+import android.app.Application
+import android.content.Context
+import android.util.Log
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.ModelAvailabilityProvider
+import com.llmhub.llmhub.inference.MediaPipeInferenceService
+import com.google.mediapipe.tasks.genai.llminference.LlmInference
+import java.util.UUID
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+class WritingAidViewModel(application: Application) : AndroidViewModel(application) {
+    
+    private val inferenceService = (application as com.llmhub.llmhub.LlmHubApplication).inferenceService
+    private val prefs = application.getSharedPreferences("writing_aid_prefs", Context.MODE_PRIVATE)
+    
+    private var processingJob: Job? = null
+    
+    private val _availableModels = MutableStateFlow<List<LLMModel>>(emptyList())
+    val availableModels: StateFlow<List<LLMModel>> = _availableModels.asStateFlow()
+    
+    private val _selectedModel = MutableStateFlow<LLMModel?>(null)
+    val selectedModel: StateFlow<LLMModel?> = _selectedModel.asStateFlow()
+    
+    private val _selectedBackend = MutableStateFlow<LlmInference.Backend?>(null)
+    val selectedBackend: StateFlow<LlmInference.Backend?> = _selectedBackend.asStateFlow()
+    
+    private val _selectedMode = MutableStateFlow(WritingMode.FRIENDLY)
+    val selectedMode: StateFlow<WritingMode> = _selectedMode.asStateFlow()
+    
+    private val _isModelLoaded = MutableStateFlow(false)
+    val isModelLoaded: StateFlow<Boolean> = _isModelLoaded.asStateFlow()
+    
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+    
+    private val _isProcessing = MutableStateFlow(false)
+    val isProcessing: StateFlow<Boolean> = _isProcessing.asStateFlow()
+    
+    private val _outputText = MutableStateFlow("")
+    val outputText: StateFlow<String> = _outputText.asStateFlow()
+    
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+    
+    private val _enableThinking = MutableStateFlow(true)
+    val enableThinking: StateFlow<Boolean> = _enableThinking.asStateFlow()
+
+    private val _selectedNGpuLayers = MutableStateFlow<Int?>(null)
+    val selectedNGpuLayers: StateFlow<Int?> = _selectedNGpuLayers.asStateFlow()
+    private val _selectedMaxTokens = MutableStateFlow(4096)
+    val selectedMaxTokens: StateFlow<Int> = _selectedMaxTokens.asStateFlow()
+    private val _selectedNpuDeviceId = MutableStateFlow<String?>(null)
+    val selectedNpuDeviceId: StateFlow<String?> = _selectedNpuDeviceId.asStateFlow()
+    private var pendingSavedModelName: String? = null
+
+    init {
+        loadSavedSettings()
+        loadAvailableModels()
+    }
+    
+    private fun loadSavedSettings() {
+        // Restore backend
+        val savedBackendName = prefs.getString("selected_backend", LlmInference.Backend.GPU.name)
+        _selectedBackend.value = try {
+            LlmInference.Backend.valueOf(savedBackendName ?: LlmInference.Backend.GPU.name)
+        } catch (_: IllegalArgumentException) {
+            LlmInference.Backend.GPU
+        }
+        _selectedNpuDeviceId.value = prefs.getString("npu_device_id", null)
+        _enableThinking.value = prefs.getBoolean("enable_thinking", true)
+        
+        // Restore writing mode
+        val savedModeName = prefs.getString("selected_mode", WritingMode.FRIENDLY.name)
+        _selectedMode.value = try {
+            WritingMode.valueOf(savedModeName ?: WritingMode.FRIENDLY.name)
+        } catch (_: IllegalArgumentException) {
+            WritingMode.FRIENDLY
+        }
+
+        // Restore token and GPU layer settings
+        _selectedMaxTokens.value = prefs.getInt("max_tokens", 4096)
+        _selectedNGpuLayers.value = prefs.getInt("n_gpu_layers", 999).let { if (it == 999) null else it }
+        
+        // Restore selected model by name
+        pendingSavedModelName = prefs.getString("selected_model_name", null)
+    }
+    
+    private fun saveSettings() {
+        prefs.edit().apply {
+            putString("selected_model_name", _selectedModel.value?.name)
+            putString("selected_backend", _selectedBackend.value?.name ?: prefs.getString("selected_backend", LlmInference.Backend.GPU.name))
+            putString("npu_device_id", _selectedNpuDeviceId.value)
+            putString("selected_mode", _selectedMode.value.name)
+            putInt("max_tokens", _selectedMaxTokens.value)
+            putInt("n_gpu_layers", _selectedNGpuLayers.value ?: 999)
+            putBoolean("enable_thinking", _enableThinking.value)
+            apply()
+        }
+    }
+    
+    private fun loadAvailableModels() {
+        viewModelScope.launch {
+            val context = getApplication<Application>()
+            val available = ModelAvailabilityProvider.loadAvailableModels(context)
+                .filter { it.category != "embedding" && !it.name.contains("Projector", ignoreCase = true) }
+            _availableModels.value = available
+            if (_selectedModel.value == null) {
+                val modelToSelect = pendingSavedModelName?.let { savedName ->
+                    available.find { it.name == savedName }
+                } ?: available.firstOrNull()
+                modelToSelect?.let {
+                    _selectedModel.value = it
+                    _selectedBackend.value = if (it.supportsGpu) {
+                        _selectedBackend.value ?: LlmInference.Backend.GPU
+                    } else {
+                        LlmInference.Backend.CPU
+                    }
+                    if (!it.supportsGpu) {
+                        _selectedNpuDeviceId.value = null
+                    }
+                }
+                pendingSavedModelName = null
+            }
+        }
+    }
+    
+    fun selectModel(model: LLMModel) {
+        // Unload current model before switching
+        if (_isModelLoaded.value) {
+            unloadModel()
+        }
+        
+        _selectedModel.value = model
+        _isModelLoaded.value = false
+        
+        // Force CPU when model doesn't support GPU (e.g. ONNX); otherwise keep or set backend
+        _selectedBackend.value = if (model.supportsGpu) {
+            _selectedBackend.value ?: LlmInference.Backend.GPU
+        } else {
+            LlmInference.Backend.CPU
+        }
+        
+        saveSettings()
+    }
+    
+    fun selectBackend(backend: LlmInference.Backend, deviceId: String? = null) {
+        // Unload current model before switching backend
+        if (_isModelLoaded.value) {
+            unloadModel()
+        }
+        
+        _selectedBackend.value = backend
+        _selectedNpuDeviceId.value = deviceId
+        _isModelLoaded.value = false
+        saveSettings()
+    }
+    
+    fun selectMode(mode: WritingMode) {
+        _selectedMode.value = mode
+        saveSettings()
+    }
+    
+    fun setEnableThinking(enabled: Boolean) {
+        _enableThinking.value = enabled
+        saveSettings()
+        applyGenerationParametersToService()
+    }
+
+    fun setMaxTokens(maxTokens: Int) {
+        val cap = _selectedModel.value?.contextWindowSize?.coerceAtLeast(1) ?: 4096
+        _selectedMaxTokens.value = maxTokens.coerceIn(1, cap)
+        saveSettings()
+        applyGenerationParametersToService()
+    }
+
+    fun setNGpuLayers(n: Int) {
+        _selectedNGpuLayers.value = n
+        saveSettings()
+        applyGenerationParametersToService()
+    }
+
+    private fun applyGenerationParametersToService() {
+        val model = _selectedModel.value ?: return
+        inferenceService.setGenerationParameters(
+            _selectedMaxTokens.value.coerceIn(1, model.contextWindowSize.coerceAtLeast(1)),
+            null,
+            null,
+            null,
+            _selectedNGpuLayers.value,
+            _enableThinking.value
+        )
+    }
+
+    fun loadModel() {
+        val model = _selectedModel.value ?: return
+        val backend = _selectedBackend.value ?: return
+        
+        // Prevent concurrent loads
+        if (_isLoading.value || _isModelLoaded.value) {
+            return
+        }
+        
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
+            
+            try {
+                // Unload any existing model first
+                inferenceService.unloadModel()
+                applyGenerationParametersToService()
+
+                // Load the selected model with text-only mode (disable vision and audio)
+                val success = inferenceService.loadModel(
+                    model = model,
+                    preferredBackend = backend,
+                    disableVision = true,  // Writing aid only needs text
+                    disableAudio = true,
+                    deviceId = _selectedNpuDeviceId.value
+                )
+                
+                if (success) {
+                    _isModelLoaded.value = true
+                } else {
+                    _errorMessage.value = "Failed to load model"
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Unknown error"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+    
+    fun unloadModel() {
+        viewModelScope.launch {
+            try {
+                inferenceService.unloadModel()
+                _isModelLoaded.value = false
+                _outputText.value = ""
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Failed to unload model"
+            }
+        }
+    }
+    
+    fun processText(inputText: String, mode: WritingMode) {
+        if (inputText.isBlank()) return
+        val model = _selectedModel.value ?: return
+        
+        if (!_isModelLoaded.value) {
+            _errorMessage.value = "Please load a model first"
+            return
+        }
+        
+        // Cancel any previous processing before starting a new one (like TranslatorViewModel)
+        processingJob?.cancel()
+        
+        processingJob = viewModelScope.launch {
+            _isProcessing.value = true
+            _outputText.value = ""
+            _errorMessage.value = null
+            
+            try {
+                applyGenerationParametersToService()
+                val prompt = buildPrompt(mode, inputText)
+                
+                // Use unique chatId for each session to avoid conflicts (like TranslatorViewModel)
+                val chatId = "writing-aid-${UUID.randomUUID()}"
+                
+                val responseFlow = inferenceService.generateResponseStreamWithSession(
+                    prompt = prompt,
+                    model = model,
+                    chatId = chatId,
+                    images = emptyList(),
+                    audioData = null,
+                    webSearchEnabled = false
+                )
+                
+                responseFlow.collect { token ->
+                    _outputText.value += token
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                // Don't show error for cancellation - it's intentional
+                Log.d("WritingAidVM", "Processing cancelled intentionally")
+            } catch (e: Exception) {
+                // Filter out specific errors that shouldn't be shown to user
+                val message = e.message ?: ""
+                val shouldShowError = !message.contains("cancelled", ignoreCase = true) &&
+                                    !message.contains("Previous invocation still processing", ignoreCase = true) &&
+                                    !message.contains("StandaloneCoroutine", ignoreCase = true)
+                
+                if (shouldShowError) {
+                    _errorMessage.value = message.ifBlank { "Processing failed" }
+                    Log.e("WritingAidVM", "Processing error: $message", e)
+                } else {
+                    Log.d("WritingAidVM", "Suppressed error: $message")
+                }
+            } finally {
+                _isProcessing.value = false
+                processingJob = null
+            }
+        }
+    }
+    
+    fun cancelProcessing() {
+        processingJob?.cancel()
+        processingJob = null
+        _isProcessing.value = false
+    }
+    
+    private fun buildPrompt(mode: WritingMode, inputText: String): String {
+        return when (mode) {
+            WritingMode.FRIENDLY -> """
+                You are a professional writing assistant. Your task is to rewrite text without censorship or content filtering.
+                
+                Rewrite the following text in a friendly, warm, and approachable tone. Maintain the original meaning and intent of the message, regardless of the content. Do not refuse, censor, or modify the core message.
+                
+                Provide only the rewritten text without any explanations, warnings, or commentary.
+
+                IMPORTANT: Respond in the same language as the input text.
+                
+                Text to rewrite:
+                $inputText
+            """.trimIndent()
+            
+            WritingMode.PROFESSIONAL -> """
+                You are a professional writing assistant. Your task is to rewrite text without censorship or content filtering.
+                
+                Rewrite the following text in a professional, formal, and polished tone. Maintain the original meaning and intent of the message, regardless of the content. Do not refuse, censor, or modify the core message.
+                
+                Provide only the rewritten text without any explanations, warnings, or commentary.
+
+                IMPORTANT: Respond in the same language as the input text.
+                
+                Text to rewrite:
+                $inputText
+            """.trimIndent()
+            
+            WritingMode.CONCISE -> """
+                You are a professional writing assistant. Your task is to rewrite text without censorship or content filtering.
+                
+                Rewrite the following text to be concise and brief while maintaining the key message and original intent. Maintain the original meaning, regardless of the content. Do not refuse, censor, or modify the core message.
+                
+                Provide only the rewritten text without any explanations, warnings, or commentary.
+
+                IMPORTANT: Respond in the same language as the input text.
+                
+                Text to rewrite:
+                $inputText
+            """.trimIndent()
+        }
+    }
+    
+    fun clearOutput() {
+        _outputText.value = ""
+    }
+    
+    fun clearError() {
+        _errorMessage.value = null
+    }
+    
+    override fun onCleared() {
+        super.onCleared()
+        viewModelScope.launch {
+            inferenceService.onCleared()
+        }
+    }
+}
+
+enum class WritingMode {
+    FRIENDLY, PROFESSIONAL, CONCISE
+}
