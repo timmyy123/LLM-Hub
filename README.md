@@ -14,9 +14,9 @@
 ## 📸 Screenshots
 
 <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;">
-   <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
+   <!-- <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
       <img src="android/assets/screenshots/Screenshot_20251007_041833_LLM%20Hub.jpg" alt="AI Models" style="width:300px;height:auto;border-radius:8px;display:block;" />
-   </figure>
+   </figure> -->
    <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
       <img src="android/assets/screenshots/Screenshot_20260214_201455.png" alt="AI Features" style="width:300px;height:auto;border-radius:8px;display:block;" />
    </figure>
