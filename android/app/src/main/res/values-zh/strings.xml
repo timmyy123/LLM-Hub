@@ -1,0 +1,809 @@
+<resources>
+    <string name="app_name">LLM Hub</string>
+    
+    <!-- Common -->
+    <string name="ok">好</string>
+    <string name="cancel">取消</string>
+    <string name="close">关闭</string>
+    <string name="save">保存</string>
+    <string name="delete">删除</string>
+    <string name="send">发送</string>
+    <string name="copy">复制</string>
+    <string name="loading">加载中</string>
+    <string name="error">错误</string>
+    <string name="retry">重试</string>
+    <string name="download">下载</string>
+    <string name="vision">视觉</string>
+    
+    <!-- Chat -->
+    <string name="welcome_to_llm_hub">欢迎来到 LLM Hub!</string>
+    <string name="no_models_downloaded">暂无任何模型</string>
+    <!-- Displayed when there are no saved global memories for RAG -->
+    <string name="no_memories">暂无任何记忆</string>
+    <string name="download_a_model">下载模型</string>
+    <string name="ready_to_chat">准备就绪！请选择上面的模型。</string>
+    <string name="start_chatting">通过在下方输入消息开始聊天。</string>
+    <string name="type_a_message">输入消息...</string>
+    <string name="loading_model_format">正在加载 %1$s</string>
+    <string name="please_wait_model_initialize">请等待模型初始化...</string>
+    <string name="initializing_neural_network">正在初始化神经网络...</string>
+    <string name="attached_image">附加图片</string>
+    <string name="shared_a_file">分享了一个文件</string>
+    <string name="copy_message">复制消息</string>
+    <string name="regenerate_response">重新生成</string>
+    <string name="cancel_generation">取消生成</string>
+    <string name="image_attachment">图片附件</string>
+    <string name="save_image">保存图片</string>
+    <string name="tap_image_toggle_controls">点击图片切换控制选项</string>
+    <string name="vision_enabled">视觉功能已启用</string>
+    <string name="message_copied">消息已复制</string>
+    <string name="tokens_per_second_format">%1$d tokens • %2$.1f token/秒</string>
+    <string name="context_multimodal_format">%1$dk 文本 • %2$s</string>
+    <string name="multimodal_format">%1$s 多模态模型</string>
+    <string name="multimodal">多模态模型</string>
+    <string name="text_only">仅文本</string>
+    <string name="currently_loaded">当前加载</string>
+    <string name="select_model">选择模型</string>
+    <string name="unload_model">卸载模型</string>
+    <string name="reload_model">重新加载模型</string>
+    
+    <!-- About Screen -->
+    <string name="about_llm_hub">关于 LLM Hub</string>
+    <string name="about_description">LLM Hub 是一个开源的安卓应用程序，它将大型语言模型的强大功能直接带到您的设备上。使用最先进的模型如 Gemma、Llama 和 Phi 进行 AI 对话。所有这些模型都在您的设备上本地运行，以实现最大的隐私保护和离线可访问性。</string>
+    <string name="key_features">主要功能</string>
+    <string name="feature_multiple_models">🤖 有多种 LLM 模型: Gemma-3, Llama-3.2, Phi-4, and Gemma-3n</string>
+    <string name="feature_on_device">📱 设备端侧处理: 完全隐私，无需互联网</string>
+    <string name="feature_vision_support">🖼️ 视觉模型支持: 多模态模型，能够理解图像</string>
+    <string name="feature_gpu_acceleration">⚡ GPU 加速: 在支持的设备上优化性能</string>
+    <string name="feature_offline_usage">💾 离线使用: 无需互联网连接即可聊天</string>
+    <string name="feature_privacy_first">🔒 隐私优先: 您的对话永远不会离开您的设备</string>
+    <string name="feature_modern_ui">🎨 现代界面: 简洁、直观的 Material Design 界面</string>
+    <string name="developer_info">开发者信息</string>
+    <string name="about_developer_info">这个项目由一个对让 AI 技术更易于访问充满热情的爱好者开发。我们欢迎您的反馈和贡献！</string>
+    <string name="tech_stack">技术结构</string>
+    <string name="about_tech_stack">LLM Hub 由现代的安卓技术构建: Kotlin, Jetpack Compose, Material Design 3, 以及 llama.cpp 库，用于高效的设备端推理</string>
+    <string name="tech_kotlin_compose">🏗️ 使用 Kotlin &amp; Jetpack Compose 构建</string>
+    <string name="tech_mediapipe_litert">🧠 由 MediaPipe &amp; LiteRT 驱动</string>
+    <string name="tech_quantization">🚀 使用 INT4/INT8 量化优化</string>
+    <string name="tech_gpu_acceleration">⚡ 通过 LiteRT XNNPACK 实现 GPU 加速</string>
+    <string name="tech_models_source">🔗 模型来源于 HuggingFace &amp; Google</string>
+    <string name="contact_support">联系 &amp; 支持</string>
+    <string name="contact_email">联系邮箱:</string>
+    <string name="source_code">源码:</string>
+    <string name="github_repository">GitHub Repository</string>
+    <string name="acknowledgments">鸣谢</string>
+    <string name="acknowledgments_text">特别感谢谷歌、Meta、微软、IBM 以及 HuggingFace 社区提供驱动本应用的卓越大型语言模型。本项目同时依托于安卓开发者社区和开源生态系统的杰出贡献。</string>
+    <string name="sd_models_credit">图像生成模型基于 xororz 的 Stable Diffusion 实现方案，采用高通 QNN（NPU）和阿里巴巴 MNN（CPU）后端支持。</string>
+    <string name="nexa_sdk_credit">GGUF 模型推理由 Nexa SDK 提供支持。</string>
+    <string name="ai_thinking">AI 思考中...</string>
+    <string name="thinking_label">深度思考</string>
+    <string name="thinking_tokens">思考 (%1$d tokens)</string>
+    <string name="version_number">版本号 3.6.1</string>
+    <string name="app_version">应用版本</string>
+    
+    <!-- Terms of Service -->
+    <string name="terms_of_service">服务条款</string>
+    <string name="tos_last_updated">上次更新于 2025 年 7 月 16 日</string>
+    <string name="tos_welcome_text">欢迎来到 LLM Hub。使用本应用即表示您同意遵守本服务条款。请仔细阅读。</string>
+    <string name="tos_welcome">欢迎来到 LLM Hub。使用本应用即表示您同意遵守本服务条款。请仔细阅读。</string>
+    <string name="tos_acceptance_title">1. 接受条款</string>
+    <string name="tos_acceptance_text">下载、安装或使用 LLM Hub 即表示您已阅读、理解并同意受本服务条款约束。如果您不同意这些条款，请勿使用本应用程序。</string>
+    <string name="tos_app_description_title">2. 应用说明</string>
+    <string name="tos_app_description_text">LLM Hub 是一款开源的安卓应用，它提供对大型语言模型 (LLM) 的访问，用于设备端 AI 对话。该应用会在您的设备本地处理所有数据，不会将个人信息传输到外部服务器。</string>
+    <string name="tos_user_responsibilities_title">" 24 3. 用户职责"</string>
+    <string name="tos_user_responsibilities_text">您同意负责任地使用 LLM Hub，并遵守适用法律。您需承担以下责任：• 仅将应用程序用于合法目的• 不得尝试对应用程序进行反向工程或修改• 不得利用应用程序生成有害、非法或冒犯性内容• 尊重第三方知识产权• 确保您的设备满足正常运行的最低要求。</string>
+    <string name="tos_privacy_data_title">4. 隐私和数据</string>
+    <string name="tos_privacy_data_text">LLM Hub 的设计以隐私保护为核心：• 所有对话和数据处理均在您的设备本地进行 • 不会将任何个人数据传输到外部服务器 • 聊天记录存储在本地，您可以随时删除 • 模型下载直接从官方存储库（HuggingFace、Google）进行 • 该应用程序不会收集分析或使用数据。</string>
+    <string name="tos_disclaimer_title">5. 免责声明</string>
+    <string name="tos_disclaimer_text">LLM Hub 按现状提供，不提供任何形式的担保。我们不保证应用程序及其生成内容的准确性、可靠性或可用性。使用人工智能模型可能会产生不可预测的结果。</string>
+    <string name="tos_limitation_liability_title">6. 责任限制</string>
+    <string name="tos_limitation_liability_text">在任何情况下，开发者均不对因使用 LLM Hub 而导致的任何间接、附带、特殊或后果性损害承担责任。您需自行承担使用该应用程序的风险。</string>
+    <string name="tos_model_usage_title">7. 模型使用和许可</string>
+    <string name="tos_model_usage_text">通过 LLM Hub 获取的 AI 模型均受其各自许可协议和使用条款约束。用户在使用下载的模型时，须自行负责遵守模型特定的许可要求。</string>
+    <string name="tos_open_source_title">8. 开源许可</string>
+    <string name="tos_open_source_text">LLM Hub 是开源软件。其源代码采用 MIT 许可证，允许在遵守许可证条款的前提下使用、修改和分发。第三方库和模型可能采用不同的许可证条款。</string>
+    <string name="tos_changes_title">9. 条款变更</string>
+    <string name="tos_changes_text">我们可能会随时更新本服务条款。重大变更将通过应用程序更新通知用户。变更后继续使用本应用即视为接受新条款。</string>
+    <string name="tos_contact_title">10. 联系方式</string>
+    <string name="tos_contact_text">如果您对这些服务条款有任何疑问，请联系我们：timmyboy0623@gmail.com</string>
+    
+    <!-- Navigation -->
+    <string name="chat">对话</string>
+    <string name="models">模型</string>
+    <string name="settings">设置</string>
+    <string name="about">关于</string>
+    
+    <!-- Settings -->
+    <string name="appearance">外观</string>
+    <string name="features">功能</string>
+    <string name="information">信息</string>
+    <string name="source_code_section">源代码</string>
+    <string name="download_models">下载模型</string>
+    <string name="browse_download_models">浏览和下载 LLM 模型</string>
+    <string name="embedding_model">嵌入模型</string>
+    <string name="select_embedding_model">选择嵌入模型</string>
+    <string name="no_embedding_model_selected">未选择嵌入模型</string>
+    <string name="disable_embeddings">禁用嵌入</string>
+    <string name="embedding_settings_changed_title">嵌入设置已更改</string>
+    <string name="embedding_settings_changed_message">要使嵌入更改生效，请卸载并重新加载您的模型。</string>
+    <string name="reload_models">重新加载模型</string>
+    <string name="dismiss">关闭</string>
+    <string name="reload_models_notice">需要重新加载模型才能生效</string>
+    <string name="embedding_enabled">嵌入已启用</string>
+    <string name="embedding_disabled">嵌入已禁用</string>
+    <string name="embedding_status_enabled">嵌入状态: 已启用</string>
+    <string name="embedding_status_disabled">嵌入状态: 已禁用</string>
+    <string name="rag_enabled">RAG 已启用</string>
+    <string name="web_search">网络搜索</string>
+    <string name="web_search_enabled">从网络获取当前信息</string>
+    <string name="web_search_disabled">仅使用离线知识</string>
+    <string name="web_search_description_enabled">从网络获取当前信息</string>
+    <string name="web_search_description_disabled">仅使用离线知识</string>
+    <string name="theme">主题</string>
+    <string name="language">语言</string>
+    <string name="light_theme">浅色模式</string>
+    <string name="dark_theme">深色模式</string>
+    <string name="system_default_theme">系统默认</string>
+    <string name="theme_light">浅色模式</string>
+    <string name="theme_dark">深色模式</string>
+    <string name="theme_system">系统默认</string>
+    <string name="system_default_language">系统默认</string>
+    <string name="system_default">系统默认</string>
+    <string name="choose_theme">选择主题</string>
+    <string name="choose_language">选择语言</string>
+    <string name="select_language">选择语言</string>
+    <string name="app_information_contact">应用信息和联系方式</string>
+    <string name="app_info_contact">应用信息和联系方式</string>
+    <string name="legal_terms_conditions">法律条款和条件</string>
+    <string name="github_repository_desc">查看源码与贡献</string>
+    <string name="view_source_contribute">查看源码与贡献</string>
+    <string name="back">返回</string>
+
+    <!-- Language Names -->
+    <string name="language_english">English</string>
+    <string name="language_spanish">Español</string>
+    <string name="language_portuguese">Português</string>
+    <string name="language_german">Deutsch</string>
+    <string name="language_french">Français</string>
+    <string name="language_russian">Русский</string>
+    <string name="language_italian">Italiano</string>
+    <string name="language_turkish">Türkçe</string>
+    <string name="language_polish">Polski</string>
+    <string name="language_arabic">العربية</string>
+    <string name="language_japanese">日本語</string>
+    <string name="language_indonesian">Indonesia</string>
+    <string name="language_korean">한국어</string>
+    <string name="language_persian">فارسی</string>
+    <string name="language_ukrainian">Українська</string>
+    <string name="language_hebrew">עברית</string>
+    <string name="language_chinese_simplified">简体中文</string>
+    
+    <!-- Errors and Messages -->
+    <string name="failed_to_load_image">无法加载图片</string>
+    <string name="model_loading_error">加载模型时出错</string>
+    <string name="message_send_error">发送消息时出错</string>
+    <string name="file_save_error">保存文件时出错</string>
+    <string name="file_save_success">文件保存成功</string>
+    
+    <!-- Accessibility -->
+    <string name="content_description_ai_bot">AI Bot</string>
+    <string name="content_description_smart_toy">Smart Toy</string>
+    <string name="content_description_email">电子邮件</string>
+    <string name="content_description_code">源代码</string>
+    <string name="content_description_image">图片</string>
+    <string name="content_description_download">下载</string>
+    <string name="content_description_stop">停止</string>
+    <string name="content_description_refresh">刷新</string>
+    <string name="content_description_copy">复制</string>
+    <string name="content_description_speed">速度</string>
+    <string name="content_description_check">检查</string>
+    <string name="content_description_eye">启用视觉</string>
+    <string name="content_description_attach_image">附加图片</string>
+    <string name="content_description_back">返回</string>
+    
+    <!-- Model Information -->
+    <string name="no_model_selected">未选择模型</string>
+    <string name="no_model_downloaded">未下载模型</string>
+    <string name="model_supports_vision">支持视觉</string>
+    <string name="model_supports_multimodal">支持多模态</string>
+    <string name="model_text_only">仅文本</string>
+    <string name="not_loaded">未加载</string>
+    
+    <!-- Chat Drawer -->
+    <string name="drawer_title">LLM Hub</string>
+    <string name="drawer_new_chat">新对话</string>
+    <string name="drawer_recent_chats">最近对话</string>
+    <string name="drawer_no_chats">暂无对话</string>
+    <string name="drawer_download_models">下载模型</string>
+    <string name="drawer_clear_all_chats">清除所有对话</string>
+    <string name="drawer_settings">设置</string>
+    
+    <!-- Chat Management -->
+    <string name="dialog_rename_chat_title">重命名对话</string>
+    <string name="chat_title">对话标题</string>
+    <string name="more_options">更多选项</string>
+    <string name="dialog_delete_all_chats_title">删除所有对话</string>
+    <string name="dialog_delete_all_chats_message">将会永久抹除所有对话记录，且无法撤销。</string>
+    <string name="dialog_delete_chat_title">删除对话</string>
+    <string name="dialog_delete_chat_message">确定要删除对话 \"%1$s\" 吗？</string>
+    <string name="dialog_delete_creator_title">删除自定义 AI?</string>
+    <string name="dialog_delete_creator_message">确定要删除你的自定义 AI \"%1$s\" 吗？</string>
+    <string name="action_delete_all">删除全部</string>
+    <string name="action_delete">删除</string>
+    <string name="action_rename">重命名</string>
+    <string name="action_cancel">取消</string>
+    <string name="content_description_delete_chat">删除对话</string>
+    
+    <!-- Time Formatting -->
+    <string name="time_yesterday">昨天</string>
+    <string name="time_hours_ago">%1$d 小时前</string>
+    <string name="time_minutes_ago">%1$d 分钟前</string>
+    <string name="time_just_now">刚刚</string>
+    
+    <!-- Model Download Screen -->
+    <string name="ai_models">AI 模型</string>
+    <string name="download_ai_models">下载 AI 模型</string>
+    <string name="choose_text_multimodal_models">从仅文本或多模态模型中选择</string>
+    <string name="text_models">文本模型</string>
+    <string name="text_models_description">针对文本生成和对话优化的模型</string>
+    <string name="vision_models">多模态模型</string>
+    <string name="vision_models_description">能够理解文本、图像和音频的模型</string>
+    <string name="embedding_models">嵌入模型</string>
+    <string name="embedding_models_description">用于文本嵌入和语义搜索的模型</string>
+    <string name="gpu">GPU</string>
+    <string name="variant">个项目</string>
+    <string name="variants">个项目</string>
+    <string name="expand">展开</string>
+    <string name="collapse">折叠</string>
+    <string name="downloaded">已下载</string>
+    <string name="downloading">下载中...</string>
+    <string name="extracting">提取中...</string>
+    <string name="extracting_model">提取模型...</string>
+    <string name="not_downloaded">未下载</string>
+    <string name="partial">部分下载</string>
+    <string name="paused">已暂停</string>
+    <string name="paused_downloaded_format">已暂停: %1$s 已下载</string>
+    <string name="partial_downloaded_format">部分下载: %1$s 已下载</string>
+    <string name="continue_download">继续下载</string>
+    <string name="pause_download">暂停下载</string>
+    <string name="resume_download">恢复下载</string>
+    <string name="clear">清除</string>
+    <string name="ram_requirement_format">%1$dGB运行内存</string>
+    
+    <!-- File Attachments -->
+    <string name="attach_file">附加文件</string>
+    <string name="attach_image">附加图片</string>
+    <string name="attach_document">附加文档</string>
+    <string name="attach_text_file">附加文本文件</string>
+    <string name="file_attachment">文件附件</string>
+    <string name="file_too_large">文件太大</string>
+    <string name="unsupported_file_type">不支持的文件类型</string>
+    <string name="file_processing_error">文件处理错误</string>
+    <string name="could_not_read_file">无法读取文件</string>
+    <string name="file_preview">文件预览</string>
+    <string name="remove_attachment">移除</string>
+    <string name="keep_attachment">保留</string>
+    <string name="preview_not_available">预览不可用</string>
+    
+    <!-- File Type Categories -->
+    <string name="images">图片</string>
+    <string name="documents">文档</string>
+    <string name="text_files">文本文件</string>
+    <string name="images_description">JPG, PNG, GIF, WebP</string>
+    <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
+    <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
+    <string name="text_file">文本文件</string>
+    <string name="tap_to_preview">点击预览</string>
+    <string name="text_file_tap_to_preview">文本文件 • 点击预览</string>
+    <string name="read_this">阅读此内容</string>
+    
+    
+    <!-- Audio Input -->
+    <string name="audio_recording">录制音频</string>
+    <string name="audio_description">录制语音消息</string>
+    <string name="record_voice_message">录制语音消息</string>
+    <string name="recording">录制中…</string>
+    <string name="audio_recorded">音频已录制</string>
+    <string name="ready_to_send">准备发送</string>
+    <string name="tap_to_stop">点击停止</string>
+    <string name="stop_recording">停止录制</string>
+    <string name="remove_audio">移除音频</string>
+    <string name="audio_enabled">音频已启用</string>
+    <string name="audio">音频</string>
+    <string name="audio_file">音频文件</string>
+    <string name="tap_to_play">点击播放</string>
+    <string name="max_recording_reached">达到最大录制时长 (30 秒)</string>
+    <string name="remaining">剩余</string>
+
+    <!-- Image actions -->
+    <string name="image_copied_clipboard">从聊天中复制图片</string>
+    <string name="image_copied_to_clipboard">图片已复制到剪贴板</string>
+    <string name="failed_to_copy_image">复制图片失败</string>
+    <string name="failed_to_copy_image_with_error">复制图片失败: %1$s</string>
+    <string name="image_saved_to_gallery">图片已保存到相册</string>
+    <string name="failed_to_save_image">保存图片失败</string>
+    <string name="failed_to_save_image_with_error">保存图片失败: %1$s</string>
+    
+    <!-- RAG (Document Chat) -->
+    <string name="searching_documents">寻找文档...</string>
+    <string name="using_document_context_format">使用来自 %1$d 个文档部分的上下文</string>
+    <string name="documents_available_format">%1$d 个文档可用</string>
+    <string name="ai_can_reference_documents">AI 可以在回复中引用您的文档</string>
+    <string name="document_chat_enabled">文档聊天已启用</string>
+    <string name="semantic_search_active">语义搜索已激活</string>
+    <string name="memory">全局记忆</string>
+    <string name="memory_description_enabled">允许 AI 通过 RAG 访问您上传的全局内存</string>
+    <string name="memory_requires_rag">需要启用 RAG/嵌入功能</string>
+    <string name="manage_memory">管理记忆</string>
+    <string name="manage_memory_subtitle">上传/粘贴</string>
+    <string name="paste_or_upload_to_memory">粘贴/上传文档以将其添加到全局记忆中</string>
+    <string name="paste_memory_placeholder">在这里粘贴文本/文件/知识...</string>
+    <string name="upload_file">上传</string>
+    <string name="save_to_memory">保存</string>
+    <string name="import_chat_history">导入对话记录</string>
+    <string name="select_chats_to_import">选择对话以导入进记忆</string>
+    <string name="import_selected_chats">导入对话</string>
+    <string name="chat_imported_to_memory">对话记录已导入进记忆</string>
+    <string name="no_chats_selected">未选择对话</string>
+    <string name="edit_memory">编辑记忆</string>
+    <string name="memory_content">记忆内容</string>
+    <string name="save_changes">保存更改</string>
+    <string name="done">完成</string>
+    <string name="global_memory_uploaded_by">上传至全局记忆</string>
+    <string name="global_memory_pasted_by">粘贴至全局记忆</string>
+    <string name="memory_upload_success">文件已保存至全局记忆</string>
+    <string name="memory_upload_failed">无法保存至记忆 (RAG 可能被禁用)</string>
+    <string name="memory_upload_unsupported_type">记忆不支持该文件类型。仅可将文本文档（PDF、DOC、TXT 等）添加至记忆</string>
+    <string name="memory_save_success">文本已保存至记忆</string>
+    <string name="memory_save_failed">无法保存至记忆 (RAG 可能被禁用)</string>
+    <string name="saved_memories">已保存的记忆</string>
+    <string name="clear_all">清除全部</string>
+    
+    <!-- Text-to-Speech -->
+    <string name="auto_readout">自动朗读</string>
+    <string name="auto_readout_description">大声朗读 AI 的回复内容</string>
+    
+    <string name="memory_cleared">所有记忆已清除</string>
+    <string name="confirm_replace_memory_title">替换当前的记忆</string>
+    <string name="confirm_replace_memory_message">您已拥有一个全局记忆。替换它将删除现有记忆以及导入的数据。要继续吗？</string>
+    <string name="confirm_replace_action">替换</string>
+    <string name="memory_processing">处理记忆中...</string>
+    <string name="reembedding_memory_in_progress">为新嵌入模型重新嵌入全局记忆...</string>
+    <string name="reembedding_memory_done">全局记忆已重新嵌入</string>
+    
+    <!-- Gemma-3n specific GPU requirements -->
+    <string name="gemma3n_e2b_gpu_requires_6gb">需要至少 6GB 的显存</string>
+    <string name="gemma3n_e4b_gpu_requires_8gb">内存容量为 8GB 或更低的设备 无法通过 GPU 加载此模型</string>
+    <string name="audio_support">支持音频</string>
+    <string name="vision_audio_text">视觉+音频+文本</string>
+    <string name="vision_text">视觉+文本</string>
+    <string name="audio_text">音频+文本</string>
+    <string name="shared_file">分享了文件</string>
+    <string name="audio_message">音频消息</string>
+    <string name="image_message">图片消息</string>
+    <string name="model_configs_title">模型配置</string>
+    <string name="reset_to_defaults">重置</string>
+    <string name="max_tokens">最大 token</string>
+    <string name="top_k">TopK</string>
+    <string name="top_p">TopP</string>
+    <string name="temperature">温度(Temperature)</string>
+    <string name="choose_accelerator">选择加速器</string>
+    <string name="max">最大</string>
+    
+    <!-- GPU with Vision+Audio Disabled for Gemma-3n E4B -->
+    <string name="gpu_vision_disabled_title">显卡加速 禁用视觉与音频</string>
+    <string name="gpu_vision_disabled_description">为启用显卡加速，视觉与音频已被禁用。</string>
+    <string name="gpu_with_vision_disabled">显卡加速 (禁用视觉与音频)</string>
+    <string name="gemma3n_e4b_gpu_vision_warning">对于配备 7-8 GB 内存的设备，启用显卡加速需关闭视觉和音频功能。届时将无法使用附加图片和音频输入功能。</string>
+    <string name="vision_disabled_for_gpu">启用显卡加速 禁用视觉与音频</string>
+    <string name="vision_disabled_no_images">此模型配置已禁用视觉和音频功能。无法使用图像附件和音频输入功能。</string>
+    <string name="ram_limit_gpu_vision_disabled">由于内存限制 (%.1fGB), 启用显卡加速后将会禁用视觉与音频</string>
+    
+    <!-- GPU with Audio Only Disabled for Gemma-3n E4B on 8GB devices -->
+    <string name="gpu_with_audio_disabled">显卡加速 (禁用音频)</string>
+    <string name="gemma3n_e4b_gpu_audio_warning">对于配备 7-8 GB 内存的设备，启用显卡加速需禁用音频功能。届时无法使用音频输入功能。</string>
+    <string name="audio_disabled_for_gpu">启用显卡加速 禁用音频</string>
+    <string name="audio_disabled_no_audio">此模型配置已禁用音频功能。无法使用音频输入功能。</string>
+    
+    <!-- Separate modality toggles -->
+    <string name="modality_options">多模态设置</string>
+    <string name="enable_vision">启用视觉 (图片分析能力)</string>
+    <string name="enable_audio">启用音频 (语音识别能力)</string>
+    <string name="enable_thinking">启用深度思考</string>
+    <string name="gemma3n_e4b_modality_suggestion">💡 在 7–8 GB 内存设备上为获得稳定性能，建议禁用音频以节省显存。</string>
+    
+    <!-- General performance tip for all devices -->
+    <string name="gemma3n_performance_tip">💡若因内存限制导致程序崩溃或性能低下，请尝试切换至仅CPU模式 或禁用视觉/音频功能。</string>
+    
+    <!-- External Model Import -->
+    <string name="import_external_model">导入外部模型</string>
+    <string name="model_name">模型名称</string>
+    <string name="select">选择</string>
+    <string name="select_model_file">选择模型文件</string>
+
+    <string name="supports_vision">支持视觉</string>
+    <string name="supports_audio">支持音频</string>
+    <string name="supports_gpu">支持显卡加速</string>
+    <string name="model_format">模型格式</string>
+    <string name="context_window_size">上下文窗口大小</string>
+    <string name="import_model">导入模型</string>
+    <string name="model_name_required">需要填写模型名称</string>
+    <string name="model_name_already_exists">名为 \"%1$s\" 的模型已存在。请使用其他名称或先删除现有模型。</string>
+    <string name="context_window_size_invalid">请输入有效的上下文窗口大小</string>
+    <string name="please_fix_errors">请修复上面的错误</string>
+    <string name="remove">移除</string>
+    <string name="ready_to_use">准备就绪</string>
+    <string name="unsupported_file_format">不支持的文件格式。请选择 .task、.litertlm 或 .zip 格式的文件。</string>
+    <string name="download_models_from_litert_community">你可以在以下地址下载 LLM 模型：</string>
+    <string name="litert_community_link">Hugging Face 上的 LiteRT 社区</string>
+    <string name="download_image_models_from">您可以从以下位置下载兼容的图像模型：</string>
+    <string name="sd_models_link">Hugging Face 上的 Stable Diffusion 模型</string>
+    <string name="supports_npu">支持神经网络处理器</string>
+    <string name="import_model_warning">⚠️ 重要提示：导入前请务必阅读 Hugging Face 平台上的模型 README 文档。请严格按照模型文档要求设置正确的功能参数（视觉、音频、显卡加速）及上下文窗口大小。错误设置可能导致模型运行异常。重要提示：视觉 GGUF 模型需配合视觉投影器（mmproj）使用。请导入投影器文件以启用图像输入功能</string>
+    
+    <!-- Home Screen -->
+    <string name="home_welcome">欢迎来到 LLM Hub</string>
+    <string name="home_subtitle">解锁口袋里的 AI 力量 —— 私密、快速且离线可用！</string>
+    
+    <!-- Feature Cards -->
+    <string name="feature_ai_chat">AI 对话</string>
+    <string name="feature_ai_chat_desc">与 AI 模型进行多轮对话</string>
+    <string name="feature_writing_aid">写作助手</string>
+    <string name="feature_writing_aid_desc">语法、风格、改写和语调调整</string>
+    <string name="feature_translator">翻译</string>
+    <string name="feature_translator_desc">使用多模态模型私密地翻译文本</string>
+    <string name="feature_transcriber">听写</string>
+    <string name="feature_transcriber_desc">将语音或音频转录为文本</string>
+    <string name="feature_scam_detector">诈骗检测器</string>
+    <string name="feature_scam_detector_desc">分析文本、图像或 URL 以检测潜在的诈骗行为</string>
+    <string name="feature_image_generator">图像生成器</string>
+    <string name="feature_image_generator_desc">使用 AI 从文本提示生成图像</string>
+    <string name="feature_vibe_coder">代码</string>
+    <string name="feature_vibe_coder_desc">使用 AI 生成 HTML、JavaScript 和 Python 代码</string>
+    <string name="feature_creator_generation">自定义 AI</string>
+    <string name="feature_creator_generation_desc">创建你自己的自定义 AI</string>
+    <string name="drawer_my_creators">我的自定义 AI</string>
+    
+    <!-- Vibe Coder Screen -->
+    <string name="vibe_coder_title">代码</string>
+    <string name="vibe_coder_prompt_label">你想生成什么代码？</string>
+    <string name="vibe_coder_prompt_hint">描述需要生成的内容...</string>
+    <string name="vibe_coder_generate">生成代码</string>
+    <string name="vibe_coder_generating">生成代码中...</string>
+    <string name="vibe_coder_generated_code">代码已生成</string>
+    <string name="vibe_coder_copy">复制</string>
+    <string name="vibe_coder_preview">预览代码</string>
+    <string name="vibe_coder_no_model">未加载模型。请先下载并选择一个模型。</string>
+    <string name="vibe_coder_settings">设置</string>
+    <string name="vibe_coder_backend_select">选择后端</string>
+    <string name="vibe_coder_modification_mode">修改模式</string>
+    <string name="vibe_coder_refine">优化代码</string>
+    <string name="vibe_coder_clear">新项目 / 清除上下文</string>
+    <string name="vibe_coder_planning">规划架构...</string>
+    <string name="vibe_coder_revising">修订代码...</string>
+    <string name="vibe_coder_select_folder_title">先选择一个项目文件夹</string>
+    <string name="vibe_coder_select_folder_desc">打开文件夹以启用多文件生成和文件夹内文件创建功能。</string>
+    <string name="vibe_coder_open_folder">打开文件夹</string>
+    <string name="vibe_coder_show_chat">显示对话</string>
+    <string name="vibe_coder_ai_chat">AI 对话</string>
+    <string name="vibe_coder_hide_chat">隐藏对话</string>
+    <string name="vibe_coder_clear_chat">清除对话</string>
+    <string name="vibe_coder_new_chat">新对话</string>
+    <string name="vibe_coder_delete_chat_cd">删除对话</string>
+    <string name="vibe_coder_message_you">你</string>
+    <string name="vibe_coder_message_ai">AI</string>
+    <string name="vibe_coder_edit_resend_prompt">编辑提示词并重新发送</string>
+    <string name="vibe_coder_resend">重新发送</string>
+    <string name="vibe_coder_ask_ai_edit">让 AI 编辑这个文件…</string>
+    <string name="vibe_coder_create_open_file_hint">先创建/打开一个文件 (.py, .js, .ts, …)</string>
+    <string name="vibe_coder_stop_generation">停止生成</string>
+    <string name="vibe_coder_code_editor">代码编辑器</string>
+    <string name="vibe_coder_new_file">新文件</string>
+    <string name="vibe_coder_save_file">保存文件</string>
+    <string name="vibe_coder_copy_code">复制代码</string>
+    <string name="vibe_coder_delete_file_cd">删除文件</string>
+    <string name="vibe_coder_open_or_create_file">打开或创建一个文件以开始编辑。</string>
+    <string name="vibe_coder_ai_editing">AI 正在编辑代码…</string>
+    <string name="vibe_coder_write_code_hint">在此处编写代码或通过聊天向 AI 提问…</string>
+    <string name="vibe_coder_discard">取消</string>
+    <string name="vibe_coder_create_file_title">在工作区创建文件</string>
+    <string name="vibe_coder_file_name_placeholder">example.py 或 app.js</string>
+    <string name="vibe_coder_file_name_label">文件名（含扩展名）</string>
+    <string name="vibe_coder_file_name_error">请输入有效的文件名（含扩展名），例如 main.py</string>
+    <string name="vibe_coder_create">创建</string>
+    <string name="vibe_coder_delete_chat_title">删除对话？</string>
+    <string name="vibe_coder_delete_chat_message">这将永久删除此对话会话。</string>
+    <string name="vibe_coder_delete_file_title">删除文件？</string>
+    <string name="vibe_coder_delete_file_message">从该文件夹中删除 \'%1$s\'？</string>
+    <string name="vibe_coder_no_file_selected_error">未选择文件。请先从文件夹创建/打开文件。</string>
+    <string name="vibe_coder_delete_file_error">无法删除文件</string>
+    <string name="vibe_coder_autosave_failed">自动保存失败。请再次点击保存或重新打开文件。</string>
+
+    <!-- Creator Generation Screen -->
+    <string name="creator_screen_title">创建自定义 AI</string>
+    <string name="creator_bring_to_life">创建独特的 AI</string>
+    <string name="creator_description">让自定义 AI 创作者焕发生机的力量。只需描述您的自定义 AI 将如何响应任何输入、请求或创意。一旦我们生成好您的自定义 AI，您便能在聊天中使用它。</string>
+    <string name="creator_prompt_label">描述你的自定义 AI</string>
+    <string name="creator_prompt_placeholder">例如 将任何主题概括为一首不超过 10 行的押韵诗。</string>
+    <string name="creator_brewing">酝酿魔法中...</string>
+    <string name="creator_generate_persona">生成人格</string>
+    <string name="creator_load_model_first">请先加载模型。</string>
+    <string name="creator_result_heading">已制作好您的自定义 AI！</string>
+    <string name="creator_system_prompt_label">系统提示词(PCTF):</string>
+    <string name="creator_save_and_chat">保存并开始对话</string>
+
+    <!-- Kid Mode -->
+    <string name="kid_mode_title">儿童模式</string>
+    <string name="kid_mode_enabled_status">已激活 - 安全护栏已启动</string>
+    <string name="kid_mode_disabled_status">已禁用</string>
+    <string name="kid_mode_incorrect_pin">PIN 错误</string>
+    <string name="kid_mode_set_pin_title">设置儿童模式 PIN</string>
+    <string name="kid_mode_set_pin_body">输入一个 4 位数字的 PIN 来启用儿童模式。您需要这个 PIN 来禁用它。</string>
+    <string name="kid_mode_pin_label">4 位数字 PIN</string>
+    <string name="kid_mode_pin_error">PIN 必须是 4 位数字</string>
+    <string name="kid_mode_enable">启用</string>
+    <string name="kid_mode_disable_title">禁用儿童模式</string>
+    <string name="kid_mode_verify_body">输入您的 4 位数字 PIN 来禁用儿童模式。</string>
+    <string name="kid_mode_disable">禁用</string>
+
+    <!-- Writing Aid Screen -->
+    <string name="writing_aid_title">写作助手</string>
+    <string name="writing_aid_input_label">输入文本</string>
+    <string name="writing_aid_input_hint">输入你想优化的文案/作文/论文...</string>
+    <string name="writing_aid_input_hint_no_model">载入一个模型以开始</string>
+    <string name="writing_aid_mode_grammar">检查语法结构</string>
+    <string name="writing_aid_mode_paraphrase">改写</string>
+    <string name="writing_aid_mode_tone">调整语气</string>
+    <string name="writing_aid_mode_email">邮件回复</string>
+    <string name="writing_aid_mode_sms">短信回复</string>
+    <string name="writing_aid_tone_friendly">友好</string>
+    <string name="writing_aid_tone_professional">专业</string>
+    <string name="writing_aid_tone_concise">简洁</string>
+    <string name="writing_aid_select_mode">选择语气</string>
+    <string name="writing_aid_process">处理</string>
+    <string name="processing_tap_to_cancel">处理中(点击取消)</string>
+    <string name="writing_aid_result">结果</string>
+    <string name="writing_aid_no_model">未加载模型。请先下载并选择一个模型。</string>
+
+    <!-- Translator Screen -->
+    <string name="translator_title">离线翻译器</string>
+    <string name="translator_input_label">要翻译的文本</string>
+    <string name="translator_input_hint">输入要翻译的文本...</string>
+    <string name="load_model_to_start">加载模型以开始</string>
+    <string name="translator_source_lang">源语言</string>
+    <string name="translator_target_lang">目标语言</string>
+    <string name="translator_auto_detect">自动检测</string>
+    <string name="translator_translate">翻译</string>
+    <string name="translator_result">翻译结果</string>
+    <string name="translator_requires_gemma3n">此功能需要一个 Gemma-3n 模型。请从模型列表下载一个。</string>
+
+    <!-- Transcriber Screen -->
+    <string name="transcriber_title">听写</string>
+    <string name="transcriber_record">录制音频</string>
+    <string name="transcriber_upload">上传音频</string>
+    <string name="transcriber_transcribe">转录</string>
+    <string name="transcriber_result">转录结果</string>
+    <string name="transcriber_recording">录制中...</string>
+    <string name="transcriber_stop">停止录制</string>
+    <string name="transcriber_requires_gemma3n">此功能需要一个具有音频支持的 Gemma-3n 模型。请从模型列表下载一个。</string>
+    
+    <!-- Scam Detector Screen -->
+    <string name="scam_detector_title">诈骗检测器</string>
+    <string name="scam_detector_input_label">输入要分析的内容</string>
+    <string name="scam_detector_input_hint">粘贴文本、上传图像或输入 URL 以分析诈骗...</string>
+    <string name="scam_detector_url_hint">输入 URL 以分析</string>
+    <string name="scam_detector_analyze">分析</string>
+    <string name="scam_detector_analyzing">分析中(点击取消)</string>
+    <string name="scam_detector_result">分析结果</string>
+    <string name="scam_detector_no_model">未加载模型。请先下载并选择一个模型。</string>
+    <string name="scam_detector_load_model">加载模型</string>
+    <string name="scam_detector_load_model_desc">请加载一个模型以开始分析内容</string>
+    <string name="scam_detector_enable_vision">启用视觉分析</string>
+    <string name="scam_detector_vision_desc">分析图像以检测诈骗</string>
+    <string name="scam_detector_fetching_url">获取 URL 内容...</string>
+    
+    <!-- Image Generator Screen -->
+    <string name="image_generator_title">图像生成</string>
+    <string name="image_generator_subtitle">使用 Absolute Reality SD1.5 从文本提示生成图像</string>
+    <string name="image_generator_prompt_label">图像描述</string>
+    <string name="image_generator_prompt_hint">描述您想要生成的图像...</string>
+    <string name="image_generator_generate">生成图像</string>
+    <string name="image_generator_generating">正在生成图像...</string>
+    <string name="image_generator_iterations">步骤</string>
+    <string name="image_generator_seed">种子</string>
+    <string name="image_generator_random_seed">随机种子</string>
+    <string name="image_generator_save">保存图像</string>
+    <string name="image_generator_download_model">请先下载模型</string>
+    <string name="image_generator_download_model_desc">从模型列表下载Absolute Reality（NPU 或 CPU）模型，开始创建图像</string>
+    <string name="image_generator_model_not_available">图像生成模型不可用</string>
+    <string name="image_generator_error">无法生成图片</string>
+    <string name="image_generation_models">图像生成模型</string>
+    <string name="image_generation_models_description">用于文本到图像生成的 Stable Diffusion 模型</string>
+    <string name="image_generator_success">图像已生成</string>
+    <string name="image_generator_saved">保存至相册</string>
+    <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
+    <string name="image_generation_model">图像生成模型</string>
+    <string name="image_generator_load_model_title">载入模型以开始生成图像</string>
+    <string name="image_generator_load_model_desc">请选择一个 Stable Diffusion 模型</string>
+    <string name="image_generator_no_models">无可用模型</string>
+    <string name="image_generator_load_model">载入模型</string>
+    <string name="image_generator_loading_model">加载中...</string>
+    <string name="image_generator_failed_load">加载模型失败</string>
+    <string name="image_generator_variation">生成变种 %1$d...</string>
+    <string name="image_generator_swipe_more">滑动以生成更多内容</string>
+    <string name="image_generator_info">图像生成采用在设备端运行的 Stable Diffusion v1.5 模型。根据设备性能，生成过程可能需要 1-2 分钟。</string>
+    <string name="image_generator_img2img">图像编辑</string>
+    <string name="image_generator_img2img_desc">对现有图像进行编辑</string>
+    <string name="image_generator_select_image">选择输入图像</string>
+    <string name="image_generator_change_image">更换输入图像</string>
+    <string name="image_generator_denoise_strength">去噪强度: %.2f</string>
+    <string name="image_generator_denoise_strength_desc">值越高 图像修改得越多</string>
+    <string name="image_generator_input_image">输入图像</string>
+    <string name="image_generator_use_gpu">使用 GPU 加速</string>
+    <string name="image_generator_use_gpu_desc">更快的生成速度（需要 OpenCL 支持）</string>
+
+    <!-- Common Feature Strings -->
+    <string name="feature_no_model_title">无可用模型</string>
+    <string name="feature_download_model">下载模型</string>
+    <string name="feature_processing">处理中...</string>
+    <string name="feature_error">发生错误</string>
+    <string name="feature_copy_result">复制结果</string>
+    <string name="feature_share_result">分享结果</string>
+    <string name="feature_clear">清除</string>
+    
+    <!-- Language Names for Translator (Gemma-3n Supported Languages) - Alphabetically Ordered -->
+    <string name="lang_english">英文</string>
+    <string name="lang_afrikaans">南非荷兰语</string>
+    <string name="lang_amharic">阿姆哈拉语</string>
+    <string name="lang_arabic">阿拉伯语</string>
+    <string name="lang_armenian">亚美尼亚语</string>
+    <string name="lang_azerbaijani">阿塞拜疆语</string>
+    <string name="lang_basque">巴斯克语</string>
+    <string name="lang_bengali">孟加拉语</string>
+    <string name="lang_bulgarian">保加利亚语</string>
+    <string name="lang_burmese">缅甸语</string>
+    <string name="lang_catalan">加泰罗尼亚语</string>
+    <string name="lang_chinese">简体中文</string>
+    <string name="lang_chinese_traditional">繁体中文</string>
+    <string name="lang_croatian">克罗地亚语</string>
+    <string name="lang_czech">捷克语</string>
+    <string name="lang_danish">丹麦语</string>
+    <string name="lang_dutch">荷兰语</string>
+    <string name="lang_estonian">爱沙尼亚语</string>
+    <string name="lang_filipino">菲律宾语（他加禄语）</string>
+    <string name="lang_finnish">芬兰语</string>
+    <string name="lang_french">法语</string>
+    <string name="lang_galician">加利西亚语</string>
+    <string name="lang_georgian">格鲁吉亚语</string>
+    <string name="lang_german">德语</string>
+    <string name="lang_greek">希腊语</string>
+    <string name="lang_gujarati">古吉拉特语</string>
+    <string name="lang_hausa">豪萨语</string>
+    <string name="lang_hebrew">希伯来语</string>
+    <string name="lang_hindi">印地语</string>
+    <string name="lang_hungarian">匈牙利语</string>
+    <string name="lang_icelandic">冰岛语</string>
+    <string name="lang_igbo">伊博语</string>
+    <string name="lang_indonesian">印尼语</string>
+    <string name="lang_italian">意大利语</string>
+    <string name="lang_japanese">日语</string>
+    <string name="lang_kannada"> 卡纳达语</string>
+    <string name="lang_kazakh">哈萨克语</string>
+    <string name="lang_khmer">高棉语</string>
+    <string name="lang_korean">韩语</string>
+    <string name="lang_lao">老挝语</string>
+    <string name="lang_latvian">拉脱维亚语</string>
+    <string name="lang_lithuanian">立陶宛语</string>
+    <string name="lang_malay">马来语</string>
+    <string name="lang_malayalam">马拉雅拉姆语</string>
+    <string name="lang_marathi">马拉地语</string>
+    <string name="lang_nepali">尼泊尔语</string>
+    <string name="lang_norwegian">挪威语言</string>
+    <string name="lang_pashto">普什图语</string>
+    <string name="lang_persian">波斯语(伊朗)</string>
+    <string name="lang_polish">波兰语</string>
+    <string name="lang_portuguese">葡萄牙语</string>
+    <string name="lang_punjabi">旁遮普语</string>
+    <string name="lang_romanian">罗马尼亚语</string>
+    <string name="lang_russian">俄语</string>
+    <string name="lang_serbian">塞尔维亚语</string>
+    <string name="lang_sindhi">信德语</string>
+    <string name="lang_sinhala">僧伽罗语</string>
+    <string name="lang_slovak">斯洛伐克语</string>
+    <string name="lang_slovenian">斯洛文尼亚语</string>
+    <string name="lang_somali">索马里语</string>
+    <string name="lang_spanish">西班牙语</string>
+    <string name="lang_swahili">斯瓦西里语</string>
+    <string name="lang_swedish">瑞典语</string>
+    <string name="lang_tamil">泰米尔语</string>
+    <string name="lang_telugu">泰卢固语</string>
+    <string name="lang_thai">泰语</string>
+    <string name="lang_turkish">土耳其语</string>
+    <string name="lang_ukrainian">乌克兰语</string>
+    <string name="lang_urdu">乌尔都语</string>
+    <string name="lang_uzbek">乌兹别克语</string>
+    <string name="lang_vietnamese">越南语</string>
+    <string name="lang_yoruba">约鲁巴语</string>
+    <string name="lang_zulu">祖鲁语</string>
+    
+    <!-- Model Selection -->
+    <string name="feature_settings_title">设置</string>
+    <string name="select_model_title">选择模型</string>
+    <string name="no_models_available">无可用模型</string>
+    <string name="download_models_first">请先下载模型</string>
+    <string name="select_backend">选择后端</string>
+    <string name="backend_cpu">CPU</string>
+    <string name="backend_gpu">GPU 显卡加速</string>
+    <string name="backend_npu">NPU (骁龙 Hexagon)</string>
+    <string name="gpu_layers_label">GPU 层数: %1$d</string>
+    <string name="gpu_layers_hint">卸载至 GPU/NPU 的层。0 表示仅 CPU 处理，999 表示所有层</string>
+    <string name="thinking_toggle_label">启用深度思考</string>
+    <string name="gpu_not_supported">GPU 不支持该模型</string>
+    <string name="load_model">载入模型</string>
+    <string name="model_loaded">模型加载成功</string>
+    <string name="model_loading">正在加载模型…</string>
+    <string name="model_load_failed">模型加载失败</string>
+    <string name="multimodal_models_only">仅支持多模态 (Gemma-3n) 模型</string>
+    <string name="text_models_only">仅支持文本模型</string>
+    
+    <!-- Audio Features -->
+    <string name="enable_audio_input">启用音频输入</string>
+    <string name="audio_input_enabled">音频输入已启用</string>
+    <string name="audio_input_disabled">音频输入已禁用</string>
+    <string name="record_audio">录制音频</string>
+    
+    <!-- Auto-detect Language -->
+    <string name="lang_auto_detect">自动检测语言</string>
+    <string name="auto_detecting_language"> 检测语言中...</string>
+    <string name="language_detected">已检测到的语言: %1$s</string>
+    
+    <!-- Feature-specific Processing -->
+    <string name="processing">处理中...</string>
+    <string name="translating">翻译中</string>
+    <string name="translating_tap_to_cancel">翻译中 (点按以取消)</string>
+    <string name="transcribing">听写中...</string>
+    <string name="transcribing_tap_to_cancel">听写中 (点按以取消)</string>
+    <string name="analyzing_code">分析代码中...</string>
+    <string name="processing_text">处理文本中...</string>
+    
+    <!-- Vision Features -->
+    <string name="input_options">输入选项</string>
+    <string name="enable_vision_input">启用视觉输入</string>
+    <string name="translate_from_image">翻译图像内的文本</string>
+    <string name="speak_to_translate">听写翻译</string>
+    <string name="select_image">选择图像</string>
+    <string name="change_image">更改图像</string>
+    <string name="transcription_result">翻译结果</string>
+    
+    <!-- Translator Settings -->
+    <string name="translator_enable_vision">启用视觉翻译</string>
+    <string name="translator_vision_description">翻译视觉内的文本</string>
+    <string name="translator_enable_audio">启用音频翻译</string>
+    <string name="translator_audio_description">从音频翻译文本</string>
+    
+    <!-- Backend Selection -->
+    <string name="choose_backend_for_gemma">为 Gemma 模型选择处理方式</string>
+    <string name="gpu_backend">显卡加速 (推荐)</string>
+    <string name="cpu_backend">CPU </string>
+    <string name="gpu_backend_description">使用 GPU显卡加速 将加快处理速度</string>
+    <string name="cpu_backend_description">使用 CPU 将更稳定</string>
+    <string name="backend_selection_hint">如果使用 GPU 出现异常，则可使用 CPU</string>
+    <string name="not_available">不可用</string>
+    <string name="gpu_disabled_low_memory">该模型不允许在设备内存小于 %1$dGB 时启用 GPU 加速</string>
+    
+    <!-- Web Search Messages -->
+    <string name="web_searching">🔍 网络搜索中...</string>
+    <string name="web_search_found_results">✅ 已找到 %1$d 个结果。分析中...</string>
+    <string name="web_search_no_results">❌ 未找到搜索结果。将用离线数据回应...</string>
+    <string name="web_search_failed">❌ 网络搜索失败: %1$s. 将用离线数据回应...</string>
+    
+    <!-- Vision Model Error Messages -->
+    <string name="vision_chat_cannot_open">🚫 **无法打开此对话**\n\n本对话包含图片，但您当前加载的是**纯文本模型**：\n\n📱 **当前模型：** %1$s\n🖼️ **本对话：** 包含图片\n\n---\n\n## 🎯 解决方法：\n\n1. **📥 下载视觉模型**\n   - 前往「下载模型」\n   - 查找标有🖼️或「视觉+文本」的模型\n   - 推荐尝试：**Gemma-3n E2B (视觉+文本)**\n\n2. **🔄 切换至视觉模型**\n   - 加载您下载的视觉模型\n   - 视觉模型可同时处理文本和图像\n\n3. **✅ 返回当前对话**\n   - 视觉模型加载后，本对话将完美运行！\n\n---\n\n💡 **专业提示：**视觉模型不仅具备文本模型的所有功能，还能处理图像！</string>
+    <string name="vision_image_cannot_send">🖼️ **无法发送图片**\n\n您正尝试发送图片，但当前模型仅支持**文本输入**：\n\n📱 **当前模型：** %1$s\n\n---\n\n## 🎯 发送图片操作指南：\n\n1. **📥 下载视觉模型**\n   - 点击菜单 → \“下载模型\”\n   - 查找 🖼️ **视觉+文本** 模型\n   - 推荐：**Gemma-3n E2B (视觉+文本)**\n\n2. **🔄 切换模型**\n   - 加载您下载的视觉模型\n   - 视觉模型同时处理文本和图像\n\n3. **✅ 再次尝试**\n   - 加载完成后，即可自由发送图片！\n\n---\n\n💡 **专业提示：**视觉模型不仅能完成文本模型的所有功能，还能理解图像！</string>
+    
+    <!-- Model Error Messages -->
+    <string name="please_download_model">请下载一个模型以开始聊天。</string>
+    <string name="model_not_loaded">模型未正确加载。请尝试切换到不同的模型或重启应用。</string>
+    <string name="no_response_produced">未生成响应。(可能原因: token 限制或会话重置)。点击重新生成。</string>
+    <string name="prompt_too_long">提示信息过长。请缩短您的消息并重试。</string>
+</resources>

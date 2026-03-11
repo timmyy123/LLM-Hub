@@ -46,7 +46,7 @@ android {
     // Specify supported locales to ensure proper resource loading
     // Note: Indonesian uses both "id" (modern) and "in" (legacy) for maximum compatibility
     androidResources {
-        localeFilters += listOf("en", "es", "pt", "de", "fr", "ru", "it", "tr", "pl", "ar", "ja", "id", "in", "ko", "fa", "he", "iw", "uk")
+        localeFilters += listOf("en", "es", "pt", "de", "fr", "ru", "it", "tr", "pl", "ar", "ja", "id", "in", "ko", "fa", "he", "iw", "uk", "zh")
     }
 
     // Configure asset packs for install-time delivery
