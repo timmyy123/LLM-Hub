@@ -46,6 +46,7 @@ import com.llmhub.llmhub.LlmHubApplication
 import com.llmhub.llmhub.ads.BannerAd
 import kotlinx.coroutines.launch
 import android.util.Log
+import androidx.activity.ComponentActivity
 
 @Composable
 fun getLocalizedModelName(model: LLMModel): String {
@@ -90,6 +91,9 @@ fun ChatScreen(
         factory = viewModelFactory
     )
     val context = LocalContext.current
+    val activity = context as ComponentActivity
+    val isPremium by (context.applicationContext as LlmHubApplication).billingManager.isPremium.collectAsState(initial = false)
+    val rewardedAdManager = remember { (context.applicationContext as LlmHubApplication).rewardedAdManager }
     val coroutineScope = rememberCoroutineScope()
 
     val messages by viewModel.messages.collectAsState()
@@ -460,20 +464,28 @@ fun ChatScreen(
             },
             onLoadModel = { model, maxTokens, topK, topP, temperature, backend, deviceId, disableVision, disableAudio, nGpuLayers, enableThinking ->
                 Log.d("ChatScreen", "Model configs confirmed: maxTokens=$maxTokens topK=$topK topP=$topP temperature=$temperature backend=$backend deviceId=$deviceId disableVision=$disableVision disableAudio=$disableAudio nGpuLayers=$nGpuLayers enableThinking=$enableThinking for model ${model.name}")
-                
-                // Push generation parameters to inference service via ViewModel
-                viewModel.setGenerationParameters(maxTokens, topK, topP, temperature, nGpuLayers, enableThinking)
 
-                // Always sync backend + deviceId so stale NPU device from a previous session
-                // doesn't override the user's current selection (e.g. GPU with deviceId=null)
-                if (backend != null) {
-                    viewModel.selectBackend(backend, deviceId)
-                    viewModel.switchModelWithBackend(model, backend, disableVision, disableAudio)
-                } else {
-                    viewModel.switchModel(model)
-                }
-                
                 showSettingsSheet = false
+
+                val doLoad = {
+                    // Push generation parameters to inference service via ViewModel
+                    viewModel.setGenerationParameters(maxTokens, topK, topP, temperature, nGpuLayers, enableThinking)
+
+                    // Always sync backend + deviceId so stale NPU device from a previous session
+                    // doesn't override the user's current selection (e.g. GPU with deviceId=null)
+                    if (backend != null) {
+                        viewModel.selectBackend(backend, deviceId)
+                        viewModel.switchModelWithBackend(model, backend, disableVision, disableAudio)
+                    } else {
+                        viewModel.switchModel(model)
+                    }
+                }
+
+                if (isPremium) {
+                    doLoad()
+                } else {
+                    rewardedAdManager.showAdOrGrant(activity) { doLoad() }
+                }
             },
             onUnloadModel = {
                 viewModel.unloadModel()

@@ -471,6 +471,8 @@
     <string name="premium_feature_image_gen">Image Generator – on-device AI art</string>
     <string name="premium_feature_tts">Text-to-Speech auto readout</string>
     <string name="premium_feature_import_models">Import external models</string>
+    <string name="premium_feature_web_search">Web Search – live internet results</string>
+    <string name="premium_feature_memory">Memory – global context recall</string>
     <string name="premium_feature_future">All future premium features</string>
     <string name="premium_button_unlock">Unlock Premium</string>
     <string name="premium_button_restore">Restore Purchase</string>

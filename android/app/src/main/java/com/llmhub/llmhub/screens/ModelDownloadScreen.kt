@@ -46,7 +46,6 @@ import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.ModelRequirements
 import com.llmhub.llmhub.data.DeviceInfo
 import com.llmhub.llmhub.LlmHubApplication
-import com.llmhub.llmhub.ads.RewardedAdManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.net.Uri
@@ -100,22 +99,11 @@ fun ModelDownloadScreen(
     val isPremium by (context.applicationContext as LlmHubApplication)
         .billingManager.isPremium.collectAsState(initial = false)
 
-    val rewardedAdManager = (context.applicationContext as LlmHubApplication).rewardedAdManager
-
     // Use activity-scoped ViewModel to ensure downloads persist across navigation
     val downloadViewModel = viewModel ?: ViewModelProvider(
         activity,
         ViewModelProvider.AndroidViewModelFactory.getInstance(activity.application)
     )[ModelDownloadViewModel::class.java]
-
-    // Gate: free users watch a rewarded ad before each download; premium users skip it.
-    fun onDownloadGated(model: com.llmhub.llmhub.data.LLMModel) {
-        if (isPremium) {
-            downloadViewModel.downloadModel(model)
-        } else {
-            rewardedAdManager.showAdOrGrant(activity) { downloadViewModel.downloadModel(model) }
-        }
-    }
     
     val models by downloadViewModel.models.collectAsState()
     val textModels = models.filter { it.category == "text" }
@@ -217,7 +205,7 @@ fun ModelDownloadScreen(
                             context = context,
                             viewModel = downloadViewModel,
                             isMultimodal = false,
-                            onDownload = ::onDownloadGated
+                            onDownload = { downloadViewModel.downloadModel(it) }
                         )
                     }
                 }
@@ -240,7 +228,7 @@ fun ModelDownloadScreen(
                             context = context,
                             viewModel = downloadViewModel,
                             isMultimodal = true,
-                            onDownload = ::onDownloadGated
+                            onDownload = { downloadViewModel.downloadModel(it) }
                         )
                     }
                 }
@@ -263,7 +251,7 @@ fun ModelDownloadScreen(
                             context = context,
                             viewModel = downloadViewModel,
                             isMultimodal = false,
-                            onDownload = ::onDownloadGated
+                            onDownload = { downloadViewModel.downloadModel(it) }
                         )
                     }
                 }
@@ -286,7 +274,7 @@ fun ModelDownloadScreen(
                             context = context,
                             viewModel = downloadViewModel,
                             isMultimodal = false,
-                            onDownload = ::onDownloadGated
+                            onDownload = { downloadViewModel.downloadModel(it) }
                         )
                     }
                 }

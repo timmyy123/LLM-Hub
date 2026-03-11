@@ -808,6 +808,8 @@
     <string name="premium_feature_image_gen">מחולל תמונות – אמנות AI במכשיר</string>
     <string name="premium_feature_tts">קריאה אוטומטית טקסט לדיבור</string>
     <string name="premium_feature_import_models">ייבוא מודלים חיצוניים</string>
+    <string name="premium_feature_web_search">חיפוש ברשת – תוצאות חיות</string>
+    <string name="premium_feature_memory">זיכרון – הקשר גלובלי</string>
     <string name="premium_feature_future">כל תכונות הפרמיום העתידיות</string>
     <string name="premium_button_unlock">פתח Premium</string>
     <string name="premium_button_restore">שחזר רכישה</string>

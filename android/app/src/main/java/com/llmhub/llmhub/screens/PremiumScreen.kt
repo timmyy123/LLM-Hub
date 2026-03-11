@@ -201,6 +201,16 @@ fun PremiumScreen(
                                 text = stringResource(R.string.premium_feature_import_models)
                             )
                             PremiumFeatureRow(
+                                icon = Icons.Default.Search,
+                                tint = Color(0xFF29B6F6),
+                                text = stringResource(R.string.premium_feature_web_search)
+                            )
+                            PremiumFeatureRow(
+                                icon = Icons.Default.Psychology,
+                                tint = Color(0xFF9C27B0),
+                                text = stringResource(R.string.premium_feature_memory)
+                            )
+                            PremiumFeatureRow(
                                 icon = Icons.Default.AutoAwesome,
                                 tint = Color(0xFF00BCD4),
                                 text = stringResource(R.string.premium_feature_future),

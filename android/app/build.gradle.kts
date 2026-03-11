@@ -25,7 +25,7 @@ android {
         applicationId = "com.llmhub.llmhub"
         minSdk = 27
         targetSdk = 36
-        versionCode = 82
+        versionCode = 84
         versionName = "3.6.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

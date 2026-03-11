@@ -806,6 +806,8 @@
     <string name="premium_feature_image_gen">画像ジェネレーター – デバイス上のAIアート</string>
     <string name="premium_feature_tts">テキスト読み上げ自動再生</string>
     <string name="premium_feature_import_models">外部モデルのインポート</string>
+    <string name="premium_feature_web_search">ウェブ検索 – リアルタイム結果</string>
+    <string name="premium_feature_memory">メモリ – グローバルコンテキスト</string>
     <string name="premium_feature_future">今後のすべてのプレミアム機能</string>
     <string name="premium_button_unlock">Premiumをアンロック</string>
     <string name="premium_button_restore">購入を復元</string>

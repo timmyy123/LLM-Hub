@@ -809,6 +809,8 @@
     <string name="premium_feature_image_gen">Генератор зображень — ШІ-арт на пристрої</string>
     <string name="premium_feature_tts">Автоматичне озвучення тексту</string>
     <string name="premium_feature_import_models">Імпорт зовнішніх моделей</string>
+    <string name="premium_feature_web_search">Веб-пошук – результати в реальному часі</string>
+    <string name="premium_feature_memory">Пам\'ять – глобальний контекст</string>
     <string name="premium_feature_future">Усі майбутні преміум-функції</string>
     <string name="premium_button_unlock">Розблокувати Premium</string>
     <string name="premium_button_restore">Відновити покупку</string>

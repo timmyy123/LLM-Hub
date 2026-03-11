@@ -811,6 +811,8 @@
     <string name="premium_feature_image_gen">Generator gambar – seni AI di perangkat</string>
     <string name="premium_feature_tts">Pembacaan otomatis teks ke suara</string>
     <string name="premium_feature_import_models">Import model eksternal</string>
+    <string name="premium_feature_web_search">Pencarian Web – hasil internet langsung</string>
+    <string name="premium_feature_memory">Memori – konteks global</string>
     <string name="premium_feature_future">Semua fitur premium masa depan</string>
     <string name="premium_button_unlock">Buka Premium</string>
     <string name="premium_button_restore">Pulihkan pembelian</string>

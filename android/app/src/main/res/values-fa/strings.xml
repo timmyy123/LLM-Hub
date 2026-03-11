@@ -809,6 +809,8 @@
     <string name="premium_feature_image_gen">مولد تصویر – هنر هوش مصنوعی روی دستگاه</string>
     <string name="premium_feature_tts">خواندن خودکار متن به گفتار</string>
     <string name="premium_feature_import_models">وارد کردن مدل‌های خارجی</string>
+    <string name="premium_feature_web_search">جستجوی وب – نتایج زنده اینترنتی</string>
+    <string name="premium_feature_memory">حافظه – زمینه جهانی</string>
     <string name="premium_feature_future">تمام ویژگی‌های پریمیوم آینده</string>
     <string name="premium_button_unlock">باز کردن Premium</string>
     <string name="premium_button_restore">بازیابی خرید</string>

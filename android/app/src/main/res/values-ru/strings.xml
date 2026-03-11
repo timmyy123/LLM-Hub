@@ -781,6 +781,8 @@
     <string name="premium_feature_image_gen">Генератор изображений — ИИ-арт на устройстве</string>
     <string name="premium_feature_tts">Автоматическое озвучивание текста</string>
     <string name="premium_feature_import_models">Импорт внешних моделей</string>
+    <string name="premium_feature_web_search">Веб-поиск – результаты в реальном времени</string>
+    <string name="premium_feature_memory">Память – глобальный контекст</string>
     <string name="premium_feature_future">Все будущие премиум-функции</string>
     <string name="premium_button_unlock">Разблокировать Premium</string>
     <string name="premium_button_restore">Восстановить покупку</string>

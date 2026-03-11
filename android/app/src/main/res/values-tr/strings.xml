@@ -808,6 +808,8 @@
     <string name="premium_feature_image_gen">Görsel Üreteci – Cihazda Yapay Zeka Sanatı</string>
     <string name="premium_feature_tts">Otomatik Metinden Sese Okuma</string>
     <string name="premium_feature_import_models">Harici Modelleri İçe Aktar</string>
+    <string name="premium_feature_web_search">Web Araması – canlı internet sonuçları</string>
+    <string name="premium_feature_memory">Bellek – global bağlam</string>
     <string name="premium_feature_future">Gelecekteki Tüm Premium Özellikler</string>
     <string name="premium_button_unlock">Premium’u Aç</string>
     <string name="premium_button_restore">Satın Almayı Geri Yükle</string>

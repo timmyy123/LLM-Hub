@@ -808,6 +808,8 @@
     <string name="premium_feature_image_gen">مولّد الصور – فن الذكاء الاصطناعي على الجهاز</string>
     <string name="premium_feature_tts">القراءة التلقائية نصّ إلى كلام</string>
     <string name="premium_feature_import_models">استيراد نماذج خارجية</string>
+    <string name="premium_feature_web_search">البحث على الويب – نتائج مباشرة</string>
+    <string name="premium_feature_memory">الذاكرة – السياق العالمي</string>
     <string name="premium_feature_future">جميع الميزات المميزة المستقبلية</string>
     <string name="premium_button_unlock">فتح Premium</string>
     <string name="premium_button_restore">استعادة الشراء</string>

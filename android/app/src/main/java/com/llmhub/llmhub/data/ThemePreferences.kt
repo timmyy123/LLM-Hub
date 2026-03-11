@@ -43,7 +43,7 @@ class ThemePreferences(private val context: Context) {
 
     val webSearchEnabled: Flow<Boolean> = context.dataStore.data
         .map { preferences ->
-            preferences[WEB_SEARCH_KEY] ?: true // Default to enabled
+            preferences[WEB_SEARCH_KEY] ?: false // Default to disabled
         }
 
     val appLanguage: Flow<String?> = context.dataStore.data

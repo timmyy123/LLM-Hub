@@ -803,6 +803,8 @@
     <string name="premium_feature_image_gen">Generatore di immagini – arte IA sul dispositivo</string>
     <string name="premium_feature_tts">Lettura automatica testo-voce</string>
     <string name="premium_feature_import_models">Importa modelli esterni</string>
+    <string name="premium_feature_web_search">Ricerca web – risultati live</string>
+    <string name="premium_feature_memory">Memoria – contesto globale</string>
     <string name="premium_feature_future">Tutte le future funzionalità premium</string>
     <string name="premium_button_unlock">Sblocca Premium</string>
     <string name="premium_button_restore">Ripristina acquisto</string>

@@ -116,6 +116,7 @@ fun SettingsScreen(
             
             item {
                 SettingsSection(title = stringResource(R.string.features)) {
+                    // Web Search toggle (Premium feature)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -125,36 +126,64 @@ fun SettingsScreen(
                         Icon(
                             Icons.Default.Search,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = if (isPremium) MaterialTheme.colorScheme.onSurfaceVariant
+                                   else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                             modifier = Modifier.size(24.dp)
                         )
-                        
+
                         Spacer(modifier = Modifier.width(16.dp))
-                        
+
                         Column(
                             modifier = Modifier.weight(1f)
                         ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = stringResource(R.string.web_search),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = if (isPremium) MaterialTheme.colorScheme.onSurface
+                                            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                )
+                                if (!isPremium) {
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Icon(
+                                        Icons.Default.Lock,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(14.dp),
+                                        tint = Color(0xFFFFD700)
+                                    )
+                                }
+                            }
                             Text(
-                                text = stringResource(R.string.web_search),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = if (webSearchEnabled) stringResource(R.string.web_search_description_enabled) else stringResource(R.string.web_search_description_disabled),
+                                text = if (isPremium) {
+                                    if (webSearchEnabled) stringResource(R.string.web_search_description_enabled)
+                                    else stringResource(R.string.web_search_description_disabled)
+                                } else {
+                                    stringResource(R.string.premium_tap_to_unlock)
+                                },
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (isPremium) MaterialTheme.colorScheme.onSurfaceVariant
+                                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                             )
                         }
-                        
-                        Switch(
-                            checked = webSearchEnabled,
-                            onCheckedChange = { enabled ->
-                                themeViewModel.setWebSearchEnabled(enabled)
+
+                        if (isPremium) {
+                            Switch(
+                                checked = webSearchEnabled,
+                                onCheckedChange = { enabled ->
+                                    themeViewModel.setWebSearchEnabled(enabled)
+                                }
+                            )
+                        } else {
+                            TextButton(onClick = onNavigateToPremium) {
+                                Text(
+                                    stringResource(R.string.premium_go_premium),
+                                    color = Color(0xFFFFD700)
+                                )
                             }
-                        )
+                        }
                     }
 
-                    // Memory (global context) toggle and manager
+                    // Memory (global context) toggle (Premium feature)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -164,7 +193,8 @@ fun SettingsScreen(
                         Icon(
                             Icons.Default.Storage,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = if (isPremium) MaterialTheme.colorScheme.onSurfaceVariant
+                                   else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                             modifier = Modifier.size(24.dp)
                         )
 
@@ -173,85 +203,108 @@ fun SettingsScreen(
                         Column(
                             modifier = Modifier.weight(1f)
                         ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = stringResource(R.string.memory),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = if (isPremium) MaterialTheme.colorScheme.onSurface
+                                            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                )
+                                if (!isPremium) {
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Icon(
+                                        Icons.Default.Lock,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(14.dp),
+                                        tint = Color(0xFFFFD700)
+                                    )
+                                }
+                            }
                             Text(
-                                text = stringResource(R.string.memory),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                // Show memory description based on the memoryEnabled flag (was mistakenly using embeddingEnabled)
-                                text = if (memoryEnabled) stringResource(R.string.memory_description_enabled) else stringResource(R.string.memory_requires_rag),
+                                text = if (!isPremium) stringResource(R.string.premium_tap_to_unlock)
+                                       else if (memoryEnabled) stringResource(R.string.memory_description_enabled)
+                                       else stringResource(R.string.memory_requires_rag),
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (isPremium) MaterialTheme.colorScheme.onSurfaceVariant
+                                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                             )
                         }
 
-                        Switch(
-                            checked = memoryEnabled,
-                            onCheckedChange = { enabled ->
-                                // Only allow enabling if embeddings/RAG are enabled AND an embedding model is selected
-                                if (enabled && (!embeddingEnabled || selectedEmbeddingModel.isNullOrBlank())) {
-                                    // Ignore — UI indicates why toggle is disabled
-                                    return@Switch
-                                }
-                                themeViewModel.setMemoryEnabled(enabled)
+                        if (isPremium) {
+                            Switch(
+                                checked = memoryEnabled,
+                                onCheckedChange = { enabled ->
+                                    // Only allow enabling if embeddings/RAG are enabled AND an embedding model is selected
+                                    if (enabled && (!embeddingEnabled || selectedEmbeddingModel.isNullOrBlank())) {
+                                        // Ignore — UI indicates why toggle is disabled
+                                        return@Switch
+                                    }
+                                    themeViewModel.setMemoryEnabled(enabled)
 
-                                if (enabled) {
-                                    // If user re-enables memory after changing embedding model, show re-embedding
-                                    coroutineScope.launch {
-                                        try {
-                                            val prefs = com.llmhub.llmhub.data.ThemePreferences(context)
-                                            val embeddingsOn = prefs.embeddingEnabled.first()
-                                            val currentModel = prefs.selectedEmbeddingModel.first()
-                                            if (!embeddingsOn || currentModel.isNullOrBlank()) return@launch
+                                    if (enabled) {
+                                        // If user re-enables memory after changing embedding model, show re-embedding
+                                        coroutineScope.launch {
+                                            try {
+                                                val prefs = com.llmhub.llmhub.data.ThemePreferences(context)
+                                                val embeddingsOn = prefs.embeddingEnabled.first()
+                                                val currentModel = prefs.selectedEmbeddingModel.first()
+                                                if (!embeddingsOn || currentModel.isNullOrBlank()) return@launch
 
-                                            val db = com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context)
-                                            val hasAnyMemory = withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                                db.memoryDao().getAllMemory().first().isNotEmpty()
-                                            }
-                                            if (!hasAnyMemory) return@launch
+                                                val db = com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context)
+                                                val hasAnyMemory = withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                                    db.memoryDao().getAllMemory().first().isNotEmpty()
+                                                }
+                                                if (!hasAnyMemory) return@launch
 
-                                            val needsReembed = withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                                val chunks = db.memoryDao().getAllChunks()
-                                                // No chunks (docs exist but not embedded) or any chunk model differs
-                                                chunks.isEmpty() || chunks.any { it.embeddingModel != currentModel }
-                                            }
-                                            if (!needsReembed) return@launch
+                                                val needsReembed = withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                                    val chunks = db.memoryDao().getAllChunks()
+                                                    // No chunks (docs exist but not embedded) or any chunk model differs
+                                                    chunks.isEmpty() || chunks.any { it.embeddingModel != currentModel }
+                                                }
+                                                if (!needsReembed) return@launch
 
-                                            showReembedDialogGlobal = true
+                                                showReembedDialogGlobal = true
 
-                                            withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                                val ragManager = com.llmhub.llmhub.embedding.RagServiceManager.getInstance(context)
-                                                try {
-                                                    ragManager.clearGlobalDocuments()
-                                                    val docs = db.memoryDao().getAllMemory().first()
-                                                    docs.forEach { doc ->
-                                                        try { db.memoryDao().update(doc.copy(status = "PENDING", chunkCount = 0)) } catch (_: Exception) { }
-                                                    }
-                                                    try { db.memoryDao().deleteAllChunks() } catch (_: Exception) { }
+                                                withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                                    val ragManager = com.llmhub.llmhub.embedding.RagServiceManager.getInstance(context)
+                                                    try {
+                                                        ragManager.clearGlobalDocuments()
+                                                        val docs = db.memoryDao().getAllMemory().first()
+                                                        docs.forEach { doc ->
+                                                            try { db.memoryDao().update(doc.copy(status = "PENDING", chunkCount = 0)) } catch (_: Exception) { }
+                                                        }
+                                                        try { db.memoryDao().deleteAllChunks() } catch (_: Exception) { }
 
-                                                    val processor = com.llmhub.llmhub.data.MemoryProcessor(context, db)
-                                                    processor.processPending()
+                                                        val processor = com.llmhub.llmhub.data.MemoryProcessor(context, db)
+                                                        processor.processPending()
 
-                                                    try { withTimeoutOrNull(5_000) { com.llmhub.llmhub.data.MemoryProcessor.processing.first { it } } } catch (_: Exception) { }
-                                                    com.llmhub.llmhub.data.MemoryProcessor.processing.first { running -> !running }
-                                                } catch (e: Exception) {
-                                                    android.util.Log.w("SettingsScreen", "Re-embedding after memory enable failed: ${e.message}")
-                                                } finally {
-                                                    withContext(kotlinx.coroutines.Dispatchers.Main) {
-                                                        showReembedDialogGlobal = false
-                                                        android.widget.Toast.makeText(context, context.getString(com.llmhub.llmhub.R.string.reembedding_memory_done), android.widget.Toast.LENGTH_SHORT).show()
+                                                        try { withTimeoutOrNull(5_000) { com.llmhub.llmhub.data.MemoryProcessor.processing.first { it } } } catch (_: Exception) { }
+                                                        com.llmhub.llmhub.data.MemoryProcessor.processing.first { running -> !running }
+                                                    } catch (e: Exception) {
+                                                        android.util.Log.w("SettingsScreen", "Re-embedding after memory enable failed: ${e.message}")
+                                                    } finally {
+                                                        withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                                            showReembedDialogGlobal = false
+                                                            android.widget.Toast.makeText(context, context.getString(com.llmhub.llmhub.R.string.reembedding_memory_done), android.widget.Toast.LENGTH_SHORT).show()
+                                                        }
                                                     }
                                                 }
+                                            } catch (e: Exception) {
+                                                android.util.Log.w("SettingsScreen", "Failed to check/trigger re-embedding on memory enable: ${e.message}")
                                             }
-                                        } catch (e: Exception) {
-                                            android.util.Log.w("SettingsScreen", "Failed to check/trigger re-embedding on memory enable: ${e.message}")
                                         }
                                     }
-                                }
-                            },
-                            enabled = embeddingEnabled && !selectedEmbeddingModel.isNullOrBlank()
-                        )
+                                },
+                                enabled = embeddingEnabled && !selectedEmbeddingModel.isNullOrBlank()
+                            )
+                        } else {
+                            TextButton(onClick = onNavigateToPremium) {
+                                Text(
+                                    stringResource(R.string.premium_go_premium),
+                                    color = Color(0xFFFFD700)
+                                )
+                            }
+                        }
                     }
 
                     // Auto Readout toggle (Premium feature)
