@@ -68,7 +68,7 @@ Activate this in Settings under Kid Mode. Set a PIN, and the mode will remain in
 - GPU/NPU acceleration for fast performance
 - Text-to-Speech with auto-readout
 - RAG with global memory for enhanced responses
-- Import custom models (.task, .litertlm, .mnn, .gguf)
+- Import custom models (.task, .litertlm, qnn,.mnn, .gguf)
 - Direct downloads from HuggingFace
 - 16 language interfaces
 
