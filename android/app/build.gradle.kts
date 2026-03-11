@@ -25,12 +25,29 @@ android {
         applicationId = "com.llmhub.llmhub"
         minSdk = 27
         targetSdk = 36
-        versionCode = 81
-        versionName = "3.6.1"
+        versionCode = 82
+        versionName = "3.6.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         val hfToken: String = localProperties.getProperty("HF_TOKEN", "")
         buildConfigField("String", "HF_TOKEN", "\"$hfToken\"")
+        val debugPremium: Boolean = localProperties.getProperty("DEBUG_PREMIUM", "false").toBoolean()
+        buildConfigField("Boolean", "DEBUG_PREMIUM", "$debugPremium")
+
+        // AdMob IDs — override in local.properties; test IDs are the defaults
+        val admobAppId: String = localProperties.getProperty(
+            "ADMOB_APP_ID", "ca-app-pub-3940256099942544~3347511713")
+        val admobBannerId: String = localProperties.getProperty(
+            "ADMOB_BANNER_ID", "ca-app-pub-3940256099942544/6300978111")
+        val admobInterstitialId: String = localProperties.getProperty(
+            "ADMOB_INTERSTITIAL_ID", "ca-app-pub-3940256099942544/1033173712")
+        val admobRewardedId: String = localProperties.getProperty(
+            "ADMOB_REWARDED_ID", "ca-app-pub-3940256099942544/5224354917")
+        buildConfigField("String", "ADMOB_APP_ID", "\"$admobAppId\"")
+        buildConfigField("String", "ADMOB_BANNER_ID", "\"$admobBannerId\"")
+        buildConfigField("String", "ADMOB_INTERSTITIAL_ID", "\"$admobInterstitialId\"")
+        buildConfigField("String", "ADMOB_REWARDED_ID", "\"$admobRewardedId\"")
+        manifestPlaceholders["admobAppId"] = admobAppId
         
         // Enable 16KB page size support for Android 15+ compatibility
         // Required for Google Play Store submission starting Nov 1st, 2025
@@ -258,6 +275,14 @@ dependencies {
     // Play Core for asset pack access at runtime
     implementation("com.google.android.play:asset-delivery:2.2.2")
     implementation("com.google.android.play:asset-delivery-ktx:2.2.2")
+
+    // Google Play Billing (IAP)
+    implementation("com.android.billingclient:billing-ktx:7.1.1")
+
+    // AdMob
+    implementation("com.google.android.gms:play-services-ads:23.6.0")
+    // AdMob UMP SDK — EU consent (GDPR) form
+    implementation("com.google.android.ump:user-messaging-platform:3.1.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

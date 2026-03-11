@@ -766,4 +766,30 @@
 
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
+
+    <!-- Premium / IAP -->
+    <string name="premium_title">LLM Hub Premium</string>
+    <string name="premium_subtitle">Vollständige Erfahrung freischalten</string>
+    <string name="premium_feature_no_ads">Keine Werbung, nie</string>
+    <string name="premium_feature_vibe_coder">VibeCoder – KI-Code-Generator</string>
+    <string name="premium_feature_image_gen">Bildgenerator – KI-Kunst auf dem Gerät</string>
+    <string name="premium_feature_tts">Text-zu-Sprache automatisch vorlesen</string>
+    <string name="premium_feature_import_models">Externe Modelle importieren</string>
+    <string name="premium_feature_future">Alle zukünftigen Premium-Funktionen</string>
+    <string name="premium_button_unlock">Premium freischalten</string>
+    <string name="premium_button_restore">Kauf wiederherstellen</string>
+    <string name="premium_button_later">Vielleicht später</string>
+    <string name="premium_price_loading">Preis wird geladen…</string>
+    <string name="premium_payment_note">Einmaliger Kauf über Google Play. Kein Abonnement.</string>
+    <string name="premium_active_title">Du bist Premium! 👑</string>
+    <string name="premium_active_subtitle">Alle Funktionen sind freigeschaltet. Danke für deine Unterstützung!</string>
+    <string name="premium_locked_feature">Premium-Funktion</string>
+    <string name="premium_tap_to_unlock">Tippen, um mit Premium freizuschalten</string>
+    <string name="premium_restore_success">Kauf erfolgreich wiederhergestellt!</string>
+    <string name="premium_restore_nothing">Kein früherer Kauf gefunden.</string>
+    <string name="premium_go_premium">Premium werden</string>
+
+    <!-- Privacy &amp; Ads consent -->
+    <string name="privacy_ads_title">Datenschutz &amp; Werbung</string>
+    <string name="privacy_ads_subtitle">Werbe-Personalisierung und Einwilligungen verwalten</string>
 </resources>

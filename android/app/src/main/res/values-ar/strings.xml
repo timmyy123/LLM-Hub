@@ -799,4 +799,30 @@
 
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
+
+    <!-- Premium / IAP -->
+    <string name="premium_title">LLM Hub Premium</string>
+    <string name="premium_subtitle">افتح التجربة الكاملة</string>
+    <string name="premium_feature_no_ads">لا إعلانات أبداً</string>
+    <string name="premium_feature_vibe_coder">VibeCoder – مولّد كود بالذكاء الاصطناعي</string>
+    <string name="premium_feature_image_gen">مولّد الصور – فن الذكاء الاصطناعي على الجهاز</string>
+    <string name="premium_feature_tts">القراءة التلقائية نصّ إلى كلام</string>
+    <string name="premium_feature_import_models">استيراد نماذج خارجية</string>
+    <string name="premium_feature_future">جميع الميزات المميزة المستقبلية</string>
+    <string name="premium_button_unlock">فتح Premium</string>
+    <string name="premium_button_restore">استعادة الشراء</string>
+    <string name="premium_button_later">ربما لاحقاً</string>
+    <string name="premium_price_loading">جارٍ تحميل السعر…</string>
+    <string name="premium_payment_note">شراء لمرة واحدة عبر Google Play. بدون اشتراك.</string>
+    <string name="premium_active_title">أنت Premium! 👑</string>
+    <string name="premium_active_subtitle">جميع الميزات مفتوحة. شكراً لدعمك!</string>
+    <string name="premium_locked_feature">ميزة مميزة</string>
+    <string name="premium_tap_to_unlock">اضغط لفتح مع Premium</string>
+    <string name="premium_restore_success">تمّ استعادة الشراء بنجاح!</string>
+    <string name="premium_restore_nothing">لم يُعثر على مشتريات سابقة.</string>
+    <string name="premium_go_premium">الانتقال إلى Premium</string>
+
+    <!-- Privacy &amp; Ads consent -->
+    <string name="privacy_ads_title">الخصوصية والإعلانات</string>
+    <string name="privacy_ads_subtitle">إدارة تخصيص الإعلانات وخيارات الموافقة</string>
 </resources>

@@ -772,4 +772,30 @@
 
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
+
+    <!-- Premium / IAP -->
+    <string name="premium_title">LLM Hub Premium</string>
+    <string name="premium_subtitle">Откройте полный доступ</string>
+    <string name="premium_feature_no_ads">Никакой рекламы</string>
+    <string name="premium_feature_vibe_coder">VibeCoder — генератор кода на ИИ</string>
+    <string name="premium_feature_image_gen">Генератор изображений — ИИ-арт на устройстве</string>
+    <string name="premium_feature_tts">Автоматическое озвучивание текста</string>
+    <string name="premium_feature_import_models">Импорт внешних моделей</string>
+    <string name="premium_feature_future">Все будущие премиум-функции</string>
+    <string name="premium_button_unlock">Разблокировать Premium</string>
+    <string name="premium_button_restore">Восстановить покупку</string>
+    <string name="premium_button_later">Может быть, позже</string>
+    <string name="premium_price_loading">Загрузка цены…</string>
+    <string name="premium_payment_note">Единоразовая покупка через Google Play. Без подписок.</string>
+    <string name="premium_active_title">Вы Premium! 👑</string>
+    <string name="premium_active_subtitle">Все функции разблокированы. Спасибо за поддержку!</string>
+    <string name="premium_locked_feature">Премиум-функция</string>
+    <string name="premium_tap_to_unlock">Нажмите, чтобы разблокировать с Premium</string>
+    <string name="premium_restore_success">Покупка успешно восстановлена!</string>
+    <string name="premium_restore_nothing">Предыдущих покупок не найдено.</string>
+    <string name="premium_go_premium">Перейти на Premium</string>
+
+    <!-- Privacy &amp; Ads consent -->
+    <string name="privacy_ads_title">Конфиденциальность и реклама</string>
+    <string name="privacy_ads_subtitle">Управление персонализацией рекламы и согласиями</string>
 </resources>

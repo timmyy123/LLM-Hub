@@ -799,4 +799,30 @@
 
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
+
+    <!-- Premium / IAP -->
+    <string name="premium_title">LLM Hub Premium</string>
+    <string name="premium_subtitle">פתח את החווייה המלאה</string>
+    <string name="premium_feature_no_ads">ללא פרסומות, לעולם</string>
+    <string name="premium_feature_vibe_coder">VibeCoder – מחולל קוד AI</string>
+    <string name="premium_feature_image_gen">מחולל תמונות – אמנות AI במכשיר</string>
+    <string name="premium_feature_tts">קריאה אוטומטית טקסט לדיבור</string>
+    <string name="premium_feature_import_models">ייבוא מודלים חיצוניים</string>
+    <string name="premium_feature_future">כל תכונות הפרמיום העתידיות</string>
+    <string name="premium_button_unlock">פתח Premium</string>
+    <string name="premium_button_restore">שחזר רכישה</string>
+    <string name="premium_button_later">אולי מאוחר יותר</string>
+    <string name="premium_price_loading">טוען מחיר…</string>
+    <string name="premium_payment_note">רכישה חד פעמית דרך Google Play. ללא מנוי.</string>
+    <string name="premium_active_title">אתה Premium! 👑</string>
+    <string name="premium_active_subtitle">כל התכונות פתוחות. תודה על תמיכתך!</string>
+    <string name="premium_locked_feature">תכונת פרמיום</string>
+    <string name="premium_tap_to_unlock">הקש כדי לפתוח עם Premium</string>
+    <string name="premium_restore_success">הרכישה שוחזרה בהצלחה!</string>
+    <string name="premium_restore_nothing">לא נמצאו רכישות קודמות.</string>
+    <string name="premium_go_premium">עבור ל-Premium</string>
+
+    <!-- Privacy &amp; Ads consent -->
+    <string name="privacy_ads_title">פרטיות ומודעות</string>
+    <string name="privacy_ads_subtitle">נהל את התאמה אישית של מודעות ובחירות הסכמה</string>
 </resources>

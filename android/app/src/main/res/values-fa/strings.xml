@@ -800,4 +800,30 @@
 
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
+
+    <!-- Premium / IAP -->
+    <string name="premium_title">LLM Hub Premium</string>
+    <string name="premium_subtitle">تجربه کامل را باز کنید</string>
+    <string name="premium_feature_no_ads">بدون تبلیغات، هرگز</string>
+    <string name="premium_feature_vibe_coder">VibeCoder – مولد کد هوش مصنوعی</string>
+    <string name="premium_feature_image_gen">مولد تصویر – هنر هوش مصنوعی روی دستگاه</string>
+    <string name="premium_feature_tts">خواندن خودکار متن به گفتار</string>
+    <string name="premium_feature_import_models">وارد کردن مدل‌های خارجی</string>
+    <string name="premium_feature_future">تمام ویژگی‌های پریمیوم آینده</string>
+    <string name="premium_button_unlock">باز کردن Premium</string>
+    <string name="premium_button_restore">بازیابی خرید</string>
+    <string name="premium_button_later">شاید بعداً</string>
+    <string name="premium_price_loading">در حال بارگذاری قیمت…</string>
+    <string name="premium_payment_note">خرید یک بار از طریق Google Play. بدون اشتراک.</string>
+    <string name="premium_active_title">شما Premium هستید! 👑</string>
+    <string name="premium_active_subtitle">تمام ویژگی‌ها باز شده‌اند. ممنون از حمایت شما!</string>
+    <string name="premium_locked_feature">ویژگی پریمیوم</string>
+    <string name="premium_tap_to_unlock">برای باز کردن با Premium ضربه بزنید</string>
+    <string name="premium_restore_success">خرید با موفقیت بازیابی شد!</string>
+    <string name="premium_restore_nothing">هیچ خرید قبلی یافت نشد.</string>
+    <string name="premium_go_premium">رفتن به Premium</string>
+
+    <!-- Privacy &amp; Ads consent -->
+    <string name="privacy_ads_title">حریم خصوصی و تبلیغات</string>
+    <string name="privacy_ads_subtitle">مدیریت شخصی‌سازی تبلیغات و انتخاب‌های رضایت</string>
 </resources>

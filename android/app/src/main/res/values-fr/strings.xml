@@ -788,4 +788,30 @@
 
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
+
+    <!-- Premium / IAP -->
+    <string name="premium_title">LLM Hub Premium</string>
+    <string name="premium_subtitle">Déverrouillez l’expérience complète</string>
+    <string name="premium_feature_no_ads">Aucune publicité, jamais</string>
+    <string name="premium_feature_vibe_coder">VibeCoder – Générateur de code IA</string>
+    <string name="premium_feature_image_gen">Générateur d’images – art IA sur l’appareil</string>
+    <string name="premium_feature_tts">Lecture automatique texte-parole</string>
+    <string name="premium_feature_import_models">Importer des modèles externes</string>
+    <string name="premium_feature_future">Toutes les futures fonctionnalités premium</string>
+    <string name="premium_button_unlock">Déverrouiller Premium</string>
+    <string name="premium_button_restore">Restaurer l’achat</string>
+    <string name="premium_button_later">Peut-être plus tard</string>
+    <string name="premium_price_loading">Chargement du prix…</string>
+    <string name="premium_payment_note">Achat unique via Google Play. Sans abonnement.</string>
+    <string name="premium_active_title">Vous êtes Premium ! 👑</string>
+    <string name="premium_active_subtitle">Toutes les fonctionnalités sont déverrouillées. Merci pour votre soutien !</string>
+    <string name="premium_locked_feature">Fonctionnalité Premium</string>
+    <string name="premium_tap_to_unlock">Appuyer pour déverrouiller avec Premium</string>
+    <string name="premium_restore_success">Achat restauré avec succès !</string>
+    <string name="premium_restore_nothing">Aucun achat antérieur trouvé.</string>
+    <string name="premium_go_premium">Passer Premium</string>
+
+    <!-- Privacy &amp; Ads consent -->
+    <string name="privacy_ads_title">Confidentialité et publicités</string>
+    <string name="privacy_ads_subtitle">Gérer la personnalisation des publicités et vos choix de consentement</string>
 </resources>

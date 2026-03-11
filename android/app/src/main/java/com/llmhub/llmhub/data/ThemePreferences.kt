@@ -27,6 +27,7 @@ class ThemePreferences(private val context: Context) {
         private val SELECTED_EMBEDDING_MODEL_KEY = stringPreferencesKey("selected_embedding_model")
         private val MEMORY_ENABLED_KEY = booleanPreferencesKey("memory_enabled")
         private val AUTO_READOUT_ENABLED_KEY = booleanPreferencesKey("auto_readout_enabled")
+        private val IS_PREMIUM_KEY = booleanPreferencesKey("is_premium")
         private val GITHUB_STARS_KEY = androidx.datastore.preferences.core.intPreferencesKey("github_stars")
     }
 
@@ -68,6 +69,11 @@ class ThemePreferences(private val context: Context) {
     val autoReadoutEnabled: Flow<Boolean> = context.dataStore.data
         .map { preferences ->
             preferences[AUTO_READOUT_ENABLED_KEY] ?: false // Default to disabled
+        }
+
+    val isPremium: Flow<Boolean> = context.dataStore.data
+        .map { preferences ->
+            preferences[IS_PREMIUM_KEY] ?: false
         }
 
     suspend fun setThemeMode(themeMode: ThemeMode) {
@@ -117,6 +123,12 @@ class ThemePreferences(private val context: Context) {
     suspend fun setAutoReadoutEnabled(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[AUTO_READOUT_ENABLED_KEY] = enabled
+        }
+    }
+
+    suspend fun setIsPremium(premium: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[IS_PREMIUM_KEY] = premium
         }
     }
 

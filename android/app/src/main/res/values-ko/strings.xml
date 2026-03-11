@@ -800,4 +800,30 @@
 
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
+
+    <!-- Premium / IAP -->
+    <string name="premium_title">LLM Hub Premium</string>
+    <string name="premium_subtitle">전체 기능을 잠금 해제하세요</string>
+    <string name="premium_feature_no_ads">광고 없음, 영원히</string>
+    <string name="premium_feature_vibe_coder">VibeCoder – AI 코드 생성기</string>
+    <string name="premium_feature_image_gen">이미지 생성기 – 디바이스의 AI 아트</string>
+    <string name="premium_feature_tts">텍스트 음성 변환 자동 읽기</string>
+    <string name="premium_feature_import_models">외부 모델 가져오기</string>
+    <string name="premium_feature_future">모든 미래 프리미엄 기능</string>
+    <string name="premium_button_unlock">프리미엄 잠금 해제</string>
+    <string name="premium_button_restore">구매 복원</string>
+    <string name="premium_button_later">나중에</string>
+    <string name="premium_price_loading">가격 불러오는 중…</string>
+    <string name="premium_payment_note">Google Play를 통한 일회성 구매. 구독 없음.</string>
+    <string name="premium_active_title">프리미엄입니다! 👑</string>
+    <string name="premium_active_subtitle">모든 기능이 잠금 해제되었습니다. 지원해 주셔서 감사합니다!</string>
+    <string name="premium_locked_feature">프리미엄 기능</string>
+    <string name="premium_tap_to_unlock">탭하여 프리미엄으로 잠금 해제</string>
+    <string name="premium_restore_success">구매가 성공적으로 복원되었습니다!</string>
+    <string name="premium_restore_nothing">이전 구매 내역이 없습니다.</string>
+    <string name="premium_go_premium">프리미엄으로 이동</string>
+
+    <!-- Privacy &amp; Ads consent -->
+    <string name="privacy_ads_title">개인정보 및 광고</string>
+    <string name="privacy_ads_subtitle">광고 개인화 및 동의 선택 관리</string>
 </resources>

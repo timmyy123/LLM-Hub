@@ -797,4 +797,30 @@
 
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
+
+    <!-- Premium / IAP -->
+    <string name="premium_title">LLM Hub Premium</string>
+    <string name="premium_subtitle">フル機能を解除する</string>
+    <string name="premium_feature_no_ads">広告なし、永遠に</string>
+    <string name="premium_feature_vibe_coder">VibeCoder – AIコードジェネレーター</string>
+    <string name="premium_feature_image_gen">画像ジェネレーター – デバイス上のAIアート</string>
+    <string name="premium_feature_tts">テキスト読み上げ自動再生</string>
+    <string name="premium_feature_import_models">外部モデルのインポート</string>
+    <string name="premium_feature_future">今後のすべてのプレミアム機能</string>
+    <string name="premium_button_unlock">Premiumをアンロック</string>
+    <string name="premium_button_restore">購入を復元</string>
+    <string name="premium_button_later">後で</string>
+    <string name="premium_price_loading">価格を読み込んでいます…</string>
+    <string name="premium_payment_note">Google Playでの一回限りの購入。サブスクリプションなし。</string>
+    <string name="premium_active_title">Premiumです！ 👑</string>
+    <string name="premium_active_subtitle">すべての機能がアンロックされました。ご支持ありがとうございます！</string>
+    <string name="premium_locked_feature">プレミアム機能</string>
+    <string name="premium_tap_to_unlock">タップしてPremiumでアンロック</string>
+    <string name="premium_restore_success">購入が正常に復元されました！</string>
+    <string name="premium_restore_nothing">以前の購入履歴が見つかりませんでした。</string>
+    <string name="premium_go_premium">Premiumへ</string>
+
+    <!-- Privacy &amp; Ads consent -->
+    <string name="privacy_ads_title">プライバシーと広告</string>
+    <string name="privacy_ads_subtitle">広告のパーソナライズと同意の選択を管理する</string>
 </resources>

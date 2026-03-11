@@ -19,6 +19,8 @@ import com.llmhub.llmhub.LlmHubApplication
 import com.llmhub.llmhub.screens.*
 import com.llmhub.llmhub.viewmodels.ChatViewModelFactory
 import com.llmhub.llmhub.viewmodels.ThemeViewModel
+import androidx.activity.ComponentActivity
+import androidx.compose.runtime.collectAsState
 
 sealed class Screen(val route: String) {
     object Home : Screen("home")
@@ -43,6 +45,7 @@ sealed class Screen(val route: String) {
     object About : Screen("about")
     object Terms : Screen("terms")
     object CreatorGeneration : Screen("creator_generation")
+    object Premium : Screen("premium")
 }
 
 @Composable
@@ -62,12 +65,27 @@ fun LlmHubNavigation(
     val isOnChatRoute = currentRoute == Screen.Chat.route
     var wasOnChatRoute by remember { mutableStateOf(isOnChatRoute) }
     val context = LocalContext.current
+    val activity = context as? ComponentActivity
+
+    // Billing — observe premium status for paywall gating
+    val billingManager = (context.applicationContext as LlmHubApplication).billingManager
+    val isPremium by billingManager.isPremium.collectAsState()
+
+    // Interstitial — only for free users
+    val interstitialAdManager = (context.applicationContext as LlmHubApplication).interstitialAdManager
+
     LaunchedEffect(isOnChatRoute) {
         if (wasOnChatRoute && !isOnChatRoute) {
             (context.applicationContext as? LlmHubApplication)?.inferenceService?.unloadModel()
             com.llmhub.llmhub.embedding.RagServiceManager.getInstance(context.applicationContext).cleanup()
         }
         wasOnChatRoute = isOnChatRoute
+    }
+
+    // Helper: navigate to premium or the real destination
+    fun navigateIfPremium(route: String) {
+        if (isPremium) navController.navigate(route)
+        else navController.navigate(Screen.Premium.route)
     }
 
     NavHost(
@@ -84,8 +102,8 @@ fun LlmHubNavigation(
                         "translator" -> navController.navigate(Screen.Translator.route)
                         "transcriber" -> navController.navigate(Screen.Transcriber.route)
                         "scam_detector" -> navController.navigate(Screen.ScamDetector.route)
-                        "image_generator" -> navController.navigate(Screen.ImageGenerator.route)
-                        "vibe_coder" -> navController.navigate(Screen.VibeCoder.route)
+                        "image_generator" -> navigateIfPremium(Screen.ImageGenerator.route)
+                        "vibe_coder" -> navigateIfPremium(Screen.VibeCoder.route)
                         "creator_generation" -> navController.navigate(Screen.CreatorGeneration.route)
                     }
                 },
@@ -97,7 +115,11 @@ fun LlmHubNavigation(
                 },
                 onNavigateToChatHistory = {
                     navController.navigate(Screen.ChatHistory.route)
-                }
+                },
+                onNavigateToPremium = {
+                    navController.navigate(Screen.Premium.route)
+                },
+                isPremium = isPremium
             )
         }
         
@@ -126,6 +148,13 @@ fun LlmHubNavigation(
         ) { backStackEntry ->
             val chatId = backStackEntry.arguments?.getString("chatId") ?: "new"
             val creatorId = backStackEntry.arguments?.getString("creatorId")
+
+            // Trigger interstitial ad for free users starting a new chat
+            LaunchedEffect(chatId) {
+                if (!isPremium && chatId == "new" && activity != null) {
+                    interstitialAdManager.onNewChatStarted(activity)
+                }
+            }
             
             // We need to pass creatorId to ChatScreen/ViewModel somehow.
             // Since ChatScreen takes a ViewModel, we might need to update ChatScreen signature
@@ -236,6 +265,9 @@ fun LlmHubNavigation(
                 onNavigateToTerms = {
                     navController.navigate(Screen.Terms.route)
                 },
+                onNavigateToPremium = {
+                    navController.navigate(Screen.Premium.route)
+                },
                 themeViewModel = themeViewModel
             )
         }
@@ -244,6 +276,9 @@ fun LlmHubNavigation(
             ModelDownloadScreen(
                 onNavigateBack = {
                     navController.popBackStack()
+                },
+                onNavigateToPremium = {
+                    navController.navigate(Screen.Premium.route)
                 }
             )
         }
@@ -275,6 +310,12 @@ fun LlmHubNavigation(
                     }
                 },
                 viewModelFactory = chatViewModelFactory
+            )
+        }
+
+        composable(Screen.Premium.route) {
+            PremiumScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

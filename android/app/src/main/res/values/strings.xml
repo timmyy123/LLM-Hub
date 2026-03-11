@@ -462,6 +462,32 @@
     <string name="feature_creator_generation">creAItors</string>
     <string name="feature_creator_generation_desc">Create your own custom AI personas</string>
     <string name="drawer_my_creators">my creAItors</string>
+
+    <!-- Premium / IAP -->
+    <string name="premium_title">LLM Hub Premium</string>
+    <string name="premium_subtitle">Unlock the full experience</string>
+    <string name="premium_feature_no_ads">No ads, ever</string>
+    <string name="premium_feature_vibe_coder">VibeCoder – AI code builder</string>
+    <string name="premium_feature_image_gen">Image Generator – on-device AI art</string>
+    <string name="premium_feature_tts">Text-to-Speech auto readout</string>
+    <string name="premium_feature_import_models">Import external models</string>
+    <string name="premium_feature_future">All future premium features</string>
+    <string name="premium_button_unlock">Unlock Premium</string>
+    <string name="premium_button_restore">Restore Purchase</string>
+    <string name="premium_button_later">Maybe later</string>
+    <string name="premium_price_loading">Loading price…</string>
+    <string name="premium_payment_note">One-time purchase via Google Play. No subscription.</string>
+    <string name="premium_active_title">You\'re Premium! 👑</string>
+    <string name="premium_active_subtitle">All features are unlocked. Thank you for your support!</string>
+    <string name="premium_locked_feature">Premium Feature</string>
+    <string name="premium_tap_to_unlock">Tap to unlock with Premium</string>
+    <string name="premium_restore_success">Purchase restored successfully!</string>
+    <string name="premium_restore_nothing">No previous purchase found.</string>
+    <string name="premium_go_premium">Go Premium</string>
+
+    <!-- Privacy &amp; Ads consent -->
+    <string name="privacy_ads_title">Privacy &amp; Ads</string>
+    <string name="privacy_ads_subtitle">Manage your ad personalisation and consent choices</string>
     
     <!-- Vibe Coder Screen -->
     <string name="vibe_coder_title">Vibes</string>

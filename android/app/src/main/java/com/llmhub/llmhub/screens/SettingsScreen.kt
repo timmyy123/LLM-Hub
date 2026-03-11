@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.mutableStateListOf
@@ -38,6 +39,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.runtime.rememberCoroutineScope
 import android.net.Uri
+import com.llmhub.llmhub.ads.ConsentManager
 import com.llmhub.llmhub.embedding.RagServiceManager
 import com.llmhub.llmhub.utils.FileUtils
 import com.llmhub.llmhub.R
@@ -53,6 +55,7 @@ fun SettingsScreen(
     onNavigateToModels: () -> Unit,
     onNavigateToAbout: () -> Unit,
     onNavigateToTerms: () -> Unit,
+    onNavigateToPremium: () -> Unit = {},
     themeViewModel: ThemeViewModel = viewModel()
 ) {
     val uriHandler = LocalUriHandler.current
@@ -68,6 +71,8 @@ fun SettingsScreen(
     val selectedEmbeddingModel by themeViewModel.selectedEmbeddingModel.collectAsState()
     val currentLanguage by themeViewModel.appLanguage.collectAsState()
     val autoReadoutEnabled by themeViewModel.autoReadoutEnabled.collectAsState()
+    val isPremium by (context.applicationContext as com.llmhub.llmhub.LlmHubApplication)
+        .billingManager.isPremium.collectAsState(initial = false)
     
     Scaffold(
         topBar = {
@@ -249,7 +254,7 @@ fun SettingsScreen(
                         )
                     }
 
-                    // Auto Readout toggle
+                    // Auto Readout toggle (Premium feature)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -259,7 +264,8 @@ fun SettingsScreen(
                         Icon(
                             Icons.Default.VolumeUp,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = if (isPremium) MaterialTheme.colorScheme.onSurfaceVariant
+                                   else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                             modifier = Modifier.size(24.dp)
                         )
 
@@ -268,24 +274,49 @@ fun SettingsScreen(
                         Column(
                             modifier = Modifier.weight(1f)
                         ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = stringResource(R.string.auto_readout),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = if (isPremium) MaterialTheme.colorScheme.onSurface
+                                            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                )
+                                if (!isPremium) {
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Icon(
+                                        Icons.Default.Lock,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(14.dp),
+                                        tint = Color(0xFFFFD700)
+                                    )
+                                }
+                            }
                             Text(
-                                text = stringResource(R.string.auto_readout),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = stringResource(R.string.auto_readout_description),
+                                text = if (isPremium)
+                                    stringResource(R.string.auto_readout_description)
+                                else
+                                    stringResource(R.string.premium_tap_to_unlock),
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (isPremium) MaterialTheme.colorScheme.onSurfaceVariant
+                                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                             )
                         }
 
-                        Switch(
-                            checked = autoReadoutEnabled,
-                            onCheckedChange = { enabled ->
-                                themeViewModel.setAutoReadoutEnabled(enabled)
+                        if (isPremium) {
+                            Switch(
+                                checked = autoReadoutEnabled,
+                                onCheckedChange = { enabled ->
+                                    themeViewModel.setAutoReadoutEnabled(enabled)
+                                }
+                            )
+                        } else {
+                            TextButton(onClick = onNavigateToPremium) {
+                                Text(
+                                    stringResource(R.string.premium_go_premium),
+                                    color = Color(0xFFFFD700)
+                                )
                             }
-                        )
+                        }
                     }
 
                     // Memory manager: allow paste/upload when memory is enabled
@@ -769,6 +800,17 @@ fun SettingsScreen(
                         title = stringResource(R.string.terms_of_service),
                         subtitle = stringResource(R.string.legal_terms_conditions),
                         onClick = onNavigateToTerms
+                    )
+
+                    // Privacy & Ads — shows AdMob consent form (visible to all users)
+                    val activity = context as? androidx.activity.ComponentActivity
+                    SettingsItem(
+                        icon = Icons.Default.PrivacyTip,
+                        title = stringResource(R.string.privacy_ads_title),
+                        subtitle = stringResource(R.string.privacy_ads_subtitle),
+                        onClick = {
+                            activity?.let { ConsentManager.showPrivacyOptionsForm(it) }
+                        }
                     )
                 }
             }

@@ -45,6 +45,8 @@ import androidx.compose.ui.res.stringResource
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.ModelRequirements
 import com.llmhub.llmhub.data.DeviceInfo
+import com.llmhub.llmhub.LlmHubApplication
+import com.llmhub.llmhub.ads.RewardedAdManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.net.Uri
@@ -88,16 +90,32 @@ private fun shouldShowNpuBadge(model: LLMModel): Boolean {
 @Composable
 fun ModelDownloadScreen(
     onNavigateBack: () -> Unit = {},
+    onNavigateToPremium: () -> Unit = {},
     viewModel: ModelDownloadViewModel? = null
 ) {
     val context = LocalContext.current
     val activity = context as ComponentActivity
-    
+
+    // Check premium status
+    val isPremium by (context.applicationContext as LlmHubApplication)
+        .billingManager.isPremium.collectAsState(initial = false)
+
+    val rewardedAdManager = (context.applicationContext as LlmHubApplication).rewardedAdManager
+
     // Use activity-scoped ViewModel to ensure downloads persist across navigation
     val downloadViewModel = viewModel ?: ViewModelProvider(
         activity,
         ViewModelProvider.AndroidViewModelFactory.getInstance(activity.application)
     )[ModelDownloadViewModel::class.java]
+
+    // Gate: free users watch a rewarded ad before each download; premium users skip it.
+    fun onDownloadGated(model: com.llmhub.llmhub.data.LLMModel) {
+        if (isPremium) {
+            downloadViewModel.downloadModel(model)
+        } else {
+            rewardedAdManager.showAdOrGrant(activity) { downloadViewModel.downloadModel(model) }
+        }
+    }
     
     val models by downloadViewModel.models.collectAsState()
     val textModels = models.filter { it.category == "text" }
@@ -160,12 +178,15 @@ fun ModelDownloadScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showImportDialog = true },
+                onClick = {
+                    if (isPremium) showImportDialog = true
+                    else onNavigateToPremium()
+                },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
                 Icon(
-                    imageVector = Icons.Default.Add,
+                    imageVector = if (isPremium) Icons.Default.Add else Icons.Default.Lock,
                     contentDescription = stringResource(R.string.import_external_model)
                 )
             }
@@ -195,7 +216,8 @@ fun ModelDownloadScreen(
                             variants = variants,
                             context = context,
                             viewModel = downloadViewModel,
-                            isMultimodal = false
+                            isMultimodal = false,
+                            onDownload = ::onDownloadGated
                         )
                     }
                 }
@@ -217,7 +239,8 @@ fun ModelDownloadScreen(
                             variants = variants,
                             context = context,
                             viewModel = downloadViewModel,
-                            isMultimodal = true
+                            isMultimodal = true,
+                            onDownload = ::onDownloadGated
                         )
                     }
                 }
@@ -239,7 +262,8 @@ fun ModelDownloadScreen(
                             variants = variants,
                             context = context,
                             viewModel = downloadViewModel,
-                            isMultimodal = false
+                            isMultimodal = false,
+                            onDownload = ::onDownloadGated
                         )
                     }
                 }
@@ -261,7 +285,8 @@ fun ModelDownloadScreen(
                             variants = variants,
                             context = context,
                             viewModel = downloadViewModel,
-                            isMultimodal = false
+                            isMultimodal = false,
+                            onDownload = ::onDownloadGated
                         )
                     }
                 }
@@ -312,7 +337,8 @@ private fun ModelFamilyCard(
     variants: List<LLMModel>,
     context: Context,
     viewModel: ModelDownloadViewModel,
-    isMultimodal: Boolean
+    isMultimodal: Boolean,
+    onDownload: (LLMModel) -> Unit = { viewModel.downloadModel(it) }
 ) {
     var expanded by remember { mutableStateOf(false) }
     
@@ -397,7 +423,7 @@ private fun ModelFamilyCard(
                     ModelVariantItem(
                         model = model,
                         context = context,
-                        onDownload = { viewModel.downloadModel(it) },
+                        onDownload = { onDownload(it) },
                         onCancel = { viewModel.cancelDownload(it) },
                         onPause = { viewModel.pauseDownload(it) },
                         onResume = { viewModel.resumeDownload(it) },

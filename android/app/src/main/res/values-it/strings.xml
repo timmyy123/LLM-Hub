@@ -794,4 +794,30 @@
 
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
+
+    <!-- Premium / IAP -->
+    <string name="premium_title">LLM Hub Premium</string>
+    <string name="premium_subtitle">Sblocca l’esperienza completa</string>
+    <string name="premium_feature_no_ads">Nessuna pubblicità, mai</string>
+    <string name="premium_feature_vibe_coder">VibeCoder – Generatore di codice IA</string>
+    <string name="premium_feature_image_gen">Generatore di immagini – arte IA sul dispositivo</string>
+    <string name="premium_feature_tts">Lettura automatica testo-voce</string>
+    <string name="premium_feature_import_models">Importa modelli esterni</string>
+    <string name="premium_feature_future">Tutte le future funzionalità premium</string>
+    <string name="premium_button_unlock">Sblocca Premium</string>
+    <string name="premium_button_restore">Ripristina acquisto</string>
+    <string name="premium_button_later">Forse più tardi</string>
+    <string name="premium_price_loading">Caricamento prezzo…</string>
+    <string name="premium_payment_note">Acquisto unico tramite Google Play. Nessun abbonamento.</string>
+    <string name="premium_active_title">Sei Premium! 👑</string>
+    <string name="premium_active_subtitle">Tutte le funzionalità sono sbloccate. Grazie per il tuo supporto!</string>
+    <string name="premium_locked_feature">Funzionalità Premium</string>
+    <string name="premium_tap_to_unlock">Tocca per sbloccare con Premium</string>
+    <string name="premium_restore_success">Acquisto ripristinato con successo!</string>
+    <string name="premium_restore_nothing">Nessun acquisto precedente trovato.</string>
+    <string name="premium_go_premium">Diventa Premium</string>
+
+    <!-- Privacy &amp; Ads consent -->
+    <string name="privacy_ads_title">Privacy e pubblicità</string>
+    <string name="privacy_ads_subtitle">Gestisci la personalizzazione degli annunci e le tue scelte di consenso</string>
 </resources>

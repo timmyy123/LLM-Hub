@@ -39,6 +39,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.platform.LocalContext
+import com.llmhub.llmhub.ads.BannerAd
 import com.llmhub.llmhub.data.ThemePreferences
 
 data class FeatureCard(
@@ -50,13 +51,18 @@ data class FeatureCard(
 )
 
 
+/** Routes that require a Premium subscription. */
+private val PREMIUM_ROUTES = setOf("image_generator", "vibe_coder")
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onNavigateToFeature: (String) -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToModels: () -> Unit,
-    onNavigateToChatHistory: () -> Unit
+    onNavigateToChatHistory: () -> Unit,
+    onNavigateToPremium: () -> Unit = {},
+    isPremium: Boolean = false
 ) {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
@@ -223,6 +229,17 @@ fun HomeScreen(
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
+
+                    // Go Premium button (only for free users)
+                    if (!isPremium) {
+                        IconButton(onClick = onNavigateToPremium) {
+                            Icon(
+                                imageVector = Icons.Default.WorkspacePremium,
+                                contentDescription = stringResource(R.string.premium_go_premium),
+                                tint = Color(0xFFFFD700)
+                            )
+                        }
+                    }
                     
                     // Settings Button
                     IconButton(onClick = onNavigateToSettings) {
@@ -234,6 +251,12 @@ fun HomeScreen(
                     }
                 }
             )
+        },
+        bottomBar = {
+            // Banner ad for free users — 320×50, anchored at the very bottom
+            if (!isPremium) {
+                BannerAd(modifier = Modifier.fillMaxWidth())
+            }
         }
     ) { paddingValues ->
         BoxWithConstraints(
@@ -287,13 +310,16 @@ fun HomeScreen(
 
                 // Feature Cards
                 itemsIndexed(features) { index, feature ->
+                    val isLocked = !isPremium && feature.route in PREMIUM_ROUTES
                     AnimatedFeatureCard(
                         feature = feature,
                         index = index,
                         cardHeight = cardHeight,
                         startTime = startTime,
+                        isLocked = isLocked,
                         onClick = {
-                            onNavigateToFeature(feature.route)
+                            if (isLocked) onNavigateToPremium()
+                            else onNavigateToFeature(feature.route)
                         }
                     )
                 }
@@ -310,6 +336,7 @@ fun AnimatedFeatureCard(
     index: Int,
     cardHeight: Dp? = null,
     startTime: Long,
+    isLocked: Boolean = false,
     onClick: () -> Unit
 ) {
     // Calculate initial visibility based on time passed since screen load
@@ -374,8 +401,8 @@ fun AnimatedFeatureCard(
                     .background(
                         brush = Brush.linearGradient(
                             colors = listOf(
-                                feature.gradient.first.copy(alpha = 0.9f),
-                                feature.gradient.second.copy(alpha = 0.9f)
+                                feature.gradient.first.copy(alpha = if (isLocked) 0.45f else 0.9f),
+                                feature.gradient.second.copy(alpha = if (isLocked) 0.45f else 0.9f)
                             )
                         )
                     )
@@ -422,6 +449,25 @@ fun AnimatedFeatureCard(
                         lineHeight = 16.sp,
                         modifier = Modifier.padding(horizontal = 8.dp)
                     )
+                }
+
+                // Lock badge — top-right corner for premium-gated features
+                if (isLocked) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .clip(RoundedCornerShape(bottomStart = 10.dp))
+                            .background(Color(0xFFFFD700))
+                            .padding(horizontal = 6.dp, vertical = 3.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = stringResource(R.string.premium_locked_feature),
+                            tint = Color(0xFF1A0533),
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
                 }
             }
         }

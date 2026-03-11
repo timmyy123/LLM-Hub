@@ -4,6 +4,8 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Required for AdMob on Android 13+ (advertising ID access) -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -35,6 +37,11 @@
         
         <!-- Declare 16 KB page size support for Google Play (required for native libraries) -->
         <property android:name="android.app.16kb_page_agnostic" android:value="true" />
+
+        <!-- AdMob App ID (value injected from BuildConfig / manifest placeholder) -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="${admobAppId}"/>
         
         <!-- OpenCL libraries for MediaPipe Image Generator (Android 12+) -->
         <uses-native-library android:name="libOpenCL.so" android:required="false" />

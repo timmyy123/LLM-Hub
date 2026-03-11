@@ -802,4 +802,30 @@
 
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
+
+    <!-- Premium / IAP -->
+    <string name="premium_title">LLM Hub Premium</string>
+    <string name="premium_subtitle">Buka pengalaman penuh</string>
+    <string name="premium_feature_no_ads">Tanpa iklan, selamanya</string>
+    <string name="premium_feature_vibe_coder">VibeCoder – Generator kode AI</string>
+    <string name="premium_feature_image_gen">Generator gambar – seni AI di perangkat</string>
+    <string name="premium_feature_tts">Pembacaan otomatis teks ke suara</string>
+    <string name="premium_feature_import_models">Import model eksternal</string>
+    <string name="premium_feature_future">Semua fitur premium masa depan</string>
+    <string name="premium_button_unlock">Buka Premium</string>
+    <string name="premium_button_restore">Pulihkan pembelian</string>
+    <string name="premium_button_later">Mungkin nanti</string>
+    <string name="premium_price_loading">Memuat harga…</string>
+    <string name="premium_payment_note">Pembelian sekali melalui Google Play. Tanpa langganan.</string>
+    <string name="premium_active_title">Anda adalah Premium! 👑</string>
+    <string name="premium_active_subtitle">Semua fitur dibuka. Terima kasih atas dukungan Anda!</string>
+    <string name="premium_locked_feature">Fitur Premium</string>
+    <string name="premium_tap_to_unlock">Ketuk untuk membuka dengan Premium</string>
+    <string name="premium_restore_success">Pembelian berhasil dipulihkan!</string>
+    <string name="premium_restore_nothing">Tidak ada pembelian sebelumnya ditemukan.</string>
+    <string name="premium_go_premium">Pergi ke Premium</string>
+
+    <!-- Privacy &amp; Ads consent -->
+    <string name="privacy_ads_title">Privasi &amp; Iklan</string>
+    <string name="privacy_ads_subtitle">Kelola personalisasi iklan dan pilihan persetujuan Anda</string>
 </resources>
