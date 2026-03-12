@@ -29,7 +29,8 @@ object LocaleHelper {
         "fa", // Persian (Farsi)
         "he", // Hebrew (modern code)
         "iw", // Hebrew (legacy Android code for compatibility)
-        "uk"  // Ukrainian
+        "uk",  // Ukrainian
+        "zh"  // Chinese (simplified)
     )
     
     /**
