@@ -16,6 +16,10 @@ local.properties
 app/release/app-release.aab
 app/release/baselineProfiles/0/app-release.dm
 app/release/app-release.apk
+release/app-release.aab
+release/app-release.apk
+*.aab
+*.apk
 app/release/baselineProfiles/1/app-release.dm
 app/src/main/assets/text-embed/embeddinggemma-300M_seq2048_mixed-precision.tflite
 app/src/main/assets/text-embed/sentencepiece.model
