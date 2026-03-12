@@ -1,16 +1,31 @@
-MIT License
+PolyForm Noncommercial License 1.0.0
 
-Copyright (c) 2026 timmy
+Copyright (c) 2026 timmy (timmyboy0623@gmail.com)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+of this software and associated documentation files (the "Software"), to use,
+copy, modify, and distribute the Software for noncommercial purposes only,
+subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. NONCOMMERCIAL USE ONLY. You may not use the Software, or any derivative
+   work based on it, for any Commercial Purpose. "Commercial Purpose" means:
+   (a) distributing or making available the Software or a derivative work
+       on any app store or platform (including but not limited to Google Play,
+       Amazon Appstore, Samsung Galaxy Store, or any third-party app store);
+   (b) charging any fee for the Software or access to it;
+   (c) monetizing the Software through advertising, in-app purchases,
+       subscriptions, sponsorships, or any other revenue-generating mechanism;
+   (d) using the Software in any product or service that generates revenue.
+
+2. ATTRIBUTION. The above copyright notice and this permission notice shall be
+   included in all copies or substantial portions of the Software.
+
+3. NO SUBLICENSING FOR COMMERCIAL USE. You may not sublicense the Software or
+   any derivative work to any third party for Commercial Purposes.
+
+4. COMMERCIAL LICENSING. If you wish to use the Software for a Commercial
+   Purpose, you must obtain a separate written license from the copyright
+   holder. Contact: timmyboy0623@gmail.com
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,

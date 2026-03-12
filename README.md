@@ -115,17 +115,24 @@ Development Setup
 ### Building from source
 ```bash
 git clone https://github.com/timmyy123/LLM-Hub.git
-cd LLM-Hub
+cd LLM-Hub/android
 ./gradlew assembleDebug
 ./gradlew installDebug
 ```
 
 ### Setting up Hugging Face Token for Development
-To use private or gated models, add your HuggingFace token to `local.properties` (do NOT commit this file):
+To use private or gated models, add your HuggingFace token to `android/local.properties` (do NOT commit this file):
 ```properties
 HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 Save and sync Gradle in Android Studio; the app will read `BuildConfig.HF_TOKEN` at build time.
+
+### Dev Premium Flag
+To skip ads and unlock all premium features locally without a real IAP purchase, add this to `android/local.properties`:
+```properties
+DEBUG_PREMIUM=true
+```
+Set it back to `false` before making a production build.
 
 ### Model License Acceptance
 Some models on HuggingFace (especially from Google and Meta) require explicit license acceptance before downloading. When building the app locally:
@@ -143,7 +150,10 @@ Contributing
 - Fork → branch → PR. See CONTRIBUTING.md (or open an issue/discussion if unsure).
 
 License
-- MIT (see LICENSE)
+- Source code is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE).
+- You are free to use, study, and build on this project for non-commercial purposes.
+- **Commercial use — including distributing the app, charging for it, or monetizing it with ads or IAP — is not permitted without explicit written permission from the author.**
+- Contact timmyboy0623@gmail.com for commercial licensing enquiries.
 
 Support
 - Email: timmyboy0623@gmail.com
