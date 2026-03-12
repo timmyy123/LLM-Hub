@@ -694,6 +694,9 @@ object SearchIntentDetector {
         // Hebrew
         "חפש", "חיפוש", "חפש עבור", "מצא", "מצא מידע על", "חיפוש ברשת", "חיפוש באינטרנט",
         
+        // Chinese (Simplified)
+        "搜索", "搜一下", "查找", "帮我找", "找信息", "找一下", "网络搜索", "上网搜索", "百度一下", "搜索一下",
+        
         // Current/recent information requests
         "what's the latest", "latest news", "recent", "current", "today", "this week",
         "what happened", "news about", "recent news", "latest update",
@@ -731,6 +734,9 @@ object SearchIntentDetector {
         // Hebrew
         "האחרונות", "החדשות", "עדכני", "עדכון", "היום", "עכשיו", "השבוע", "הכרזה",
         
+        // Chinese (Simplified)
+        "最新的", "最新消息", "最近", "当前", "今天", "本周", "发生了什么", "关于的消息", "最新更新",
+        
         // Question words that often need current info
         "what is happening", "what's happening", "what's new", "what are the latest",
         // German
@@ -763,6 +769,9 @@ object SearchIntentDetector {
         "що відбувається", "що нового",
         // Hebrew
         "מה קורה", "מה חדש",
+        
+        // Chinese (Simplified)
+        "发生了什么", "有什么新鲜事", "什么是最新的",
         
         // Time-sensitive queries
         "now", "currently", "at the moment", "right now", "today's",
@@ -797,6 +806,9 @@ object SearchIntentDetector {
         // Hebrew
         "עכשיו", "כרגע", "ברגע זה", "של היום",
         
+        // Chinese (Simplified)
+        "现在", "目前", "此刻", "今天的",
+        
         // Stock/price/weather queries
         "stock price", "weather", "temperature", "forecast", "price of",
         // German
@@ -829,6 +841,9 @@ object SearchIntentDetector {
         "ціна акцій", "погода", "температура", "прогноз", "ціна",
         // Hebrew
         "מחיר מניה", "מזג האוויר", "טמפרטורה", "תחזית", "מחיר",
+        
+        // Chinese (Simplified)
+        "股票价格", "天气", "气温", "预报", "价格",
         
         // Events and schedules
         "when is", "schedule", "events", "concerts", "movies",
@@ -863,6 +878,9 @@ object SearchIntentDetector {
         // Hebrew
         "מתי", "לוח זמנים", "אירועים", "קונצרטים", "סרטים",
         
+        // Chinese (Simplified)
+        "什么时候", "日程", "活动", "演唱会", "电影",
+        
         // Technology and product info
         "release date", "specs", "reviews", "latest version",
         // German
@@ -894,7 +912,10 @@ object SearchIntentDetector {
         // Ukrainian
         "дата релізу", "специфікації", "огляди", "остання версія",
         // Hebrew
-        "תאריך יציאה", "מפרט", "ביקורות", "גרסה אחרונה"
+        "תאריך יציאה", "מפרט", "ביקורות", "גרסה אחרונה",
+        
+        // Chinese (Simplified)
+        "发布日期", "规格参数", "评测", "最新版本"
     )
     
     private val weatherKeywords = listOf(
@@ -932,7 +953,10 @@ object SearchIntentDetector {
         "погода", "температура", "прогноз", "дощ", "сніг", "сонячно", "хмарно", "вітер", "шторм", "клімат",
         
         // Hebrew
-        "מזג האוויר", "טמפרטורה", "תחזית", "גשם", "שלג", "שמשי", "מעונן", "רוח", "סערה", "אקלים"
+        "מזג האוויר", "טמפרטורה", "תחזית", "גשם", "שלג", "שמשי", "מעונן", "רוח", "סערה", "אקלים",
+        
+        // Chinese (Simplified)
+        "天气", "气温", "温度", "天气预报", "下雨", "下雪", "晴天", "多云", "炎热", "寒冷", "暖和", "凉爽", "潮湿", "风", "暴风", "气候"
     )
     
     private val locationKeywords = listOf(
@@ -968,7 +992,10 @@ object SearchIntentDetector {
         // Ukrainian
         "у моєму місті", "моє місто", "моє місцезнаходження", "тут", "поточне місцезнаходження", "де я", "поруч", "поблизу", "навколо мене", "локально",
         // Hebrew
-        "בעיר שלי", "העיר שלי", "המיקום שלי", "כאן", "מיקום נוכחי", "איפה שאני", "ליד", "בסביבה", "מסביבי", "מקומי"
+        "בעיר שלי", "העיר שלי", "המיקום שלי", "כאן", "מיקום נוכחי", "איפה שאני", "ליד", "בסביבה", "מסביבי", "מקומי",
+        
+        // Chinese (Simplified)
+        "我的城市", "我的位置", "这里", "当前位置", "我在哪里", "附近", "我附近", "周边", "本地"
     )
     
     private val currentInfoKeywords = listOf(
@@ -1005,7 +1032,10 @@ object SearchIntentDetector {
         // Ukrainian
         "останні", "сьогодні", "зараз", "цього тижня", "новини", "оновлення",
         // Hebrew
-        "האחרונות", "היום", "עכשיו", "השבוע", "חדשות", "עדכון"
+        "האחרונות", "היום", "עכשיו", "השבוע", "חדשות", "עדכון",
+        
+        // Chinese (Simplified)
+        "最新", "最近", "今天", "现在", "本周", "新闻", "更新", "公告"
     )
     
     fun needsWebSearch(query: String): Boolean {

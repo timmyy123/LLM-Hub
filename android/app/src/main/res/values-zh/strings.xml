@@ -806,4 +806,32 @@
     <string name="model_not_loaded">模型未正确加载。请尝试切换到不同的模型或重启应用。</string>
     <string name="no_response_produced">未生成响应。(可能原因: token 限制或会话重置)。点击重新生成。</string>
     <string name="prompt_too_long">提示信息过长。请缩短您的消息并重试。</string>
+
+    <!-- Premium / IAP -->
+    <string name="premium_title">LLM Hub 高级版</string>
+    <string name="premium_subtitle">解锁完整体验</string>
+    <string name="premium_feature_no_ads">永久去广告</string>
+    <string name="premium_feature_vibe_coder">代码生成器 – AI 代码构建</string>
+    <string name="premium_feature_image_gen">图像生成器 – 设备端 AI 绘画</string>
+    <string name="premium_feature_tts">文字转语音自动朗读</string>
+    <string name="premium_feature_import_models">导入外部模型</string>
+    <string name="premium_feature_web_search">网络搜索 – 实时互联网结果</string>
+    <string name="premium_feature_memory">全局记忆 – 上下文智能回忆</string>
+    <string name="premium_feature_future">所有未来高级功能</string>
+    <string name="premium_button_unlock">解锁高级版</string>
+    <string name="premium_button_restore">恢复购买</string>
+    <string name="premium_button_later">稍后再说</string>
+    <string name="premium_price_loading">价格加载中…</string>
+    <string name="premium_payment_note">通过 Google Play 一次性购买，无需订阅。</string>
+    <string name="premium_active_title">您已是高级用户！👑</string>
+    <string name="premium_active_subtitle">所有功能已解锁。感谢您的支持！</string>
+    <string name="premium_locked_feature">高级功能</string>
+    <string name="premium_tap_to_unlock">点击以高级版解锁</string>
+    <string name="premium_restore_success">购买恢复成功！</string>
+    <string name="premium_restore_nothing">未找到历史购买记录。</string>
+    <string name="premium_go_premium">升级高级版</string>
+
+    <!-- Privacy &amp; Ads consent -->
+    <string name="privacy_ads_title">隐私与广告</string>
+    <string name="privacy_ads_subtitle">管理您的广告个性化和同意选项</string>
 </resources>
