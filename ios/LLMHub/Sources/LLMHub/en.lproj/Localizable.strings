@@ -70,7 +70,7 @@
 "ai_thinking" = "AI is thinking...";
 "thinking_label" = "Thinking";
 "thinking_tokens" = "Thinking (%1$d tokens)";
-"version_number" = "Version 3.6.1";
+"version_number" = "Version 3.6.2";
 "app_version" = "App Version";
 "terms_of_service" = "Terms of Service";
 "tos_last_updated" = "Last updated: July 16, 2025";

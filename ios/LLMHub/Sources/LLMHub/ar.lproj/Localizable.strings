@@ -70,7 +70,7 @@
 "ai_thinking" = "الذكاء الاصطناعي يفكر...";
 "thinking_label" = "التفكير";
 "thinking_tokens" = "التفكير (%1$d رموز)";
-"version_number" = "الإصدار 3.6.1";
+"version_number" = "الإصدار 3.6.2";
 "app_version" = "إصدار التطبيق";
 "terms_of_service" = "شروط الخدمة";
 "tos_last_updated" = "آخر تحديث: 16 يوليو 2025";

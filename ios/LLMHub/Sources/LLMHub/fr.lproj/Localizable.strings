@@ -69,7 +69,7 @@
 "ai_thinking" = "L'IA réfléchit...";
 "thinking_label" = "Réflexion";
 "thinking_tokens" = "Réflexion (%1$d jetons)";
-"version_number" = "Version 3.6.1";
+"version_number" = "Version 3.6.2";
 "app_version" = "Version de l'App";
 "terms_of_service" = "Conditions d'Utilisation";
 "tos_last_updated" = "Dernière mise à jour : 16 juillet 2025";

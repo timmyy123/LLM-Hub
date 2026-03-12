@@ -118,7 +118,7 @@
 "acknowledgments_text" = "Особая благодарность Google, Meta, Microsoft, IBM, и сообществу HuggingFace за предоставление невероятных LLM-моделей, которые питают это приложение. Этот проект также опирается на удивительную работу сообщества разработчиков Android и экосистемы открытого исходного кода.";
 "sd_models_credit" = "Модели генерации изображений работают на основе реализаций Stable Diffusion от xororz с использованием бэкендов Qualcomm QNN (NPU) и Alibaba MNN (CPU).";
 "nexa_sdk_credit" = "Вывод моделей GGUF работает на основе Nexa SDK.";
-"version_number" = "Версия 3.6.1";
+"version_number" = "Версия 3.6.2";
 "ai_thinking" = "ИИ думает...";
 "thinking_label" = "Размышление";
 "thinking_tokens" = "Размышление (%1$d токенов)";

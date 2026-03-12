@@ -70,7 +70,7 @@
 "ai_thinking" = "Yapay zeka düşünüyor...";
 "thinking_label" = "Düşünme";
 "thinking_tokens" = "Düşünme (%1$d token)";
-"version_number" = "Sürüm 3.6.1";
+"version_number" = "Sürüm 3.6.2";
 "app_version" = "Uygulama Sürümü";
 "terms_of_service" = "Hizmet Şartları";
 "tos_last_updated" = "Son güncelleme: 16 Temmuz 2025";

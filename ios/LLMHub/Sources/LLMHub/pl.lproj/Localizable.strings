@@ -70,7 +70,7 @@
 "ai_thinking" = "AI myśli...";
 "thinking_label" = "Myślenie";
 "thinking_tokens" = "Myślenie (%1$d tokenów)";
-"version_number" = "Wersja 3.6.1";
+"version_number" = "Wersja 3.6.2";
 "app_version" = "Wersja Aplikacji";
 "terms_of_service" = "Warunki Usługi";
 "tos_last_updated" = "Ostatnia aktualizacja: 16 lipca 2025";

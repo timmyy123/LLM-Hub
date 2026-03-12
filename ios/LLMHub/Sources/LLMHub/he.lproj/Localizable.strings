@@ -70,7 +70,7 @@
 "ai_thinking" = "ה-AI חושב…";
 "thinking_label" = "חשיבה";
 "thinking_tokens" = "חשיבה (%1$d אסימונים)";
-"version_number" = "גרסה 3.6.1";
+"version_number" = "גרסה 3.6.2";
 "app_version" = "גרסת אפליקציה";
 "terms_of_service" = "תנאי שימוש";
 "tos_last_updated" = "עודכן לאחרונה: 16 ביולי 2025";

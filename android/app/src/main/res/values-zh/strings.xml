@@ -78,7 +78,7 @@
     <string name="ai_thinking">AI 思考中...</string>
     <string name="thinking_label">深度思考</string>
     <string name="thinking_tokens">思考 (%1$d tokens)</string>
-    <string name="version_number">版本号 3.6.1</string>
+    <string name="version_number">版本号 3.6.2</string>
     <string name="app_version">应用版本</string>
     
     <!-- Terms of Service -->
