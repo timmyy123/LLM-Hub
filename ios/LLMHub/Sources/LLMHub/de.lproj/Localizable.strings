@@ -69,7 +69,7 @@
 "ai_thinking" = "KI denkt nach...";
 "thinking_label" = "Denken";
 "thinking_tokens" = "Denken (%1$d Tokens)";
-"version_number" = "Version 3.6.2";
+"version_number" = "Version 3.6.3";
 "app_version" = "App-Version";
 "terms_of_service" = "Nutzungsbedingungen";
 "tos_last_updated" = "Zuletzt aktualisiert: 16. Juli 2025";

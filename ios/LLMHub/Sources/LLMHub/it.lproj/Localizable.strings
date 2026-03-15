@@ -70,7 +70,7 @@
 "ai_thinking" = "L'IA sta pensando...";
 "thinking_label" = "Pensiero";
 "thinking_tokens" = "Pensiero (%1$d token)";
-"version_number" = "Versione 3.6.2";
+"version_number" = "Versione 3.6.3";
 "app_version" = "Versione App";
 "terms_of_service" = "Termini di Servizio";
 "tos_last_updated" = "Ultimo aggiornamento: 16 luglio 2025";

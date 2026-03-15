@@ -46,6 +46,15 @@ fun PremiumScreen(
     var restoreMessage by remember { mutableStateOf<String?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
 
+    // Auto-restore on screen open using server-side query — catches new devices
+    LaunchedEffect(Unit) {
+        if (!isPremium) {
+            isRestoring = true
+            billingManager.restorePurchasesFromServer()
+            isRestoring = false
+        }
+    }
+
     // Pulse animation for the crown icon
     val infiniteTransition = rememberInfiniteTransition(label = "crown_pulse")
     val crownScale by infiniteTransition.animateFloat(
@@ -252,11 +261,11 @@ fun PremiumScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     // Restore purchases
-                    TextButton(
+                    OutlinedButton(
                         onClick = {
                             isRestoring = true
                             coroutineScope.launch {
-                                billingManager.restorePurchases()
+                                billingManager.restorePurchasesFromServer()
                                 isRestoring = false
                                 restoreMessage = if (billingManager.isPremium.value)
                                     context.getString(R.string.premium_restore_success)
@@ -264,19 +273,39 @@ fun PremiumScreen(
                                     context.getString(R.string.premium_restore_nothing)
                             }
                         },
-                        enabled = !isRestoring
+                        enabled = !isRestoring,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        border = ButtonDefaults.outlinedButtonBorder.copy(
+                            brush = Brush.linearGradient(
+                                listOf(Color.White.copy(alpha = 0.5f), Color.White.copy(alpha = 0.5f))
+                            )
+                        ),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color.White
+                        )
                     ) {
                         if (isRestoring) {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
+                                modifier = Modifier.size(18.dp),
                                 strokeWidth = 2.dp,
-                                color = Color.White.copy(alpha = 0.7f)
+                                color = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                        } else {
+                            Icon(
+                                Icons.Default.Restore,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                         }
                         Text(
                             stringResource(R.string.premium_button_restore),
-                            color = Color.White.copy(alpha = 0.7f)
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 15.sp
                         )
                     }
 

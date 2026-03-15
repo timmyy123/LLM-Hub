@@ -70,7 +70,7 @@
 "ai_thinking" = "AI가 생각 중입니다...";
 "thinking_label" = "생각";
 "thinking_tokens" = "생각 (%1$d 토큰)";
-"version_number" = "버전 3.6.2";
+"version_number" = "버전 3.6.3";
 "app_version" = "앱 버전";
 "terms_of_service" = "서비스 약관";
 "tos_last_updated" = "최종 업데이트: 2025년 7월 16일";

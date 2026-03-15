@@ -70,7 +70,7 @@
 "ai_thinking" = "AI думає…";
 "thinking_label" = "Міркування";
 "thinking_tokens" = "Міркування (%1$d токенів)";
-"version_number" = "Версія 3.6.2";
+"version_number" = "Версія 3.6.3";
 "app_version" = "Версія застосунку";
 "terms_of_service" = "Умови надання послуг";
 "tos_last_updated" = "Останнє оновлення: 16 липня 2025";

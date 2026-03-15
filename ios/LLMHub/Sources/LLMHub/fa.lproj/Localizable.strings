@@ -70,7 +70,7 @@
 "ai_thinking" = "هوش مصنوعی در حال فکر کردن…";
 "thinking_label" = "تفکر";
 "thinking_tokens" = "تفکر (%1$d توکن)";
-"version_number" = "نسخه 3.6.2";
+"version_number" = "نسخه 3.6.3";
 "app_version" = "نسخه برنامه";
 "terms_of_service" = "شرایط خدمات";
 "tos_last_updated" = "آخرین بروزرسانی: 16 ژوئیه 2025";

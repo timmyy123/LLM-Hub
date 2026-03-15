@@ -70,7 +70,7 @@
 "ai_thinking" = "AI sedang berpikir...";
 "thinking_label" = "Pemikiran";
 "thinking_tokens" = "Pemikiran (%1$d token)";
-"version_number" = "Versi 3.6.2";
+"version_number" = "Versi 3.6.3";
 "app_version" = "Versi Aplikasi";
 "terms_of_service" = "Ketentuan Layanan";
 "tos_last_updated" = "Terakhir diperbarui: 16 Juli 2025";

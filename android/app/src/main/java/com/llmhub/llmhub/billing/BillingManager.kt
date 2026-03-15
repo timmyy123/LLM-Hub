@@ -114,13 +114,59 @@ class BillingManager(private val context: Context) {
         }
     }
 
-    /** Silently restore purchases (called on startup and from PremiumScreen). */
+    /**
+     * Silently restore from local Play Store cache — fast, used on startup.
+     * May miss purchases on a brand-new device that hasn't synced yet.
+     */
     suspend fun restorePurchases() {
         if (!billingClient.isReady) {
             Log.d(TAG, "Billing not ready, skipping restore")
             return
         }
         restorePurchasesInternal()
+    }
+
+    /**
+     * Full server-side restore — always hits Google's servers.
+     * Use this for the manual "Restore Purchase" button so new-device users are covered.
+     * Returns true if premium was found and activated.
+     */
+    suspend fun restorePurchasesFromServer(): Boolean {
+        if (!billingClient.isReady) {
+            // Try to reconnect and wait briefly
+            connectAndQuery()
+            delay(3_000)
+            if (!billingClient.isReady) {
+                Log.w(TAG, "Billing not ready for server restore")
+                return false
+            }
+        }
+
+        // First try the local cache (fast)
+        restorePurchasesInternal()
+        if (_isPremium.value) return true
+
+        // Fall back to server history query — works on new devices with empty local cache
+        val historyParams = QueryPurchaseHistoryParams.newBuilder()
+            .setProductType(BillingClient.ProductType.INAPP)
+            .build()
+
+        val historyResult = billingClient.queryPurchaseHistory(historyParams)
+        if (historyResult.billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+            val foundInHistory = historyResult.purchaseHistoryRecordList?.any { record ->
+                record.products.contains(PRODUCT_PREMIUM_LIFETIME)
+            } ?: false
+
+            if (foundInHistory) {
+                Log.d(TAG, "Premium found in purchase history — activating")
+                setPremium(true)
+                return true
+            }
+        } else {
+            Log.w(TAG, "queryPurchaseHistory failed: ${historyResult.billingResult.debugMessage}")
+        }
+
+        return _isPremium.value
     }
 
     private suspend fun restorePurchasesInternal() {

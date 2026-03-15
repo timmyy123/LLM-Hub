@@ -37,6 +37,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.activity.ComponentActivity
 import coil.compose.AsyncImage
 import com.llmhub.llmhub.LlmHubApplication
+import com.llmhub.llmhub.ads.BannerAd
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.components.ModelSelectorCard
 import com.llmhub.llmhub.components.SelectableMarkdownText
@@ -1253,6 +1254,10 @@ fun TranslatorScreen(
                     shadowElevation = 8.dp,
                     color = MaterialTheme.colorScheme.surface
                 ) {
+                    Column {
+                    if (!isPremium) {
+                        BannerAd(modifier = Modifier.fillMaxWidth())
+                    }
                     if (isTranslating) {
                         // Show Cancel button while translating
                         OutlinedButton(
@@ -1292,6 +1297,7 @@ fun TranslatorScreen(
                             Text(stringResource(R.string.translator_translate))
                         }
                     }
+                    } // Column
                 }
             }
             }
@@ -1676,6 +1682,10 @@ fun TranscriberScreen(
                     shadowElevation = 8.dp,
                     color = MaterialTheme.colorScheme.surface
                 ) {
+                    Column {
+                    if (!isPremium) {
+                        BannerAd(modifier = Modifier.fillMaxWidth())
+                    }
                     if (isTranscribing) {
                         // Show Cancel button while transcribing
                         OutlinedButton(
@@ -1709,6 +1719,7 @@ fun TranscriberScreen(
                             Text(stringResource(R.string.transcriber_transcribe))
                         }
                     }
+                    } // Column
                 }
             }
         }
@@ -1767,6 +1778,9 @@ fun ScamDetectorScreen(
     viewModel: com.llmhub.llmhub.viewmodels.ScamDetectorViewModel = viewModel()
 ) {
     val context = LocalContext.current
+    val activity = context as ComponentActivity
+    val isPremium by (context.applicationContext as LlmHubApplication).billingManager.isPremium.collectAsState(initial = false)
+    val rewardedAdManager = remember { (context.applicationContext as LlmHubApplication).rewardedAdManager }
     val keyboard = LocalSoftwareKeyboardController.current
     val clipboardManager = LocalClipboardManager.current
     val coroutineScope = rememberCoroutineScope()
@@ -1877,7 +1891,13 @@ fun ScamDetectorScreen(
                     isModelLoaded = isModelLoaded,
                     onModelSelected = { viewModel.selectModel(it) },
                     onBackendSelected = { backend, deviceId -> viewModel.selectBackend(backend, deviceId) },
-                    onLoadModel = { viewModel.loadModel() },
+                    onLoadModel = {
+                        if (isPremium) {
+                            viewModel.loadModel()
+                        } else {
+                            rewardedAdManager.showAdOrGrant(activity) { viewModel.loadModel() }
+                        }
+                    },
                     onUnloadModel = { viewModel.unloadModel() },
                     filterMultimodalOnly = false
                 )
@@ -2305,6 +2325,10 @@ fun ScamDetectorScreen(
                     shadowElevation = 8.dp,
                     color = MaterialTheme.colorScheme.surface
                 ) {
+                    Column {
+                    if (!isPremium) {
+                        BannerAd(modifier = Modifier.fillMaxWidth())
+                    }
                     if (isAnalyzing) {
                         FilledTonalButton(
                             onClick = { viewModel.cancelAnalysis() },
@@ -2336,6 +2360,7 @@ fun ScamDetectorScreen(
                             Text(stringResource(R.string.scam_detector_analyze))
                         }
                     }
+                    } // Column
                 }
             }
             } // end else (model loaded)

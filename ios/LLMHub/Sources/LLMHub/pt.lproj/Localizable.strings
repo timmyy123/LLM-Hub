@@ -69,7 +69,7 @@
 "ai_thinking" = "A IA está pensando...";
 "thinking_label" = "Pensamento";
 "thinking_tokens" = "Pensamento (%1$d tokens)";
-"version_number" = "Versão 3.6.2";
+"version_number" = "Versão 3.6.3";
 "app_version" = "Versão do App";
 "chat" = "Chat";
 "models" = "Modelos";

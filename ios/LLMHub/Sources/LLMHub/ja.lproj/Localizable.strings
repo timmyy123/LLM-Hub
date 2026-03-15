@@ -70,7 +70,7 @@
 "ai_thinking" = "AIが考え中...";
 "thinking_label" = "思考";
 "thinking_tokens" = "思考（%1$d トークン）";
-"version_number" = "バージョン 3.6.2";
+"version_number" = "バージョン 3.6.3";
 "app_version" = "アプリバージョン";
 "terms_of_service" = "利用規約";
 "tos_last_updated" = "最終更新：2025年7月16日";
