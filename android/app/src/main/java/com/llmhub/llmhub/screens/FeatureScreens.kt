@@ -34,7 +34,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.activity.ComponentActivity
 import coil.compose.AsyncImage
+import com.llmhub.llmhub.LlmHubApplication
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.components.ModelSelectorCard
 import com.llmhub.llmhub.components.SelectableMarkdownText
@@ -213,6 +215,9 @@ fun TranslatorScreen(
     viewModel: TranslatorViewModel = viewModel()
 ) {
     val context = LocalContext.current
+    val activity = context as ComponentActivity
+    val isPremium by (context.applicationContext as LlmHubApplication).billingManager.isPremium.collectAsState(initial = false)
+    val rewardedAdManager = remember { (context.applicationContext as LlmHubApplication).rewardedAdManager }
     val coroutineScope = rememberCoroutineScope()
     val keyboard = LocalSoftwareKeyboardController.current
     
@@ -455,7 +460,13 @@ fun TranslatorScreen(
                     isModelLoaded = isModelLoaded,
                     onModelSelected = { viewModel.selectModel(it) },
                     onBackendSelected = { backend, deviceId -> viewModel.selectBackend(backend, deviceId) },
-                    onLoadModel = { viewModel.loadModel() },
+                    onLoadModel = {
+                        if (isPremium) {
+                            viewModel.loadModel()
+                        } else {
+                            rewardedAdManager.showAdOrGrant(activity) { viewModel.loadModel() }
+                        }
+                    },
                     onUnloadModel = { viewModel.unloadModel() },
                     filterMultimodalOnly = true,
                     modifier = Modifier.fillMaxWidth()
@@ -1319,6 +1330,9 @@ fun TranscriberScreen(
     
     // Audio recording components (same as Translator)
     val context = LocalContext.current
+    val activity = context as ComponentActivity
+    val isPremium by (context.applicationContext as LlmHubApplication).billingManager.isPremium.collectAsState(initial = false)
+    val rewardedAdManager = remember { (context.applicationContext as LlmHubApplication).rewardedAdManager }
     val coroutineScope = rememberCoroutineScope()
     val audioService = remember { AudioInputService(context) }
     var recordedAudioData by remember { mutableStateOf<ByteArray?>(null) }
@@ -1730,7 +1744,13 @@ fun TranscriberScreen(
                     isModelLoaded = isModelLoaded,
                     onModelSelected = { viewModel.selectModel(it) },
                     onBackendSelected = { backend, deviceId -> viewModel.selectBackend(backend, deviceId) },
-                    onLoadModel = { viewModel.loadModel() },
+                    onLoadModel = {
+                        if (isPremium) {
+                            viewModel.loadModel()
+                        } else {
+                            rewardedAdManager.showAdOrGrant(activity) { viewModel.loadModel() }
+                        }
+                    },
                     onUnloadModel = { viewModel.unloadModel() },
                     filterMultimodalOnly = true
                 )

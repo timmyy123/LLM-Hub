@@ -16,8 +16,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeout
-import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -332,22 +330,16 @@ class CreatorViewModel(
                     IMPORTANT: Respond in the same language as the User Description. Do not add any other text or conversational filler. Just the format above.
                 """.trimIndent()
 
-                // Add 3 minute timeout
-                withTimeout(180_000L) {
-                    applyGenerationParametersToService()
-                    val response = inferenceService.generateResponse(metaPrompt, model)
-                    
-                    val parsedCreator = parseResponse(response, userPrompt)
-                    if (parsedCreator != null) {
-                        _generatedCreator.value = parsedCreator
-                    } else {
-                        _error.value = "Failed to parse generation result. Try again."
-                    }
+                applyGenerationParametersToService()
+                val response = inferenceService.generateResponse(metaPrompt, model)
+                
+                val parsedCreator = parseResponse(response, userPrompt)
+                if (parsedCreator != null) {
+                    _generatedCreator.value = parsedCreator
+                } else {
+                    _error.value = "Failed to parse generation result. Try again."
                 }
 
-            } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
-                Log.e("CreatorViewModel", "Generation timed out", e)
-                _error.value = "Generation timed out (3 min limit). Please try a simpler prompt or faster model."
             } catch (e: kotlinx.coroutines.CancellationException) {
                 Log.d("CreatorViewModel", "Generation cancelled")
             } catch (e: Exception) {

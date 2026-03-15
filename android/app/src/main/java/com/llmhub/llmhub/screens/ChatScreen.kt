@@ -46,7 +46,6 @@ import com.llmhub.llmhub.LlmHubApplication
 import com.llmhub.llmhub.ads.BannerAd
 import kotlinx.coroutines.launch
 import android.util.Log
-import androidx.activity.ComponentActivity
 
 @Composable
 fun getLocalizedModelName(model: LLMModel): String {
@@ -91,9 +90,6 @@ fun ChatScreen(
         factory = viewModelFactory
     )
     val context = LocalContext.current
-    val activity = context as ComponentActivity
-    val isPremium by (context.applicationContext as LlmHubApplication).billingManager.isPremium.collectAsState(initial = false)
-    val rewardedAdManager = remember { (context.applicationContext as LlmHubApplication).rewardedAdManager }
     val coroutineScope = rememberCoroutineScope()
 
     val messages by viewModel.messages.collectAsState()
@@ -481,11 +477,7 @@ fun ChatScreen(
                     }
                 }
 
-                if (isPremium) {
-                    doLoad()
-                } else {
-                    rewardedAdManager.showAdOrGrant(activity) { doLoad() }
-                }
+                doLoad()
             },
             onUnloadModel = {
                 viewModel.unloadModel()

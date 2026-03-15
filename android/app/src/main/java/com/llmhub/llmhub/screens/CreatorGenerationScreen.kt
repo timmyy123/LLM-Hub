@@ -29,9 +29,12 @@ import com.llmhub.llmhub.components.FeatureModelSettingsSheet
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.activity.ComponentActivity
 import android.graphics.Rect
 import android.view.ViewTreeObserver
+import com.llmhub.llmhub.LlmHubApplication
 
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
@@ -64,6 +67,12 @@ fun CreatorGenerationScreen(
     val promptBringRequester = remember { BringIntoViewRequester() }
     var promptFocused by remember { mutableStateOf(false) }
     
+    // Ad gating for free users
+    val context = LocalContext.current
+    val activity = context as ComponentActivity
+    val isPremium by (context.applicationContext as LlmHubApplication).billingManager.isPremium.collectAsState(initial = false)
+    val rewardedAdManager = remember { (context.applicationContext as LlmHubApplication).rewardedAdManager }
+
     // Detect keyboard (IME) visibility
     val view = LocalView.current
     val imeVisible = remember { mutableStateOf(false) }
@@ -386,7 +395,11 @@ fun CreatorGenerationScreen(
                 if (backend != null) viewModel.selectBackend(backend, deviceId)
                 viewModel.setNGpuLayers(nGpuLayers)
                 viewModel.setEnableThinking(enableThinking)
-                viewModel.loadModel()
+                if (isPremium) {
+                    viewModel.loadModel()
+                } else {
+                    rewardedAdManager.showAdOrGrant(activity) { viewModel.loadModel() }
+                }
             },
             onUnloadModel = { viewModel.unloadModel() },
             onDismiss = { showSettingsSheet = false }
