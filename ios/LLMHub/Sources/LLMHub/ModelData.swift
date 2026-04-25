@@ -316,16 +316,92 @@ public struct ModelData {
 
 // AUTO-GENERATED from android ModelData.kt: GGUF + ONNX models only
 public static let models: [AIModel] = [
-    // Gemma-3 270M — smallest Gemma 3 model. Ideal for the Mimo Bot voice
-    // loop where response latency matters more than verbosity. The exact
-    // GGUF URL points at unsloth's mirror; if it 404s, swap to bartowski's
-    // (`bartowski/google_gemma-3-270m-it-GGUF`) — same shape.
+    // Gemma-3 270M — smallest Gemma 3, ideal for fast voice replies. The full
+    // quantization ladder from unsloth's GGUF mirror: pick smaller for size,
+    // larger for quality. Q4_K_M is the recommended sweet spot. If a URL 404s,
+    // bartowski/google_gemma-3-270m-it-GGUF mirrors the same files with a
+    // `google_gemma-3-270m-it-` filename prefix.
+    AIModel(
+        name: "Gemma-3 270M (Q2_K)",
+        description: "Gemma-3 270M, 2-bit K-quant. Smallest, lossy. Use only when storage is tight. (~80 MB)",
+        url: "https://huggingface.co/unsloth/gemma-3-270m-it-GGUF/resolve/main/gemma-3-270m-it-Q2_K.gguf?download=true",
+        category: .text,
+        sizeBytes: 83886080,
+        source: "Google via Unsloth",
+        supportsVision: false,
+        supportsAudio: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 1, recommendedRamGB: 1),
+        contextWindowSize: 32768,
+        modelFormat: .gguf,
+        additionalFiles: []
+    ),
+    AIModel(
+        name: "Gemma-3 270M (Q3_K_M)",
+        description: "Gemma-3 270M, 3-bit K-quant medium. Good size/quality tradeoff. (~120 MB)",
+        url: "https://huggingface.co/unsloth/gemma-3-270m-it-GGUF/resolve/main/gemma-3-270m-it-Q3_K_M.gguf?download=true",
+        category: .text,
+        sizeBytes: 125829120,
+        source: "Google via Unsloth",
+        supportsVision: false,
+        supportsAudio: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 1, recommendedRamGB: 2),
+        contextWindowSize: 32768,
+        modelFormat: .gguf,
+        additionalFiles: []
+    ),
+    AIModel(
+        name: "Gemma-3 270M (Q4_0)",
+        description: "Gemma-3 270M, legacy 4-bit. Compatible with older llama.cpp builds. (~145 MB)",
+        url: "https://huggingface.co/unsloth/gemma-3-270m-it-GGUF/resolve/main/gemma-3-270m-it-Q4_0.gguf?download=true",
+        category: .text,
+        sizeBytes: 152043520,
+        source: "Google via Unsloth",
+        supportsVision: false,
+        supportsAudio: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 1, recommendedRamGB: 2),
+        contextWindowSize: 32768,
+        modelFormat: .gguf,
+        additionalFiles: []
+    ),
     AIModel(
         name: "Gemma-3 270M (Q4_K_M)",
-        description: "Google Gemma-3 270M, INT4 quantized GGUF. Smallest Gemma 3 — ideal for low-latency voice replies on the Mimo Bot screen. (~150 MB)",
+        description: "Gemma-3 270M, 4-bit K-quant medium. **Recommended** size/quality default for the voice loop. (~155 MB)",
         url: "https://huggingface.co/unsloth/gemma-3-270m-it-GGUF/resolve/main/gemma-3-270m-it-Q4_K_M.gguf?download=true",
         category: .text,
-        sizeBytes: 157286400,
+        sizeBytes: 162529280,
+        source: "Google via Unsloth",
+        supportsVision: false,
+        supportsAudio: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 1, recommendedRamGB: 2),
+        contextWindowSize: 32768,
+        modelFormat: .gguf,
+        additionalFiles: []
+    ),
+    AIModel(
+        name: "Gemma-3 270M (Q5_K_M)",
+        description: "Gemma-3 270M, 5-bit K-quant medium. Higher quality than Q4_K_M with modest size bump. (~190 MB)",
+        url: "https://huggingface.co/unsloth/gemma-3-270m-it-GGUF/resolve/main/gemma-3-270m-it-Q5_K_M.gguf?download=true",
+        category: .text,
+        sizeBytes: 199229440,
+        source: "Google via Unsloth",
+        supportsVision: false,
+        supportsAudio: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 1, recommendedRamGB: 2),
+        contextWindowSize: 32768,
+        modelFormat: .gguf,
+        additionalFiles: []
+    ),
+    AIModel(
+        name: "Gemma-3 270M (Q6_K)",
+        description: "Gemma-3 270M, 6-bit K-quant. Near-lossless. (~220 MB)",
+        url: "https://huggingface.co/unsloth/gemma-3-270m-it-GGUF/resolve/main/gemma-3-270m-it-Q6_K.gguf?download=true",
+        category: .text,
+        sizeBytes: 230686720,
         source: "Google via Unsloth",
         supportsVision: false,
         supportsAudio: false,
@@ -337,7 +413,7 @@ public static let models: [AIModel] = [
     ),
     AIModel(
         name: "Gemma-3 270M (Q8_0)",
-        description: "Google Gemma-3 270M, INT8 quantized GGUF. Higher quality, still fast. (~290 MB)",
+        description: "Gemma-3 270M, 8-bit. Highest quantized quality. (~290 MB)",
         url: "https://huggingface.co/unsloth/gemma-3-270m-it-GGUF/resolve/main/gemma-3-270m-it-Q8_0.gguf?download=true",
         category: .text,
         sizeBytes: 304087040,
@@ -346,6 +422,21 @@ public static let models: [AIModel] = [
         supportsAudio: false,
         supportsGpu: true,
         requirements: ModelRequirements(minRamGB: 1, recommendedRamGB: 2),
+        contextWindowSize: 32768,
+        modelFormat: .gguf,
+        additionalFiles: []
+    ),
+    AIModel(
+        name: "Gemma-3 270M (F16)",
+        description: "Gemma-3 270M, 16-bit float. Reference quality, only use if you have RAM to spare. (~540 MB)",
+        url: "https://huggingface.co/unsloth/gemma-3-270m-it-GGUF/resolve/main/gemma-3-270m-it-F16.gguf?download=true",
+        category: .text,
+        sizeBytes: 566231040,
+        source: "Google via Unsloth",
+        supportsVision: false,
+        supportsAudio: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 2, recommendedRamGB: 3),
         contextWindowSize: 32768,
         modelFormat: .gguf,
         additionalFiles: []
