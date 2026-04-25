@@ -15,9 +15,9 @@ final class VoicePipeline: ObservableObject {
     @Published private(set) var lastTranscript: String = ""
     @Published private(set) var lastResponse: String = ""
 
-    private let stt: SpeechToText
-    private let tts: TTS
-    private let sink: AudioSink
+    private var stt: SpeechToText
+    private var tts: TTS
+    private var sink: AudioSink
     private let rag: RagService?
     private let webSearchEnabled: Bool
     private let chatId: String
@@ -38,6 +38,12 @@ final class VoicePipeline: ObservableObject {
         self.chatId = chatId
         self.rag = rag
         self.webSearchEnabled = webSearchEnabled
+    }
+
+    /// Hot-swap the TTS impl. Stops any in-flight synth on the old one first.
+    func setTTS(_ newTTS: TTS) {
+        tts.stop()
+        tts = newTTS
     }
 
     func startTurn() {

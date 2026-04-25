@@ -1,17 +1,31 @@
 import SwiftUI
 
-/// Dev-mode voice loop screen — uses the phone's mic + speaker to exercise
-/// the full STT → LLM → TTS path before BLE transport / Whisper / Kokoro
-/// land. Requires a model already loaded via the regular Chat flow.
+private enum TTSChoice: String, CaseIterable, Identifiable {
+    case system = "System (AVSpeechSynthesizer)"
+    case kokoro = "Kokoro-82M (neural)"
+    var id: String { rawValue }
+}
+
+private let kokoroDefaultVoice = "af_heart"
+
+/// Dev-mode voice loop screen — phone mic + speaker drive STT → LLM → TTS,
+/// switchable between the system synthesizer and Kokoro-82M (one-time
+/// ~165 MB download).
 struct MimoBotTestView: View {
     var onNavigateBack: () -> Void
 
+    @ObservedObject private var backend = LLMBackend.shared
     @StateObject private var pipeline = VoicePipeline(
         stt: SFSpeechRecognizerSTT(),
         tts: SystemTTS(),
         sink: SpeakerSink()
     )
-    @ObservedObject private var backend = LLMBackend.shared
+
+    @State private var ttsChoice: TTSChoice = .system
+    @State private var kokoroReady: Bool = KokoroAssets.isReady(voice: kokoroDefaultVoice)
+    @State private var downloadStage: String? = nil
+    @State private var downloadDone: Int64 = 0
+    @State private var downloadTotal: Int64 = -1
 
     var body: some View {
         ZStack {
@@ -23,6 +37,7 @@ struct MimoBotTestView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         modelCard
+                        voiceCard
                         stateCard
                         if !pipeline.lastTranscript.isEmpty { transcriptCard }
                         if !pipeline.lastResponse.isEmpty   { responseCard }
@@ -31,13 +46,29 @@ struct MimoBotTestView: View {
                 }
 
                 Spacer()
-
                 actionButton
                     .padding(.horizontal)
                     .padding(.bottom, 24)
             }
         }
         .navigationBarBackButtonHidden(true)
+        .onChange(of: ttsChoice) { _ in updateTTS() }
+        .onChange(of: kokoroReady) { _ in updateTTS() }
+    }
+
+    private func updateTTS() {
+        switch ttsChoice {
+        case .system:
+            pipeline.setTTS(SystemTTS())
+        case .kokoro:
+            if kokoroReady,
+               let model = try? KokoroAssets.modelFile(),
+               let voice = try? KokoroAssets.voiceFile(kokoroDefaultVoice) {
+                pipeline.setTTS(KokoroTTS(modelURL: model, voicePackURL: voice, voiceId: kokoroDefaultVoice))
+            } else {
+                pipeline.setTTS(SystemTTS())
+            }
+        }
     }
 
     private var header: some View {
@@ -63,6 +94,45 @@ struct MimoBotTestView: View {
             if backend.currentlyLoadedModel == nil {
                 Text("Open Chat first to load a model, then come back.")
                     .font(.caption).foregroundColor(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(12)
+    }
+
+    private var voiceCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Voice").font(.caption).foregroundColor(.secondary)
+            ForEach(TTSChoice.allCases) { c in
+                HStack {
+                    Image(systemName: ttsChoice == c ? "circle.inset.filled" : "circle")
+                    Text(c.rawValue)
+                    Spacer()
+                }
+                .contentShape(Rectangle())
+                .onTapGesture { ttsChoice = c }
+            }
+
+            if ttsChoice == .kokoro && !kokoroReady {
+                if let stage = downloadStage {
+                    Text(stage).font(.caption)
+                    if downloadTotal > 0 {
+                        ProgressView(value: Double(downloadDone) / Double(downloadTotal))
+                    } else {
+                        ProgressView()
+                    }
+                } else {
+                    Button("Download Kokoro (~165 MB)") {
+                        Task { await downloadKokoro() }
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+            } else if ttsChoice == .kokoro {
+                Text("Kokoro starter G2P only knows ~150 common English words. Out-of-vocabulary words will be spelled letter by letter.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -125,6 +195,24 @@ struct MimoBotTestView: View {
                     .frame(maxWidth: .infinity, minHeight: 52)
             }
             .buttonStyle(.bordered)
+        }
+    }
+
+    private func downloadKokoro() async {
+        do {
+            for try await p in KokoroAssets.ensure(voice: kokoroDefaultVoice) {
+                await MainActor.run {
+                    downloadStage = p.stage
+                    downloadDone = p.bytesDone
+                    downloadTotal = p.bytesTotal
+                }
+            }
+            await MainActor.run {
+                kokoroReady = KokoroAssets.isReady(voice: kokoroDefaultVoice)
+                downloadStage = nil
+            }
+        } catch {
+            await MainActor.run { downloadStage = "Download failed: \(error.localizedDescription)" }
         }
     }
 }

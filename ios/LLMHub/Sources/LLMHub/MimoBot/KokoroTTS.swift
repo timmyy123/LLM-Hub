@@ -1,52 +1,177 @@
 import Foundation
+import onnxruntime_objc
 
-/// Kokoro-82M neural TTS via ONNX Runtime (Core ML execution provider on iOS).
+/// Kokoro-82M neural TTS via ONNX Runtime (onnxruntime-objc package).
 ///
-/// Why Kokoro on iOS:
-///   - 82M params, ~160 MB fp16 ONNX → fits comfortably alongside an LLM.
-///   - ONNX Runtime iOS has a Core ML EP that maps compatible ops to the ANE /
-///     GPU, so inference is fast on Apple Silicon.
-///   - Shares the exact same model files as the Android side — one download,
-///     two platforms.
+/// Pipeline (per utterance):
+///   text → EnglishG2P → IPA → KokoroVocab.tokenize → Int64 ids
+///        → pad with 0 on both ends → (1, L+2) tokens
+///        → style row L from VoicePack → ORT run
+///        → 24 kHz Float audio → resample to 16 kHz Int16 → 320-sample frames
 ///
-/// Model assets (see android/KokoroTts.kt for equivalents):
-///   - kokoro-v0_19.onnx
-///   - voices.bin
-///   - phoneme vocab JSON
+/// Model files (download via KokoroAssets):
+///   - kokoro-v1.0.fp16.onnx     (onnx-community/Kokoro-82M-ONNX export)
+///   - voices/<id>.bin           (per-voice 511×256 float32 packs)
 ///
-/// TODO(kokoro):
-///   1. Add `https://github.com/microsoft/onnxruntime-swift-package-manager`
-///      to Package.swift dependencies when implementing.
-///   2. Register the Kokoro asset bundle in ModelData / ModelDownloader so
-///      first-run download reuses existing plumbing.
-///   3. Create `ORTSession` with Core ML EP:
-///        let sessionOptions = try ORTSessionOptions()
-///        try sessionOptions.appendCoreMLExecutionProvider(with: opts)
-///   4. G2P: espeak-ng via small XCFramework, or ship a cached phoneme dict
-///      for English only in v0.
-///   5. Output is 24 kHz float; resample to 16 kHz, quantize Int16, emit
-///      320-sample frames.
+/// Same KNOWN LIMITATION as Android: bundled English G2P only handles
+/// ~150 common words, OOV falls back to letter spelling. See EnglishG2P.swift.
 final class KokoroTTS: TTS {
-    let modelURL: URL
-    let voicesURL: URL
-    let voiceId: String
 
-    init(modelURL: URL, voicesURL: URL, voiceId: String = "af_bella") {
+    let modelURL: URL
+    let voicePackURL: URL
+    let voiceId: String
+    let speed: Float
+
+    private var env: ORTEnv?
+    private var session: ORTSession?
+    private var voicePack: VoicePack?
+
+    private var inputTokensName: String = "input_ids"
+    private var inputStyleName: String = "style"
+    private var inputSpeedName: String = "speed"
+    private var outputName: String = "audio"
+
+    init(modelURL: URL, voicePackURL: URL, voiceId: String = "af_heart", speed: Float = 1.0) {
         self.modelURL = modelURL
-        self.voicesURL = voicesURL
+        self.voicePackURL = voicePackURL
         self.voiceId = voiceId
+        self.speed = speed
     }
 
     func load() async throws {
-        fatalError("TODO(kokoro): ORTEnv + ORTSession from modelURL with Core ML EP; load voices.bin")
+        if session != nil { return }
+        let env = try ORTEnv(loggingLevel: .warning)
+        let opts = try ORTSessionOptions()
+        try opts.setGraphOptimizationLevel(.all)
+        // Core ML EP — silently skipped on simulators / older devices.
+        do {
+            let coreml = ORTCoreMLExecutionProviderOptions()
+            coreml.useCPUOnly = false
+            try opts.appendCoreMLExecutionProvider(with: coreml)
+        } catch {
+            print("ℹ️ KokoroTTS: Core ML EP unavailable, falling back to CPU: \(error)")
+        }
+
+        let session = try ORTSession(env: env, modelPath: modelURL.path, sessionOptions: opts)
+
+        // Probe input/output names.
+        let inputs: Set<String> = (try? session.inputNames()).map(Set.init) ?? []
+        if inputs.contains("tokens") { inputTokensName = "tokens" }
+        if inputs.contains("ref_s")  { inputStyleName = "ref_s" }
+
+        let outputs: [String] = (try? session.outputNames()) ?? []
+        if let first = outputs.first { outputName = first }
+
+        self.env = env
+        self.session = session
+        self.voicePack = try VoicePack.load(from: voicePackURL)
     }
 
     func speakToPCM(text: String, language: String = "en-US") -> AsyncStream<[Int16]> {
         AsyncStream { continuation in
-            // TODO(kokoro): G2P → ORT run → resample 24k→16k → 320-frame chunks
-            _ = continuation
+            Task.detached { [weak self] in
+                guard let self else { continuation.finish(); return }
+                do {
+                    if self.session == nil { try await self.load() }
+                    try self.synthesize(text: text, into: continuation)
+                } catch {
+                    print("⚠️ KokoroTTS synth failed: \(error)")
+                }
+                continuation.finish()
+            }
         }
     }
 
-    func stop() { /* TODO: cancel the in-flight run */ }
+    private func synthesize(text: String, into continuation: AsyncStream<[Int16]>.Continuation) throws {
+        guard let session = session else { return }
+
+        let ipa = EnglishG2P.phonemize(text)
+        guard !ipa.isEmpty else { return }
+        let ids = KokoroVocab.tokenize(ipa)
+        guard !ids.isEmpty else { return }
+
+        // Pad with 0 on both ends.
+        var padded = [Int64](repeating: 0, count: ids.count + 2)
+        for (i, v) in ids.enumerated() { padded[i + 1] = Int64(v) }
+
+        // Build tensors.
+        let tokensData = NSMutableData()
+        padded.withUnsafeBytes { tokensData.append($0.baseAddress!, length: $0.count) }
+        let tokensValue = try ORTValue(
+            tensorData: tokensData,
+            elementType: .int64,
+            shape: [NSNumber(value: 1), NSNumber(value: padded.count)]
+        )
+
+        let styleVec = voicePack?.style(forTokens: ids.count) ?? [Float](repeating: 0, count: 256)
+        let styleData = NSMutableData()
+        styleVec.withUnsafeBytes { styleData.append($0.baseAddress!, length: $0.count) }
+        let styleValue = try ORTValue(
+            tensorData: styleData,
+            elementType: .float,
+            shape: [NSNumber(value: 1), NSNumber(value: styleVec.count)]
+        )
+
+        var speedArr: [Float] = [speed]
+        let speedData = NSMutableData()
+        speedArr.withUnsafeBytes { speedData.append($0.baseAddress!, length: $0.count) }
+        let speedValue = try ORTValue(
+            tensorData: speedData,
+            elementType: .float,
+            shape: [NSNumber(value: 1)]
+        )
+
+        let outputs = try session.run(
+            withInputs: [
+                inputTokensName: tokensValue,
+                inputStyleName: styleValue,
+                inputSpeedName: speedValue
+            ],
+            outputNames: Set([outputName]),
+            runOptions: nil
+        )
+
+        guard let outValue = outputs[outputName] else { return }
+        let outData = try outValue.tensorData() as Data
+        let floats = outData.withUnsafeBytes { raw -> [Float] in
+            let bound = raw.bindMemory(to: Float.self)
+            return Array(bound)
+        }
+
+        let pcm16k = Self.resampleLinear(floats, from: 24_000, to: MimoBotIds.sampleRateHz)
+        let frame = MimoBotIds.frameSamples
+        var i = 0
+        while i + frame <= pcm16k.count {
+            continuation.yield(Array(pcm16k[i..<(i + frame)]))
+            i += frame
+        }
+        if i < pcm16k.count {
+            var tail = Array(pcm16k[i...])
+            while tail.count < frame { tail.append(0) }
+            continuation.yield(tail)
+        }
+    }
+
+    func stop() { /* one-shot synth — nothing to interrupt mid-run */ }
+
+    static func resampleLinear(_ input: [Float], from srcRate: Int, to dstRate: Int) -> [Int16] {
+        if input.isEmpty { return [] }
+        if srcRate == dstRate {
+            return input.map { Int16(max(-1, min(1, $0)) * 32767) }
+        }
+        let ratio = Double(srcRate) / Double(dstRate)
+        let outLen = Int(Double(input.count) / ratio)
+        var out = [Int16](repeating: 0, count: outLen)
+        var srcPos = 0.0
+        for i in 0..<outLen {
+            let idx = Int(srcPos)
+            let frac = Float(srcPos - Double(idx))
+            let s0 = input[idx]
+            let s1 = idx + 1 < input.count ? input[idx + 1] : s0
+            let sample = max(-1, min(1, s0 + (s1 - s0) * frac))
+            out[i] = Int16(sample * 32767)
+            srcPos += ratio
+        }
+        return out
+    }
 }

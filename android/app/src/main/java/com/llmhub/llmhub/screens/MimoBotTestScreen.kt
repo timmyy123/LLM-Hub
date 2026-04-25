@@ -7,12 +7,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -21,8 +23,10 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -46,12 +50,23 @@ import com.llmhub.llmhub.R
 import com.llmhub.llmhub.mimobot.audio.SpeakerSink
 import com.llmhub.llmhub.mimobot.pipeline.VoicePipeline
 import com.llmhub.llmhub.mimobot.speech.AndroidSpeechRecognizerStt
+import com.llmhub.llmhub.mimobot.speech.KokoroTts
 import com.llmhub.llmhub.mimobot.speech.SystemTts
+import com.llmhub.llmhub.mimobot.speech.Tts
+import com.llmhub.llmhub.mimobot.speech.kokoro.KokoroAssets
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+
+private enum class TtsChoice { System, Kokoro }
+private const val DEFAULT_KOKORO_VOICE = "af_heart"
 
 /**
  * Dev-mode voice-loop screen. Uses the phone's own mic + speaker to exercise
- * the full STT → LLM → TTS path before the BLE transport and Whisper/Kokoro
- * backends are in place.
+ * the full STT → LLM → TTS path before BLE transport / Whisper land.
+ *
+ * TTS is selectable: the system recognizer (works immediately) or Kokoro
+ * (requires a one-time ~165 MB model download, runs through ONNX Runtime
+ * with NNAPI EP).
  *
  * Requires a model to be already loaded via the regular chat flow.
  */
@@ -65,31 +80,49 @@ fun MimoBotTestScreen(onBack: () -> Unit) {
     val inference = remember { app.inferenceService }
     val loadedModel = remember { inference.getCurrentlyLoadedModel() }
 
-    // Build pipeline once. DisposableEffect tears it down when we leave the screen.
-    val pipeline = remember(loadedModel) {
-        loadedModel?.let { model ->
-            VoicePipeline(
-                scope = scope,
-                inference = inference,
-                model = model,
-                stt = AndroidSpeechRecognizerStt(context),
-                tts = SystemTts(context),
-                sink = SpeakerSink(),
-            )
+    var ttsChoice by remember { mutableStateOf(TtsChoice.System) }
+
+    // Track Kokoro asset readiness reactively.
+    var kokoroReady by remember {
+        mutableStateOf(KokoroAssets.isReady(context, DEFAULT_KOKORO_VOICE))
+    }
+    var downloadStage by remember { mutableStateOf<String?>(null) }
+    var downloadDone by remember { mutableStateOf(0L) }
+    var downloadTotal by remember { mutableStateOf(-1L) }
+
+    // Build pipeline whenever the user model or TTS choice changes.
+    val pipeline = remember(loadedModel, ttsChoice, kokoroReady) {
+        if (loadedModel == null) return@remember null
+        val tts: Tts = when (ttsChoice) {
+            TtsChoice.System -> SystemTts(context)
+            TtsChoice.Kokoro -> if (kokoroReady) {
+                KokoroTts(
+                    context = context,
+                    modelPath = KokoroAssets.modelFile(context).absolutePath,
+                    voicePackPath = KokoroAssets.voiceFile(context, DEFAULT_KOKORO_VOICE).absolutePath,
+                    voiceId = DEFAULT_KOKORO_VOICE,
+                )
+            } else {
+                // Kokoro picked but assets missing — fall back so the screen still works.
+                SystemTts(context)
+            }
         }
+        VoicePipeline(
+            scope = scope,
+            inference = inference,
+            model = loadedModel,
+            stt = AndroidSpeechRecognizerStt(context),
+            tts = tts,
+            sink = SpeakerSink(),
+        )
     }
 
-    DisposableEffect(pipeline) {
-        onDispose {
-            pipeline?.cancel()
-        }
-    }
+    DisposableEffect(pipeline) { onDispose { pipeline?.cancel() } }
 
     val state by (pipeline?.state?.collectAsState() ?: remember { mutableStateOf(VoicePipeline.State.IDLE) })
     val transcript by (pipeline?.lastTranscript?.collectAsState() ?: remember { mutableStateOf("") })
     val response by (pipeline?.lastResponse?.collectAsState() ?: remember { mutableStateOf("") })
 
-    // Mic permission handling
     var hasMicPermission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
@@ -135,6 +168,72 @@ fun MimoBotTestScreen(onBack: () -> Unit) {
                 Column(Modifier.padding(16.dp)) {
                     Text("Model", style = MaterialTheme.typography.labelMedium)
                     Text(loadedModel.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp)) {
+                    Text("Voice", style = MaterialTheme.typography.labelMedium)
+                    TtsChoice.values().forEach { choice ->
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .selectable(
+                                    selected = ttsChoice == choice,
+                                    onClick = { ttsChoice = choice },
+                                )
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(selected = ttsChoice == choice, onClick = { ttsChoice = choice })
+                            val label = when (choice) {
+                                TtsChoice.System -> "System (Android TTS)"
+                                TtsChoice.Kokoro -> "Kokoro-82M (neural)"
+                            }
+                            Text(label)
+                        }
+                    }
+
+                    if (ttsChoice == TtsChoice.Kokoro && !kokoroReady) {
+                        Spacer(Modifier.height(8.dp))
+                        if (downloadStage == null) {
+                            Button(
+                                modifier = Modifier.fillMaxWidth(),
+                                onClick = {
+                                    scope.launch {
+                                        try {
+                                            KokoroAssets.ensure(context, DEFAULT_KOKORO_VOICE)
+                                                .collectLatest { p ->
+                                                    downloadStage = p.stage
+                                                    downloadDone = p.bytesDone
+                                                    downloadTotal = p.bytesTotal
+                                                }
+                                            kokoroReady = KokoroAssets.isReady(context, DEFAULT_KOKORO_VOICE)
+                                        } catch (t: Throwable) {
+                                            downloadStage = "Download failed: ${t.message}"
+                                        }
+                                    }
+                                },
+                            ) { Text("Download Kokoro (~165 MB)") }
+                        } else {
+                            Text(downloadStage ?: "", style = MaterialTheme.typography.bodyMedium)
+                            if (downloadTotal > 0) {
+                                LinearProgressIndicator(
+                                    progress = { (downloadDone.toFloat() / downloadTotal.toFloat()).coerceIn(0f, 1f) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            } else {
+                                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                            }
+                        }
+                    } else if (ttsChoice == TtsChoice.Kokoro) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "Kokoro starter G2P only knows ~150 common English words. " +
+                                "Out-of-vocabulary words will be spelled letter by letter.",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
                 }
             }
 
