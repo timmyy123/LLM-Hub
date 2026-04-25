@@ -32,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,6 +48,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.llmhub.llmhub.LlmHubApplication
 import com.llmhub.llmhub.R
+import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.ModelAvailabilityProvider
 import com.llmhub.llmhub.mimobot.audio.SpeakerSink
 import com.llmhub.llmhub.mimobot.pipeline.VoicePipeline
 import com.llmhub.llmhub.mimobot.speech.AndroidSpeechRecognizerStt
@@ -69,7 +72,9 @@ private const val DEFAULT_KOKORO_VOICE = "af_heart"
  * (requires a one-time ~165 MB model download, runs through ONNX Runtime
  * with NNAPI EP).
  *
- * Requires a model to be already loaded via the regular chat flow.
+ * Loads a model directly from this screen — no need to detour through the
+ * Chat tab first. The downloaded text models from `ModelAvailabilityProvider`
+ * are listed and any one can be loaded with a tap.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,7 +84,21 @@ fun MimoBotTestScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
 
     val inference = remember { app.inferenceService }
-    val loadedModel = remember { inference.getCurrentlyLoadedModel() }
+    var loadedModel by remember { mutableStateOf(inference.getCurrentlyLoadedModel()) }
+
+    // Locally downloaded text models the user can load from this screen.
+    var availableModels by remember { mutableStateOf<List<LLMModel>>(emptyList()) }
+    var loadingModelName by remember { mutableStateOf<String?>(null) }
+    var loadError by remember { mutableStateOf<String?>(null) }
+
+    // Refresh the available list whenever we (re)enter the screen.
+    LaunchedEffect(Unit) {
+        availableModels = ModelAvailabilityProvider
+            .loadAvailableModels(context)
+            .filter { it.category == "text" }
+        // Pick up state changes that happened while we were on another screen.
+        loadedModel = inference.getCurrentlyLoadedModel()
+    }
 
     var ttsChoice by remember { mutableStateOf(TtsChoice.System) }
 
@@ -93,7 +112,7 @@ fun MimoBotTestScreen(onBack: () -> Unit) {
 
     // Build pipeline whenever the user model or TTS choice changes.
     val pipeline = remember(loadedModel, ttsChoice, kokoroReady) {
-        if (loadedModel == null) return@remember null
+        val model = loadedModel ?: return@remember null
         val tts: Tts = when (ttsChoice) {
             TtsChoice.System -> SystemTts(context)
             TtsChoice.Kokoro -> if (kokoroReady) {
@@ -111,7 +130,7 @@ fun MimoBotTestScreen(onBack: () -> Unit) {
         VoicePipeline(
             scope = scope,
             inference = inference,
-            model = loadedModel,
+            model = model,
             stt = AndroidSpeechRecognizerStt(context),
             tts = tts,
             sink = SpeakerSink(),
@@ -155,23 +174,60 @@ fun MimoBotTestScreen(onBack: () -> Unit) {
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            if (loadedModel == null) {
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(16.dp)) {
-                        Text("No model loaded", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        Spacer(Modifier.height(8.dp))
-                        Text("Open a chat first to load a model, then come back here.", style = MaterialTheme.typography.bodyMedium)
-                    }
-                }
-                return@Column
-            }
-
+            // ── Model card ─────────────────────────────────────────────
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp)) {
                     Text("Model", style = MaterialTheme.typography.labelMedium)
-                    Text(loadedModel.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    val current = loadedModel
+                    if (current != null) {
+                        Text(current.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    } else if (loadingModelName != null) {
+                        Text("Loading $loadingModelName…", style = MaterialTheme.typography.titleMedium)
+                        Spacer(Modifier.height(8.dp))
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    } else if (availableModels.isEmpty()) {
+                        Text("No model loaded", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "No downloaded text models found. Open Settings → Models and download one (e.g. Gemma-3 270M (INT4, 1k) — fastest).",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    } else {
+                        Text("Pick a model to load", style = MaterialTheme.typography.bodyMedium)
+                        Spacer(Modifier.height(8.dp))
+                        availableModels.forEach { m ->
+                            OutlinedButton(
+                                modifier = Modifier.fillMaxWidth(),
+                                onClick = {
+                                    if (loadingModelName != null) return@OutlinedButton
+                                    loadingModelName = m.name
+                                    loadError = null
+                                    scope.launch {
+                                        try {
+                                            val ok = inference.loadModel(m, null, null)
+                                            if (ok) {
+                                                loadedModel = inference.getCurrentlyLoadedModel()
+                                            } else {
+                                                loadError = "Backend selection failed for ${m.name}"
+                                            }
+                                        } catch (t: Throwable) {
+                                            loadError = t.message ?: t.toString()
+                                        } finally {
+                                            loadingModelName = null
+                                        }
+                                    }
+                                },
+                            ) { Text(m.name) }
+                        }
+                    }
+                    loadError?.let {
+                        Spacer(Modifier.height(8.dp))
+                        Text("Load failed: $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                    }
                 }
             }
+
+            if (loadedModel == null) return@Column
 
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp)) {
