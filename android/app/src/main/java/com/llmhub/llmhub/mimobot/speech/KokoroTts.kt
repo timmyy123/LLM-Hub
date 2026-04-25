@@ -7,7 +7,7 @@ import ai.onnxruntime.providers.NNAPIFlags
 import android.content.Context
 import android.util.Log
 import com.llmhub.llmhub.mimobot.MimoBotIds
-import com.llmhub.llmhub.mimobot.speech.kokoro.EnglishG2P
+import com.llmhub.llmhub.mimobot.speech.kokoro.G2P
 import com.llmhub.llmhub.mimobot.speech.kokoro.KokoroVocab
 import com.llmhub.llmhub.mimobot.speech.kokoro.VoicePack
 import kotlinx.coroutines.Dispatchers
@@ -29,7 +29,7 @@ import java.util.EnumSet
  * dependency — no new native libs.
  *
  * Pipeline (per utterance):
- *   text ──► EnglishG2P ──► IPA phonemes ──► KokoroVocab.tokenise ──► int64 ids
+ *   text ──► G2P (espeak-ng or dict) ──► IPA ──► KokoroVocab.tokenise ──► int64 ids
  *                                                                       │
  *                                                                       ▼
  *   pad with 0 on both ends → (1, L+2) tokens, style row L from VoicePack
@@ -47,9 +47,8 @@ import java.util.EnumSet
  *   - kokoro-v1.0.fp16.onnx   (ONNX export from onnx-community/Kokoro-82M-ONNX)
  *   - voices/<id>.bin         (one voice file per voice, ~512 KB each)
  *
- * KNOWN LIMITATION: the bundled English G2P only handles ~150 common words.
- * OOV words fall back to letter-spelling. See EnglishG2P.kt for the upgrade
- * path (espeak-ng).
+ * G2P selection: defaults to [G2P.best], which prefers espeak-ng when its
+ * native libs are present and falls back to the bundled dictionary otherwise.
  */
 class KokoroTts(
     private val context: Context,
@@ -57,7 +56,11 @@ class KokoroTts(
     private val voicePackPath: String,
     @Suppress("unused") private val voiceId: String = "af_heart",
     private val speed: Float = 1.0f,
+    private val g2p: G2P = G2P.best(context),
 ) : Tts {
+
+    /** The G2P engine actually being used at runtime — exposed so the UI can show it. */
+    val g2pName: String get() = g2p.displayName
 
     private var ortEnv: OrtEnvironment? = null
     private var session: OrtSession? = null
@@ -111,7 +114,7 @@ class KokoroTts(
         val env = ortEnv ?: throw IllegalStateException("OrtEnvironment missing")
         val pack = voicePack ?: throw IllegalStateException("VoicePack missing")
 
-        val ipa = EnglishG2P.phonemize(text)
+        val ipa = g2p.phonemize(text, language)
         if (ipa.isBlank()) return@flow
         val ids = KokoroVocab.tokenise(ipa)
         if (ids.isEmpty()) return@flow

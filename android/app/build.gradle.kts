@@ -153,6 +153,18 @@ android {
     }
 
     // Removed externalNativeBuild - now using MediaPipe instead of native llama.cpp
+
+    // Mimo Bot espeak-ng JNI bridge. Builds nothing unless the user has run
+    // scripts/build_espeak_android.sh to populate src/main/cpp/espeak-ng/include/
+    // and src/main/jniLibs/<abi>/libespeak-ng.so. The CMakeLists.txt early-returns
+    // when those files are missing, so the build still works on a fresh checkout
+    // — Kokoro just falls back to the bundled DictionaryG2P.
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
+    }
 }
 
 // The Image Generator requires full protobuf-java, not the lite version

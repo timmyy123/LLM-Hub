@@ -4,7 +4,7 @@ import onnxruntime_objc
 /// Kokoro-82M neural TTS via ONNX Runtime (onnxruntime-objc package).
 ///
 /// Pipeline (per utterance):
-///   text → EnglishG2P → IPA → KokoroVocab.tokenize → Int64 ids
+///   text → G2P (espeak-ng or dict) → IPA → KokoroVocab.tokenize → Int64 ids
 ///        → pad with 0 on both ends → (1, L+2) tokens
 ///        → style row L from VoicePack → ORT run
 ///        → 24 kHz Float audio → resample to 16 kHz Int16 → 320-sample frames
@@ -13,14 +13,17 @@ import onnxruntime_objc
 ///   - kokoro-v1.0.fp16.onnx     (onnx-community/Kokoro-82M-ONNX export)
 ///   - voices/<id>.bin           (per-voice 511×256 float32 packs)
 ///
-/// Same KNOWN LIMITATION as Android: bundled English G2P only handles
-/// ~150 common words, OOV falls back to letter spelling. See EnglishG2P.swift.
+/// G2P defaults to `G2PFactory.best()` — espeak-ng if its XCFramework is
+/// present, the bundled dictionary otherwise.
 final class KokoroTTS: TTS {
 
     let modelURL: URL
     let voicePackURL: URL
     let voiceId: String
     let speed: Float
+    let g2p: G2P
+    /// Human-readable name of the active G2P engine (for UI display).
+    var g2pName: String { g2p.displayName }
 
     private var env: ORTEnv?
     private var session: ORTSession?
@@ -31,11 +34,18 @@ final class KokoroTTS: TTS {
     private var inputSpeedName: String = "speed"
     private var outputName: String = "audio"
 
-    init(modelURL: URL, voicePackURL: URL, voiceId: String = "af_heart", speed: Float = 1.0) {
+    init(
+        modelURL: URL,
+        voicePackURL: URL,
+        voiceId: String = "af_heart",
+        speed: Float = 1.0,
+        g2p: G2P = G2PFactory.best()
+    ) {
         self.modelURL = modelURL
         self.voicePackURL = voicePackURL
         self.voiceId = voiceId
         self.speed = speed
+        self.g2p = g2p
     }
 
     func load() async throws {
@@ -85,7 +95,7 @@ final class KokoroTTS: TTS {
     private func synthesize(text: String, into continuation: AsyncStream<[Int16]>.Continuation) throws {
         guard let session = session else { return }
 
-        let ipa = EnglishG2P.phonemize(text)
+        let ipa = g2p.phonemize(text, language: "en-us")
         guard !ipa.isEmpty else { return }
         let ids = KokoroVocab.tokenize(ipa)
         guard !ids.isEmpty else { return }

@@ -53,6 +53,7 @@ import com.llmhub.llmhub.mimobot.speech.AndroidSpeechRecognizerStt
 import com.llmhub.llmhub.mimobot.speech.KokoroTts
 import com.llmhub.llmhub.mimobot.speech.SystemTts
 import com.llmhub.llmhub.mimobot.speech.Tts
+import com.llmhub.llmhub.mimobot.speech.kokoro.G2P
 import com.llmhub.llmhub.mimobot.speech.kokoro.KokoroAssets
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -228,11 +229,18 @@ fun MimoBotTestScreen(onBack: () -> Unit) {
                         }
                     } else if (ttsChoice == TtsChoice.Kokoro) {
                         Spacer(Modifier.height(4.dp))
+                        val g2pName = remember { G2P.best(context).displayName }
                         Text(
-                            "Kokoro starter G2P only knows ~150 common English words. " +
-                                "Out-of-vocabulary words will be spelled letter by letter.",
+                            "G2P: $g2pName",
                             style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.SemiBold,
                         )
+                        if (g2pName.startsWith("dictionary")) {
+                            Text(
+                                "Bundled dictionary covers ~150 words. Run scripts/build_espeak_android.sh and rebuild for full coverage — see docs/espeak-ng-setup.md.",
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
                     }
                 }
             }

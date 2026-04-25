@@ -1,29 +1,20 @@
 import Foundation
 
-/// Tiny English grapheme-to-phoneme converter.
+/// Tiny English `G2P` backed by a hand-curated dictionary.
 ///
-/// **Starter, not finished.** Hand-curated dictionary covers what a voice
-/// companion is most likely to say (greetings, pronouns, numbers, common
-/// verbs / nouns / adjectives). Out-of-vocabulary words fall back to
-/// letter-by-letter spelling — usable but robotic.
-///
-/// Replace with espeak-ng or misaki for production. Drop-in shape is the
-/// same: text → space-joined IPA using only `KokoroVocab.symbols`.
-///
-/// TODO(g2p):
-///   1. Add an espeak-ng XCFramework (or a Swift port of misaki).
-///   2. Replace `phonemize` with the upstream G2P call.
-///   3. Match the exact phonemizer the chosen Kokoro ONNX export was
-///      trained against (kokoro-onnx → espeak-ng with `--ipa=3`).
-enum EnglishG2P {
+/// Covers the vocabulary a voice companion is most likely to need. OOV words
+/// fall back to letter-by-letter spelling. Use `EspeakG2P` for production
+/// multilingual coverage.
+struct DictionaryG2P: G2P {
+    let displayName: String = "dictionary (~150 words)"
 
-    static func phonemize(_ text: String) -> String {
+    func phonemize(_ text: String, language: String) -> String {
         let words = text.lowercased()
             .components(separatedBy: CharacterSet.letters.inverted.subtracting(["'"]))
             .filter { !$0.isEmpty }
         var parts: [String] = []
         for w in words {
-            parts.append(dict[w] ?? spell(w))
+            parts.append(Self.dict[w] ?? Self.spell(w))
         }
         return parts.joined(separator: " ")
     }

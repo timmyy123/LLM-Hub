@@ -130,9 +130,14 @@ struct MimoBotTestView: View {
                     .buttonStyle(.borderedProminent)
                 }
             } else if ttsChoice == .kokoro {
-                Text("Kokoro starter G2P only knows ~150 common English words. Out-of-vocabulary words will be spelled letter by letter.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                let g2pName = G2PFactory.best().displayName
+                Text("G2P: \(g2pName)")
+                    .font(.caption.weight(.semibold))
+                if g2pName.hasPrefix("dictionary") {
+                    Text("Bundled dictionary covers ~150 words. Run scripts/build_espeak_ios.sh and finish the manual setup in docs/espeak-ng-setup.md for full coverage.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

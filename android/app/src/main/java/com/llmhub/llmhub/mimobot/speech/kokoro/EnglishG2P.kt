@@ -1,32 +1,19 @@
 package com.llmhub.llmhub.mimobot.speech.kokoro
 
 /**
- * Tiny English grapheme-to-phoneme converter.
+ * Tiny English [G2P] backed by a hand-curated dictionary.
  *
- * **This is a starter, not a finished G2P.** It ships a small hand-curated
- * dictionary covering the vocabulary a voice companion is most likely to need
- * (greetings, pronouns, numbers, common verbs/nouns/adjectives) so the Kokoro
- * pipeline produces real, intelligible audio for those words. Out-of-vocabulary
- * words fall back to a deterministic letter-by-letter spelling — usable but
- * sounds like a robot literally spelling things.
+ * Covers the vocabulary a voice companion is most likely to need (greetings,
+ * pronouns, numbers, common verbs/nouns/adjectives) so the Kokoro pipeline
+ * produces real, intelligible audio. Out-of-vocabulary words fall back to a
+ * deterministic letter-by-letter spelling — usable but sounds robotic.
  *
- * Replace this with a proper espeak-ng or misaki-style phonemizer for
- * production. The expected drop-in shape is the same: text in → space-joined
- * IPA out, using only symbols present in [KokoroVocab.SYMBOLS].
- *
- * TODO(g2p):
- *   1. Compile espeak-ng for arm64-v8a + armeabi-v7a → libespeak-ng.so.
- *   2. Bundle espeak-ng-data (~7 MB) under src/main/assets/espeak-data.
- *   3. Replace [phonemize] with an espeak_TextToPhonemes JNI call.
- *   4. Match the exact phonemizer that the chosen Kokoro ONNX export was
- *      trained against (kokoro-onnx uses espeak-ng with `--ipa=3` flags).
+ * Use [EspeakG2P] for production-grade multilingual coverage.
  */
-object EnglishG2P {
+object DictionaryG2P : G2P {
+    override val displayName: String = "dictionary (~150 words)"
 
-    /**
-     * Convert a text utterance to a phoneme string ready for [KokoroVocab.tokenise].
-     */
-    fun phonemize(text: String): String {
+    override fun phonemize(text: String, language: String): String {
         val tokens = text.lowercase().split(Regex("[^a-z']+")).filter { it.isNotEmpty() }
         val sb = StringBuilder()
         for ((i, w) in tokens.withIndex()) {
@@ -56,12 +43,6 @@ object EnglishG2P {
         'z' to "zi"
     )
 
-    /**
-     * Hand-curated starter dictionary. Stress markers are omitted for
-     * simplicity — Kokoro handles bare phonemes OK. Diphthongs are written as
-     * two adjacent vowel symbols (e.g. "oʊ", "aɪ") since Kokoro tokenises per
-     * symbol.
-     */
     private val DICT: Map<String, String> = mapOf(
         // greetings
         "hello" to "həloʊ", "hi" to "haɪ", "hey" to "heɪ",
