@@ -42,9 +42,14 @@ class VoicePipeline(
     private val rag: RagService? = null,
     private val webSearch: WebSearchService? = DuckDuckGoSearchService(),
     private val webSearchEnabled: Boolean = true,
+    /** How many (user, assistant) turns to keep in conversation memory. */
+    private val maxHistoryTurns: Int = 6,
 ) {
 
     enum class State { IDLE, LISTENING, THINKING, SPEAKING }
+
+    /** A single completed exchange. */
+    data class Turn(val user: String, val assistant: String)
 
     private val _state = MutableStateFlow(State.IDLE)
     val state: StateFlow<State> = _state.asStateFlow()
@@ -55,8 +60,17 @@ class VoicePipeline(
     private val _lastResponse = MutableStateFlow("")
     val lastResponse: StateFlow<String> = _lastResponse.asStateFlow()
 
+    private val _history = MutableStateFlow<List<Turn>>(emptyList())
+    /** Immutable view of the in-memory conversation history. */
+    val history: StateFlow<List<Turn>> = _history.asStateFlow()
+
     private var currentTurn: Job? = null
     @Volatile private var cancelRequested = false
+
+    /** Wipe the conversation memory. Called from the test screen's Clear button. */
+    fun clearHistory() {
+        _history.value = emptyList()
+    }
 
     /** Run one listen → think → speak turn. Safe to call only when state == IDLE. */
     fun startTurn() {
@@ -118,12 +132,14 @@ class VoicePipeline(
             }
         }
 
+        val full = StringBuilder()
         try {
             val buf = StringBuilder()
             inference.generateResponseStream(prompt, model).collect { token ->
                 if (cancelRequested) return@collect
                 buf.append(token)
-                _lastResponse.value = buf.toString()
+                full.append(token)
+                _lastResponse.value = full.toString()
                 while (true) {
                     val end = findSentenceEnd(buf)
                     if (end < 0) break
@@ -138,6 +154,14 @@ class VoicePipeline(
             sentences.close()
             speakJob.join()
             sink.stop()
+        }
+
+        // Commit this turn to history once we've finished speaking it.
+        val finalReply = full.toString().trim()
+        if (finalReply.isNotEmpty() && !cancelRequested) {
+            val updated = (_history.value + Turn(transcript, finalReply))
+                .takeLast(maxHistoryTurns)
+            _history.value = updated
         }
     }
 
@@ -190,6 +214,15 @@ class VoicePipeline(
         }
 
         sb.append("system: You are a small voice companion. Answer in one or two short sentences. Never output Markdown, code blocks, or emoji.\n\n")
+
+        // Replay conversation memory so the model sees previous turns. Format
+        // matches what InferenceService.extractCurrentUserMessage already
+        // expects ("user: ...\nassistant: ...\n").
+        for (turn in _history.value) {
+            sb.append("user: ").append(turn.user).append('\n')
+            sb.append("assistant: ").append(turn.assistant).append('\n')
+        }
+
         sb.append("user: ").append(userQuery)
         return sb.toString()
     }

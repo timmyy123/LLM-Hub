@@ -123,6 +123,7 @@ fun MimoBotTestScreen(onBack: () -> Unit) {
     val state by (pipeline?.state?.collectAsState() ?: remember { mutableStateOf(VoicePipeline.State.IDLE) })
     val transcript by (pipeline?.lastTranscript?.collectAsState() ?: remember { mutableStateOf("") })
     val response by (pipeline?.lastResponse?.collectAsState() ?: remember { mutableStateOf("") })
+    val history by (pipeline?.history?.collectAsState() ?: remember { mutableStateOf(emptyList<VoicePipeline.Turn>()) })
 
     var hasMicPermission by remember {
         mutableStateOf(
@@ -240,6 +241,27 @@ fun MimoBotTestScreen(onBack: () -> Unit) {
                                 "Bundled dictionary covers ~150 words. Run scripts/build_espeak_android.sh and rebuild for full coverage — see docs/espeak-ng-setup.md.",
                                 style = MaterialTheme.typography.bodySmall,
                             )
+                        }
+                    }
+                }
+            }
+
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp)) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Conversation memory", style = MaterialTheme.typography.labelMedium)
+                            Text(
+                                if (history.isEmpty()) "no turns yet" else "${history.size} turn${if (history.size == 1) "" else "s"}",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                        if (history.isNotEmpty()) {
+                            OutlinedButton(onClick = { pipeline?.clearHistory() }) { Text("Clear") }
                         }
                     }
                 }

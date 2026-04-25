@@ -57,6 +57,38 @@ object DeviceInfo {
 
 object ModelData {
     val models = listOf(
+        // Gemma-3 270M — smallest Gemma 3, great for fast voice replies on the
+        // Mimo Bot test screen. ~150 MB INT4 / ~270 MB INT8.
+        // URLs follow the litert-community filename convention used for Gemma-3
+        // 1B; if Google releases the 270M with a different exact name, just
+        // edit the URL — the rest of the entry stays correct.
+        LLMModel(
+            name = "Gemma-3 270M (INT4, 1k)",
+            description = "Google Gemma-3 270M with INT4 quantization. Smallest Gemma 3 — ideal for low-latency voice replies on the Mimo Bot screen. (~150 MB)",
+            url = "https://huggingface.co/litert-community/Gemma3-270M-IT/resolve/main/Gemma3-270M-IT_multi-prefill-seq_q4_ekv1024.task?download=true",
+            category = "text",
+            sizeBytes = 157286400L, // ~150 MB
+            source = "Google via LiteRT Community",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 2),
+            contextWindowSize = 1024,
+            modelFormat = "task"
+        ),
+        LLMModel(
+            name = "Gemma-3 270M (INT8, 1k)",
+            description = "Google Gemma-3 270M with INT8 quantization. Higher quality, still fast. (~270 MB)",
+            url = "https://huggingface.co/litert-community/Gemma3-270M-IT/resolve/main/Gemma3-270M-IT_multi-prefill-seq_q8_ekv1024.task?download=true",
+            category = "text",
+            sizeBytes = 283115520L, // ~270 MB
+            source = "Google via LiteRT Community",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 2),
+            contextWindowSize = 1024,
+            modelFormat = "task"
+        ),
+
         // Gemma-3 1B Models
         LLMModel(
             name = "Gemma-3 1B (INT4, 2k)",

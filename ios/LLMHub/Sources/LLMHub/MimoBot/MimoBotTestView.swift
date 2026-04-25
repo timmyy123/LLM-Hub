@@ -38,6 +38,7 @@ struct MimoBotTestView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         modelCard
                         voiceCard
+                        memoryCard
                         stateCard
                         if !pipeline.lastTranscript.isEmpty { transcriptCard }
                         if !pipeline.lastResponse.isEmpty   { responseCard }
@@ -138,6 +139,27 @@ struct MimoBotTestView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(12)
+    }
+
+    private var memoryCard: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Conversation memory").font(.caption).foregroundColor(.secondary)
+                Text(pipeline.history.isEmpty
+                    ? "no turns yet"
+                    : "\(pipeline.history.count) turn\(pipeline.history.count == 1 ? "" : "s")")
+                    .font(.headline)
+            }
+            Spacer()
+            if !pipeline.history.isEmpty {
+                Button("Clear") { pipeline.clearHistory() }
+                    .buttonStyle(.bordered)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
