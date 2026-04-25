@@ -1,109 +1,161 @@
 package com.llmhub.llmhub.mimobot.pipeline
 
+import android.util.Log
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.embedding.RagService
 import com.llmhub.llmhub.inference.InferenceService
-import com.llmhub.llmhub.mimobot.audio.OpusDecoder
-import com.llmhub.llmhub.mimobot.audio.OpusEncoder
+import com.llmhub.llmhub.mimobot.audio.AudioSink
+import com.llmhub.llmhub.mimobot.speech.SpeechToText
 import com.llmhub.llmhub.mimobot.speech.Tts
-import com.llmhub.llmhub.mimobot.speech.WhisperStt
-import com.llmhub.llmhub.mimobot.transport.MimoTransport
 import com.llmhub.llmhub.websearch.DuckDuckGoSearchService
 import com.llmhub.llmhub.websearch.SearchIntentDetector
 import com.llmhub.llmhub.websearch.WebSearchService
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 /**
- * Orchestrates the full voice loop, reusing existing LLM-Hub services:
- *   - [InferenceService]       ← LLM (MediaPipe / LiteRT / Nexa / ONNX)
- *   - [RagService]             ← in-memory semantic search over documents
- *   - [WebSearchService]       ← DuckDuckGo fallback
- *   - [SearchIntentDetector]   ← decides when a query warrants web search
+ * Voice loop wiring: STT → LLM → TTS → AudioSink.
  *
- * None of these services are changed. We just assemble a voice front end on
- * top and feed the augmented text prompt into generateResponseStream().
+ * Transport-agnostic: pass a [SpeakerSink][com.llmhub.llmhub.mimobot.audio.SpeakerSink]
+ * for local dev mode, or a future `BleAudioSink` (Opus-encode + BLE write) for
+ * the real device.
  *
- * v0 flow (PTT):
- *
- *   transport.audioUp  (Opus) ──► decoder ──► PCM buffer
- *       ▲ user releases PTT                     │
- *       │                                        ▼
- *   transport.control ("end") ───► Whisper ──► transcript
- *                                                  │
- *                                                  ▼
- *                                  augment(transcript) with:
- *                                     • RagService.searchRelevantContext(chatId, q)
- *                                     • WebSearchService.search(q)  (if intent detected)
- *                                                  │
- *                                                  ▼
- *                              InferenceService.generateResponseStream
- *                                  (sentence-buffered — emit to TTS on each
- *                                   punctuation boundary for low first-audio
- *                                   latency)
- *                                                  │
- *                                                  ▼
- *                                          Tts.speakToPcm
- *                                                  │
- *                                                  ▼
- *                                          OpusEncoder
- *                                                  │
- *                                                  ▼
- *                                   transport.sendAudioDown(opusFrame)
- *
- * TODO(pipeline): implement.
- *
- * Implementation notes:
- *   - Run the LLM stream and the TTS synth as two coroutines connected by a
- *     Channel<String> of sentence-sized chunks. This is what lets you start
- *     speaking before the model is done generating.
- *   - On `{"t":"barge_in"}` from the device, call tts.stop(), drop the LLM
- *     stream, and return to listening state.
+ * Reuses existing LLM-Hub services unchanged:
+ *   - [InferenceService]  → any of the 4 inference backends
+ *   - [RagService]        → optional, passes document context into the prompt
+ *   - [WebSearchService]  → optional, gated by [SearchIntentDetector]
  */
 class VoicePipeline(
     private val scope: CoroutineScope,
-    private val transport: MimoTransport,
     private val inference: InferenceService,
-    private val whisper: WhisperStt,
-    private val tts: Tts,
     private val model: LLMModel,
+    private val stt: SpeechToText,
+    private val tts: Tts,
+    private val sink: AudioSink,
     private val chatId: String = "mimobot",
-    // Optional capabilities — pass null to disable that feature in this session.
     private val rag: RagService? = null,
     private val webSearch: WebSearchService? = DuckDuckGoSearchService(),
     private val webSearchEnabled: Boolean = true,
 ) {
-    private var loopJob: Job? = null
-    private val encoder = OpusEncoder()
-    private val decoder = OpusDecoder()
 
-    fun start() {
-        TODO("""
-            1. collect transport.control → dispatch PTT / barge-in / end events
-            2. collect transport.audioUp → decoder → PCM ring buffer
-            3. on end: whisper.transcribe(pcm) → transcript
-            4. augmentPrompt(transcript) (see helper below)
-            5. inference.generateResponseStream(augmented, model)
-               .bufferByPunctuation()
-               .collect { sentence ->
-                   tts.speakToPcm(sentence).collect { pcm ->
-                       transport.sendAudioDown(encoder.encode(pcm))
-                   }
-               }
-        """.trimIndent())
+    enum class State { IDLE, LISTENING, THINKING, SPEAKING }
+
+    private val _state = MutableStateFlow(State.IDLE)
+    val state: StateFlow<State> = _state.asStateFlow()
+
+    private val _lastTranscript = MutableStateFlow("")
+    val lastTranscript: StateFlow<String> = _lastTranscript.asStateFlow()
+
+    private val _lastResponse = MutableStateFlow("")
+    val lastResponse: StateFlow<String> = _lastResponse.asStateFlow()
+
+    private var currentTurn: Job? = null
+    @Volatile private var cancelRequested = false
+
+    /** Run one listen → think → speak turn. Safe to call only when state == IDLE. */
+    fun startTurn() {
+        if (currentTurn?.isActive == true) return
+        cancelRequested = false
+        currentTurn = scope.launch(Dispatchers.Default) {
+            try {
+                runTurn()
+            } catch (t: Throwable) {
+                Log.e(TAG, "turn failed", t)
+            } finally {
+                _state.value = State.IDLE
+            }
+        }
     }
 
-    /**
-     * Builds the text prompt fed to the LLM. Mirrors the logic in
-     * InferenceService.generateResponseStreamWithSession (lines 745-795) but
-     * for a headless voice pipeline — no Markdown, short responses, and
-     * RAG/web results already inlined before the question reaches the model.
-     */
-    @Suppress("unused")
+    /** Cancel an in-flight turn. Mic, LLM stream, and TTS are all torn down. */
+    fun cancel() {
+        cancelRequested = true
+        stt.cancel()
+        tts.stop()
+        sink.stop()
+        currentTurn?.cancel()
+        currentTurn = null
+        _state.value = State.IDLE
+    }
+
+    private suspend fun runTurn() {
+        _state.value = State.LISTENING
+        val transcript = stt.recognizeTurn().trim()
+        if (cancelRequested) return
+        _lastTranscript.value = transcript
+        if (transcript.isBlank()) {
+            Log.d(TAG, "empty transcript, abandoning turn")
+            return
+        }
+
+        _state.value = State.THINKING
+        val prompt = augmentPrompt(transcript)
+
+        _state.value = State.SPEAKING
+        _lastResponse.value = ""
+        sink.start()
+
+        // Sentence channel decouples LLM streaming from TTS synthesis so the first
+        // audio frame starts rendering before the model is done generating.
+        val sentences = Channel<String>(Channel.UNLIMITED)
+        val speakJob = scope.launch(Dispatchers.IO) {
+            for (sentence in sentences) {
+                if (cancelRequested) break
+                try {
+                    tts.speakToPcm(sentence).collect { frame ->
+                        if (cancelRequested) return@collect
+                        sink.write(frame)
+                    }
+                } catch (t: Throwable) {
+                    Log.w(TAG, "tts emit failed: ${t.message}")
+                }
+            }
+        }
+
+        try {
+            val buf = StringBuilder()
+            inference.generateResponseStream(prompt, model).collect { token ->
+                if (cancelRequested) return@collect
+                buf.append(token)
+                _lastResponse.value = buf.toString()
+                while (true) {
+                    val end = findSentenceEnd(buf)
+                    if (end < 0) break
+                    val sentence = buf.substring(0, end + 1).trim()
+                    buf.delete(0, end + 1)
+                    if (sentence.isNotEmpty()) sentences.send(sentence)
+                }
+            }
+            val tail = buf.toString().trim()
+            if (tail.isNotEmpty() && !cancelRequested) sentences.send(tail)
+        } finally {
+            sentences.close()
+            speakJob.join()
+            sink.stop()
+        }
+    }
+
+    /** Find the index of the first sentence-ending char in [buf], or -1. */
+    private fun findSentenceEnd(buf: StringBuilder): Int {
+        // Allow a short minimum so "Hi." still gets spoken, but prefer longer chunks
+        // so we don't chop in the middle of a short phrase.
+        if (buf.length < 12) return -1
+        for (i in buf.indices) {
+            val c = buf[i]
+            if (c == '.' || c == '!' || c == '?' || c == '\n') return i
+        }
+        return -1
+    }
+
     private suspend fun augmentPrompt(userQuery: String): String {
         val sb = StringBuilder()
 
-        // ── RAG: pull any pre-ingested document context
         rag?.let { r ->
             val chunks = r.searchRelevantContext(
                 chatId = chatId,
@@ -119,32 +171,28 @@ class VoicePipeline(
             }
         }
 
-        // ── Web search: reuse SearchIntentDetector exactly like InferenceService does
         if (webSearchEnabled && webSearch != null &&
             SearchIntentDetector.needsWebSearch(userQuery)
         ) {
-            val q = SearchIntentDetector.extractSearchQuery(userQuery)
-            val results = webSearch.search(q, maxResults = 5)
-            if (results.isNotEmpty()) {
-                sb.append("CURRENT WEB SEARCH RESULTS:\n")
-                results.forEach { r ->
-                    sb.append("- ").append(r.title).append(": ").append(r.snippet).append('\n')
+            try {
+                val q = SearchIntentDetector.extractSearchQuery(userQuery)
+                val results = webSearch.search(q, maxResults = 3)
+                if (results.isNotEmpty()) {
+                    sb.append("CURRENT WEB SEARCH RESULTS:\n")
+                    results.forEach { r ->
+                        sb.append("- ").append(r.title).append(": ").append(r.snippet).append('\n')
+                    }
+                    sb.append('\n')
                 }
-                sb.append('\n')
+            } catch (t: Throwable) {
+                Log.w(TAG, "web search failed: ${t.message}")
             }
         }
 
-        // Voice-specific system hint — keep responses short, no Markdown.
         sb.append("system: You are a small voice companion. Answer in one or two short sentences. Never output Markdown, code blocks, or emoji.\n\n")
         sb.append("user: ").append(userQuery)
         return sb.toString()
     }
 
-    fun stop() {
-        loopJob?.cancel()
-        loopJob = null
-        tts.stop()
-        encoder.close()
-        decoder.close()
-    }
+    companion object { private const val TAG = "MimoVoicePipeline" }
 }

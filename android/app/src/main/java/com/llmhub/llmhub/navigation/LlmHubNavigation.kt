@@ -47,6 +47,7 @@ sealed class Screen(val route: String) {
     object Terms : Screen("terms")
     object CreatorGeneration : Screen("creator_generation")
     object Premium : Screen("premium")
+    object MimoBotTest : Screen("mimobot_test")
 }
 
 @Composable
@@ -242,6 +243,10 @@ fun LlmHubNavigation(
                 onNavigateToModels = { navController.navigate(Screen.Models.route) }
             )
         }
+
+        composable(Screen.MimoBotTest.route) {
+            MimoBotTestScreen(onBack = { navController.popBackStack() })
+        }
         
         composable(
             route = "code_canvas?code={code}&type={type}",
@@ -277,10 +282,13 @@ fun LlmHubNavigation(
                 onNavigateToPremium = {
                     navController.navigate(Screen.Premium.route)
                 },
+                onNavigateToMimoBot = {
+                    navController.navigate(Screen.MimoBotTest.route)
+                },
                 themeViewModel = themeViewModel
             )
         }
-        
+
         composable(Screen.Models.route) {
             ModelDownloadScreen(
                 onNavigateBack = {

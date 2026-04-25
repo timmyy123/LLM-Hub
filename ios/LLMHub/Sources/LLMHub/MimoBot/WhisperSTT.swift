@@ -1,28 +1,23 @@
 import Foundation
 
-/// whisper.cpp wrapper. Same model as Android — tiny.en.q5_1 — so the model
-/// catalog in `ModelData` can be extended with a single entry that targets both
-/// platforms.
+/// whisper.cpp-backed `SpeechToText`.
 ///
-/// TODO(stt):
-///   1. Add `https://github.com/ggerganov/whisper.cpp` as a SwiftPM dep. There's
-///      a pre-packaged `whisper.spm` branch that builds cleanly on iOS 17+.
-///   2. `var ctx = whisper_init_from_file_with_params(modelPath, params)`.
-///   3. Transcribe with `whisper_full`; join segments from
-///      `whisper_full_get_segment_text(ctx, i)`.
-///   4. Metal is enabled by default on Apple Silicon — tiny.en runs ~20x realtime.
-final class WhisperSTT {
+/// NOT IMPLEMENTED YET — iOS v0 uses `SFSpeechRecognizerSTT`. When this lands,
+/// it'll consume PCM from a `MicSource` (or the BLE transport) and run
+/// whisper.cpp inference via a SwiftPM dependency.
+///
+/// TODO(whisper-ios):
+///   1. `https://github.com/ggerganov/whisper.cpp` — the `whisper.spm` branch
+///      builds cleanly on iOS 17+.
+///   2. Transcribe once the mic source reports end-of-utterance (VAD or PTT).
+final class WhisperSTT: SpeechToText {
     let modelURL: URL
     init(modelURL: URL) { self.modelURL = modelURL }
 
-    func load() async throws {
-        fatalError("TODO(stt): whisper_init_from_file")
+    func recognizeTurn(languageHint: String) async -> String {
+        fatalError("TODO(whisper-ios): whisper.cpp init + transcribe")
     }
 
-    /// Transcribe a PCM buffer (16 kHz mono, Float32 for whisper.cpp).
-    func transcribe(pcm: [Float], languageHint: String? = "en") async throws -> String {
-        fatalError("TODO(stt): whisper_full + collect segments")
-    }
-
-    func close() { /* TODO: whisper_free */ }
+    func cancel() { /* TODO */ }
+    func close() { /* TODO */ }
 }

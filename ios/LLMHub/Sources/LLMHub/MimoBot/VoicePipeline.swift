@@ -1,87 +1,146 @@
 import Foundation
+import SwiftUI
 
-/// Orchestrates the full voice loop, reusing existing LLM-Hub services:
-///   - `LLMBackend`     ← LLM via RunAnywhere (llama.cpp / Apple Foundation)
-///   - `RagService`     ← actor in RagService.swift, already present
-///   - Web search       ← currently file-private inside `ChatScreen.swift`;
-///                        see TODO below — either hoist it into its own file
-///                        or re-implement a slim version here.
+/// Voice loop wiring: STT → LLM → TTS → AudioSink.
 ///
-/// v0 flow (PTT):
-///
-///   transport.audioUp (Opus) → decoder → PCM ring buffer
-///       ▲ user releases PTT              │
-///       │                                 ▼
-///   transport.control ("end") → Whisper → transcript
-///                                           │
-///                                           ▼
-///                             augment(transcript):
-///                                • RagService.search(chatId, query, …)
-///                                • DuckDuckGo search (when intent matches)
-///                                           │
-///                                           ▼
-///                             LLMBackend.shared.generate(prompt, …)
-///                                (sentence-buffered → TTS on punctuation
-///                                 boundary for low first-audio latency)
-///                                           │
-///                                           ▼
-///                                    TTS.speakToPCM
-///                                           │
-///                                           ▼
-///                                    OpusEncoderWrap
-///                                           │
-///                                           ▼
-///                          transport.sendAudioDown(opusFrame)
-///
-/// TODO(pipeline): implement.
+/// Transport-agnostic: pass a `SpeakerSink` for local dev mode or a future
+/// `BLEAudioSink` for the real device. Reuses `LLMBackend.shared` for
+/// generation (which itself wraps RunAnywhere + llama.cpp / Apple Foundation).
 @MainActor
-final class VoicePipeline {
-    private let transport: MimoTransport
-    private let whisper: WhisperSTT
+final class VoicePipeline: ObservableObject {
+
+    enum State: String { case idle, listening, thinking, speaking }
+
+    @Published private(set) var state: State = .idle
+    @Published private(set) var lastTranscript: String = ""
+    @Published private(set) var lastResponse: String = ""
+
+    private let stt: SpeechToText
     private let tts: TTS
-    private let encoder = OpusEncoderWrap()
-    private let decoder = OpusDecoderWrap()
-    private let chatId: String
+    private let sink: AudioSink
     private let rag: RagService?
     private let webSearchEnabled: Bool
+    private let chatId: String
+
+    private var currentTurn: Task<Void, Never>?
 
     init(
-        transport: MimoTransport,
-        whisper: WhisperSTT,
+        stt: SpeechToText,
         tts: TTS,
+        sink: AudioSink,
         chatId: String = "mimobot",
         rag: RagService? = nil,
         webSearchEnabled: Bool = true
     ) {
-        self.transport = transport
-        self.whisper = whisper
+        self.stt = stt
         self.tts = tts
+        self.sink = sink
         self.chatId = chatId
         self.rag = rag
         self.webSearchEnabled = webSearchEnabled
     }
 
-    func start() {
-        // TODO: spawn Tasks that drain transport.audioUp + transport.control,
-        // then whisper → augmentPrompt → LLMBackend.shared.generate(...) →
-        // sentence-buffered → tts.speakToPCM → encoder → transport.sendAudioDown.
+    func startTurn() {
+        if currentTurn != nil { return }
+        lastResponse = ""
+        currentTurn = Task { [weak self] in
+            guard let self else { return }
+            await self.runTurn()
+            await MainActor.run { self.currentTurn = nil; self.state = .idle }
+        }
     }
 
-    /// Builds the prompt that goes to LLMBackend. Mirrors what the Android
-    /// `VoicePipeline.augmentPrompt` does — inlines RAG context and web
-    /// search results before the user's question.
-    ///
-    /// TODO(augment):
-    ///   1. Hoist `WebSearchService` out of `ChatScreen.swift` into its own
-    ///      file so this pipeline (and anything else headless) can import it.
-    ///   2. Add a tiny iOS twin of `SearchIntentDetector` — or ship the
-    ///      Android keyword list in a shared resource if we ever set up
-    ///      shared-resource tooling.
+    func cancel() {
+        stt.cancel()
+        tts.stop()
+        sink.stop()
+        currentTurn?.cancel()
+        currentTurn = nil
+        state = .idle
+    }
+
+    private func runTurn() async {
+        state = .listening
+        let transcript = await stt.recognizeTurn(languageHint: "en-US")
+        if Task.isCancelled { return }
+        lastTranscript = transcript
+        if transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return }
+
+        state = .thinking
+        let prompt = await augmentPrompt(userQuery: transcript)
+
+        state = .speaking
+        sink.start()
+
+        // Decouple LLM streaming from TTS synthesis so the first audio frame
+        // starts rendering before the model is finished generating.
+        let (sentences, sentenceCont) = AsyncStream<String>.makeStream()
+
+        let speakTask = Task { [weak self] in
+            guard let self else { return }
+            for await sentence in sentences {
+                if Task.isCancelled { break }
+                for await frame in self.tts.speakToPCM(text: sentence, language: "en-US") {
+                    if Task.isCancelled { break }
+                    await self.sink.write(frame)
+                }
+            }
+            await MainActor.run { self.sink.stop() }
+        }
+
+        // Bridge the callback-driven LLMBackend.generate API into an AsyncStream
+        // so the rest of the loop can iterate over cumulative-text snapshots
+        // without any @escaping mutable captures.
+        let (tokenStream, tokenCont) = AsyncStream<String>.makeStream()
+        let generateTask = Task.detached {
+            do {
+                try await LLMBackend.shared.generate(
+                    prompt: prompt,
+                    systemPrompt: nil,
+                    onUpdate: { cumulativeText, _, _ in
+                        tokenCont.yield(cumulativeText)
+                    }
+                )
+            } catch {
+                print("⚠️ VoicePipeline: LLM generate failed: \(error)")
+            }
+            tokenCont.finish()
+        }
+
+        var buf = ""
+        var sent = 0  // chars of cumulative text already chunked
+        for await cumulative in tokenStream {
+            if Task.isCancelled { break }
+            if cumulative.count > sent {
+                let idx = cumulative.index(cumulative.startIndex, offsetBy: sent)
+                buf += String(cumulative[idx...])
+                sent = cumulative.count
+                lastResponse = cumulative
+                while let end = Self.findSentenceEnd(buf) {
+                    let sentence = String(buf[..<buf.index(after: end)])
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    buf.removeSubrange(..<buf.index(after: end))
+                    if !sentence.isEmpty { sentenceCont.yield(sentence) }
+                }
+            }
+        }
+        await generateTask.value
+
+        let tail = buf.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !tail.isEmpty { sentenceCont.yield(tail) }
+        sentenceCont.finish()
+        await speakTask.value
+    }
+
+    private static func findSentenceEnd(_ s: String) -> String.Index? {
+        guard s.count >= 12 else { return nil }
+        return s.firstIndex { c in c == "." || c == "!" || c == "?" || c == "\n" }
+    }
+
     private func augmentPrompt(userQuery: String) async -> String {
         var sb = ""
 
         if let rag {
-            // RagService.search returns [ContextChunk]; see RagService.swift
             let chunks = await rag.search(
                 chatId: chatId,
                 query: userQuery,
@@ -95,19 +154,13 @@ final class VoicePipeline {
             }
         }
 
-        if webSearchEnabled {
-            // TODO(augment-web): run DuckDuckGo search when intent matches.
-            // Currently the iOS implementation lives inside ChatScreen.swift as
-            // `fileprivate actor WebSearchService` — hoist it first.
-        }
+        // TODO(augment-web): iOS web-search lives inside ChatScreen.swift as
+        // a fileprivate actor; hoist it before wiring here. See TODO in
+        // ios/LLMHub/Sources/LLMHub/MimoBot/README-style TODOs.
+        _ = webSearchEnabled
 
         sb += "system: You are a small voice companion. Answer in one or two short sentences. Never output Markdown, code blocks, or emoji.\n\n"
         sb += "user: \(userQuery)"
         return sb
-    }
-
-    func stop() {
-        tts.stop()
-        Task { await transport.disconnect() }
     }
 }
