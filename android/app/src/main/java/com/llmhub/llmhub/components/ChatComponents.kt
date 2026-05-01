@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -54,8 +55,10 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
@@ -1468,6 +1471,12 @@ fun RenderMessageSegments(
                         }
                     }
                 }
+                is ParsedSegment.Table -> {
+                    MarkdownTableView(
+                        rawTable = seg.content,
+                        baseColor = baseColor
+                    )
+                }
             }
         }
     }
@@ -2818,4 +2827,131 @@ private fun formatTime(timeMs: Int): String {
     val minutes = seconds / 60
     val remainingSeconds = seconds % 60
     return "%d:%02d".format(minutes, remainingSeconds)
-} 
+}
+
+/**
+ * Renders a markdown table with a header row and data rows,
+ * matching the iOS MarkdownTableView style.
+ */
+@Composable
+fun MarkdownTableView(
+    rawTable: String,
+    baseColor: Color,
+    modifier: Modifier = Modifier
+) {
+    val rows = remember(rawTable) { parseMarkdownTable(rawTable) }
+    if (rows.isEmpty()) return
+
+    val colCount = rows.maxOf { it.size }
+    val colWidths = remember(rows) {
+        mutableStateListOf<Int>().apply { repeat(colCount) { add(0) } }
+    }
+    val density = LocalDensity.current
+    val scrollState = rememberScrollState()
+    val gridColor = baseColor.copy(alpha = 0.2f)
+    val localContext = LocalContext.current
+
+    Box(
+        modifier = modifier
+            .padding(vertical = 4.dp)
+            .border(0.5.dp, gridColor, RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(10.dp))
+            .background(baseColor.copy(alpha = 0.05f))
+    ) {
+        Column(modifier = Modifier.horizontalScroll(scrollState)) {
+            rows.forEachIndexed { rowIdx, cells ->
+                Row(
+                    modifier = Modifier
+                        .height(IntrinsicSize.Max)
+                        .background(
+                            if (rowIdx == 0) baseColor.copy(alpha = 0.12f)
+                            else Color.Transparent
+                        )
+                ) {
+                    for (colIdx in 0 until colCount) {
+                        val cell = cells.getOrElse(colIdx) { "" }
+
+                        if (colIdx > 0) {
+                            Box(
+                                modifier = Modifier
+                                    .width(0.5.dp)
+                                    .fillMaxHeight()
+                                    .background(gridColor)
+                            )
+                        }
+
+                        val forcedWidthDp = if (colWidths[colIdx] > 0) {
+                            with(density) { colWidths[colIdx].toDp() }
+                        } else null
+
+                        Box(
+                            modifier = Modifier
+                                .then(
+                                    if (forcedWidthDp != null) Modifier.width(forcedWidthDp)
+                                    else Modifier.widthIn(min = 60.dp)
+                                )
+                                .onSizeChanged { size ->
+                                    if (size.width > (colWidths.getOrNull(colIdx) ?: 0)) {
+                                        colWidths[colIdx] = size.width
+                                    }
+                                }
+                                .padding(horizontal = 12.dp, vertical = 8.dp)
+                        ) {
+                            Text(
+                                text = cell,
+                                fontWeight = if (rowIdx == 0) FontWeight.Bold else FontWeight.Normal,
+                                color = baseColor,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                }
+
+                if (rowIdx < rows.lastIndex) {
+                    HorizontalDivider(color = gridColor, thickness = 0.5.dp)
+                }
+            }
+        }
+
+        IconButton(
+            onClick = {
+                val clipboard = localContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                val clip = ClipData.newPlainText("Table", rawTable.trim())
+                clipboard.setPrimaryClip(clip)
+            },
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(4.dp)
+                .size(28.dp)
+        ) {
+            Icon(
+                Icons.Outlined.ContentCopy,
+                contentDescription = "Copy table",
+                modifier = Modifier.size(15.dp),
+                tint = baseColor.copy(alpha = 0.6f)
+            )
+        }
+    }
+}
+
+private fun parseMarkdownTable(raw: String): List<List<String>> {
+    val lines = raw.trim().lines()
+    val result = mutableListOf<List<String>>()
+    for (line in lines) {
+        val trimmed = line.trim()
+        if (trimmed.isEmpty()) continue
+        // Skip separator rows (e.g. |---|---|)
+        val stripped = trimmed.replace("|", "").replace("-", "").replace(":", "").trim()
+        if (stripped.isEmpty()) continue
+        val cells = line.split("|")
+            .drop(1)                        // drop empty before first |
+            .dropLast(1)                    // drop empty after last |
+            .map { cellRaw ->
+                cellRaw.trim()
+                    .replace(Regex("""\*\*(.*?)\*\*"""), "$1")  // strip bold **text**
+                    .replace(Regex("""\*(.*?)\*"""), "$1")      // strip italic *text*
+            }
+        if (cells.isNotEmpty()) result.add(cells)
+    }
+    return result
+}

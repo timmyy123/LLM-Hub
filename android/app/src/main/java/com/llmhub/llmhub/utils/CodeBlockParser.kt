@@ -59,6 +59,7 @@ object CodeBlockParser {
     sealed class ParsedSegment {
         data class Text(val text: String) : ParsedSegment()
         data class Code(val language: String?, val content: String) : ParsedSegment()
+        data class Table(val content: String) : ParsedSegment()
     }
 
     /**
@@ -68,19 +69,45 @@ object CodeBlockParser {
      */
     fun parseSegments(text: String): List<ParsedSegment> {
         val normalized = normalizeSingleBacktickBlocks(text)
-        val pattern = Regex("(?s)```\\s*([A-Za-z0-9_+\\-]*)\\s*\\n(.*?)\\n?```")
+
+        val codePattern = Regex("(?s)```\\s*([A-Za-z0-9_+\\-]*)\\s*\\n(.*?)\\n?```")
+        val tablePattern = Regex("(?:^|\n)(\\|.*\\|[ \t]*\n\\|[ \t]*[:-].*\\|[ \t]*\n(?:\\|.*\\|[ \t]*\n?)+)")
+
+        data class MatchInfo(val range: IntRange, val type: String, val match: MatchResult)
+
+        val allMatches = mutableListOf<MatchInfo>()
+        for (m in codePattern.findAll(normalized)) {
+            allMatches.add(MatchInfo(m.range, "code", m))
+        }
+        for (m in tablePattern.findAll(normalized)) {
+            allMatches.add(MatchInfo(m.range, "table", m))
+        }
+        allMatches.sortBy { it.range.first }
+
         val result = mutableListOf<ParsedSegment>()
         var lastIndex = 0
 
-        for (m in pattern.findAll(normalized)) {
-            if (m.range.first > lastIndex) {
-                val before = normalized.substring(lastIndex, m.range.first)
+        for (info in allMatches) {
+            if (info.range.first < lastIndex) continue // skip overlapping
+
+            if (info.range.first > lastIndex) {
+                val before = normalized.substring(lastIndex, info.range.first)
                 if (before.isNotBlank()) result.add(ParsedSegment.Text(before))
             }
-            val lang = m.groupValues.getOrNull(1)?.ifBlank { null }
-            val content = m.groupValues.getOrNull(2) ?: ""
-            result.add(ParsedSegment.Code(lang, content))
-            lastIndex = m.range.last + 1
+
+            when (info.type) {
+                "code" -> {
+                    val lang = info.match.groupValues.getOrNull(1)?.ifBlank { null }
+                    val content = info.match.groupValues.getOrNull(2) ?: ""
+                    result.add(ParsedSegment.Code(lang, content))
+                }
+                "table" -> {
+                    val content = info.match.groupValues.getOrNull(1) ?: ""
+                    result.add(ParsedSegment.Table(content))
+                }
+            }
+
+            lastIndex = info.range.last + 1
         }
 
         if (lastIndex < normalized.length) {
