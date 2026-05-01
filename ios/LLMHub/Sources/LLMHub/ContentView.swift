@@ -47,7 +47,8 @@ struct ContentView: View {
                 case .settings:
                     SettingsScreen(
                         onNavigateBack: { path.removeLast() },
-                        onNavigateToModels: { path.append(Screen.models) }
+                        onNavigateToModels: { path.append(Screen.models) },
+                        onNavigateToMimoBot: { path.append(Screen.mimoBotTest) }
                     )
                     .navigationBarBackButtonHidden(true)
                     .enableSwipeBack()
@@ -85,6 +86,10 @@ struct ContentView: View {
                     )
                     .navigationBarBackButtonHidden(true)
                     .enableSwipeBack()
+                case .mimoBotTest:
+                    MimoBotTestView(onNavigateBack: { path.removeLast() })
+                        .navigationBarBackButtonHidden(true)
+                        .enableSwipeBack()
                 }
             }
         }
@@ -102,4 +107,5 @@ enum Screen: Hashable {
     case vibeCoder
     case vibeVoice
     case imageGenerator
+    case mimoBotTest
 }

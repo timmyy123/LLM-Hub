@@ -153,6 +153,20 @@ android {
     }
 
     // Removed externalNativeBuild - now using MediaPipe instead of native llama.cpp
+
+    // Mimo Bot espeak-ng JNI bridge. Only enabled when the user has run
+    // scripts/build_espeak_android.sh and the headers landed under
+    // src/main/cpp/espeak-ng/include/. Skipping the block on fresh checkouts
+    // means AGP doesn't require an NDK install for users who only want the
+    // bundled DictionaryG2P fallback.
+    if (file("src/main/cpp/espeak-ng/include/speak_lib.h").exists()) {
+        externalNativeBuild {
+            cmake {
+                path = file("src/main/cpp/CMakeLists.txt")
+                version = "3.22.1"
+            }
+        }
+    }
 }
 
 // The Image Generator requires full protobuf-java, not the lite version

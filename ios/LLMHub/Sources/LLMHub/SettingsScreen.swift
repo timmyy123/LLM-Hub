@@ -8,6 +8,7 @@ struct SettingsScreen: View {
 
     var onNavigateBack: () -> Void
     var onNavigateToModels: () -> Void
+    var onNavigateToMimoBot: (() -> Void)? = nil
 
     @State private var showLanguageDialog = false
     @State private var showMemoryDialog = false
@@ -114,6 +115,22 @@ struct SettingsScreen: View {
                     .listRowBackground(Color.clear)
                 } header: {
                     SectionHeader(titleKey: "appearance", icon: "paintbrush")
+                }
+
+                // MARK: Experimental Section
+                if let onNavigateToMimoBot {
+                    Section {
+                        SettingsRow(
+                            icon: "mic.circle.fill",
+                            iconColor: ApolloPalette.accentStrong,
+                            titleKey: "Mimo Bot (test)",
+                            subtitleString: "Voice loop using phone mic + speaker"
+                        ) { onNavigateToMimoBot() }
+                        .listRowInsets(EdgeInsets(top: 6, leading: 14, bottom: 6, trailing: 14))
+                        .listRowBackground(Color.clear)
+                    } header: {
+                        SectionHeader(titleKey: "Experimental", icon: "wand.and.stars")
+                    }
                 }
 
                 // MARK: Information Section

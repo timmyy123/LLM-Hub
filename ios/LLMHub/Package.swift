@@ -18,7 +18,10 @@ let package = Package(
     dependencies: [
         .package(path: "../runanywhere-sdks-latest"),
         .package(url: "https://github.com/apple/ml-stable-diffusion", from: "1.1.1"),
-        .package(url: "https://github.com/weichsel/ZIPFoundation", from: "0.9.20")
+        .package(url: "https://github.com/weichsel/ZIPFoundation", from: "0.9.20"),
+        // Raw ONNX Runtime Objective-C API for the Kokoro TTS path. RunAnywhereONNX
+        // wraps ORT for LLM inference but doesn't expose generic ORT graph APIs.
+        .package(url: "https://github.com/microsoft/onnxruntime-swift-package-manager", from: "1.20.0")
     ],
     targets: [
         .target(
@@ -28,7 +31,8 @@ let package = Package(
                 .product(name: "RunAnywhereLlamaCPP", package: "runanywhere-sdks-latest"),
                 .product(name: "RunAnywhereONNX", package: "runanywhere-sdks-latest"),
                 .product(name: "StableDiffusion", package: "ml-stable-diffusion"),
-                .product(name: "ZIPFoundation", package: "ZIPFoundation")
+                .product(name: "ZIPFoundation", package: "ZIPFoundation"),
+                .product(name: "onnxruntime", package: "onnxruntime-swift-package-manager")
             ],
             exclude: [
                 "check_strings.py"

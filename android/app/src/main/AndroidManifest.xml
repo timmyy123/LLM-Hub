@@ -15,6 +15,10 @@
         <intent>
             <action android:name="android.intent.action.TTS_SERVICE" />
         </intent>
+        <!-- Required on Android 11+ so SpeechRecognizer can bind to the on-device recognizer. -->
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
     </queries>
     <!-- end -->
 
