@@ -1859,7 +1859,7 @@ object ModelData {
         // Granite 4.1 3B Models (unsloth)
         LLMModel(
             name = "Granite 4.1 3B (Q2_K_XL)",
-            description = "IBM Granite 4.1 3B with Q2_K_XL quantization. Ultra-compact 2-bit variant for low-memory devices. (1.32GB)",
+            description = "IBM Granite 4.1 3B with Q2_K_XL quantization. Ultra-compact 2-bit variant for low-memory devices. 512K context. (1.32GB)",
             url = "https://huggingface.co/unsloth/granite-4.1-3b-GGUF/resolve/main/granite-4.1-3b-UD-Q2_K_XL.gguf?download=true",
             category = "text",
             sizeBytes = 1414548800L, // 1.32GB (actual size from HuggingFace)
@@ -1867,12 +1867,12 @@ object ModelData {
             supportsVision = false,
             supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
-            contextWindowSize = 4096,
+            contextWindowSize = 524288,
             modelFormat = "gguf"
         ),
         LLMModel(
             name = "Granite 4.1 3B (IQ3_XXS)",
-            description = "IBM Granite 4.1 3B with IQ3_XXS quantization. Ultra-compact 3-bit variant. (1.32GB)",
+            description = "IBM Granite 4.1 3B with IQ3_XXS quantization. Ultra-compact 3-bit variant. 512K context. (1.32GB)",
             url = "https://huggingface.co/unsloth/granite-4.1-3b-GGUF/resolve/main/granite-4.1-3b-UD-IQ3_XXS.gguf?download=true",
             category = "text",
             sizeBytes = 1416576320L, // 1.32GB (actual size from HuggingFace)
@@ -1880,12 +1880,12 @@ object ModelData {
             supportsVision = false,
             supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
-            contextWindowSize = 4096,
+            contextWindowSize = 524288,
             modelFormat = "gguf"
         ),
         LLMModel(
             name = "Granite 4.1 3B (Q3_K_XL)",
-            description = "IBM Granite 4.1 3B with Q3_K_XL quantization. Balanced 3-bit variant. (1.67GB)",
+            description = "IBM Granite 4.1 3B with Q3_K_XL quantization. Balanced 3-bit variant. 512K context. (1.67GB)",
             url = "https://huggingface.co/unsloth/granite-4.1-3b-GGUF/resolve/main/granite-4.1-3b-UD-Q3_K_XL.gguf?download=true",
             category = "text",
             sizeBytes = 1794667840L, // 1.67GB (actual size from HuggingFace)
@@ -1893,12 +1893,12 @@ object ModelData {
             supportsVision = false,
             supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
-            contextWindowSize = 4096,
+            contextWindowSize = 524288,
             modelFormat = "gguf"
         ),
         LLMModel(
             name = "Granite 4.1 3B (Q4_K_XL)",
-            description = "IBM Granite 4.1 3B with Q4_K_XL quantization. Standard 4-bit variant. (2.00GB)",
+            description = "IBM Granite 4.1 3B with Q4_K_XL quantization. Standard 4-bit variant. 512K context. (2.00GB)",
             url = "https://huggingface.co/unsloth/granite-4.1-3b-GGUF/resolve/main/granite-4.1-3b-UD-Q4_K_XL.gguf?download=true",
             category = "text",
             sizeBytes = 2152381760L, // 2.00GB (actual size from HuggingFace)
@@ -1906,12 +1906,12 @@ object ModelData {
             supportsVision = false,
             supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 5),
-            contextWindowSize = 4096,
+            contextWindowSize = 524288,
             modelFormat = "gguf"
         ),
         LLMModel(
             name = "Granite 4.1 3B (Q5_K_XL)",
-            description = "IBM Granite 4.1 3B with Q5_K_XL quantization. High-quality 5-bit variant. (2.28GB)",
+            description = "IBM Granite 4.1 3B with Q5_K_XL quantization. High-quality 5-bit variant. 512K context. (2.28GB)",
             url = "https://huggingface.co/unsloth/granite-4.1-3b-GGUF/resolve/main/granite-4.1-3b-UD-Q5_K_XL.gguf?download=true",
             category = "text",
             sizeBytes = 2453939520L, // 2.28GB (actual size from HuggingFace)
@@ -1919,12 +1919,12 @@ object ModelData {
             supportsVision = false,
             supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
-            contextWindowSize = 4096,
+            contextWindowSize = 524288,
             modelFormat = "gguf"
         ),
         LLMModel(
             name = "Granite 4.1 3B (Q6_K_XL)",
-            description = "IBM Granite 4.1 3B with Q6_K_XL quantization. High-quality 6-bit variant. (2.84GB)",
+            description = "IBM Granite 4.1 3B with Q6_K_XL quantization. High-quality 6-bit variant. 512K context. (2.84GB)",
             url = "https://huggingface.co/unsloth/granite-4.1-3b-GGUF/resolve/main/granite-4.1-3b-UD-Q6_K_XL.gguf?download=true",
             category = "text",
             sizeBytes = 3048299840L, // 2.84GB (actual size from HuggingFace)
@@ -1932,12 +1932,12 @@ object ModelData {
             supportsVision = false,
             supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 5, recommendedRamGB = 7),
-            contextWindowSize = 4096,
+            contextWindowSize = 524288,
             modelFormat = "gguf"
         ),
         LLMModel(
             name = "Granite 4.1 3B (Q8_K_XL)",
-            description = "IBM Granite 4.1 3B with Q8_K_XL quantization. Maximum quality 8-bit variant. (3.99GB)",
+            description = "IBM Granite 4.1 3B with Q8_K_XL quantization. Maximum quality 8-bit variant. 512K context. (3.99GB)",
             url = "https://huggingface.co/unsloth/granite-4.1-3b-GGUF/resolve/main/granite-4.1-3b-UD-Q8_K_XL.gguf?download=true",
             category = "text",
             sizeBytes = 4284472640L, // 3.99GB (actual size from HuggingFace)
@@ -1945,7 +1945,7 @@ object ModelData {
             supportsVision = false,
             supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 8),
-            contextWindowSize = 4096,
+            contextWindowSize = 524288,
             modelFormat = "gguf"
         )
         // Note: Gecko tokenizer removed - Gecko models have built-in tokenizers
