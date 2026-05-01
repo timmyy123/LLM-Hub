@@ -1839,6 +1839,114 @@ object ModelData {
             requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 4),
             contextWindowSize = 0,
             modelFormat = "mnn_cpu" // MNN framework for CPU inference
+        ),
+
+        // Ternary Bonsai Models (prism-ml) — F16 variants only (Q2_0 ternary quantization unsupported by Nexa SDK)
+        LLMModel(
+            name = "Ternary Bonsai 1.7B (F16)",
+            description = "Ternary Bonsai 1.7B in full float16 precision. Highest quality variant for high-end devices with ample RAM. (3.21GB)",
+            url = "https://huggingface.co/prism-ml/Ternary-Bonsai-1.7B-gguf/resolve/main/Ternary-Bonsai-1.7B-F16.gguf?download=true",
+            category = "text",
+            sizeBytes = 3446249408L, // 3.21GB (actual size from HuggingFace)
+            source = "Prism ML",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 5, recommendedRamGB = 6),
+            contextWindowSize = 4096,
+            modelFormat = "gguf"
+        ),
+
+        // Granite 4.1 3B Models (unsloth)
+        LLMModel(
+            name = "Granite 4.1 3B (Q2_K_XL)",
+            description = "IBM Granite 4.1 3B with Q2_K_XL quantization. Ultra-compact 2-bit variant for low-memory devices. (1.32GB)",
+            url = "https://huggingface.co/unsloth/granite-4.1-3b-GGUF/resolve/main/granite-4.1-3b-UD-Q2_K_XL.gguf?download=true",
+            category = "text",
+            sizeBytes = 1414548800L, // 1.32GB (actual size from HuggingFace)
+            source = "IBM via Unsloth",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 4096,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.1 3B (IQ3_XXS)",
+            description = "IBM Granite 4.1 3B with IQ3_XXS quantization. Ultra-compact 3-bit variant. (1.32GB)",
+            url = "https://huggingface.co/unsloth/granite-4.1-3b-GGUF/resolve/main/granite-4.1-3b-UD-IQ3_XXS.gguf?download=true",
+            category = "text",
+            sizeBytes = 1416576320L, // 1.32GB (actual size from HuggingFace)
+            source = "IBM via Unsloth",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 4096,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.1 3B (Q3_K_XL)",
+            description = "IBM Granite 4.1 3B with Q3_K_XL quantization. Balanced 3-bit variant. (1.67GB)",
+            url = "https://huggingface.co/unsloth/granite-4.1-3b-GGUF/resolve/main/granite-4.1-3b-UD-Q3_K_XL.gguf?download=true",
+            category = "text",
+            sizeBytes = 1794667840L, // 1.67GB (actual size from HuggingFace)
+            source = "IBM via Unsloth",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 4096,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.1 3B (Q4_K_XL)",
+            description = "IBM Granite 4.1 3B with Q4_K_XL quantization. Standard 4-bit variant. (2.00GB)",
+            url = "https://huggingface.co/unsloth/granite-4.1-3b-GGUF/resolve/main/granite-4.1-3b-UD-Q4_K_XL.gguf?download=true",
+            category = "text",
+            sizeBytes = 2152381760L, // 2.00GB (actual size from HuggingFace)
+            source = "IBM via Unsloth",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 5),
+            contextWindowSize = 4096,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.1 3B (Q5_K_XL)",
+            description = "IBM Granite 4.1 3B with Q5_K_XL quantization. High-quality 5-bit variant. (2.28GB)",
+            url = "https://huggingface.co/unsloth/granite-4.1-3b-GGUF/resolve/main/granite-4.1-3b-UD-Q5_K_XL.gguf?download=true",
+            category = "text",
+            sizeBytes = 2453939520L, // 2.28GB (actual size from HuggingFace)
+            source = "IBM via Unsloth",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 4096,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.1 3B (Q6_K_XL)",
+            description = "IBM Granite 4.1 3B with Q6_K_XL quantization. High-quality 6-bit variant. (2.84GB)",
+            url = "https://huggingface.co/unsloth/granite-4.1-3b-GGUF/resolve/main/granite-4.1-3b-UD-Q6_K_XL.gguf?download=true",
+            category = "text",
+            sizeBytes = 3048299840L, // 2.84GB (actual size from HuggingFace)
+            source = "IBM via Unsloth",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 5, recommendedRamGB = 7),
+            contextWindowSize = 4096,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Granite 4.1 3B (Q8_K_XL)",
+            description = "IBM Granite 4.1 3B with Q8_K_XL quantization. Maximum quality 8-bit variant. (3.99GB)",
+            url = "https://huggingface.co/unsloth/granite-4.1-3b-GGUF/resolve/main/granite-4.1-3b-UD-Q8_K_XL.gguf?download=true",
+            category = "text",
+            sizeBytes = 4284472640L, // 3.99GB (actual size from HuggingFace)
+            source = "IBM via Unsloth",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 8),
+            contextWindowSize = 4096,
+            modelFormat = "gguf"
         )
         // Note: Gecko tokenizer removed - Gecko models have built-in tokenizers
     )

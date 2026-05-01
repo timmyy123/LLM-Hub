@@ -104,6 +104,14 @@ class ChatViewModel(
     // Embedding enabled state
     private val _isEmbeddingEnabled = MutableStateFlow(false)
     val isEmbeddingEnabled: StateFlow<Boolean> = _isEmbeddingEnabled.asStateFlow()
+
+    // Per-session web search toggle (badge in input bar, premium only)
+    private val _isWebSearchEnabled = MutableStateFlow(false)
+    val isWebSearchEnabled: StateFlow<Boolean> = _isWebSearchEnabled.asStateFlow()
+
+    fun toggleWebSearch() {
+        _isWebSearchEnabled.value = !_isWebSearchEnabled.value
+    }
     // Re-embedding in progress (when embedding model changes)
     private val _isReembedding = MutableStateFlow(false)
     val isReembedding: StateFlow<Boolean> = _isReembedding.asStateFlow()
@@ -1484,8 +1492,8 @@ inferenceService.loadModel(currentModel!!, _selectedBackend.value, _selectedNpuD
                         emptyList()
                     }
                     
-                    // Get web search preference
-                    val webSearchEnabled = runBlocking { themePreferences.webSearchEnabled.first() }
+                    // Get web search from session badge toggle
+                    val webSearchEnabled = _isWebSearchEnabled.value
                     
                     // Log a preview of the final prompt passed to the model (trimmed) to
                     // help debug why memory facts may not be used. This logs only the

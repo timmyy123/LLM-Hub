@@ -736,7 +736,7 @@ class MediaPipeInferenceService(private val applicationContext: Context) : Infer
         
         // Extract the current user message from the prompt for web search detection
         val currentUserMessage = extractCurrentUserMessage(prompt)
-        val needsWebSearch = webSearchEnabled && SearchIntentDetector.needsWebSearch(currentUserMessage)
+        val needsWebSearch = webSearchEnabled
         var enhancedPrompt = prompt
 
         // Inject Kid Mode Instruction if enabled (Global Injection) - MOVED DOWN

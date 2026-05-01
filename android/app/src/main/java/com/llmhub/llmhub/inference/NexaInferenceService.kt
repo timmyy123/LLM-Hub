@@ -654,7 +654,7 @@ class NexaInferenceService @Inject constructor(
 
         // --- Web Search ---
         val currentUserMessage = extractUserTextForSearch(prompt)
-        val needsWebSearch = webSearchEnabled && SearchIntentDetector.needsWebSearch(currentUserMessage)
+        val needsWebSearch = webSearchEnabled
         var effectivePrompt = prompt
 
         if (needsWebSearch) {

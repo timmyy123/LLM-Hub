@@ -841,7 +841,7 @@ class OnnxInferenceService @Inject constructor(
         
         // Extract the current user message from the prompt for web search detection
         val currentUserMessage = extractCurrentUserMessage(prompt)
-        val needsWebSearch = webSearchEnabled && SearchIntentDetector.needsWebSearch(currentUserMessage)
+        val needsWebSearch = webSearchEnabled
         var enhancedPrompt = prompt
         
         if (needsWebSearch) {

@@ -376,7 +376,7 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
 
         return flow {
             val currentUserMessage = extractCurrentUserMessage(prompt)
-            val needsWebSearch = webSearchEnabled && SearchIntentDetector.needsWebSearch(currentUserMessage)
+            val needsWebSearch = webSearchEnabled
             var enhancedPrompt = prompt
 
             if (needsWebSearch) {

@@ -1603,7 +1603,10 @@ fun MessageInput(
     editText: String? = null,
     onEditTextChange: ((String) -> Unit)? = null,
     onConfirmEdit: (() -> Unit)? = null,
-    onCancelEdit: (() -> Unit)? = null
+    onCancelEdit: (() -> Unit)? = null,
+    // Web search badge (premium only — null means badge is hidden)
+    isWebSearchEnabled: Boolean = false,
+    onToggleWebSearch: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
@@ -1940,6 +1943,45 @@ fun MessageInput(
                                     tint = MaterialTheme.colorScheme.error
                                 )
                             }
+                        }
+                    }
+                }
+            }
+
+            // Web search badge — only shown for premium users (when onToggleWebSearch != null)
+            if (onToggleWebSearch != null) {
+                Row(
+                    modifier = Modifier.padding(bottom = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        onClick = { if (!isLoading) onToggleWebSearch() },
+                        shape = RoundedCornerShape(50),
+                        color = if (isWebSearchEnabled) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.surfaceVariant,
+                        border = if (!isWebSearchEnabled) androidx.compose.foundation.BorderStroke(
+                            0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+                        ) else null
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Language,
+                                contentDescription = "Web Search",
+                                modifier = Modifier.size(13.dp),
+                                tint = if (isWebSearchEnabled) MaterialTheme.colorScheme.onPrimary
+                                       else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = stringResource(R.string.web_search),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (isWebSearchEnabled) MaterialTheme.colorScheme.onPrimary
+                                        else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }

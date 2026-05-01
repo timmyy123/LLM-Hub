@@ -65,7 +65,6 @@ fun SettingsScreen(
     var showThemeDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
     val currentThemeMode by themeViewModel.themeMode.collectAsState()
-    val webSearchEnabled by themeViewModel.webSearchEnabled.collectAsState()
     val embeddingEnabled by themeViewModel.embeddingEnabled.collectAsState()
     val memoryEnabled by themeViewModel.memoryEnabled.collectAsState()
     val selectedEmbeddingModel by themeViewModel.selectedEmbeddingModel.collectAsState()
@@ -116,73 +115,6 @@ fun SettingsScreen(
             
             item {
                 SettingsSection(title = stringResource(R.string.features)) {
-                    // Web Search toggle (Premium feature)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Search,
-                            contentDescription = null,
-                            tint = if (isPremium) MaterialTheme.colorScheme.onSurfaceVariant
-                                   else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                            modifier = Modifier.size(24.dp)
-                        )
-
-                        Spacer(modifier = Modifier.width(16.dp))
-
-                        Column(
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = stringResource(R.string.web_search),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = if (isPremium) MaterialTheme.colorScheme.onSurface
-                                            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                                )
-                                if (!isPremium) {
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Icon(
-                                        Icons.Default.Lock,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(14.dp),
-                                        tint = Color(0xFFFFD700)
-                                    )
-                                }
-                            }
-                            Text(
-                                text = if (isPremium) {
-                                    if (webSearchEnabled) stringResource(R.string.web_search_description_enabled)
-                                    else stringResource(R.string.web_search_description_disabled)
-                                } else {
-                                    stringResource(R.string.premium_tap_to_unlock)
-                                },
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = if (isPremium) MaterialTheme.colorScheme.onSurfaceVariant
-                                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                            )
-                        }
-
-                        if (isPremium) {
-                            Switch(
-                                checked = webSearchEnabled,
-                                onCheckedChange = { enabled ->
-                                    themeViewModel.setWebSearchEnabled(enabled)
-                                }
-                            )
-                        } else {
-                            TextButton(onClick = onNavigateToPremium) {
-                                Text(
-                                    stringResource(R.string.premium_go_premium),
-                                    color = Color(0xFFFFD700)
-                                )
-                            }
-                        }
-                    }
-
                     // Memory (global context) toggle (Premium feature)
                     Row(
                         modifier = Modifier

@@ -110,6 +110,11 @@ fun ChatScreen(
     
     // Embedding state
     val isEmbeddingEnabled by viewModel.isEmbeddingEnabled.collectAsState()
+
+    // Premium status and web search badge
+    val appIsPremiumForSearch = (context.applicationContext as? LlmHubApplication)
+        ?.billingManager?.isPremium?.collectAsState(initial = false)?.value ?: false
+    val isWebSearchEnabled by viewModel.isWebSearchEnabled.collectAsState()
     
     // TTS Service - use ViewModel's TTS service (same instance for auto-readout and manual)
     val ttsService = viewModel.ttsService
@@ -403,9 +408,7 @@ fun ChatScreen(
                 }
 
                 // Banner ad for free users — sits above the message input
-                val appIsPremium = (context.applicationContext as? LlmHubApplication)
-                    ?.billingManager?.isPremium?.collectAsState(initial = false)?.value ?: false
-                if (!appIsPremium) {
+                if (!appIsPremiumForSearch) {
                     BannerAd(modifier = Modifier.fillMaxWidth())
                 }
 
@@ -441,7 +444,11 @@ fun ChatScreen(
                     onCancelEdit = {
                         isEditingLastPrompt = false
                         editedPromptText = ""
-                    }
+                    },
+                    isWebSearchEnabled = isWebSearchEnabled,
+                    onToggleWebSearch = if (appIsPremiumForSearch) {
+                        { viewModel.toggleWebSearch() }
+                    } else null
                 )
                 }
             }
