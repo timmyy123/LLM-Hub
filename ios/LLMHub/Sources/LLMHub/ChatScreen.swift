@@ -425,6 +425,7 @@ final class ChatMicTranscriber: NSObject, ObservableObject {
     private var baseText: String = ""
     private let engine = SpeechEngine()
     private let speechRecognizer = SFSpeechRecognizer()
+    private var silenceTask: Task<Void, Never>?
 
     func startLive() async {
         guard !isRecording, !isPreparing else { return }
@@ -448,6 +449,7 @@ final class ChatMicTranscriber: NSObject, ObservableObject {
                     Task { @MainActor [weak self] in
                         guard let self = self else { return }
                         self.liveText = self.baseText + (self.baseText.isEmpty ? "" : " ") + text
+                        self.rescheduleSilenceDetection()
                     }
                 }, onError: { _ in })
                 await MainActor.run {
@@ -462,6 +464,8 @@ final class ChatMicTranscriber: NSObject, ObservableObject {
 
     /// Stop live recording and return the final transcript.
     func stopLive() async -> String {
+        silenceTask?.cancel()
+        silenceTask = nil
         await engine.stop()
         let result = liveText
         await MainActor.run {
@@ -471,6 +475,20 @@ final class ChatMicTranscriber: NSObject, ObservableObject {
             self.baseText = ""
         }
         return result
+    }
+
+    /// Reschedule the silence auto-stop timer. Each new speech result resets the 1.8s countdown.
+    private func rescheduleSilenceDetection() {
+        guard isRecording else { return }
+        silenceTask?.cancel()
+        silenceTask = Task { [weak self] in
+            do {
+                try await Task.sleep(nanoseconds: 1_800_000_000) // 1.8s silence
+                guard !Task.isCancelled else { return }
+                guard let self = self, self.isRecording else { return }
+                _ = await self.stopLive()
+            } catch {}
+        }
     }
 
     /// Transcribe an audio file URL and return the resulting text.
@@ -3074,10 +3092,8 @@ struct ChatScreen: View {
                     Button {
                         if micTranscriber.isRecording {
                             Task {
-                                let text = await micTranscriber.stopLive()
-                                if !text.isEmpty {
-                                    vm.inputText += (vm.inputText.isEmpty ? "" : " ") + text
-                                }
+                                // Text is already in vm.inputText via live onChange — just stop.
+                                _ = await micTranscriber.stopLive()
                             }
                         } else {
                             Task { await micTranscriber.startLive() }
@@ -3107,6 +3123,10 @@ struct ChatScreen: View {
                     // ─── send / stop ──────────────────────────────────────────
                     Button {
                         isComposerFocused = false
+                        // Stop mic recording immediately so the spoken text stays in inputText.
+                        if micTranscriber.isRecording {
+                            Task { _ = await micTranscriber.stopLive() }
+                        }
                         if vm.isGenerating {
                             vm.stopGeneration()
                         } else if vm.isWebSearchEnabled {
