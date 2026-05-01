@@ -72,39 +72,41 @@ class KokoroTts(
     private var inputStyleName: String = "style"
     private var inputSpeedName: String = "speed"
 
-    override suspend fun init() = withContext(Dispatchers.IO) {
-        mutex.withLock {
-            if (session != null) return@withContext
-            val modelFile = File(modelPath)
-            val voiceFile = File(voicePackPath)
-            require(modelFile.exists()) { "Kokoro model not found at $modelPath" }
-            require(voiceFile.exists()) { "Kokoro voice pack not found at $voicePackPath" }
+    override suspend fun init() {
+        withContext(Dispatchers.IO) {
+            mutex.withLock {
+                if (session != null) return@withContext
+                val modelFile = File(modelPath)
+                val voiceFile = File(voicePackPath)
+                require(modelFile.exists()) { "Kokoro model not found at $modelPath" }
+                require(voiceFile.exists()) { "Kokoro voice pack not found at $voicePackPath" }
 
-            val env = OrtEnvironment.getEnvironment()
-            val opts = OrtSession.SessionOptions().apply {
-                setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
-                try {
-                    addNnapi(EnumSet.of(NNAPIFlags.USE_FP16))
-                } catch (t: Throwable) {
-                    Log.w(TAG, "NNAPI EP unavailable, falling back to CPU: ${t.message}")
+                val env = OrtEnvironment.getEnvironment()
+                val opts = OrtSession.SessionOptions().apply {
+                    setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
+                    try {
+                        addNnapi(EnumSet.of(NNAPIFlags.USE_FP16))
+                    } catch (t: Throwable) {
+                        Log.w(TAG, "NNAPI EP unavailable, falling back to CPU: ${t.message}")
+                    }
                 }
-            }
 
-            val s = env.createSession(modelFile.absolutePath, opts)
-            // Probe input names — handles both `input_ids/style/speed` and
-            // `tokens/style/speed` exports.
-            for (name in s.inputNames) {
-                when (name.lowercase()) {
-                    "input_ids", "tokens" -> inputTokensName = name
-                    "style", "ref_s" -> inputStyleName = name
-                    "speed" -> inputSpeedName = name
+                val s = env.createSession(modelFile.absolutePath, opts)
+                // Probe input names — handles both `input_ids/style/speed` and
+                // `tokens/style/speed` exports.
+                for (name in s.inputNames) {
+                    when (name.lowercase()) {
+                        "input_ids", "tokens" -> inputTokensName = name
+                        "style", "ref_s" -> inputStyleName = name
+                        "speed" -> inputSpeedName = name
+                    }
                 }
-            }
 
-            ortEnv = env
-            session = s
-            voicePack = VoicePack.load(voiceFile)
-            Log.i(TAG, "Kokoro loaded — inputs=${s.inputNames}, voice rows=${voicePack!!.rows}")
+                ortEnv = env
+                session = s
+                voicePack = VoicePack.load(voiceFile)
+                Log.i(TAG, "Kokoro loaded — inputs=${s.inputNames}, voice rows=${voicePack!!.rows}")
+            }
         }
     }
 
@@ -204,7 +206,6 @@ class KokoroTts(
             val s1 = if (idx + 1 < input.size) input[idx + 1] else s0
             val sample = (s0 + (s1 - s0) * frac).coerceIn(-1f, 1f)
             out[i] = (sample * 32767f).toInt().toShort()
-            srcPos += ratio
         }
         return out
     }
