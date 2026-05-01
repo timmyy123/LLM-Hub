@@ -1841,6 +1841,296 @@ object ModelData {
             modelFormat = "mnn_cpu" // MNN framework for CPU inference
         ),
 
+        // Additional SD-QNN Image Generation Models (xororz) - Device chip filtering
+        LLMModel(
+            name = "Realisian V6 (NPU - ${DeviceInfo.getSdQnnPackageSuffix()})",
+            description = "Realisian V6 SD1.5 model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation at 512x512 resolution. Requires Snapdragon 8 Gen 1 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~1.0 GB download from HuggingFace.",
+            url = "https://huggingface.co/xororz/sd-qnn/resolve/main/RealisianV6_qnn2.28_${DeviceInfo.getSdQnnPackageSuffix()}.zip",
+            category = "image_generation",
+            sizeBytes = when(DeviceInfo.getSdQnnPackageSuffix()) {
+                "8gen1" -> 1044639038L    // 996 MB
+                "8gen2" -> 1043759055L    // 995 MB
+                else -> 1166389677L       // 1.11 GB (min)
+            },
+            source = "Stable Diffusion 1.5 (QNN SDK via xororz)",
+            supportsVision = false,
+            supportsAudio = false,
+            supportsGpu = false, // Uses NPU, not GPU
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 0,
+            modelFormat = "qnn_npu"
+        ),
+        LLMModel(
+            name = "Realistic Vision Hyper (NPU - ${DeviceInfo.getSdQnnPackageSuffix()})",
+            description = "Realistic Vision Hyper SD1.5 model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation at 512x512 resolution. Requires Snapdragon 8 Gen 1 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~1.0 GB download from HuggingFace.",
+            url = "https://huggingface.co/xororz/sd-qnn/resolve/main/RealisticVisionHyper_qnn2.28_${DeviceInfo.getSdQnnPackageSuffix()}.zip",
+            category = "image_generation",
+            sizeBytes = when(DeviceInfo.getSdQnnPackageSuffix()) {
+                "8gen1" -> 1072234959L    // 1.02 GB
+                "8gen2" -> 1068141522L    // 1.02 GB
+                else -> 1005957458L       // 959 MB (min)
+            },
+            source = "Stable Diffusion 1.5 (QNN SDK via xororz)",
+            supportsVision = false,
+            supportsAudio = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 0,
+            modelFormat = "qnn_npu"
+        ),
+        LLMModel(
+            name = "SweetMix V22 Flat (NPU - ${DeviceInfo.getSdQnnPackageSuffix()})",
+            description = "SweetMix V22 Flat SD1.5 model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation at 512x512 resolution. Requires Snapdragon 8 Gen 1 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~1.0 GB download from HuggingFace.",
+            url = "https://huggingface.co/xororz/sd-qnn/resolve/main/SweetMixV22Flat_qnn2.28_${DeviceInfo.getSdQnnPackageSuffix()}.zip",
+            category = "image_generation",
+            sizeBytes = when(DeviceInfo.getSdQnnPackageSuffix()) {
+                "8gen1" -> 1032689513L    // 985 MB
+                "8gen2" -> 1032146162L    // 984 MB
+                else -> 1157637084L       // 1.10 GB (min)
+            },
+            source = "Stable Diffusion 1.5 (QNN SDK via xororz)",
+            supportsVision = false,
+            supportsAudio = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 0,
+            modelFormat = "qnn_npu"
+        ),
+        LLMModel(
+            name = "Anything V5 (NPU - ${DeviceInfo.getSdQnnPackageSuffix()})",
+            description = "Anything V5 SD1.5 model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation at 512x512 resolution. Requires Snapdragon 8 Gen 1 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~1.0 GB download from HuggingFace.",
+            url = "https://huggingface.co/xororz/sd-qnn/resolve/main/AnythingV5_qnn2.28_${DeviceInfo.getSdQnnPackageSuffix()}.zip",
+            category = "image_generation",
+            sizeBytes = when(DeviceInfo.getSdQnnPackageSuffix()) {
+                "8gen1" -> 1061290117L    // 1.01 GB
+                "8gen2" -> 1057820237L    // 1.01 GB
+                else -> 995100213L        // 949 MB (min)
+            },
+            source = "Stable Diffusion 1.5 (QNN SDK via xororz)",
+            supportsVision = false,
+            supportsAudio = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 0,
+            modelFormat = "qnn_npu"
+        ),
+        LLMModel(
+            name = "ChilloutMix (NPU - ${DeviceInfo.getSdQnnPackageSuffix()})",
+            description = "ChilloutMix SD1.5 model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation at 512x512 resolution. Requires Snapdragon 8 Gen 1 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~1.0 GB download from HuggingFace.",
+            url = "https://huggingface.co/xororz/sd-qnn/resolve/main/ChilloutMix_qnn2.28_${DeviceInfo.getSdQnnPackageSuffix()}.zip",
+            category = "image_generation",
+            sizeBytes = when(DeviceInfo.getSdQnnPackageSuffix()) {
+                "8gen1" -> 1073617353L    // 1.02 GB
+                "8gen2" -> 1069856038L    // 1.02 GB
+                else -> 1007485231L       // 961 MB (min)
+            },
+            source = "Stable Diffusion 1.5 (QNN SDK via xororz)",
+            supportsVision = false,
+            supportsAudio = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 0,
+            modelFormat = "qnn_npu"
+        ),
+        LLMModel(
+            name = "CrossKemono 2.5 (NPU - ${DeviceInfo.getSdQnnPackageSuffix()})",
+            description = "CrossKemono 2.5 SD1.5 model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation at 512x512 resolution. Requires Snapdragon 8 Gen 1 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~1.0 GB download from HuggingFace.",
+            url = "https://huggingface.co/xororz/sd-qnn/resolve/main/CrossKemono2.5_qnn2.28_${DeviceInfo.getSdQnnPackageSuffix()}.zip",
+            category = "image_generation",
+            sizeBytes = when(DeviceInfo.getSdQnnPackageSuffix()) {
+                "8gen1" -> 1072385058L    // 1.02 GB
+                "8gen2" -> 1068054709L    // 1.02 GB
+                else -> 1006705044L       // 960 MB (min)
+            },
+            source = "Stable Diffusion 1.5 (QNN SDK via xororz)",
+            supportsVision = false,
+            supportsAudio = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 0,
+            modelFormat = "qnn_npu"
+        ),
+        LLMModel(
+            name = "CuteYukiMix (NPU - ${DeviceInfo.getSdQnnPackageSuffix()})",
+            description = "CuteYukiMix SD1.5 model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation at 512x512 resolution. Requires Snapdragon 8 Gen 1 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~1.0 GB download from HuggingFace.",
+            url = "https://huggingface.co/xororz/sd-qnn/resolve/main/CuteYukiMix_qnn2.28_${DeviceInfo.getSdQnnPackageSuffix()}.zip",
+            category = "image_generation",
+            sizeBytes = when(DeviceInfo.getSdQnnPackageSuffix()) {
+                "8gen1" -> 1059582346L    // 1.01 GB
+                "8gen2" -> 1057299173L    // 1.01 GB
+                else -> 993526703L        // 947 MB (min)
+            },
+            source = "Stable Diffusion 1.5 (QNN SDK via xororz)",
+            supportsVision = false,
+            supportsAudio = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 0,
+            modelFormat = "qnn_npu"
+        ),
+        LLMModel(
+            name = "DarkSushi V4 (NPU - ${DeviceInfo.getSdQnnPackageSuffix()})",
+            description = "DarkSushi V4 SD1.5 model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation at 512x512 resolution. Requires Snapdragon 8 Gen 1 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~1.0 GB download from HuggingFace.",
+            url = "https://huggingface.co/xororz/sd-qnn/resolve/main/DarkSushiV4_qnn2.28_${DeviceInfo.getSdQnnPackageSuffix()}.zip",
+            category = "image_generation",
+            sizeBytes = when(DeviceInfo.getSdQnnPackageSuffix()) {
+                "8gen1" -> 1033284420L    // 986 MB
+                "8gen2" -> 1033065066L    // 985 MB
+                else -> 1157705057L       // 1.10 GB (min)
+            },
+            source = "Stable Diffusion 1.5 (QNN SDK via xororz)",
+            supportsVision = false,
+            supportsAudio = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 0,
+            modelFormat = "qnn_npu"
+        ),
+        LLMModel(
+            name = "DreamShaper V8 (NPU - ${DeviceInfo.getSdQnnPackageSuffix()})",
+            description = "DreamShaper V8 SD1.5 model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation at 512x512 resolution. Requires Snapdragon 8 Gen 1 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~1.0 GB download from HuggingFace.",
+            url = "https://huggingface.co/xororz/sd-qnn/resolve/main/DreamShaperV8_qnn2.28_${DeviceInfo.getSdQnnPackageSuffix()}.zip",
+            category = "image_generation",
+            sizeBytes = when(DeviceInfo.getSdQnnPackageSuffix()) {
+                "8gen1" -> 1032481706L    // 985 MB
+                "8gen2" -> 1032290626L    // 985 MB
+                else -> 1154529244L       // 1.10 GB (min)
+            },
+            source = "Stable Diffusion 1.5 (QNN SDK via xororz)",
+            supportsVision = false,
+            supportsAudio = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 0,
+            modelFormat = "qnn_npu"
+        ),
+        LLMModel(
+            name = "HyperSpire V5 (NPU - ${DeviceInfo.getSdQnnPackageSuffix()})",
+            description = "HyperSpire V5 SD1.5 model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation at 512x512 resolution. Requires Snapdragon 8 Gen 1 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~1.0 GB download from HuggingFace.",
+            url = "https://huggingface.co/xororz/sd-qnn/resolve/main/HyperSpireV5_qnn2.28_${DeviceInfo.getSdQnnPackageSuffix()}.zip",
+            category = "image_generation",
+            sizeBytes = when(DeviceInfo.getSdQnnPackageSuffix()) {
+                "8gen1" -> 1071984420L    // 1.02 GB
+                "8gen2" -> 1067653544L    // 1.02 GB
+                else -> 1005874378L       // 959 MB (min)
+            },
+            source = "Stable Diffusion 1.5 (QNN SDK via xororz)",
+            supportsVision = false,
+            supportsAudio = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 0,
+            modelFormat = "qnn_npu"
+        ),
+        LLMModel(
+            name = "Majicmix Realistic V7 (NPU - ${DeviceInfo.getSdQnnPackageSuffix()})",
+            description = "Majicmix Realistic V7 SD1.5 model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation at 512x512 resolution. Requires Snapdragon 8 Gen 1 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~1.0 GB download from HuggingFace.",
+            url = "https://huggingface.co/xororz/sd-qnn/resolve/main/MajicmixRealisticV7_qnn2.28_${DeviceInfo.getSdQnnPackageSuffix()}.zip",
+            category = "image_generation",
+            sizeBytes = when(DeviceInfo.getSdQnnPackageSuffix()) {
+                "8gen1" -> 1059073569L    // 1.01 GB
+                "8gen2" -> 1055975131L    // 1.01 GB
+                else -> 993001718L        // 947 MB (min)
+            },
+            source = "Stable Diffusion 1.5 (QNN SDK via xororz)",
+            supportsVision = false,
+            supportsAudio = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 0,
+            modelFormat = "qnn_npu"
+        ),
+        LLMModel(
+            name = "MeinaMix V12 (NPU - ${DeviceInfo.getSdQnnPackageSuffix()})",
+            description = "MeinaMix V12 SD1.5 model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation at 512x512 resolution. Requires Snapdragon 8 Gen 1 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~1.0 GB download from HuggingFace.",
+            url = "https://huggingface.co/xororz/sd-qnn/resolve/main/MeinaMixV12_qnn2.28_${DeviceInfo.getSdQnnPackageSuffix()}.zip",
+            category = "image_generation",
+            sizeBytes = when(DeviceInfo.getSdQnnPackageSuffix()) {
+                "8gen1" -> 1032314916L    // 985 MB
+                "8gen2" -> 1031765133L    // 984 MB
+                else -> 1156786441L       // 1.10 GB (min)
+            },
+            source = "Stable Diffusion 1.5 (QNN SDK via xororz)",
+            supportsVision = false,
+            supportsAudio = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 0,
+            modelFormat = "qnn_npu"
+        ),
+        LLMModel(
+            name = "Mistoon Anime V3 (NPU - ${DeviceInfo.getSdQnnPackageSuffix()})",
+            description = "Mistoon Anime V3 SD1.5 model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation at 512x512 resolution. Requires Snapdragon 8 Gen 1 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~1.0 GB download from HuggingFace.",
+            url = "https://huggingface.co/xororz/sd-qnn/resolve/main/MistoonAnimeV3_qnn2.28_${DeviceInfo.getSdQnnPackageSuffix()}.zip",
+            category = "image_generation",
+            sizeBytes = when(DeviceInfo.getSdQnnPackageSuffix()) {
+                "8gen1" -> 1057071590L    // 1.01 GB
+                "8gen2" -> 1052577511L    // 1.00 GB
+                else -> 990892974L        // 945 MB (min)
+            },
+            source = "Stable Diffusion 1.5 (QNN SDK via xororz)",
+            supportsVision = false,
+            supportsAudio = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 0,
+            modelFormat = "qnn_npu"
+        ),
+        LLMModel(
+            name = "Nai Anime V2 (NPU - ${DeviceInfo.getSdQnnPackageSuffix()})",
+            description = "Nai Anime V2 SD1.5 model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation at 512x512 resolution. Requires Snapdragon 8 Gen 1 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~1.0 GB download from HuggingFace.",
+            url = "https://huggingface.co/xororz/sd-qnn/resolve/main/NaiAnimeV2_qnn2.28_${DeviceInfo.getSdQnnPackageSuffix()}.zip",
+            category = "image_generation",
+            sizeBytes = when(DeviceInfo.getSdQnnPackageSuffix()) {
+                "8gen1" -> 1055448913L    // 1.01 GB
+                "8gen2" -> 1052105518L    // 1.00 GB
+                else -> 989892898L        // 944 MB (min)
+            },
+            source = "Stable Diffusion 1.5 (QNN SDK via xororz)",
+            supportsVision = false,
+            supportsAudio = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 0,
+            modelFormat = "qnn_npu"
+        ),
+        LLMModel(
+            name = "NeverEndingDream V122 (NPU - ${DeviceInfo.getSdQnnPackageSuffix()})",
+            description = "NeverEndingDream V122 SD1.5 model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation at 512x512 resolution. Requires Snapdragon 8 Gen 1 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~1.0 GB download from HuggingFace.",
+            url = "https://huggingface.co/xororz/sd-qnn/resolve/main/NeverEndingDreamV122_qnn2.28_${DeviceInfo.getSdQnnPackageSuffix()}.zip",
+            category = "image_generation",
+            sizeBytes = when(DeviceInfo.getSdQnnPackageSuffix()) {
+                "8gen1" -> 1032366907L    // 985 MB
+                "8gen2" -> 1031689930L    // 984 MB
+                else -> 1156937629L       // 1.10 GB (min)
+            },
+            source = "Stable Diffusion 1.5 (QNN SDK via xororz)",
+            supportsVision = false,
+            supportsAudio = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 0,
+            modelFormat = "qnn_npu"
+        ),
+        LLMModel(
+            name = "QteaMix (NPU - ${DeviceInfo.getSdQnnPackageSuffix()})",
+            description = "QteaMix SD1.5 model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation at 512x512 resolution. Requires Snapdragon 8 Gen 1 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~1.0 GB download from HuggingFace.",
+            url = "https://huggingface.co/xororz/sd-qnn/resolve/main/QteaMix_qnn2.28_${DeviceInfo.getSdQnnPackageSuffix()}.zip",
+            category = "image_generation",
+            sizeBytes = when(DeviceInfo.getSdQnnPackageSuffix()) {
+                "8gen1" -> 1061160208L    // 1.01 GB
+                "8gen2" -> 1056615116L    // 1.01 GB
+                else -> 995347176L        // 949 MB (min)
+            },
+            source = "Stable Diffusion 1.5 (QNN SDK via xororz)",
+            supportsVision = false,
+            supportsAudio = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 0,
+            modelFormat = "qnn_npu"
+        ),
+
         // Ternary Bonsai Models (prism-ml) — F16 variants only (Q2_0 ternary quantization unsupported by Nexa SDK)
         LLMModel(
             name = "Ternary Bonsai 1.7B (F16)",
