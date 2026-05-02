@@ -56,6 +56,7 @@ fun SettingsScreen(
     onNavigateToAbout: () -> Unit,
     onNavigateToTerms: () -> Unit,
     onNavigateToPremium: () -> Unit = {},
+    onNavigateToMimoBot: () -> Unit = {},
     themeViewModel: ThemeViewModel = viewModel()
 ) {
     val uriHandler = LocalUriHandler.current
@@ -771,6 +772,17 @@ fun SettingsScreen(
                 }
             }
             
+            item {
+                SettingsSection(title = "Experimental") {
+                    SettingsItem(
+                        icon = Icons.Default.Mic,
+                        title = "Mimo Bot (test)",
+                        subtitle = "Voice loop using phone mic + speaker",
+                        onClick = onNavigateToMimoBot
+                    )
+                }
+            }
+
             item {
                 SettingsSection(title = stringResource(R.string.information)) {
                     SettingsItem(

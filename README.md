@@ -16,6 +16,41 @@
 </table>
 
 
+## 🤖 Mimo Bot — voice companion (work in progress)
+
+A small ESP32-S3 device acts as a mic + speaker for the phone; the phone runs
+the full Whisper → LLM → TTS pipeline using LLM Hub's existing inference core.
+Nothing leaves the pair of devices.
+
+```
+┌───────── ESP32-S3 ─────────┐      ┌───── Phone (LLM Hub) ─────┐
+│ mic → Opus → BLE   ────────┼──────┼► Whisper → LLM → TTS      │
+│ spk ← Opus ← BLE   ────────┼──────┼◄ Opus ← TTS (Kokoro/Sys)  │
+└────────────────────────────┘      └───────────────────────────┘
+```
+
+Status: **scaffolding only.** The transport, audio codec, Whisper, TTS, and
+pipeline modules are stubs with `TODO(...)` markers and a locked wire protocol
+so firmware and apps can be built in parallel without re-negotiating.
+
+- `docs/mimobot-protocol.md` — BLE service + control JSON schema
+- `android/app/src/main/java/com/llmhub/llmhub/mimobot/` — Android pipeline
+  (`transport/`, `audio/`, `speech/`, `pipeline/`)
+- `ios/LLMHub/Sources/LLMHub/MimoBot/` — iOS pipeline (same shape)
+- `firmware/` — ESP-IDF v5.2+ skeleton for the ESP32-S3
+
+The pipeline reuses the existing `InferenceService` / `LLMBackend`,
+`RagService`, and web-search services unchanged — voice is purely additive.
+
+TTS is pluggable via a `Tts` / `TTS` interface; two implementations are
+stubbed out:
+- **SystemTts / SystemTTS** — free, ships with the OS, decent quality
+- **KokoroTts / KokoroTTS** — Kokoro-82M via ONNX Runtime (already a
+  dependency), higher quality, one ~160 MB download
+
+See `firmware/README.md` for hardware and toolchain.
+
+
 ## 📸 Screenshots
 
 <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;">
