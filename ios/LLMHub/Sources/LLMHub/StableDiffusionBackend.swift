@@ -29,10 +29,9 @@ enum SDError: LocalizedError {
 #if canImport(StableDiffusion)
 import StableDiffusion
 
-// Sendable wrapper: StableDiffusionPipeline is a struct but contains
-// reference-type model resources, so we bridge with @unchecked Sendable.
+// Sendable wrapper: StableDiffusionPipeline Protocol bridge
 private struct SendablePipeline: @unchecked Sendable {
-    let value: StableDiffusionPipeline
+    let value: StableDiffusionPipelineProtocol
 }
 
 @MainActor
@@ -46,7 +45,7 @@ final class StableDiffusionBackend: ObservableObject {
     @Published var generationTotalSteps = 20
     @Published var loadedModelId: String? = nil
 
-    nonisolated(unsafe) private var pipeline: StableDiffusionPipeline?
+    nonisolated(unsafe) private var pipeline: StableDiffusionPipelineProtocol?
     private var loadedWithANE = false
 
     private init() {}
@@ -138,6 +137,12 @@ final class StableDiffusionBackend: ObservableObject {
     }
 #endif
 
+    // MARK: - SDXL detection helper
+
+    nonisolated private static func isSDXL(modelId: String) -> Bool {
+        modelId.contains("sdxl") || modelId.contains("xl-base")
+    }
+
     func loadModel(_ model: AIModel) async throws {
         try await loadModel(model, preferANE: model.id.contains("split-einsum"))
     }
@@ -184,14 +189,34 @@ final class StableDiffusionBackend: ObservableObject {
             // pre-compiled E5 bundle and fails hard when it's stale.
             // .cpuAndGPU: explicitly excludes ANE.
             cfg.computeUnits = useANE ? .all : .cpuAndGPU
-            let p = try StableDiffusionPipeline(
-                resourcesAt: modelDir,
-                controlNet: [],
-                configuration: cfg,
-                reduceMemory: true
-            )
-            try p.loadResources()
-            return SendablePipeline(value: p)
+
+            // For SDXL, instantiate StableDiffusionXLPipeline instead.
+            // The Apple Neural Engine (ANE) is highly memory efficient but
+            // compiling the massive SDXL models all at once during load causes
+            // a massive Jetsam OOM memory crash on iOS.
+            // To prevent this, we instantiate the pipeline with `.all` (ANE)
+            // but we DO NOT call `loadResources()` or `prewarmResources()`.
+            // By relying entirely on `reduceMemory: true` and lazy loading,
+            // each model is loaded, compiled, and unloaded sequentially during
+            // the generation loop, keeping peak memory below the Jetsam limit.
+            if isSDXL(modelId: modelDir.lastPathComponent) {
+                let p = try StableDiffusionXLPipeline(
+                    resourcesAt: modelDir,
+                    configuration: cfg,
+                    reduceMemory: true
+                )
+                // Deliberately skipping `p.loadResources()` here for SDXL!
+                return SendablePipeline(value: p)
+            } else {
+                let p = try StableDiffusionPipeline(
+                    resourcesAt: modelDir,
+                    controlNet: [],
+                    configuration: cfg,
+                    reduceMemory: true
+                )
+                try p.loadResources()
+                return SendablePipeline(value: p)
+            }
         }.value
     }
 
@@ -236,12 +261,17 @@ final class StableDiffusionBackend: ObservableObject {
         isGenerating = true
         defer { isGenerating = false }
 
-        var config = StableDiffusionPipeline.Configuration(prompt: prompt)
+        var config = PipelineConfiguration(prompt: prompt)
         config.negativePrompt = "ugly, blurry, bad anatomy, bad quality"
-        config.stepCount = steps
+        let isXL = loadedModelId.map { Self.isSDXL(modelId: $0) } ?? false
+        // The apple/coreml-stable-diffusion-xl-base-ios bundle only supports
+        // PNDM. Using DPM-Solver++ on this model causes tensor shape mismatches
+        // that result in either a crash or an infinite hang during generation.
+        config.schedulerType = isXL ? .pndmScheduler : .dpmSolverMultistepScheduler
+        // SDXL needs at least 20 PNDM steps to produce coherent output.
+        config.stepCount = isXL ? max(steps, 20) : steps
         config.seed = seed
-        config.guidanceScale = 7.5
-        config.schedulerType = .dpmSolverMultistepScheduler
+        config.guidanceScale = isXL ? 5.0 : 7.5
         if let inputImage {
     #if canImport(UIKit)
             config.startingImage = Self.preparedStartingImage(inputImage, modelId: loadedModelId)
