@@ -106,7 +106,17 @@ endif()
 
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Force static libraries for llama.cpp" FORCE)
 
+
 FetchContent_MakeAvailable(llamacpp)
+
+# Apply patch to support old TQ2_0 models (type 42)
+if(EXISTS "${llamacpp_SOURCE_DIR}/ggml/src/gguf.cpp")
+    execute_process(
+        COMMAND sed -i "" "s/ok = ok && gr.read(info.t.type);/ok = ok \\&\\& gr.read(info.t.type); if(info.t.type == 42) info.t.type = (ggml_type)35; \\/\\/ GGML_TYPE_TQ2_0/g" "${llamacpp_SOURCE_DIR}/ggml/src/gguf.cpp"
+        COMMAND sed -i "s/ok = ok && gr.read(info.t.type);/ok = ok \\&\\& gr.read(info.t.type); if(info.t.type == 42) info.t.type = (ggml_type)35; \\/\\/ GGML_TYPE_TQ2_0/g" "${llamacpp_SOURCE_DIR}/ggml/src/gguf.cpp"
+    )
+endif()
+
 
 # Android: map POSIX_MADV_* to MADV_* to avoid missing constants
 if(RAC_PLATFORM_ANDROID)
