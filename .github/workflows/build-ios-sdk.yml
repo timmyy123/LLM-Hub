@@ -1,7 +1,7 @@
 name: Build iOS SDK (Patched)
 
 # Builds RACommons + RABackendLLAMACPP XCFrameworks from the local patched
-# runanywhere-sdks-latest source (MAX_BATCH_SIZE=2048, MAX_UBATCH_SIZE=512 fix)
+# runanywhere-sdks-latest source (Q2_0 Bonsai + batch-size fixes)
 # and publishes them as release assets under the `ios-sdk-v*-patched` tag.
 #
 # TRIGGER: manually via workflow_dispatch, or by pushing a tag like
@@ -22,11 +22,11 @@ on:
       release_tag:
         description: 'Release tag to create/update'
         required: true
-        default: 'ios-sdk-v0.19.7-patched'
+        default: 'ios-sdk-v0.19.7-patched-v9'
 
   push:
     tags:
-      - 'ios-sdk-v*-patched'
+      - 'ios-sdk-v*-patched*'
 
 jobs:
   build:
@@ -77,8 +77,10 @@ jobs:
         run: |
           gh release create "${RELEASE_TAG}" \
             --repo "${{ github.repository }}" \
-            --title "iOS SDK ${SDK_VERSION} (batch-size patch)" \
+            --title "iOS SDK ${SDK_VERSION} (patched v9)" \
             --notes "Patched RunAnywhere SDK v${SDK_VERSION}:
+          - iOS LlamaCPP build uses official ggml-org/llama.cpp b9174 (latest checked 2026-05-16 UTC) for newer quantization support, including the Ternary Bonsai Q2_0 path
+          - Link-complete llama.cpp b9174 packaging by bundling libllama-common/libllama-common-base and all mtmd model implementations
           - MAX_BATCH_SIZE = 2048 (was 4096) — fixes OOM on Gemma 4B (Q2_K)
           - MAX_UBATCH_SIZE = 512
           - Built from ios/runanywhere-sdks-latest local source

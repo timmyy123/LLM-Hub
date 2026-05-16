@@ -61,8 +61,19 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 BUILD_DIR="${PROJECT_ROOT}/build/ios"
 DIST_DIR="${PROJECT_ROOT}/dist"
 
+# Codex/non-interactive shells may not inherit the user Python bin path where
+# cmake/ninja are installed on this machine.
+if [[ -d "${HOME}/Library/Python/3.9/bin" ]]; then
+    export PATH="${HOME}/Library/Python/3.9/bin:${PATH}"
+fi
+
 # Load versions
 source "${SCRIPT_DIR}/load-versions.sh"
+
+# Keep the llama.cpp bump scoped to the iOS/macOS SDK build so Android continues
+# to use the shared default pin unless it is explicitly overridden.
+IOS_LLAMACPP_REPOSITORY="${IOS_LLAMACPP_REPOSITORY:-https://github.com/ggml-org/llama.cpp.git}"
+IOS_LLAMACPP_VERSION="${IOS_LLAMACPP_VERSION:-b9174}"
 
 # Get version
 VERSION=$(cat "${PROJECT_ROOT}/VERSION" 2>/dev/null | head -1 || echo "0.1.0")
@@ -216,6 +227,8 @@ build_macos() {
         -DRAC_BUILD_PLATFORM=ON \
         -DRAC_BUILD_SHARED=OFF \
         -DRAC_BUILD_JNI=OFF \
+        -DRAC_IOS_LLAMACPP_REPOSITORY="${IOS_LLAMACPP_REPOSITORY}" \
+        -DRAC_IOS_LLAMACPP_VERSION="${IOS_LLAMACPP_VERSION}" \
         $BACKEND_FLAGS
 
     cmake --build . --config "${BUILD_TYPE}" -j"$(sysctl -n hw.ncpu)"
@@ -271,6 +284,8 @@ build_platform() {
         -DRAC_BUILD_PLATFORM=ON \
         -DRAC_BUILD_SHARED=OFF \
         -DRAC_BUILD_JNI=OFF \
+        -DRAC_IOS_LLAMACPP_REPOSITORY="${IOS_LLAMACPP_REPOSITORY}" \
+        -DRAC_IOS_LLAMACPP_VERSION="${IOS_LLAMACPP_VERSION}" \
         $BLAS_FLAGS \
         $BACKEND_FLAGS
 
@@ -588,11 +603,12 @@ create_backend_xcframework() {
             local LLAMA_BUILD="${PLATFORM_DIR}/src/backends/llamacpp/_deps/llamacpp-build"
             [[ ! -d "$LLAMA_BUILD" ]] && LLAMA_BUILD="${PLATFORM_DIR}/_deps/llamacpp-build"
 
-            for lib in llama common ggml ggml-base ggml-cpu ggml-metal ggml-blas; do
+            for lib in llama llama-common llama-common-base common cpp-httplib ggml ggml-base ggml-cpu ggml-metal ggml-blas; do
                 local lib_path=""
                 for possible in \
                     "${LLAMA_BUILD}/src/lib${lib}.a" \
                     "${LLAMA_BUILD}/common/lib${lib}.a" \
+                    "${LLAMA_BUILD}/vendor/cpp-httplib/lib${lib}.a" \
                     "${LLAMA_BUILD}/ggml/src/lib${lib}.a" \
                     "${LLAMA_BUILD}/ggml/src/ggml-metal/lib${lib}.a" \
                     "${LLAMA_BUILD}/ggml/src/ggml-blas/lib${lib}.a" \

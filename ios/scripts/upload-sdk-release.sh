@@ -8,7 +8,7 @@
 #
 # WHAT IT DOES:
 #   1. Zips the built XCFrameworks from runanywhere-sdks-latest/sdk/runanywhere-commons/dist/
-#   2. Creates or updates the GitHub Release on timmyy123/LLM-Hub tagged ios-sdk-v0.19.7-patched-v5
+#   2. Creates or updates the GitHub Release on timmyy123/LLM-Hub tagged ios-sdk-v0.19.7-patched-v9
 #   3. Uploads both ZIPs + checksums.txt as release assets
 #   4. Prints the SHA-256 checksums so you can update Package.swift
 #
@@ -48,9 +48,11 @@ fi
 
 REPO="timmyy123/LLM-Hub"
 SDK_VERSION="0.19.7"
-RELEASE_TAG="${RELEASE_TAG_OVERRIDE:-ios-sdk-v${SDK_VERSION}-patched-v7}"
-RELEASE_TITLE="iOS SDK v${SDK_VERSION} (patched v7)"
+RELEASE_TAG="${RELEASE_TAG_OVERRIDE:-ios-sdk-v${SDK_VERSION}-patched-v9}"
+RELEASE_TITLE="iOS SDK v${SDK_VERSION} (patched v9)"
 RELEASE_NOTES="Patched RunAnywhere SDK v${SDK_VERSION}:
+- UPDATE: iOS LlamaCPP build uses official ggml-org/llama.cpp b9174 (latest checked 2026-05-16 UTC) for newer quantization support, including the Ternary Bonsai Q2_0 path.
+- FIX: Link-complete llama.cpp b9174 packaging by bundling libllama-common/libllama-common-base and all mtmd model implementations.
 - FIX: Chunked-decode n_cur bug in llamacpp_backend.cpp (line 873). When prompt > n_batch (2048), batch.n_tokens held only the last chunk size instead of total prompt_tokens, causing generated tokens to overwrite existing KV cache entries → 1-char responses or llama_decode failures.
 - FIX: context_size forwarded from model registry → rac_llm_service.cpp → llamacpp_create_service (fixes n_ctx stuck at 1024)
 - FIX: Gemma 4 chat prompt format (<|turn>...<turn|>) in ChatScreen multi-turn builder

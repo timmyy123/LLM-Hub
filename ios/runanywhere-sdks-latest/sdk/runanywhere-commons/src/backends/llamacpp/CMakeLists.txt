@@ -11,14 +11,29 @@ message(STATUS "Configuring LlamaCPP backend...")
 include(FetchContent)
 include(LoadVersions)
 
+if((RAC_PLATFORM_IOS OR RAC_PLATFORM_MACOS) AND DEFINED RAC_IOS_LLAMACPP_VERSION)
+    set(LLAMACPP_VERSION "${RAC_IOS_LLAMACPP_VERSION}")
+endif()
+
 if(NOT DEFINED LLAMACPP_VERSION)
     set(LLAMACPP_VERSION "b8011")
 endif()
 set(LLAMA_CPP_VERSION "${LLAMACPP_VERSION}")
 
+if((RAC_PLATFORM_IOS OR RAC_PLATFORM_MACOS) AND DEFINED RAC_IOS_LLAMACPP_REPOSITORY)
+    set(LLAMACPP_REPOSITORY "${RAC_IOS_LLAMACPP_REPOSITORY}")
+endif()
+
+if(NOT DEFINED LLAMACPP_REPOSITORY)
+    set(LLAMACPP_REPOSITORY "https://github.com/ggml-org/llama.cpp.git")
+endif()
+
+message(STATUS "Using llama.cpp repository: ${LLAMACPP_REPOSITORY}")
+message(STATUS "Using llama.cpp tag/ref: ${LLAMA_CPP_VERSION}")
+
 FetchContent_Declare(
     llamacpp
-    GIT_REPOSITORY https://github.com/ggerganov/llama.cpp.git
+    GIT_REPOSITORY ${LLAMACPP_REPOSITORY}
     GIT_TAG        ${LLAMA_CPP_VERSION}
     GIT_SHALLOW    TRUE
     GIT_PROGRESS   TRUE
@@ -136,30 +151,12 @@ if(RAC_VLM_USE_MTMD)
         ${llamacpp_SOURCE_DIR}/tools/mtmd/mtmd-image.cpp
         ${llamacpp_SOURCE_DIR}/tools/mtmd/clip.cpp
     )
-    # Add mtmd model implementations (clip_graph_* classes)
-    list(APPEND LLAMACPP_BACKEND_SOURCES
-        ${llamacpp_SOURCE_DIR}/tools/mtmd/models/llava.cpp
-        ${llamacpp_SOURCE_DIR}/tools/mtmd/models/qwen2vl.cpp
-        ${llamacpp_SOURCE_DIR}/tools/mtmd/models/qwen3vl.cpp
-        ${llamacpp_SOURCE_DIR}/tools/mtmd/models/minicpmv.cpp
-        ${llamacpp_SOURCE_DIR}/tools/mtmd/models/glm4v.cpp
-        ${llamacpp_SOURCE_DIR}/tools/mtmd/models/cogvlm.cpp
-        ${llamacpp_SOURCE_DIR}/tools/mtmd/models/internvl.cpp
-        ${llamacpp_SOURCE_DIR}/tools/mtmd/models/kimivl.cpp
-        ${llamacpp_SOURCE_DIR}/tools/mtmd/models/llama4.cpp
-        ${llamacpp_SOURCE_DIR}/tools/mtmd/models/siglip.cpp
-        ${llamacpp_SOURCE_DIR}/tools/mtmd/models/pixtral.cpp
-        ${llamacpp_SOURCE_DIR}/tools/mtmd/models/youtuvl.cpp
-        ${llamacpp_SOURCE_DIR}/tools/mtmd/models/conformer.cpp
-        ${llamacpp_SOURCE_DIR}/tools/mtmd/models/whisper-enc.cpp
-        ${llamacpp_SOURCE_DIR}/tools/mtmd/models/kimik25.cpp
-        ${llamacpp_SOURCE_DIR}/tools/mtmd/models/mobilenetv5.cpp
-        ${llamacpp_SOURCE_DIR}/tools/mtmd/models/paddleocr.cpp
-        ${llamacpp_SOURCE_DIR}/tools/mtmd/models/nemotron-v2-vl.cpp
-        ${llamacpp_SOURCE_DIR}/tools/mtmd/models/gemma4v.cpp
-        ${llamacpp_SOURCE_DIR}/tools/mtmd/models/hunyuanocr.cpp
-        ${llamacpp_SOURCE_DIR}/tools/mtmd/models/deepseekocr.cpp
+    # Add every mtmd model implementation. New llama.cpp releases regularly add
+    # clip_graph_* classes; globbing keeps the backend archive link-complete.
+    file(GLOB LLAMACPP_MTMD_MODEL_SOURCES CONFIGURE_DEPENDS
+        ${llamacpp_SOURCE_DIR}/tools/mtmd/models/*.cpp
     )
+    list(APPEND LLAMACPP_BACKEND_SOURCES ${LLAMACPP_MTMD_MODEL_SOURCES})
 endif()
 
 if(RAC_BUILD_SHARED)
