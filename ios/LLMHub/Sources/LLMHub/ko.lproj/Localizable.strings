@@ -701,7 +701,7 @@
 "kid_mode_disable" = "비활성화";
 "gpu_layers_label" = "GPU Layers: %1$d";
 "gpu_layers_hint" = "Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers";
-"premium_title" = "LLM Hub Premium";
+"premium_title" = "LLM Hub 프리미엄 평생";
 "premium_subtitle" = "전체 기능을 잠금 해제하세요";
 "premium_feature_no_ads" = "광고 없음, 영원히";
 "premium_feature_vibe_coder" = "VibeCoder – AI 코드 생성기";
@@ -716,6 +716,8 @@
 "premium_button_later" = "나중에";
 "premium_price_loading" = "가격 불러오는 중…";
 "premium_payment_note" = "Google Play를 통한 일회성 구매. 구독 없음.";
+"premium_payment_note_ios" = "One-time purchase via App Store. No subscription.";
+"premium_active_subtitle_short" = "모든 기능 잠금 해제. 감사합니다! 👑";
 "premium_active_title" = "프리미엄입니다! 👑";
 "premium_active_subtitle" = "모든 기능이 잠금 해제되었습니다. 지원해 주셔서 감사합니다!";
 "premium_locked_feature" = "프리미엄 기능";

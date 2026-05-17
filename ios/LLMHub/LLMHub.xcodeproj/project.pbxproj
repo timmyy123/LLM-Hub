@@ -10,6 +10,7 @@
 		1AE5E42ED85BEFE5C3ED1D2A /* LocalizationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BBFF4AA65F0EF6FF1DB93D /* LocalizationManager.swift */; };
 		1D92A835955F48E1AA4AEEEF /* EmbeddingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59683F4EC0364144B429B48B /* EmbeddingService.swift */; };
 		1F3A9E5C7B2E4D6F8A1B2C3D /* ApolloTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E4B5F6A7C8D9E0F1A2B3C4D /* ApolloTheme.swift */; };
+		2461869E2FB9A616005E46A3 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2461869D2FB9A616005E46A3 /* StoreKit.framework */; };
 		2A3672DC476297C35298841D /* HomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6D5DEA8384F9DDFC69C359C /* HomeScreen.swift */; };
 		2CD0F1D1F3E04E66AA24812C /* RagServiceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9DF631F25054004865F2A2B /* RagServiceManager.swift */; };
 		366119C26429D712F621B7DF /* ModelDownloadScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E674F93296C177D68CCEFED /* ModelDownloadScreen.swift */; };
@@ -40,6 +41,11 @@
 		FA001122334455667788AADD /* StableDiffusion in Frameworks */ = {isa = PBXBuildFile; productRef = FA001122334455667788AAEE /* StableDiffusion */; };
 		FA001122334455667788AAFF /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = FA001122334455667788AA11 /* ZIPFoundation */; };
 		FA0011BB334455667788AA01 /* PreviewServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0011BB334455667788AA02 /* PreviewServer.swift */; };
+		AD000001000000000000AA01 /* AdManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD000001000000000000AA02 /* AdManager.swift */; };
+		AD000001000000000000AA03 /* PurchaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD000001000000000000AA04 /* PurchaseManager.swift */; };
+		AD000001000000000000AA05 /* PremiumScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD000001000000000000AA06 /* PremiumScreen.swift */; };
+		AD000002000000000000BB05 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = AD000002000000000000BB03 /* GoogleMobileAds */; };
+		AD000002000000000000BB06 /* GoogleUserMessagingPlatform in Frameworks */ = {isa = PBXBuildFile; productRef = AD000002000000000000BB04 /* GoogleUserMessagingPlatform */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -47,6 +53,10 @@
 		0805DB9589154E465145E2DB /* ChatModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatModels.swift; sourceTree = "<group>"; };
 		223C0ACCB98929BFEDBB0B16 /* it */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = it; path = it.lproj/Localizable.strings; sourceTree = "<group>"; };
 		2461869C2FB762B0005E46A3 /* LLMHub.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LLMHub.entitlements; sourceTree = SOURCE_ROOT; };
+		2461869D2FB9A616005E46A3 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
+		2461869F2FB9AAE2005E46A3 /* Secrets.debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.debug.xcconfig; sourceTree = "<group>"; };
+		246186A02FB9AAF6005E46A3 /* Secrets.release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.release.xcconfig; sourceTree = "<group>"; };
+		246186A12FB9AB95005E46A3 /* LLMHub-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "LLMHub-Info.plist"; sourceTree = SOURCE_ROOT; };
 		27AC91B048B74436A4029665 /* MemoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryStore.swift; sourceTree = "<group>"; };
 		2E4B5F6A7C8D9E0F1A2B3C4D /* ApolloTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApolloTheme.swift; sourceTree = "<group>"; };
 		2FDAEABFBFE266EFF8492FEB /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -89,6 +99,9 @@
 		F841EEA264BDE0E6E2A1BC18 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Icon.png; sourceTree = "<group>"; };
 		FA001122334455667788AACC /* StableDiffusionBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StableDiffusionBackend.swift; sourceTree = "<group>"; };
 		FA0011BB334455667788AA02 /* PreviewServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewServer.swift; sourceTree = "<group>"; };
+		AD000001000000000000AA02 /* AdManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdManager.swift; sourceTree = "<group>"; };
+		AD000001000000000000AA04 /* PurchaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseManager.swift; sourceTree = "<group>"; };
+		AD000001000000000000AA06 /* PremiumScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumScreen.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -97,11 +110,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				3D9B9E094861BF2162D95F61 /* RunAnywhere in Frameworks */,
+				2461869E2FB9A616005E46A3 /* StoreKit.framework in Frameworks */,
 				E534E3B14352A9FCAA9F1A89 /* RunAnywhereLlamaCPP in Frameworks */,
 				B1C4A2D3F5E6789012345678 /* RunAnywhereONNX in Frameworks */,
 				9D4F93BDDE99FDE1ECFA704A /* Accelerate.framework in Frameworks */,
 				FA001122334455667788AADD /* StableDiffusion in Frameworks */,
 				FA001122334455667788AAFF /* ZIPFoundation in Frameworks */,
+				AD000002000000000000BB05 /* GoogleMobileAds in Frameworks */,
+				AD000002000000000000BB06 /* GoogleUserMessagingPlatform in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -111,6 +127,7 @@
 		2C0336DBCA471F0B9ACFE6C9 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				2461869D2FB9A616005E46A3 /* StoreKit.framework */,
 				60A19FA5E2C65DD1CDCAB9BB /* Accelerate.framework */,
 			);
 			name = Frameworks;
@@ -119,6 +136,7 @@
 		44F5735070D2A88436068B98 /* LLMHub */ = {
 			isa = PBXGroup;
 			children = (
+				246186A12FB9AB95005E46A3 /* LLMHub-Info.plist */,
 				2461869C2FB762B0005E46A3 /* LLMHub.entitlements */,
 				2E4B5F6A7C8D9E0F1A2B3C4D /* ApolloTheme.swift */,
 				0805DB9589154E465145E2DB /* ChatModels.swift */,
@@ -147,6 +165,10 @@
 				FA001122334455667788AACC /* StableDiffusionBackend.swift */,
 				A1B2C3D4E5F600002A2B3C4D /* ThinkingComponents.swift */,
 				FA0011BB334455667788AA02 /* PreviewServer.swift */,
+				/* === New ad/IAP sources === */
+				AD000001000000000000AA02 /* AdManager.swift */,
+				AD000001000000000000AA04 /* PurchaseManager.swift */,
+				AD000001000000000000AA06 /* PremiumScreen.swift */,
 			);
 			name = LLMHub;
 			path = Sources/LLMHub;
@@ -158,6 +180,8 @@
 				44F5735070D2A88436068B98 /* LLMHub */,
 				2C0336DBCA471F0B9ACFE6C9 /* Frameworks */,
 				F9BA2238AD5E6E62D6EC09E6 /* Products */,
+				2461869F2FB9AAE2005E46A3 /* Secrets.debug.xcconfig */,
+				246186A02FB9AAF6005E46A3 /* Secrets.release.xcconfig */,
 			);
 			sourceTree = "<group>";
 		};
@@ -191,6 +215,8 @@
 				B1C4A2D4F5E6789012345678 /* RunAnywhereONNX */,
 				FA001122334455667788AAEE /* StableDiffusion */,
 				FA001122334455667788AA11 /* ZIPFoundation */,
+				AD000002000000000000BB03 /* GoogleMobileAds */,
+				AD000002000000000000BB04 /* GoogleUserMessagingPlatform */,
 			);
 			productName = LLMHub;
 			productReference = 5F60B98E5AE21634E4E47E99 /* LLMHub.app */;
@@ -239,6 +265,8 @@
 				A26F31FFA020DC1866683F48 /* XCLocalSwiftPackageReference "../runanywhere-sdks-latest" */,
 				FA001122334455667788AA44 /* XCRemoteSwiftPackageReference "ml-stable-diffusion" */,
 				FA001122334455667788AA55 /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
+				AD000002000000000000BB01 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
+				AD000002000000000000BB02 /* XCRemoteSwiftPackageReference "swift-package-manager-google-user-messaging-platform" */,
 			);
 			projectDirPath = "";
 			projectRoot = "";
@@ -290,6 +318,10 @@
 				FA001122334455667788AABB /* StableDiffusionBackend.swift in Sources */,
 				A1B2C3D4E5F600001A2B3C4D /* ThinkingComponents.swift in Sources */,
 				FA0011BB334455667788AA01 /* PreviewServer.swift in Sources */,
+				/* === New ad/IAP compile === */
+				AD000001000000000000AA01 /* AdManager.swift in Sources */,
+				AD000001000000000000AA03 /* PurchaseManager.swift in Sources */,
+				AD000001000000000000AA05 /* PremiumScreen.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -325,6 +357,7 @@
 /* Begin XCBuildConfiguration section */
 		5F27A11A650BD7025E6AF037 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2461869F2FB9AAE2005E46A3 /* Secrets.debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -388,6 +421,7 @@
 		};
 		9075C4CA9576425C8D952A9A /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 246186A02FB9AAF6005E46A3 /* Secrets.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = LLMHub.entitlements;
@@ -396,6 +430,7 @@
 				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = 76K65T869A;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "LLMHub-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = LLMHub;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "LLM Hub uses your microphone to transcribe speech on-device.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "LLM Hub uses speech recognition to transcribe your audio on-device.";
@@ -421,6 +456,7 @@
 		};
 		E554B34FCEA1915FC9553D49 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2461869F2FB9AAE2005E46A3 /* Secrets.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = LLMHub.entitlements;
@@ -429,6 +465,7 @@
 				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = 76K65T869A;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "LLMHub-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = LLMHub;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "LLM Hub uses your microphone to transcribe speech on-device.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "LLM Hub uses speech recognition to transcribe your audio on-device.";
@@ -454,6 +491,7 @@
 		};
 		EE0D8D09C754D34589382FCA /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 246186A02FB9AAF6005E46A3 /* Secrets.release.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -555,6 +593,22 @@
 				minimumVersion = 0.9.20;
 			};
 		};
+		AD000002000000000000BB01 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.0.0;
+			};
+		};
+		AD000002000000000000BB02 /* XCRemoteSwiftPackageReference "swift-package-manager-google-user-messaging-platform" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-user-messaging-platform";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -582,6 +636,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = FA001122334455667788AA44 /* XCRemoteSwiftPackageReference "ml-stable-diffusion" */;
 			productName = StableDiffusion;
+		};
+		AD000002000000000000BB03 /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AD000002000000000000BB01 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
+		};
+		AD000002000000000000BB04 /* GoogleUserMessagingPlatform */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AD000002000000000000BB02 /* XCRemoteSwiftPackageReference "swift-package-manager-google-user-messaging-platform" */;
+			productName = GoogleUserMessagingPlatform;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -706,7 +706,7 @@
 "model_not_loaded" = "模型未正确加载。请尝试切换到不同的模型或重启应用。";
 "no_response_produced" = "未生成响应。(可能原因: token 限制或会话重置)。点击重新生成。";
 "prompt_too_long" = "提示信息过长。请缩短您的消息并重试。";
-"premium_title" = "LLM Hub 高级版";
+"premium_title" = "LLM Hub 终身高级版";
 "premium_subtitle" = "解锁完整体验";
 "premium_feature_no_ads" = "永久去广告";
 "premium_feature_vibe_coder" = "代码生成器 – AI 代码构建";
@@ -721,6 +721,8 @@
 "premium_button_later" = "稍后再说";
 "premium_price_loading" = "价格加载中…";
 "premium_payment_note" = "通过 Google Play 一次性购买，无需订阅。";
+"premium_payment_note_ios" = "One-time purchase via App Store. No subscription.";
+"premium_active_subtitle_short" = "所有功能已解锁。谢谢！ 👑";
 "premium_active_title" = "您已是高级用户！👑";
 "premium_active_subtitle" = "所有功能已解锁。感谢您的支持！";
 "premium_locked_feature" = "高级功能";

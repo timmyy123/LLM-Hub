@@ -826,8 +826,11 @@ struct ModelDownloadScreen: View {
     @EnvironmentObject var settings: AppSettings
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var vm = ModelDownloadViewModel()
+    @StateObject private var purchases = PurchaseManager.shared
     @State private var showImportSheet = false
+    @State private var showPremiumForImport = false
     var onNavigateBack: () -> Void
+    var onShowPremium: (() -> Void)? = nil
 
     var body: some View {
         ZStack {
@@ -936,6 +939,7 @@ struct ModelDownloadScreen: View {
         }
         .navigationTitle(settings.localized("ai_models"))
         .navigationBarTitleDisplayMode(.inline)
+        .safeAreaInset(edge: .bottom, spacing: 0) { BannerAdContainer() }
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
@@ -948,10 +952,21 @@ struct ModelDownloadScreen: View {
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
-                    showImportSheet = true
+                    if purchases.isPremium {
+                        showImportSheet = true
+                    } else {
+                        onShowPremium?()
+                    }
                 } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 14, weight: .semibold))
+                    HStack(spacing: 4) {
+                        if !purchases.isPremium {
+                            Image(systemName: "crown.fill")
+                                .font(.system(size: 11))
+                                .foregroundStyle(Color(hex: "FFD700"))
+                        }
+                        Image(systemName: "plus")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
                 }
                 .accessibilityLabel(settings.localized("import_external_model"))
             }

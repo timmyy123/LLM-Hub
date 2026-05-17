@@ -8,6 +8,7 @@ import UIKit
 @main
 struct LLMHubApp: App {
     @StateObject private var settings = AppSettings.shared
+    @StateObject private var consent = ConsentManager.shared
 
     init() {
         let line = "[LLMHub] App launched\n"
@@ -16,6 +17,19 @@ struct LLMHubApp: App {
         }
         NSLog("[LLMHub] App launched")
         UISwitch.appearance().onTintColor = UIColor(ApolloPalette.accentStrong)
+
+        // Initialise AdMob SDK before any ad is shown
+        AdMobSDK.initialize()
+
+        // Warm up StoreKit 2 / restore premium state
+        Task {
+            await PurchaseManager.shared.loadProduct()
+        }
+
+        // Request EU/GDPR consent info update — form shown automatically if required
+        Task { @MainActor in
+            ConsentManager.shared.requestConsentUpdate()
+        }
 
         // Initialize RunAnywhere SDK first — sets up C++ module registry
         // and service infrastructure. Backends MUST be registered after this.
@@ -46,6 +60,7 @@ struct LLMHubApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(settings)
+                .environmentObject(consent)
                 .preferredColorScheme(.dark)
                 .environment(\.locale, settings.selectedLanguage.locale)
                 .environment(\.layoutDirection, settings.selectedLanguage.isRTL ? .rightToLeft : .leftToRight)

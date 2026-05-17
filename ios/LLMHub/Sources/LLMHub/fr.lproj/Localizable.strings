@@ -688,7 +688,7 @@
 "kid_mode_disable" = "Désactiver";
 "gpu_layers_label" = "GPU Layers: %1$d";
 "gpu_layers_hint" = "Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers";
-"premium_title" = "LLM Hub Premium";
+"premium_title" = "LLM Hub Premium Lifetime";
 "premium_subtitle" = "Déverrouillez l’expérience complète";
 "premium_feature_no_ads" = "Aucune publicité, jamais";
 "premium_feature_vibe_coder" = "VibeCoder – Générateur de code IA";
@@ -703,6 +703,8 @@
 "premium_button_later" = "Peut-être plus tard";
 "premium_price_loading" = "Chargement du prix…";
 "premium_payment_note" = "Achat unique via Google Play. Sans abonnement.";
+"premium_payment_note_ios" = "One-time purchase via App Store. No subscription.";
+"premium_active_subtitle_short" = "Toutes les fonctionnalités débloquées. Merci ! 👑";
 "premium_active_title" = "Vous êtes Premium ! 👑";
 "premium_active_subtitle" = "Toutes les fonctionnalités sont déverrouillées. Merci pour votre soutien !";
 "premium_locked_feature" = "Fonctionnalité Premium";

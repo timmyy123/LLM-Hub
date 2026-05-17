@@ -8,3 +8,7 @@ DerivedData/
 .netrc
 
 /xtool
+
+# AdMob / secrets — NEVER commit these
+Secrets.debug.xcconfig
+Secrets.release.xcconfig

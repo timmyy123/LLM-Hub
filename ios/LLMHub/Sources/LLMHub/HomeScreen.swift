@@ -17,6 +17,8 @@ struct HomeScreen: View {
     var onNavigateToSettings: () -> Void
     var onNavigateToRoute: (String) -> Void
     @State private var githubStars: Int? = nil
+    @ObservedObject private var purchases = PurchaseManager.shared
+    @State private var showPremium = false
 
     var features: [FeatureCard] {
         [
@@ -79,6 +81,31 @@ struct HomeScreen: View {
 
                     Spacer()
 
+                    if !purchases.isPremium {
+                        Button {
+                            showPremium = true
+                        } label: {
+                            Image(systemName: "crown.fill")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundStyle(Color(hex: "FFD700"))
+                                .padding(8)
+                                .background(.ultraThinMaterial, in: Circle())
+                                .overlay(
+                                    Circle()
+                                        .stroke(
+                                            LinearGradient(
+                                                colors: [Color.white.opacity(0.35), Color.white.opacity(0.08)],
+                                                startPoint: .top,
+                                                endPoint: .bottom
+                                            ),
+                                            lineWidth: 1
+                                        )
+                                )
+                                .shadow(color: .black.opacity(0.2), radius: 6, x: 0, y: 3)
+                        }
+                        .buttonStyle(.plain)
+                    }
+
                     HStack(spacing: 10) {
                         if let githubStars, githubStars > 0 {
                             Button {
@@ -89,6 +116,8 @@ struct HomeScreen: View {
                                         .font(.caption)
                                     Text("\(githubStars)")
                                         .font(.subheadline.bold())
+                                        .lineLimit(1)
+                                        .fixedSize(horizontal: true, vertical: false)
                                 }
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 5)
@@ -128,6 +157,7 @@ struct HomeScreen: View {
                     )
                     .shadow(color: .black.opacity(0.32), radius: 10, x: 0, y: 6)
                     .clipShape(Capsule())
+                    .fixedSize(horizontal: true, vertical: false)
                 }
                 .padding(.horizontal, horizontalPadding)
                 .padding(.top, topPadding)
@@ -167,7 +197,14 @@ struct HomeScreen: View {
             }
         }
         .apolloScreenBackground()
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            BannerAdContainer()
+        }
         .toolbar(.hidden, for: .navigationBar)
+        .sheet(isPresented: $showPremium) {
+            PremiumScreen()
+                .environmentObject(settings)
+        }
     }
 
     private func loadGithubStars() async {

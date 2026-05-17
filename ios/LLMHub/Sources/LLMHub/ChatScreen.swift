@@ -1481,6 +1481,9 @@ class ChatViewModel: ObservableObject {
         ragDocumentCount = 0
         objectWillChange.send()
 
+        // Fire interstitial ad (skipped for premium users, every 4th new chat)
+        InterstitialAdManager.shared.onEvent()
+
         // Populate new chat with global memory so RAG search includes it.
         if isMemoryEnabled {
             Task {
@@ -2788,10 +2791,12 @@ struct ChatScreen: View {
     @EnvironmentObject var settings: AppSettings
     @StateObject private var vm = ChatViewModel()
     @ObservedObject private var ttsManager = OnDeviceTtsManager.shared
+    @ObservedObject private var interstitialManager = InterstitialAdManager.shared
     var onNavigateToSettings: () -> Void
     var onNavigateToModels: () -> Void
     var onNavigateBack: () -> Void
 
+    @State private var showPremiumFromAd = false
     @State private var showDrawer = false
     @State private var showSettings = false
     @State private var copiedMessageId: UUID? = nil
@@ -3168,6 +3173,9 @@ struct ChatScreen: View {
             .animation(.easeOut(duration: 0.2), value: isComposerFocused)
         }
         .apolloScreenBackground()
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            BannerAdContainer()
+        }
         .navigationTitle(vm.chatSessions.first(where: { $0.id == vm.currentSessionId })?.title ?? settings.localized("chat"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
@@ -3190,6 +3198,17 @@ struct ChatScreen: View {
         .sheet(isPresented: $showSettings) {
              ChatSettingsSheet(vm: vm)
                 .environmentObject(settings)
+        }
+        // Show premium upsell after every interstitial ad
+        .sheet(isPresented: $showPremiumFromAd) {
+            PremiumScreen()
+                .environmentObject(settings)
+        }
+        .onChange(of: interstitialManager.showPremiumAfterAd) { _, triggered in
+            if triggered {
+                showPremiumFromAd = true
+                interstitialManager.showPremiumAfterAd = false
+            }
         }
         .fullScreenCover(isPresented: Binding(
             get: { previewImagePath != nil },

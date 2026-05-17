@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var path = NavigationPath()
+    @State private var showPremium = false
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -41,13 +42,17 @@ struct ContentView: View {
                     .navigationBarBackButtonHidden(true)
                     .enableSwipeBack()
                 case .models:
-                    ModelDownloadScreen(onNavigateBack: { path.removeLast() })
-                        .navigationBarBackButtonHidden(true)
-                        .enableSwipeBack()
+                    ModelDownloadScreen(
+                        onNavigateBack: { path.removeLast() },
+                        onShowPremium: { showPremium = true }
+                    )
+                    .navigationBarBackButtonHidden(true)
+                    .enableSwipeBack()
                 case .settings:
                     SettingsScreen(
                         onNavigateBack: { path.removeLast() },
-                        onNavigateToModels: { path.append(Screen.models) }
+                        onNavigateToModels: { path.append(Screen.models) },
+                        onShowPremium: { showPremium = true }
                     )
                     .navigationBarBackButtonHidden(true)
                     .enableSwipeBack()
@@ -87,6 +92,10 @@ struct ContentView: View {
                     .enableSwipeBack()
                 }
             }
+        }
+        .sheet(isPresented: $showPremium) {
+            PremiumScreen()
+                .environmentObject(AppSettings.shared)
         }
     }
 }

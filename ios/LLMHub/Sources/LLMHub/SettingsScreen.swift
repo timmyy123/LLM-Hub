@@ -5,9 +5,12 @@ import RunAnywhere
 struct SettingsScreen: View {
     @EnvironmentObject var settings: AppSettings
     @Environment(\.openURL) var openURL
+    @StateObject private var purchases = PurchaseManager.shared
+    @ObservedObject private var consent = ConsentManager.shared
 
     var onNavigateBack: () -> Void
     var onNavigateToModels: () -> Void
+    var onShowPremium: (() -> Void)? = nil
 
     @State private var showLanguageDialog = false
     @State private var showMemoryDialog = false
@@ -135,8 +138,37 @@ struct SettingsScreen: View {
                     ) { showTerms = true }
                     .listRowInsets(EdgeInsets(top: 6, leading: 14, bottom: 6, trailing: 14))
                     .listRowBackground(Color.clear)
+
+                    // Privacy & Ads — only shown when GDPR consent is required (EU users)
+                    // When consent is not required this row is hidden; always safe to show it though.
+                    SettingsRow(
+                        icon: "hand.raised.fill",
+                        iconColor: Color(hex: "4CAF50"),
+                        titleKey: "privacy_ads_title",
+                        subtitleKey: "privacy_ads_subtitle"
+                    ) {
+                        consent.showPrivacyOptionsForm()
+                    }
+                    .listRowInsets(EdgeInsets(top: 6, leading: 14, bottom: 6, trailing: 14))
+                    .listRowBackground(Color.clear)
                 } header: {
                     SectionHeader(titleKey: "information", icon: "info.circle")
+                }
+
+                // MARK: Premium Section
+                Section {
+                    SettingsRow(
+                        icon: purchases.isPremium ? "crown.fill" : "crown",
+                        iconColor: Color(hex: "FFD700"),
+                        titleKey: purchases.isPremium ? "premium_active_title" : "premium_go_premium",
+                        subtitleKey: purchases.isPremium ? "premium_active_subtitle_short" : "premium_tap_to_unlock"
+                    ) {
+                        onShowPremium?()
+                    }
+                    .listRowInsets(EdgeInsets(top: 6, leading: 14, bottom: 6, trailing: 14))
+                    .listRowBackground(Color.clear)
+                } header: {
+                    SectionHeader(titleKey: "premium_title", icon: "sparkles")
                 }
 
                 // MARK: Source Code Section
@@ -159,6 +191,9 @@ struct SettingsScreen: View {
             }
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            BannerAdContainer()
         }
         .navigationTitle(settings.localized("feature_settings_title"))
         .navigationBarTitleDisplayMode(.large)

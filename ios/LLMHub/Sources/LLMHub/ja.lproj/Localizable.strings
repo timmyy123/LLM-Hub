@@ -701,7 +701,7 @@
 "kid_mode_disable" = "無効にする";
 "gpu_layers_label" = "GPU Layers: %1$d";
 "gpu_layers_hint" = "Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers";
-"premium_title" = "LLM Hub Premium";
+"premium_title" = "LLM Hub プレミアム ライフタイム";
 "premium_subtitle" = "フル機能を解除する";
 "premium_feature_no_ads" = "広告なし、永遠に";
 "premium_feature_vibe_coder" = "VibeCoder – AIコードジェネレーター";
@@ -716,6 +716,8 @@
 "premium_button_later" = "後で";
 "premium_price_loading" = "価格を読み込んでいます…";
 "premium_payment_note" = "Google Playでの一回限りの購入。サブスクリプションなし。";
+"premium_payment_note_ios" = "One-time purchase via App Store. No subscription.";
+"premium_active_subtitle_short" = "すべての機能が解放されました。ありがとう！ 👑";
 "premium_active_title" = "Premiumです！ 👑";
 "premium_active_subtitle" = "すべての機能がアンロックされました。ご支持ありがとうございます！";
 "premium_locked_feature" = "プレミアム機能";

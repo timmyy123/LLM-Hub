@@ -712,7 +712,7 @@
 "language_chinese_simplified" = "简体中文";
 "model_system_prompt_label" = "System prompt (per model)";
 "model_system_prompt_hint" = "Applied automatically when this model generates a response.";
-"premium_title" = "LLM Hub Premium";
+"premium_title" = "LLM Hub Premium Lifetime";
 "premium_subtitle" = "Unlock the full experience";
 "premium_feature_no_ads" = "No ads, ever";
 "premium_feature_vibe_coder" = "VibeCoder – AI code builder";
@@ -727,6 +727,9 @@
 "premium_button_later" = "Maybe later";
 "premium_price_loading" = "Loading price…";
 "premium_payment_note" = "One-time purchase via Google Play. No subscription.";
+"premium_payment_note_ios" = "One-time purchase via App Store. No subscription.";
+"premium_active_subtitle_short" = "All features unlocked. Thank you! 👑";
+
 "premium_active_title" = "You\'re Premium! 👑";
 "premium_active_subtitle" = "All features are unlocked. Thank you for your support!";
 "premium_locked_feature" = "Premium Feature";

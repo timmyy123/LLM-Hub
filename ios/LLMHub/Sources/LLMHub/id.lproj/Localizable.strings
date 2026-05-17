@@ -701,7 +701,7 @@
 "kid_mode_disable" = "Nonaktifkan";
 "gpu_layers_label" = "GPU Layers: %1$d";
 "gpu_layers_hint" = "Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers";
-"premium_title" = "LLM Hub Premium";
+"premium_title" = "LLM Hub Premium Seumur Hidup";
 "premium_subtitle" = "Buka pengalaman penuh";
 "premium_feature_no_ads" = "Tanpa iklan, selamanya";
 "premium_feature_vibe_coder" = "VibeCoder – Generator kode AI";
@@ -716,6 +716,8 @@
 "premium_button_later" = "Mungkin nanti";
 "premium_price_loading" = "Memuat harga…";
 "premium_payment_note" = "Pembelian sekali melalui Google Play. Tanpa langganan.";
+"premium_payment_note_ios" = "One-time purchase via App Store. No subscription.";
+"premium_active_subtitle_short" = "Semua fitur terbuka. Terima kasih! 👑";
 "premium_active_title" = "Anda adalah Premium! 👑";
 "premium_active_subtitle" = "Semua fitur dibuka. Terima kasih atas dukungan Anda!";
 "premium_locked_feature" = "Fitur Premium";

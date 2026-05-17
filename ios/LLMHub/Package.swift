@@ -18,7 +18,15 @@ let package = Package(
     dependencies: [
         .package(path: "../runanywhere-sdks-latest"),
         .package(url: "https://github.com/apple/ml-stable-diffusion", from: "1.1.1"),
-        .package(url: "https://github.com/weichsel/ZIPFoundation", from: "0.9.20")
+        .package(url: "https://github.com/weichsel/ZIPFoundation", from: "0.9.20"),
+        .package(
+            url: "https://github.com/googleads/swift-package-manager-google-mobile-ads",
+            from: "11.0.0"
+        ),
+        .package(
+            url: "https://github.com/googleads/swift-package-manager-google-user-messaging-platform",
+            from: "2.0.0"
+        ),
     ],
     targets: [
         .target(
@@ -28,7 +36,9 @@ let package = Package(
                 .product(name: "RunAnywhereLlamaCPP", package: "runanywhere-sdks-latest"),
                 .product(name: "RunAnywhereONNX", package: "runanywhere-sdks-latest"),
                 .product(name: "StableDiffusion", package: "ml-stable-diffusion"),
-                .product(name: "ZIPFoundation", package: "ZIPFoundation")
+                .product(name: "ZIPFoundation", package: "ZIPFoundation"),
+                .product(name: "GoogleMobileAds", package: "swift-package-manager-google-mobile-ads"),
+                .product(name: "GoogleUserMessagingPlatform", package: "swift-package-manager-google-user-messaging-platform"),
             ],
             exclude: [
                 "check_strings.py"
