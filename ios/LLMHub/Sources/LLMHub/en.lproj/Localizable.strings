@@ -754,3 +754,4 @@
 "preparing_mic" = "Preparing…";
 "audio_file_transcribe" = "Audio File (Transcribe)";
 "preparing_mic" = "Preparing…";
+"model_download_interrupted_warning" = "⚠️ Note: Interrupting the download may corrupt the model and cause it to generate gibberish.";

@@ -744,3 +744,4 @@
 "preparing_mic" = "Preparing…";
 "audio_file_transcribe" = "Audio File (Transcribe)";
 "preparing_mic" = "Preparing…";
+"model_download_interrupted_warning" = "⚠️ 주의: 다운로드 중 중단되면 모델이 손상되어 무의미한 출력(외계어)이 생성될 수 있습니다.";

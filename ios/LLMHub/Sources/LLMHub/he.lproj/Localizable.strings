@@ -744,3 +744,4 @@
 "preparing_mic" = "Preparing…";
 "audio_file_transcribe" = "Audio File (Transcribe)";
 "preparing_mic" = "Preparing…";
+"model_download_interrupted_warning" = "⚠️ שים לב: הפסקת ההורדה עלולה להשחית את המודל ולגרום לייצור פלט לא מובן.";

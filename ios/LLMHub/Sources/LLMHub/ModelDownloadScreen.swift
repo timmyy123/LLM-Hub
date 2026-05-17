@@ -687,6 +687,13 @@ struct ModelRowView: View {
                     }
                     .padding(.horizontal, 16)
 
+                    Text(settings.localized("model_download_interrupted_warning"))
+                        .font(.caption)
+                        .foregroundColor(Color.orange.opacity(0.95))
+                        .lineLimit(nil)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal, 16)
+
                     // Action buttons
                     HStack(spacing: 10) {
                         switch state {

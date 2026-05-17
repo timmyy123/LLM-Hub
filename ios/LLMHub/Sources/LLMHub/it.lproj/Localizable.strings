@@ -734,3 +734,4 @@
 "preparing_mic" = "Preparing…";
 "audio_file_transcribe" = "Audio File (Transcribe)";
 "preparing_mic" = "Preparing…";
+"model_download_interrupted_warning" = "⚠️ Nota: L'interruzione del download potrebbe corrompere il modello e causare la generazione di testo senza senso.";

@@ -752,3 +752,4 @@
 "preparing_mic" = "Preparing…";
 "audio_file_transcribe" = "Audio File (Transcribe)";
 "preparing_mic" = "Preparing…";
+"model_download_interrupted_warning" = "⚠️ 注意：中断下载可能会损坏模型，导致生成乱码或无意义的内容。";
