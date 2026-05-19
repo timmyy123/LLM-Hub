@@ -78,7 +78,7 @@
     <string name="ai_thinking">AI 思考中...</string>
     <string name="thinking_label">深度思考</string>
     <string name="thinking_tokens">思考 (%1$d tokens)</string>
-    <string name="version_number">版本号 3.7.2</string>
+    <string name="version_number">版本号 3.7.3</string>
     <string name="app_version">应用版本</string>
     
     <!-- Terms of Service -->
@@ -808,7 +808,7 @@
     <string name="prompt_too_long">提示信息过长。请缩短您的消息并重试。</string>
 
     <!-- Premium / IAP -->
-    <string name="premium_title">LLM Hub 高级版</string>
+    <string name="premium_title">LLM Hub 终身高级版</string>
     <string name="premium_subtitle">解锁完整体验</string>
     <string name="premium_feature_no_ads">永久去广告</string>
     <string name="premium_feature_vibe_coder">代码生成器 – AI 代码构建</string>

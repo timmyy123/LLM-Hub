@@ -243,8 +243,8 @@ class CreatorViewModel(
                 val success = inferenceService.loadModel(
                     model = model,
                     preferredBackend = backend,
-                    disableVision = !model.supportsVision,
-                    disableAudio = !model.supportsAudio,
+                    disableVision = true,  // Creator is text-only; skip vision backend init
+                    disableAudio = true,   // Creator is text-only; skip audio backend init
                     deviceId = _selectedNpuDeviceId.value
                 )
                 

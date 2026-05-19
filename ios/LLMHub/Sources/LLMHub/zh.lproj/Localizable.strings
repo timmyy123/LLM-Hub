@@ -70,7 +70,7 @@
 "ai_thinking" = "AI 思考中...";
 "thinking_label" = "深度思考";
 "thinking_tokens" = "思考 (%1$d tokens)";
-"version_number" = "版本号 3.7.2";
+"version_number" = "版本号 3.7.3";
 "app_version" = "应用版本";
 "terms_of_service" = "服务条款";
 "tos_last_updated" = "上次更新于 2025 年 7 月 16 日";

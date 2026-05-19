@@ -78,7 +78,7 @@
     <string name="ai_thinking">AI sedang berpikir...</string>
     <string name="thinking_label">Pemikiran</string>
     <string name="thinking_tokens">Pemikiran (%1$d token)</string>
-    <string name="version_number">Versi 3.7.2</string>
+    <string name="version_number">Versi 3.7.3</string>
     <string name="app_version">Versi Aplikasi</string>
     
     <!-- Terms of Service -->
@@ -804,7 +804,7 @@
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
 
     <!-- Premium / IAP -->
-    <string name="premium_title">LLM Hub Premium</string>
+    <string name="premium_title">LLM Hub Premium Seumur Hidup</string>
     <string name="premium_subtitle">Buka pengalaman penuh</string>
     <string name="premium_feature_no_ads">Tanpa iklan, selamanya</string>
     <string name="premium_feature_vibe_coder">VibeCoder – Generator kode AI</string>

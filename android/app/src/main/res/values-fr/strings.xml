@@ -78,7 +78,7 @@
     <string name="ai_thinking">L\'IA réfléchit...</string>
     <string name="thinking_label">Réflexion</string>
     <string name="thinking_tokens">Réflexion (%1$d jetons)</string>
-    <string name="version_number">Version 3.7.2</string>
+    <string name="version_number">Version 3.7.3</string>
     <string name="app_version">Version de l\'App</string>
     
     <!-- Terms of Service -->
@@ -790,7 +790,7 @@
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
 
     <!-- Premium / IAP -->
-    <string name="premium_title">LLM Hub Premium</string>
+    <string name="premium_title">LLM Hub Premium Lifetime</string>
     <string name="premium_subtitle">Déverrouillez l’expérience complète</string>
     <string name="premium_feature_no_ads">Aucune publicité, jamais</string>
     <string name="premium_feature_vibe_coder">VibeCoder – Générateur de code IA</string>

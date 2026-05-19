@@ -78,7 +78,7 @@
     <string name="ai_thinking">AI is thinking...</string>
     <string name="thinking_label">Thinking</string>
     <string name="thinking_tokens">Thinking (%1$d tokens)</string>
-    <string name="version_number">Version 3.7.2</string>
+    <string name="version_number">Version 3.7.3</string>
     <string name="app_version">App Version</string>
     
     <!-- Terms of Service -->
@@ -469,7 +469,7 @@
     <string name="drawer_my_creators">my creAItors</string>
 
     <!-- Premium / IAP -->
-    <string name="premium_title">LLM Hub Premium</string>
+    <string name="premium_title">LLM Hub Premium Lifetime</string>
     <string name="premium_subtitle">Unlock the full experience</string>
     <string name="premium_feature_no_ads">No ads, ever</string>
     <string name="premium_feature_vibe_coder">VibeCoder – AI code builder</string>

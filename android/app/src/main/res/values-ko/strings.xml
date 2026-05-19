@@ -78,7 +78,7 @@
     <string name="ai_thinking">AI가 생각 중입니다...</string>
     <string name="thinking_label">생각</string>
     <string name="thinking_tokens">생각 (%1$d 토큰)</string>
-    <string name="version_number">버전 3.7.2</string>
+    <string name="version_number">버전 3.7.3</string>
     <string name="app_version">앱 버전</string>
     
     <!-- Terms of Service -->
@@ -802,7 +802,7 @@
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
 
     <!-- Premium / IAP -->
-    <string name="premium_title">LLM Hub Premium</string>
+    <string name="premium_title">LLM Hub 프리미엄 평생</string>
     <string name="premium_subtitle">전체 기능을 잠금 해제하세요</string>
     <string name="premium_feature_no_ads">광고 없음, 영원히</string>
     <string name="premium_feature_vibe_coder">VibeCoder – AI 코드 생성기</string>

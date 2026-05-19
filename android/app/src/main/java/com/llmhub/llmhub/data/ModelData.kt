@@ -1565,7 +1565,7 @@ object ModelData {
         LLMModel(
             name = "Gemma-4 E2B",
             description = "Google Gemma-4 E2B multimodal model (text, vision, audio). Effective 2B parameters with 32k context. Embedding params are memory-mapped; only ~0.8GB decoder weights stay in RAM. GPU uses ~676MB, CPU uses ~1.7GB (Google benchmarks). Vision and audio loaded on-demand. Ready to download from HuggingFace (2.58GB)",
-            url = "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm?download=true",
+            url = "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/d23202ebbc77c976719090aaa080362f29d746e2/gemma-4-E2B-it.litertlm?download=true",
             category = "multimodal",
             sizeBytes = 2583085056L, // 2,583,085,056 bytes (2.58 GB actual)
             source = "Google (LiteRT LM)",
@@ -1579,7 +1579,7 @@ object ModelData {
         LLMModel(
             name = "Gemma-4 E4B",
             description = "Google Gemma-4 E4B multimodal model (text, vision, audio). Effective 4B parameters with 32k context. Embedding params are memory-mapped; ~2.24GB decoder weights stay in RAM. GPU uses ~710MB, CPU uses ~3.2GB (Google benchmarks). Vision and audio loaded on-demand. Ready to download from HuggingFace (3.65GB)",
-            url = "https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm/resolve/main/gemma-4-E4B-it.litertlm?download=true",
+            url = "https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm/resolve/55b6eef9e490da991fe6bc5fec1834106927b727/gemma-4-E4B-it.litertlm?download=true",
             category = "multimodal",
             sizeBytes = 3654467584L, // 3,654,467,584 bytes (3.65 GB actual)
             source = "Google (LiteRT LM)",

@@ -79,7 +79,7 @@
     <string name="ai_thinking">L\'IA sta pensando...</string>
     <string name="thinking_label">Pensiero</string>
     <string name="thinking_tokens">Pensiero (%1$d token)</string>
-    <string name="version_number">Versione 3.7.2</string>
+    <string name="version_number">Versione 3.7.3</string>
     <string name="app_version">Versione App</string>
     
     <!-- Terms of Service -->
@@ -796,7 +796,7 @@
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
 
     <!-- Premium / IAP -->
-    <string name="premium_title">LLM Hub Premium</string>
+    <string name="premium_title">LLM Hub Premium Lifetime</string>
     <string name="premium_subtitle">Sblocca l’esperienza completa</string>
     <string name="premium_feature_no_ads">Nessuna pubblicità, mai</string>
     <string name="premium_feature_vibe_coder">VibeCoder – Generatore di codice IA</string>

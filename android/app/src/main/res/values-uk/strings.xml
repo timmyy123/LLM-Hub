@@ -77,7 +77,7 @@
     <string name="ai_thinking">AI думає…</string>
     <string name="thinking_label">Міркування</string>
     <string name="thinking_tokens">Міркування (%1$d токенів)</string>
-    <string name="version_number">Версія 3.7.2</string>
+    <string name="version_number">Версія 3.7.3</string>
     <string name="app_version">Версія застосунку</string>
 
     <!-- Terms of Service -->
@@ -802,7 +802,7 @@
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
 
     <!-- Premium / IAP -->
-    <string name="premium_title">LLM Hub Premium</string>
+    <string name="premium_title">LLM Hub Premium (Назавжди)</string>
     <string name="premium_subtitle">Відкрийте повний доступ</string>
     <string name="premium_feature_no_ads">Ніякої реклами</string>
     <string name="premium_feature_vibe_coder">VibeCoder — генератор коду на ШІ</string>

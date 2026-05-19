@@ -77,7 +77,7 @@
     <string name="ai_thinking">هوش مصنوعی در حال فکر کردن…</string>
     <string name="thinking_label">تفکر</string>
     <string name="thinking_tokens">تفکر (%1$d توکن)</string>
-    <string name="version_number">نسخه 3.7.2</string>
+    <string name="version_number">نسخه 3.7.3</string>
     <string name="app_version">نسخه برنامه</string>
 
     <!-- Terms of Service (Short titles translated; body kept concise translation) -->
@@ -802,7 +802,7 @@
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
 
     <!-- Premium / IAP -->
-    <string name="premium_title">LLM Hub Premium</string>
+    <string name="premium_title">LLM Hub Premium مادام‌العمر</string>
     <string name="premium_subtitle">تجربه کامل را باز کنید</string>
     <string name="premium_feature_no_ads">بدون تبلیغات، هرگز</string>
     <string name="premium_feature_vibe_coder">VibeCoder – مولد کد هوش مصنوعی</string>

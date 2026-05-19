@@ -128,7 +128,7 @@
     <string name="acknowledgments_text">Особая благодарность Google, Meta, Microsoft, IBM, и сообществу HuggingFace за предоставление невероятных LLM-моделей, которые питают это приложение. Этот проект также опирается на удивительную работу сообщества разработчиков Android и экосистемы открытого исходного кода.</string>
     <string name="sd_models_credit">Модели генерации изображений работают на основе реализаций Stable Diffusion от xororz с использованием бэкендов Qualcomm QNN (NPU) и Alibaba MNN (CPU).</string>
     <string name="nexa_sdk_credit">Вывод моделей GGUF работает на основе Nexa SDK.</string>
-    <string name="version_number">Версия 3.7.2</string>
+    <string name="version_number">Версия 3.7.3</string>
     <string name="ai_thinking">ИИ думает...</string>
     <string name="thinking_label">Размышление</string>
     <string name="thinking_tokens">Размышление (%1$d токенов)</string>
@@ -774,7 +774,7 @@
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
 
     <!-- Premium / IAP -->
-    <string name="premium_title">LLM Hub Premium</string>
+    <string name="premium_title">LLM Hub Premium (Навсегда)</string>
     <string name="premium_subtitle">Откройте полный доступ</string>
     <string name="premium_feature_no_ads">Никакой рекламы</string>
     <string name="premium_feature_vibe_coder">VibeCoder — генератор кода на ИИ</string>
