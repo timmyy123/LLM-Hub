@@ -745,3 +745,5 @@
 "audio_file_transcribe" = "Audio File (Transcribe)";
 "preparing_mic" = "Preparing…";
 "model_download_interrupted_warning" = "⚠️ 주의: 다운로드 중 중단되면 모델이 손상되어 무의미한 출력(외계어)이 생성될 수 있습니다.";
+"agent_tools_label" = "도구";
+"agent_tools_description" = "AI 에이전트 기술 활성화: Wikipedia 검색, 해시 계산기, 이메일 보내기, SMS 보내기 및 지도 열기.";

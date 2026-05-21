@@ -745,3 +745,5 @@
 "audio_file_transcribe" = "Audio File (Transcribe)";
 "preparing_mic" = "Preparing…";
 "model_download_interrupted_warning" = "⚠️ שים לב: הפסקת ההורדה עלולה להשחית את המודל ולגרום לייצור פלט לא מובן.";
+"agent_tools_label" = "כלים";
+"agent_tools_description" = "מפעיל מיומנויות סוכן AI: חיפוש בוויקיפדיה, מחשבון hash, שליחת אימייל, שליחת SMS ופתיחת מפות.";

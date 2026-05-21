@@ -33,6 +33,7 @@ class LLMBackend: ObservableObject {
     var enableVision: Bool = true
     var enableAudio: Bool = true
     var enableThinking: Bool = true
+    var enableAgentTools: Bool = true
 
     private var isSDKInitialized = false
     private var areModelsRegistered = false
@@ -750,10 +751,16 @@ class LLMBackend: ObservableObject {
                     userInfo: [NSLocalizedDescriptionKey: "Model is not downloaded locally"])
             }
             let filePath = try resolveLiteRTModelPath(for: model)
-            try await LiteRTLMBackend.shared.loadModel(at: filePath, supportsVision: model.supportsVision && enableVision)
+            let effectiveContext = clampedContextWindow(contextWindow, for: model)
+            try await LiteRTLMBackend.shared.loadModel(
+                at: filePath,
+                supportsVision: model.supportsVision && enableVision,
+                supportsAudio: model.supportsAudio && enableAudio,
+                maxTokens: effectiveContext
+            )
             isLoaded = true
             currentlyLoadedModel = model.name
-            loadedContextWindow = model.contextWindowSize > 0 ? model.contextWindowSize : 131072
+            loadedContextWindow = effectiveContext
             return
         }
         #endif
@@ -902,8 +909,6 @@ class LLMBackend: ObservableObject {
         stopSequences: [String] = [],
         onUpdate: @escaping (String, Int, Double) -> Void
     ) async throws {
-        _ = audioURL
-
         // ── LiteRT-LM path ──────────────────────────────────────────────────
         #if canImport(LiteRTLM)
         if let model = loadedAIModel(), model.modelFormat == .litertlm {
@@ -915,17 +920,22 @@ class LLMBackend: ObservableObject {
             try await LiteRTLMBackend.shared.generateStream(
                 prompt: prompt,
                 imageURL: enableVision ? imageURL : nil,
+                audioURL: enableAudio ? audioURL : nil,
                 systemPrompt: systemPrompt,
                 temperature: temperature,
                 topK: topK,
                 topP: topP,
                 maxTokens: effectiveMaxTokens,
+                useThinking: model.supportsThinking && enableThinking,
+                enableAgentTools: enableAgentTools && model.name.contains("Gemma 4") && model.modelFormat == .litertlm,
                 onUpdate: onUpdate
             )
             return
         }
         #endif
         // ────────────────────────────────────────────────────────────────────
+
+        _ = audioURL
 
         try await ensureSDKReady()
 

@@ -1035,7 +1035,6 @@ private struct IOS26TranscriberScreen: View {
     @State private var audioTranscriptionTask: Task<Void, Never>?
     @AppStorage("feature_transcriber_model_name") private var selectedModelName: String = ""
     @AppStorage("feature_transcriber_max_tokens") private var maxTokens: Double = 512
-    @AppStorage("feature_transcriber_enable_audio") private var enableAudio: Bool = true
 
     let onNavigateBack: () -> Void
 
@@ -1055,9 +1054,11 @@ private struct IOS26TranscriberScreen: View {
         selectedFeatureModel(named: selectedModelName)
     }
 
+    /// True only when the user has loaded a Gemma 4 LiteRT-LM model.
+    /// Defaults to false (system transcriber). No toggle needed — loading the model auto-enables.
     private var useModelAudioInput: Bool {
         guard let model = selectedModel else { return false }
-        return enableAudio && isGemma4LiteRTLM(model)
+        return isGemma4LiteRTLM(model)
     }
 
     var body: some View {
@@ -1248,15 +1249,15 @@ private struct IOS26TranscriberScreen: View {
                 maxTokens: $maxTokens,
                 enableThinking: .constant(false),
                 enableVision: .constant(false),
-                enableAudio: $enableAudio,
+                enableAudio: nil,
                 isLoading: .constant(false),
                 errorMessage: .constant(nil),
                 supportsVisionToggle: false,
                 visionToggleTitleKey: "scam_detector_enable_vision",
-                audioToggleTitleKey: "enable_audio",
+                audioToggleTitleKey: nil,
                 visionAvailableCheck: nil,
                 writingMode: nil,
-                modelFilter: { $0.supportsAudio },
+                modelFilter: { $0.modelFormat == .litertlm && $0.supportsAudio },
                 onLoad: { await ensureAudioModelLoaded(force: false) },
                 onUnload: { llm.unloadModel() }
             )
@@ -1288,10 +1289,9 @@ private struct IOS26TranscriberScreen: View {
         .onAppear {
             Task {
                 await syncRunAnywhereModelDiscovery()
-                let available = downloadableFeatureModels().filter { $0.supportsAudio }
-                if selectedModelName.isEmpty || !available.contains(where: { $0.name == selectedModelName }) {
-                    selectedModelName = available.first?.name ?? ""
-                }
+                // Default to empty = system transcriber.
+                // User picks a Gemma4 LiteRT-LM model from the config sheet to use AI transcription.
+                // Don't auto-select an audio model on appear.
             }
         }
     }
@@ -1378,10 +1378,16 @@ private struct IOS26TranscriberScreen: View {
                         }
                     } else {
                         Task { @MainActor in
+                            let isGemma4 = useModelAudioInput
+                            let ext = isGemma4 ? "wav" : "m4a"
                             let destination = FileManager.default.temporaryDirectory
                                 .appendingPathComponent("transcriber_audio_\(UUID().uuidString)")
-                                .appendingPathExtension("m4a")
-                            _ = await audioRecorder.startRecording(outputURL: destination, autoStopAfterSilence: true) { url in
+                                .appendingPathExtension(ext)
+                            _ = await audioRecorder.startRecording(
+                                outputURL: destination,
+                                autoStopAfterSilence: true,
+                                isFloat32Wav: isGemma4
+                            ) { url in
                                 Task { @MainActor in
                                     selectedAudioURL = url
                                 }
@@ -1613,7 +1619,8 @@ private struct IOS26TranscriberScreen: View {
         llm.maxTokens = min(Int(maxTokens), effectiveContext)
         llm.contextWindow = effectiveContext
         llm.enableVision = false
-        llm.enableAudio = enableAudio
+        // Auto-enable audio when a Gemma4 LiteRT-LM model is selected; no toggle needed.
+        llm.enableAudio = isGemma4LiteRTLM(model)
         llm.enableThinking = false
 
         if shouldReload {
@@ -1628,7 +1635,7 @@ struct TranscriberScreen: View {
 
     var body: some View {
         Group {
-            if #available(iOS 26.0, *) {
+            if #available(iOS 17.0, *) {
                 IOS26TranscriberScreen(onNavigateBack: onNavigateBack)
             } else {
                 VStack(spacing: 12) {
@@ -1637,7 +1644,7 @@ struct TranscriberScreen: View {
                         .foregroundStyle(.secondary)
                     Text(settings.localized("transcriber_title"))
                         .font(.title3.weight(.bold))
-                    Text("Live on-device transcriber requires iOS 26 or newer.")
+                    Text("Live on-device transcriber requires iOS 17 or newer.")
                         .font(.subheadline)
                         .foregroundStyle(.white.opacity(0.7))
                         .multilineTextAlignment(.center)
@@ -2172,11 +2179,14 @@ private struct IOS17VibeVoiceScreen: View {
 
         voiceState = .listening
         if useModelAudioInput {
+            let isGemma4 = useModelAudioInput
+            let ext = isGemma4 ? "wav" : "m4a"
             await audioRecorder.startRecording(
                 outputURL: FileManager.default.temporaryDirectory
                     .appendingPathComponent("vibevoice_audio_\(UUID().uuidString)")
-                    .appendingPathExtension("m4a"),
-                autoStopAfterSilence: true
+                    .appendingPathExtension(ext),
+                autoStopAfterSilence: true,
+                isFloat32Wav: isGemma4
             ) { url in
                 Task { @MainActor in
                     self.lastRecordedAudioURL = url
@@ -3168,10 +3178,16 @@ struct TranslatorScreen: View {
                                 }
                             } else {
                                 Task { @MainActor in
+                                    let isGemma4 = selectedModel.map { isGemma4LiteRTLM($0) } ?? false
+                                    let ext = isGemma4 ? "wav" : "m4a"
                                     let destination = FileManager.default.temporaryDirectory
                                         .appendingPathComponent("translator_audio_\(UUID().uuidString)")
-                                        .appendingPathExtension("m4a")
-                                    _ = await audioRecorder.startRecording(outputURL: destination, autoStopAfterSilence: true) { url in
+                                        .appendingPathExtension(ext)
+                                    _ = await audioRecorder.startRecording(
+                                        outputURL: destination,
+                                        autoStopAfterSilence: true,
+                                        isFloat32Wav: isGemma4
+                                    ) { url in
                                         Task { @MainActor in
                                             selectedAudioURL = url
                                         }

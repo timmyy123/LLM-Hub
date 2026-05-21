@@ -163,6 +163,17 @@ struct ChatSettingsSheet: View {
                                 if model.supportsAudio {
                                     ToggleTile(title: settings.localized("enable_audio"), isOn: $vm.enableAudio, icon: "mic.fill")
                                 }
+                                if model.supportsThinking {
+                                    ToggleTile(title: settings.localized("enable_thinking"), isOn: $vm.enableThinking, icon: "brain")
+                                }
+                                if model.name.contains("Gemma 4") && model.modelFormat == .litertlm {
+                                    ToggleTile(
+                                        title: settings.localized("agent_tools_label"),
+                                        subtitle: settings.localized("agent_tools_description"),
+                                        isOn: $vm.enableAgentTools,
+                                        icon: "square.stack.3d.up.fill"
+                                    )
+                                }
                             }
                             .padding()
                             .background(.ultraThinMaterial)
@@ -415,21 +426,32 @@ struct ConfigSlider: View {
 
 struct ToggleTile: View {
     let title: String
+    var subtitle: String? = nil
     @Binding var isOn: Bool
     let icon: String
     
     var body: some View {
-        HStack {
+        HStack(alignment: subtitle == nil ? .center : .top) {
             Image(systemName: icon)
                 .foregroundColor(isOn ? ApolloPalette.accentStrong : .white.opacity(0.58))
                 .frame(width: 24)
-            Text(title)
-                .font(.subheadline)
-                .foregroundColor(.white)
+                .padding(.top, subtitle == nil ? 0 : 2)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.subheadline)
+                    .foregroundColor(.white)
+                if let subtitle = subtitle {
+                    Text(subtitle)
+                        .font(.caption2)
+                        .foregroundColor(.white.opacity(0.58))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
             Spacer()
             Toggle("", isOn: $isOn)
                 .labelsHidden()
                 .tint(ApolloPalette.accentStrong)
+                .padding(.top, subtitle == nil ? 0 : 2)
         }
     }
 }

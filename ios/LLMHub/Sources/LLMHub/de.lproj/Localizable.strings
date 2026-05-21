@@ -717,3 +717,5 @@
 "audio_file_transcribe" = "Audio File (Transcribe)";
 "preparing_mic" = "Preparing…";
 "model_download_interrupted_warning" = "⚠️ Hinweis: Das Unterbrechen des Downloads kann das Modell beschädigen und zu unleserlichen Ausgaben führen.";
+"agent_tools_label" = "Tools";
+"agent_tools_description" = "Aktiviert KI-Agent-Fähigkeiten: Wikipedia-Suche, Hash-Rechner, E-Mail senden, SMS senden und Karten öffnen.";

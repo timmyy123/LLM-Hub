@@ -68,6 +68,22 @@ public class Conversation {
     }
   }
 
+  /// Immediately releases the native conversation session.
+  ///
+  /// The LiteRT-LM engine only allows ONE session at a time. Waiting for Swift ARC
+  /// deinit is insufficient — the local `conversation` variable on the caller's stack
+  /// keeps the object alive past the next `createConversation()` call, causing
+  /// FAILED_PRECONDITION: A session already exists.
+  ///
+  /// Call this explicitly before creating a new Conversation. Safe to call
+  /// multiple times; deinit is also guarded against double-delete.
+  public func invalidate() {
+    if let h = handle {
+      litert_lm_conversation_delete(h)
+      handle = nil
+    }
+  }
+
   /// Sends a message to the model and returns the response. This is a synchronous call.
   ///
   /// - Parameter message: The message to send to the model.

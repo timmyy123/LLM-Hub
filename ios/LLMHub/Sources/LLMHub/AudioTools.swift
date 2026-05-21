@@ -15,7 +15,7 @@ final class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
     var silenceThresholdDb: Float = -45.0
     var silenceDuration: TimeInterval = 1.2
 
-    func startRecording(outputURL: URL, autoStopAfterSilence: Bool, onFinish: ((URL) -> Void)? = nil) async -> Bool {
+    func startRecording(outputURL: URL, autoStopAfterSilence: Bool, isFloat32Wav: Bool = false, onFinish: ((URL) -> Void)? = nil) async -> Bool {
         guard !isRecording, !isPreparing else { return false }
         isPreparing = true
         finishHandler = onFinish
@@ -35,12 +35,25 @@ final class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
             return false
         }
 
-        let settings: [String: Any] = [
-            AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-            AVSampleRateKey: 16000,
-            AVNumberOfChannelsKey: 1,
-            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
-        ]
+        let settings: [String: Any]
+        if isFloat32Wav {
+            settings = [
+                AVFormatIDKey: Int(kAudioFormatLinearPCM),
+                AVSampleRateKey: 16000.0,
+                AVNumberOfChannelsKey: 1,
+                AVLinearPCMBitDepthKey: 32,
+                AVLinearPCMIsFloatKey: true,
+                AVLinearPCMIsBigEndianKey: false,
+                AVLinearPCMIsNonInterleaved: false
+            ]
+        } else {
+            settings = [
+                AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+                AVSampleRateKey: 16000,
+                AVNumberOfChannelsKey: 1,
+                AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
+            ]
+        }
 
         do {
             if FileManager.default.fileExists(atPath: outputURL.path) {

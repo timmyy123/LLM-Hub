@@ -745,3 +745,5 @@
 "audio_file_transcribe" = "Audio File (Transcribe)";
 "preparing_mic" = "Preparing…";
 "model_download_interrupted_warning" = "⚠️ Not: İndirmenin kesintiye uğraması modeli bozabilir ve anlamsız çıktılar üretilmesine neden olabilir.";
+"agent_tools_label" = "Araçlar";
+"agent_tools_description" = "Yapay zeka ajanı becerilerini etkinleştirir: Wikipedia arama, karma hesaplayıcı, e-posta gönderme, SMS gönderme ve harita açma.";

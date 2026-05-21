@@ -745,3 +745,5 @@
 "audio_file_transcribe" = "Audio File (Transcribe)";
 "preparing_mic" = "Preparing…";
 "model_download_interrupted_warning" = "⚠️ توجه: قطع شدن دانلود ممکن است مدل را خراب کرده و باعث تولید خروجی‌های نامفهوم شود.";
+"agent_tools_label" = "ابزارها";
+"agent_tools_description" = "فعال‌سازی مهارت‌های عامل هوش مصنوعی: جستجوی ویکی‌پدیا، ماشین‌حساب هش، ارسال ایمیل، ارسال پیامک کوتاه و باز کردن نقشه.";

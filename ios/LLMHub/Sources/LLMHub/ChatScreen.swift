@@ -534,7 +534,41 @@ class ChatViewModel: ObservableObject {
         var enableVision: Bool
         var enableAudio: Bool
         var enableThinking: Bool
+        var enableAgentTools: Bool
         var systemPrompt: String?
+
+        enum CodingKeys: String, CodingKey {
+            case maxTokens, contextWindow, topK, topP, temperature, selectedBackend, enableVision, enableAudio, enableThinking, enableAgentTools, systemPrompt
+        }
+
+        init(maxTokens: Double, contextWindow: Double, topK: Double, topP: Double, temperature: Double, selectedBackend: String, enableVision: Bool, enableAudio: Bool, enableThinking: Bool, enableAgentTools: Bool, systemPrompt: String?) {
+            self.maxTokens = maxTokens
+            self.contextWindow = contextWindow
+            self.topK = topK
+            self.topP = topP
+            self.temperature = temperature
+            self.selectedBackend = selectedBackend
+            self.enableVision = enableVision
+            self.enableAudio = enableAudio
+            self.enableThinking = enableThinking
+            self.enableAgentTools = enableAgentTools
+            self.systemPrompt = systemPrompt
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            maxTokens = try container.decode(Double.self, forKey: .maxTokens)
+            contextWindow = try container.decode(Double.self, forKey: .contextWindow)
+            topK = try container.decode(Double.self, forKey: .topK)
+            topP = try container.decode(Double.self, forKey: .topP)
+            temperature = try container.decode(Double.self, forKey: .temperature)
+            selectedBackend = try container.decode(String.self, forKey: .selectedBackend)
+            enableVision = try container.decode(Bool.self, forKey: .enableVision)
+            enableAudio = try container.decode(Bool.self, forKey: .enableAudio)
+            enableThinking = try container.decodeIfPresent(Bool.self, forKey: .enableThinking) ?? true
+            enableAgentTools = try container.decodeIfPresent(Bool.self, forKey: .enableAgentTools) ?? true
+            systemPrompt = try container.decodeIfPresent(String.self, forKey: .systemPrompt)
+        }
     }
 
     private enum PersistenceKeys {
@@ -551,6 +585,7 @@ class ChatViewModel: ObservableObject {
         static let enableVision = "chat_enable_vision"
         static let enableAudio = "chat_enable_audio"
         static let enableThinking = "chat_enable_thinking"
+        static let enableAgentTools = "chat_enable_agent_tools"
         static let systemPrompt = "chat_system_prompt"
     }
 
@@ -581,6 +616,7 @@ class ChatViewModel: ObservableObject {
         enableVision: true,
         enableAudio: true,
         enableThinking: true,
+        enableAgentTools: true,
         systemPrompt: ""
     )
 
@@ -633,6 +669,9 @@ class ChatViewModel: ObservableObject {
         didSet { persistCurrentModelSettingsIfNeeded() }
     }
     @Published var enableThinking: Bool = ChatViewModel.defaultGenerationSettings.enableThinking {
+        didSet { persistCurrentModelSettingsIfNeeded() }
+    }
+    @Published var enableAgentTools: Bool = ChatViewModel.defaultGenerationSettings.enableAgentTools {
         didSet { persistCurrentModelSettingsIfNeeded() }
     }
     @Published var systemPrompt: String = ChatViewModel.defaultGenerationSettings.systemPrompt ?? "" {
@@ -812,6 +851,7 @@ class ChatViewModel: ObservableObject {
         llmBackend.enableVision = enableVision
         llmBackend.enableAudio = enableAudio
         llmBackend.enableThinking = enableThinking
+        llmBackend.enableAgentTools = enableAgentTools
         llmBackend.selectedBackend = selectedBackend
     }
 
@@ -866,6 +906,7 @@ class ChatViewModel: ObservableObject {
         enableVision = settings.enableVision
         enableAudio = settings.enableAudio
         enableThinking = settings.enableThinking
+        enableAgentTools = settings.enableAgentTools
         systemPrompt = settings.systemPrompt ?? ""
         isApplyingPersistedSettings = false
     }
@@ -881,6 +922,7 @@ class ChatViewModel: ObservableObject {
             enableVision: enableVision,
             enableAudio: enableAudio,
             enableThinking: enableThinking,
+            enableAgentTools: enableAgentTools,
             systemPrompt: systemPrompt
         )
     }
@@ -964,6 +1006,9 @@ class ChatViewModel: ObservableObject {
         }
         // Thinking is always enabled for thinking-capable models — no toggle.
         settings.enableThinking = true
+        if defaults.object(forKey: PersistenceKeys.enableAgentTools) != nil {
+            settings.enableAgentTools = defaults.bool(forKey: PersistenceKeys.enableAgentTools)
+        }
         if let sp = defaults.string(forKey: PersistenceKeys.systemPrompt) {
             settings.systemPrompt = sp
         }
@@ -1946,7 +1991,21 @@ struct MessageBubble: View {
                                     }
                             }
 
-                            if message.attachmentAudioPath != nil {
+                            if let audioPath = message.attachmentAudioPath,
+                               let audioURL = resolveStoredAttachmentURL(audioPath) {
+                                HStack(spacing: 8) {
+                                    AudioPlaybackButton(url: audioURL)
+                                    Label(settings.localized("audio"), systemImage: "waveform")
+                                        .font(.caption)
+                                        .foregroundColor(.white)
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 14)
+                                        .fill(LinearGradient(colors: [Color(hex: "5e7bb2").opacity(0.92), Color(hex: "455a7d").opacity(0.94)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                                )
+                            } else if message.attachmentAudioPath != nil {
                                 Label(settings.localized("audio"), systemImage: "waveform")
                                     .font(.caption)
                                     .foregroundColor(.white)
@@ -3124,8 +3183,8 @@ struct ChatScreen: View {
                                 Task { @MainActor in
                                     let destination = attachmentStorageDirectory()
                                         .appendingPathComponent("audio_\(UUID().uuidString)")
-                                        .appendingPathExtension("m4a")
-                                    _ = await audioRecorder.startRecording(outputURL: destination, autoStopAfterSilence: true) { url in
+                                        .appendingPathExtension("wav")
+                                    _ = await audioRecorder.startRecording(outputURL: destination, autoStopAfterSilence: true, isFloat32Wav: true) { url in
                                         Task { @MainActor in
                                             attachedAudioURL = url
                                         }

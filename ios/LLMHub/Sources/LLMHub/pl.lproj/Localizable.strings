@@ -745,3 +745,5 @@
 "audio_file_transcribe" = "Audio File (Transcribe)";
 "preparing_mic" = "Preparing…";
 "model_download_interrupted_warning" = "⚠️ Uwaga: Przerwanie pobierania może uszkodzić model i spowodować generowanie nieczytelnych tekstów.";
+"agent_tools_label" = "Narzędzia";
+"agent_tools_description" = "Włącza umiejętności agenta AI: wyszukiwanie Wikipedia, kalkulator skrótu, wysyłanie e-maila, wysyłanie SMS i otwieranie map.";

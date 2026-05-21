@@ -11,6 +11,7 @@
 		1D92A835955F48E1AA4AEEEF /* EmbeddingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59683F4EC0364144B429B48B /* EmbeddingService.swift */; };
 		1F3A9E5C7B2E4D6F8A1B2C3D /* ApolloTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E4B5F6A7C8D9E0F1A2B3C4D /* ApolloTheme.swift */; };
 		F1A2B3C4D5E6F708192A3B4D /* AudioTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E6F708192A3B4C /* AudioTools.swift */; };
+		E1B2C3D4E5F600001A2B3C4D /* ChatAgentSkillsTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1B2C3D4E5F600002A2B3C4D /* ChatAgentSkillsTools.swift */; };
 		F1A2B3C4D5E6F708192A3B50 /* LiteRTLMBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E6F708192A3B4F /* LiteRTLMBackend.swift */; };
 		2461869E2FB9A616005E46A3 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2461869D2FB9A616005E46A3 /* StoreKit.framework */; };
 		2A3672DC476297C35298841D /* HomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6D5DEA8384F9DDFC69C359C /* HomeScreen.swift */; };
@@ -63,6 +64,7 @@
 		27AC91B048B74436A4029665 /* MemoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryStore.swift; sourceTree = "<group>"; };
 		2E4B5F6A7C8D9E0F1A2B3C4D /* ApolloTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApolloTheme.swift; sourceTree = "<group>"; };
 		F1A2B3C4D5E6F708192A3B4C /* AudioTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioTools.swift; sourceTree = "<group>"; };
+		E1B2C3D4E5F600002A2B3C4D /* ChatAgentSkillsTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatAgentSkillsTools.swift; sourceTree = "<group>"; };
 		F1A2B3C4D5E6F708192A3B4F /* LiteRTLMBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiteRTLMBackend.swift; sourceTree = "<group>"; };
 		2FDAEABFBFE266EFF8492FEB /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Localizable.strings; sourceTree = "<group>"; };
 		368DEEF34DE54ABD87FE0EF3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -146,6 +148,7 @@
 				2461869C2FB762B0005E46A3 /* LLMHub.entitlements */,
 				2E4B5F6A7C8D9E0F1A2B3C4D /* ApolloTheme.swift */,
 				F1A2B3C4D5E6F708192A3B4C /* AudioTools.swift */,
+				E1B2C3D4E5F600002A2B3C4D /* ChatAgentSkillsTools.swift */,
 				0805DB9589154E465145E2DB /* ChatModels.swift */,
 				59683F4EC0364144B429B48B /* EmbeddingService.swift */,
 				C74D4095CAC843D4AD4F61B3 /* RagService.swift */,
@@ -305,6 +308,7 @@
 			files = (
 				1F3A9E5C7B2E4D6F8A1B2C3D /* ApolloTheme.swift in Sources */,
 				F1A2B3C4D5E6F708192A3B4D /* AudioTools.swift in Sources */,
+				E1B2C3D4E5F600001A2B3C4D /* ChatAgentSkillsTools.swift in Sources */,
 				467EEBBF61BCADC562B0C42C /* ChatModels.swift in Sources */,
 				1D92A835955F48E1AA4AEEEF /* EmbeddingService.swift in Sources */,
 				7410CEC1D27C4FE7BC6C6486 /* RagService.swift in Sources */,

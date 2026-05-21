@@ -755,3 +755,5 @@
 "audio_file_transcribe" = "Audio File (Transcribe)";
 "preparing_mic" = "Preparing…";
 "model_download_interrupted_warning" = "⚠️ Note: Interrupting the download may corrupt the model and cause it to generate gibberish.";
+"agent_tools_label" = "Tools";
+"agent_tools_description" = "Enables AI agent skills: Wikipedia search, hash calculator, send email, send SMS, and open maps.";

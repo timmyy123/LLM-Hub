@@ -745,3 +745,5 @@
 "audio_file_transcribe" = "Audio File (Transcribe)";
 "preparing_mic" = "Preparing…";
 "model_download_interrupted_warning" = "⚠️ 注意: ダウンロードを途中で中断すると、モデルが破損して文字化けや無意味な出力が発生する原因になります。";
+"agent_tools_label" = "ツール";
+"agent_tools_description" = "AIエージェントスキルを有効化します：Wikipedia検索、ハッシュ計算、メール送信、SMS送信、地図を開く。";

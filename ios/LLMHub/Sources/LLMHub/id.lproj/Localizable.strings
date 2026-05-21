@@ -745,3 +745,5 @@
 "audio_file_transcribe" = "Audio File (Transcribe)";
 "preparing_mic" = "Preparing…";
 "model_download_interrupted_warning" = "⚠️ Catatan: Menghentikan unduhan di tengah jalan dapat merusak model dan menghasilkan teks yang tidak masuk akal.";
+"agent_tools_label" = "Alat";
+"agent_tools_description" = "Mengaktifkan keahlian agen AI: pencarian Wikipedia, kalkulator hash, kirim email, kirim SMS, dan buka peta.";

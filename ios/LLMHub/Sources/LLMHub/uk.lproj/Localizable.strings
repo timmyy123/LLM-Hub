@@ -745,3 +745,5 @@
 "audio_file_transcribe" = "Audio File (Transcribe)";
 "preparing_mic" = "Preparing…";
 "model_download_interrupted_warning" = "⚠️ Примітка: Переривання завантаження може пошкодити модель і призвести до генерації безглуздого тексту.";
+"agent_tools_label" = "Інструменти";
+"agent_tools_description" = "Вмикає навички ШІ-агента: пошук у Вікіпедії, обчислювач хешу, надсилання email, надсилання SMS та відкриття карт.";

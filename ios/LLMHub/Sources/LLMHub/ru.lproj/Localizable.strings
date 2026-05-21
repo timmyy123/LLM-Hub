@@ -717,3 +717,5 @@
 "audio_file_transcribe" = "Audio File (Transcribe)";
 "preparing_mic" = "Preparing…";
 "model_download_interrupted_warning" = "⚠️ Примечание: Прерывание загрузки может повредить модель и привести к генерации бессмысленного текста.";
+"agent_tools_label" = "Инструменты";
+"agent_tools_description" = "Включает навыки ИИ-агента: поиск Wikipedia, вычислитель хэша, отправка email, отправка SMS и открытие карт.";

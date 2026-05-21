@@ -745,3 +745,5 @@
 "audio_file_transcribe" = "Audio File (Transcribe)";
 "preparing_mic" = "Preparing…";
 "model_download_interrupted_warning" = "⚠️ تنبيه: قد يؤدي قطع التنزيل إلى تلف النموذج وإنتاج نصوص غير مفهومة.";
+"agent_tools_label" = "الأدوات";
+"agent_tools_description" = "يُفعِّل مهارات وكيل الذكاء الاصطناعي: البحث في ويكيبيديا، حاسبة التجزئة، إرسال البريد الإلكتروني، إرسال رسالة نصية، وفتح الخرائط.";
