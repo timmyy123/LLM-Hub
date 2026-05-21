@@ -1,6 +1,6 @@
 import Foundation
 #if canImport(LiteRTLM)
-import LiteRTLM
+@preconcurrency import LiteRTLM
 
 // MARK: - Errors
 
@@ -100,8 +100,8 @@ final class LiteRTLMBackend {
         // Build sampler
         let samplerConfig = try SamplerConfig(
             topK: topK,
-            topP: Double(topP),
-            temperature: Double(temperature)
+            topP: topP,
+            temperature: temperature
         )
 
         // Build conversation config with optional system message

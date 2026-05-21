@@ -506,6 +506,9 @@ class LLMBackend: ObservableObject {
     }
 
     func isVisionProjectorAvailable(for model: AIModel) -> Bool {
+        if model.modelFormat == .litertlm {
+            return true
+        }
         let path = resolveVisionProjectorPath(for: model)
         print("🔍 [LLMBackend] isVisionProjectorAvailable model=\(model.name) result=\(path != nil) path=\(path ?? "nil")")
         return path != nil

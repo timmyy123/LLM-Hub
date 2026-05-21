@@ -822,15 +822,34 @@ class ChatViewModel: ObservableObject {
 
     private func loadSettingsForSelectedModel() {
         let settings: ModelGenerationSettings
+        let hasPersisted: Bool
 
         if let modelId = selectedModelId,
            let persisted = settingsByModelId[modelId] {
             settings = clampSettings(persisted, forModelName: selectedModelName)
+            hasPersisted = true
         } else {
             settings = clampSettings(Self.legacyDefaults(from: userDefaults), forModelName: selectedModelName)
+            hasPersisted = false
         }
 
-        applySettings(settings)
+        let adjusted: ModelGenerationSettings = {
+            guard !hasPersisted,
+                  let model = chatModel(named: selectedModelName) else {
+                return settings
+            }
+            let isGemma4LiteRT = model.modelFormat == .litertlm
+                && model.supportsAudio
+                && model.name.lowercased().contains("gemma 4")
+            if isGemma4LiteRT {
+                var updated = settings
+                updated.enableAudio = true
+                return updated
+            }
+            return settings
+        }()
+
+        applySettings(adjusted)
 
         // Ensure first-time model selections get persisted immediately.
         persistCurrentModelSettingsIfNeeded(force: true)
@@ -2812,6 +2831,7 @@ struct ChatScreen: View {
     @State private var showAttachMenu = false
     @State private var hasInitializedChatSession = false
     @StateObject private var micTranscriber = ChatMicTranscriber()
+    @StateObject private var audioRecorder = AudioRecorder()
     @FocusState private var isComposerFocused: Bool
 
     var body: some View {
@@ -3007,7 +3027,7 @@ struct ChatScreen: View {
             VStack(spacing: 0) {
                 // Text field fills the top of the box
                 ZStack(alignment: .leading) {
-                    if micTranscriber.isPreparing {
+                    if micTranscriber.isPreparing && !shouldUseModelAudioInput {
                         Text(settings.localized("preparing_mic"))
                             .foregroundColor(.white.opacity(0.45))
                             .font(.body)
@@ -3095,13 +3115,32 @@ struct ChatScreen: View {
 
                     // ─── mic ─────────────────────────────────────────────────
                     Button {
-                        if micTranscriber.isRecording {
-                            Task {
-                                // Text is already in vm.inputText via live onChange — just stop.
-                                _ = await micTranscriber.stopLive()
+                        if shouldUseModelAudioInput {
+                            if audioRecorder.isRecording {
+                                if let url = audioRecorder.stopRecording() {
+                                    attachedAudioURL = url
+                                }
+                            } else {
+                                Task { @MainActor in
+                                    let destination = attachmentStorageDirectory()
+                                        .appendingPathComponent("audio_\(UUID().uuidString)")
+                                        .appendingPathExtension("m4a")
+                                    _ = await audioRecorder.startRecording(outputURL: destination, autoStopAfterSilence: true) { url in
+                                        Task { @MainActor in
+                                            attachedAudioURL = url
+                                        }
+                                    }
+                                }
                             }
                         } else {
-                            Task { await micTranscriber.startLive() }
+                            if micTranscriber.isRecording {
+                                Task {
+                                    // Text is already in vm.inputText via live onChange — just stop.
+                                    _ = await micTranscriber.stopLive()
+                                }
+                            } else {
+                                Task { await micTranscriber.startLive() }
+                            }
                         }
                     } label: {
                         ZStack {
@@ -3112,15 +3151,15 @@ struct ChatScreen: View {
                                     Circle()
                                         .stroke(Color.white.opacity(0.18), lineWidth: 1)
                                 )
-                            if micTranscriber.isRecording {
+                            if micTranscriber.isRecording || audioRecorder.isRecording {
                                 Circle()
                                     .fill(Color.red.opacity(0.25))
                                     .frame(width: 34, height: 34)
                             }
-                            Image(systemName: micTranscriber.isPreparing ? "ellipsis"
-                                             : micTranscriber.isRecording ? "stop.fill" : "mic.fill")
+                            Image(systemName: (micTranscriber.isPreparing || audioRecorder.isPreparing) ? "ellipsis"
+                                             : (micTranscriber.isRecording || audioRecorder.isRecording) ? "stop.fill" : "mic.fill")
                                 .font(.system(size: 15, weight: .semibold))
-                                .foregroundColor(micTranscriber.isRecording ? .red : .white)
+                                .foregroundColor((micTranscriber.isRecording || audioRecorder.isRecording) ? .red : .white)
                         }
                     }
                     .disabled(vm.isGenerating)
@@ -3239,10 +3278,16 @@ struct ChatScreen: View {
             allowsMultipleSelection: false
         ) { result in
             guard case .success(let urls) = result, let sourceURL = urls.first else { return }
-            Task {
-                let transcript = await micTranscriber.transcribeFile(sourceURL)
-                if !transcript.isEmpty {
-                    vm.inputText += (vm.inputText.isEmpty ? "" : " ") + transcript
+            Task { @MainActor in
+                if shouldUseModelAudioInput {
+                    if let copiedURL = copyAttachmentToTemp(sourceURL, preferredExtension: sourceURL.pathExtension) {
+                        attachedAudioURL = copiedURL
+                    }
+                } else {
+                    let transcript = await micTranscriber.transcribeFile(sourceURL)
+                    if !transcript.isEmpty {
+                        vm.inputText += (vm.inputText.isEmpty ? "" : " ") + transcript
+                    }
                 }
             }
         }
@@ -3318,7 +3363,7 @@ struct ChatScreen: View {
         }
         .onChange(of: micTranscriber.liveText) { _, newText in
             // Mirror live transcript into the input field in real time.
-            guard !newText.isEmpty else { return }
+            guard !shouldUseModelAudioInput, !newText.isEmpty else { return }
             vm.inputText = newText
         }
         .onAppear {
@@ -3399,6 +3444,14 @@ struct ChatScreen: View {
 
     private func attachmentStorageDirectory() -> URL {
         persistentAttachmentDirectoryURL()
+    }
+
+    private var shouldUseModelAudioInput: Bool {
+        guard let model = chatModel(named: vm.selectedModelName) else { return false }
+        return model.modelFormat == .litertlm
+            && model.supportsAudio
+            && vm.enableAudio
+            && model.name.lowercased().contains("gemma 4")
     }
 
     var emptyState: some View {

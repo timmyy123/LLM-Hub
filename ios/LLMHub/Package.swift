@@ -27,10 +27,7 @@ let package = Package(
             url: "https://github.com/googleads/swift-package-manager-google-user-messaging-platform",
             from: "2.0.0"
         ),
-        .package(
-            url: "https://github.com/google-ai-edge/LiteRT-LM",
-            from: "0.12.0"
-        ),
+        .package(path: "LocalPackages/LiteRT-LM"),
     ],
     targets: [
         .target(

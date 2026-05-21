@@ -200,6 +200,12 @@ private func isTranslatorSupportedModel(_ model: AIModel) -> Bool {
         && (model.name.hasPrefix("Translate Gemma 4B") || model.name.hasPrefix("Gemma 4 "))
 }
 
+private func isGemma4LiteRTLM(_ model: AIModel) -> Bool {
+    model.modelFormat == .litertlm
+        && model.supportsAudio
+        && model.name.lowercased().contains("gemma 4")
+}
+
 private func usesGemma4TurnTemplate(_ model: AIModel) -> Bool {
     model.name.hasPrefix("Gemma 4 ")
 }
@@ -443,10 +449,12 @@ private struct FeatureModelSettingsSheet: View {
     @Binding var maxTokens: Double
     @Binding var enableThinking: Bool
     @Binding var enableVision: Bool
+    let enableAudio: Binding<Bool>?
     @Binding var isLoading: Bool
     @Binding var errorMessage: String?
     let supportsVisionToggle: Bool
     let visionToggleTitleKey: String
+    let audioToggleTitleKey: String?
     let visionAvailableCheck: ((AIModel) -> Bool)?
     let writingMode: Binding<WritingAidMode>?
     let modelFilter: ((AIModel) -> Bool)?
@@ -466,6 +474,11 @@ private struct FeatureModelSettingsSheet: View {
     private var selectedModelSupportsVision: Bool {
         guard supportsVisionToggle, let model = selectedModel, model.supportsVision else { return false }
         return visionAvailableCheck?(model) ?? true
+    }
+
+    private var selectedModelSupportsAudio: Bool {
+        guard let model = selectedModel else { return false }
+        return model.supportsAudio
     }
 
     private var maxContextCap: Double {
@@ -522,6 +535,12 @@ private struct FeatureModelSettingsSheet: View {
 
                             if selectedModelSupportsVision {
                                 Toggle(settings.localized(visionToggleTitleKey), isOn: $enableVision)
+                                    .tint(ApolloPalette.accentStrong)
+                                    .foregroundColor(.white)
+                            }
+
+                            if let enableAudio, selectedModelSupportsAudio {
+                                Toggle(settings.localized(audioToggleTitleKey ?? "enable_audio"), isOn: enableAudio)
                                     .tint(ApolloPalette.accentStrong)
                                     .foregroundColor(.white)
                             }
@@ -1004,8 +1023,19 @@ private final class IOSSpeechTranscriber: NSObject, ObservableObject {
 private struct IOS26TranscriberScreen: View {
     @EnvironmentObject var settings: AppSettings
     @StateObject private var transcriber = IOSSpeechTranscriber()
+    @StateObject private var audioRecorder = AudioRecorder()
     @ObservedObject private var ttsManager = OnDeviceTtsManager.shared
+    @ObservedObject private var llm = LLMBackend.shared
     @State private var showAudioImporter = false
+    @State private var showSettings = false
+    @State private var audioTranscript: String = ""
+    @State private var audioHistory: [TranscriptionSession] = []
+    @State private var isAudioTranscribing = false
+    @State private var selectedAudioURL: URL?
+    @State private var audioTranscriptionTask: Task<Void, Never>?
+    @AppStorage("feature_transcriber_model_name") private var selectedModelName: String = ""
+    @AppStorage("feature_transcriber_max_tokens") private var maxTokens: Double = 512
+    @AppStorage("feature_transcriber_enable_audio") private var enableAudio: Bool = true
 
     let onNavigateBack: () -> Void
 
@@ -1021,8 +1051,21 @@ private struct IOS26TranscriberScreen: View {
         transcriber.selectedAudioURL != nil && !transcriber.isRecording && !transcriber.isTranscribing && !transcriber.isPreparing
     }
 
+    private var selectedModel: AIModel? {
+        selectedFeatureModel(named: selectedModelName)
+    }
+
+    private var useModelAudioInput: Bool {
+        guard let model = selectedModel else { return false }
+        return enableAudio && isGemma4LiteRTLM(model)
+    }
+
     var body: some View {
-        VStack(spacing: 12) {
+        Group {
+            if useModelAudioInput {
+                gemmaAudioTranscriberView
+            } else {
+                VStack(spacing: 12) {
             VStack(spacing: 16) {
                 Button {
                     if transcriber.isRecording {
@@ -1176,6 +1219,8 @@ private struct IOS26TranscriberScreen: View {
             .disabled(isBottomButtonDisabled)
             .padding(.horizontal)
             .padding(.bottom, 8)
+                }
+            }
         }
         .navigationTitle(settings.localized("transcriber_title"))
         .navigationBarTitleDisplayMode(.inline)
@@ -1191,6 +1236,30 @@ private struct IOS26TranscriberScreen: View {
                     Image(systemName: "arrow.left")
                 }
             }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button { showSettings = true } label: {
+                    Image(systemName: "slider.horizontal.3")
+                }
+            }
+        }
+        .sheet(isPresented: $showSettings) {
+            FeatureModelSettingsSheet(
+                selectedModelName: $selectedModelName,
+                maxTokens: $maxTokens,
+                enableThinking: .constant(false),
+                enableVision: .constant(false),
+                enableAudio: $enableAudio,
+                isLoading: .constant(false),
+                errorMessage: .constant(nil),
+                supportsVisionToggle: false,
+                visionToggleTitleKey: "scam_detector_enable_vision",
+                audioToggleTitleKey: "enable_audio",
+                visionAvailableCheck: nil,
+                writingMode: nil,
+                modelFilter: { $0.supportsAudio },
+                onLoad: { await ensureAudioModelLoaded(force: false) },
+                onUnload: { llm.unloadModel() }
+            )
         }
         .fileImporter(
             isPresented: $showAudioImporter,
@@ -1200,7 +1269,11 @@ private struct IOS26TranscriberScreen: View {
             switch result {
             case .success(let urls):
                 if let first = urls.first {
-                    transcriber.setSelectedAudioURL(first)
+                    if useModelAudioInput {
+                        selectedAudioURL = first
+                    } else {
+                        transcriber.setSelectedAudioURL(first)
+                    }
                 }
             case .failure(let error):
                 NSLog("[LLMHub][Transcriber] Audio import failed: \(error.localizedDescription)")
@@ -1208,6 +1281,18 @@ private struct IOS26TranscriberScreen: View {
         }
         .onDisappear {
             transcriber.cleanup()
+            audioRecorder.cancelRecording()
+            audioTranscriptionTask?.cancel()
+            audioTranscriptionTask = nil
+        }
+        .onAppear {
+            Task {
+                await syncRunAnywhereModelDiscovery()
+                let available = downloadableFeatureModels().filter { $0.supportsAudio }
+                if selectedModelName.isEmpty || !available.contains(where: { $0.name == selectedModelName }) {
+                    selectedModelName = available.first?.name ?? ""
+                }
+            }
         }
     }
 
@@ -1215,7 +1300,8 @@ private struct IOS26TranscriberScreen: View {
     private func transcriptionBoxView(for text: String) -> some View {
         let speechKey = "transcriber-\(text)"
         VStack(alignment: .leading, spacing: 8) {
-            Text(text.isEmpty ? (transcriber.isRecording ? "..." : "-") : text)
+            let isLive = transcriber.isRecording || audioRecorder.isRecording
+            Text(text.isEmpty ? (isLive ? "..." : "-") : text)
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .frame(minHeight: 120, alignment: .topLeading)
@@ -1279,6 +1365,260 @@ private struct IOS26TranscriberScreen: View {
             return false
         }
         return transcriber.selectedAudioURL == nil
+    }
+
+    private var gemmaAudioTranscriberView: some View {
+        VStack(spacing: 12) {
+            VStack(spacing: 16) {
+                Button {
+                    if audioRecorder.isRecording {
+                        if let url = audioRecorder.stopRecording() {
+                            selectedAudioURL = url
+                            Task { await transcribeAudio(url) }
+                        }
+                    } else {
+                        Task { @MainActor in
+                            let destination = FileManager.default.temporaryDirectory
+                                .appendingPathComponent("transcriber_audio_\(UUID().uuidString)")
+                                .appendingPathExtension("m4a")
+                            _ = await audioRecorder.startRecording(outputURL: destination, autoStopAfterSilence: true) { url in
+                                Task { @MainActor in
+                                    selectedAudioURL = url
+                                }
+                                Task { await transcribeAudio(url) }
+                            }
+                        }
+                    }
+                } label: {
+                    ZStack {
+                        Circle()
+                            .fill(.ultraThinMaterial)
+                            .frame(width: 124, height: 124)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                            )
+
+                        if audioRecorder.isPreparing {
+                            ProgressView()
+                                .tint(.white)
+                                .scaleEffect(1.2)
+                        } else {
+                            Image(systemName: audioRecorder.isRecording ? "stop.fill" : "mic.fill")
+                                .font(.system(size: 42, weight: .bold))
+                                .foregroundStyle(audioRecorder.isRecording ? .red : .white)
+                        }
+                    }
+                }
+                .contentShape(Circle())
+                .buttonStyle(.plain)
+                .disabled(audioRecorder.isPreparing || isAudioTranscribing)
+
+                Text(
+                    audioRecorder.isPreparing
+                        ? settings.localized("processing")
+                        : audioRecorder.isRecording
+                        ? settings.localized("transcriber_recording")
+                        : settings.localized("transcriber_record")
+                )
+                .font(.headline)
+
+                Button {
+                    showAudioImporter = true
+                } label: {
+                    HStack {
+                        Image(systemName: "waveform.badge.plus")
+                        Text(settings.localized("transcriber_upload"))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.white)
+                .liquidGlassPrimaryButton(cornerRadius: 12)
+                .disabled(audioRecorder.isRecording || audioRecorder.isPreparing || isAudioTranscribing)
+
+                if let selectedAudioURL {
+                    HStack(spacing: 10) {
+                        AudioPlaybackButton(url: selectedAudioURL)
+                        Text(selectedAudioURL.lastPathComponent)
+                            .font(.subheadline)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Button(role: .destructive) {
+                            self.selectedAudioURL = nil
+                        } label: {
+                            Image(systemName: "trash")
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(10)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+            }
+            .padding()
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.white.opacity(0.14), lineWidth: 1)
+            )
+            .padding(.horizontal)
+
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        ForEach(audioHistory) { session in
+                            transcriptionBoxView(for: session.text)
+                                .id(session.id)
+                        }
+
+                        if !audioTranscript.isEmpty || audioRecorder.isRecording || audioRecorder.isPreparing || isAudioTranscribing {
+                            transcriptionBoxView(for: audioTranscript)
+                                .id("current_box")
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+                .onChange(of: audioTranscript) { _, _ in
+                    withAnimation {
+                        proxy.scrollTo("current_box", anchor: .bottom)
+                    }
+                }
+                .onChange(of: audioHistory.count) { _, _ in
+                    if let lastId = audioHistory.last?.id {
+                        withAnimation {
+                            proxy.scrollTo(lastId, anchor: .bottom)
+                        }
+                    }
+                }
+            }
+
+            Spacer(minLength: 0)
+
+            Button {
+                if audioRecorder.isRecording {
+                    if let url = audioRecorder.stopRecording() {
+                        selectedAudioURL = url
+                        Task { await transcribeAudio(url) }
+                    }
+                } else if isAudioTranscribing {
+                    audioTranscriptionTask?.cancel()
+                    audioTranscriptionTask = nil
+                    isAudioTranscribing = false
+                } else if let selectedAudioURL {
+                    Task { await transcribeAudio(selectedAudioURL) }
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    if audioRecorder.isPreparing || isAudioTranscribing {
+                        ProgressView()
+                            .tint(.white)
+                            .scaleEffect(0.85)
+                    } else {
+                        Image(systemName: audioRecorder.isRecording ? "stop.fill" : "waveform")
+                            .font(.system(size: 12, weight: .bold))
+                    }
+                    Text(gemmaButtonTitle)
+                        .lineLimit(1)
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 52)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.white)
+            .liquidGlassPrimaryButton(cornerRadius: 12)
+            .disabled(gemmaButtonDisabled)
+            .padding(.horizontal)
+            .padding(.bottom, 8)
+        }
+    }
+
+    private var gemmaButtonTitle: String {
+        if audioRecorder.isRecording {
+            return settings.localized("transcriber_stop")
+        }
+        if audioRecorder.isPreparing {
+            return settings.localized("processing")
+        }
+        if isAudioTranscribing {
+            return settings.localized("transcribing_tap_to_cancel")
+        }
+        if selectedAudioURL != nil {
+            return settings.localized("transcriber_transcribe")
+        }
+        return settings.localized("transcriber_record")
+    }
+
+    private var gemmaButtonDisabled: Bool {
+        if audioRecorder.isRecording || isAudioTranscribing || audioRecorder.isPreparing {
+            return false
+        }
+        return selectedAudioURL == nil
+    }
+
+    private func transcribeAudio(_ url: URL) async {
+        audioTranscriptionTask?.cancel()
+        audioTranscriptionTask = nil
+
+        await ensureAudioModelLoaded(force: false)
+        guard llm.isLoaded else { return }
+
+        isAudioTranscribing = true
+        audioTranscript = ""
+
+        audioTranscriptionTask = Task {
+            var latest = ""
+            do {
+                try await llm.generate(
+                    prompt: "Transcribe this audio.",
+                    audioURL: url,
+                    maxTokensOverride: 512
+                ) { text, _, _ in
+                    Task { @MainActor in
+                        latest = sanitizeModelOutputText(text)
+                        audioTranscript = latest
+                    }
+                }
+            } catch is CancellationError {
+                // User cancelled.
+            } catch {
+                NSLog("[LLMHub][Transcriber] Audio transcription failed: \(error.localizedDescription)")
+            }
+
+            await MainActor.run {
+                let final = latest.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !final.isEmpty {
+                    audioHistory.append(TranscriptionSession(id: UUID(), text: final, timestamp: Date()))
+                }
+                audioTranscript = ""
+                isAudioTranscribing = false
+                audioTranscriptionTask = nil
+            }
+        }
+    }
+
+    private func ensureAudioModelLoaded(force: Bool) async {
+        guard let model = selectedModel else { return }
+        let modelContextCap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+        let effectiveContext = min(max(1, Int(maxTokens)), modelContextCap)
+        let shouldReload = force
+            || llm.currentlyLoadedModel != model.name
+            || llm.loadedContextWindow != effectiveContext
+
+        llm.maxTokens = min(Int(maxTokens), effectiveContext)
+        llm.contextWindow = effectiveContext
+        llm.enableVision = false
+        llm.enableAudio = enableAudio
+        llm.enableThinking = false
+
+        if shouldReload {
+            try? await llm.loadModel(model)
+        }
     }
 }
 
@@ -1530,6 +1870,8 @@ private struct IOS17VibeVoiceScreen: View {
     @State private var generationTask: Task<Void, Never>?
     @State private var conversationHistory: [(role: String, content: String)] = []
     @StateObject private var transcriber = IOSVibeVoiceTranscriber()
+    @StateObject private var audioRecorder = AudioRecorder()
+    @State private var lastRecordedAudioURL: URL?
 
     private let ttsKey = "vibevoice-reply"
 
@@ -1537,6 +1879,11 @@ private struct IOS17VibeVoiceScreen: View {
 
     private var isCurrentModelLoaded: Bool {
         llm.isLoaded && llm.currentlyLoadedModel == selectedModelName
+    }
+
+    private var useModelAudioInput: Bool {
+        guard let model = selectedFeatureModel(named: selectedModelName) else { return false }
+        return isGemma4LiteRTLM(model)
     }
 
     var body: some View {
@@ -1574,10 +1921,12 @@ private struct IOS17VibeVoiceScreen: View {
                 maxTokens: $maxTokens,
                 enableThinking: .constant(false),
                 enableVision: .constant(false),
+                enableAudio: nil,
                 isLoading: $isLoading,
                 errorMessage: $errorMessage,
                 supportsVisionToggle: false,
                 visionToggleTitleKey: "scam_detector_enable_vision",
+                audioToggleTitleKey: nil,
                 visionAvailableCheck: nil,
                 writingMode: nil,
                 modelFilter: isNonTranslatorFeatureModel,
@@ -1615,6 +1964,7 @@ private struct IOS17VibeVoiceScreen: View {
             }
         }
         .onChange(of: transcriber.isRecording) { oldValue, newValue in
+            guard !useModelAudioInput else { return }
             if oldValue && !newValue && !transcriber.isPreparing {
                 if voiceState == .listening {
                     voiceState = .idle
@@ -1730,7 +2080,7 @@ private struct IOS17VibeVoiceScreen: View {
                 .padding(.top, 24)
 
             // Live partial transcript while listening
-            if !transcriber.transcript.isEmpty && voiceState == .listening {
+            if !useModelAudioInput && !transcriber.transcript.isEmpty && voiceState == .listening {
                 Text(transcriber.transcript)
                     .font(.footnote)
                     .foregroundStyle(.white.opacity(0.55))
@@ -1740,6 +2090,18 @@ private struct IOS17VibeVoiceScreen: View {
                     .padding(.top, 8)
                     .transition(.opacity)
                     .animation(.easeInOut(duration: 0.2), value: transcriber.transcript)
+            }
+
+            if let lastRecordedAudioURL {
+                HStack(spacing: 8) {
+                    AudioPlaybackButton(url: lastRecordedAudioURL)
+                    Text(lastRecordedAudioURL.lastPathComponent)
+                        .font(.caption)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 8)
             }
 
             // Latest AI reply card
@@ -1809,15 +2171,33 @@ private struct IOS17VibeVoiceScreen: View {
         guard isChatActive && isCurrentModelLoaded else { return }
 
         voiceState = .listening
-        await transcriber.startListening { text in
-            Task { @MainActor in
-                guard self.isChatActive else { return }
-                await self.handleTranscript(text)
+        if useModelAudioInput {
+            await audioRecorder.startRecording(
+                outputURL: FileManager.default.temporaryDirectory
+                    .appendingPathComponent("vibevoice_audio_\(UUID().uuidString)")
+                    .appendingPathExtension("m4a"),
+                autoStopAfterSilence: true
+            ) { url in
+                Task { @MainActor in
+                    self.lastRecordedAudioURL = url
+                    await self.handleAudioTranscript(url)
+                }
             }
-        }
 
-        if !transcriber.isRecording && !transcriber.isPreparing {
-            voiceState = .idle
+            if !audioRecorder.isRecording && !audioRecorder.isPreparing {
+                voiceState = .idle
+            }
+        } else {
+            await transcriber.startListening { text in
+                Task { @MainActor in
+                    guard self.isChatActive else { return }
+                    await self.handleTranscript(text)
+                }
+            }
+
+            if !transcriber.isRecording && !transcriber.isPreparing {
+                voiceState = .idle
+            }
         }
     }
 
@@ -2025,6 +2405,53 @@ private struct IOS17VibeVoiceScreen: View {
         }
     }
 
+    private func handleAudioTranscript(_ url: URL) async {
+        guard isChatActive else { return }
+        voiceState = .responding
+        latestReply = ""
+
+        await ensureModelLoaded(force: false)
+        guard llm.isLoaded && isChatActive else {
+            voiceState = .idle
+            return
+        }
+
+        let transcribed = await transcribeAudioWithModel(url)
+        let cleaned = transcribed.trimmingCharacters(in: .whitespacesAndNewlines)
+        if cleaned.isEmpty {
+            voiceState = .idle
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 300_000_000)
+                guard self.isChatActive && self.isCurrentModelLoaded else { return }
+                await self.startListeningCycle()
+            }
+            return
+        }
+
+        await handleTranscript(cleaned)
+    }
+
+    private func transcribeAudioWithModel(_ url: URL) async -> String {
+        var latest = ""
+        do {
+            try await llm.generate(
+                prompt: "Transcribe this audio.",
+                audioURL: url,
+                maxTokensOverride: 512
+            ) { text, _, _ in
+                Task { @MainActor in
+                    latest = sanitizeModelOutputText(text)
+                }
+            }
+        } catch is CancellationError {
+            return ""
+        } catch {
+            NSLog("[LLMHub][VibeVoice] Audio transcription failed: \(error.localizedDescription)")
+            return ""
+        }
+        return latest
+    }
+
     private func ensureModelLoaded(force: Bool) async {
         guard let model = selectedFeatureModel(named: selectedModelName) else {
             errorMessage = settings.localized("writing_aid_no_model")
@@ -2042,7 +2469,7 @@ private struct IOS17VibeVoiceScreen: View {
         llm.maxTokens = min(Int(maxTokens), effectiveContext)
         llm.contextWindow = effectiveContext
         llm.enableVision = false
-        llm.enableAudio = false
+        llm.enableAudio = model.supportsAudio
         llm.enableThinking = false
 
         do {
@@ -2062,6 +2489,7 @@ private struct IOS17VibeVoiceScreen: View {
         voiceState = .idle
         conversationHistory = []
         transcriber.cancelListening()
+        audioRecorder.cancelRecording()
     }
 }
 
@@ -2297,10 +2725,12 @@ struct WritingAidScreen: View {
                 maxTokens: $maxTokens,
                 enableThinking: $enableThinking,
                 enableVision: .constant(false),
+                enableAudio: nil,
                 isLoading: $isLoading,
                 errorMessage: $errorMessage,
                 supportsVisionToggle: false,
                 visionToggleTitleKey: "scam_detector_enable_vision",
+                audioToggleTitleKey: nil,
                 visionAvailableCheck: nil,
                 writingMode: selectedModeBinding,
                 modelFilter: isNonTranslatorFeatureModel,
@@ -2435,6 +2865,7 @@ struct TranslatorScreen: View {
     @AppStorage("feature_translator_model_name") private var selectedModelName: String = ""
     @AppStorage("feature_translator_max_tokens") private var maxTokens: Double = 2048
     @AppStorage("feature_translator_enable_vision") private var enableVision: Bool = true
+    @AppStorage("feature_translator_enable_audio") private var enableAudio: Bool = true
     @AppStorage("feature_translator_source_lang") private var sourceLanguageCode: String = "en"
     @AppStorage("feature_translator_target_lang") private var targetLanguageCode: String = "es"
     @AppStorage("feature_translator_auto_detect") private var autoDetectSource: Bool = false
@@ -2446,8 +2877,11 @@ struct TranslatorScreen: View {
     @State private var errorMessage: String?
     @State private var selectedImageItem: PhotosPickerItem?
     @State private var selectedImageURL: URL?
+    @State private var selectedAudioURL: URL?
+    @State private var showAudioImporter = false
     @State private var generationTask: Task<Void, Never>?
     @State private var availableTranslatorModels: [AIModel] = []
+    @StateObject private var audioRecorder = AudioRecorder()
 
     let onNavigateBack: () -> Void
     let onNavigateToModels: () -> Void
@@ -2483,7 +2917,17 @@ struct TranslatorScreen: View {
     }
 
     private var inputHasContent: Bool {
-        !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || selectedImageURL != nil
+        !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || selectedImageURL != nil
+            || selectedAudioURL != nil
+    }
+
+    private var canUseAudioInput: Bool {
+        guard let model = selectedModel else { return false }
+        return enableAudio
+            && model.supportsAudio
+            && model.modelFormat == .litertlm
+            && model.name.lowercased().contains("gemma 4")
     }
 
     var body: some View {
@@ -2520,10 +2964,12 @@ struct TranslatorScreen: View {
                 maxTokens: $maxTokens,
                 enableThinking: .constant(false),
                 enableVision: $enableVision,
+                enableAudio: $enableAudio,
                 isLoading: $isLoading,
                 errorMessage: $errorMessage,
                 supportsVisionToggle: true,
                 visionToggleTitleKey: "translator_enable_vision",
+                audioToggleTitleKey: "translator_enable_audio",
                 visionAvailableCheck: translatorHasDownloadedVisionProjector,
                 writingMode: nil,
                 modelFilter: isTranslatorSupportedModel,
@@ -2559,6 +3005,7 @@ struct TranslatorScreen: View {
                 if let sourceURL = try? await item.loadTransferable(type: URL.self) {
                     selectedImageURL = sourceURL
                     inputText = ""
+                    selectedAudioURL = nil
                     return
                 }
                 if let data = try? await item.loadTransferable(type: Data.self) {
@@ -2566,11 +3013,38 @@ struct TranslatorScreen: View {
                     try? data.write(to: temp)
                     selectedImageURL = temp
                     inputText = ""
+                    selectedAudioURL = nil
                 }
             }
         }
         .onChange(of: enableVision) { _, isEnabled in
             if !isEnabled {
+                selectedImageItem = nil
+                selectedImageURL = nil
+            }
+        }
+        .onChange(of: enableAudio) { _, isEnabled in
+            if !isEnabled {
+                selectedAudioURL = nil
+            }
+        }
+        .fileImporter(
+            isPresented: $showAudioImporter,
+            allowedContentTypes: [.audio, .mpeg4Audio, .mp3],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                if let first = urls.first {
+                    selectedAudioURL = first
+                }
+            case .failure(let error):
+                NSLog("[LLMHub][Translator] Audio import failed: \(error.localizedDescription)")
+            }
+        }
+        .onChange(of: selectedAudioURL) { _, url in
+            if url != nil {
+                inputText = ""
                 selectedImageItem = nil
                 selectedImageURL = nil
             }
@@ -2662,6 +3136,7 @@ struct TranslatorScreen: View {
                             inputText += clip
                             selectedImageItem = nil
                             selectedImageURL = nil
+                            selectedAudioURL = nil
                         }
                         #endif
                     } label: {
@@ -2685,6 +3160,41 @@ struct TranslatorScreen: View {
                     .featureActionIconButtonStyle()
                     .disabled(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
+                    if canUseAudioInput {
+                        Button {
+                            if audioRecorder.isRecording {
+                                if let url = audioRecorder.stopRecording() {
+                                    selectedAudioURL = url
+                                }
+                            } else {
+                                Task { @MainActor in
+                                    let destination = FileManager.default.temporaryDirectory
+                                        .appendingPathComponent("translator_audio_\(UUID().uuidString)")
+                                        .appendingPathExtension("m4a")
+                                    _ = await audioRecorder.startRecording(outputURL: destination, autoStopAfterSilence: true) { url in
+                                        Task { @MainActor in
+                                            selectedAudioURL = url
+                                        }
+                                    }
+                                }
+                            }
+                        } label: {
+                            Image(systemName: audioRecorder.isRecording ? "stop.fill" : "mic.fill")
+                                .font(.system(size: 18, weight: .semibold))
+                                .frame(width: 44, height: 44)
+                        }
+                        .featureActionIconButtonStyle()
+
+                        Button {
+                            showAudioImporter = true
+                        } label: {
+                            Image(systemName: "waveform.badge.plus")
+                                .font(.system(size: 18, weight: .semibold))
+                                .frame(width: 44, height: 44)
+                        }
+                        .featureActionIconButtonStyle()
+                    }
+
                     if enableVision {
                         PhotosPicker(selection: $selectedImageItem, matching: .images) {
                             Image(systemName: hasSelectedImage ? "photo.badge.plus" : "photo")
@@ -2703,6 +3213,26 @@ struct TranslatorScreen: View {
                     }
 
                     Spacer()
+                }
+
+                if let selectedAudioURL {
+                    HStack(spacing: 10) {
+                        AudioPlaybackButton(url: selectedAudioURL)
+                        Text(selectedAudioURL.lastPathComponent)
+                            .font(.subheadline)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Button(role: .destructive) {
+                            self.selectedAudioURL = nil
+                        } label: {
+                            Image(systemName: "trash")
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(10)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
                 }
             }
             .padding(.horizontal)
@@ -2913,7 +3443,17 @@ struct TranslatorScreen: View {
         let targetName = englishName(for: targetLanguage)
         let isTranslateGemma = selectedModel.map(isTranslateGemmaModel) ?? false
 
-        let hasImage = selectedImageURL != nil && enableVision
+        let hasAudio = selectedAudioURL != nil && canUseAudioInput
+        let hasImage = selectedImageURL != nil && enableVision && !hasAudio
+
+        if hasAudio {
+            if let source = source {
+                let sourceName = englishName(for: source)
+                let sourceCode = source.code.replacingOccurrences(of: "_", with: "-")
+                return "Transcribe the spoken audio in \(sourceName) (\(sourceCode)) and translate it into \(targetName) (\(targetCode)). Respond ONLY with the translated \(targetName) text and no commentary."
+            }
+            return "Transcribe the spoken audio and translate it into \(targetName) (\(targetCode)). Respond ONLY with the translated \(targetName) text and no commentary."
+        }
 
         if hasImage {
             let srcPart: String
@@ -2961,7 +3501,7 @@ struct TranslatorScreen: View {
         llm.temperature = 0.2
         llm.topP = 0.8
         llm.enableVision = enableVision
-        llm.enableAudio = false
+        llm.enableAudio = enableAudio && (selectedModel?.supportsAudio == true)
         llm.enableThinking = false
 
         do {
@@ -3002,10 +3542,12 @@ struct TranslatorScreen: View {
             outputText = ""
 
             do {
-                let effectiveImageURL = enableVision ? selectedImageURL : nil
+                let effectiveAudioURL = canUseAudioInput ? selectedAudioURL : nil
+                let effectiveImageURL = (enableVision && effectiveAudioURL == nil) ? selectedImageURL : nil
                 try await llm.generate(
                     prompt: buildPrompt(),
                     imageURL: effectiveImageURL,
+                    audioURL: effectiveAudioURL,
                     maxTokensOverride: 512,
                     stopSequences: [
                         "<turn|>",
@@ -3320,10 +3862,12 @@ struct ScamDetectorScreen: View {
                 maxTokens: $maxTokens,
                 enableThinking: $enableThinking,
                 enableVision: $enableVision,
+                enableAudio: nil,
                 isLoading: $isLoading,
                 errorMessage: $errorMessage,
                 supportsVisionToggle: true,
                 visionToggleTitleKey: "scam_detector_enable_vision",
+                audioToggleTitleKey: nil,
                 visionAvailableCheck: hasDownloadedVisionProjector,
                 writingMode: nil,
                 modelFilter: isNonTranslatorFeatureModel,
@@ -4262,10 +4806,12 @@ struct VibeCoderScreen: View {
                 maxTokens: $maxTokens,
                 enableThinking: $enableThinking,
                 enableVision: .constant(false),
+                enableAudio: nil,
                 isLoading: $isLoading,
                 errorMessage: $errorMessage,
                 supportsVisionToggle: false,
                 visionToggleTitleKey: "scam_detector_enable_vision",
+                audioToggleTitleKey: nil,
                 visionAvailableCheck: nil,
                 writingMode: nil,
                 modelFilter: isNonTranslatorFeatureModel,

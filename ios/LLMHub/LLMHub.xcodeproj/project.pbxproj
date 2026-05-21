@@ -10,6 +10,8 @@
 		1AE5E42ED85BEFE5C3ED1D2A /* LocalizationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BBFF4AA65F0EF6FF1DB93D /* LocalizationManager.swift */; };
 		1D92A835955F48E1AA4AEEEF /* EmbeddingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59683F4EC0364144B429B48B /* EmbeddingService.swift */; };
 		1F3A9E5C7B2E4D6F8A1B2C3D /* ApolloTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E4B5F6A7C8D9E0F1A2B3C4D /* ApolloTheme.swift */; };
+		F1A2B3C4D5E6F708192A3B4D /* AudioTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E6F708192A3B4C /* AudioTools.swift */; };
+		F1A2B3C4D5E6F708192A3B50 /* LiteRTLMBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E6F708192A3B4F /* LiteRTLMBackend.swift */; };
 		2461869E2FB9A616005E46A3 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2461869D2FB9A616005E46A3 /* StoreKit.framework */; };
 		2A3672DC476297C35298841D /* HomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6D5DEA8384F9DDFC69C359C /* HomeScreen.swift */; };
 		2CD0F1D1F3E04E66AA24812C /* RagServiceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9DF631F25054004865F2A2B /* RagServiceManager.swift */; };
@@ -32,6 +34,7 @@
 		AD000001000000000000AA05 /* PremiumScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD000001000000000000AA06 /* PremiumScreen.swift */; };
 		AD000002000000000000BB05 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = AD000002000000000000BB03 /* GoogleMobileAds */; };
 		AD000002000000000000BB06 /* GoogleUserMessagingPlatform in Frameworks */ = {isa = PBXBuildFile; productRef = AD000002000000000000BB04 /* GoogleUserMessagingPlatform */; };
+		AD000002000000000000BB09 /* LiteRTLM in Frameworks */ = {isa = PBXBuildFile; productRef = AD000002000000000000BB08 /* LiteRTLM */; };
 		AFCC035B534D28D50731B66D /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A69D8D4DF513F8D642F73064 /* Localizable.strings */; };
 		B0DC2F58405BDC55315A8099 /* ModelDownloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BF91E2CF47146ED081A0A8 /* ModelDownloader.swift */; };
 		B1C4A2D3F5E6789012345678 /* RunAnywhereONNX in Frameworks */ = {isa = PBXBuildFile; productRef = B1C4A2D4F5E6789012345678 /* RunAnywhereONNX */; };
@@ -59,6 +62,8 @@
 		246186A12FB9AB95005E46A3 /* LLMHub-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "LLMHub-Info.plist"; sourceTree = SOURCE_ROOT; };
 		27AC91B048B74436A4029665 /* MemoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryStore.swift; sourceTree = "<group>"; };
 		2E4B5F6A7C8D9E0F1A2B3C4D /* ApolloTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApolloTheme.swift; sourceTree = "<group>"; };
+		F1A2B3C4D5E6F708192A3B4C /* AudioTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioTools.swift; sourceTree = "<group>"; };
+		F1A2B3C4D5E6F708192A3B4F /* LiteRTLMBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiteRTLMBackend.swift; sourceTree = "<group>"; };
 		2FDAEABFBFE266EFF8492FEB /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Localizable.strings; sourceTree = "<group>"; };
 		368DEEF34DE54ABD87FE0EF3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		42AB4DF1F6862EBAD2981FB1 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -118,6 +123,7 @@
 				FA001122334455667788AAFF /* ZIPFoundation in Frameworks */,
 				AD000002000000000000BB05 /* GoogleMobileAds in Frameworks */,
 				AD000002000000000000BB06 /* GoogleUserMessagingPlatform in Frameworks */,
+				AD000002000000000000BB09 /* LiteRTLM in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -139,6 +145,7 @@
 				246186A12FB9AB95005E46A3 /* LLMHub-Info.plist */,
 				2461869C2FB762B0005E46A3 /* LLMHub.entitlements */,
 				2E4B5F6A7C8D9E0F1A2B3C4D /* ApolloTheme.swift */,
+				F1A2B3C4D5E6F708192A3B4C /* AudioTools.swift */,
 				0805DB9589154E465145E2DB /* ChatModels.swift */,
 				59683F4EC0364144B429B48B /* EmbeddingService.swift */,
 				C74D4095CAC843D4AD4F61B3 /* RagService.swift */,
@@ -154,6 +161,7 @@
 				368DEEF34DE54ABD87FE0EF3 /* Assets.xcassets */,
 				F841EEA264BDE0E6E2A1BC18 /* Icon.png */,
 				ECD7AAE029AF6E8F7EA01B3D /* LLMBackend.swift */,
+				F1A2B3C4D5E6F708192A3B4F /* LiteRTLMBackend.swift */,
 				8576188C8596440A08A0B171 /* LLMHubApp.swift */,
 				A69D8D4DF513F8D642F73064 /* Localizable.strings */,
 				75BBFF4AA65F0EF6FF1DB93D /* LocalizationManager.swift */,
@@ -216,6 +224,7 @@
 				FA001122334455667788AA11 /* ZIPFoundation */,
 				AD000002000000000000BB03 /* GoogleMobileAds */,
 				AD000002000000000000BB04 /* GoogleUserMessagingPlatform */,
+				AD000002000000000000BB08 /* LiteRTLM */,
 			);
 			productName = LLMHub;
 			productReference = 5F60B98E5AE21634E4E47E99 /* LLMHub.app */;
@@ -266,6 +275,7 @@
 				FA001122334455667788AA55 /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
 				AD000002000000000000BB01 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
 				AD000002000000000000BB02 /* XCRemoteSwiftPackageReference "swift-package-manager-google-user-messaging-platform" */,
+				AD000002000000000000BB07 /* XCLocalSwiftPackageReference "LocalPackages/LiteRT-LM" */,
 			);
 			projectDirPath = "";
 			projectRoot = "";
@@ -294,6 +304,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1F3A9E5C7B2E4D6F8A1B2C3D /* ApolloTheme.swift in Sources */,
+				F1A2B3C4D5E6F708192A3B4D /* AudioTools.swift in Sources */,
 				467EEBBF61BCADC562B0C42C /* ChatModels.swift in Sources */,
 				1D92A835955F48E1AA4AEEEF /* EmbeddingService.swift in Sources */,
 				7410CEC1D27C4FE7BC6C6486 /* RagService.swift in Sources */,
@@ -307,6 +318,7 @@
 				3DAB449A0AE3C67F8D2F39B1 /* FeatureScreens.swift in Sources */,
 				2A3672DC476297C35298841D /* HomeScreen.swift in Sources */,
 				53F6C1EA0149E74AC5BB3E22 /* LLMBackend.swift in Sources */,
+				F1A2B3C4D5E6F708192A3B50 /* LiteRTLMBackend.swift in Sources */,
 				BBEFB76ECA4FB739E947BF5D /* LLMHubApp.swift in Sources */,
 				1AE5E42ED85BEFE5C3ED1D2A /* LocalizationManager.swift in Sources */,
 				59504FB10CC196F7E32BAB32 /* ModelData.swift in Sources */,
@@ -572,6 +584,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = "../runanywhere-sdks-latest";
 		};
+		AD000002000000000000BB07 /* XCLocalSwiftPackageReference "LocalPackages/LiteRT-LM" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "LocalPackages/LiteRT-LM";
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -629,6 +645,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = AD000002000000000000BB02 /* XCRemoteSwiftPackageReference "swift-package-manager-google-user-messaging-platform" */;
 			productName = GoogleUserMessagingPlatform;
+		};
+		AD000002000000000000BB08 /* LiteRTLM */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AD000002000000000000BB07 /* XCLocalSwiftPackageReference "LocalPackages/LiteRT-LM" */;
+			productName = LiteRTLM;
 		};
 		B1C4A2D4F5E6789012345678 /* RunAnywhereONNX */ = {
 			isa = XCSwiftPackageProductDependency;
