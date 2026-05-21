@@ -3507,10 +3507,12 @@ struct ChatScreen: View {
 
     private var shouldUseModelAudioInput: Bool {
         guard let model = chatModel(named: vm.selectedModelName) else { return false }
-        return model.modelFormat == .litertlm
+        let isGemma4LiteRT = model.modelFormat == .litertlm
             && model.supportsAudio
             && vm.enableAudio
             && model.name.lowercased().contains("gemma 4")
+        guard isGemma4LiteRT else { return false }
+        return vm.loadedModelName == vm.selectedModelName
     }
 
     var emptyState: some View {

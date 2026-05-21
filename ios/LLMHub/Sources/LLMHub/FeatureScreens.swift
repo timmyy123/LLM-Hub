@@ -1035,6 +1035,8 @@ private struct IOS26TranscriberScreen: View {
     @State private var audioTranscriptionTask: Task<Void, Never>?
     @AppStorage("feature_transcriber_model_name") private var selectedModelName: String = ""
     @AppStorage("feature_transcriber_max_tokens") private var maxTokens: Double = 512
+    @State private var isModelLoading = false
+    @State private var modelLoadError: String? = nil
 
     let onNavigateBack: () -> Void
 
@@ -1058,7 +1060,9 @@ private struct IOS26TranscriberScreen: View {
     /// Defaults to false (system transcriber). No toggle needed — loading the model auto-enables.
     private var useModelAudioInput: Bool {
         guard let model = selectedModel else { return false }
-        return isGemma4LiteRTLM(model)
+        // For the transcriber screen, don't auto-switch until the model is completely loaded,
+        // so the user can keep using the system transcriber while waiting.
+        return isGemma4LiteRTLM(model) && llm.isLoaded && llm.currentlyLoadedModel == model.name
     }
 
     var body: some View {
@@ -1250,16 +1254,27 @@ private struct IOS26TranscriberScreen: View {
                 enableThinking: .constant(false),
                 enableVision: .constant(false),
                 enableAudio: nil,
-                isLoading: .constant(false),
-                errorMessage: .constant(nil),
+                isLoading: $isModelLoading,
+                errorMessage: $modelLoadError,
                 supportsVisionToggle: false,
                 visionToggleTitleKey: "scam_detector_enable_vision",
                 audioToggleTitleKey: nil,
                 visionAvailableCheck: nil,
                 writingMode: nil,
                 modelFilter: { $0.modelFormat == .litertlm && $0.supportsAudio },
-                onLoad: { await ensureAudioModelLoaded(force: false) },
-                onUnload: { llm.unloadModel() }
+                onLoad: { 
+                    isModelLoading = true
+                    modelLoadError = nil
+                    llm.isLoaded = false
+                    llm.currentlyLoadedModel = nil
+                    await ensureAudioModelLoaded(force: true) 
+                    isModelLoading = false
+                },
+                onUnload: { 
+                    llm.isLoaded = false
+                    llm.currentlyLoadedModel = nil
+                    llm.unloadModel() 
+                }
             )
         }
         .fileImporter(
@@ -1624,7 +1639,11 @@ private struct IOS26TranscriberScreen: View {
         llm.enableThinking = false
 
         if shouldReload {
-            try? await llm.loadModel(model)
+            do {
+                try await llm.loadModel(model)
+            } catch {
+                modelLoadError = error.localizedDescription
+            }
         }
     }
 }

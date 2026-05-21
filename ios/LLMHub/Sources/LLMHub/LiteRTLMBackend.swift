@@ -36,6 +36,8 @@ final class LiteRTLMBackend {
     private var loadedModelPath: String?
     /// The single active conversation. LiteRT-LM only allows one at a time.
     private var currentConversation: Conversation?
+    /// Prevents re-entrancy bugs where a new session is created before the old one is destroyed.
+    private var generationInProgress = false
 
     private init() {}
 
@@ -108,6 +110,14 @@ final class LiteRTLMBackend {
         guard let engine else {
             throw LiteRTLMError.engineNotLoaded
         }
+
+        // Wait if a previous generation is still winding down (to avoid 'Session already exists' crashes)
+        while generationInProgress {
+            try await Task.sleep(nanoseconds: 50_000_000)
+            try Task.checkCancellation()
+        }
+        generationInProgress = true
+        defer { generationInProgress = false }
 
         // Build sampler
         let samplerConfig = try SamplerConfig(
