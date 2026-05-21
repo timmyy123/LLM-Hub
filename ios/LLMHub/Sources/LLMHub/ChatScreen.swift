@@ -849,7 +849,11 @@ class ChatViewModel: ObservableObject {
         llmBackend.topP = Float(topP)
         llmBackend.temperature = Float(temperature)
         llmBackend.enableVision = enableVision
-        llmBackend.enableAudio = enableAudio
+        if let model = chatModel(named: selectedModelName), model.isGemma4LiteRTLM {
+            llmBackend.enableAudio = true
+        } else {
+            llmBackend.enableAudio = enableAudio
+        }
         llmBackend.enableThinking = enableThinking
         llmBackend.enableAgentTools = enableAgentTools
         llmBackend.selectedBackend = selectedBackend
@@ -874,14 +878,10 @@ class ChatViewModel: ObservableObject {
         }
 
         let adjusted: ModelGenerationSettings = {
-            guard !hasPersisted,
-                  let model = chatModel(named: selectedModelName) else {
+            guard let model = chatModel(named: selectedModelName) else {
                 return settings
             }
-            let isGemma4LiteRT = model.modelFormat == .litertlm
-                && model.supportsAudio
-                && model.name.lowercased().contains("gemma 4")
-            if isGemma4LiteRT {
+            if model.isGemma4LiteRTLM {
                 var updated = settings
                 updated.enableAudio = true
                 return updated
@@ -3184,7 +3184,7 @@ struct ChatScreen: View {
                                     let destination = attachmentStorageDirectory()
                                         .appendingPathComponent("audio_\(UUID().uuidString)")
                                         .appendingPathExtension("wav")
-                                    _ = await audioRecorder.startRecording(outputURL: destination, autoStopAfterSilence: true, isFloat32Wav: true) { url in
+                                    _ = await audioRecorder.startRecording(outputURL: destination, autoStopAfterSilence: false, isFloat32Wav: true) { url in
                                         Task { @MainActor in
                                             attachedAudioURL = url
                                         }
@@ -3507,11 +3507,7 @@ struct ChatScreen: View {
 
     private var shouldUseModelAudioInput: Bool {
         guard let model = chatModel(named: vm.selectedModelName) else { return false }
-        let isGemma4LiteRT = model.modelFormat == .litertlm
-            && model.supportsAudio
-            && vm.enableAudio
-            && model.name.lowercased().contains("gemma 4")
-        guard isGemma4LiteRT else { return false }
+        guard model.isGemma4LiteRTLM else { return false }
         return vm.loadedModelName == vm.selectedModelName
     }
 

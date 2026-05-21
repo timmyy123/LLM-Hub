@@ -114,6 +114,12 @@ public struct AIModel: Identifiable, Codable, Sendable {
         return formatter.string(fromByteCount: sizeBytes)
     }
 
+    public var isGemma4LiteRTLM: Bool {
+        modelFormat == .litertlm
+            && supportsAudio
+            && name.lowercased().contains("gemma 4")
+    }
+
     public var ramLabel: String {
         "\(requirements.minRamGB)GB RAM"
     }

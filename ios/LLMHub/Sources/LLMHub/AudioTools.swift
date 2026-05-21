@@ -26,11 +26,18 @@ final class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
             return false
         }
 
-        let session = AVAudioSession.sharedInstance()
-        do {
-            try session.setCategory(.playAndRecord, mode: .spokenAudio, options: [.defaultToSpeaker, .allowBluetoothHFP])
-            try session.setActive(true)
-        } catch {
+        let sessionConfigured = await MainActor.run {
+            let session = AVAudioSession.sharedInstance()
+            do {
+                try session.setCategory(.playAndRecord, mode: .spokenAudio, options: [.defaultToSpeaker, .allowBluetoothHFP])
+                try session.setActive(true)
+                return true
+            } catch {
+                return false
+            }
+        }
+
+        guard sessionConfigured else {
             isPreparing = false
             return false
         }
@@ -107,8 +114,12 @@ final class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
     private func startMeteringTimer() {
         stopMeteringTimer()
         meterTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                guard let self, let recorder = self.recorder else { return }
+            DispatchQueue.main.async {
+                guard let self = self, let recorder = self.recorder else { return }
+                guard recorder.currentTime >= 1.5 else {
+                    self.silenceStart = nil
+                    return
+                }
                 recorder.updateMeters()
                 let power = recorder.averagePower(forChannel: 0)
                 if power < self.silenceThresholdDb {
