@@ -63,7 +63,23 @@ struct LLMHubApp: App {
                 .environmentObject(consent)
                 .preferredColorScheme(.dark)
                 .environment(\.locale, settings.selectedLanguage.locale)
-                .environment(\.layoutDirection, settings.selectedLanguage.isRTL ? .rightToLeft : .leftToRight)
+                .environment(\.layoutDirection, effectiveLayoutDirection)
+        }
+    }
+
+    /// Resolves the layout direction for the currently selected language.
+    /// For `.systemDefault`, we defer to the actual system/process direction
+    /// so RTL system languages are honoured. For an explicit language choice
+    /// we apply that language's direction regardless of the system setting.
+    private var effectiveLayoutDirection: LayoutDirection {
+        switch settings.selectedLanguage {
+        case .systemDefault:
+            // Use UIApplication's semantic content attribute which reflects the
+            // process-level language direction set by iOS at launch.
+            let semantic = UIApplication.shared.userInterfaceLayoutDirection
+            return semantic == .rightToLeft ? .rightToLeft : .leftToRight
+        default:
+            return settings.selectedLanguage.isRTL ? .rightToLeft : .leftToRight
         }
     }
 

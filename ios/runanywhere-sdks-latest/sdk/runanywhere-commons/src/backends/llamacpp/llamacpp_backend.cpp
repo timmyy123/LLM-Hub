@@ -341,11 +341,8 @@ bool LlamaCppTextGeneration::load_model(const std::string& model_path,
 
     // Allow user override via config
     if (config.contains("gpu_layers")) {
-        int user_gpu_layers = config["gpu_layers"].get<int>();
-        if (user_gpu_layers != -1) {
-            gpu_layers = user_gpu_layers;
-            LOGI("Using user-provided GPU layers: %d", gpu_layers);
-        }
+        gpu_layers = config["gpu_layers"].get<int>();
+        LOGI("Using user-provided GPU layers: %d", gpu_layers);
     }
 
     model_params.n_gpu_layers = gpu_layers;

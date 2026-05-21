@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import RunAnywhere
 
 // MARK: - Settings Screen (mirroring Android SettingsScreen.kt)
@@ -21,6 +22,20 @@ struct SettingsScreen: View {
     @StateObject private var ragManager = RagServiceManager.shared
     @State private var showAbout = false
     @State private var showTerms = false
+
+    /// Effective layout direction for the currently selected language.
+    /// Pinning this explicitly on the List prevents UITableView from
+    /// caching a stale direction when the user switches between RTL and LTR
+    /// languages without restarting the app.
+    private var effectiveLayoutDirection: LayoutDirection {
+        switch settings.selectedLanguage {
+        case .systemDefault:
+            let semantic = UIApplication.shared.userInterfaceLayoutDirection
+            return semantic == .rightToLeft ? .rightToLeft : .leftToRight
+        default:
+            return settings.selectedLanguage.isRTL ? .rightToLeft : .leftToRight
+        }
+    }
 
     var body: some View {
         ZStack {
@@ -191,7 +206,9 @@ struct SettingsScreen: View {
             }
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
+            .environment(\.layoutDirection, effectiveLayoutDirection)
         }
+        .environment(\.layoutDirection, effectiveLayoutDirection)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             BannerAdContainer()
         }

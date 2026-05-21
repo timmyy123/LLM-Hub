@@ -624,7 +624,7 @@ class LLMBackend: ObservableObject {
     }
 
 #if canImport(UIKit)
-    private func downsampledUIImage(from imageURL: URL, maxDimension: CGFloat = 1024) -> UIImage? {
+    private func downsampledUIImage(from imageURL: URL, maxDimension: CGFloat = 448) -> UIImage? {
         let sourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
         guard let source = CGImageSourceCreateWithURL(imageURL as CFURL, sourceOptions) else {
             return nil
@@ -726,21 +726,35 @@ class LLMBackend: ObservableObject {
 
         print("ℹ️ [LLMBackend] loadModel name=\(model.name) visionEnabled=\(enableVision) audioEnabled=\(enableAudio)")
 
-        // ALWAYS unload before loading.  llama.cpp maps model weights via mmap; attempting to
-        // mmap while a previous model is still resident causes "Cannot allocate memory" (-111).
-        //
-        // Critical: `unloadModel()` (the public fire-and-forget version) may have been called by
-        // another screen's onDisappear, resetting Swift state (isLoaded/loadedLLMModelId) while
-        // the C++ RunAnywhere.unloadModel() is still running.  We must AWAIT the C++ unload here
-        // unconditionally to guarantee the address space is clean before the new mmap.
+        // ALWAYS unload before loading.
         do { try await RunAnywhere.unloadModel() } catch { /* no-op if nothing was loaded */ }
         await RunAnywhere.unloadVLMModel()
+        #if canImport(LiteRTLM)
+        await LiteRTLMBackend.shared.unload()
+        #endif
         self.isLoaded = false
         self.currentlyLoadedModel = nil
         self.loadedContextWindow = nil
         self.loadedLLMModelId = nil
         self.loadedVLMModelId = nil
         self.loadedVLMProjectorPath = nil
+
+        // ── LiteRT-LM path ──────────────────────────────────────────────────
+        #if canImport(LiteRTLM)
+        if model.modelFormat == .litertlm {
+            guard isModelAvailableLocally(model) else {
+                throw NSError(domain: "LLMBackend", code: -100,
+                    userInfo: [NSLocalizedDescriptionKey: "Model is not downloaded locally"])
+            }
+            let filePath = try resolveLiteRTModelPath(for: model)
+            try await LiteRTLMBackend.shared.loadModel(at: filePath, supportsVision: model.supportsVision && enableVision)
+            isLoaded = true
+            currentlyLoadedModel = model.name
+            loadedContextWindow = model.contextWindowSize > 0 ? model.contextWindowSize : 131072
+            return
+        }
+        #endif
+        // ────────────────────────────────────────────────────────────────────
 
         try await ensureSDKReady()
         let effectiveContext = clampedContextWindow(contextWindow, for: model)
@@ -835,6 +849,25 @@ class LLMBackend: ObservableObject {
         loadedVLMProjectorPath = nil
     }
 
+    // MARK: - LiteRT-LM load path
+
+    private func resolveLiteRTModelPath(for model: AIModel) throws -> String {
+        let folderURL = try SimplifiedFileManager.shared.getModelFolderURL(
+            modelId: model.id, framework: model.inferenceFramework
+        )
+        // The required file name is derived from the download URL (e.g. "gemma-4-E2B-it.litertlm")
+        guard let fileName = model.requiredFileNames.first else {
+            throw NSError(domain: "LLMBackend", code: -120,
+                userInfo: [NSLocalizedDescriptionKey: "No required file name for LiteRT model \(model.name)"])
+        }
+        let filePath = folderURL.appendingPathComponent(fileName).path
+        guard FileManager.default.fileExists(atPath: filePath) else {
+            throw NSError(domain: "LLMBackend", code: -121,
+                userInfo: [NSLocalizedDescriptionKey: "LiteRT model file not found: \(filePath)"])
+        }
+        return filePath
+    }
+
     func unloadModel() {
         Task {
             do {
@@ -843,6 +876,9 @@ class LLMBackend: ObservableObject {
                 print("❌ [LLMBackend] unloadModel error=\(error)")
             }
             await RunAnywhere.unloadVLMModel()
+            #if canImport(LiteRTLM)
+            await LiteRTLMBackend.shared.unload()
+            #endif
             await MainActor.run {
                 self.isLoaded = false
                 self.currentlyLoadedModel = nil
@@ -863,8 +899,30 @@ class LLMBackend: ObservableObject {
         stopSequences: [String] = [],
         onUpdate: @escaping (String, Int, Double) -> Void
     ) async throws {
-        _ = imageURL
         _ = audioURL
+
+        // ── LiteRT-LM path ──────────────────────────────────────────────────
+        #if canImport(LiteRTLM)
+        if let model = loadedAIModel(), model.modelFormat == .litertlm {
+            let effectiveMaxTokens: Int = {
+                if let override = maxTokensOverride { return max(1, override) }
+                return max(1, maxTokens)
+            }()
+            _ = effectiveMaxTokens // LiteRT-LM respects SamplerConfig; maxTokens passed for parity
+            try await LiteRTLMBackend.shared.generateStream(
+                prompt: prompt,
+                imageURL: enableVision ? imageURL : nil,
+                systemPrompt: systemPrompt,
+                temperature: temperature,
+                topK: topK,
+                topP: topP,
+                maxTokens: effectiveMaxTokens,
+                onUpdate: onUpdate
+            )
+            return
+        }
+        #endif
+        // ────────────────────────────────────────────────────────────────────
 
         try await ensureSDKReady()
 

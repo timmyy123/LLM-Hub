@@ -27,6 +27,10 @@ let package = Package(
             url: "https://github.com/googleads/swift-package-manager-google-user-messaging-platform",
             from: "2.0.0"
         ),
+        .package(
+            url: "https://github.com/google-ai-edge/LiteRT-LM",
+            from: "0.12.0"
+        ),
     ],
     targets: [
         .target(
@@ -39,6 +43,7 @@ let package = Package(
                 .product(name: "ZIPFoundation", package: "ZIPFoundation"),
                 .product(name: "GoogleMobileAds", package: "swift-package-manager-google-mobile-ads"),
                 .product(name: "GoogleUserMessagingPlatform", package: "swift-package-manager-google-user-messaging-platform"),
+                .product(name: "LiteRTLM", package: "LiteRT-LM"),
             ],
             exclude: [
                 "check_strings.py"
