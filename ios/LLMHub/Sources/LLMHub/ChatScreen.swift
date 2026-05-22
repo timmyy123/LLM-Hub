@@ -849,11 +849,7 @@ class ChatViewModel: ObservableObject {
         llmBackend.topP = Float(topP)
         llmBackend.temperature = Float(temperature)
         llmBackend.enableVision = enableVision
-        if let model = chatModel(named: selectedModelName), model.isGemma4LiteRTLM {
-            llmBackend.enableAudio = true
-        } else {
-            llmBackend.enableAudio = enableAudio
-        }
+        llmBackend.enableAudio = enableAudio
         llmBackend.enableThinking = enableThinking
         llmBackend.enableAgentTools = enableAgentTools
         llmBackend.selectedBackend = selectedBackend
@@ -877,17 +873,7 @@ class ChatViewModel: ObservableObject {
             hasPersisted = false
         }
 
-        let adjusted: ModelGenerationSettings = {
-            guard let model = chatModel(named: selectedModelName) else {
-                return settings
-            }
-            if model.isGemma4LiteRTLM {
-                var updated = settings
-                updated.enableAudio = true
-                return updated
-            }
-            return settings
-        }()
+        let adjusted = settings
 
         applySettings(adjusted)
 
@@ -3339,11 +3325,20 @@ struct ChatScreen: View {
             guard case .success(let urls) = result, let sourceURL = urls.first else { return }
             Task { @MainActor in
                 if shouldUseModelAudioInput {
-                    if let copiedURL = copyAttachmentToTemp(sourceURL, preferredExtension: sourceURL.pathExtension) {
-                        attachedAudioURL = copiedURL
+                    if let convertedURL = prepareGemmaAudioInput(
+                        from: sourceURL,
+                        destinationDirectory: persistentAttachmentDirectoryURL(),
+                        filePrefix: "chat_audio"
+                    ) {
+                        attachedAudioURL = convertedURL
                     }
                 } else {
-                    let transcript = await micTranscriber.transcribeFile(sourceURL)
+                    let speechURL = prepareGemmaAudioInput(
+                        from: sourceURL,
+                        destinationDirectory: FileManager.default.temporaryDirectory,
+                        filePrefix: "chat_speech"
+                    ) ?? sourceURL
+                    let transcript = await micTranscriber.transcribeFile(speechURL)
                     if !transcript.isEmpty {
                         vm.inputText += (vm.inputText.isEmpty ? "" : " ") + transcript
                     }
@@ -3507,7 +3502,7 @@ struct ChatScreen: View {
 
     private var shouldUseModelAudioInput: Bool {
         guard let model = chatModel(named: vm.selectedModelName) else { return false }
-        guard model.isGemma4LiteRTLM else { return false }
+        guard model.isGemma4LiteRTLM, vm.enableAudio else { return false }
         return vm.loadedModelName == vm.selectedModelName
     }
 

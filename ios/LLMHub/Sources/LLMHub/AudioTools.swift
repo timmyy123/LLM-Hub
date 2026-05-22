@@ -143,6 +143,114 @@ final class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
     }
 }
 
+func prepareGemmaAudioInput(from sourceURL: URL, destinationDirectory: URL, filePrefix: String) -> URL? {
+    let destinationURL = destinationDirectory
+        .appendingPathComponent("\(filePrefix)_\(UUID().uuidString)")
+        .appendingPathExtension("wav")
+
+    do {
+        return try convertAudioFileToWav(sourceURL: sourceURL, destinationURL: destinationURL)
+    } catch {
+        NSLog("[LLMHub][Audio] Failed to prepare Gemma audio input: \(error.localizedDescription)")
+        return nil
+    }
+}
+
+func convertAudioFileToWav(sourceURL: URL, destinationURL: URL) throws -> URL {
+    let accessing = sourceURL.startAccessingSecurityScopedResource()
+    defer {
+        if accessing {
+            sourceURL.stopAccessingSecurityScopedResource()
+        }
+    }
+
+    let inputFile = try AVAudioFile(forReading: sourceURL)
+
+    guard let outputFormat = AVAudioFormat(
+        commonFormat: .pcmFormatFloat32,
+        sampleRate: 16_000,
+        channels: 1,
+        interleaved: false
+    ) else {
+        throw NSError(
+            domain: "LLMHubAudioConversion",
+            code: -1,
+            userInfo: [NSLocalizedDescriptionKey: "Unable to create output audio format"]
+        )
+    }
+
+    guard let converter = AVAudioConverter(from: inputFile.processingFormat, to: outputFormat) else {
+        throw NSError(
+            domain: "LLMHubAudioConversion",
+            code: -2,
+            userInfo: [NSLocalizedDescriptionKey: "Unable to create audio converter"]
+        )
+    }
+
+    if FileManager.default.fileExists(atPath: destinationURL.path) {
+        try FileManager.default.removeItem(at: destinationURL)
+    }
+
+    let outputFile = try AVAudioFile(forWriting: destinationURL, settings: outputFormat.settings)
+    let inputFrameCapacity: AVAudioFrameCount = 4096
+    let inputBuffer = AVAudioPCMBuffer(pcmFormat: inputFile.processingFormat, frameCapacity: inputFrameCapacity)!
+
+    var reachedEndOfStream = false
+
+    while true {
+        let outputFrameCapacity = max(
+            inputFrameCapacity,
+            AVAudioFrameCount((Double(inputFrameCapacity) * outputFormat.sampleRate / inputFile.processingFormat.sampleRate).rounded(.up)) + 16
+        )
+        guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: outputFormat, frameCapacity: outputFrameCapacity) else {
+            throw NSError(
+                domain: "LLMHubAudioConversion",
+                code: -3,
+                userInfo: [NSLocalizedDescriptionKey: "Unable to create output buffer"]
+            )
+        }
+
+        var conversionError: NSError?
+        let status = converter.convert(to: outputBuffer, error: &conversionError) { _, outputStatus in
+            if reachedEndOfStream {
+                outputStatus.pointee = .endOfStream
+                return nil
+            }
+
+            do {
+                try inputFile.read(into: inputBuffer)
+            } catch {
+                reachedEndOfStream = true
+                outputStatus.pointee = .endOfStream
+                return nil
+            }
+
+            if inputBuffer.frameLength == 0 {
+                reachedEndOfStream = true
+                outputStatus.pointee = .endOfStream
+                return nil
+            }
+
+            outputStatus.pointee = .haveData
+            return inputBuffer
+        }
+
+        if let conversionError {
+            throw conversionError
+        }
+
+        if outputBuffer.frameLength > 0 {
+            try outputFile.write(from: outputBuffer)
+        }
+
+        if status == .endOfStream {
+            break
+        }
+    }
+
+    return destinationURL
+}
+
 @MainActor
 final class AudioPlaybackController: NSObject, ObservableObject, @preconcurrency AVAudioPlayerDelegate {
     @Published var isPlaying = false

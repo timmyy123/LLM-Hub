@@ -1290,7 +1290,11 @@ private struct IOS26TranscriberScreen: View {
             case .success(let urls):
                 if let first = urls.first {
                     if useModelAudioInput {
-                        selectedAudioURL = first
+                        selectedAudioURL = prepareGemmaAudioInput(
+                            from: first,
+                            destinationDirectory: persistentAudioStorageDirectory(),
+                            filePrefix: "transcriber_audio"
+                        )
                     } else {
                         transcriber.setSelectedAudioURL(first)
                     }
@@ -1599,12 +1603,25 @@ private struct IOS26TranscriberScreen: View {
         isAudioTranscribing = true
         audioTranscript = ""
 
+        let audioInputURL: URL? = useModelAudioInput
+            ? prepareGemmaAudioInput(
+                from: url,
+                destinationDirectory: FileManager.default.temporaryDirectory,
+                filePrefix: "transcribe_audio"
+            )
+            : url
+
+        guard let audioInputURL else {
+            isAudioTranscribing = false
+            return
+        }
+
         audioTranscriptionTask = Task {
             var latest = ""
             do {
                 try await llm.generate(
                     prompt: "Transcribe this audio.",
-                    audioURL: url,
+                    audioURL: audioInputURL,
                     maxTokensOverride: 512
                 ) { text, _, _ in
                     Task { @MainActor in
