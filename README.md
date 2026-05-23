@@ -69,7 +69,7 @@ Technology
 Acknowledgments
 - [Nexa SDK](https://github.com/NexaAI/nexa-sdk) — GGUF model inference support (credit shown in-app About) ⚡
 - [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks) — iOS model runtime and LLM execution framework 🚀
-- **Google, Meta, Microsoft, IBM, LiquidAI, Mistral, HuggingFace** — model and tooling contributions
+- **Google, OpenAI, Meta, Microsoft, IBM, LiquidAI, Mistral, Primsm ML, HuggingFace** — model and tooling contributions
 
 Development Setup
 
