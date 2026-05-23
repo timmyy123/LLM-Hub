@@ -36,10 +36,7 @@
 | **🌍 Translator** | Translate text, images (OCR), and audio across 50+ languages - offline |
 | **🎙️ Transcriber** | Convert speech to text with on-device processing |
 | **🛡️ Scam Detector** | Analyze messages and images for phishing with risk assessment |
-
-### ✨ Vibes & Creators
-- **Vibes**: A full on-device coding environment. The LLM writes HTML/JS/CSS based on your requirements, and you can preview/run the app instantly in a secure sandbox.
-- **creAItor**: Powerful persona generation to create anything from characters with fun personalities to system architects. Just describe a creAItor ("respond like a pirate" or "respond with a markdown spec for a code agent to generate a full-stack system"), and the on-device LLM generates a complex system prompt (PCTF format) that you can use in chat.
+| **🗣️ VibeVoice** | **[NEW]** Hands-free AI voice chat |
 
 
 ### 🔐 Privacy First
@@ -63,9 +60,9 @@ Quick Start
 
 
 Technology
-- **Android**: Kotlin + Jetpack Compose (Material 3)
+- **Android**: Kotlin + Jetpack Compose (Material 3), [Nexa SDK](https://github.com/NexaAI/nexa-sdk)
 - **iOS**: Swift + SwiftUI, [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks), Apple Foundation Model
-- **LLM Runtime**: MediaPipe, LiteRT, [Nexa SDK](https://github.com/NexaAI/nexa-sdk), Llama.cpp (via [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks))
+- **LLM Runtime**: MediaPipe, LiteRT, Llama.cpp (via [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks))
 - **Image Gen**: MNN / Qualcomm QNN
 - **Quantization**: INT4/INT8/MLX (Apple Foundation Model)
 
