@@ -18,9 +18,9 @@
 
 ## 📸 Demo & Screenshots
 
-| Vibe Coder Demo | LLM Hub on iOS | Image Generation on Android |
+| Vibe Coder Demo on iOS | LLM Hub on iOS | Image Generation on Android |
 | :-: | :-: | :-: |
-| <img src="vibecode_demo.gif" width="300" style="border-radius:8px;" /> | <img src="iphone_screenshot.jpg" width="300" style="border-radius:8px;" /> | <video src="android_image_generation_demo.mp4" width="300" style="border-radius:8px;" controls></video> |
+| <img src="vibecode_demo.gif" width="300" style="border-radius:8px;" /> | <img src="iphone_screenshot.jpg" width="300" style="border-radius:8px;" /> | <img src="android_image_generation_demo.gif" width="300" style="border-radius:8px;" /> |
 | Vibe Coder using Gemma 4 model on iPhone (HTML preview) | LLM Hub chat interface on iPhone | Stable Diffusion image generation on Android |
 
 ## 🚀 Features
