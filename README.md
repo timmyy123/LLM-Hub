@@ -41,11 +41,6 @@
 - **Vibes**: A full on-device coding environment. The LLM writes HTML/JS/CSS based on your requirements, and you can preview/run the app instantly in a secure sandbox.
 - **creAItor**: Powerful persona generation to create anything from characters with fun personalities to system architects. Just describe a creAItor ("respond like a pirate" or "respond with a markdown spec for a code agent to generate a full-stack system"), and the on-device LLM generates a complex system prompt (PCTF format) that you can use in chat.
 
-###  Kid Mode
-Activate this in Settings under Kid Mode. Set a PIN, and the mode will remain in effect until you unlock it with the same PIN.
-- **Safe Exploration**: Families can introduce children to private local AI with confidence.
-- **Model-Level Guardrails**: Automatically activates strict safety protocols at the model inference layer across **all** tools (Chat, Writing Aid, Image Gen, etc.).
-- **Peace of Mind**: Ensures all generated content is age-appropriate without compromising the privacy benefits of on-device processing.
 
 ### 🔐 Privacy First
 - **100% on-device processing** - no internet required for inference
@@ -66,38 +61,17 @@ Quick Start
 2. Open Settings → Download Models → Download or Import a model
 3. Select a model and start chatting or generating images
 
-Supported Model Families (summary)
-- Gemma (LiteRT Task)
-- Llama (Task + GGUF variants)
-- Phi (LiteRT LM)
-- LiquidAI LFM (LFM 2.5 1.2B + LFM VL 1.6B vision-enabled)
-- Ministral / Mistral family (GGUF / ONNX)
-- IBM Granite (GGUF)
-
-Model Formats
-- Task / LiteRT (.task): MediaPipe/LiteRT optimized models (GPU/NPU capable)
-- LiteRT LM (.litertlm): LiteRT language models
-- GGUF (.gguf): Quantized models — CPU inference powered by Nexa SDK; some vision-capable GGUF models require an additional `mmproj` vision project file
-- ONNX (.onnx): Cross-platform model runtime
-
-GGUF Compatibility Notes
-- Not all Android devices can load GGUF models in this app.
-- GGUF loading/runtime depends on Nexa SDK native libraries and device/ABI support; on unsupported devices, GGUF model loading can fail even if the model file is valid.
-- In this app, the GGUF NPU option is intentionally shown only for Snapdragon 8 Gen 4-class devices.
-
-Importing models
-- Settings → Download Models → Import Model → choose `.task`, `.litertlm`, `.qnn`, `.gguf`, or `.mnn`
-- The full model list and download links live in `app/src/.../data/ModelData.kt` (do not exhaustively list variants in the README)
 
 Technology
 - **Android**: Kotlin + Jetpack Compose (Material 3)
-- **iOS**: Swift + SwiftUI, Run Anywhere SDK, Apple Foundation Model
-- **LLM Runtime**: MediaPipe, LiteRT, Nexa SDK, Llama.cpp (via Run Anywhere)
+- **iOS**: Swift + SwiftUI, [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks), Apple Foundation Model
+- **LLM Runtime**: MediaPipe, LiteRT, [Nexa SDK](https://github.com/NexaAI/nexa-sdk), Llama.cpp (via [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks))
 - **Image Gen**: MNN / Qualcomm QNN
 - **Quantization**: INT4/INT8/MLX (Apple Foundation Model)
 
 Acknowledgments
-- **Nexa SDK** — GGUF model inference support (credit shown in-app About) ⚡
+- [Nexa SDK](https://github.com/NexaAI/nexa-sdk) — GGUF model inference support (credit shown in-app About) ⚡
+- [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks) — iOS model runtime and LLM execution framework 🚀
 - **Google, Meta, Microsoft, IBM, LiquidAI, Mistral, HuggingFace** — model and tooling contributions
 
 Development Setup
