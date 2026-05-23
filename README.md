@@ -20,7 +20,7 @@
 
 <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;">
    <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
-      <video src="vibecode_demo.mp4" controls style="width:300px;height:auto;border-radius:8px;display:block;"></video>
+      <img src="vibecode_demo.gif" alt="Vibe Coder Demo" style="width:300px;height:auto;border-radius:8px;display:block;" />
       <figcaption style="margin-top:8px;font-size:14px;color:#555;"><b>Demo:</b> Vibe Coder using Gemma 4 model on iPhone (HTML preview)</figcaption>
    </figure>
    <figure style="margin:0;flex:0 1 300px;max-width:300px;text-align:center">
