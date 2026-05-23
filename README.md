@@ -63,8 +63,8 @@ Technology
 - **Android**: Kotlin + Jetpack Compose (Material 3), [Nexa SDK](https://github.com/NexaAI/nexa-sdk)
 - **iOS**: Swift + SwiftUI, [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks), Apple Foundation Model
 - **LLM Runtime**: MediaPipe, LiteRT, Llama.cpp (via [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks))
-- **Image Gen**: MNN / Qualcomm QNN
-- **Quantization**: INT4/INT8/MLX (Apple Foundation Model)
+- **Image Gen**: Qualcomm QNN
+
 
 Acknowledgments
 - [Nexa SDK](https://github.com/NexaAI/nexa-sdk) — GGUF model inference support (credit shown in-app About) ⚡
