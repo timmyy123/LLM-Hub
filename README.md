@@ -152,7 +152,7 @@ License
 - Source code is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE).
 - You are free to use, study, and build on this project for non-commercial purposes.
 - **Commercial use — including distributing the app, charging for it, or monetizing it with ads or IAP — is not permitted without explicit written permission from the author.**
-- Contact timmyboy0623@gmail.com for commercial licensing enquiries.
+- Contact timmy@llm-hub.app for commercial licensing enquiries.
 
 Support
 - Email: timmyboy0623@gmail.com
