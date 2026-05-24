@@ -1915,6 +1915,21 @@ object ModelData {
             modelFormat = "qnn_npu"
         ),
         LLMModel(
+            name = "Anything V5 (CPU)",
+            description = "Anything V5 SD1.5 model for CPU inference using MNN framework. Highly popular anime-style model. Works on all Android devices without NPU requirements. Supports txt2img generation with flexible resolutions. ~1.3 GB download from HuggingFace.",
+            url = "https://huggingface.co/xororz/sd-mnn/resolve/main/AnythingV5.zip",
+            category = "image_generation",
+            sizeBytes = 1347020471L, // ~1.3 GB
+            source = "Stable Diffusion 1.5 (MNN via xororz)",
+            supportsVision = false,
+            supportsAudio = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 4),
+            contextWindowSize = 0,
+            modelFormat = "mnn_cpu"
+        ),
+
+        LLMModel(
             name = "ChilloutMix (NPU - ${DeviceInfo.getSdQnnPackageSuffix()})",
             description = "ChilloutMix SD1.5 model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation at 512x512 resolution. Requires Snapdragon 8 Gen 1 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~1.0 GB download from HuggingFace.",
             url = "https://huggingface.co/xororz/sd-qnn/resolve/main/ChilloutMix_qnn2.28_${DeviceInfo.getSdQnnPackageSuffix()}.zip",
