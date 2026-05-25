@@ -1916,10 +1916,10 @@ object ModelData {
         ),
         LLMModel(
             name = "Anything V5 (CPU)",
-            description = "Anything V5 SD1.5 model for CPU inference using MNN framework. Highly popular anime-style model. Works on all Android devices without NPU requirements. Supports txt2img generation with flexible resolutions. ~1.3 GB download from HuggingFace.",
+            description = "Anything V5 SD1.5 model for CPU inference using MNN framework. Highly popular anime-style model. Works on all Android devices without NPU requirements. Supports txt2img generation with flexible resolutions. 1.1 GB download from HuggingFace.",
             url = "https://huggingface.co/xororz/sd-mnn/resolve/main/AnythingV5.zip",
             category = "image_generation",
-            sizeBytes = 1347020471L, // ~1.3 GB
+            sizeBytes = 1191044427L, // 1.1 GB
             source = "Stable Diffusion 1.5 (MNN via xororz)",
             supportsVision = false,
             supportsAudio = false,
@@ -1947,6 +1947,21 @@ object ModelData {
             contextWindowSize = 0,
             modelFormat = "qnn_npu"
         ),
+        LLMModel(
+            name = "ChilloutMix (CPU)",
+            description = "ChilloutMix SD1.5 model for CPU inference using MNN framework. Works on all Android devices without NPU requirements. Supports txt2img generation with flexible resolutions. 1.2 GB download from HuggingFace.",
+            url = "https://huggingface.co/xororz/sd-mnn/resolve/main/ChilloutMix.zip",
+            category = "image_generation",
+            sizeBytes = 1203917293L, // 1.2 GB
+            source = "Stable Diffusion 1.5 (MNN via xororz)",
+            supportsVision = false,
+            supportsAudio = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 4),
+            contextWindowSize = 0,
+            modelFormat = "mnn_cpu"
+        ),
+
         LLMModel(
             name = "CrossKemono 2.5 (NPU - ${DeviceInfo.getSdQnnPackageSuffix()})",
             description = "CrossKemono 2.5 SD1.5 model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation at 512x512 resolution. Requires Snapdragon 8 Gen 1 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~1.0 GB download from HuggingFace.",
@@ -1983,6 +1998,21 @@ object ModelData {
             contextWindowSize = 0,
             modelFormat = "qnn_npu"
         ),
+        LLMModel(
+            name = "CuteYukiMix (CPU)",
+            description = "CuteYukiMix SD1.5 model for CPU inference using MNN framework. Works on all Android devices without NPU requirements. Supports txt2img generation with flexible resolutions. 1.1 GB download from HuggingFace.",
+            url = "https://huggingface.co/xororz/sd-mnn/resolve/main/CuteYukiMix.zip",
+            category = "image_generation",
+            sizeBytes = 1188112898L, // 1.1 GB
+            source = "Stable Diffusion 1.5 (MNN via xororz)",
+            supportsVision = false,
+            supportsAudio = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 4),
+            contextWindowSize = 0,
+            modelFormat = "mnn_cpu"
+        ),
+
         LLMModel(
             name = "DarkSushi V4 (NPU - ${DeviceInfo.getSdQnnPackageSuffix()})",
             description = "DarkSushi V4 SD1.5 model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation at 512x512 resolution. Requires Snapdragon 8 Gen 1 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~1.0 GB download from HuggingFace.",
@@ -2144,6 +2174,20 @@ object ModelData {
             requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
             contextWindowSize = 0,
             modelFormat = "qnn_npu"
+        ),
+        LLMModel(
+            name = "QteaMix (CPU)",
+            description = "QteaMix SD1.5 model for CPU inference using MNN framework. Works on all Android devices without NPU requirements. Supports txt2img generation with flexible resolutions. 1.1 GB download from HuggingFace.",
+            url = "https://huggingface.co/xororz/sd-mnn/resolve/main/QteaMix.zip",
+            category = "image_generation",
+            sizeBytes = 1191096924L, // 1.1 GB
+            source = "Stable Diffusion 1.5 (MNN via xororz)",
+            supportsVision = false,
+            supportsAudio = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 4),
+            contextWindowSize = 0,
+            modelFormat = "mnn_cpu"
         ),
 
         // Ternary Bonsai Models (prism-ml) — F16 variants only (Q2_0 ternary quantization unsupported by Nexa SDK)
