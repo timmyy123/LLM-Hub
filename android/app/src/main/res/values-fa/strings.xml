@@ -77,7 +77,7 @@
     <string name="ai_thinking">هوش مصنوعی در حال فکر کردن…</string>
     <string name="thinking_label">تفکر</string>
     <string name="thinking_tokens">تفکر (%1$d توکن)</string>
-    <string name="version_number">نسخه 3.7.3</string>
+    <string name="version_number">نسخه 3.7.4</string>
     <string name="app_version">نسخه برنامه</string>
 
     <!-- Terms of Service (Short titles translated; body kept concise translation) -->
@@ -104,7 +104,7 @@
     <string name="tos_changes_title">9. تغییرات شرایط</string>
     <string name="tos_changes_text">ممکن است شرایط به‌روزرسانی شود. ادامه استفاده به منزله پذیرش شرایط جدید است.</string>
     <string name="tos_contact_title">10. اطلاعات تماس</string>
-    <string name="tos_contact_text">برای سؤالات درباره این شرایط با نشانی timmyboy0623@gmail.com تماس بگیرید.</string>
+    <string name="tos_contact_text">برای سؤالات درباره این شرایط با نشانی timmy@llm-hub.app تماس بگیرید.</string>
 
     <!-- Navigation -->
     <string name="chat">گفتگو</string>

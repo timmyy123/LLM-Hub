@@ -70,7 +70,7 @@
 "ai_thinking" = "هوش مصنوعی در حال فکر کردن…";
 "thinking_label" = "تفکر";
 "thinking_tokens" = "تفکر (%1$d توکن)";
-"version_number" = "نسخه 3.7.3";
+"version_number" = "نسخه 3.7.4";
 "app_version" = "نسخه برنامه";
 "terms_of_service" = "شرایط خدمات";
 "tos_last_updated" = "آخرین بروزرسانی: 16 ژوئیه 2025";
@@ -95,7 +95,7 @@
 "tos_changes_title" = "9. تغییرات شرایط";
 "tos_changes_text" = "ممکن است شرایط به‌روزرسانی شود. ادامه استفاده به منزله پذیرش شرایط جدید است.";
 "tos_contact_title" = "10. اطلاعات تماس";
-"tos_contact_text" = "برای سؤالات درباره این شرایط با نشانی timmyboy0623@gmail.com تماس بگیرید.";
+"tos_contact_text" = "برای سؤالات درباره این شرایط با نشانی timmy@llm-hub.app تماس بگیرید.";
 "chat" = "گفتگو";
 "models" = "مدل‌ها";
 "settings" = "تنظیمات";

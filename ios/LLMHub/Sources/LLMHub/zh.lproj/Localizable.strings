@@ -70,7 +70,7 @@
 "ai_thinking" = "AI 思考中...";
 "thinking_label" = "深度思考";
 "thinking_tokens" = "思考 (%1$d tokens)";
-"version_number" = "版本号 3.7.3";
+"version_number" = "版本号 3.7.4";
 "app_version" = "应用版本";
 "terms_of_service" = "服务条款";
 "tos_last_updated" = "上次更新于 2025 年 7 月 16 日";
@@ -95,7 +95,7 @@
 "tos_changes_title" = "9. 条款变更";
 "tos_changes_text" = "我们可能会随时更新本服务条款。重大变更将通过应用程序更新通知用户。变更后继续使用本应用即视为接受新条款。";
 "tos_contact_title" = "10. 联系方式";
-"tos_contact_text" = "如果您对这些服务条款有任何疑问，请联系我们：timmyboy0623@gmail.com";
+"tos_contact_text" = "如果您对这些服务条款有任何疑问，请联系我们：timmy@llm-hub.app";
 "chat" = "对话";
 "models" = "模型";
 "settings" = "设置";

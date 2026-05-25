@@ -78,7 +78,7 @@
     <string name="ai_thinking">الذكاء الاصطناعي يفكر...</string>
     <string name="thinking_label">التفكير</string>
     <string name="thinking_tokens">التفكير (%1$d رموز)</string>
-    <string name="version_number">الإصدار 3.7.3</string>
+    <string name="version_number">الإصدار 3.7.4</string>
     <string name="app_version">إصدار التطبيق</string>
 
     <!-- Terms of Service -->
@@ -105,7 +105,7 @@
     <string name="tos_changes_title">9. تغييرات على الشروط</string>
     <string name="tos_changes_text">قد نقوم بتحديث شروط الخدمة هذه من حين لآخر. سيتم إخطار المستخدمين بالتغييرات المهمة من خلال تحديثات التطبيق. يشكّل الاستمرار في استخدام التطبيق بعد التغييرات قبولًا للشروط الجديدة.</string>
     <string name="tos_contact_title">10. معلومات الاتصال</string>
-    <string name="tos_contact_text">للاستفسارات حول شروط الخدمة هذه، يرجى التواصل عبر البريد: timmyboy0623@gmail.com</string>
+    <string name="tos_contact_text">للاستفسارات حول شروط الخدمة هذه، يرجى التواصل عبر البريد: timmy@llm-hub.app</string>
 
     <!-- Navigation -->
     <string name="chat">دردشة</string>

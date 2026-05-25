@@ -70,7 +70,7 @@
 "ai_thinking" = "L\'IA sta pensando...";
 "thinking_label" = "Pensiero";
 "thinking_tokens" = "Pensiero (%1$d token)";
-"version_number" = "Versione 3.7.3";
+"version_number" = "Versione 3.7.4";
 "app_version" = "Versione App";
 "terms_of_service" = "Termini di Servizio";
 "tos_last_updated" = "Ultimo aggiornamento: 16 luglio 2025";
@@ -95,7 +95,7 @@
 "tos_changes_title" = "9. Modifiche ai Termini";
 "tos_changes_text" = "Potremmo aggiornare periodicamente questi Termini di Servizio. Gli utenti saranno informati delle modifiche significative tramite aggiornamenti dell\'app. L\'uso continuato dell\'app dopo le modifiche costituisce accettazione dei nuovi termini.";
 "tos_contact_title" = "10. Informazioni di Contatto";
-"tos_contact_text" = "Per domande su questi Termini di Servizio, contattaci a timmyboy0623@gmail.com";
+"tos_contact_text" = "Per domande su questi Termini di Servizio, contattaci a timmy@llm-hub.app";
 "chat" = "Chat";
 "models" = "Modelli";
 "settings" = "Impostazioni";

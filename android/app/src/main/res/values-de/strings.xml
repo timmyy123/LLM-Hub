@@ -75,7 +75,7 @@
     <string name="acknowledgments_text">Besonderen Dank an Google, Meta, Microsoft, IBM und die HuggingFace-Community für die Bereitstellung der unglaublichen LLM-Modelle, die diese Anwendung antreiben. Dieses Projekt stützt sich auch auf die erstaunliche Arbeit der Android-Entwicklergemeinschaft und des Open-Source-Ökosystems.</string>    <string name="sd_models_credit">Bildgenerierungsmodelle werden von xororz\'s Stable Diffusion-Implementierungen mit Qualcomm QNN (NPU) und Alibaba MNN (CPU) Backends betrieben.</string>    <string name="nexa_sdk_credit">GGUF-Modellinferenz wird von Nexa SDK bereitgestellt.</string>    <string name="ai_thinking">KI denkt nach...</string>
     <string name="thinking_label">Denken</string>
     <string name="thinking_tokens">Denken (%1$d Tokens)</string>
-    <string name="version_number">Version 3.7.3</string>
+    <string name="version_number">Version 3.7.4</string>
     <string name="app_version">App-Version</string>
     
     <!-- Terms of Service -->
@@ -102,7 +102,7 @@
     <string name="tos_changes_title">9. Änderungen der Bedingungen</string>
     <string name="tos_changes_text">Wir können diese Nutzungsbedingungen von Zeit zu Zeit aktualisieren. Benutzer werden über wesentliche Änderungen durch App-Updates benachrichtigt. Die fortgesetzte Nutzung der Anwendung nach Änderungen stellt die Annahme der neuen Bedingungen dar.</string>
     <string name="tos_contact_title">10. Kontaktinformationen</string>
-    <string name="tos_contact_text">Für Fragen zu diesen Nutzungsbedingungen kontaktieren Sie uns bitte unter timmyboy0623@gmail.com</string>
+    <string name="tos_contact_text">Für Fragen zu diesen Nutzungsbedingungen kontaktieren Sie uns bitte unter timmy@llm-hub.app</string>
     
     <!-- Navigation -->
     <string name="chat">Chat</string>

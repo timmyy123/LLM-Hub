@@ -78,7 +78,7 @@
     <string name="ai_thinking">AI 思考中...</string>
     <string name="thinking_label">深度思考</string>
     <string name="thinking_tokens">思考 (%1$d tokens)</string>
-    <string name="version_number">版本号 3.7.3</string>
+    <string name="version_number">版本号 3.7.4</string>
     <string name="app_version">应用版本</string>
     
     <!-- Terms of Service -->
@@ -105,7 +105,7 @@
     <string name="tos_changes_title">9. 条款变更</string>
     <string name="tos_changes_text">我们可能会随时更新本服务条款。重大变更将通过应用程序更新通知用户。变更后继续使用本应用即视为接受新条款。</string>
     <string name="tos_contact_title">10. 联系方式</string>
-    <string name="tos_contact_text">如果您对这些服务条款有任何疑问，请联系我们：timmyboy0623@gmail.com</string>
+    <string name="tos_contact_text">如果您对这些服务条款有任何疑问，请联系我们：timmy@llm-hub.app</string>
     
     <!-- Navigation -->
     <string name="chat">对话</string>

@@ -78,7 +78,7 @@
     <string name="ai_thinking">L\'IA réfléchit...</string>
     <string name="thinking_label">Réflexion</string>
     <string name="thinking_tokens">Réflexion (%1$d jetons)</string>
-    <string name="version_number">Version 3.7.3</string>
+    <string name="version_number">Version 3.7.4</string>
     <string name="app_version">Version de l\'App</string>
     
     <!-- Terms of Service -->
@@ -105,7 +105,7 @@
     <string name="tos_changes_title">9. Modifications des Conditions</string>
     <string name="tos_changes_text">Nous pouvons mettre à jour ces Conditions d\'Utilisation de temps en temps.</string>
     <string name="tos_contact_title">10. Informations de Contact</string>
-    <string name="tos_contact_text">Pour des questions concernant ces Conditions d\'Utilisation, veuillez nous contacter à timmyboy0623@gmail.com</string>
+    <string name="tos_contact_text">Pour des questions concernant ces Conditions d\'Utilisation, veuillez nous contacter à timmy@llm-hub.app</string>
     
     <!-- Navigation -->
     <string name="chat">Chat</string>

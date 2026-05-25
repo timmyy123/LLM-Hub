@@ -78,7 +78,7 @@
     <string name="ai_thinking">La IA está pensando...</string>
     <string name="thinking_label">Pensamiento</string>
     <string name="thinking_tokens">Pensamiento (%1$d tokens)</string>
-    <string name="version_number">Versión 3.7.3</string>
+    <string name="version_number">Versión 3.7.4</string>
     <string name="app_version">Versión de la App</string>
     
     <!-- Terms of Service -->
@@ -105,7 +105,7 @@
     <string name="tos_changes_title">9. Cambios en los Términos</string>
     <string name="tos_changes_text">Podemos actualizar estos Términos de Servicio de vez en cuando. Los usuarios serán notificados de cambios significativos a través de actualizaciones de la aplicación. El uso continuado de la aplicación después de los cambios constituye aceptación de los nuevos términos.</string>
     <string name="tos_contact_title">10. Información de Contacto</string>
-    <string name="tos_contact_text">Para preguntas sobre estos Términos de Servicio, por favor contáctanos en timmyboy0623@gmail.com</string>
+    <string name="tos_contact_text">Para preguntas sobre estos Términos de Servicio, por favor contáctanos en timmy@llm-hub.app</string>
     
     <!-- Navigation -->
     <string name="chat">Chat</string>

@@ -78,7 +78,7 @@
     <string name="ai_thinking">AI sedang berpikir...</string>
     <string name="thinking_label">Pemikiran</string>
     <string name="thinking_tokens">Pemikiran (%1$d token)</string>
-    <string name="version_number">Versi 3.7.3</string>
+    <string name="version_number">Versi 3.7.4</string>
     <string name="app_version">Versi Aplikasi</string>
     
     <!-- Terms of Service -->
@@ -105,7 +105,7 @@
     <string name="tos_changes_title">9. Perubahan pada Ketentuan</string>
     <string name="tos_changes_text">Kami dapat memperbarui Ketentuan Layanan ini dari waktu ke waktu. Pengguna akan diberitahu tentang perubahan signifikan melalui pembaruan aplikasi. Penggunaan aplikasi yang berkelanjutan setelah perubahan merupakan penerimaan ketentuan baru.</string>
     <string name="tos_contact_title">10. Informasi Kontak</string>
-    <string name="tos_contact_text">Untuk pertanyaan tentang Ketentuan Layanan ini, silakan hubungi kami di timmyboy0623@gmail.com</string>
+    <string name="tos_contact_text">Untuk pertanyaan tentang Ketentuan Layanan ini, silakan hubungi kami di timmy@llm-hub.app</string>
     
     <!-- Navigation -->
     <string name="chat">Obrolan</string>

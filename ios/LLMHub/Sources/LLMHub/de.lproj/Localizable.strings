@@ -69,7 +69,7 @@
 "ai_thinking" = "KI denkt nach...";
 "thinking_label" = "Denken";
 "thinking_tokens" = "Denken (%1$d Tokens)";
-"version_number" = "Version 3.7.3";
+"version_number" = "Version 3.7.4";
 "app_version" = "App-Version";
 "terms_of_service" = "Nutzungsbedingungen";
 "tos_last_updated" = "Zuletzt aktualisiert: 16. Juli 2025";
@@ -94,7 +94,7 @@
 "tos_changes_title" = "9. Änderungen der Bedingungen";
 "tos_changes_text" = "Wir können diese Nutzungsbedingungen von Zeit zu Zeit aktualisieren. Benutzer werden über wesentliche Änderungen durch App-Updates benachrichtigt. Die fortgesetzte Nutzung der Anwendung nach Änderungen stellt die Annahme der neuen Bedingungen dar.";
 "tos_contact_title" = "10. Kontaktinformationen";
-"tos_contact_text" = "Für Fragen zu diesen Nutzungsbedingungen kontaktieren Sie uns bitte unter timmyboy0623@gmail.com";
+"tos_contact_text" = "Für Fragen zu diesen Nutzungsbedingungen kontaktieren Sie uns bitte unter timmy@llm-hub.app";
 "chat" = "Chat";
 "models" = "Modelle";
 "settings" = "Einstellungen";

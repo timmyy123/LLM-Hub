@@ -235,12 +235,12 @@ fun AboutScreen(
                             
                             TextButton(
                                 onClick = {
-                                    uriHandler.openUri("mailto:timmyboy0623@gmail.com")
+                                    uriHandler.openUri("mailto:timmy@llm-hub.app")
                                 },
                                 modifier = Modifier.padding(start = 28.dp)
                             ) {
                                 Text(
-                                    text = "timmyboy0623@gmail.com",
+                                    text = "timmy@llm-hub.app",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.primary
                                 )

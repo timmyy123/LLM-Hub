@@ -70,7 +70,7 @@
 "ai_thinking" = "AI sedang berpikir...";
 "thinking_label" = "Pemikiran";
 "thinking_tokens" = "Pemikiran (%1$d token)";
-"version_number" = "Versi 3.7.3";
+"version_number" = "Versi 3.7.4";
 "app_version" = "Versi Aplikasi";
 "terms_of_service" = "Ketentuan Layanan";
 "tos_last_updated" = "Terakhir diperbarui: 16 Juli 2025";
@@ -95,7 +95,7 @@
 "tos_changes_title" = "9. Perubahan pada Ketentuan";
 "tos_changes_text" = "Kami dapat memperbarui Ketentuan Layanan ini dari waktu ke waktu. Pengguna akan diberitahu tentang perubahan signifikan melalui pembaruan aplikasi. Penggunaan aplikasi yang berkelanjutan setelah perubahan merupakan penerimaan ketentuan baru.";
 "tos_contact_title" = "10. Informasi Kontak";
-"tos_contact_text" = "Untuk pertanyaan tentang Ketentuan Layanan ini, silakan hubungi kami di timmyboy0623@gmail.com";
+"tos_contact_text" = "Untuk pertanyaan tentang Ketentuan Layanan ini, silakan hubungi kami di timmy@llm-hub.app";
 "chat" = "Obrolan";
 "models" = "Model";
 "settings" = "Pengaturan";

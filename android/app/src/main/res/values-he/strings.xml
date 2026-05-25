@@ -77,7 +77,7 @@
     <string name="ai_thinking">ה-AI חושב…</string>
     <string name="thinking_label">חשיבה</string>
     <string name="thinking_tokens">חשיבה (%1$d אסימונים)</string>
-    <string name="version_number">גרסה 3.7.3</string>
+    <string name="version_number">גרסה 3.7.4</string>
     <string name="app_version">גרסת אפליקציה</string>
 
     <!-- Terms of Service -->
@@ -104,7 +104,7 @@
     <string name="tos_changes_title">9. שינוי תנאים</string>
     <string name="tos_changes_text">ייתכנו עדכונים מעת לעת; שימוש מתמשך מהווה הסכמה לתנאים החדשים.</string>
     <string name="tos_contact_title">10. פרטי קשר</string>
-    <string name="tos_contact_text">לשאלות לגבי תנאי השימוש: timmyboy0623@gmail.com</string>
+    <string name="tos_contact_text">לשאלות לגבי תנאי השימוש: timmy@llm-hub.app</string>
 
     <!-- Navigation -->
     <string name="chat">צ\'אט</string>

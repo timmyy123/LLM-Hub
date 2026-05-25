@@ -70,7 +70,7 @@
 "ai_thinking" = "AI myśli...";
 "thinking_label" = "Myślenie";
 "thinking_tokens" = "Myślenie (%1$d tokenów)";
-"version_number" = "Wersja 3.7.3";
+"version_number" = "Wersja 3.7.4";
 "app_version" = "Wersja Aplikacji";
 "terms_of_service" = "Warunki Usługi";
 "tos_last_updated" = "Ostatnia aktualizacja: 16 lipca 2025";
@@ -95,7 +95,7 @@
 "tos_changes_title" = "9. Zmiany w Warunkach";
 "tos_changes_text" = "Możemy od czasu do czasu aktualizować niniejsze Warunki Usługi. Użytkownicy zostaną powiadomieni o istotnych zmianach poprzez aktualizacje aplikacji. Dalsze korzystanie z aplikacji po zmianach oznacza akceptację nowych warunków.";
 "tos_contact_title" = "10. Informacje Kontaktowe";
-"tos_contact_text" = "W sprawie pytań dotyczących niniejszych Warunków Usługi prosimy o kontakt na adres timmyboy0623@gmail.com";
+"tos_contact_text" = "W sprawie pytań dotyczących niniejszych Warunków Usługi prosimy o kontakt na adres timmy@llm-hub.app";
 "chat" = "Czat";
 "models" = "Modele";
 "settings" = "Ustawienia";

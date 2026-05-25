@@ -78,7 +78,7 @@
     <string name="ai_thinking">AI myśli...</string>
     <string name="thinking_label">Myślenie</string>
     <string name="thinking_tokens">Myślenie (%1$d tokenów)</string>
-    <string name="version_number">Wersja 3.7.3</string>
+    <string name="version_number">Wersja 3.7.4</string>
     <string name="app_version">Wersja Aplikacji</string>
     
     <!-- Terms of Service -->
@@ -105,7 +105,7 @@
     <string name="tos_changes_title">9. Zmiany w Warunkach</string>
     <string name="tos_changes_text">Możemy od czasu do czasu aktualizować niniejsze Warunki Usługi. Użytkownicy zostaną powiadomieni o istotnych zmianach poprzez aktualizacje aplikacji. Dalsze korzystanie z aplikacji po zmianach oznacza akceptację nowych warunków.</string>
     <string name="tos_contact_title">10. Informacje Kontaktowe</string>
-    <string name="tos_contact_text">W sprawie pytań dotyczących niniejszych Warunków Usługi prosimy o kontakt na adres timmyboy0623@gmail.com</string>
+    <string name="tos_contact_text">W sprawie pytań dotyczących niniejszych Warunków Usługi prosimy o kontakt na adres timmy@llm-hub.app</string>
     
     <!-- Navigation -->
     <string name="chat">Czat</string>

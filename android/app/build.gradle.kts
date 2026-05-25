@@ -25,8 +25,8 @@ android {
         applicationId = "com.llmhub.llmhub"
         minSdk = 27
         targetSdk = 36
-        versionCode = 97
-        versionName = "3.7.3"
+        versionCode = 99
+        versionName = "3.7.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         val hfToken: String = localProperties.getProperty("HF_TOKEN", "")
@@ -240,13 +240,13 @@ dependencies {
     // NOTE: Version 0.10.29 has slower initial load for multimodal models due to eager
     // vision/audio component initialization. Disable vision/audio when not needed for faster loading.
     // tasks-genai latest: 0.10.29; tasks-text latest: 0.10.29
-    implementation("com.google.mediapipe:tasks-genai:0.10.33")
-    implementation("com.google.mediapipe:tasks-vision:0.10.33")
-    implementation("com.google.mediapipe:tasks-text:0.10.33")
+    implementation("com.google.mediapipe:tasks-genai:0.10.35")
+    implementation("com.google.mediapipe:tasks-vision:0.10.35")
+    implementation("com.google.mediapipe:tasks-text:0.10.35")
 
     // LiteRT-LM: native Kotlin API for .litertlm models (Gemma-3n, Gemma-4, etc.)
     // Replaces tasks-genai for litertlm format models. GPU enabled once 0.10.1 hits Maven.
-    implementation("com.google.ai.edge.litertlm:litertlm-android:0.10.0")
+    implementation("com.google.ai.edge.litertlm:litertlm-android:0.12.0")
     
     // Protobuf - required for MediaPipe
     implementation("com.google.protobuf:protobuf-java:3.25.1")

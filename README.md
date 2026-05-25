@@ -155,7 +155,7 @@ License
 - Contact timmy@llm-hub.app for commercial licensing enquiries.
 
 Support
-- Email: timmyboy0623@gmail.com
+- Email: timmy@llm-hub.app
 - Issues & Discussions: GitHub
 
 Notes

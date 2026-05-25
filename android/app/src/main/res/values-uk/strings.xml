@@ -77,7 +77,7 @@
     <string name="ai_thinking">AI думає…</string>
     <string name="thinking_label">Міркування</string>
     <string name="thinking_tokens">Міркування (%1$d токенів)</string>
-    <string name="version_number">Версія 3.7.3</string>
+    <string name="version_number">Версія 3.7.4</string>
     <string name="app_version">Версія застосунку</string>
 
     <!-- Terms of Service -->
@@ -104,7 +104,7 @@
     <string name="tos_changes_title">9. Зміни умов</string>
     <string name="tos_changes_text">Час від часу умови можуть оновлюватися; подальше використання означає згоду з новими умовами.</string>
     <string name="tos_contact_title">10. Контактна інформація</string>
-    <string name="tos_contact_text">Із запитаннями щодо умов звертайтесь: timmyboy0623@gmail.com</string>
+    <string name="tos_contact_text">Із запитаннями щодо умов звертайтесь: timmy@llm-hub.app</string>
 
     <!-- Navigation -->
     <string name="chat">Чат</string>

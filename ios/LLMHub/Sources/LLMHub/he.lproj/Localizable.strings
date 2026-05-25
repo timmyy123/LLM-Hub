@@ -70,7 +70,7 @@
 "ai_thinking" = "ה-AI חושב…";
 "thinking_label" = "חשיבה";
 "thinking_tokens" = "חשיבה (%1$d אסימונים)";
-"version_number" = "גרסה 3.7.3";
+"version_number" = "גרסה 3.7.4";
 "app_version" = "גרסת אפליקציה";
 "terms_of_service" = "תנאי שימוש";
 "tos_last_updated" = "עודכן לאחרונה: 16 ביולי 2025";
@@ -95,7 +95,7 @@
 "tos_changes_title" = "9. שינוי תנאים";
 "tos_changes_text" = "ייתכנו עדכונים מעת לעת; שימוש מתמשך מהווה הסכמה לתנאים החדשים.";
 "tos_contact_title" = "10. פרטי קשר";
-"tos_contact_text" = "לשאלות לגבי תנאי השימוש: timmyboy0623@gmail.com";
+"tos_contact_text" = "לשאלות לגבי תנאי השימוש: timmy@llm-hub.app";
 "chat" = "צ\'אט";
 "models" = "מודלים";
 "settings" = "הגדרות";

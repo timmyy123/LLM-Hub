@@ -78,7 +78,7 @@
     <string name="ai_thinking">Yapay zeka düşünüyor...</string>
     <string name="thinking_label">Düşünme</string>
     <string name="thinking_tokens">Düşünme (%1$d token)</string>
-    <string name="version_number">Sürüm 3.7.3</string>
+    <string name="version_number">Sürüm 3.7.4</string>
     <string name="app_version">Uygulama Sürümü</string>
     
     <!-- Terms of Service -->
@@ -105,7 +105,7 @@
     <string name="tos_changes_title">9. Şartlardaki Değişiklikler</string>
     <string name="tos_changes_text">Bu Hizmet Şartlarını zaman zaman güncelleyebiliriz. Kullanıcılar, uygulama güncellemeleri aracılığıyla önemli değişikliklerden haberdar edilecektir. Değişikliklerden sonra uygulamayı kullanmaya devam etmek, yeni şartların kabulü anlamına gelir.</string>
     <string name="tos_contact_title">10. İletişim Bilgileri</string>
-    <string name="tos_contact_text">Bu Hizmet Şartları hakkında sorularınız için lütfen bizimle timmyboy0623@gmail.com adresinden iletişime geçin</string>
+    <string name="tos_contact_text">Bu Hizmet Şartları hakkında sorularınız için lütfen bizimle timmy@llm-hub.app adresinden iletişime geçin</string>
     
     <!-- Navigation -->
     <string name="chat">Sohbet</string>
