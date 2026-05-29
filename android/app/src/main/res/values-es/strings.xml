@@ -284,9 +284,11 @@
     <string name="partial">Parcial</string>
     <string name="paused">Pausado</string>
     <string name="paused_downloaded_format">Pausado: %1$s descargado</string>
+    <string name="partial_downloaded_format">Parcial: %1$s descargado</string>
     <string name="continue_download">Continuar</string>
     <string name="pause_download">Pausa</string>
     <string name="resume_download">Reanudar</string>    <string name="ram_requirement_format">%1$dGB RAM</string>
+    <string name="clear">Limpiar</string>
     
     <!-- File Attachments -->
     <string name="attach_file">Adjuntar archivo</string>
@@ -321,16 +323,34 @@
     <string name="record_voice_message">Grabar mensaje de voz</string>
     <string name="recording">Grabando…</string>
     <string name="tap_to_stop">Toca para detener</string>
+    <string name="stop_recording">Detener grabación</string>
+    <string name="remove_audio">Eliminar audio</string>
+    <string name="audio_enabled">Audio activado</string>
+    <string name="audio">Audio</string>
     <string name="ready_to_send">Listo para enviar</string>
     <string name="audio_recorded">Audio grabado</string>
     <string name="audio_file">Archivo de Audio</string>
     <string name="tap_to_play">Tocar para reproducir</string>
     <string name="max_recording_reached">Duración máxima de grabación alcanzada (30 segundos)</string>
     <string name="remaining">restantes</string>
+    <string name="image_copied_clipboard">Imagen copiada del chat</string>
+    <string name="image_copied_to_clipboard">Imagen copiada al portapapeles</string>
+    <string name="failed_to_copy_image">Error al copiar la imagen</string>
+    <string name="failed_to_copy_image_with_error">Error al copiar la imagen: %1$s</string>
+    <string name="image_saved_to_gallery">Imagen guardada en la galería</string>
+    <string name="failed_to_save_image">Error al guardar la imagen</string>
+    <string name="failed_to_save_image_with_error">Error al guardar la imagen: %1$s</string>
+    <string name="searching_documents">Buscando documentos...</string>
+    <string name="using_document_context_format">Usando contexto de %1$d secciones de documentos</string>
+    <string name="documents_available_format">%1$d documentos disponibles</string>
+    <string name="ai_can_reference_documents">La IA puede hacer referencia a tus documentos en las respuestas</string>
+    <string name="document_chat_enabled">Chat con documentos activado</string>
+    <string name="semantic_search_active">Búsqueda semántica activa</string>
     
     <!-- Text-to-Speech -->
     <string name="auto_readout">Lectura Automática</string>
     <string name="auto_readout_description">Leer respuestas de IA en voz alta automáticamente después de enviar un mensaje</string>
+    <string name="memory_cleared">Todas las memorias borradas</string>
     
     <string name="translating_tap_to_cancel">Traduciendo (toca para cancelar)</string>
     <string name="transcribing_tap_to_cancel">Transcribiendo (toca para cancelar)</string>
@@ -356,6 +376,7 @@
     <string name="top_p">TopP</string>
     <string name="temperature">Temperatura</string>
     <string name="choose_accelerator">Elegir acelerador</string>
+    <string name="max">máximo</string>
     
     <!-- GPU with Vision Disabled for Gemma-3n E4B -->
     <string name="gpu_vision_disabled_title">GPU con Visión+Audio Deshabilitadas</string>
@@ -613,6 +634,7 @@
     <string name="select_backend">Seleccionar backend</string>
     <string name="backend_cpu">CPU</string>
     <string name="backend_gpu">GPU</string>
+    <string name="backend_npu">NPU (Hexagon)</string>
     <string name="gpu_not_supported">GPU no compatible con este modelo</string>
     <string name="load_model">Cargar modelo</string>
     <string name="model_loaded">Modelo cargado exitosamente</string>
@@ -646,12 +668,21 @@
     <string name="speak_to_translate">Speak to translate</string>
     <string name="select_image">Select Image</string>
     <string name="change_image">Change Image</string>
+    <string name="transcription_result">Transcripción</string>
     
     <!-- Translator Settings -->
     <string name="translator_enable_vision">Habilitar Visión</string>
     <string name="translator_vision_description">Traducir texto de imágenes</string>
     <string name="translator_enable_audio">Habilitar Audio</string>
     <string name="translator_audio_description">Traducir grabaciones de audio</string>
+    <string name="choose_backend_for_gemma">Elegir el backend de procesamiento para el modelo Gemma</string>
+    <string name="gpu_backend">GPU (Recomendado)</string>
+    <string name="cpu_backend">CPU (Alternativo)</string>
+    <string name="gpu_backend_description">Procesamiento más rápido usando la GPU del dispositivo</string>
+    <string name="cpu_backend_description">Procesamiento más lento pero más estable</string>
+    <string name="backend_selection_hint">Si la aplicación falla o no funciona correctamente con la GPU, intenta con el backend de CPU</string>
+    <string name="not_available">No disponible</string>
+    <string name="gpu_disabled_low_memory">La GPU no está disponible para este modelo en dispositivos con %1$d GB de RAM o menos</string>
     
     <!-- Web Search Messages -->
     <string name="web_searching">🔍 Buscando en la web...</string>
@@ -771,6 +802,7 @@
 
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
+    <string name="thinking_toggle_label">Activar pensamiento</string>
 
     <!-- Premium / IAP -->
     <string name="premium_title">LLM Hub Premium Lifetime</string>
