@@ -1103,6 +1103,99 @@ object ModelData {
             modelFormat = "gguf"
         ),
 
+        // LFM-2.5 8B Models (LiquidAI GGUF - MoE, 8.3B total / 1.5B active params)
+        LLMModel(
+            name = "LFM2.5-8B-A1B (Q4_0)",
+            description = "Liquid's 8.3B parameter MoE model (1.5B active). Q4_0 quantization. 131k context. (4.84GB)",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B-GGUF/resolve/main/LFM2.5-8B-A1B-Q4_0.gguf?download=true",
+            category = "text",
+            sizeBytes = 4844678112L,
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 8),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM2.5-8B-A1B (Q4_K_M)",
+            description = "Liquid's 8.3B parameter MoE model (1.5B active). Q4_K_M quantization, recommended. 131k context. (5.16GB)",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B-GGUF/resolve/main/LFM2.5-8B-A1B-Q4_K_M.gguf?download=true",
+            category = "text",
+            sizeBytes = 5155564512L,
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 7, recommendedRamGB = 9),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM2.5-8B-A1B (Q5_K_M)",
+            description = "Liquid's 8.3B parameter MoE model (1.5B active). Q5_K_M quantization. 131k context. (6.03GB)",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B-GGUF/resolve/main/LFM2.5-8B-A1B-Q5_K_M.gguf?download=true",
+            category = "text",
+            sizeBytes = 6030339040L,
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 8, recommendedRamGB = 10),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM2.5-8B-A1B (Q6_K)",
+            description = "Liquid's 8.3B parameter MoE model (1.5B active). Q6_K quantization. 131k context. (6.96GB)",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B-GGUF/resolve/main/LFM2.5-8B-A1B-Q6_K.gguf?download=true",
+            category = "text",
+            sizeBytes = 6959786976L,
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 9, recommendedRamGB = 11),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM2.5-8B-A1B (Q8_0)",
+            description = "Liquid's 8.3B parameter MoE model (1.5B active). Q8_0 quantization. 131k context. (9.01GB)",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B-GGUF/resolve/main/LFM2.5-8B-A1B-Q8_0.gguf?download=true",
+            category = "text",
+            sizeBytes = 9010195424L,
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 11, recommendedRamGB = 14),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM2.5-8B-A1B (BF16)",
+            description = "Liquid's 8.3B parameter MoE model (1.5B active). BF16 (bfloat16 precision) variant. 131k context. (16.95GB)",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B-GGUF/resolve/main/LFM2.5-8B-A1B-BF16.gguf?download=true",
+            category = "text",
+            sizeBytes = 16947260384L,
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 20, recommendedRamGB = 24),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM2.5-8B-A1B (F16)",
+            description = "Liquid's 8.3B parameter MoE model (1.5B active). F16 (float16 precision) variant. 131k context. (16.95GB)",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B-GGUF/resolve/main/LFM2.5-8B-A1B-F16.gguf?download=true",
+            category = "text",
+            sizeBytes = 16947260384L,
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 20, recommendedRamGB = 24),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+
         // LFM2-24B-A2B Models (LiquidAI GGUF - MoE, 2B active params)
         LLMModel(
             name = "LFM2-24B-A2B (Q4_0)",

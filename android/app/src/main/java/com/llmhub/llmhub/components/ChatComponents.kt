@@ -714,7 +714,7 @@ private const val RAW_OPEN_THINK = "<think>"
 private const val RAW_CLOSE_THINK = "</think>"
 
 private fun parseThinkingAndAnswer(content: String): Pair<String, String> {
-    // 1) Same as chat: sentinels from OnnxInferenceService
+    // 1) Same as chat: sentinels from OnnxInferenceService / NexaInferenceService
     if (content.contains(SENTINEL_THINK)) {
         val afterThink = content.substringAfter(SENTINEL_THINK)
         if (afterThink.contains(SENTINEL_ENDTHINK)) {
@@ -725,11 +725,15 @@ private fun parseThinkingAndAnswer(content: String): Pair<String, String> {
         return afterThink to ""
     }
     // 2) Raw <think>...</think>
-    if (content.contains(RAW_OPEN_THINK) && content.contains(RAW_CLOSE_THINK)) {
+    if (content.contains(RAW_OPEN_THINK)) {
         val afterThink = content.substringAfter(RAW_OPEN_THINK)
         if (afterThink.contains(RAW_CLOSE_THINK)) {
+            val thinking = afterThink.substringBefore(RAW_CLOSE_THINK).trim()
             val answer = afterThink.substringAfter(RAW_CLOSE_THINK).trim()
-            return "" to answer
+            return thinking to answer
+        } else {
+            // Streaming/incomplete: everything after <think> is thinking content, answer is empty
+            return afterThink.trim() to ""
         }
     }
     // 3) Closing tag only (e.g. "THINK I think ... </think>\n\nanswer" when no <think>)

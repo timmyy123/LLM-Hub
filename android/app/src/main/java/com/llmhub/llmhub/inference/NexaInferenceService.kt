@@ -345,7 +345,8 @@ class NexaInferenceService @Inject constructor(
                 }
 
                 val isThinkingModelForConfig = model.name.contains("Thinking", ignoreCase = true) ||
-                    model.name.contains("Reasoning", ignoreCase = true)
+                    model.name.contains("Reasoning", ignoreCase = true) ||
+                    model.name.contains("LFM2.5-8B-A1B", ignoreCase = true)
 
                 val modelConfig = ModelConfig(
                     nCtx = nCtx,
@@ -709,7 +710,8 @@ class NexaInferenceService @Inject constructor(
         val topPVal = overrideTopP ?: 0.9f
         
         val isThinkingModel = model.name.contains("Thinking", ignoreCase = true) ||
-                              model.name.contains("Reasoning", ignoreCase = true)
+                              model.name.contains("Reasoning", ignoreCase = true) ||
+                              model.name.contains("LFM2.5-8B-A1B", ignoreCase = true)
         val isHarmonyModel = model.name.contains("gpt-oss", ignoreCase = true) ||
                              model.name.contains("gpt_oss", ignoreCase = true)
 
@@ -1307,7 +1309,8 @@ class NexaInferenceService @Inject constructor(
                             // string after applyChatTemplate so it always lands in the user turn
                             // regardless of template format, with no reflection needed.
                             val isThinkingModelFmt = model.name.contains("Thinking", ignoreCase = true) ||
-                                                      model.name.contains("Reasoning", ignoreCase = true)
+                                                      model.name.contains("Reasoning", ignoreCase = true) ||
+                                                      model.name.contains("LFM2.5-8B-A1B", ignoreCase = true)
                             val isHarmonyModelFmt  = model.name.contains("gpt-oss", ignoreCase = true) ||
                                                      model.name.contains("gpt_oss", ignoreCase = true)
                             if (!thinkingEnabled && isThinkingModelFmt && !isHarmonyModelFmt) {
@@ -1360,7 +1363,8 @@ class NexaInferenceService @Inject constructor(
             // 4. Fallback: Manual ChatML construction from parsed messages (Robust)
             val sb = StringBuilder()
             val isThinkingModel = model.name.contains("Thinking", ignoreCase = true) || 
-                                  model.name.contains("Reasoning", ignoreCase = true)
+                                  model.name.contains("Reasoning", ignoreCase = true) ||
+                                  model.name.contains("LFM2.5-8B-A1B", ignoreCase = true)
             
             sb.append("<|im_start|>system\n")
             if (isThinkingModel) {
