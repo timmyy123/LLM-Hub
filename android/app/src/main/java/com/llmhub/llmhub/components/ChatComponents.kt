@@ -498,6 +498,8 @@ private fun LatexMathView(
         val cssTextColor = textColor.toCssHex()
         val expressionJs = remember(latex) { escapeForJs(latex) }
 
+        // KaTeX is bundled locally in assets/katex/ — no network needed.
+        // Base URL points to the katex asset folder so relative font paths resolve correctly.
         val html = remember(expressionJs, isBlock, cssTextColor) {
                 """
                 <!doctype html>
@@ -505,8 +507,8 @@ private fun LatexMathView(
                 <head>
                     <meta charset="utf-8" />
                     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
-                    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+                    <link rel="stylesheet" href="katex.min.css" />
+                    <script src="katex.min.js"></script>
                     <style>
                         html, body {
                             margin: 0;
@@ -517,7 +519,7 @@ private fun LatexMathView(
                         }
                         #math {
                             width: 100%;
-                            text-align: ${if (isBlock) "left" else "left"};
+                            text-align: left;
                             padding: ${if (isBlock) "2px 0" else "0"};
                         }
                     </style>
@@ -525,7 +527,7 @@ private fun LatexMathView(
                 <body>
                     <div id="math"></div>
                     <script>
-                        document.addEventListener('DOMContentLoaded', function () {
+                        (function() {
                             try {
                                 katex.render('$expressionJs', document.getElementById('math'), {
                                     throwOnError: false,
@@ -534,7 +536,7 @@ private fun LatexMathView(
                             } catch (e) {
                                 document.getElementById('math').textContent = '$expressionJs';
                             }
-                        });
+                        })();
                     </script>
                 </body>
                 </html>
@@ -552,6 +554,138 @@ private fun LatexMathView(
                                 settings.domStorageEnabled = true
                                 settings.loadWithOverviewMode = true
                                 settings.useWideViewPort = true
+                                @Suppress("SetJavaScriptEnabled")
+                                settings.allowFileAccess = true
+                                webViewClient = WebViewClient()
+                                layoutParams = ViewGroup.LayoutParams(
+                                        ViewGroup.LayoutParams.MATCH_PARENT,
+                                        ViewGroup.LayoutParams.WRAP_CONTENT
+                                )
+                        }
+                },
+                update = { webView ->
+                        // Use file:///android_asset/katex/ as base so the WebView resolves
+                        // katex.min.css, katex.min.js, and fonts/ all from the local assets bundle.
+                        webView.loadDataWithBaseURL(
+                                "file:///android_asset/katex/",
+                                html,
+                                "text/html",
+                                "utf-8",
+                                null
+                        )
+                }
+        )
+}
+
+/**
+ * Renders a mixed segment of plain text and inline/block LaTeX in a single WebView so that
+ * inline math (e.g. $s$) flows on the same line as the surrounding text instead of stacking
+ * as separate vertical blocks.
+ *
+ * Text parts receive basic markdown-to-HTML conversion (bold, italic, inline code).
+ * Math parts are rendered by KaTeX into inline <span> elements.
+ * The entire page uses the locally-bundled KaTeX assets — no network required.
+ */
+@Composable
+private fun InlineLatexView(
+        segments: List<LatexSegment>,
+        textColor: Color,
+        fontSize: androidx.compose.ui.unit.TextUnit,
+        modifier: Modifier = Modifier
+) {
+        val cssTextColor = textColor.toCssHex()
+        val fontSizePx = fontSize.value
+
+        val html = remember(segments, cssTextColor, fontSizePx) {
+                val bodyHtml = buildString {
+                        var mathId = 0
+                        for (seg in segments) {
+                                when (seg) {
+                                        is LatexSegment.TextPart -> {
+                                                // Convert markdown → HTML for the text portions
+                                                var t = seg.text
+                                                        .replace("&", "&amp;")
+                                                        .replace("<", "&lt;")
+                                                        .replace(">", "&gt;")
+                                                // Bold **text**
+                                                t = t.replace(Regex("""\*\*(.+?)\*\*""")) { "<b>${it.groupValues[1]}</b>" }
+                                                // Italic *text* (single star, not double)
+                                                t = t.replace(Regex("""(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)""")) { "<i>${it.groupValues[1]}</i>" }
+                                                // Inline code `text`
+                                                t = t.replace(Regex("""`(.+?)`""")) { "<code>${it.groupValues[1]}</code>" }
+                                                // Newlines → <br>
+                                                t = t.replace("\n", "<br/>")
+                                                append("<span class='txt'>").append(t).append("</span>")
+                                        }
+                                        is LatexSegment.MathPart -> {
+                                                // Placeholder span; script below renders KaTeX into it
+                                                append("<span id='m").append(mathId).append("'></span>")
+                                                mathId++
+                                        }
+                                }
+                        }
+                }
+
+                // Build the KaTeX render calls
+                val renderScript = buildString {
+                        append("(function(){")
+                        var mathId = 0
+                        for (seg in segments) {
+                                if (seg is LatexSegment.MathPart) {
+                                        val escaped = escapeForJs(seg.latex)
+                                        append("katex.render('$escaped',document.getElementById('m$mathId'),{throwOnError:false,displayMode:${seg.isBlock}});")
+                                        mathId++
+                                }
+                        }
+                        append("})();")
+                }
+
+                """
+                <!doctype html>
+                <html>
+                <head>
+                    <meta charset="utf-8" />
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                    <link rel="stylesheet" href="katex.min.css" />
+                    <script src="katex.min.js"></script>
+                    <style>
+                        html, body {
+                            margin: 0; padding: 0;
+                            background: transparent;
+                            color: $cssTextColor;
+                            font-size: ${fontSizePx}px;
+                            line-height: 1.5;
+                            overflow: hidden;
+                            font-family: system-ui, sans-serif;
+                        }
+                        #content { display: inline; }
+                        .txt { white-space: pre-wrap; }
+                        code {
+                            font-family: monospace;
+                            background: rgba(128,128,128,0.15);
+                            padding: 0 3px;
+                            border-radius: 3px;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div id="content">$bodyHtml</div>
+                    <script>$renderScript</script>
+                </body>
+                </html>
+                """.trimIndent()
+        }
+
+        AndroidView(
+                modifier = modifier,
+                factory = { context ->
+                        WebView(context).apply {
+                                setBackgroundColor(AndroidColor.TRANSPARENT)
+                                isVerticalScrollBarEnabled = false
+                                isHorizontalScrollBarEnabled = false
+                                settings.javaScriptEnabled = true
+                                settings.domStorageEnabled = true
+                                settings.allowFileAccess = true
                                 webViewClient = WebViewClient()
                                 layoutParams = ViewGroup.LayoutParams(
                                         ViewGroup.LayoutParams.MATCH_PARENT,
@@ -561,7 +695,7 @@ private fun LatexMathView(
                 },
                 update = { webView ->
                         webView.loadDataWithBaseURL(
-                                "https://localhost/",
+                                "file:///android_asset/katex/",
                                 html,
                                 "text/html",
                                 "utf-8",
@@ -1391,30 +1525,51 @@ fun RenderMessageSegments(
                             linkColorOverride = linkColor
                         )
                     } else {
-                        Column(modifier = textModifier) {
-                            latexSegments.forEach { part ->
-                                when (part) {
-                                    is LatexSegment.TextPart -> {
-                                        if (part.text.isNotBlank()) {
-                                            SelectableMarkdownText(
-                                                markdown = part.text,
-                                                color = baseColor,
-                                                fontSize = fontSize,
-                                                modifier = Modifier.fillMaxWidth(),
-                                                textAlign = if (isUser) TextAlign.End else TextAlign.Start,
-                                                linkColorOverride = linkColor
+                        // Check whether inline math is mixed with surrounding text.
+                        // If so, render the whole segment in one WebView so text and math
+                        // stay on the same line instead of stacking as vertical blocks.
+                        val hasInlineMath = latexSegments.any {
+                            it is LatexSegment.MathPart && !it.isBlock
+                        }
+                        val hasSurroundingText = latexSegments.any {
+                            it is LatexSegment.TextPart && it.text.isNotBlank()
+                        }
+
+                        if (hasInlineMath && hasSurroundingText) {
+                            // Inline math mixed with text — render together in one WebView
+                            InlineLatexView(
+                                segments = latexSegments,
+                                textColor = baseColor,
+                                fontSize = fontSize,
+                                modifier = textModifier
+                            )
+                        } else {
+                            // Pure block display math ($$...$$) — render each in its own WebView
+                            Column(modifier = textModifier) {
+                                latexSegments.forEach { part ->
+                                    when (part) {
+                                        is LatexSegment.TextPart -> {
+                                            if (part.text.isNotBlank()) {
+                                                SelectableMarkdownText(
+                                                    markdown = part.text,
+                                                    color = baseColor,
+                                                    fontSize = fontSize,
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    textAlign = if (isUser) TextAlign.End else TextAlign.Start,
+                                                    linkColorOverride = linkColor
+                                                )
+                                            }
+                                        }
+                                        is LatexSegment.MathPart -> {
+                                            LatexMathView(
+                                                latex = part.latex,
+                                                isBlock = part.isBlock,
+                                                textColor = baseColor,
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(vertical = if (part.isBlock) 4.dp else 2.dp)
                                             )
                                         }
-                                    }
-                                    is LatexSegment.MathPart -> {
-                                        LatexMathView(
-                                            latex = part.latex,
-                                            isBlock = part.isBlock,
-                                            textColor = baseColor,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(vertical = if (part.isBlock) 4.dp else 2.dp)
-                                        )
                                     }
                                 }
                             }

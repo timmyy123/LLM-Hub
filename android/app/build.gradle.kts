@@ -26,7 +26,7 @@ android {
         minSdk = 27
         targetSdk = 36
         versionCode = 99
-        versionName = "3.7.4"
+        versionName = "3.7.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         val hfToken: String = localProperties.getProperty("HF_TOKEN", "")
