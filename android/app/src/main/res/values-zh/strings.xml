@@ -641,6 +641,8 @@
     <string name="image_generator_input_image">输入图像</string>
     <string name="image_generator_use_gpu">使用 GPU 加速</string>
     <string name="image_generator_use_gpu_desc">更快的生成速度（需要 OpenCL 支持）</string>
+    <string name="image_generator_width">宽度</string>
+    <string name="image_generator_height">高度</string>
 
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">无可用模型</string>
