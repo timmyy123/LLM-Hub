@@ -1,4 +1,4 @@
-﻿package com.llmhub.llmhub.screens
+package com.llmhub.llmhub.screens
 
 import android.graphics.Bitmap
 import androidx.compose.foundation.BorderStroke
@@ -60,6 +60,8 @@ fun ImageGeneratorScreen(
     var promptText by remember { mutableStateOf("") }
     var iterations by remember { mutableIntStateOf(prefs.getInt("iterations", 20)) }
     var seed by remember { mutableIntStateOf(prefs.getInt("seed", (0..999999).random())) }
+    var imageWidth by remember { mutableIntStateOf(prefs.getInt("image_width", 256)) }
+    var imageHeight by remember { mutableIntStateOf(prefs.getInt("image_height", 256)) }
     val generatedImages = remember { mutableStateListOf<Bitmap>() }
     var isGenerating by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -142,10 +144,12 @@ fun ImageGeneratorScreen(
     }
     
     // Save settings when they change
-    LaunchedEffect(iterations, seed, selectedModel, denoiseStrength, useGpu) {
+    LaunchedEffect(iterations, seed, selectedModel, denoiseStrength, useGpu, imageWidth, imageHeight) {
         prefs.edit()
             .putInt("iterations", iterations)
             .putInt("seed", seed)
+            .putInt("image_width", imageWidth)
+            .putInt("image_height", imageHeight)
             .putString("last_model_path", selectedModel?.path)
             .putFloat("denoise_strength", denoiseStrength)
             .putBoolean("use_gpu", useGpu)
@@ -415,6 +419,40 @@ fun ImageGeneratorScreen(
                                 steps = 7,
                                 enabled = !isGenerating
                             )
+                        }
+
+                        if (selectedModel?.type == ModelType.MNN_CPU) {
+                            // Width slider
+                            Column {
+                                Text(
+                                    text = "${stringResource(R.string.image_generator_width)}: $imageWidth",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Slider(
+                                    value = imageWidth.toFloat(),
+                                    onValueChange = { imageWidth = it.toInt() },
+                                    valueRange = 128f..512f,
+                                    steps = 2,
+                                    enabled = !isGenerating
+                                )
+                            }
+
+                            // Height slider
+                            Column {
+                                Text(
+                                    text = "${stringResource(R.string.image_generator_height)}: $imageHeight",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Slider(
+                                    value = imageHeight.toFloat(),
+                                    onValueChange = { imageHeight = it.toInt() },
+                                    valueRange = 128f..512f,
+                                    steps = 2,
+                                    enabled = !isGenerating
+                                )
+                            }
                         }
                         
                         // Seed input with random button
@@ -705,6 +743,8 @@ fun ImageGeneratorScreen(
                                         prompt = promptText,
                                         iterations = iterations,
                                         seed = seed,
+                                        width = imageWidth,
+                                        height = imageHeight,
                                         inputImage = inputImageBitmap,
                                         denoiseStrength = denoiseStrength,
                                         useGpu = useGpu
@@ -881,6 +921,8 @@ fun ImageGeneratorScreen(
                                                         prompt = promptText,
                                                         iterations = iterations,
                                                         seed = seed,
+                                                        width = imageWidth,
+                                                        height = imageHeight,
                                                         inputImage = inputImageBitmap,
                                                         denoiseStrength = denoiseStrength,
                                                         useGpu = useGpu
@@ -971,6 +1013,8 @@ fun ImageGeneratorScreen(
                                                 prompt = promptText,
                                                 iterations = iterations,
                                                 seed = newSeed,
+                                                width = imageWidth,
+                                                height = imageHeight,
                                                 useGpu = useGpu
                                             )
                                             if (bitmap != null) {
@@ -1238,6 +1282,8 @@ fun ImageGeneratorScreen(
                                                 prompt = promptText,
                                                 iterations = iterations,
                                                 seed = seed,
+                                                width = imageWidth,
+                                                height = imageHeight,
                                                 inputImage = inputImageBitmap,
                                                 denoiseStrength = denoiseStrength,
                                                 useGpu = useGpu
@@ -1304,6 +1350,8 @@ fun ImageGeneratorScreen(
                                                         prompt = promptText,
                                                         iterations = iterations,
                                                         seed = newSeed,
+                                                        width = imageWidth,
+                                                        height = imageHeight,
                                                         inputImage = inputImageBitmap,
                                                         denoiseStrength = denoiseStrength,
                                                         useGpu = useGpu

@@ -521,6 +521,8 @@
     <string name="image_generator_input_image">Входное изображение</string>
     <string name="image_generator_use_gpu">Использовать ускорение GPU</string>
     <string name="image_generator_use_gpu_desc">Более быстрая генерация (требуется поддержка OpenCL)</string>
+    <string name="image_generator_width">Ширина</string>
+    <string name="image_generator_height">Высота</string>
 
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">Модель недоступна</string>

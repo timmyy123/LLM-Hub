@@ -515,6 +515,8 @@
     <string name="image_generator_input_image">Eingabebild</string>
     <string name="image_generator_use_gpu">GPU-Beschleunigung verwenden</string>
     <string name="image_generator_use_gpu_desc">Schnellere Generierung (erfordert OpenCL-Unterstützung)</string>
+    <string name="image_generator_width">Breite</string>
+    <string name="image_generator_height">Höhe</string>
 
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">Kein Modell verfügbar</string>
