@@ -95,8 +95,8 @@ class ImageGeneratorHelper(private val context: Context) {
     ): Bitmap? = withContext(Dispatchers.IO) {
         try {
             val img2imgInfo = if (inputImage != null) " [img2img, denoise: $denoiseStrength]" else ""
-            val targetWidth = width
-            val targetHeight = height
+            val targetWidth = if (currentModelType == ModelType.QNN_NPU) 512 else width
+            val targetHeight = if (currentModelType == ModelType.QNN_NPU) 512 else height
 
             Log.i(
                 TAG,

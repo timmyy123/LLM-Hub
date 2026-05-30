@@ -1,4 +1,4 @@
-﻿package com.llmhub.llmhub.screens
+package com.llmhub.llmhub.screens
 
 import android.graphics.Bitmap
 import androidx.compose.foundation.BorderStroke
@@ -421,36 +421,38 @@ fun ImageGeneratorScreen(
                             )
                         }
 
-                        // Width slider
-                        Column {
-                            Text(
-                                text = "${stringResource(R.string.image_generator_width)}: $imageWidth",
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Slider(
-                                value = imageWidth.toFloat(),
-                                onValueChange = { imageWidth = it.toInt() },
-                                valueRange = 128f..512f,
-                                steps = 2,
-                                enabled = !isGenerating
-                            )
-                        }
+                        if (selectedModel?.type == ModelType.MNN_CPU) {
+                            // Width slider
+                            Column {
+                                Text(
+                                    text = "${stringResource(R.string.image_generator_width)}: $imageWidth",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Slider(
+                                    value = imageWidth.toFloat(),
+                                    onValueChange = { imageWidth = it.toInt() },
+                                    valueRange = 128f..512f,
+                                    steps = 2,
+                                    enabled = !isGenerating
+                                )
+                            }
 
-                        // Height slider
-                        Column {
-                            Text(
-                                text = "${stringResource(R.string.image_generator_height)}: $imageHeight",
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Slider(
-                                value = imageHeight.toFloat(),
-                                onValueChange = { imageHeight = it.toInt() },
-                                valueRange = 128f..512f,
-                                steps = 2,
-                                enabled = !isGenerating
-                            )
+                            // Height slider
+                            Column {
+                                Text(
+                                    text = "${stringResource(R.string.image_generator_height)}: $imageHeight",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Slider(
+                                    value = imageHeight.toFloat(),
+                                    onValueChange = { imageHeight = it.toInt() },
+                                    valueRange = 128f..512f,
+                                    steps = 2,
+                                    enabled = !isGenerating
+                                )
+                            }
                         }
                         
                         // Seed input with random button
