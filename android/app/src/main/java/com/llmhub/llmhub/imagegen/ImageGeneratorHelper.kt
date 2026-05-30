@@ -87,16 +87,16 @@ class ImageGeneratorHelper(private val context: Context) {
         prompt: String,
         iterations: Int = 28,  // Renamed from 'steps' for API compatibility
         seed: Int = 0,
+        width: Int = 256,
+        height: Int = 256,
         inputImage: Bitmap? = null,
         denoiseStrength: Float = 0.7f,
         useGpu: Boolean = false
     ): Bitmap? = withContext(Dispatchers.IO) {
         try {
             val img2imgInfo = if (inputImage != null) " [img2img, denoise: $denoiseStrength]" else ""
-            val (targetWidth, targetHeight) = when (currentModelType) {
-                ModelType.MNN_CPU -> 256 to 256
-                else -> 512 to 512
-            }
+            val targetWidth = width
+            val targetHeight = height
 
             Log.i(
                 TAG,

@@ -539,6 +539,8 @@
     <string name="image_generator_input_image">Gambar input</string>
     <string name="image_generator_use_gpu">Gunakan Akselerasi GPU</string>
     <string name="image_generator_use_gpu_desc">Generasi lebih cepat (memerlukan dukungan OpenCL)</string>
+    <string name="image_generator_width">Lebar</string>
+    <string name="image_generator_height">Tinggi</string>
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">Tidak Ada Model Tersedia</string>
     <string name="feature_download_model">Unduh Model</string>

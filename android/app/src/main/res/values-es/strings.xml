@@ -520,6 +520,8 @@
     <string name="image_generator_input_image">Imagen de entrada</string>
     <string name="image_generator_use_gpu">Usar aceleración GPU</string>
     <string name="image_generator_use_gpu_desc">Generación más rápida (requiere soporte OpenCL)</string>
+    <string name="image_generator_width">Ancho</string>
+    <string name="image_generator_height">Alto</string>
     
     <!-- Common Feature Strings -->
     <string name="feature_no_model_title">No Hay Modelo Disponible</string>
