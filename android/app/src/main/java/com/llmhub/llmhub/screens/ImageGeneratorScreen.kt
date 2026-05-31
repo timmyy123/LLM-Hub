@@ -94,6 +94,46 @@ fun ImageGeneratorScreen(
             }
         }
     }
+
+    // Component for rendering the selected input image preview with a clear/remove button overlay
+    val InputImageThumbnail = @Composable { bitmap: Bitmap, enabled: Boolean, onClick: () -> Unit, onRemoveClick: () -> Unit ->
+        Box(
+            modifier = Modifier.size(64.dp)
+        ) {
+            // Main image container card
+            Card(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable { onClick() },
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Image(
+                    bitmap = bitmap.asImageBitmap(),
+                    contentDescription = stringResource(R.string.image_generator_input_image),
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            // Floating clear button aligned to the top-right corner
+            Surface(
+                shape = CircleShape,
+                color = if (enabled) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                modifier = Modifier
+                    .size(24.dp)
+                    .align(Alignment.TopEnd)
+                    .offset(x = 6.dp, y = (-6).dp)
+                    .clickable(enabled = enabled) { onRemoveClick() },
+                shadowElevation = 2.dp
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = stringResource(R.string.close),
+                    modifier = Modifier.padding(4.dp)
+                )
+            }
+        }
+    }
     
     // Model availability state
     var availableModels by remember { mutableStateOf<List<ModelInfo>>(emptyList()) }
@@ -688,20 +728,16 @@ fun ImageGeneratorScreen(
                                                     )
                                                 )
                                             }
-                                            
+
                                             inputImageBitmap?.let { bitmap ->
-                                                Card(
-                                                    modifier = Modifier
-                                                        .size(64.dp)
-                                                        .clickable { showInputImageFullscreen = true },
-                                                    shape = RoundedCornerShape(8.dp)
-                                                ) {
-                                                    Image(
-                                                        bitmap = bitmap.asImageBitmap(),
-                                                        contentDescription = stringResource(R.string.image_generator_input_image),
-                                                        modifier = Modifier.fillMaxSize()
-                                                    )
-                                                }
+                                                InputImageThumbnail(
+                                                    bitmap,
+                                                    !isGenerating,
+                                                    { showInputImageFullscreen = true },
+                                                    {
+                                                        inputImageBitmap = null
+                                                    }
+                                                )
                                             }
                                         }
                                         
@@ -866,20 +902,16 @@ fun ImageGeneratorScreen(
                                                     )
                                                 )
                                             }
-                                            
+
                                             inputImageBitmap?.let { bitmap ->
-                                                Card(
-                                                    modifier = Modifier
-                                                        .size(64.dp)
-                                                        .clickable { showInputImageFullscreen = true },
-                                                    shape = RoundedCornerShape(8.dp)
-                                                ) {
-                                                    Image(
-                                                        bitmap = bitmap.asImageBitmap(),
-                                                        contentDescription = stringResource(R.string.image_generator_input_image),
-                                                        modifier = Modifier.fillMaxSize()
-                                                    )
-                                                }
+                                                InputImageThumbnail(
+                                                    bitmap,
+                                                    !isGenerating,
+                                                    { showInputImageFullscreen = true },
+                                                    {
+                                                        inputImageBitmap = null
+                                                    }
+                                                )
                                             }
                                         }
                                         
@@ -1227,20 +1259,16 @@ fun ImageGeneratorScreen(
                                             )
                                         )
                                     }
-                                    
+
                                     inputImageBitmap?.let { bitmap ->
-                                        Card(
-                                            modifier = Modifier
-                                                .size(64.dp)
-                                                .clickable { showInputImageFullscreen = true },
-                                            shape = RoundedCornerShape(8.dp)
-                                        ) {
-                                            Image(
-                                                bitmap = bitmap.asImageBitmap(),
-                                                contentDescription = stringResource(R.string.image_generator_input_image),
-                                                modifier = Modifier.fillMaxSize()
-                                            )
-                                        }
+                                        InputImageThumbnail(
+                                            bitmap,
+                                            !isGenerating,
+                                            { showInputImageFullscreen = true },
+                                            {
+                                                inputImageBitmap = null
+                                            }
+                                        )
                                     }
                                 }
                                 
