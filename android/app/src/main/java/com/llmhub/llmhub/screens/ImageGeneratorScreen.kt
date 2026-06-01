@@ -372,7 +372,7 @@ fun ImageGeneratorScreen(
                                     selectedModel?.let { model ->
                                         isModelLoading = true
                                         coroutineScope.launch {
-                                            val success = imageGeneratorHelper.initialize(model.path, useGpu)
+                                            val success = imageGeneratorHelper.initialize(model.path, model.type, useGpu)
                                             isModelLoaded = success
                                             isModelLoading = false
                                             if (!success) {

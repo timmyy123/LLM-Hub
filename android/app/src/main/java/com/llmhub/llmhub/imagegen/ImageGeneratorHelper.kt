@@ -25,14 +25,14 @@ class ImageGeneratorHelper(private val context: Context) {
     private val sdHelper = StableDiffusionHelper(context)
     private var currentModelType: ModelType? = null
     
-    suspend fun initialize(modelPath: String? = null, useGpu: Boolean = false): Boolean = withContext(Dispatchers.IO) {
+    suspend fun initialize(modelPath: String? = null, modelType: ModelType? = null, useGpu: Boolean = false): Boolean = withContext(Dispatchers.IO) {
         try {
             // Check if model is available
-            val modelInfo = if (modelPath != null) {
+            val modelInfo = if (modelPath != null && modelType != null) {
                 // If path provided, verify it
                 val file = File(modelPath)
                 if (file.exists()) {
-                    ModelInfo(file.name, ModelType.QNN_NPU, file.absolutePath, true) // Type is guessed, backend will detect
+                    ModelInfo(file.name, modelType, file.absolutePath, true) // Type is guessed, backend will detect
                 } else {
                     null
                 }
