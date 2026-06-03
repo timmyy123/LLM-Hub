@@ -275,16 +275,16 @@ func binaryTargets() -> [Target] {
         // Download XCFrameworks from GitHub releases
         // All xcframeworks include iOS + macOS slices (v0.19.0+)
         // =====================================================================
-        var targets: [Target] = [
+        let targets: [Target] = [
             .binaryTarget(
                 name: "RACommonsBinary",
-                url: "https://github.com/timmyy123/LLM-Hub/releases/download/ios-sdk-v\(sdkVersion)-patched-v15/RACommons-v\(sdkVersion).zip",
-                checksum: "2f622ca1d7ae28bcd354c5e8bd38a3d2140a5fd64fc0a2c950975a80ea8ee179"
+                url: "https://github.com/timmyy123/LLM-Hub/releases/download/ios-sdk-v\(sdkVersion)-patched-v16/RACommons-v\(sdkVersion).zip",
+                checksum: "f56a7bd9be0dbe4c4d464840e4efb49ae33b7333774ceb0cf5fac5d907a51bc9"
             ),
             .binaryTarget(
                 name: "RABackendLlamaCPPBinary",
-                url: "https://github.com/timmyy123/LLM-Hub/releases/download/ios-sdk-v\(sdkVersion)-patched-v15/RABackendLLAMACPP-v\(sdkVersion).zip",
-                checksum: "ea210f83e9cad8703d7a4ca818051283e25e7ff395e9bffa1ccaad233461d5f8"
+                url: "https://github.com/timmyy123/LLM-Hub/releases/download/ios-sdk-v\(sdkVersion)-patched-v16/RABackendLLAMACPP-v\(sdkVersion).zip",
+                checksum: "a2dc2f43e9d32ce229a03c7aab9251e396f7217d027a92f8f8bd2b9106f460fd"
             ),
             .binaryTarget(
                 name: "RABackendONNXBinary",

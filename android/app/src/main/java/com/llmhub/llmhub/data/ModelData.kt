@@ -1107,9 +1107,9 @@ object ModelData {
         LLMModel(
             name = "LFM2.5-8B-A1B (Q4_0)",
             description = "Liquid's 8.3B parameter MoE model (1.5B active). Q4_0 quantization. 131k context. (4.84GB)",
-            url = "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B-GGUF/resolve/80d14f2e3e999d70c9c57e533b67362750331417/LFM2.5-8B-A1B-Q4_0.gguf?download=true",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B-GGUF/resolve/dfd5fdcad7a1c0d31473fb4ca443b8befbacddf0/LFM2.5-8B-A1B-Q4_0.gguf?download=true",
             category = "text",
-            sizeBytes = 4844678112L,
+            sizeBytes = 4844678368L,
             source = "LiquidAI",
             supportsVision = false,
             supportsGpu = true,
@@ -1120,9 +1120,9 @@ object ModelData {
         LLMModel(
             name = "LFM2.5-8B-A1B (Q4_K_M)",
             description = "Liquid's 8.3B parameter MoE model (1.5B active). Q4_K_M quantization, recommended. 131k context. (5.16GB)",
-            url = "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B-GGUF/resolve/80d14f2e3e999d70c9c57e533b67362750331417/LFM2.5-8B-A1B-Q4_K_M.gguf?download=true",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B-GGUF/resolve/dfd5fdcad7a1c0d31473fb4ca443b8befbacddf0/LFM2.5-8B-A1B-Q4_K_M.gguf?download=true",
             category = "text",
-            sizeBytes = 5155564512L,
+            sizeBytes = 5155564768L,
             source = "LiquidAI",
             supportsVision = false,
             supportsGpu = true,
@@ -1133,9 +1133,9 @@ object ModelData {
         LLMModel(
             name = "LFM2.5-8B-A1B (Q5_K_M)",
             description = "Liquid's 8.3B parameter MoE model (1.5B active). Q5_K_M quantization. 131k context. (6.03GB)",
-            url = "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B-GGUF/resolve/80d14f2e3e999d70c9c57e533b67362750331417/LFM2.5-8B-A1B-Q5_K_M.gguf?download=true",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B-GGUF/resolve/dfd5fdcad7a1c0d31473fb4ca443b8befbacddf0/LFM2.5-8B-A1B-Q5_K_M.gguf?download=true",
             category = "text",
-            sizeBytes = 6030339040L,
+            sizeBytes = 6030339296L,
             source = "LiquidAI",
             supportsVision = false,
             supportsGpu = true,
@@ -1146,9 +1146,9 @@ object ModelData {
         LLMModel(
             name = "LFM2.5-8B-A1B (Q6_K)",
             description = "Liquid's 8.3B parameter MoE model (1.5B active). Q6_K quantization. 131k context. (6.96GB)",
-            url = "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B-GGUF/resolve/80d14f2e3e999d70c9c57e533b67362750331417/LFM2.5-8B-A1B-Q6_K.gguf?download=true",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B-GGUF/resolve/dfd5fdcad7a1c0d31473fb4ca443b8befbacddf0/LFM2.5-8B-A1B-Q6_K.gguf?download=true",
             category = "text",
-            sizeBytes = 6959786976L,
+            sizeBytes = 6959787232L,
             source = "LiquidAI",
             supportsVision = false,
             supportsGpu = true,
@@ -1159,9 +1159,9 @@ object ModelData {
         LLMModel(
             name = "LFM2.5-8B-A1B (Q8_0)",
             description = "Liquid's 8.3B parameter MoE model (1.5B active). Q8_0 quantization. 131k context. (9.01GB)",
-            url = "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B-GGUF/resolve/80d14f2e3e999d70c9c57e533b67362750331417/LFM2.5-8B-A1B-Q8_0.gguf?download=true",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B-GGUF/resolve/dfd5fdcad7a1c0d31473fb4ca443b8befbacddf0/LFM2.5-8B-A1B-Q8_0.gguf?download=true",
             category = "text",
-            sizeBytes = 9010195424L,
+            sizeBytes = 9010195680L,
             source = "LiquidAI",
             supportsVision = false,
             supportsGpu = true,
@@ -1172,9 +1172,9 @@ object ModelData {
         LLMModel(
             name = "LFM2.5-8B-A1B (BF16)",
             description = "Liquid's 8.3B parameter MoE model (1.5B active). BF16 (bfloat16 precision) variant. 131k context. (16.95GB)",
-            url = "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B-GGUF/resolve/80d14f2e3e999d70c9c57e533b67362750331417/LFM2.5-8B-A1B-BF16.gguf?download=true",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B-GGUF/resolve/dfd5fdcad7a1c0d31473fb4ca443b8befbacddf0/LFM2.5-8B-A1B-BF16.gguf?download=true",
             category = "text",
-            sizeBytes = 16947260384L,
+            sizeBytes = 16947260640L,
             source = "LiquidAI",
             supportsVision = false,
             supportsGpu = true,
@@ -1185,9 +1185,9 @@ object ModelData {
         LLMModel(
             name = "LFM2.5-8B-A1B (F16)",
             description = "Liquid's 8.3B parameter MoE model (1.5B active). F16 (float16 precision) variant. 131k context. (16.95GB)",
-            url = "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B-GGUF/resolve/80d14f2e3e999d70c9c57e533b67362750331417/LFM2.5-8B-A1B-F16.gguf?download=true",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B-GGUF/resolve/dfd5fdcad7a1c0d31473fb4ca443b8befbacddf0/LFM2.5-8B-A1B-F16.gguf?download=true",
             category = "text",
-            sizeBytes = 16947260384L,
+            sizeBytes = 16947260640L,
             source = "LiquidAI",
             supportsVision = false,
             supportsGpu = true,
@@ -1658,9 +1658,9 @@ object ModelData {
         LLMModel(
             name = "Gemma-4 E2B",
             description = "Google Gemma-4 E2B multimodal model (text, vision, audio). Effective 2B parameters with 32k context. Embedding params are memory-mapped; only ~0.8GB decoder weights stay in RAM. GPU uses ~676MB, CPU uses ~1.7GB (Google benchmarks). Vision and audio loaded on-demand. Ready to download from HuggingFace (2.58GB)",
-            url = "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/d23202ebbc77c976719090aaa080362f29d746e2/gemma-4-E2B-it.litertlm?download=true",
+            url = "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/a4a831c060880f3733135ad22f10e0e9f758f45d/gemma-4-E2B-it.litertlm?download=true",
             category = "multimodal",
-            sizeBytes = 2583085056L, // 2,583,085,056 bytes (2.58 GB actual)
+            sizeBytes = 2588147712L, // 2,588,147,712 bytes (2.58 GB actual)
             source = "Google (LiteRT LM)",
             supportsVision = true,
             supportsAudio = true,
@@ -1672,9 +1672,9 @@ object ModelData {
         LLMModel(
             name = "Gemma-4 E4B",
             description = "Google Gemma-4 E4B multimodal model (text, vision, audio). Effective 4B parameters with 32k context. Embedding params are memory-mapped; ~2.24GB decoder weights stay in RAM. GPU uses ~710MB, CPU uses ~3.2GB (Google benchmarks). Vision and audio loaded on-demand. Ready to download from HuggingFace (3.65GB)",
-            url = "https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm/resolve/55b6eef9e490da991fe6bc5fec1834106927b727/gemma-4-E4B-it.litertlm?download=true",
+            url = "https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm/resolve/28299f30ee4d43294517a4ac93abd6163412f07f/gemma-4-E4B-it.litertlm?download=true",
             category = "multimodal",
-            sizeBytes = 3654467584L, // 3,654,467,584 bytes (3.65 GB actual)
+            sizeBytes = 3659530240L, // 3,659,530,240 bytes (3.65 GB actual)
             source = "Google (LiteRT LM)",
             supportsVision = true,
             supportsAudio = true,

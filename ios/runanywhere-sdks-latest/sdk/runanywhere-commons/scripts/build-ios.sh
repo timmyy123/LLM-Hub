@@ -73,7 +73,7 @@ source "${SCRIPT_DIR}/load-versions.sh"
 # Keep the llama.cpp bump scoped to the iOS/macOS SDK build so Android continues
 # to use the shared default pin unless it is explicitly overridden.
 IOS_LLAMACPP_REPOSITORY="${IOS_LLAMACPP_REPOSITORY:-https://github.com/ggml-org/llama.cpp.git}"
-IOS_LLAMACPP_VERSION="${IOS_LLAMACPP_VERSION:-b9247}"
+IOS_LLAMACPP_VERSION="${IOS_LLAMACPP_VERSION:-b9493}"
 
 # Get version
 VERSION=$(cat "${PROJECT_ROOT}/VERSION" 2>/dev/null | head -1 || echo "0.1.0")
