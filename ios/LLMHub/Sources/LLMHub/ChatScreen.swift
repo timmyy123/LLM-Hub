@@ -1651,10 +1651,9 @@ class ChatViewModel: ObservableObject {
     /// The key used for the current auto-readout turn, so we can stop it on new turn/chat switch.
     private var autoReadoutKey: String?
 
-    /// Sentence-ending pattern: period/!/? followed by whitespace or end-of-string.
-    private static let sentenceEndRegex = try! NSRegularExpression(pattern: "[.!?。！？](?:\\s|$)", options: [])
-
     /// Called from `updateLastAIMessageSync` during streaming to progressively speak completed sentences.
+    /// Extracts only the NEW delta text since last call and feeds it token-by-token into the TTS
+    /// streaming buffer — mirrors Android's `ttsService.addStreamingText(piece)` pattern.
     private func progressiveTTSUpdate(fullContent: String, messageKey: String) {
         guard AppSettings.shared.autoReadoutEnabled else { return }
 
@@ -1668,53 +1667,37 @@ class ChatViewModel: ObservableObject {
 
         guard displayContent.count > ttsReadCursor else { return }
 
-        let unread = String(displayContent.dropFirst(ttsReadCursor))
-        let range = NSRange(unread.startIndex..., in: unread)
-        let matches = Self.sentenceEndRegex.matches(in: unread, options: [], range: range)
+        // Extract only the NEW characters since the last update
+        let delta = String(displayContent.dropFirst(ttsReadCursor))
+        ttsReadCursor = displayContent.count
 
-        guard let lastMatch = matches.last else { return }
-        let matchEnd = lastMatch.range.location + lastMatch.range.length
-        let sentenceEnd = unread.index(unread.startIndex, offsetBy: matchEnd)
-        let newText = String(unread[unread.startIndex..<sentenceEnd]).trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !delta.isEmpty else { return }
 
-        guard !newText.isEmpty else { return }
-
-        // If TTS is idle (first sentence) or has finished the previous chunk, speak the next chunk.
-        // If still speaking previous chunk, let it finish — we'll catch up on next token update.
-        if !ttsManager.isSpeaking {
-            autoReadoutKey = messageKey
-            ttsManager.speak(newText, fallbackLanguage: AppSettings.shared.selectedLanguage, key: messageKey)
-            ttsReadCursor += matchEnd
-        }
+        autoReadoutKey = messageKey
+        // Feed the delta into the streaming buffer; it will speak each sentence as it completes
+        ttsManager.addStreamingToken(delta, fallbackLanguage: AppSettings.shared.selectedLanguage, key: messageKey)
     }
 
-    /// Speaks any remaining unread text after generation finishes.
+    /// Flushes any remaining buffered text after generation finishes.
     private func progressiveTTSFinish(fullContent: String, messageKey: String) {
         guard AppSettings.shared.autoReadoutEnabled else { return }
 
+        // Feed any final delta that may not have been processed yet
         let displayContent: String
         if contentHasThinkingMarkers(fullContent) {
             displayContent = getDisplayContentWithoutThinking(fullContent)
         } else {
             displayContent = fullContent
         }
-
-        let remaining = String(displayContent.dropFirst(ttsReadCursor)).trimmingCharacters(in: .whitespacesAndNewlines)
-        if !remaining.isEmpty {
-            // Wait for current speech to finish, then speak remainder
-            autoReadoutKey = messageKey
-            let lang = AppSettings.shared.selectedLanguage
-            let key = messageKey
-            let mgr = ttsManager
-            Task { @MainActor in
-                // Poll briefly for current utterance to finish (max ~5s)
-                for _ in 0..<50 {
-                    if !mgr.isSpeaking { break }
-                    try? await Task.sleep(nanoseconds: 100_000_000)
-                }
-                mgr.speak(remaining, fallbackLanguage: lang, key: key)
+        if displayContent.count > ttsReadCursor {
+            let delta = String(displayContent.dropFirst(ttsReadCursor))
+            if !delta.isEmpty {
+                ttsManager.addStreamingToken(delta, fallbackLanguage: AppSettings.shared.selectedLanguage, key: messageKey)
             }
         }
+
+        // Flush any leftover text in the buffer (e.g. last sentence without punctuation)
+        ttsManager.flushStreamingBuffer(fallbackLanguage: AppSettings.shared.selectedLanguage, key: messageKey)
         ttsReadCursor = 0
     }
 

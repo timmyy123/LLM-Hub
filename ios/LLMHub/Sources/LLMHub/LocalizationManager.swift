@@ -181,11 +181,16 @@ final class OnDeviceTtsManager: NSObject, ObservableObject, AVSpeechSynthesizerD
     @Published private(set) var currentKey: String?
 
     private let synthesizer = AVSpeechSynthesizer()
+    /// Streaming token buffer — mirrors Android TtsService.textBuffer.
+    private var streamingBuffer = ""
+    private static let sentenceDelimiters: Set<Character> = [".", "!", "?", "。", "！", "？"]
 
     private override init() {
         super.init()
         synthesizer.delegate = self
     }
+
+    // MARK: - Non-streaming speak (manual tap)
 
     func speak(_ text: String, fallbackLanguage: AppLanguage, key: String? = nil) {
         let cleaned = sanitize(text)
@@ -196,14 +201,11 @@ final class OnDeviceTtsManager: NSObject, ObservableObject, AVSpeechSynthesizerD
         currentKey = key
         isSpeaking = true
 
-        // Switch audio session to playback off the main thread, then create
-        // and speak the utterance on MainActor (AVSpeechUtterance is not Sendable).
         let fallback = fallbackLanguage
         Task { @MainActor [weak self, cleaned, fallback] in
             guard let self = self else { return }
             try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio, options: .duckOthers)
             try? AVAudioSession.sharedInstance().setActive(true)
-            
             let utterance = AVSpeechUtterance(string: cleaned)
             utterance.voice = self.bestVoice(for: cleaned, fallbackLanguage: fallback)
             utterance.rate = AVSpeechUtteranceDefaultSpeechRate
@@ -211,6 +213,57 @@ final class OnDeviceTtsManager: NSObject, ObservableObject, AVSpeechSynthesizerD
             self.synthesizer.speak(utterance)
         }
     }
+
+    // MARK: - Streaming TTS (mirrors Android addStreamingText / flushStreamingBuffer)
+
+    /// Feed one token of new text into the buffer.
+    /// Speaks any complete sentence(s) immediately via QUEUE_ADD so nothing is ever skipped.
+    func addStreamingToken(_ token: String, fallbackLanguage: AppLanguage, key: String?) {
+        guard !token.isEmpty else { return }
+
+        // Activate audio session on first token
+        if !isSpeaking && streamingBuffer.isEmpty {
+            try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio, options: .duckOthers)
+            try? AVAudioSession.sharedInstance().setActive(true)
+            currentKey = key
+            isSpeaking = true
+        }
+
+        streamingBuffer += token
+
+        // Speak each complete sentence as it forms
+        while let delimIdx = streamingBuffer.firstIndex(where: { Self.sentenceDelimiters.contains($0) }) {
+            // Include the delimiter itself
+            let endIdx = streamingBuffer.index(after: delimIdx)
+            let sentence = String(streamingBuffer[streamingBuffer.startIndex..<endIdx]).trimmingCharacters(in: .whitespacesAndNewlines)
+            streamingBuffer = String(streamingBuffer[endIdx...])
+
+            guard !sentence.isEmpty else { continue }
+            let cleaned = sanitize(sentence)
+            guard !cleaned.isEmpty else { continue }
+            let utterance = AVSpeechUtterance(string: cleaned)
+            utterance.voice = bestVoice(for: cleaned, fallbackLanguage: fallbackLanguage)
+            utterance.rate = AVSpeechUtteranceDefaultSpeechRate
+            utterance.prefersAssistiveTechnologySettings = true
+            synthesizer.speak(utterance)  // QUEUE_ADD behaviour — AVSpeechSynthesizer queues by default
+        }
+    }
+
+    /// Speak any leftover text in the buffer after generation finishes.
+    func flushStreamingBuffer(fallbackLanguage: AppLanguage, key: String?) {
+        let remaining = streamingBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
+        streamingBuffer = ""
+        guard !remaining.isEmpty else { return }
+        let cleaned = sanitize(remaining)
+        guard !cleaned.isEmpty else { return }
+        let utterance = AVSpeechUtterance(string: cleaned)
+        utterance.voice = bestVoice(for: cleaned, fallbackLanguage: fallbackLanguage)
+        utterance.rate = AVSpeechUtteranceDefaultSpeechRate
+        utterance.prefersAssistiveTechnologySettings = true
+        synthesizer.speak(utterance)
+    }
+
+    // MARK: - Controls
 
     func toggleSpeaking(_ text: String, fallbackLanguage: AppLanguage, key: String) {
         if isSpeaking(key: key) {
@@ -230,6 +283,7 @@ final class OnDeviceTtsManager: NSObject, ObservableObject, AVSpeechSynthesizerD
     }
 
     func stop() {
+        streamingBuffer = ""
         if synthesizer.isSpeaking || synthesizer.isPaused {
             synthesizer.stopSpeaking(at: .immediate)
         }
@@ -242,8 +296,11 @@ final class OnDeviceTtsManager: NSObject, ObservableObject, AVSpeechSynthesizerD
         // connection (IPCAUClient: can't connect to server). SpeechEngine.start() will
         // switch the category and call setActive(true) itself when the mic restarts.
         Task { @MainActor in
-            self.isSpeaking = false
-            self.currentKey = nil
+            // Only clear speaking state if the native queue is now empty
+            if !self.synthesizer.isSpeaking {
+                self.isSpeaking = false
+                self.currentKey = nil
+            }
         }
     }
 
