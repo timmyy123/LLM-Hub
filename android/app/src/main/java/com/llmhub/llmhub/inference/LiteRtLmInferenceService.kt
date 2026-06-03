@@ -103,21 +103,12 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
      *  the OpenCL sampler GPU decode crash is fixed. Then restore the commented block.
      */
     private fun mapBackend(preferredBackend: LlmInference.Backend?, supportsGpu: Boolean): Backend {
-        // Workaround: GPU decode crashes in 0.10.0 (libLiteRtTopKOpenClSampler.so missing).
-        // Force CPU for all litertlm models until 0.10.1 ships on Maven.
-        if (preferredBackend == LlmInference.Backend.GPU) {
-            Log.w(TAG, "GPU requested but forced to CPU (litertlm-android 0.10.0 GPU decode bug). Upgrade to 0.10.1 to enable GPU.")
-        }
-        return Backend.CPU()
-
-        /* Uncomment once litertlm-android >= 0.10.1 is available on Maven:
         return when (preferredBackend) {
             LlmInference.Backend.GPU -> Backend.GPU()
             LlmInference.Backend.CPU -> Backend.CPU()
             null -> if (supportsGpu) Backend.GPU() else Backend.CPU()
             else -> Backend.CPU()
         }
-        */
     }
 
     override fun getEffectiveMaxTokens(model: LLMModel): Int {
@@ -184,6 +175,7 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
         }
     }
 
+    @OptIn(ExperimentalApi::class)
     private suspend fun ensureEngineLoaded(
         model: LLMModel,
         preferredBackend: LlmInference.Backend? = null,
@@ -204,6 +196,9 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
 
             val backend = mapBackend(preferredBackend, model.supportsGpu)
             currentBackendIsGpu = backend is Backend.GPU
+
+            // Enable Multi-Token Prediction (MTP) via speculative decoding when running on GPU
+            ExperimentalFlags.enableSpeculativeDecoding = currentBackendIsGpu
 
             val engineConfig = EngineConfig(
                 modelPath = modelFile.absolutePath,
