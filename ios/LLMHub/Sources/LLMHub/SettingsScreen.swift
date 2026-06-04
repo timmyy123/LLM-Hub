@@ -771,7 +771,6 @@ struct LanguagePickerSheet: View {
                         HStack {
                             Text(settings.localized(lang.displayNameKey))
                                 .foregroundColor(.white)
-                                .environment(\.layoutDirection, lang.isRTL ? .rightToLeft : .leftToRight)
                             Spacer()
                             if settings.selectedLanguage == lang {
                                 Image(systemName: "checkmark.circle.fill")

@@ -63,21 +63,24 @@ struct LLMHubApp: App {
                 .environmentObject(consent)
                 .preferredColorScheme(.dark)
                 .environment(\.locale, settings.selectedLanguage.locale)
-                .environment(\.layoutDirection, effectiveLayoutDirection)
+                .ifLet(layoutDirectionOverride) { view, dir in
+                    view.environment(\.layoutDirection, dir)
+                }
         }
     }
 
-    /// Resolves the layout direction for the currently selected language.
-    /// For `.systemDefault`, we defer to the actual system/process direction
-    /// so RTL system languages are honoured. For an explicit language choice
-    /// we apply that language's direction regardless of the system setting.
-    private var effectiveLayoutDirection: LayoutDirection {
+    /// Resolves the layout direction override for the currently selected language.
+    /// Returns `nil` for `.systemDefault` so iOS handles RTL natively without
+    /// SwiftUI mirroring text glyphs — only non-nil when we need to *override*
+    /// the system direction (e.g. user picks Arabic on an LTR device, or picks
+    /// English on an Arabic-locale device).
+    private var layoutDirectionOverride: LayoutDirection? {
         switch settings.selectedLanguage {
         case .systemDefault:
-            // Use UIApplication's semantic content attribute which reflects the
-            // process-level language direction set by iOS at launch.
-            let semantic = UIApplication.shared.userInterfaceLayoutDirection
-            return semantic == .rightToLeft ? .rightToLeft : .leftToRight
+            // Let iOS/SwiftUI handle it naturally — do NOT set layoutDirection.
+            // Explicitly setting .rightToLeft here causes SwiftUI to mirror the
+            // entire coordinate space, which flips text glyphs on screen.
+            return nil
         default:
             return settings.selectedLanguage.isRTL ? .rightToLeft : .leftToRight
         }

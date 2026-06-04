@@ -66,6 +66,19 @@ extension View {
     func enableSwipeBack() -> some View {
         background(ApolloSwipeBackEnabler())
     }
+
+    /// Applies `transform` only when `value` is non-nil.
+    /// Used to conditionally set `.environment(\.layoutDirection, ...)` so we
+    /// never override the system layout direction when the user has chosen
+    /// "System Default" — preventing SwiftUI from mirroring text glyphs.
+    @ViewBuilder
+    func ifLet<T>(_ value: T?, transform: (Self, T) -> some View) -> some View {
+        if let value {
+            transform(self, value)
+        } else {
+            self
+        }
+    }
 }
 
 private struct ApolloSwipeBackEnabler: UIViewControllerRepresentable {
