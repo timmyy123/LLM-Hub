@@ -2400,6 +2400,82 @@ public static let models: [AIModel] = [
         modelFormat: .litertlm,
         additionalFiles: []
     ),
+    // MARK: - Gemma 4 12B (12B active params)
+    AIModel(
+        name: "Gemma 4 12B (Q3_K_M)",
+        description: "Google Gemma 4 12B with Q3_K_M quantization (5.69 GB). 12B parameters. Supports text + vision — download the Vision Projector (mmproj) to enable image input. 128k context.",
+        url: "https://huggingface.co/unsloth/gemma-4-12b-it-GGUF/resolve/b2f1b1f5549253e499db75d34f94acb233d8b7ca/gemma-4-12b-it-Q3_K_M.gguf?download=true",
+        category: .multimodal,
+        sizeBytes: 5693871520,
+        source: "Google via Unsloth",
+        supportsVision: true,
+        supportsAudio: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 10, recommendedRamGB: 14),
+        contextWindowSize: 131072,
+        modelFormat: .gguf,
+        additionalFiles: []
+    ),
+    AIModel(
+        name: "Gemma 4 12B (Q4_K_M)",
+        description: "Google Gemma 4 12B with Q4_K_M quantization (7.12 GB). Recommended balance of quality and size. Supports text + vision — download the Vision Projector (mmproj) to enable image input. 128k context.",
+        url: "https://huggingface.co/unsloth/gemma-4-12b-it-GGUF/resolve/b2f1b1f5549253e499db75d34f94acb233d8b7ca/gemma-4-12b-it-Q4_K_M.gguf?download=true",
+        category: .multimodal,
+        sizeBytes: 7121860000,
+        source: "Google via Unsloth",
+        supportsVision: true,
+        supportsAudio: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 12, recommendedRamGB: 16),
+        contextWindowSize: 131072,
+        modelFormat: .gguf,
+        additionalFiles: []
+    ),
+    AIModel(
+        name: "Gemma 4 12B (Q5_K_M)",
+        description: "Google Gemma 4 12B with Q5_K_M quantization (8.41 GB). Higher-quality 5-bit variant. Supports text + vision — download the Vision Projector (mmproj) to enable image input. 128k context.",
+        url: "https://huggingface.co/unsloth/gemma-4-12b-it-GGUF/resolve/b2f1b1f5549253e499db75d34f94acb233d8b7ca/gemma-4-12b-it-Q5_K_M.gguf?download=true",
+        category: .multimodal,
+        sizeBytes: 8413574560,
+        source: "Google via Unsloth",
+        supportsVision: true,
+        supportsAudio: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 14, recommendedRamGB: 18),
+        contextWindowSize: 131072,
+        modelFormat: .gguf,
+        additionalFiles: []
+    ),
+    AIModel(
+        name: "Gemma 4 12B (Q8_0)",
+        description: "Google Gemma 4 12B with Q8_0 quantization (12.67 GB). Near full quality. Supports text + vision — download the Vision Projector (mmproj) to enable image input. 128k context.",
+        url: "https://huggingface.co/unsloth/gemma-4-12b-it-GGUF/resolve/b2f1b1f5549253e499db75d34f94acb233d8b7ca/gemma-4-12b-it-Q8_0.gguf?download=true",
+        category: .multimodal,
+        sizeBytes: 12669646240,
+        source: "Google via Unsloth",
+        supportsVision: true,
+        supportsAudio: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 16, recommendedRamGB: 20),
+        contextWindowSize: 131072,
+        modelFormat: .gguf,
+        additionalFiles: []
+    ),
+    AIModel(
+        name: "Gemma 4 12B (Vision Projector, F16)",
+        description: "Vision Projector (mmproj) required to enable image input for Gemma 4 12B. F16 variant for accurate visual encodings. (122 MB)",
+        url: "https://huggingface.co/unsloth/gemma-4-12b-it-GGUF/resolve/b2f1b1f5549253e499db75d34f94acb233d8b7ca/mmproj-F16.gguf?download=true",
+        category: .multimodal,
+        sizeBytes: 122031680,
+        source: "Google via Unsloth",
+        supportsVision: true,
+        supportsAudio: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 1, recommendedRamGB: 2),
+        contextWindowSize: 0,
+        modelFormat: .gguf,
+        additionalFiles: []
+    ),
     
     // MARK: - Phi-4 Mini Models (Microsoft via unsloth GGUF)
     AIModel(

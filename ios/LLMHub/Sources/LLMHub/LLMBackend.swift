@@ -215,6 +215,104 @@ class LLMBackend: ObservableObject {
         return (raw, false)
     }
 
+    private static func cleanGemma4Output(_ raw: String) -> String {
+        let startTokens = ["<|channel|>thought", "<|channel>thought"]
+        
+        // 1. If the raw string is a prefix of any start token, hide it (prevent flashing)
+        if !raw.isEmpty {
+            for pfx in startTokens {
+                if pfx.hasPrefix(raw) && raw.count < pfx.count {
+                    return ""
+                }
+            }
+        }
+        
+        // 2. Look for the start of the thought channel
+        var hasStartTag = false
+        var startTagEndIndex: String.Index? = nil
+        for tag in startTokens {
+            if let range = raw.range(of: tag) {
+                hasStartTag = true
+                startTagEndIndex = range.upperBound
+                break
+            }
+        }
+        
+        var remainder: String
+        
+        if hasStartTag, let startIndex = startTagEndIndex {
+            // 3. Look for any closing token after the start tag
+            let closingTokens = [
+                "<channel|>",
+                "<|channel|>",
+                "<|channel|>text",
+                "<|channel>text",
+                "<|turn|>model",
+                "<|turn>model"
+            ]
+            
+            let searchArea = raw[startIndex...]
+            var firstCloseRange: Range<String.Index>? = nil
+            
+            for tag in closingTokens {
+                if let range = searchArea.range(of: tag) {
+                    if firstCloseRange == nil || range.lowerBound < firstCloseRange!.lowerBound {
+                        firstCloseRange = range
+                    }
+                }
+            }
+            
+            if let closeRange = firstCloseRange {
+                // Thought channel is closed; get everything after the closing token
+                remainder = String(raw[closeRange.upperBound...])
+            } else {
+                // Thought channel is open and still streaming; hide all output
+                return ""
+            }
+        } else {
+            remainder = raw
+        }
+        
+        // 4. Strip any intermediate or stray channel/header tokens from the remainder
+        let tokensToRemove = [
+            "<|channel|>text",
+            "<|channel>text",
+            "<channel|>",
+            "<|channel|>",
+            "<|turn|>model",
+            "<|turn>model"
+        ]
+        for tok in tokensToRemove {
+            remainder = remainder.replacingOccurrences(of: tok, with: "")
+        }
+        
+        // 5. If the remainder ends with a prefix of any special token, strip it from the end (prevent flashing)
+        let allSpecialTokens = [
+            "<|channel|>thought",
+            "<|channel>thought",
+            "<channel|>",
+            "<|channel|>",
+            "<|channel|>text",
+            "<|channel>text",
+            "<|turn|>model",
+            "<|turn>model",
+            "<end_of_turn>",
+            "</s>",
+            "<eos>"
+        ]
+        for token in allSpecialTokens {
+            for len in (1...token.count).reversed() {
+                let prefixOfToken = String(token.prefix(len))
+                if remainder.hasSuffix(prefixOfToken) {
+                    remainder = String(remainder.dropLast(len))
+                    break
+                }
+            }
+        }
+        
+        return remainder.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     private func legacyModelDirectory(for model: AIModel) -> URL? {
         guard let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return nil }
         return documentsDir.appendingPathComponent("models").appendingPathComponent(model.id)
@@ -927,7 +1025,7 @@ class LLMBackend: ObservableObject {
                 topP: topP,
                 maxTokens: effectiveMaxTokens,
                 useThinking: model.supportsThinking && enableThinking,
-                enableAgentTools: enableAgentTools && model.name.contains("Gemma 4") && model.modelFormat == .litertlm,
+                enableAgentTools: enableAgentTools && model.name.contains("Gemma 4") && !model.name.contains("Translate") && model.modelFormat == .litertlm,
                 onUpdate: onUpdate
             )
             return
@@ -997,14 +1095,21 @@ class LLMBackend: ObservableObject {
                 topP: topP
             )
 
+            let isGemma4 = (loadedModelName.range(of: "gemma 4", options: .caseInsensitive) != nil ||
+                            loadedModelName.range(of: "gemma-4", options: .caseInsensitive) != nil) &&
+                           loadedModelName.range(of: "translate", options: .caseInsensitive) == nil
+
             var currentOutput = ""
             for try await token in streamResult.stream {
+                try Task.checkCancellation()
                 currentOutput += token
-                onUpdate(currentOutput, 0, 0)
+                let displayOutput = isGemma4 ? Self.cleanGemma4Output(currentOutput) : currentOutput
+                onUpdate(displayOutput, 0, 0)
             }
 
             let result = try await streamResult.metrics.value
-            onUpdate(currentOutput, result.completionTokens, result.tokensPerSecond)
+            let finalOutput = isGemma4 ? Self.cleanGemma4Output(currentOutput) : currentOutput
+            onUpdate(finalOutput, result.completionTokens, result.tokensPerSecond)
             return
         }
 
@@ -1155,6 +1260,10 @@ class LLMBackend: ObservableObject {
             "🧠 [ThinkingDebug][gate] model=\(loadedModelName) supportsThinking=\(modelSupportsThinking) enableThinking=\(enableThinking) harmony=\(isHarmonyModel)"
         )
 
+        let isGemma4 = (loadedModelName.range(of: "gemma 4", options: .caseInsensitive) != nil ||
+                        loadedModelName.range(of: "gemma-4", options: .caseInsensitive) != nil) &&
+                       loadedModelName.range(of: "translate", options: .caseInsensitive) == nil
+
         for try await token in streamResult.stream {
             // Respect Task cancellation — stop consuming tokens when the caller
             // cancels (e.g. user taps stop, or turn-leak auto-stop).
@@ -1167,7 +1276,8 @@ class LLMBackend: ObservableObject {
                 currentOutput = currentOutput.replacingOccurrences(
                     of: #"<unused\d+>"#, with: "", options: .regularExpression)
             }
-            let normalizedOutput = isHarmonyModel ? Self.normalizeHarmonyOutput(currentOutput) : (currentOutput, false)
+            let displayOutput = isGemma4 ? Self.cleanGemma4Output(currentOutput) : currentOutput
+            let normalizedOutput = isHarmonyModel ? Self.normalizeHarmonyOutput(displayOutput) : (displayOutput, false)
 
             if chunkCount == 1 {
                 print("🧠 [ThinkingDebug][stream] firstChunk preview=\(String(token.prefix(120)))")
@@ -1203,6 +1313,9 @@ class LLMBackend: ObservableObject {
                     .trimmingCharacters(in: .whitespacesAndNewlines)
                 break
             }
+        }
+        if isGemma4 {
+            currentOutput = Self.cleanGemma4Output(currentOutput)
         }
         let normalizedFinalOutput = isHarmonyModel ? Self.normalizeHarmonyOutput(currentOutput) : (currentOutput, false)
         let sdkThinking = result.thinkingContent?.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines) ?? ""

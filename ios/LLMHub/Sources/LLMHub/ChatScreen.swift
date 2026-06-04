@@ -1737,7 +1737,7 @@ class ChatViewModel: ObservableObject {
         let modelName = selectedModelName.lowercased()
         let modelSupportsThinking = chatModel(named: selectedModelName)?.supportsThinking == true
         let isGemma  = modelName.contains("gemma")
-        let isGemma4 = isGemma && (modelName.contains("gemma 4e ") || modelName.contains("gemma-4e ") || modelName.hasSuffix("gemma 4e") || modelName.hasSuffix("gemma-4e"))
+        let isGemma4 = isGemma && (modelName.contains("gemma 4") || modelName.contains("gemma-4")) && !modelName.contains("translate")
         let isLlama  = modelName.contains("llama") || modelName.contains("mistral")
         let isHarmonyModel = modelName.contains("gpt-oss") || modelName.contains("gpt_oss")
 

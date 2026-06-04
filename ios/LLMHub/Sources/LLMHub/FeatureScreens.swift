@@ -207,11 +207,11 @@ private func isTranslatorSupportedModel(_ model: AIModel) -> Bool {
     !model.isDependencyOnly
         && model.category == .multimodal
         && model.supportsVision
-        && (model.name.hasPrefix("Translate Gemma 4B") || model.name.hasPrefix("Gemma 4 "))
+        && (model.name.hasPrefix("Translate Gemma 4B") || (model.name.localizedCaseInsensitiveContains("gemma 4") && !model.name.localizedCaseInsensitiveContains("translate")))
 }
 
 private func usesGemma4TurnTemplate(_ model: AIModel) -> Bool {
-    model.name.hasPrefix("Gemma 4 ")
+    model.name.localizedCaseInsensitiveContains("gemma 4") && !model.name.localizedCaseInsensitiveContains("translate")
 }
 
 private func isNonTranslatorFeatureModel(_ model: AIModel) -> Bool {
@@ -255,7 +255,7 @@ private func translatorHasDownloadedVisionProjector(for model: AIModel) -> Bool 
 
     guard !candidates.isEmpty else { return false }
 
-    if family.hasPrefix("gemma 4 e") {
+    if family.hasPrefix("gemma 4") {
         return candidates.contains {
             $0.name.lowercased().contains("f16") || $0.url.lowercased().contains("f16")
         }
@@ -1280,6 +1280,7 @@ private struct IOS26TranscriberScreen: View {
                     llm.unloadModel() 
                 }
             )
+            .environmentObject(settings)
         }
         .fileImporter(
             isPresented: $showAudioImporter,
@@ -1985,6 +1986,7 @@ private struct IOS17VibeVoiceScreen: View {
                 onLoad: { await ensureModelLoaded(force: false) },
                 onUnload: { llm.unloadModel() }
             )
+            .environmentObject(settings)
         }
         .onAppear {
             Task {
@@ -2308,7 +2310,7 @@ private struct IOS17VibeVoiceScreen: View {
         let modelName = selectedModelName.lowercased()
         let modelSupportsThinking = selectedFeatureModel(named: selectedModelName)?.supportsThinking == true
         let isGemma  = modelName.contains("gemma")
-        let isGemma4 = isGemma && (modelName.contains("gemma 4 ") || modelName.contains("gemma-4 ") || modelName.hasSuffix("gemma 4") || modelName.hasSuffix("gemma-4"))
+        let isGemma4 = isGemma && (modelName.contains("gemma 4") || modelName.contains("gemma-4")) && !modelName.contains("translate")
         let isLlama  = modelName.contains("llama") || modelName.contains("mistral")
         let isHarmonyModel = modelName.contains("gpt-oss") || modelName.contains("gpt_oss")
 
@@ -2796,6 +2798,7 @@ struct WritingAidScreen: View {
                 onLoad: { await ensureModelLoaded(force: false) },
                 onUnload: { llm.unloadModel() }
             )
+            .environmentObject(settings)
         }
         .onAppear {
             Task {
@@ -3035,6 +3038,7 @@ struct TranslatorScreen: View {
                 onLoad: { await ensureModelLoaded(force: false) },
                 onUnload: { llm.unloadModel() }
             )
+            .environmentObject(settings)
         }
         .onChange(of: showSettings) { _, isPresented in
             if !isPresented {
@@ -3937,6 +3941,7 @@ struct ScamDetectorScreen: View {
                 onLoad: { await ensureModelLoaded(force: false) },
                 onUnload: { llm.unloadModel() }
             )
+            .environmentObject(settings)
         }
         .onAppear {
             Task {
@@ -4881,6 +4886,7 @@ struct VibeCoderScreen: View {
                 onLoad: { await ensureModelLoaded(force: false) },
                 onUnload: { llm.unloadModel() }
             )
+            .environmentObject(settings)
         }
         .onAppear {
             restoreChatSessionsFromStorage()
@@ -5384,7 +5390,7 @@ struct VibeCoderScreen: View {
         let modelName = selectedModelName.lowercased()
         let modelSupportsThinking = selectedFeatureModel(named: selectedModelName)?.supportsThinking == true
         let isGemma  = modelName.contains("gemma")
-        let isGemma4 = isGemma && (modelName.contains("gemma 4 ") || modelName.contains("gemma-4 ") || modelName.hasSuffix("gemma 4") || modelName.hasSuffix("gemma-4"))
+        let isGemma4 = isGemma && (modelName.contains("gemma 4") || modelName.contains("gemma-4")) && !modelName.contains("translate")
         let isLlama  = modelName.contains("llama") || modelName.contains("mistral")
         let isHarmonyModel = modelName.contains("gpt-oss") || modelName.contains("gpt_oss")
 
@@ -5733,6 +5739,7 @@ struct ImageGeneratorScreen: View {
                 },
                 onUnload: { sdBackend.unloadModel() }
             )
+            .environmentObject(settings)
         }
         .onChange(of: selectedImageItem) { _, item in
             guard selectedModelSupportsImageToImage else {
