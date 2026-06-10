@@ -133,6 +133,8 @@ android {
             // Pick only the architecture we need to reduce size and alignment issues
             // Prevent duplicate .so files from different MediaPipe tasks modules
             pickFirsts += setOf("**/libmediapipe_tasks_text_jni.so")
+            // Prevent duplicate libonnxruntime.so file
+            pickFirsts += setOf("**/libonnxruntime.so")
             // Exclude DeepSeek OCR library to avoid 16KB page alignment issues
             excludes += setOf("**/libdeepseek-ocr.so")
             // Exclude Nexa SDK's bundled stable-diffusion — app uses its own libstable_diffusion_core.so subprocess
