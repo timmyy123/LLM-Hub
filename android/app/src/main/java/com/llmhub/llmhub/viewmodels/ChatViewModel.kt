@@ -340,12 +340,18 @@ class ChatViewModel(
     // Public method to select model and persist
     fun selectModel(model: LLMModel) {
         _selectedModel.value = model
-        // Auto-select backend if not set
-        if (_selectedBackend.value == null) {
-            _selectedBackend.value = if (model.supportsGpu) {
-                LlmInference.Backend.GPU
-            } else {
-                LlmInference.Backend.CPU
+        val isGemma4_12B = model.name.contains("Gemma-4 12B", ignoreCase = true) || model.name.contains("Gemma 4 12B", ignoreCase = true)
+        if (isGemma4_12B) {
+            _selectedBackend.value = LlmInference.Backend.GPU
+            _selectedNpuDeviceId.value = null
+        } else {
+            // Auto-select backend if not set or if current backend is not supported by the model
+            if (_selectedBackend.value == null || (!model.supportsGpu && _selectedBackend.value == LlmInference.Backend.GPU)) {
+                _selectedBackend.value = if (model.supportsGpu) {
+                    LlmInference.Backend.GPU
+                } else {
+                    LlmInference.Backend.CPU
+                }
             }
         }
         saveChatSettings()

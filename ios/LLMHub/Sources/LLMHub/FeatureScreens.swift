@@ -204,7 +204,10 @@ private func downloadableTranslatorModels() -> [AIModel] {
 }
 
 private func isTranslatorSupportedModel(_ model: AIModel) -> Bool {
-    !model.isDependencyOnly
+    if model.name.localizedCaseInsensitiveContains("gemma 4 12b") && model.modelFormat == .litertlm {
+        return !model.isDependencyOnly
+    }
+    return !model.isDependencyOnly
         && model.category == .multimodal
         && model.supportsVision
         && (model.name.hasPrefix("Translate Gemma 4B") || (model.name.localizedCaseInsensitiveContains("gemma 4") && !model.name.localizedCaseInsensitiveContains("translate")))

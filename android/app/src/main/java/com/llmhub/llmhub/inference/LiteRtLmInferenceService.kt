@@ -112,8 +112,10 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
     }
 
     override fun getEffectiveMaxTokens(model: LLMModel): Int {
-        val contextWindow = overrideContextWindow?.coerceIn(1, model.contextWindowSize)
-            ?: model.contextWindowSize
+        val isGemma4_12B = model.name.contains("Gemma-4 12B", ignoreCase = true) || model.name.contains("Gemma 4 12B", ignoreCase = true)
+        val limit = if (isGemma4_12B) 4096 else model.contextWindowSize
+        val contextWindow = overrideContextWindow?.coerceIn(1, limit)
+            ?: limit
         return overrideMaxTokens?.coerceIn(1, contextWindow) ?: contextWindow
     }
 
@@ -194,17 +196,20 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
             isVisionDisabled = disableVision
             isAudioDisabled = disableAudio
 
-            val backend = mapBackend(preferredBackend, model.supportsGpu)
+            val isGemma4_12B = model.name.contains("Gemma-4 12B", ignoreCase = true) || model.name.contains("Gemma 4 12B", ignoreCase = true)
+
+            val backend = if (isGemma4_12B) Backend.GPU() else mapBackend(preferredBackend, model.supportsGpu)
             currentBackendIsGpu = backend is Backend.GPU
 
-            // Enable Multi-Token Prediction (MTP) via speculative decoding when running on GPU
-            ExperimentalFlags.enableSpeculativeDecoding = currentBackendIsGpu
+            // Enable Multi-Token Prediction (MTP) via speculative decoding when running on GPU, except for Gemma-4 12B
+            ExperimentalFlags.enableSpeculativeDecoding = currentBackendIsGpu && !isGemma4_12B
 
             val engineConfig = EngineConfig(
                 modelPath = modelFile.absolutePath,
                 backend = backend,
-                visionBackend = if (model.supportsVision && !disableVision) backend else null,
-                audioBackend = if (model.supportsAudio && !disableAudio) Backend.CPU() else null,
+                visionBackend = if (model.supportsVision && !disableVision && !isGemma4_12B) backend else null,
+                audioBackend = if (model.supportsAudio && !disableAudio && !isGemma4_12B) Backend.CPU() else null,
+                maxNumTokens = if (isGemma4_12B) getEffectiveMaxTokens(model) else null,
                 cacheDir = applicationContext.cacheDir.path
             )
 

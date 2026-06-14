@@ -90,8 +90,17 @@ fun ChatSettingsSheet(
         selectedModel?.supportsGpu == true
     }
     
-    val defaultUseGpu = remember(selectedModel) { 
-        if (isPhi4Mini) false else selectedModel?.supportsGpu == true
+    val isGemma4_12B = remember(selectedModel) {
+        selectedModel?.name?.contains("Gemma-4 12B", ignoreCase = true) == true ||
+            selectedModel?.name?.contains("Gemma 4 12B", ignoreCase = true) == true
+    }
+    
+    val showBackendSelection = remember(selectedModel, canSelectAccelerator, isGemma4_12B) {
+        canSelectAccelerator && !isGemma4_12B
+    }
+    
+    val defaultUseGpu = remember(selectedModel, isGemma4_12B) { 
+        if (isGemma4_12B) true else if (isPhi4Mini) false else selectedModel?.supportsGpu == true
     }
     val canUseNpuForSelectedModel by remember(selectedModel, isPhi4Mini) {
         derivedStateOf {
@@ -158,7 +167,8 @@ fun ChatSettingsSheet(
             val newBaseCap = MediaPipeInferenceService.getMaxTokensForModelStatic(model)
             val newIsGemma3n = model.name.contains("Gemma-3n", ignoreCase = true)
             val newIsPhi4Mini = model.name.contains("Phi-4 Mini", ignoreCase = true)
-            val newDefaultUseGpu = if (newIsPhi4Mini) false else model.supportsGpu
+            val newIsGemma4_12B = model.name.contains("Gemma-4 12B", ignoreCase = true) || model.name.contains("Gemma 4 12B", ignoreCase = true)
+            val newDefaultUseGpu = if (newIsGemma4_12B) true else if (newIsPhi4Mini) false else model.supportsGpu
             
             try {
                 val saved = modelPrefs.getModelConfig(model.name)
@@ -173,12 +183,12 @@ fun ChatSettingsSheet(
                     topK = saved.topK
                     topP = saved.topP
                     temperature = saved.temperature
-                    useGpu = when (saved.backend) {
+                    useGpu = if (newIsGemma4_12B) true else when (saved.backend) {
                         "GPU" -> true
                         "CPU" -> false
                         else -> newDefaultUseGpu
                     }
-                    useNpu = saved.deviceId == "dev0"
+                    useNpu = if (newIsGemma4_12B) false else saved.deviceId == "dev0"
                     disableVision = saved.disableVision || !selectedModelSupportsVisionInput
                     disableAudio = saved.disableAudio
                     gpuLayers = saved.nGpuLayers
@@ -197,7 +207,7 @@ fun ChatSettingsSheet(
                     topK = 64
                     topP = 0.95f
                     temperature = 1.0f
-                    useGpu = newDefaultUseGpu
+                    useGpu = if (newIsGemma4_12B) true else newDefaultUseGpu
                     useNpu = false
                     disableVision = newIsGemma3n || !selectedModelSupportsVisionInput
                     disableAudio = newIsGemma3n
@@ -217,7 +227,7 @@ fun ChatSettingsSheet(
                 topK = 64
                 topP = 0.95f
                 temperature = 1.0f
-                useGpu = newDefaultUseGpu
+                useGpu = if (newIsGemma4_12B) true else newDefaultUseGpu
                 useNpu = false
                 disableVision = newIsGemma3n || !selectedModelSupportsVisionInput
                 disableAudio = newIsGemma3n
@@ -229,6 +239,13 @@ fun ChatSettingsSheet(
     }
 
     LaunchedEffect(selectedModel?.name, canSelectAccelerator, canUseNpuForSelectedModel) {
+        val isGemma4_12B = selectedModel?.name?.contains("Gemma-4 12B", ignoreCase = true) == true ||
+            selectedModel?.name?.contains("Gemma 4 12B", ignoreCase = true) == true
+        if (isGemma4_12B) {
+            useGpu = true
+            useNpu = false
+            return@LaunchedEffect
+        }
         if (!canSelectAccelerator) {
             useGpu = false
             useNpu = false
@@ -419,7 +436,7 @@ fun ChatSettingsSheet(
                         }
                         
                         // Backend Selection
-                        if (canSelectAccelerator) {
+                        if (showBackendSelection) {
                             ExposedDropdownMenuBox(
                                 expanded = showBackendMenu,
                                 onExpandedChange = { showBackendMenu = !showBackendMenu }

@@ -1683,6 +1683,20 @@ object ModelData {
             contextWindowSize = 32768,
             modelFormat = "litertlm"
         ),
+        LLMModel(
+            name = "Gemma-4 12B",
+            description = "Google Gemma-4 12B text model. 12B parameters with 32k context. GPU acceleration required. Ready to download from HuggingFace (6.54GB)",
+            url = "https://huggingface.co/litert-community/gemma-4-12B-it-litert-lm/resolve/44cf85a326f79b814fa86a60af414c042755b43a/gemma-4-12B-it.litertlm?download=true",
+            category = "text",
+            sizeBytes = 6547589312L, // 6,547,589,312 bytes (6.54 GB actual)
+            source = "Google (LiteRT LM)",
+            supportsVision = false,
+            supportsAudio = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
+            contextWindowSize = 32768,
+            modelFormat = "litertlm"
+        ),
 
         // --- Added Gemma-3 GGUF multimodal models (4B & 12B) + vision projectors ---
         LLMModel(

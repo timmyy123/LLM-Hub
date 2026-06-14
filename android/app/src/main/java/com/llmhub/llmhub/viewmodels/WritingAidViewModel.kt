@@ -145,11 +145,17 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
         _selectedModel.value = model
         _isModelLoaded.value = false
         
-        // Force CPU when model doesn't support GPU (e.g. ONNX); otherwise keep or set backend
-        _selectedBackend.value = if (model.supportsGpu) {
-            _selectedBackend.value ?: LlmInference.Backend.GPU
+        val isGemma4_12B = model.name.contains("Gemma-4 12B", ignoreCase = true) || model.name.contains("Gemma 4 12B", ignoreCase = true)
+        if (isGemma4_12B) {
+            _selectedBackend.value = LlmInference.Backend.GPU
+            _selectedNpuDeviceId.value = null
         } else {
-            LlmInference.Backend.CPU
+            // Force CPU when model doesn't support GPU (e.g. ONNX); otherwise keep or set backend
+            _selectedBackend.value = if (model.supportsGpu) {
+                _selectedBackend.value ?: LlmInference.Backend.GPU
+            } else {
+                LlmInference.Backend.CPU
+            }
         }
         
         saveSettings()

@@ -91,8 +91,15 @@ fun FeatureModelSettingsSheet(
     val canSelectAccelerator = remember(selectedModel) {
         selectedModel?.supportsGpu == true
     }
-    val defaultUseGpu = remember(selectedModel) {
-        if (isPhi4Mini) false else selectedModel?.supportsGpu == true
+    val isGemma4_12B = remember(selectedModel) {
+        selectedModel?.name?.contains("Gemma-4 12B", ignoreCase = true) == true ||
+            selectedModel?.name?.contains("Gemma 4 12B", ignoreCase = true) == true
+    }
+    val showBackendSelection = remember(selectedModel, canSelectAccelerator, isGemma4_12B) {
+        canSelectAccelerator && !isGemma4_12B
+    }
+    val defaultUseGpu = remember(selectedModel, isGemma4_12B) {
+        if (isGemma4_12B) true else if (isPhi4Mini) false else selectedModel?.supportsGpu == true
     }
     val canUseNpuForSelectedModel by remember(selectedModel, isPhi4Mini) {
         derivedStateOf {
@@ -145,18 +152,25 @@ fun FeatureModelSettingsSheet(
         }
     }
 
-    LaunchedEffect(selectedModel?.name, baseMaxTokensCap) {
+    LaunchedEffect(selectedModel?.name, baseMaxTokensCap, isGemma4_12B) {
         // Preserve user's saved value, just cap it to the selected model's context window
         val capped = minOf(maxTokensValue.coerceAtLeast(1), baseMaxTokensCap.coerceAtLeast(1))
         maxTokensValue = capped
         maxTokensText = capped.toString()
         onMaxTokensChanged(capped)
         if (selectedModel != null) {
-            useGpu = if (isPhi4Mini) false else useGpu
+            useGpu = if (isGemma4_12B) true else if (isPhi4Mini) false else useGpu
         }
     }
 
     LaunchedEffect(selectedModel?.name, canSelectAccelerator, canUseNpuForSelectedModel) {
+        val isGemma4_12B = selectedModel?.name?.contains("Gemma-4 12B", ignoreCase = true) == true ||
+            selectedModel?.name?.contains("Gemma 4 12B", ignoreCase = true) == true
+        if (isGemma4_12B) {
+            useGpu = true
+            useNpu = false
+            return@LaunchedEffect
+        }
         if (!canSelectAccelerator) {
             useGpu = false
             useNpu = false
@@ -280,7 +294,7 @@ fun FeatureModelSettingsSheet(
                             }
                         }
 
-                        if (canSelectAccelerator) {
+                        if (showBackendSelection) {
                             ExposedDropdownMenuBox(
                                 expanded = showBackendMenu,
                                 onExpandedChange = { showBackendMenu = !showBackendMenu }

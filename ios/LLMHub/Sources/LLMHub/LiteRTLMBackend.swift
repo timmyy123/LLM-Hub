@@ -54,15 +54,15 @@ final class LiteRTLMBackend {
 
         print("ℹ️ [LiteRTLMBackend] loadModel path=\(path) vision=\(supportsVision) audio=\(supportsAudio) maxTokens=\(String(describing: maxTokens))")
 
-        // Enable Multi-Token Prediction speculative decoding for GPU speed boost
+        let isGemma4_12B = path.lowercased().hasSuffix(".litertlm") && (path.lowercased().contains("gemma-4-12b") || path.lowercased().contains("gemma4_12b"))
         ExperimentalFlags.optIntoExperimentalAPIs()
-        ExperimentalFlags.enableSpeculativeDecoding = true
+        ExperimentalFlags.enableSpeculativeDecoding = !isGemma4_12B
 
         let config = try EngineConfig(
             modelPath: path,
             backend: .gpu,
-            visionBackend: supportsVision ? .cpu() : nil,
-            audioBackend: supportsAudio ? .cpu() : nil,
+            visionBackend: (supportsVision && !isGemma4_12B) ? .cpu() : nil,
+            audioBackend: (supportsAudio && !isGemma4_12B) ? .cpu() : nil,
             maxNumTokens: maxTokens,
             cacheDir: liteRTCacheDir()
         )

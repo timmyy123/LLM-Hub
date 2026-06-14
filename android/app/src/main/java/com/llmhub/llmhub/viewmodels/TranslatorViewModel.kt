@@ -113,8 +113,12 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
         viewModelScope.launch {
             val context = getApplication<Application>()
             val allModels = ModelAvailabilityProvider.loadAvailableModels(context)
-            val multimodalModels = allModels.filter { it.supportsVision || it.supportsAudio }
-            _availableModels.value = multimodalModels
+             val multimodalModels = allModels.filter {
+                 it.supportsVision || it.supportsAudio ||
+                 it.name.contains("Gemma-4 12B", ignoreCase = true) ||
+                 it.name.contains("Gemma 4 12B", ignoreCase = true)
+             }
+             _availableModels.value = multimodalModels
 
             // Restore saved model or use first as default
             val savedModelName = prefs.getString("selected_model_name", null)
@@ -188,6 +192,13 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
         if (!model.supportsAudio) {
             _audioEnabled.value = false
         }
+        
+        val isGemma4_12B = model.name.contains("Gemma-4 12B", ignoreCase = true) || model.name.contains("Gemma 4 12B", ignoreCase = true)
+        if (isGemma4_12B) {
+            _selectedBackend.value = LlmInference.Backend.GPU
+            _selectedNpuDeviceId.value = null
+        }
+        
         saveSettings()
     }
     

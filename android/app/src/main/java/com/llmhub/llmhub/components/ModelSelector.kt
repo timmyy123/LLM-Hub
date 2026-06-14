@@ -38,7 +38,11 @@ fun ModelSelectorCard(
     extraContent: (@Composable ColumnScope.() -> Unit)? = null
 ) {
     val filteredModels = if (filterMultimodalOnly) {
-        models.filter { it.supportsAudio || it.supportsVision }
+        models.filter { 
+            it.supportsAudio || it.supportsVision || 
+            it.name.contains("Gemma-4 12B", ignoreCase = true) || 
+            it.name.contains("Gemma 4 12B", ignoreCase = true)
+        }
     } else {
         models
     }
@@ -150,8 +154,12 @@ fun ModelSelectorCard(
                 }
                 
                 // Backend Selection
+                val isGemma4_12B = remember(selectedModel) {
+                    selectedModel?.name?.contains("Gemma-4 12B", ignoreCase = true) == true ||
+                        selectedModel?.name?.contains("Gemma 4 12B", ignoreCase = true) == true
+                }
                 AnimatedVisibility(
-                    visible = selectedModel != null,
+                    visible = selectedModel != null && !isGemma4_12B,
                     enter = fadeIn() + expandVertically()
                 ) {
                     ExposedDropdownMenuBox(

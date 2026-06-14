@@ -2400,6 +2400,22 @@ public static let models: [AIModel] = [
         modelFormat: .litertlm,
         additionalFiles: []
     ),
+    AIModel(
+        name: "Gemma 4 12B (LiteRT-LM)",
+        description: "Google Gemma 4 12B via LiteRT-LM — Google's native on-device runtime with GPU/Metal acceleration. 32k context. (6.54 GB)",
+        url: "https://huggingface.co/litert-community/gemma-4-12B-it-litert-lm/resolve/44cf85a326f79b814fa86a60af414c042755b43a/gemma-4-12B-it.litertlm?download=true",
+        category: .text,
+        sizeBytes: 6547589312,
+        source: "Google via LiteRT Community",
+        supportsVision: false,
+        supportsAudio: false,
+        supportsThinking: true,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 12, recommendedRamGB: 16),
+        contextWindowSize: 4096,
+        modelFormat: .litertlm,
+        additionalFiles: []
+    ),
     // MARK: - Gemma 4 12B (12B active params)
     AIModel(
         name: "Gemma 4 12B (Q3_K_M)",

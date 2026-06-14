@@ -183,10 +183,16 @@ class CreatorViewModel(
         val savedTokens = prefs.getInt("max_tokens_${model.name}", minOf(4096, model.contextWindowSize.coerceAtLeast(1)))
         _selectedMaxTokens.value = savedTokens.coerceIn(1, model.contextWindowSize.coerceAtLeast(1))
 
-        _selectedBackend.value = if (model.supportsGpu) {
-            _selectedBackend.value ?: LlmInference.Backend.GPU
+        val isGemma4_12B = model.name.contains("Gemma-4 12B", ignoreCase = true) || model.name.contains("Gemma 4 12B", ignoreCase = true)
+        if (isGemma4_12B) {
+            _selectedBackend.value = LlmInference.Backend.GPU
+            _selectedNpuDeviceId.value = null
         } else {
-            LlmInference.Backend.CPU
+            _selectedBackend.value = if (model.supportsGpu) {
+                _selectedBackend.value ?: LlmInference.Backend.GPU
+            } else {
+                LlmInference.Backend.CPU
+            }
         }
 
         saveSettings()
