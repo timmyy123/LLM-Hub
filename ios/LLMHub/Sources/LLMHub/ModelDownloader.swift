@@ -161,7 +161,11 @@ public actor ModelDownloader {
             let tracker = ThroughputTracker()
             let drawThingsFileSizes: [String: Int64] = [
                 "svd_i2v_xt_1.0_q6p_q8p.ckpt": 1334681600,
+                "svd_i2v_xt_1.1_q6p_q8p.ckpt": 1525776384,
+                "svd_i2v_1.0_q6p_q8p.ckpt": 1334681600,
+                "animatelcm_svd_xt_v1.1_q6p_q8p.ckpt": 1376313344,
                 "open_clip_vit_h14_vision_model_f16.ckpt": 1263398912,
+                "open_clip_vit_h14_visual_proj_f16.ckpt": 2633728,
                 "vae_ft_mse_840000_f16.ckpt": 167538688
             ]
             let allFiles: [String]

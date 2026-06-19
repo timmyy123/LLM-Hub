@@ -2830,8 +2830,40 @@ public static let models: [AIModel] = [
         description: "Updated image-to-video checkpoint from Draw Things. Requires 12GB RAM for stable performance on iOS.",
         url: "https://huggingface.co/stabilityai/stable-video-diffusion-img2vid-xt",
         category: .videoGeneration,
-        sizeBytes: 2_765_619_200,
+        sizeBytes: 2_789_175_296,
         source: "Stability AI / Draw Things",
+        supportsVision: false,
+        supportsAudio: false,
+        supportsThinking: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 10, recommendedRamGB: 12),
+        contextWindowSize: 512,
+        modelFormat: .drawthings
+    ),
+    AIModel(
+        id: "animatelcm_svd_xt_v1.1_q6p_q8p.ckpt",
+        name: "AnimateLCM SVD XT v1.1 (8-bit)",
+        description: "Consistency distilled image-to-video model. Generates 25-frame video in just 4-8 steps. Requires 12GB RAM for stable performance.",
+        url: "https://huggingface.co/wangfuyun/AnimateLCM-SVD",
+        category: .videoGeneration,
+        sizeBytes: 2_642_345_984,
+        source: "Stability AI / AnimateLCM",
+        supportsVision: false,
+        supportsAudio: false,
+        supportsThinking: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 10, recommendedRamGB: 12),
+        contextWindowSize: 512,
+        modelFormat: .drawthings
+    ),
+    AIModel(
+        id: "svd_i2v_1.0_q6p_q8p.ckpt",
+        name: "Stable Video Diffusion I2V v1.0 (8-bit)",
+        description: "The non-XT version of SVD 1.0. Generates shorter 14-frame videos with less processing time. Requires 12GB RAM.",
+        url: "https://huggingface.co/stabilityai/stable-video-diffusion-img2vid",
+        category: .videoGeneration,
+        sizeBytes: 2_598_080_512,
+        source: "Stability AI",
         supportsVision: false,
         supportsAudio: false,
         supportsThinking: false,
@@ -2843,3 +2875,4 @@ public static let models: [AIModel] = [
 
 ]
 }
+
