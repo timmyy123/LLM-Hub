@@ -326,35 +326,7 @@ private func downloadableFeatureModels() -> [AIModel] {
     return models
 }
 
-@MainActor
-private func appleFoundationModelIfAvailable() -> AIModel? {
-    #if canImport(FoundationModels)
-    if #available(iOS 26.0, *) {
-        let model = SystemLanguageModel.default
-        guard model.isAvailable else { return nil }
 
-        return AIModel(
-            id: "apple.foundation.system",
-            name: "Apple Foundation Model",
-            description: "On-device Apple Intelligence foundation model.",
-            url: "apple://foundation-model",
-            category: .text,
-            sizeBytes: 0,
-            source: "Apple",
-            supportsVision: false,
-            supportsAudio: false,
-            supportsThinking: false,
-            supportsGpu: true,
-            requirements: ModelRequirements(minRamGB: 8, recommendedRamGB: 8),
-            contextWindowSize: max(1, model.contextSize),
-            modelFormat: .gguf,
-            additionalFiles: []
-        )
-    }
-    #endif
-
-    return nil
-}
 
 @MainActor
 private func selectedFeatureModel(named selectedModelName: String) -> AIModel? {
@@ -409,7 +381,7 @@ private func sanitizeModelOutputText(_ text: String) -> String {
     .trimmingCharacters(in: .whitespacesAndNewlines)
 }
 
-private extension View {
+extension View {
     func liquidGlassPrimaryButton(cornerRadius: CGFloat = 12) -> some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
 

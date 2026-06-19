@@ -1,5 +1,6 @@
 import Foundation
 import RunAnywhere
+import ModelZoo
 
 public enum ModelFormat: String, Codable, Sendable {
     case task
@@ -7,6 +8,7 @@ public enum ModelFormat: String, Codable, Sendable {
     case gguf
     case onnx
     case coreml
+    case drawthings
 }
 
 public enum DownloadState: Equatable, Sendable {
@@ -22,6 +24,7 @@ public enum ModelCategory: String, Codable, CaseIterable, Sendable {
     case multimodal = "Multimodal Models"
     case embedding = "Embedding Models"
     case imageGeneration = "Image Generation"
+    case videoGeneration = "Video Generation"
 
     public var icon: String {
         switch self {
@@ -29,6 +32,7 @@ public enum ModelCategory: String, Codable, CaseIterable, Sendable {
         case .multimodal: return "eye.fill"
         case .embedding: return "link.circle.fill"
         case .imageGeneration: return "photo.fill"
+        case .videoGeneration: return "video.fill"
         }
     }
 
@@ -38,6 +42,7 @@ public enum ModelCategory: String, Codable, CaseIterable, Sendable {
         case .multimodal: return "vision_models"
         case .embedding: return "embedding_models"
         case .imageGeneration: return "image_generation_models"
+        case .videoGeneration: return "video_generation_models"
         }
     }
 
@@ -47,6 +52,7 @@ public enum ModelCategory: String, Codable, CaseIterable, Sendable {
         case .multimodal: return "vision_models_description"
         case .embedding: return "embedding_models_description"
         case .imageGeneration: return "image_generation_models_description"
+        case .videoGeneration: return "video_generation_models_description"
         }
     }
 }
@@ -150,6 +156,14 @@ public struct AIModel: Identifiable, Codable, Sendable {
         modelFormat == .coreml && category == .imageGeneration
     }
 
+    public var isCoreMLVideoGeneration: Bool {
+        modelFormat == .coreml && category == .videoGeneration
+    }
+
+    public var isDrawThingsVideoGeneration: Bool {
+        modelFormat == .drawthings && category == .videoGeneration
+    }
+
     public var imageGenerationResolution: Int? {
         guard isCoreMLImageGeneration else { return nil }
         return id.contains("sdxl") ? 768 : 512
@@ -197,7 +211,13 @@ public struct ModelData {
     }
 
     private static func localFileStatus(in directory: URL, for model: AIModel) -> (allExist: Bool, totalBytes: Int64) {
-        if model.isCoreMLImageGeneration {
+        if model.modelFormat == .drawthings {
+            let fileURL = directory.appendingPathComponent(model.id)
+            let exists = FileManager.default.fileExists(atPath: fileURL.path)
+            return (exists, exists ? model.sizeBytes : 0)
+        }
+
+        if model.isCoreMLImageGeneration || model.isCoreMLVideoGeneration {
             let sentinel = directory.appendingPathComponent("_downloaded")
             let exists = FileManager.default.fileExists(atPath: sentinel.path)
             return (exists, exists ? model.sizeBytes : 0)
@@ -262,6 +282,27 @@ public struct ModelData {
     }
 
     public static func isModelFullyAvailableLocally(_ model: AIModel) -> Bool {
+        if model.modelFormat == .drawthings {
+            guard let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+                return false
+            }
+            let drawThingsDir = docsDir.appendingPathComponent("Models")
+            let allFiles: [String]
+            if let specification = ModelZoo.specificationForModel(model.id) {
+                var seen = Set<String>()
+                allFiles = ModelZoo.filesToDownload(specification).map(\.file).filter { seen.insert($0).inserted }
+            } else {
+                allFiles = [model.id]
+            }
+            for f in allFiles {
+                let fileURL = drawThingsDir.appendingPathComponent(f)
+                if !FileManager.default.fileExists(atPath: fileURL.path) {
+                    return false
+                }
+            }
+            return true
+        }
+
         if model.source == "Custom" {
             let normalized = normalizeCustomModel(model)
             guard FileManager.default.fileExists(atPath: normalized.url),
@@ -2767,5 +2808,38 @@ public static let models: [AIModel] = [
             "https://huggingface.co/onnx-community/embeddinggemma-300m-ONNX/resolve/main/tokenizer_config.json?download=true"
         ]
     ),
+    AIModel(
+        id: "svd_i2v_xt_1.0_q6p_q8p.ckpt",
+        name: "Stable Video Diffusion (XT)",
+        description: "High quality image-to-video model. Requires 12GB RAM for stable performance on iOS. (2.8 GB)",
+        url: "https://huggingface.co/stabilityai/stable-video-diffusion-img2vid-xt/resolve/main/svd_xt.safetensors?download=true",
+        category: .videoGeneration,
+        sizeBytes: 2_765_619_200,
+        source: "Stability AI",
+        supportsVision: false,
+        supportsAudio: false,
+        supportsThinking: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 10, recommendedRamGB: 12),
+        contextWindowSize: 512,
+        modelFormat: .drawthings
+    ),
+    AIModel(
+        id: "svd_i2v_xt_1.1_q6p_q8p.ckpt",
+        name: "Stable Video Diffusion (XT v1.1)",
+        description: "Updated image-to-video checkpoint from Draw Things. Requires 12GB RAM for stable performance on iOS.",
+        url: "https://huggingface.co/stabilityai/stable-video-diffusion-img2vid-xt",
+        category: .videoGeneration,
+        sizeBytes: 2_765_619_200,
+        source: "Stability AI / Draw Things",
+        supportsVision: false,
+        supportsAudio: false,
+        supportsThinking: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 10, recommendedRamGB: 12),
+        contextWindowSize: 512,
+        modelFormat: .drawthings
+    )
+
 ]
 }

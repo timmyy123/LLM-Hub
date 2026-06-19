@@ -26,6 +26,8 @@ struct ContentView: View {
                         path.append(Screen.vibeCoder)
                     case "vibe_voice":
                         path.append(Screen.vibeVoice)
+                    case "video_generator":
+                        path.append(Screen.videoGenerator)
                     default:
                         break
                     }
@@ -90,6 +92,13 @@ struct ContentView: View {
                     )
                     .navigationBarBackButtonHidden(true)
                     .enableSwipeBack()
+                case .videoGenerator:
+                    VideoGeneratorScreen(
+                        onNavigateBack: { path.removeLast() },
+                        onNavigateToModels: { path.append(Screen.models) }
+                    )
+                    .navigationBarBackButtonHidden(true)
+                    .enableSwipeBack()
                 }
             }
         }
@@ -111,4 +120,5 @@ enum Screen: Hashable {
     case vibeCoder
     case vibeVoice
     case imageGenerator
+    case videoGenerator
 }

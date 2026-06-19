@@ -50,6 +50,10 @@
 		FA001122334455667788AADD /* StableDiffusion in Frameworks */ = {isa = PBXBuildFile; productRef = FA001122334455667788AAEE /* StableDiffusion */; };
 		FA001122334455667788AAFF /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = FA001122334455667788AA11 /* ZIPFoundation */; };
 		FA0011BB334455667788AA01 /* PreviewServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0011BB334455667788AA02 /* PreviewServer.swift */; };
+		VG000001000000000000VG01 /* VideoGeneratorScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = VG000001000000000000VG02 /* VideoGeneratorScreen.swift */; };
+		VG000001000000000000VG03 /* VideoGeneratorBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = VG000001000000000000VG04 /* VideoGeneratorBackend.swift */; };
+		AF000001000000000000AF01 /* AppleFoundationModelSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF000001000000000000AF02 /* AppleFoundationModelSupport.swift */; };
+		MGK00001000000000000MG01 /* MediaGenerationKit in Frameworks */ = {isa = PBXBuildFile; productRef = MGK00001000000000000MG02 /* MediaGenerationKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -109,6 +113,9 @@
 		F841EEA264BDE0E6E2A1BC18 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Icon.png; sourceTree = "<group>"; };
 		FA001122334455667788AACC /* StableDiffusionBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StableDiffusionBackend.swift; sourceTree = "<group>"; };
 		FA0011BB334455667788AA02 /* PreviewServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewServer.swift; sourceTree = "<group>"; };
+		VG000001000000000000VG02 /* VideoGeneratorScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoGeneratorScreen.swift; sourceTree = "<group>"; };
+		VG000001000000000000VG04 /* VideoGeneratorBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoGeneratorBackend.swift; sourceTree = "<group>"; };
+		AF000001000000000000AF02 /* AppleFoundationModelSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleFoundationModelSupport.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -126,6 +133,7 @@
 				AD000002000000000000BB05 /* GoogleMobileAds in Frameworks */,
 				AD000002000000000000BB06 /* GoogleUserMessagingPlatform in Frameworks */,
 				AD000002000000000000BB09 /* LiteRTLM in Frameworks */,
+				MGK00001000000000000MG01 /* MediaGenerationKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -179,6 +187,9 @@
 				AD000001000000000000AA02 /* AdManager.swift */,
 				AD000001000000000000AA04 /* PurchaseManager.swift */,
 				AD000001000000000000AA06 /* PremiumScreen.swift */,
+				VG000001000000000000VG02 /* VideoGeneratorScreen.swift */,
+				VG000001000000000000VG04 /* VideoGeneratorBackend.swift */,
+				AF000001000000000000AF02 /* AppleFoundationModelSupport.swift */,
 			);
 			name = LLMHub;
 			path = Sources/LLMHub;
@@ -228,6 +239,7 @@
 				AD000002000000000000BB03 /* GoogleMobileAds */,
 				AD000002000000000000BB04 /* GoogleUserMessagingPlatform */,
 				AD000002000000000000BB08 /* LiteRTLM */,
+				MGK00001000000000000MG02 /* MediaGenerationKit */,
 			);
 			productName = LLMHub;
 			productReference = 5F60B98E5AE21634E4E47E99 /* LLMHub.app */;
@@ -279,6 +291,7 @@
 				AD000002000000000000BB01 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
 				AD000002000000000000BB02 /* XCRemoteSwiftPackageReference "swift-package-manager-google-user-messaging-platform" */,
 				AD000002000000000000BB07 /* XCLocalSwiftPackageReference "LocalPackages/LiteRT-LM" */,
+				MGK00001000000000000MG03 /* XCLocalSwiftPackageReference "LocalPackages/media-generation-kit" */,
 			);
 			projectDirPath = "";
 			projectRoot = "";
@@ -336,6 +349,9 @@
 				AD000001000000000000AA01 /* AdManager.swift in Sources */,
 				AD000001000000000000AA03 /* PurchaseManager.swift in Sources */,
 				AD000001000000000000AA05 /* PremiumScreen.swift in Sources */,
+				VG000001000000000000VG01 /* VideoGeneratorScreen.swift in Sources */,
+				VG000001000000000000VG03 /* VideoGeneratorBackend.swift in Sources */,
+				AF000001000000000000AF01 /* AppleFoundationModelSupport.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -592,6 +608,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = "LocalPackages/LiteRT-LM";
 		};
+		MGK00001000000000000MG03 /* XCLocalSwiftPackageReference "LocalPackages/media-generation-kit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "LocalPackages/media-generation-kit";
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -669,6 +689,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = FA001122334455667788AA44 /* XCRemoteSwiftPackageReference "ml-stable-diffusion" */;
 			productName = StableDiffusion;
+		};
+		MGK00001000000000000MG02 /* MediaGenerationKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = MGK00001000000000000MG03 /* XCLocalSwiftPackageReference "LocalPackages/media-generation-kit" */;
+			productName = MediaGenerationKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -20,14 +20,23 @@ struct HomeScreen: View {
     @ObservedObject private var purchases = PurchaseManager.shared
     @State private var showPremium = false
 
-    var features: [FeatureCard] {
+    var heroFeature: FeatureCard {
+        FeatureCard(titleKey: "feature_ai_chat", descriptionKey: "feature_ai_chat_desc", iconSystemName: "bubble.left.and.bubble.right.fill", gradient: [Color(hex: "7ea3ff"), Color(hex: "5e79da")], route: "chat")
+    }
+
+    var toolsFeatures: [FeatureCard] {
         [
-            FeatureCard(titleKey: "feature_ai_chat", descriptionKey: "feature_ai_chat_desc", iconSystemName: "bubble.left.and.bubble.right.fill", gradient: [Color(hex: "7ea3ff"), Color(hex: "5e79da")], route: "chat"),
             FeatureCard(titleKey: "feature_writing_aid", descriptionKey: "feature_writing_aid_desc", iconSystemName: "pencil.line", gradient: [Color(hex: "91d4ff"), Color(hex: "4e86d5")], route: "writing_aid"),
             FeatureCard(titleKey: "feature_translator", descriptionKey: "feature_translator_desc", iconSystemName: "network", gradient: [Color(hex: "84f1cf"), Color(hex: "4aa897")], route: "translator"),
             FeatureCard(titleKey: "feature_transcriber", descriptionKey: "feature_transcriber_desc", iconSystemName: "mic.fill", gradient: [Color(hex: "b4b2ff"), Color(hex: "6f77cf")], route: "transcriber"),
-            FeatureCard(titleKey: "feature_scam_detector", descriptionKey: "feature_scam_detector_desc", iconSystemName: "shield.fill", gradient: [Color(hex: "ffb08a"), Color(hex: "d77c59")], route: "scam_detector"),
             FeatureCard(titleKey: "feature_image_generator", descriptionKey: "feature_image_generator_desc", iconSystemName: "paintpalette.fill", gradient: [Color(hex: "9cc3ff"), Color(hex: "5b86d2")], route: "image_generator"),
+            FeatureCard(titleKey: "feature_video_generator", descriptionKey: "feature_video_generator_desc", iconSystemName: "video.fill", gradient: [Color(hex: "ff99c8"), Color(hex: "fc4b93")], route: "video_generator")
+        ]
+    }
+
+    var utilityFeatures: [FeatureCard] {
+        [
+            FeatureCard(titleKey: "feature_scam_detector", descriptionKey: "feature_scam_detector_desc", iconSystemName: "shield.fill", gradient: [Color(hex: "ffb08a"), Color(hex: "d77c59")], route: "scam_detector"),
             FeatureCard(titleKey: "feature_vibe_coder", descriptionKey: "feature_vibe_coder_desc", iconSystemName: "chevron.left.slash.chevron.right", gradient: [Color(hex: "a8bcff"), Color(hex: "5f76be")], route: "vibe_coder"),
             FeatureCard(titleKey: "feature_vibevoice", descriptionKey: "feature_vibevoice_desc", iconSystemName: "waveform.circle.fill", gradient: [Color(hex: "89d3f7"), Color(hex: "3a68cc")], route: "vibe_voice")
         ]
@@ -48,30 +57,14 @@ struct HomeScreen: View {
                 return min(max(usableWidth * 0.014, 8), 12)
             }()
 
-            let columnsCount: Int = {
-                if isLandscape { return 4 }
-                if usableWidth >= 620 { return 3 }
-                return 2
-            }()
-            let rowsTarget: CGFloat = {
-                if isLandscape { return 2 }
-                return columnsCount == 3 ? 3 : 4
-            }()
+            let toolsColumnsCount = isLandscape ? 4 : 2
+            let utilityColumnsCount = isLandscape ? 4 : (usableWidth >= 600 ? 3 : (usableWidth >= 414 ? 3 : 2))
 
-            let totalHorizontalSpacing = spacing * CGFloat(columnsCount - 1)
-            let computedCardWidth = (usableWidth - totalHorizontalSpacing) / CGFloat(columnsCount)
-            let cardWidth = max(72, computedCardWidth.isFinite ? computedCardWidth : 72)
-
+            let toolsColumns = Array(repeating: GridItem(.flexible(), spacing: spacing), count: toolsColumnsCount)
+            let utilityColumns = Array(repeating: GridItem(.flexible(), spacing: spacing), count: utilityColumnsCount)
+            let cardHeight: CGFloat = isLandscape ? 85 : 100
             let gridTopPadding: CGFloat = isLandscape ? 12 : 8
             let gridBottomPadding: CGFloat = 12
-            let totalVerticalSpacing = spacing * (rowsTarget - 1)
-            let reservedHeight = topBarHeight + topPadding + gridTopPadding + gridBottomPadding + totalVerticalSpacing
-            let availableHeight = max(200, geo.size.height - reservedHeight)
-            let rowFitHeight = availableHeight / rowsTarget
-            let safeRowFitHeight = rowFitHeight.isFinite ? rowFitHeight : 118
-            let cardHeight = min(max(safeRowFitHeight, 118), 280)
-
-            let columns = Array(repeating: GridItem(.flexible(), spacing: spacing), count: columnsCount)
 
             VStack(spacing: 0) {
                 HStack(spacing: 12) {
@@ -164,22 +157,53 @@ struct HomeScreen: View {
                 .frame(height: topBarHeight)
 
                 ScrollView {
-                    LazyVGrid(columns: columns, spacing: spacing) {
-                        ForEach(features, id: \.route) { feature in
-                            Button {
-                                switch feature.route {
-                                case "chat":
-                                    onNavigateToChat()
-                                case "writing_aid", "translator", "transcriber", "scam_detector", "vibe_coder", "image_generator", "vibe_voice":
-                                    onNavigateToRoute(feature.route)
-                                default:
-                                    break
+                    VStack(alignment: .leading, spacing: 20) {
+                        // Hero Card for Chat
+                        Button {
+                            onNavigateToChat()
+                        } label: {
+                            HomeHeroCardView(feature: heroFeature)
+                        }
+                        .buttonStyle(.plain)
+                        
+                        // Tools section
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text(settings.localized("home_section_tools"))
+                                .font(.title2.bold())
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 4)
+                            
+                            LazyVGrid(columns: toolsColumns, spacing: spacing) {
+                                ForEach(toolsFeatures, id: \.route) { feature in
+                                    Button {
+                                        onNavigateToRoute(feature.route)
+                                    } label: {
+                                        SmallFeatureCardView(feature: feature)
+                                            .frame(height: cardHeight)
+                                    }
+                                    .buttonStyle(.plain)
                                 }
-                            } label: {
-                                FeatureCardView(feature: feature)
-                                    .frame(width: cardWidth, height: cardHeight)
                             }
-                            .buttonStyle(.plain)
+                        }
+                        
+                        // Utilities section
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text(settings.localized("home_section_utilities"))
+                                .font(.title2.bold())
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 4)
+                            
+                            LazyVGrid(columns: utilityColumns, spacing: spacing) {
+                                ForEach(utilityFeatures, id: \.route) { feature in
+                                    Button {
+                                        onNavigateToRoute(feature.route)
+                                    } label: {
+                                        SmallFeatureCardView(feature: feature)
+                                            .frame(height: cardHeight)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
                         }
                     }
                     .padding(.horizontal, horizontalPadding)
@@ -233,42 +257,35 @@ struct HomeScreen: View {
     }
 }
 
-struct FeatureCardView: View {
+struct SmallFeatureCardView: View {
     @EnvironmentObject var settings: AppSettings
     let feature: FeatureCard
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             ZStack {
                 Circle()
                     .fill(.ultraThinMaterial)
-                    .frame(width: 56, height: 56)
+                    .frame(width: 36, height: 36)
                     .overlay(
                         Circle()
                             .stroke(Color.white.opacity(0.24), lineWidth: 1)
                     )
 
                 Image(systemName: feature.iconSystemName)
-                    .font(.system(size: 24, weight: .semibold))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.white)
             }
 
-            VStack(spacing: 4) {
-                Text(settings.localized(feature.titleKey))
-                    .font(.headline)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-                    .multilineTextAlignment(.center)
-
-                Text(settings.localized(feature.descriptionKey))
-                    .font(.caption)
-                    .foregroundColor(.white.opacity(0.85))
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-            }
+            Text(settings.localized(feature.titleKey))
+                .font(.subheadline)
+                .fontWeight(.bold)
+                .foregroundColor(.white)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(14)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        .padding(12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(
             LinearGradient(
                 gradient: Gradient(colors: feature.gradient),
@@ -278,9 +295,9 @@ struct FeatureCardView: View {
             .opacity(0.18)
         )
         .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(
-            RoundedRectangle(cornerRadius: 20)
+            RoundedRectangle(cornerRadius: 16)
                 .stroke(
                     LinearGradient(
                         colors: [Color.white.opacity(0.35), Color.white.opacity(0.06)],
@@ -290,7 +307,84 @@ struct FeatureCardView: View {
                     lineWidth: 1
                 )
         )
-        .shadow(color: .black.opacity(0.35), radius: 10, x: 0, y: 8)
+        .shadow(color: .black.opacity(0.25), radius: 6, x: 0, y: 4)
+    }
+}
+
+struct HomeHeroCardView: View {
+    @EnvironmentObject var settings: AppSettings
+    let feature: FeatureCard
+    
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            // Background Image/Icon decoration
+            Image(systemName: "bubble.left.and.bubble.right.fill")
+                .font(.system(size: 140))
+                .foregroundColor(.white.opacity(0.08))
+                .offset(x: 20, y: 10)
+                .allowsHitTesting(false)
+            
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(.ultraThinMaterial)
+                            .frame(width: 50, height: 50)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(Color.white.opacity(0.24), lineWidth: 1)
+                            )
+                        Image(systemName: feature.iconSystemName)
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                    Text(settings.localized(feature.titleKey))
+                        .font(.title2.bold())
+                        .foregroundColor(.white)
+                }
+                
+                Text(settings.localized(feature.descriptionKey))
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(0.9))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                
+                HStack {
+                    Text(settings.localized("chat_now"))
+                        .font(.caption.bold())
+                        .foregroundColor(Color(hex: "233E88"))
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 8)
+                        .background(Color.white.opacity(0.75))
+                        .cornerRadius(20)
+                    Spacer()
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(
+            LinearGradient(
+                gradient: Gradient(colors: feature.gradient),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .opacity(0.3)
+        )
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24)
+                .stroke(
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.35), Color.white.opacity(0.06)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+        )
+        .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 6)
     }
 }
 

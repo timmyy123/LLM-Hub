@@ -456,30 +456,4 @@ struct ToggleTile: View {
     }
 }
 
-private extension View {
-    func liquidGlassPrimaryButton(cornerRadius: CGFloat = 12) -> some View {
-        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
 
-        return self
-            .foregroundStyle(.white)
-            .background(shape.fill(.ultraThinMaterial))
-            .clipShape(shape)
-            .contentShape(shape)
-            .overlay(
-                shape
-                    .fill(
-                        LinearGradient(
-                            colors: [ApolloPalette.accent.opacity(0.16), Color.white.opacity(0.03)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .allowsHitTesting(false)
-            )
-            .overlay(
-                shape
-                    .stroke(Color.white.opacity(0.22), lineWidth: 1)
-                    .allowsHitTesting(false)
-            )
-    }
-}

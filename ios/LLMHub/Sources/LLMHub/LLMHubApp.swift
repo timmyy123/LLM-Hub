@@ -93,6 +93,7 @@ struct LLMHubApp: App {
     }
 
     private func register(_ model: AIModel) {
+        guard model.modelFormat != .drawthings else { return }
         guard let primaryURL = URL(string: model.url) else { return }
 
         if model.additionalFiles.isEmpty {
@@ -111,6 +112,8 @@ struct LLMHubApp: App {
                         return .embedding
                     case .imageGeneration:
                         return .imageGeneration
+                    case .videoGeneration:
+                        return .imageGeneration // or .videoGeneration if RunAnywhere has it
                     }
                 }(),
                 memoryRequirement: model.sizeBytes,
@@ -138,6 +141,8 @@ struct LLMHubApp: App {
                 case .embedding:
                     return .embedding
                 case .imageGeneration:
+                    return .imageGeneration
+                case .videoGeneration:
                     return .imageGeneration
                 }
             }(),

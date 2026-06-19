@@ -1,6 +1,7 @@
 import SwiftUI
 import RunAnywhere
 import UniformTypeIdentifiers
+import ModelZoo
 
 struct ModelFamilyGroup: Identifiable {
     let title: String
@@ -45,7 +46,13 @@ class ModelDownloadViewModel: ObservableObject {
     }
 
     private func destinationDirectory(for model: AIModel) throws -> URL {
-        if model.isCoreMLImageGeneration {
+        if model.modelFormat == .drawthings {
+            guard let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+                throw NSError(domain: "ModelDownload", code: -3, userInfo: [NSLocalizedDescriptionKey: "Cannot resolve documents directory"])
+            }
+            return docsDir.appendingPathComponent("Models")
+        }
+        if model.isCoreMLImageGeneration || model.isCoreMLVideoGeneration {
             guard let dir = StableDiffusionBackend.sdModelDirectory(for: model.id) else {
                 throw NSError(domain: "ModelDownload", code: -3, userInfo: [NSLocalizedDescriptionKey: "Cannot resolve documents directory"])
             }
@@ -55,8 +62,29 @@ class ModelDownloadViewModel: ObservableObject {
     }
 
     private func requiredFilesExist(in directory: URL, for model: AIModel) -> (allExist: Bool, totalBytes: Int64) {
-        // CoreML models: check for sentinel file written after ZIP extraction
-        if model.isCoreMLImageGeneration {
+        if model.modelFormat == .drawthings {
+            let allFiles: [String]
+            if let specification = ModelZoo.specificationForModel(model.id) {
+                var seen = Set<String>()
+                allFiles = ModelZoo.filesToDownload(specification).map(\.file).filter { seen.insert($0).inserted }
+            } else {
+                allFiles = [model.id]
+            }
+            var allExist = true
+            var totalLocalBytes: Int64 = 0
+            for f in allFiles {
+                let fileURL = directory.appendingPathComponent(f)
+                if FileManager.default.fileExists(atPath: fileURL.path) {
+                    let attrs = try? FileManager.default.attributesOfItem(atPath: fileURL.path)
+                    totalLocalBytes += attrs?[.size] as? Int64 ?? 0
+                } else {
+                    allExist = false
+                }
+            }
+            return (allExist, allExist ? model.sizeBytes : totalLocalBytes)
+        }
+        // CoreML models (image gen + video gen): check for sentinel file written after ZIP extraction
+        if model.isCoreMLImageGeneration || model.isCoreMLVideoGeneration {
             let sentinel = directory.appendingPathComponent("_downloaded")
             let exists = FileManager.default.fileExists(atPath: sentinel.path)
             return (exists, exists ? model.sizeBytes : 0)
@@ -85,6 +113,29 @@ class ModelDownloadViewModel: ObservableObject {
     }
 
     private func verifiedInstallMarkerExists(in directory: URL, for model: AIModel) -> Bool {
+        if model.modelFormat == .drawthings {
+            let allFiles: [String]
+            if let specification = ModelZoo.specificationForModel(model.id) {
+                var seen = Set<String>()
+                allFiles = ModelZoo.filesToDownload(specification).map(\.file).filter { seen.insert($0).inserted }
+            } else {
+                allFiles = [model.id]
+            }
+            for f in allFiles {
+                let fileURL = directory.appendingPathComponent(f)
+                if !FileManager.default.fileExists(atPath: fileURL.path) {
+                    return false
+                }
+            }
+            return true
+        }
+        // CoreML models (image gen + video gen) write an empty sentinel file after ZIP extraction.
+        // Don't try to JSON-decode it — its existence is sufficient proof of completion.
+        if model.isCoreMLImageGeneration || model.isCoreMLVideoGeneration {
+            let sentinel = directory.appendingPathComponent("_downloaded")
+            return sentinel.path.isEmpty ? false : FileManager.default.fileExists(atPath: sentinel.path)
+        }
+
         let markerURL = ModelDownloader.installMarkerURL(for: directory)
         guard let data = try? Data(contentsOf: markerURL) else { return false }
 

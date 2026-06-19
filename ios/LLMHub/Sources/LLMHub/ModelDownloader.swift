@@ -1,5 +1,7 @@
 import Foundation
 import ZIPFoundation
+@preconcurrency import MediaGenerationKit
+import ModelZoo
 
 private extension URLError.Code {
     var isTransientDownloadFailure: Bool {
@@ -32,6 +34,35 @@ private struct ModelInstallMarker: Codable {
     let modelId: String
     let totalBytes: Int64
     let fileNames: [String]
+}
+
+private final class ThroughputTracker: @unchecked Sendable {
+    private let lock = NSLock()
+    private var throughputSamples: [(time: Date, bytes: Int64)] = []
+    private var lastBytesWritten: Int64 = 0
+    private let window: TimeInterval = 3.0
+
+    func recordTransfer(bytesWritten: Int64) -> Double {
+        lock.lock()
+        defer { lock.unlock() }
+        let now = Date()
+        let diff = bytesWritten - lastBytesWritten
+        if diff > 0 {
+            throughputSamples.append((time: now, bytes: diff))
+            lastBytesWritten = bytesWritten
+        } else if bytesWritten < lastBytesWritten {
+            lastBytesWritten = bytesWritten
+        }
+        
+        let cutoff = now.addingTimeInterval(-window)
+        throughputSamples.removeAll { $0.time < cutoff }
+        
+        guard !throughputSamples.isEmpty else { return 0 }
+        guard let firstTime = throughputSamples.first?.time else { return 0 }
+        let bytes = throughputSamples.reduce(0) { $0 + $1.bytes }
+        let span = max(0.1, now.timeIntervalSince(firstTime))
+        return Double(bytes) / span
+    }
 }
 
 public actor ModelDownloader {
@@ -123,6 +154,87 @@ public actor ModelDownloader {
         destinationDir: URL,
         onProgress: @Sendable @escaping (DownloadUpdate) -> Void
     ) async throws {
+        if model.modelFormat == .drawthings {
+            struct EnvWrapper {
+                static let env = MediaGenerationEnvironment.default
+            }
+            let tracker = ThroughputTracker()
+            let drawThingsFileSizes: [String: Int64] = [
+                "svd_i2v_xt_1.0_q6p_q8p.ckpt": 1334681600,
+                "open_clip_vit_h14_vision_model_f16.ckpt": 1263398912,
+                "vae_ft_mse_840000_f16.ckpt": 167538688
+            ]
+            let allFiles: [String]
+            if let specification = ModelZoo.specificationForModel(model.id) {
+                var seen = Set<String>()
+                allFiles = ModelZoo.filesToDownload(specification).map(\.file).filter { seen.insert($0).inserted }
+            } else {
+                allFiles = [model.id]
+            }
+            
+            _ = try await EnvWrapper.env.ensure(model.id, offline: false) { state in
+                switch state {
+                case .resolving:
+                    onProgress(DownloadUpdate(bytesDownloaded: 0, totalBytes: model.sizeBytes, speedBytesPerSecond: 0))
+                case .verifying:
+                    var cumulativeBytes: Int64 = 0
+                    for f in allFiles {
+                        let path = ModelZoo.filePathForModelDownloaded(f)
+                        if FileManager.default.fileExists(atPath: path) {
+                            let attrs = try? FileManager.default.attributesOfItem(atPath: path)
+                            let localSize = attrs?[.size] as? Int64 ?? 0
+                            if localSize > 0 {
+                                cumulativeBytes += localSize
+                            } else if let knownSize = drawThingsFileSizes[f] {
+                                cumulativeBytes += knownSize
+                            }
+                        }
+                    }
+                    let trueTotalSize = allFiles.reduce(Int64(0)) { sum, f in
+                        sum + (drawThingsFileSizes[f] ?? 0)
+                    }
+                    let finalTotalSize = trueTotalSize > 0 ? trueTotalSize : model.sizeBytes
+                    let progressProportion = Double(cumulativeBytes) / Double(max(1, finalTotalSize))
+                    let reportedBytes = min(model.sizeBytes, Int64(progressProportion * Double(model.sizeBytes)))
+                    onProgress(DownloadUpdate(bytesDownloaded: reportedBytes, totalBytes: model.sizeBytes, speedBytesPerSecond: 0))
+                case .downloading(let file, _, _, let bytesWritten, _):
+                    let speed = tracker.recordTransfer(bytesWritten: bytesWritten)
+                    
+                    var cumulativeBytes: Int64 = 0
+                    for f in allFiles {
+                        if f == file {
+                            cumulativeBytes += bytesWritten
+                        } else {
+                            let path = ModelZoo.filePathForModelDownloaded(f)
+                            if FileManager.default.fileExists(atPath: path) {
+                                let attrs = try? FileManager.default.attributesOfItem(atPath: path)
+                                let localSize = attrs?[.size] as? Int64 ?? 0
+                                if localSize > 0 {
+                                    cumulativeBytes += localSize
+                                } else if let knownSize = drawThingsFileSizes[f] {
+                                    cumulativeBytes += knownSize
+                                }
+                            }
+                        }
+                    }
+                    
+                    let trueTotalSize = allFiles.reduce(Int64(0)) { sum, f in
+                        sum + (drawThingsFileSizes[f] ?? 0)
+                    }
+                    let finalTotalSize = trueTotalSize > 0 ? trueTotalSize : model.sizeBytes
+                    let progressProportion = Double(cumulativeBytes) / Double(max(1, finalTotalSize))
+                    let reportedBytes = min(model.sizeBytes, Int64(progressProportion * Double(model.sizeBytes)))
+                    
+                    onProgress(DownloadUpdate(
+                        bytesDownloaded: reportedBytes,
+                        totalBytes: model.sizeBytes,
+                        speedBytesPerSecond: speed
+                    ))
+                }
+            }
+            return
+        }
+
         // CoreML models (Stable Diffusion) are distributed as ZIP archives;
         // download, extract, and store a sentinel to mark completion.
         if model.modelFormat == .coreml {
@@ -540,7 +652,6 @@ public actor ModelDownloader {
     private func extractZip(at zipURL: URL, to destinationURL: URL) throws {
         try FileManager.default.createDirectory(at: destinationURL, withIntermediateDirectories: true)
         let fm = FileManager.default
-        // ZIPFoundation FileManager extension: skips __MACOSX entries automatically.
         try fm.unzipItem(at: zipURL, to: destinationURL)
     }
 

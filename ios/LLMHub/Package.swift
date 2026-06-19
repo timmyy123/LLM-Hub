@@ -18,7 +18,8 @@ let package = Package(
     dependencies: [
         .package(path: "../runanywhere-sdks-latest"),
         .package(url: "https://github.com/apple/ml-stable-diffusion", from: "1.1.1"),
-        .package(url: "https://github.com/weichsel/ZIPFoundation", from: "0.9.20"),
+        .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.20"),
+        .package(path: "LocalPackages/media-generation-kit"),
         .package(
             url: "https://github.com/googleads/swift-package-manager-google-mobile-ads",
             from: "11.0.0"
@@ -41,6 +42,7 @@ let package = Package(
                 .product(name: "GoogleMobileAds", package: "swift-package-manager-google-mobile-ads"),
                 .product(name: "GoogleUserMessagingPlatform", package: "swift-package-manager-google-user-messaging-platform"),
                 .product(name: "LiteRTLM", package: "LiteRT-LM"),
+                .product(name: "MediaGenerationKit", package: "media-generation-kit"),
             ],
             exclude: [
                 "check_strings.py"
