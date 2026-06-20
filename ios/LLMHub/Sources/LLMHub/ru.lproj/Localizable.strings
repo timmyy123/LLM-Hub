@@ -747,3 +747,8 @@
 "video_generator_random_seed" = "Случайный сид";
 "feature_video_generator" = "Генератор видео";
 "feature_video_generator_desc" = "Генеруйте відео з текстових підказок або зображень";
+
+"success" = "Успех";
+"image_generator_step_of" = "Шаг %1$d из %2$d";
+"video_generator_save_failed" = "Не удалось сохранить видео";
+"image_generator_save_failed" = "Не удалось сохранить изображение";

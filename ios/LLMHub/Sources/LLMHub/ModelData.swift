@@ -160,13 +160,17 @@ public struct AIModel: Identifiable, Codable, Sendable {
         modelFormat == .coreml && category == .videoGeneration
     }
 
+    public var isDrawThingsImageGeneration: Bool {
+        modelFormat == .drawthings && category == .imageGeneration
+    }
+
     public var isDrawThingsVideoGeneration: Bool {
         modelFormat == .drawthings && category == .videoGeneration
     }
 
     public var imageGenerationResolution: Int? {
-        guard isCoreMLImageGeneration else { return nil }
-        return id.contains("sdxl") ? 768 : 512
+        guard isDrawThingsImageGeneration else { return nil }
+        return id.contains("sd_xl") || id.contains("flux") ? 768 : 512
     }
 
     public var isDependencyOnly: Bool {
@@ -217,11 +221,6 @@ public struct ModelData {
             return (exists, exists ? model.sizeBytes : 0)
         }
 
-        if model.isCoreMLImageGeneration || model.isCoreMLVideoGeneration {
-            let sentinel = directory.appendingPathComponent("_downloaded")
-            let exists = FileManager.default.fileExists(atPath: sentinel.path)
-            return (exists, exists ? model.sizeBytes : 0)
-        }
 
         guard !model.requiredFileNames.isEmpty else {
             return (false, 0)
@@ -283,10 +282,6 @@ public struct ModelData {
 
     public static func isModelFullyAvailableLocally(_ model: AIModel) -> Bool {
         if model.modelFormat == .drawthings {
-            guard let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
-                return false
-            }
-            let drawThingsDir = docsDir.appendingPathComponent("Models")
             let allFiles: [String]
             if let specification = ModelZoo.specificationForModel(model.id) {
                 var seen = Set<String>()
@@ -295,8 +290,9 @@ public struct ModelData {
                 allFiles = [model.id]
             }
             for f in allFiles {
-                let fileURL = drawThingsDir.appendingPathComponent(f)
-                if !FileManager.default.fileExists(atPath: fileURL.path) {
+                // Use filePathForModelDownloaded which checks AppSupport AND legacy Documents path
+                let filePath = ModelZoo.filePathForModelDownloaded(f)
+                if !FileManager.default.fileExists(atPath: filePath) {
                     return false
                 }
             }
@@ -2656,90 +2652,90 @@ public static let models: [AIModel] = [
         additionalFiles: []
     ),
     
-    // MARK: - Image Generation (CoreML Stable Diffusion)
+    // MARK: - Image Generation (Draw Things Stable Diffusion & Flux)
     AIModel(
-        id: "sd-v1-4-apple-palettized-split-einsum-v2",
-        name: "Stable Diffusion v1.4 (ANE)",
-        description: "Stable Diffusion v1.4 — Apple official palettized split-einsum v2 bundle for iPhone/iPad Neural Engine deployment. Generates 512×512 images. Requires iOS 17+. (1.57 GB)",
-        url: "https://huggingface.co/apple/coreml-stable-diffusion-1-4-palettized/resolve/main/coreml-stable-diffusion-1-4-palettized_split_einsum_v2_compiled.zip?download=true",
+        id: "sd_v1.5_f16.ckpt",
+        name: "Stable Diffusion v1.5",
+        description: "Standard 1.5B parameter text-to-image model. Extremely stable on all devices. Generates 512×512 images. (1.97 GB)",
+        url: "https://huggingface.co/runwayml/stable-diffusion-v1-5",
         category: .imageGeneration,
-        sizeBytes: 1685774664,
-        source: "Apple / Hugging Face",
+        sizeBytes: 1_967_783_936,
+        source: "Stability AI",
         supportsVision: false,
         supportsAudio: false,
         supportsThinking: false,
-        supportsGpu: false,
+        supportsGpu: true,
         requirements: ModelRequirements(minRamGB: 4, recommendedRamGB: 6),
         contextWindowSize: 0,
-        modelFormat: .coreml,
+        modelFormat: .drawthings,
         additionalFiles: []
     ),
     AIModel(
-        id: "sd-v1-5-apple-palettized-split-einsum-v2",
-        name: "Stable Diffusion v1.5 (ANE)",
-        description: "Stable Diffusion v1.5 — Apple official palettized split-einsum v2 bundle for iPhone/iPad Neural Engine deployment. Generates 512×512 images. Requires iOS 17+. (1.57 GB)",
-        url: "https://huggingface.co/apple/coreml-stable-diffusion-v1-5-palettized/resolve/main/coreml-stable-diffusion-v1-5-palettized_split_einsum_v2_compiled.zip?download=true",
+        id: "sd_v2.1_f16.ckpt",
+        name: "Stable Diffusion v2.1",
+        description: "Updated 1.5B parameter text-to-image model. Generates 512×512 images. (2.42 GB)",
+        url: "https://huggingface.co/stabilityai/stable-diffusion-2-1",
         category: .imageGeneration,
-        sizeBytes: 1685774664,
-        source: "Apple / Hugging Face",
+        sizeBytes: 2_416_160_768,
+        source: "Stability AI",
         supportsVision: false,
         supportsAudio: false,
         supportsThinking: false,
-        supportsGpu: false,
+        supportsGpu: true,
         requirements: ModelRequirements(minRamGB: 4, recommendedRamGB: 6),
         contextWindowSize: 0,
-        modelFormat: .coreml,
+        modelFormat: .drawthings,
         additionalFiles: []
     ),
     AIModel(
-        id: "sd-v2-base-apple-palettized-split-einsum-v2",
-        name: "Stable Diffusion 2 Base (ANE)",
-        description: "Stable Diffusion 2 Base — Apple official palettized split-einsum v2 bundle for iPhone/iPad Neural Engine deployment. Generates 512×512 images. Requires iOS 17+. (1.14 GB)",
-        url: "https://huggingface.co/apple/coreml-stable-diffusion-2-base-palettized/resolve/main/coreml-stable-diffusion-2-base-palettized_split_einsum_v2_compiled.zip?download=true",
+        id: "sd_xl_base_1.0_q6p_q8p.ckpt",
+        name: "Stable Diffusion XL Base (8-bit)",
+        description: "Large 6.6B parameter model quantized to 8-bit. Generates high quality 768×768 images. (3.74 GB)",
+        url: "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0",
         category: .imageGeneration,
-        sizeBytes: 1224065679,
-        source: "Apple / Hugging Face",
+        sizeBytes: 3_737_505_792,
+        source: "Stability AI / Draw Things",
         supportsVision: false,
         supportsAudio: false,
         supportsThinking: false,
-        supportsGpu: false,
-        requirements: ModelRequirements(minRamGB: 4, recommendedRamGB: 6),
-        contextWindowSize: 0,
-        modelFormat: .coreml,
-        additionalFiles: []
-    ),
-    AIModel(
-        id: "sd-v2-1-base-apple-palettized-split-einsum-v2",
-        name: "Stable Diffusion 2.1 Base (ANE)",
-        description: "Stable Diffusion 2.1 Base — Apple official palettized split-einsum v2 bundle for iPhone/iPad Neural Engine deployment. Generates 512×512 images. Requires iOS 17+. (1.14 GB)",
-        url: "https://huggingface.co/apple/coreml-stable-diffusion-2-1-base-palettized/resolve/main/coreml-stable-diffusion-2-1-base-palettized_split_einsum_v2_compiled.zip?download=true",
-        category: .imageGeneration,
-        sizeBytes: 1224065679,
-        source: "Apple / Hugging Face",
-        supportsVision: false,
-        supportsAudio: false,
-        supportsThinking: false,
-        supportsGpu: false,
-        requirements: ModelRequirements(minRamGB: 4, recommendedRamGB: 6),
-        contextWindowSize: 0,
-        modelFormat: .coreml,
-        additionalFiles: []
-    ),
-    AIModel(
-        id: "sdxl-base-ios-apple-split-einsum",
-        name: "Stable Diffusion XL Base iOS (ANE)",
-        description: "Stable Diffusion XL Base iOS — Apple official split-einsum bundle for iPhone/iPad Neural Engine deployment. Generates 768×768 images. Requires iOS 17+. Much slower and heavier than SD 1.x/2.x. (3.05 GB)",
-        url: "https://huggingface.co/apple/coreml-stable-diffusion-xl-base-ios/resolve/main/coreml-stable-diffusion-xl-base-ios_split_einsum_compiled.zip?download=true",
-        category: .imageGeneration,
-        sizeBytes: 3274912563,
-        source: "Apple / Hugging Face",
-        supportsVision: false,
-        supportsAudio: false,
-        supportsThinking: false,
-        supportsGpu: false,
+        supportsGpu: true,
         requirements: ModelRequirements(minRamGB: 6, recommendedRamGB: 8),
         contextWindowSize: 0,
-        modelFormat: .coreml,
+        modelFormat: .drawthings,
+        additionalFiles: []
+    ),
+    AIModel(
+        id: "flux_2_klein_4b_q6p.ckpt",
+        name: "FLUX.2 [klein] 4B (6-bit)",
+        description: "Highly efficient 4B parameter model quantized to 6-bit. Excellent prompt adherence and text layout. Generates 768×768 images. (11.18 GB)",
+        url: "https://huggingface.co/black-forest-labs/FLUX.2-klein-4B",
+        category: .imageGeneration,
+        sizeBytes: 11_179_941_888,
+        source: "Black Forest Labs / Draw Things",
+        supportsVision: false,
+        supportsAudio: false,
+        supportsThinking: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 6, recommendedRamGB: 8),
+        contextWindowSize: 0,
+        modelFormat: .drawthings,
+        additionalFiles: []
+    ),
+    AIModel(
+        id: "flux_1_schnell_q5p.ckpt",
+        name: "FLUX.1 [schnell] (5-bit)",
+        description: "High quality distilled 12B model quantized to 5-bit. Generates 768×768 images in just 4 steps. Requires 12GB RAM. (13.23 GB)",
+        url: "https://huggingface.co/black-forest-labs/FLUX.1-schnell",
+        category: .imageGeneration,
+        sizeBytes: 13_234_286_592,
+        source: "Black Forest Labs / Draw Things",
+        supportsVision: false,
+        supportsAudio: false,
+        supportsThinking: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 10, recommendedRamGB: 12),
+        contextWindowSize: 0,
+        modelFormat: .drawthings,
         additionalFiles: []
     ),
 
@@ -2830,7 +2826,7 @@ public static let models: [AIModel] = [
         description: "Updated image-to-video checkpoint from Draw Things. Requires 12GB RAM for stable performance on iOS.",
         url: "https://huggingface.co/stabilityai/stable-video-diffusion-img2vid-xt",
         category: .videoGeneration,
-        sizeBytes: 2_789_175_296,
+        sizeBytes: 2_956_713_984,
         source: "Stability AI / Draw Things",
         supportsVision: false,
         supportsAudio: false,
@@ -2846,7 +2842,7 @@ public static let models: [AIModel] = [
         description: "Consistency distilled image-to-video model. Generates 25-frame video in just 4-8 steps. Requires 12GB RAM for stable performance.",
         url: "https://huggingface.co/wangfuyun/AnimateLCM-SVD",
         category: .videoGeneration,
-        sizeBytes: 2_642_345_984,
+        sizeBytes: 2_809_884_672,
         source: "Stability AI / AnimateLCM",
         supportsVision: false,
         supportsAudio: false,
@@ -2862,7 +2858,7 @@ public static let models: [AIModel] = [
         description: "The non-XT version of SVD 1.0. Generates shorter 14-frame videos with less processing time. Requires 12GB RAM.",
         url: "https://huggingface.co/stabilityai/stable-video-diffusion-img2vid",
         category: .videoGeneration,
-        sizeBytes: 2_598_080_512,
+        sizeBytes: 2_765_619_200,
         source: "Stability AI",
         supportsVision: false,
         supportsAudio: false,

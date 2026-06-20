@@ -783,3 +783,8 @@
 "video_generator_random_seed" = "随机种子模式";
 "feature_video_generator" = "视频生成器";
 "feature_video_generator_desc" = "根据文本提示或图像生成视频";
+
+"success" = "成功";
+"image_generator_step_of" = "第 %1$d 步，共 %2$d 步";
+"video_generator_save_failed" = "保存视频失败";
+"image_generator_save_failed" = "保存图像失败";

@@ -775,3 +775,8 @@
 "video_generator_random_seed" = "무작위 시드";
 "feature_video_generator" = "비디오 생성기";
 "feature_video_generator_desc" = "텍스트 프롬프트 또는 이미지에서 비디오 생성";
+
+"success" = "성공";
+"image_generator_step_of" = "%2$d단계 중 %1$d단계";
+"video_generator_save_failed" = "비디오 저장 실패";
+"image_generator_save_failed" = "이미지 저장 실패";

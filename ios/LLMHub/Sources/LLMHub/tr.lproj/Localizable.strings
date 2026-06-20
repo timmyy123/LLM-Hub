@@ -775,3 +775,8 @@
 "video_generator_random_seed" = "Rastgele Tohum";
 "feature_video_generator" = "Video Oluşturucu";
 "feature_video_generator_desc" = "Metin açıklamalarından veya görsellerden videolar oluşturun";
+
+"success" = "Başarılı";
+"image_generator_step_of" = "%1$d / %2$d Adım";
+"video_generator_save_failed" = "Video kaydedilemedi";
+"image_generator_save_failed" = "Görsel kaydedilemedi";

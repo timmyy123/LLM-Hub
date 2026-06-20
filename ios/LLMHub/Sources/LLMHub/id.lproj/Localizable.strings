@@ -775,3 +775,8 @@
 "video_generator_random_seed" = "Seed Acak";
 "feature_video_generator" = "Generator Video";
 "feature_video_generator_desc" = "Buat video dari perintah teks atau gambar";
+
+"success" = "Berhasil";
+"image_generator_step_of" = "Langkah %1$d dari %2$d";
+"video_generator_save_failed" = "Gagal menyimpan video";
+"image_generator_save_failed" = "Gagal menyimpan gambar";

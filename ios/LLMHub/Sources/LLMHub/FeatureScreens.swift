@@ -5631,6 +5631,7 @@ struct VibeCoderScreen: View {
 
 // MARK: - ImageGeneratorScreen
 
+@MainActor
 struct ImageGeneratorScreen: View {
     @EnvironmentObject var settings: AppSettings
     @AppStorage("sd_selected_model_id") private var selectedModelId: String = ""
@@ -5648,6 +5649,10 @@ struct ImageGeneratorScreen: View {
     @State private var inputImage: UIImage?
     @State private var selectedImageItem: PhotosPickerItem?
     @State private var generateTask: Task<Void, Never>?
+    @State private var imageSaver = ImageSaver()
+    @State private var showSaveAlert = false
+    @State private var saveAlertTitle = ""
+    @State private var saveAlertMessage = ""
 
     @ObservedObject private var sdBackend = StableDiffusionBackend.shared
 
@@ -5655,7 +5660,7 @@ struct ImageGeneratorScreen: View {
     let onNavigateToModels: () -> Void
 
     private var availableModels: [AIModel] {
-        ModelData.models.filter { $0.isCoreMLImageGeneration && StableDiffusionBackend.isCoreMLModelDownloaded(modelId: $0.id) }
+        ModelData.models.filter { $0.isDrawThingsImageGeneration && StableDiffusionBackend.isModelDownloaded(modelId: $0.id) }
     }
 
     private var selectedModel: AIModel? {
@@ -5761,6 +5766,11 @@ struct ImageGeneratorScreen: View {
                     .onTapGesture { errorMessage = nil }
             }
         }
+        .alert(saveAlertTitle, isPresented: $showSaveAlert) {
+            Button(settings.localized("ok"), role: .cancel) {}
+        } message: {
+            Text(saveAlertMessage)
+        }
     }
 
     // MARK: - No-Model State
@@ -5839,7 +5849,7 @@ struct ImageGeneratorScreen: View {
     private var mainGenerationView: some View {
         GeometryReader { geo in
             let isLandscape = geo.size.width > geo.size.height
-            if isLandscape && !generatedImages.isEmpty {
+            if isLandscape && (!generatedImages.isEmpty || isGenerating) {
                 landscapeLayout
             } else {
                 portraitLayout
@@ -5856,7 +5866,7 @@ struct ImageGeneratorScreen: View {
                 if selectedModelSupportsImageToImage {
                     img2imgCard
                 }
-                if !generatedImages.isEmpty {
+                if !generatedImages.isEmpty || isGenerating {
                     imageSwipeView
                 }
                 generateButton
@@ -6050,9 +6060,25 @@ struct ImageGeneratorScreen: View {
                     ProgressView()
                         .scaleEffect(1.3)
                         .tint(.white)
+                    
                     Text(String(format: settings.localized("image_generator_variation"), generatedImages.count + 1))
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.7))
+                        .font(.subheadline.bold())
+                        .foregroundStyle(.white)
+                        .multilineTextAlignment(.center)
+                    
+                    if sdBackend.generationTotalSteps > 0 {
+                        VStack(spacing: 8) {
+                            ProgressView(value: Double(sdBackend.generationStep), total: Double(sdBackend.generationTotalSteps))
+                                .tint(.white)
+                                .background(Color.white.opacity(0.2))
+                                .frame(width: 180)
+                                .clipShape(Capsule())
+                            
+                            Text(String(format: settings.localized("image_generator_step_of"), sdBackend.generationStep, sdBackend.generationTotalSteps))
+                                .font(.caption.bold())
+                                .foregroundStyle(.white.opacity(0.7))
+                        }
+                    }
                 }
             } else {
                 VStack(spacing: 12) {
@@ -6172,8 +6198,32 @@ struct ImageGeneratorScreen: View {
     }
 
     private func saveImageToPhotos(_ image: UIImage) {
-        UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
-        errorMessage = settings.localized("image_generator_saved")
+        imageSaver.writeToPhotoAlbum(image: image) { error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    self.saveAlertTitle = self.settings.localized("error")
+                    self.saveAlertMessage = String(format: self.settings.localized("image_generator_save_failed") + ": %@", error.localizedDescription)
+                } else {
+                    self.saveAlertTitle = self.settings.localized("success")
+                    self.saveAlertMessage = self.settings.localized("image_generator_saved")
+                }
+                self.showSaveAlert = true
+            }
+        }
+    }
+}
+
+// MARK: - Image Saver Helper
+class ImageSaver: NSObject {
+    var onComplete: ((Error?) -> Void)?
+
+    func writeToPhotoAlbum(image: UIImage, completion: @escaping (Error?) -> Void) {
+        self.onComplete = completion
+        UIImageWriteToSavedPhotosAlbum(image, self, #selector(saveCompleted(_:didFinishSavingWithError:contextInfo:)), nil)
+    }
+
+    @objc func saveCompleted(_ image: UIImage, didFinishSavingWithError error: Error?, contextInfo: UnsafeRawPointer) {
+        onComplete?(error)
     }
 }
 

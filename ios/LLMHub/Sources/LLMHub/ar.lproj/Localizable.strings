@@ -775,3 +775,8 @@
 "video_generator_random_seed" = "بذرة عشوائية";
 "feature_video_generator" = "مولد الفيديو";
 "feature_video_generator_desc" = "توليد مقاطع الفيديو من النصوص أو الصور";
+
+"success" = "نجاح";
+"image_generator_step_of" = "الخطوة %1$d من %2$d";
+"video_generator_save_failed" = "فشل حفظ الفيديو";
+"image_generator_save_failed" = "فشل حفظ الصورة";

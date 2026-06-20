@@ -58,10 +58,7 @@ struct HomeScreen: View {
             }()
 
             let toolsColumnsCount = isLandscape ? 4 : 2
-            let utilityColumnsCount = isLandscape ? 4 : (usableWidth >= 600 ? 3 : (usableWidth >= 414 ? 3 : 2))
-
             let toolsColumns = Array(repeating: GridItem(.flexible(), spacing: spacing), count: toolsColumnsCount)
-            let utilityColumns = Array(repeating: GridItem(.flexible(), spacing: spacing), count: utilityColumnsCount)
             let cardHeight: CGFloat = isLandscape ? 85 : 100
             let gridTopPadding: CGFloat = isLandscape ? 12 : 8
             let gridBottomPadding: CGFloat = 12
@@ -174,27 +171,7 @@ struct HomeScreen: View {
                                 .padding(.horizontal, 4)
                             
                             LazyVGrid(columns: toolsColumns, spacing: spacing) {
-                                ForEach(toolsFeatures, id: \.route) { feature in
-                                    Button {
-                                        onNavigateToRoute(feature.route)
-                                    } label: {
-                                        SmallFeatureCardView(feature: feature)
-                                            .frame(height: cardHeight)
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            }
-                        }
-                        
-                        // Utilities section
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text(settings.localized("home_section_utilities"))
-                                .font(.title2.bold())
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 4)
-                            
-                            LazyVGrid(columns: utilityColumns, spacing: spacing) {
-                                ForEach(utilityFeatures, id: \.route) { feature in
+                                ForEach(toolsFeatures + utilityFeatures, id: \.route) { feature in
                                     Button {
                                         onNavigateToRoute(feature.route)
                                     } label: {

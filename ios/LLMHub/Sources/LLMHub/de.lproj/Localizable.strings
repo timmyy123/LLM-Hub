@@ -747,3 +747,8 @@
 "video_generator_random_seed" = "Zufälliger Seed";
 "feature_video_generator" = "Videogenerator";
 "feature_video_generator_desc" = "Generieren Sie Videos aus Texten oder Bildern";
+
+"success" = "Erfolgreich";
+"image_generator_step_of" = "Schritt %1$d von %2$d";
+"video_generator_save_failed" = "Video konnte nicht gespeichert werden";
+"image_generator_save_failed" = "Bild konnte nicht gespeichert werden";

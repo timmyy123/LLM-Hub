@@ -775,3 +775,8 @@
 "video_generator_random_seed" = "Losowe ziarno";
 "feature_video_generator" = "Generator wideo";
 "feature_video_generator_desc" = "Generuj wideo z opisów tekstowych lub obrazów";
+
+"success" = "Sukces";
+"image_generator_step_of" = "Krok %1$d z %2$d";
+"video_generator_save_failed" = "Nie udało się zapisać wideo";
+"image_generator_save_failed" = "Nie udało się zapisać obrazu";

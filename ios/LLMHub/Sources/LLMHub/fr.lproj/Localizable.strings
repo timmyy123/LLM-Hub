@@ -762,3 +762,8 @@
 "video_generator_random_seed" = "Graine aléatoire";
 "feature_video_generator" = "Générateur de vidéo";
 "feature_video_generator_desc" = "Générez des vidéos à partir de texte ou d'images";
+
+"success" = "Succès";
+"image_generator_step_of" = "Étape %1$d sur %2$d";
+"video_generator_save_failed" = "Échec de l'enregistrement de la vidéo";
+"image_generator_save_failed" = "Échec de l'enregistrement de l'image";

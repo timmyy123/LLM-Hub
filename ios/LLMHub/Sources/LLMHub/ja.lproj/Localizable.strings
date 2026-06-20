@@ -775,3 +775,8 @@
 "video_generator_random_seed" = "ランダムシード";
 "feature_video_generator" = "ビデオジェネレーター";
 "feature_video_generator_desc" = "テキストや画像からビデオを生成します";
+
+"success" = "成功";
+"image_generator_step_of" = "ステップ %1$d / %2$d";
+"video_generator_save_failed" = "ビデオの保存に失敗しました";
+"image_generator_save_failed" = "画像の保存に失敗しました";

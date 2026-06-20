@@ -1,7 +1,9 @@
 import SwiftUI
 import PhotosUI
+import Photos
 import AVKit
 
+@MainActor
 struct VideoGeneratorScreen: View {
     @EnvironmentObject var settings: AppSettings
     @AppStorage("sd_video_steps") private var storedSteps: Double = 20
@@ -13,12 +15,16 @@ struct VideoGeneratorScreen: View {
     @State private var seed: Int = Int.random(in: 0..<1_000_000)
     @State private var generatedVideoURL: URL?
     @State private var isGenerating = false
+    @State private var isSaving = false
     @State private var showSettings = false
     @State private var errorMessage: String?
     @State private var inputImage: UIImage?
     @State private var selectedImageItem: PhotosPickerItem?
     @State private var generateTask: Task<Void, Never>?
-
+    @State private var videoSaver = VideoSaver()
+    @State private var showSaveAlert = false
+    @State private var saveAlertTitle = ""
+    @State private var saveAlertMessage = ""
     @ObservedObject private var videoBackend = VideoGeneratorBackend.shared
 
     let onNavigateBack: () -> Void
@@ -112,6 +118,11 @@ struct VideoGeneratorScreen: View {
                     .padding(.bottom, 8)
                     .onTapGesture { errorMessage = nil }
             }
+        }
+        .alert(saveAlertTitle, isPresented: $showSaveAlert) {
+            Button(settings.localized("ok"), role: .cancel) {}
+        } message: {
+            Text(saveAlertMessage)
         }
     }
 
@@ -381,7 +392,15 @@ struct VideoGeneratorScreen: View {
         } label: {
             HStack {
                 Spacer()
-                Text(settings.localized("video_generator_save"))
+                if isSaving {
+                    ProgressView()
+                        .tint(.white)
+                        .scaleEffect(0.85)
+                        .padding(.trailing, 8)
+                    Text("Saving...")
+                } else {
+                    Text(settings.localized("video_generator_save"))
+                }
                 Spacer()
             }
             .frame(height: 44)
@@ -389,6 +408,7 @@ struct VideoGeneratorScreen: View {
         }
         .foregroundStyle(.white)
         .liquidGlassPrimaryButton(cornerRadius: 12)
+        .disabled(isSaving)
     }
 
     // MARK: - Generation Logic
@@ -429,15 +449,38 @@ struct VideoGeneratorScreen: View {
     }
 
     private func saveVideoToPhotos(_ fileURL: URL) {
-        PHPhotoLibrary.shared().performChanges({
-            PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: fileURL)
-        }) { success, error in
+        guard !isSaving else { return }
+        isSaving = true
+        errorMessage = nil
+
+        let tempCopyURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString + ".mp4")
+        
+        do {
+            if FileManager.default.fileExists(atPath: tempCopyURL.path) {
+                try? FileManager.default.removeItem(at: tempCopyURL)
+            }
+            try FileManager.default.copyItem(at: fileURL, to: tempCopyURL)
+        } catch {
+            self.saveAlertTitle = self.settings.localized("error")
+            self.saveAlertMessage = String(format: self.settings.localized("video_generator_save_failed") + ": %@", error.localizedDescription)
+            self.showSaveAlert = true
+            self.isSaving = false
+            return
+        }
+
+        videoSaver.writeToPhotoAlbum(videoURL: tempCopyURL) { error in
             DispatchQueue.main.async {
-                if success {
-                    errorMessage = settings.localized("video_generator_saved")
-                } else if let error = error {
-                    errorMessage = error.localizedDescription
+                try? FileManager.default.removeItem(at: tempCopyURL)
+                self.isSaving = false
+                if let error = error {
+                    self.saveAlertTitle = self.settings.localized("error")
+                    self.saveAlertMessage = String(format: self.settings.localized("video_generator_save_failed") + ": %@", error.localizedDescription)
+                } else {
+                    self.saveAlertTitle = self.settings.localized("success")
+                    self.saveAlertMessage = self.settings.localized("video_generator_saved")
                 }
+                self.showSaveAlert = true
             }
         }
     }
@@ -562,5 +605,19 @@ struct VideoGeneratorSettingsSheet: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Video Saver
+class VideoSaver: NSObject {
+    var onComplete: ((Error?) -> Void)?
+
+    func writeToPhotoAlbum(videoURL: URL, completion: @escaping (Error?) -> Void) {
+        self.onComplete = completion
+        UISaveVideoAtPathToSavedPhotosAlbum(videoURL.path, self, #selector(saveCompleted(_:didFinishSavingWithError:contextInfo:)), nil)
+    }
+
+    @objc func saveCompleted(_ videoPath: String, didFinishSavingWithError error: Error?, contextInfo: UnsafeRawPointer) {
+        onComplete?(error)
     }
 }

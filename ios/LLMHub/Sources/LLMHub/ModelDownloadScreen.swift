@@ -32,6 +32,8 @@ private extension URLError.Code {
 // MARK: - Download ViewModel
 @MainActor
 class ModelDownloadViewModel: ObservableObject {
+    static let shared = ModelDownloadViewModel()
+
     @Published var models: [AIModel] = ModelData.models
     @Published var selectedCategory: ModelCategory = .multimodal
     @Published var searchText: String = ""
@@ -47,16 +49,8 @@ class ModelDownloadViewModel: ObservableObject {
 
     private func destinationDirectory(for model: AIModel) throws -> URL {
         if model.modelFormat == .drawthings {
-            guard let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
-                throw NSError(domain: "ModelDownload", code: -3, userInfo: [NSLocalizedDescriptionKey: "Cannot resolve documents directory"])
-            }
-            return docsDir.appendingPathComponent("Models")
-        }
-        if model.isCoreMLImageGeneration || model.isCoreMLVideoGeneration {
-            guard let dir = StableDiffusionBackend.sdModelDirectory(for: model.id) else {
-                throw NSError(domain: "ModelDownload", code: -3, userInfo: [NSLocalizedDescriptionKey: "Cannot resolve documents directory"])
-            }
-            return dir
+            // Use Application Support/Models — survives Xcode reinstalls on physical device
+            return ModelZoo.persistentModelsDirectory()
         }
         return try SimplifiedFileManager.shared.getModelFolderURL(modelId: model.id, framework: model.inferenceFramework)
     }
@@ -73,21 +67,16 @@ class ModelDownloadViewModel: ObservableObject {
             var allExist = true
             var totalLocalBytes: Int64 = 0
             for f in allFiles {
-                let fileURL = directory.appendingPathComponent(f)
-                if FileManager.default.fileExists(atPath: fileURL.path) {
-                    let attrs = try? FileManager.default.attributesOfItem(atPath: fileURL.path)
+                // Use filePathForModelDownloaded which checks AppSupport AND legacy Documents path
+                let filePath = ModelZoo.filePathForModelDownloaded(f)
+                if FileManager.default.fileExists(atPath: filePath) {
+                    let attrs = try? FileManager.default.attributesOfItem(atPath: filePath)
                     totalLocalBytes += attrs?[.size] as? Int64 ?? 0
                 } else {
                     allExist = false
                 }
             }
             return (allExist, allExist ? model.sizeBytes : totalLocalBytes)
-        }
-        // CoreML models (image gen + video gen): check for sentinel file written after ZIP extraction
-        if model.isCoreMLImageGeneration || model.isCoreMLVideoGeneration {
-            let sentinel = directory.appendingPathComponent("_downloaded")
-            let exists = FileManager.default.fileExists(atPath: sentinel.path)
-            return (exists, exists ? model.sizeBytes : 0)
         }
 
         var allExist = true
@@ -122,18 +111,13 @@ class ModelDownloadViewModel: ObservableObject {
                 allFiles = [model.id]
             }
             for f in allFiles {
-                let fileURL = directory.appendingPathComponent(f)
-                if !FileManager.default.fileExists(atPath: fileURL.path) {
+                // Use filePathForModelDownloaded which checks AppSupport AND legacy Documents path
+                let filePath = ModelZoo.filePathForModelDownloaded(f)
+                if !FileManager.default.fileExists(atPath: filePath) {
                     return false
                 }
             }
             return true
-        }
-        // CoreML models (image gen + video gen) write an empty sentinel file after ZIP extraction.
-        // Don't try to JSON-decode it — its existence is sufficient proof of completion.
-        if model.isCoreMLImageGeneration || model.isCoreMLVideoGeneration {
-            let sentinel = directory.appendingPathComponent("_downloaded")
-            return sentinel.path.isEmpty ? false : FileManager.default.fileExists(atPath: sentinel.path)
         }
 
         let markerURL = ModelDownloader.installMarkerURL(for: directory)
@@ -624,6 +608,24 @@ class ModelDownloadViewModel: ObservableObject {
                 try? FileManager.default.removeItem(at: dir)
                 models.removeAll { $0.id == id }
                 saveImportedModels()
+            } else if model.modelFormat == .drawthings {
+                // Draw Things models share one directory — delete only this model's files
+                let allFiles: [String]
+                if let specification = ModelZoo.specificationForModel(model.id) {
+                    var seen = Set<String>()
+                    allFiles = ModelZoo.filesToDownload(specification).map(\.file).filter { seen.insert($0).inserted }
+                } else {
+                    allFiles = [model.id]
+                }
+                for f in allFiles {
+                    // Remove from both AppSupport and legacy Documents paths
+                    let appSupportPath = ModelZoo.persistentModelsDirectory().appendingPathComponent(f).path
+                    try? FileManager.default.removeItem(atPath: appSupportPath)
+                    if let legacyDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Models") {
+                        let legacyPath = legacyDir.appendingPathComponent(f).path
+                        try? FileManager.default.removeItem(atPath: legacyPath)
+                    }
+                }
             } else {
                 if let destinationDir = try? destinationDirectory(for: model) {
                     try? FileManager.default.removeItem(at: destinationDir)
@@ -883,7 +885,7 @@ struct StatusBadge: View {
 struct ModelDownloadScreen: View {
     @EnvironmentObject var settings: AppSettings
     @Environment(\.scenePhase) private var scenePhase
-    @StateObject private var vm = ModelDownloadViewModel()
+    @StateObject private var vm = ModelDownloadViewModel.shared
     @StateObject private var purchases = PurchaseManager.shared
     @State private var showImportSheet = false
     @State private var showPremiumForImport = false

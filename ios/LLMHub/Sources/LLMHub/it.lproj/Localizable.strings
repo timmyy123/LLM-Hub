@@ -765,3 +765,8 @@
 "video_generator_random_seed" = "Seed casuale";
 "feature_video_generator" = "Generatore di video";
 "feature_video_generator_desc" = "Genera video da messaggi di testo o immagini";
+
+"success" = "Successo";
+"image_generator_step_of" = "Passo %1$d di %2$d";
+"video_generator_save_failed" = "Impossibile salvare il video";
+"image_generator_save_failed" = "Impossibile salvare l'immagine";

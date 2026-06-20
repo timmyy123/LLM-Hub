@@ -775,3 +775,8 @@
 "video_generator_random_seed" = "بذره تصادفی";
 "feature_video_generator" = "مولد ویدیو";
 "feature_video_generator_desc" = "تولید ویدیو از متن یا تصویر";
+
+"success" = "موفقیت";
+"image_generator_step_of" = "مرحله %1$d از %2$d";
+"video_generator_save_failed" = "ذخیره ویدیو انجام نشد";
+"image_generator_save_failed" = "ذخیره تصویر انجام نشد";

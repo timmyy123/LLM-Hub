@@ -728,3 +728,8 @@
 "video_generator_random_seed" = "Semente aleatória";
 "feature_video_generator" = "Gerador de vídeo";
 "feature_video_generator_desc" = "Gere vídeos a partir de prompts de texto ou imagens";
+
+"success" = "Sucesso";
+"image_generator_step_of" = "Passo %1$d de %2$d";
+"video_generator_save_failed" = "Falha ao salvar o vídeo";
+"image_generator_save_failed" = "Falha ao salvar a imagem";

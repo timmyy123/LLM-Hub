@@ -775,3 +775,8 @@
 "video_generator_random_seed" = "סיד אקראי";
 "feature_video_generator" = "מחולל וידאו";
 "feature_video_generator_desc" = "צור סרטוני וידאו מהנחיות טקסט או תמונות";
+
+"success" = "הצלחה";
+"image_generator_step_of" = "שלב %1$d מתוך %2$d";
+"video_generator_save_failed" = "שמירת הוידאו נכשלה";
+"image_generator_save_failed" = "שמירת התמונה נכשله";

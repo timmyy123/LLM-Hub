@@ -785,3 +785,8 @@
 "video_generator_random_seed" = "Random Seed";
 "feature_video_generator" = "Video Generator";
 "feature_video_generator_desc" = "Generate videos from text prompts or images";
+
+"success" = "Success";
+"image_generator_step_of" = "Step %1$d of %2$d";
+"video_generator_save_failed" = "Failed to save video";
+"image_generator_save_failed" = "Failed to save image";

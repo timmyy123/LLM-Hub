@@ -166,7 +166,17 @@ public actor ModelDownloader {
                 "animatelcm_svd_xt_v1.1_q6p_q8p.ckpt": 1376313344,
                 "open_clip_vit_h14_vision_model_f16.ckpt": 1263398912,
                 "open_clip_vit_h14_visual_proj_f16.ckpt": 2633728,
-                "vae_ft_mse_840000_f16.ckpt": 167538688
+                "vae_ft_mse_840000_f16.ckpt": 167538688,
+                "sd_v1.5_f16.ckpt": 1721266176,
+                "clip_vit_l14_f16.ckpt": 246517760,
+                "sd_v2.1_f16.ckpt": 1734078464,
+                "open_clip_vit_h14_f16.ckpt": 682082304,
+                "sd_xl_base_1.0_q6p_q8p.ckpt": 2099683328,
+                "open_clip_vit_bigg14_f16.ckpt": 1391304704,
+                "flux_2_klein_4b_q6p.ckpt": 3117088768,
+                "qwen_3_4b_f16.ckpt": 8062853120,
+                "flux_1_schnell_q5p.ckpt": 9349296128,
+                "t5_xxl_encoder_q6p.ckpt": 3884990464
             ]
             let allFiles: [String]
             if let specification = ModelZoo.specificationForModel(model.id) {
