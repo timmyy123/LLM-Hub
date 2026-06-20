@@ -1,6 +1,6 @@
 # LLM Hub 🤖
 
-**LLM Hub** is an open-source mobile app for on-device LLM chat and image generation, available for both **Android** and **iOS**. It's optimized for mobile usage (CPU/GPU/NPU acceleration) and supports multiple model formats so you can run powerful models locally and privately.
+**LLM Hub** is an open-source mobile app for on-device LLM chat, image generation, and video generation, available for both **Android** and **iOS**. It's optimized for mobile usage (CPU/GPU/NPU acceleration) and supports multiple model formats so you can run powerful models locally and privately.
 
 ## Download
 
@@ -33,6 +33,7 @@
 | **💻 Vibe Coder** | **[NEW]** Explain your app idea and watch it be built in real-time with live HTML/JS preview |
 | **✍️ Writing Aid** | Summarize, expand, rewrite, improve grammar, or generate code from descriptions |
 | **🎨 Image Generator** | Create images from text prompts using Stable Diffusion 1.5 with swipeable gallery |
+| **🎥 Video Generator** | **[NEW]** Generate videos from text prompts or images using Stable Video Diffusion on iOS |
 | **🌍 Translator** | Translate text, images (OCR), and audio across 50+ languages - offline |
 | **🎙️ Transcriber** | Convert speech to text with on-device processing |
 | **🛡️ Scam Detector** | Analyze messages and images for phishing with risk assessment |
@@ -61,14 +62,15 @@ Quick Start
 
 Technology
 - **Android**: Kotlin + Jetpack Compose (Material 3), [Nexa SDK](https://github.com/NexaAI/nexa-sdk)
-- **iOS**: Swift + SwiftUI, [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks), Apple Foundation Model
+- **iOS**: Swift + SwiftUI, [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks), [Draw Things (MediaGenerationKit)](https://drawthings.ai/), Apple Foundation Model
 - **LLM Runtime**: MediaPipe, LiteRT, Llama.cpp (via [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks))
-- **Image Gen**: Qualcomm QNN
+- **Image & Video Gen**: [Draw Things (MediaGenerationKit)](https://drawthings.ai/) (iOS), Qualcomm QNN (Android)
 
 
 Acknowledgments
 - [Nexa SDK](https://github.com/NexaAI/nexa-sdk) — GGUF model inference support (credit shown in-app About) ⚡
 - [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks) — iOS model runtime and LLM execution framework 🚀
+- [Draw Things](https://drawthings.ai/) — iOS image and video generation engine (MediaGenerationKit) 🎨
 - **Google, OpenAI, Meta, Microsoft, IBM, LiquidAI, Mistral, Primsm ML, HuggingFace** — model and tooling contributions
 
 Development Setup
