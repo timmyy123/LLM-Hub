@@ -91,7 +91,7 @@
 "tos_model_usage_title" = "7. Використання та ліцензування моделей";
 "tos_model_usage_text" = "Моделі підпорядковуються своїм ліцензіям. Користувачі мають дотримуватися відповідних умов ліцензування.";
 "tos_open_source_title" = "8. Ліцензія відкритого коду";
-"tos_open_source_text" = "LLM Hub — відкритий код під ліцензією MIT. Бібліотеки та моделі третіх сторін можуть мати інші умови.";
+"tos_open_source_text" = "LLM Hub — відкритий код під некомерційною ліцензією. Бібліотеки та моделі третіх сторін можуть мати інші умови.";
 "tos_changes_title" = "9. Зміни умов";
 "tos_changes_text" = "Час від часу умови можуть оновлюватися; подальше використання означає згоду з новими умовами.";
 "tos_contact_title" = "10. Контактна інформація";
@@ -717,8 +717,8 @@
 "premium_price_loading" = "Завантаження ціни…";
 "premium_payment_note" = "Одноразова покупка через Google Play. Без підписок.";
 "premium_payment_note_ios" = "One-time purchase via App Store. No subscription.";
-"premium_active_subtitle_short" = "Усі функції розблоковані. Дякуємо! 👑";
-"premium_active_title" = "Ви Premium! 👑";
+"premium_active_subtitle_short" = "Усі функції розблоковані. Дякуємо!";
+"premium_active_title" = "Ви Premium!";
 "premium_active_subtitle" = "Усі функції розблоковано. Дякуємо за підтримку!";
 "premium_locked_feature" = "Преміум-функція";
 "premium_tap_to_unlock" = "Натисніть, щоб розблокувати з Premium";

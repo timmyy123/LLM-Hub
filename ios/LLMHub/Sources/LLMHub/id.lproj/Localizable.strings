@@ -91,7 +91,7 @@
 "tos_model_usage_title" = "7. Penggunaan Model dan Lisensi";
 "tos_model_usage_text" = "Model AI yang tersedia melalui LLM Hub tunduk pada lisensi dan ketentuan penggunaan masing-masing. Pengguna bertanggung jawab untuk mematuhi persyaratan lisensi khusus model saat menggunakan model yang diunduh.";
 "tos_open_source_title" = "8. Lisensi Sumber Terbuka";
-"tos_open_source_text" = "LLM Hub adalah perangkat lunak sumber terbuka. Kode sumber tersedia di bawah Lisensi MIT, yang mengizinkan penggunaan, modifikasi, dan distribusi dengan tunduk pada ketentuan lisensi. Pustaka dan model pihak ketiga mungkin memiliki ketentuan lisensi yang berbeda.";
+"tos_open_source_text" = "LLM Hub adalah perangkat lunak sumber terbuka. Kode sumber tersedia di bawah Lisensi Non-Komersial, yang mengizinkan penggunaan, modifikasi, dan distribusi dengan tunduk pada ketentuan lisensi. Pustaka dan model pihak ketiga mungkin memiliki ketentuan lisensi yang berbeda.";
 "tos_changes_title" = "9. Perubahan pada Ketentuan";
 "tos_changes_text" = "Kami dapat memperbarui Ketentuan Layanan ini dari waktu ke waktu. Pengguna akan diberitahu tentang perubahan signifikan melalui pembaruan aplikasi. Penggunaan aplikasi yang berkelanjutan setelah perubahan merupakan penerimaan ketentuan baru.";
 "tos_contact_title" = "10. Informasi Kontak";
@@ -717,8 +717,8 @@
 "premium_price_loading" = "Memuat harga…";
 "premium_payment_note" = "Pembelian sekali melalui Google Play. Tanpa langganan.";
 "premium_payment_note_ios" = "One-time purchase via App Store. No subscription.";
-"premium_active_subtitle_short" = "Semua fitur terbuka. Terima kasih! 👑";
-"premium_active_title" = "Anda adalah Premium! 👑";
+"premium_active_subtitle_short" = "Semua fitur terbuka. Terima kasih!";
+"premium_active_title" = "Anda adalah Premium!";
 "premium_active_subtitle" = "Semua fitur dibuka. Terima kasih atas dukungan Anda!";
 "premium_locked_feature" = "Fitur Premium";
 "premium_tap_to_unlock" = "Ketuk untuk membuka dengan Premium";

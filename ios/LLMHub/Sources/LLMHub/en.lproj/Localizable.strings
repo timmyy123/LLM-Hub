@@ -93,7 +93,7 @@
 "tos_model_usage_title" = "7. Model Usage and Licensing";
 "tos_model_usage_text" = "The AI models available through LLM Hub are subject to their respective licenses and terms of use. Users are responsible for complying with model-specific licensing requirements when using downloaded models.";
 "tos_open_source_title" = "8. Open Source License";
-"tos_open_source_text" = "LLM Hub is open-source software. The source code is available under the MIT License, which permits use, modification, and distribution subject to the license terms. Third-party libraries and models may have different license terms.";
+"tos_open_source_text" = "LLM Hub is open-source software. The source code is available under the Non-Commercial License, which permits use, modification, and distribution subject to the license terms. Third-party libraries and models may have different license terms.";
 "tos_changes_title" = "9. Changes to Terms";
 "tos_changes_text" = "We may update these Terms of Service from time to time. Users will be notified of significant changes through app updates. Continued use of the application after changes constitutes acceptance of the new terms.";
 "tos_contact_title" = "10. Contact Information";
@@ -728,9 +728,9 @@
 "premium_price_loading" = "Loading price…";
 "premium_payment_note" = "One-time purchase via Google Play. No subscription.";
 "premium_payment_note_ios" = "One-time purchase via App Store. No subscription.";
-"premium_active_subtitle_short" = "All features unlocked. Thank you! 👑";
+"premium_active_subtitle_short" = "All features unlocked. Thank you!";
 
-"premium_active_title" = "You\'re Premium! 👑";
+"premium_active_title" = "You\'re Premium!";
 "premium_active_subtitle" = "All features are unlocked. Thank you for your support!";
 "premium_locked_feature" = "Premium Feature";
 "premium_tap_to_unlock" = "Tap to unlock with Premium";

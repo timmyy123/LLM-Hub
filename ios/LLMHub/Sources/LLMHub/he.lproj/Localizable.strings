@@ -91,7 +91,7 @@
 "tos_model_usage_title" = "7. שימוש ורישוי של מודלים";
 "tos_model_usage_text" = "המודלים כפופים לרישיונותיהם. המשתמשים אחראים לעמידה בתנאי הרישוי.";
 "tos_open_source_title" = "8. קוד פתוח";
-"tos_open_source_text" = "LLM Hub היא בקוד פתוח תחת רישיון MIT. לספריות ולמודלים של צד ג\' עשויים להיות תנאים שונים.";
+"tos_open_source_text" = "LLM Hub היא בקוד פתוח תחת רישיון לא מסחרי. לספריות ולמודלים של צד ג' עשויים להיות תנאים שונים.";
 "tos_changes_title" = "9. שינוי תנאים";
 "tos_changes_text" = "ייתכנו עדכונים מעת לעת; שימוש מתמשך מהווה הסכמה לתנאים החדשים.";
 "tos_contact_title" = "10. פרטי קשר";
@@ -717,8 +717,8 @@
 "premium_price_loading" = "טוען מחיר…";
 "premium_payment_note" = "רכישה חד פעמית דרך Google Play. ללא מנוי.";
 "premium_payment_note_ios" = "One-time purchase via App Store. No subscription.";
-"premium_active_subtitle_short" = "כל התכונות פתוחות. תודה! 👑";
-"premium_active_title" = "אתה Premium! 👑";
+"premium_active_subtitle_short" = "כל התכונות פתוחות. תודה!";
+"premium_active_title" = "אתה Premium!";
 "premium_active_subtitle" = "כל התכונות פתוחות. תודה על תמיכתך!";
 "premium_locked_feature" = "תכונת פרמיום";
 "premium_tap_to_unlock" = "הקש כדי לפתוח עם Premium";

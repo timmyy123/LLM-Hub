@@ -90,7 +90,7 @@
 "tos_model_usage_title" = "7. Uso de Modelos y Licencias";
 "tos_model_usage_text" = "Los modelos de IA disponibles a través de LLM Hub están sujetos a sus respectivas licencias y términos de uso. Los usuarios son responsables de cumplir con los requisitos de licencia específicos del modelo al usar modelos descargados.";
 "tos_open_source_title" = "8. Licencia de Código Abierto";
-"tos_open_source_text" = "LLM Hub es software de código abierto. El código fuente está disponible bajo la Licencia MIT, que permite uso, modificación y distribución sujeto a los términos de la licencia. Las librerías de terceros y modelos pueden tener términos de licencia diferentes.";
+"tos_open_source_text" = "LLM Hub es software de código abierto. El código fuente está disponible bajo la Licencia No Comercial, que permite uso, modificación y distribución sujeto a los términos de la licencia. Las librerías de terceros y modelos pueden tener términos de licencia diferentes.";
 "tos_changes_title" = "9. Cambios en los Términos";
 "tos_changes_text" = "Podemos actualizar estos Términos de Servicio de vez en cuando. Los usuarios serán notificados de cambios significativos a través de actualizaciones de la aplicación. El uso continuado de la aplicación después de los cambios constituye aceptación de los nuevos términos.";
 "tos_contact_title" = "10. Información de Contacto";
@@ -688,8 +688,8 @@
 "premium_price_loading" = "Cargando precio…";
 "premium_payment_note" = "Compra única a través de Google Play. Sin suscripción.";
 "premium_payment_note_ios" = "One-time purchase via App Store. No subscription.";
-"premium_active_subtitle_short" = "Todas las funciones desbloqueadas. ¡Gracias! 👑";
-"premium_active_title" = "¡Eres Premium! 👑";
+"premium_active_subtitle_short" = "Todas las funciones desbloqueadas. ¡Gracias!";
+"premium_active_title" = "¡Eres Premium!";
 "premium_active_subtitle" = "Todas las funciones están desbloqueadas. ¡Gracias por tu apoyo!";
 "premium_locked_feature" = "Función Premium";
 "premium_tap_to_unlock" = "Toca para desbloquear con Premium";

@@ -672,8 +672,8 @@
 "premium_price_loading" = "Carregando preço…";
 "premium_payment_note" = "Compra única via Google Play. Sem assinatura.";
 "premium_payment_note_ios" = "One-time purchase via App Store. No subscription.";
-"premium_active_subtitle_short" = "Todos os recursos desbloqueados. Obrigado! 👑";
-"premium_active_title" = "Você é Premium! 👑";
+"premium_active_subtitle_short" = "Todos os recursos desbloqueados. Obrigado!";
+"premium_active_title" = "Você é Premium!";
 "premium_active_subtitle" = "Todos os recursos estão desbloqueados. Obrigado pelo apoio!";
 "premium_locked_feature" = "Recurso Premium";
 "premium_tap_to_unlock" = "Toque para desbloquear com Premium";
@@ -733,3 +733,7 @@
 "image_generator_step_of" = "Passo %1$d de %2$d";
 "video_generator_save_failed" = "Falha ao salvar o vídeo";
 "image_generator_save_failed" = "Falha ao salvar a imagem";
+
+"tos_open_source_title" = "8. Licença de Código Aberto";
+
+"tos_open_source_text" = "O LLM Hub é um software de código aberto. O código-fonte está disponível sob a Licença Não Comercial, que permite o uso, modificação e distribuição sujeitos aos termos da licença. Bibliotecas e modelos de terceiros podem ter termos de licença diferentes.";

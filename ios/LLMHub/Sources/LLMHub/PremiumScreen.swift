@@ -18,28 +18,7 @@ struct PremiumScreen: View {
 
     var body: some View {
         ZStack {
-            // Background gradient matching Android (deep purple → dark navy)
-            LinearGradient(
-                colors: [Color(hex: "1A0533"), Color(hex: "0D1B4B")],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
-
-            // Subtle particle glow
-            Circle()
-                .fill(Color(hex: "7C4DFF").opacity(0.18))
-                .frame(width: 300, height: 300)
-                .blur(radius: 80)
-                .offset(x: -60, y: -120)
-                .allowsHitTesting(false)
-
-            Circle()
-                .fill(Color(hex: "FFD700").opacity(0.09))
-                .frame(width: 250, height: 250)
-                .blur(radius: 70)
-                .offset(x: 80, y: 200)
-                .allowsHitTesting(false)
+            ApolloLiquidBackground()
 
             ScrollView {
                 VStack(spacing: 0) {
@@ -201,10 +180,10 @@ struct PremiumScreen: View {
                     }
                 }
             } label: {
-                HStack(spacing: 10) {
+        HStack(spacing: 10) {
                     if purchases.isPurchasing {
                         ProgressView()
-                            .tint(Color(hex: "1A0533"))
+                            .tint(.black)
                     } else {
                         Image(systemName: "crown.fill")
                             .font(.system(size: 16, weight: .bold))
@@ -216,11 +195,11 @@ struct PremiumScreen: View {
                         } else {
                             // Price still loading — show spinner, button disabled
                             ProgressView()
-                                .tint(Color(hex: "1A0533"))
+                                .tint(.black)
                         }
                     }
                 }
-                .foregroundStyle(Color(hex: "1A0533"))
+                .foregroundStyle(.black)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
                 .background(

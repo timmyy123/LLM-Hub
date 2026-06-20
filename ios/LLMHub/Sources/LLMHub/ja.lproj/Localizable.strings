@@ -91,7 +91,7 @@
 "tos_model_usage_title" = "7. モデルの使用とライセンス";
 "tos_model_usage_text" = "LLM Hubを通じて利用可能なAIモデルは、それぞれのライセンスと利用規約の対象となります。ユーザーは、ダウンロードしたモデルを使用する際に、モデル固有のライセンス要件を遵守する責任があります。";
 "tos_open_source_title" = "8. オープンソースライセンス";
-"tos_open_source_text" = "LLM Hubはオープンソースソフトウェアです。ソースコードはMITライセンスの下で利用可能であり、ライセンス条項に従って使用、変更、配布が許可されています。サードパーティのライブラリとモデルは異なるライセンス条項を持つ場合があります。";
+"tos_open_source_text" = "LLM Hubはオープンソースソフトウェアです。ソースコードは非商用ライセンスの下で利用可能であり、ライセンス条項に従って使用、変更、配布が許可されています。サードパーティのライブラリとモデルは異なるライセンス条項を持つ場合があります。";
 "tos_changes_title" = "9. 規約の変更";
 "tos_changes_text" = "本利用規約を随時更新することがあります。ユーザーは、アプリの更新を通じて重要な変更について通知されます。変更後もアプリケーションを継続して使用することは、新しい規約の承諾を構成します。";
 "tos_contact_title" = "10. 連絡先情報";
@@ -717,8 +717,8 @@
 "premium_price_loading" = "価格を読み込んでいます…";
 "premium_payment_note" = "Google Playでの一回限りの購入。サブスクリプションなし。";
 "premium_payment_note_ios" = "One-time purchase via App Store. No subscription.";
-"premium_active_subtitle_short" = "すべての機能が解放されました。ありがとう！ 👑";
-"premium_active_title" = "Premiumです！ 👑";
+"premium_active_subtitle_short" = "すべての機能が解放されました。ありがとう！";
+"premium_active_title" = "Premiumです！";
 "premium_active_subtitle" = "すべての機能がアンロックされました。ご支持ありがとうございます！";
 "premium_locked_feature" = "プレミアム機能";
 "premium_tap_to_unlock" = "タップしてPremiumでアンロック";

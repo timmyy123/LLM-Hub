@@ -91,7 +91,7 @@
 "tos_model_usage_title" = "7. Model Kullanımı ve Lisanslama";
 "tos_model_usage_text" = "LLM Hub aracılığıyla kullanılabilen yapay zeka modelleri kendi lisanslarına ve kullanım şartlarına tabidir. Kullanıcılar, indirilen modelleri kullanırken modele özgü lisans gereksinimlerine uymaktan sorumludur.";
 "tos_open_source_title" = "8. Açık Kaynak Lisansı";
-"tos_open_source_text" = "LLM Hub açık kaynaklı bir yazılımdır. Kaynak kodu, lisans şartlarına tabi olarak kullanıma, değişikliğe ve dağıtıma izin veren MIT Lisansı altında mevcuttur. Üçüncü taraf kütüphaneler ve modeller farklı lisans şartlarına sahip olabilir.";
+"tos_open_source_text" = "LLM Hub açık kaynaklı bir yazılımdır. Kaynak kodu, lisans şartlarına tabi olarak kullanıma, değişikliğe ve dağıtıma izin veren Ticari Olmayan Lisans altında mevcuttur. Üçüncü taraf kütüphaneler ve modeller farklı lisans şartlarına sahip olabilir.";
 "tos_changes_title" = "9. Şartlardaki Değişiklikler";
 "tos_changes_text" = "Bu Hizmet Şartlarını zaman zaman güncelleyebiliriz. Kullanıcılar, uygulama güncellemeleri aracılığıyla önemli değişikliklerden haberdar edilecektir. Değişikliklerden sonra uygulamayı kullanmaya devam etmek, yeni şartların kabulü anlamına gelir.";
 "tos_contact_title" = "10. İletişim Bilgileri";
@@ -717,8 +717,8 @@
 "premium_price_loading" = "Fiyat yükleniyor…";
 "premium_payment_note" = "Google Play üzerinden tek seferlik satın alma. Abonelik yok.";
 "premium_payment_note_ios" = "One-time purchase via App Store. No subscription.";
-"premium_active_subtitle_short" = "Tüm özellikler açıldı. Teşekkürler! 👑";
-"premium_active_title" = "Premium’sınız! 👑";
+"premium_active_subtitle_short" = "Tüm özellikler açıldı. Teşekkürler!";
+"premium_active_title" = "Premium’sınız!";
 "premium_active_subtitle" = "Tüm özellikler açıldı. Desteğiniz için teşekkürler!";
 "premium_locked_feature" = "Premium Özellik";
 "premium_tap_to_unlock" = "Premium ile açmak için dokunun";

@@ -90,7 +90,7 @@
 "tos_model_usage_title" = "7. Utilisation des Modèles et Licences";
 "tos_model_usage_text" = "Les modèles IA disponibles via LLM Hub sont soumis à leurs licences et conditions d\'utilisation respectives.";
 "tos_open_source_title" = "8. Licence Open Source";
-"tos_open_source_text" = "LLM Hub est un logiciel open-source.";
+"tos_open_source_text" = "LLM Hub est un logiciel open-source. Le code source est disponible sous licence non commerciale, qui autorise l'utilisation, la modification et la distribution sous réserve des conditions de la licence. Les bibliothèques et modèles tiers peuvent avoir des conditions de licence différentes.";
 "tos_changes_title" = "9. Modifications des Conditions";
 "tos_changes_text" = "Nous pouvons mettre à jour ces Conditions d\'Utilisation de temps en temps.";
 "tos_contact_title" = "10. Informations de Contact";
@@ -704,8 +704,8 @@
 "premium_price_loading" = "Chargement du prix…";
 "premium_payment_note" = "Achat unique via Google Play. Sans abonnement.";
 "premium_payment_note_ios" = "One-time purchase via App Store. No subscription.";
-"premium_active_subtitle_short" = "Toutes les fonctionnalités débloquées. Merci ! 👑";
-"premium_active_title" = "Vous êtes Premium ! 👑";
+"premium_active_subtitle_short" = "Toutes les fonctionnalités débloquées. Merci !";
+"premium_active_title" = "Vous êtes Premium !";
 "premium_active_subtitle" = "Toutes les fonctionnalités sont déverrouillées. Merci pour votre soutien !";
 "premium_locked_feature" = "Fonctionnalité Premium";
 "premium_tap_to_unlock" = "Appuyer pour déverrouiller avec Premium";

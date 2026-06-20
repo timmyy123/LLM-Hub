@@ -91,7 +91,7 @@
 "tos_model_usage_title" = "7. استفاده و مجوز مدل";
 "tos_model_usage_text" = "مدل‌ها تابع مجوزهای مربوطه هستند. کاربران موظف به رعایت شرایط مجوز هر مدل می‌باشند.";
 "tos_open_source_title" = "8. مجوز متن‌باز";
-"tos_open_source_text" = "LLM Hub متن‌باز است و تحت مجوز MIT در دسترس است. کتابخانه‌ها و مدل‌های ثالث ممکن است شرایط متفاوتی داشته باشند.";
+"tos_open_source_text" = "LLM Hub متن‌باز است و تحت مجوز غیرتجاری در دسترس است. کتابخانه‌ها و مدل‌های ثالث ممکن است شرایط متفاوتی داشته باشند.";
 "tos_changes_title" = "9. تغییرات شرایط";
 "tos_changes_text" = "ممکن است شرایط به‌روزرسانی شود. ادامه استفاده به منزله پذیرش شرایط جدید است.";
 "tos_contact_title" = "10. اطلاعات تماس";
@@ -717,8 +717,8 @@
 "premium_price_loading" = "در حال بارگذاری قیمت…";
 "premium_payment_note" = "خرید یک بار از طریق Google Play. بدون اشتراک.";
 "premium_payment_note_ios" = "One-time purchase via App Store. No subscription.";
-"premium_active_subtitle_short" = "تمام ویژگی‌ها باز شدند. ممنون! 👑";
-"premium_active_title" = "شما Premium هستید! 👑";
+"premium_active_subtitle_short" = "تمام ویژگی‌ها باز شدند. ممنون!";
+"premium_active_title" = "شما Premium هستید!";
 "premium_active_subtitle" = "تمام ویژگی‌ها باز شده‌اند. ممنون از حمایت شما!";
 "premium_locked_feature" = "ویژگی پریمیوم";
 "premium_tap_to_unlock" = "برای باز کردن با Premium ضربه بزنید";

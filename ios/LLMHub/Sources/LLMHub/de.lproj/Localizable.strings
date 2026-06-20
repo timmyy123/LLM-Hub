@@ -90,7 +90,7 @@
 "tos_model_usage_title" = "7. Modellnutzung und Lizenzierung";
 "tos_model_usage_text" = "Die über LLM Hub verfügbaren KI-Modelle unterliegen ihren jeweiligen Lizenzen und Nutzungsbedingungen. Benutzer sind dafür verantwortlich, die modellspezifischen Lizenzierungsanforderungen bei der Verwendung heruntergeladener Modelle einzuhalten.";
 "tos_open_source_title" = "8. Open-Source-Lizenz";
-"tos_open_source_text" = "LLM Hub ist Open-Source-Software. Der Quellcode ist unter der MIT-Lizenz verfügbar, die Nutzung, Modifikation und Verteilung unter den Lizenzbedingungen erlaubt. Drittanbieter-Bibliotheken und Modelle können unterschiedliche Lizenzbedingungen haben.";
+"tos_open_source_text" = "LLM Hub ist Open-Source-Software. Der Quellcode ist unter der nicht-kommerziellen Lizenz verfügbar, die Nutzung, Modifikation und Verteilung unter den Lizenzbedingungen erlaubt. Drittanbieter-Bibliotheken und Modelle können unterschiedliche Lizenzbedingungen haben.";
 "tos_changes_title" = "9. Änderungen der Bedingungen";
 "tos_changes_text" = "Wir können diese Nutzungsbedingungen von Zeit zu Zeit aktualisieren. Benutzer werden über wesentliche Änderungen durch App-Updates benachrichtigt. Die fortgesetzte Nutzung der Anwendung nach Änderungen stellt die Annahme der neuen Bedingungen dar.";
 "tos_contact_title" = "10. Kontaktinformationen";
@@ -689,8 +689,8 @@
 "premium_price_loading" = "Preis wird geladen…";
 "premium_payment_note" = "Einmaliger Kauf über Google Play. Kein Abonnement.";
 "premium_payment_note_ios" = "One-time purchase via App Store. No subscription.";
-"premium_active_subtitle_short" = "Alle Funktionen freigeschaltet. Danke! 👑";
-"premium_active_title" = "Du bist Premium! 👑";
+"premium_active_subtitle_short" = "Alle Funktionen freigeschaltet. Danke!";
+"premium_active_title" = "Du bist Premium!";
 "premium_active_subtitle" = "Alle Funktionen sind freigeschaltet. Danke für deine Unterstützung!";
 "premium_locked_feature" = "Premium-Funktion";
 "premium_tap_to_unlock" = "Tippen, um mit Premium freizuschalten";

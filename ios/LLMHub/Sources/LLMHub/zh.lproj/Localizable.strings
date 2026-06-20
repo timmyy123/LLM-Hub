@@ -91,7 +91,7 @@
 "tos_model_usage_title" = "7. 模型使用和许可";
 "tos_model_usage_text" = "通过 LLM Hub 获取的 AI 模型均受其各自许可协议和使用条款约束。用户在使用下载的模型时，须自行负责遵守模型特定的许可要求。";
 "tos_open_source_title" = "8. 开源许可";
-"tos_open_source_text" = "LLM Hub 是开源软件。其源代码采用 MIT 许可证，允许在遵守许可证条款的前提下使用、修改和分发。第三方库和模型可能采用不同的许可证条款。";
+"tos_open_source_text" = "LLM Hub 是开源软件。其源代码采用非商业许可证，允许在遵守许可证条款的前提下使用、修改和分发。第三方库和模型可能采用不同的许可证条款。";
 "tos_changes_title" = "9. 条款变更";
 "tos_changes_text" = "我们可能会随时更新本服务条款。重大变更将通过应用程序更新通知用户。变更后继续使用本应用即视为接受新条款。";
 "tos_contact_title" = "10. 联系方式";
@@ -722,8 +722,8 @@
 "premium_price_loading" = "价格加载中…";
 "premium_payment_note" = "通过 Google Play 一次性购买，无需订阅。";
 "premium_payment_note_ios" = "One-time purchase via App Store. No subscription.";
-"premium_active_subtitle_short" = "所有功能已解锁。谢谢！ 👑";
-"premium_active_title" = "您已是高级用户！👑";
+"premium_active_subtitle_short" = "所有功能已解锁。谢谢！";
+"premium_active_title" = "您已是高级用户！";
 "premium_active_subtitle" = "所有功能已解锁。感谢您的支持！";
 "premium_locked_feature" = "高级功能";
 "premium_tap_to_unlock" = "点击以高级版解锁";
