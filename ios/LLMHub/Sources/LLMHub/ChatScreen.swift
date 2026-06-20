@@ -3546,7 +3546,7 @@ struct ChatScreen: View {
         var models = ModelData.allModels().filter { model in
             if model.isDependencyOnly { return false }
             if model.name.hasPrefix("Translate Gemma") { return false }
-            if model.category == .embedding || model.category == .imageGeneration { return false }
+            if model.category == .embedding || model.category == .imageGeneration || model.category == .videoGeneration { return false }
 
             guard ModelData.isModelFullyAvailableLocally(model) else { return false }
             return true
