@@ -60,7 +60,7 @@ struct HomeScreen: View {
             let toolsColumnsCount = isLandscape ? 4 : 2
             let toolsColumns = Array(repeating: GridItem(.flexible(), spacing: spacing), count: toolsColumnsCount)
             let cardHeight: CGFloat = isLandscape ? 85 : 100
-            let gridTopPadding: CGFloat = isLandscape ? 12 : 8
+            let gridTopPadding: CGFloat = isLandscape ? 20 : 24
             let gridBottomPadding: CGFloat = 12
 
             VStack(spacing: 0) {
