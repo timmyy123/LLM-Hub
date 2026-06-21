@@ -24,6 +24,7 @@ class ImageGeneratorHelper(private val context: Context) {
     private val TAG = "ImageGeneratorHelper"
     private val sdHelper = StableDiffusionHelper(context)
     private var currentModelType: ModelType? = null
+    private var isSdxlModel = false
     
     suspend fun initialize(modelPath: String? = null, modelType: ModelType? = null, useGpu: Boolean = false): Boolean = withContext(Dispatchers.IO) {
         try {
@@ -47,7 +48,21 @@ class ImageGeneratorHelper(private val context: Context) {
 
             currentModelType = modelInfo.type
             
-            Log.i(TAG, "Found model: ${modelInfo.name} (${modelInfo.type})")
+            // Check if SDXL based on keywords in model name or file path
+            val modelName = modelInfo.name.lowercase()
+            val modelPathLower = modelInfo.path.lowercase()
+            val sdxlKeywords = listOf(
+                "xl", "illustrious", "animagine", "ponydiffusion", "anikawa", "chenkinnoob", 
+                "counterfeit", "cyber_realistic", "dreamshaper", "epic_realism", "furrytoonmix", 
+                "gonzalomo", "illustrij", "intorealism", "juggernaut", "lemonsugarmix", 
+                "miaomiao", "noobai", "orange_rex", "novaanime", "novafurry", "perfect_deliberate", 
+                "perfection_realistic", "pppanimix", "prefect", "raehoshi", "realvis", "reed_xxx", 
+                "rin_anime", "featherfall", "flanime"
+            )
+            isSdxlModel = modelName.contains("xl") || modelPathLower.contains("xl") ||
+                    sdxlKeywords.any { modelName.contains(it) || modelPathLower.contains(it) }
+            
+            Log.i(TAG, "Found model: ${modelInfo.name} (${modelInfo.type}), isSdxl=$isSdxlModel")
             
             // Start backend service
             SDBackendService.start(context, modelInfo.path, useGpu)
@@ -95,8 +110,12 @@ class ImageGeneratorHelper(private val context: Context) {
     ): Bitmap? = withContext(Dispatchers.IO) {
         try {
             val img2imgInfo = if (inputImage != null) " [img2img, denoise: $denoiseStrength]" else ""
-            val targetWidth = if (currentModelType == ModelType.QNN_NPU) 512 else width
-            val targetHeight = if (currentModelType == ModelType.QNN_NPU) 512 else height
+            val targetWidth = if (currentModelType == ModelType.QNN_NPU) {
+                if (isSdxlModel) 1024 else 512
+            } else width
+            val targetHeight = if (currentModelType == ModelType.QNN_NPU) {
+                if (isSdxlModel) 1024 else 512
+            } else height
 
             Log.i(
                 TAG,
