@@ -485,7 +485,9 @@
     <string name="transcriber_result">Транскрипція</string>
     <string name="transcriber_recording">Запис…</string>
     <string name="transcriber_stop">Зупинити запис</string>
-    <string name="transcriber_requires_gemma3n">Ця функція потребує Gemma-3n або Gemma-4 E2B/E4B з підтримкою аудіо. Завантажте на екрані моделей.</string>
+    <string name="transcriber_requires_gemma3n">Ця функція потребує модель Gemma-3n/4 або ASR. Завантажте на екрані моделей.</string>
+    <string name="asr_models">Моделі ASR</string>
+    <string name="asr_models_description">Моделі розпізнавання мовлення для транскрипції</string>
 
     <!-- Scam Detector Screen -->
     <string name="scam_detector_title">Виявлення шахрайства</string>

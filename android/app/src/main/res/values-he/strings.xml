@@ -484,7 +484,9 @@
     <string name="transcriber_result">תמלול</string>
     <string name="transcriber_recording">מקליט…</string>
     <string name="transcriber_stop">עצור הקלטה</string>
-    <string name="transcriber_requires_gemma3n">תכונה זו דורשת מודל Gemma-3n או Gemma-4 E2B/E4B עם תמיכת אודיו. הורד אחד ממסך המודלים.</string>
+    <string name="transcriber_requires_gemma3n">תכונה זו דורשת מודל Gemma-3n/4 או ASR. הורד אחד ממסך המודלים.</string>
+    <string name="asr_models">מודלי ASR</string>
+    <string name="asr_models_description">מודלים של דיבור לטקست לתמלול</string>
 
     <!-- Scam Detector Screen -->
     <string name="scam_detector_title">מזהה הונאות</string>

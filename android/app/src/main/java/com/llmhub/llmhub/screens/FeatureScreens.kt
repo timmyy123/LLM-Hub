@@ -47,6 +47,9 @@ import com.llmhub.llmhub.data.hasDownloadedVisionProjector
 import com.llmhub.llmhub.data.requiresExternalVisionProjector
 import com.llmhub.llmhub.ui.components.AudioInputService
 import com.llmhub.llmhub.viewmodels.TranslatorViewModel
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.text.selection.SelectionContainer
+import com.llmhub.llmhub.viewmodels.TranscriptionSession
 import com.llmhub.llmhub.viewmodels.TranscriberViewModel
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -1431,6 +1434,7 @@ fun TranscriberScreen(
     val isModelLoaded by viewModel.isModelLoaded.collectAsState()
     val loadError by viewModel.loadError.collectAsState()
     val transcriptionText by viewModel.transcriptionText.collectAsState()
+    val transcriptionHistory by viewModel.transcriptionHistory.collectAsState()
     val audioUri by viewModel.audioUri.collectAsState()
     
     // Snackbar
@@ -1458,6 +1462,7 @@ fun TranscriberScreen(
     // Observe elapsed time from audio service
     val elapsedTimeMs by audioService.elapsedTimeMs.collectAsState()
     val remainingSeconds = ((29500L - elapsedTimeMs) / 1000).coerceAtLeast(0)
+    val isAsrModel = selectedModel?.category == "asr"
 
     val audioPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -1490,21 +1495,36 @@ fun TranscriberScreen(
         }
     }
 
-    LaunchedEffect(isRecording) {
+    LaunchedEffect(isRecording, isAsrModel) {
         if (isRecording && hasAudioPermission) {
+            audioService.maxDurationMs = if (isAsrModel) 3600000L else 29500L
+            // ASR (Whisper) models handle silence detection internally; disable early silence cut-off
+            audioService.silenceAutoStopEnabled = !isAsrModel
+            
+            // Clear previous audio inputs so a new recording session starts fresh
+            recordedAudioData = null
+            viewModel.setAudioData(null)
+            viewModel.setAudioUri(null)
+            
             val ok = audioService.startRecording()
             if (!ok) viewModel.setRecording(false)
         } else if (!isRecording) {
             // Stop recording when isRecording becomes false (either manual or auto-stop)
             if (audioService.isRecording() || recordedAudioData == null) {
-                val data = audioService.stopRecording()
+                val data = audioService.stopRecording(forceKeep = true)
                 if (data != null) {
                     recordedAudioData = data
                     viewModel.setAudioData(data)
+                    // Auto-run transcription when recording is stopped for ASR models
+                    if (isAsrModel) {
+                        viewModel.transcribe()
+                    }
                 }
             }
         }
     }
+
+
 
     LaunchedEffect(isAudioPlaying) {
         while (isAudioPlaying && audioPlayer != null) {
@@ -1629,7 +1649,104 @@ fun TranscriberScreen(
                 ) {
                     // Recording + Replay (same pattern as Translator)
                     if (selectedModel != null) {
-                        Column(modifier = Modifier.fillMaxWidth()) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            val canStartRecording = !isTranscribing
+                            
+                            // 1. Hero-style recording card UI (always visible)
+                            Card(
+                                shape = RoundedCornerShape(24.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(24.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .align(Alignment.CenterHorizontally)
+                                            .size(120.dp)
+                                            .background(
+                                                brush = Brush.linearGradient(
+                                                    colors = listOf(
+                                                        MaterialTheme.colorScheme.primary,
+                                                        MaterialTheme.colorScheme.tertiary
+                                                    )
+                                                ),
+                                                shape = CircleShape
+                                            )
+                                            .clickable {
+                                                if (!canStartRecording) return@clickable
+                                                if (isRecording) {
+                                                    viewModel.setRecording(false)
+                                                } else {
+                                                    if (hasAudioPermission) {
+                                                        viewModel.setRecording(true)
+                                                    } else {
+                                                        audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                                    }
+                                                }
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Mic,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(60.dp),
+                                            tint = when {
+                                                !canStartRecording -> MaterialTheme.colorScheme.onSurfaceVariant
+                                                isRecording -> MaterialTheme.colorScheme.error
+                                                else -> MaterialTheme.colorScheme.onPrimary
+                                            }
+                                        )
+                                    }
+
+                                    Text(
+                                        text = when {
+                                            isRecording -> stringResource(R.string.recording)
+                                            else -> stringResource(R.string.record_voice_message)
+                                        },
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                                    )
+                                    
+                                    // Show countdown timer when recording
+                                    if (isRecording) {
+                                        Text(
+                                            text = if (isAsrModel) "${elapsedTimeMs / 1000}s" else "${remainingSeconds}s",
+                                            style = MaterialTheme.typography.headlineMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (!isAsrModel && remainingSeconds <= 5) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onPrimaryContainer,
+                                            textAlign = TextAlign.Center,
+                                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            // 2. Upload file button (only if not recording)
+                            if (!isRecording) {
+                                OutlinedButton(
+                                    onClick = { audioPickerLauncher.launch("audio/*") },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(Icons.Default.UploadFile, contentDescription = null)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(stringResource(R.string.upload_file))
+                                }
+                            }
+
+                            // 3. Audio player/replay controls (if we have recorded data)
                             if (recordedAudioData != null) {
                                 Card(
                                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
@@ -1661,7 +1778,7 @@ fun TranscriberScreen(
                                             } catch (_: Exception) { isAudioPlaying = false }
                                         }) { Icon(if (isAudioPlaying) Icons.Default.Pause else Icons.Default.PlayArrow, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
 
-                                        val barHeights = remember { val rnd = java.util.Random(recordedAudioData.hashCode().toLong()); List(32) { 0.35f + rnd.nextFloat() * 0.65f } }
+                                        val barHeights = remember(recordedAudioData) { val rnd = java.util.Random(recordedAudioData.hashCode().toLong()); List(32) { 0.35f + rnd.nextFloat() * 0.65f } }
                                         val waveformColor = MaterialTheme.colorScheme.primary
                                         val progress = if (audioDuration > 0) audioCurrentPosition.toFloat()/audioDuration.toFloat() else 0f
                                         Canvas(modifier = Modifier.weight(1f).height(40.dp)) {
@@ -1687,111 +1804,16 @@ fun TranscriberScreen(
                                         }) { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) }
                                     }
                                 }
-                            } else {
-                                val canStartRecording = audioUri == null
-                                // Hero-style recording card UI (also used while recording)
-                                Card(
-                                    shape = RoundedCornerShape(24.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                                    ),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(24.dp),
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .align(Alignment.CenterHorizontally)
-                                                .size(120.dp)
-                                                .background(
-                                                    brush = Brush.linearGradient(
-                                                        colors = listOf(
-                                                            MaterialTheme.colorScheme.primary,
-                                                            MaterialTheme.colorScheme.tertiary
-                                                        )
-                                                    ),
-                                                    shape = CircleShape
-                                                )
-                                                .clickable {
-                                                    if (!canStartRecording) return@clickable
-                                                    if (isRecording) {
-                                                        viewModel.setRecording(false)
-                                                    } else {
-                                                        if (hasAudioPermission) {
-                                                            viewModel.setRecording(true)
-                                                        } else {
-                                                            audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                                                        }
-                                                    }
-                                                },
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Icon(
-                                                Icons.Default.Mic,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(60.dp),
-                                                tint = when {
-                                                    !canStartRecording -> MaterialTheme.colorScheme.onSurfaceVariant
-                                                    isRecording -> MaterialTheme.colorScheme.error
-                                                    else -> MaterialTheme.colorScheme.onPrimary
-                                                }
-                                            )
-                                        }
-
-                                        Text(
-                                            text = when {
-                                                !canStartRecording -> stringResource(R.string.audio_file)
-                                                isRecording -> stringResource(R.string.recording)
-                                                else -> stringResource(R.string.record_voice_message)
-                                            },
-                                            style = MaterialTheme.typography.titleLarge,
-                                            fontWeight = FontWeight.Bold,
-                                            textAlign = TextAlign.Center,
-                                            modifier = Modifier.align(Alignment.CenterHorizontally)
-                                        )
-                                        
-                                        // Show countdown timer when recording
-                                        if (isRecording) {
-                                            Text(
-                                                text = "${remainingSeconds}s",
-                                                style = MaterialTheme.typography.headlineMedium,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (remainingSeconds <= 5) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onPrimaryContainer,
-                                                textAlign = TextAlign.Center,
-                                                modifier = Modifier.align(Alignment.CenterHorizontally)
-                                            )
-                                        }
-                                    }
-                                }
-                                if (audioUri == null) {
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    OutlinedButton(
-                                        onClick = { audioPickerLauncher.launch("audio/*") },
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Icon(Icons.Default.UploadFile, contentDescription = null)
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(stringResource(R.string.upload_file))
-                                    }
-                                }
                             }
 
+                            // 4. Audio URI file card (if we picked a file)
                             if (recordedAudioData == null && audioUri != null) {
                                 Card(
                                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 8.dp)
+                                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
                                 ) {
                                     Row(
-                                        modifier = Modifier
-                                            .padding(12.dp)
-                                            .fillMaxWidth(),
+                                        modifier = Modifier.padding(12.dp).fillMaxWidth(),
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
@@ -1813,36 +1835,50 @@ fun TranscriberScreen(
                         }
                     }
                     
-                    if (transcriptionText.isNotEmpty()) {
+                    val clipboard = LocalClipboardManager.current
+                    
+                    if (transcriptionHistory.isNotEmpty()) {
                         Divider()
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Text(
-                                text = transcriptionText,
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.End
-                            ) {
-                                val clipboard = LocalClipboardManager.current
-                                IconButton(
-                                    onClick = { 
-                                        clipboard.setText(AnnotatedString(transcriptionText))
-                                    }
-                                ) {
-                                    Icon(
-                                        Icons.Default.ContentCopy,
-                                        contentDescription = stringResource(R.string.copy),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
+                        Text(
+                            text = stringResource(R.string.transcriber_result),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                        transcriptionHistory.forEach { session ->
+                            TranscriptionCard(
+                                text = session.text,
+                                onCopy = {
+                                    clipboard.setText(AnnotatedString(session.text))
                                 }
+                            )
+                        }
+                    }
+
+                    if (transcriptionText.isNotEmpty() || isTranscribing) {
+                        val displayActiveText = if (transcriptionText.isEmpty() && isTranscribing) {
+                            "..."
+                        } else {
+                            transcriptionText
+                        }
+                        if (displayActiveText.isNotEmpty()) {
+                            if (transcriptionHistory.isEmpty()) {
+                                Divider()
+                                Text(
+                                    text = stringResource(R.string.transcriber_result),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(vertical = 4.dp)
+                                )
                             }
+                            TranscriptionCard(
+                                text = displayActiveText,
+                                onCopy = {
+                                    clipboard.setText(AnnotatedString(transcriptionText))
+                                }
+                            )
                         }
                     }
                 }
@@ -2533,6 +2569,49 @@ fun ScamDetectorScreen(
                 }
             }
             } // end else (model loaded)
+        }
+    }
+}
+
+@Composable
+private fun TranscriptionCard(
+    text: String,
+    onCopy: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            SelectionContainer {
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .defaultMinSize(minHeight = 80.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                IconButton(onClick = onCopy) {
+                    Icon(
+                        imageVector = Icons.Default.ContentCopy,
+                        contentDescription = stringResource(R.string.copy),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
         }
     }
 }

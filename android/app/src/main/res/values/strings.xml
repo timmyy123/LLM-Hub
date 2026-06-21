@@ -617,7 +617,9 @@
     <string name="transcriber_result">Transcription</string>
     <string name="transcriber_recording">Recording...</string>
     <string name="transcriber_stop">Stop Recording</string>
-    <string name="transcriber_requires_gemma3n">This feature requires a Gemma-3n or Gemma-4 E2B/E4B model with audio support. Please download one from the Models screen.</string>
+    <string name="transcriber_requires_gemma3n">This feature requires a Gemma-3n/4 or ASR model. Please download one from the Models screen.</string>
+    <string name="asr_models">ASR Models</string>
+    <string name="asr_models_description">Speech-to-text models for transcription</string>
     
     <!-- Scam Detector Screen -->
     <string name="scam_detector_title">Scam Detector</string>

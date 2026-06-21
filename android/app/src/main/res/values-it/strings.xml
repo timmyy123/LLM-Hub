@@ -487,7 +487,9 @@
     <string name="transcriber_result">Trascrizione</string>
     <string name="transcriber_recording">Registrazione...</string>
     <string name="transcriber_stop">Ferma registrazione</string>
-    <string name="transcriber_requires_gemma3n">Questa funzionalità richiede un modello Gemma-3n o Gemma-4 E2B/E4B con supporto audio. Per favore scaricane uno dalla schermata Modelli.</string>
+    <string name="transcriber_requires_gemma3n">Questa funzionalità richiede un modello Gemma-3n/4 o ASR. Per favore scaricane uno dalla schermata Modelli.</string>
+    <string name="asr_models">Modelli ASR</string>
+    <string name="asr_models_description">Modelli da voce a testo per la trascrizione</string>
     
     <!-- Scam Detector Screen -->
     <string name="scam_detector_title">Rilevatore di Truffe</string>

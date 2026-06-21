@@ -585,7 +585,9 @@
     <string name="transcriber_result">转录结果</string>
     <string name="transcriber_recording">录制中...</string>
     <string name="transcriber_stop">停止录制</string>
-    <string name="transcriber_requires_gemma3n">此功能需要一个具有音频支持的 Gemma-3n 或 Gemma-4 E2B/E4B 模型。请从模型列表下载一个。</string>
+    <string name="transcriber_requires_gemma3n">此功能需要 Gemma-3n/4 或 ASR 模型。请从模型列表下载一个。</string>
+    <string name="asr_models">ASR 模型</string>
+    <string name="asr_models_description">用于语音识别转录的语音转文字模型</string>
     
     <!-- Scam Detector Screen -->
     <string name="scam_detector_title">诈骗检测器</string>

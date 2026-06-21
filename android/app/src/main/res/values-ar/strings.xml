@@ -481,7 +481,9 @@
     <string name="transcriber_result">النص الناتج</string>
     <string name="transcriber_recording">جارٍ التسجيل...</string>
     <string name="transcriber_stop">إيقاف التسجيل</string>
-    <string name="transcriber_requires_gemma3n">تتطلب هذه الميزة نموذج Gemma-3n أو Gemma-4 E2B/E4B مع دعم الصوت. يرجى تنزيل نموذج من شاشة النماذج.</string>
+    <string name="transcriber_requires_gemma3n">تتطلب هذه الميزة نموذج Gemma-3n/4 أو ASR. يرجى تنزيل نموذج من شاشة النماذج.</string>
+    <string name="asr_models">نماذج ASR</string>
+    <string name="asr_models_description">نماذج تحويل الكلام إلى نص للنسخ</string>
 
     <!-- Scam Detector Screen -->
     <string name="scam_detector_title">كاشف الاحتيال</string>

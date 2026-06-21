@@ -485,7 +485,9 @@
     <string name="transcriber_result">رونویس</string>
     <string name="transcriber_recording">در حال ضبط…</string>
     <string name="transcriber_stop">توقف ضبط</string>
-    <string name="transcriber_requires_gemma3n">این ویژگی به مدل Gemma-3n یا Gemma-4 E2B/E4B با پشتیبانی صوت نیاز دارد. لطفاً یکی را از صفحه مدل‌ها دانلود کنید.</string>
+    <string name="transcriber_requires_gemma3n">این ویژگی به مدل Gemma-3n/4 یا ASR نیاز دارد. لطفاً یکی را از صفحه مدل‌ها دانلود کنید.</string>
+    <string name="asr_models">مدل‌های ASR</string>
+    <string name="asr_models_description">مدل‌های تبدیل گفتار به متن برای پیاده‌سازی</string>
 
     <!-- Scam Detector Screen -->
     <string name="scam_detector_title">کشف کلاهبرداری</string>

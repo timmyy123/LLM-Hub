@@ -34,6 +34,7 @@ class AudioInputService(private val context: Context) {
     private var captureHadSpeech: Boolean = false
     var maxRecordingReached: Boolean = false
         private set
+    var maxDurationMs: Long = 29500L
     
     // Coroutine scope for callbacks
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -95,7 +96,9 @@ class AudioInputService(private val context: Context) {
             outputFile = File.createTempFile("audio_", ".wav", context.cacheDir) // optional WAV copy
 
             // Reset PCM buffer
-            pcmStream.reset()
+            synchronized(pcmStream) {
+                pcmStream.reset()
+            }
             
             // Initialize AudioRecord for mono PCM recording (MediaPipe expects raw 16-bit PCM)
             audioRecord = AudioRecord(
@@ -141,13 +144,16 @@ class AudioInputService(private val context: Context) {
      * Stop audio recording
      * @return ByteArray of recorded audio data, or null if failed
      */
-    suspend fun stopRecording(): ByteArray? = withContext(Dispatchers.IO) {
+    suspend fun stopRecording(forceKeep: Boolean = false): ByteArray? = withContext(Dispatchers.IO) {
         try {
             // Allow stopping even if isRecording is false (for auto-stop case)
             // Check if we have an active recording thread or audio data
-            if (audioRecord == null && pcmStream.size() == 0) {
-                Log.w(TAG, "No recording in progress or already stopped")
-                return@withContext null
+            val pcmData = synchronized(pcmStream) {
+                if (audioRecord == null && pcmStream.size() == 0) {
+                    Log.w(TAG, "No recording in progress or already stopped")
+                    return@withContext null
+                }
+                pcmStream.toByteArray()
             }
             
             isRecording = false
@@ -163,12 +169,13 @@ class AudioInputService(private val context: Context) {
             audioRecord = null
             recordingThread = null
             
-            val pcmData = pcmStream.toByteArray() // raw PCM16
             Log.d(TAG, "Stopped recording, PCM16 size: ${pcmData.size} bytes")
 
-            if (!captureHadSpeech) {
+            if (!captureHadSpeech && !forceKeep) {
                 Log.d(TAG, "Discarding capture because no speech was detected")
-                pcmStream.reset()
+                synchronized(pcmStream) {
+                    pcmStream.reset()
+                }
                 _audioLevel.value = 0f
                 outputFile?.delete()
                 outputFile = null
@@ -179,7 +186,9 @@ class AudioInputService(private val context: Context) {
             val float32Wav = convertPcm16ToFloat32Wav(pcmData)
 
             // Clear PCM buffer for next recording
-            pcmStream.reset()
+            synchronized(pcmStream) {
+                pcmStream.reset()
+            }
             _audioLevel.value = 0f
 
             // Cleanup temp WAV file
@@ -206,6 +215,17 @@ class AudioInputService(private val context: Context) {
      * Check if currently recording
      */
     fun isRecording(): Boolean = isRecording
+
+    /**
+     * Get the float32 WAV data recorded so far (thread-safe copy).
+     */
+    fun getFloat32WavDataSoFar(): ByteArray? {
+        val pcmData = synchronized(pcmStream) {
+            if (pcmStream.size() == 0) return null
+            pcmStream.toByteArray()
+        }
+        return convertPcm16ToFloat32Wav(pcmData)
+    }
     
     private fun cleanup() {
         try {
@@ -230,7 +250,9 @@ class AudioInputService(private val context: Context) {
         recordingThread = null
         outputFile?.delete()
         outputFile = null
-        pcmStream.reset() // Ensure PCM buffer is empty on cleanup
+        synchronized(pcmStream) {
+            pcmStream.reset() // Ensure PCM buffer is empty on cleanup
+        }
     }
     
     /**
@@ -261,8 +283,8 @@ class AudioInputService(private val context: Context) {
                 val elapsedTime = System.currentTimeMillis() - recordingStartTime
                 _elapsedTimeMs.value = elapsedTime
                 
-                if (elapsedTime >= MAX_RECORDING_DURATION_MS) {
-                    Log.d(TAG, "Max recording duration reached ($MAX_RECORDING_DURATION_MS ms)")
+                if (elapsedTime >= maxDurationMs) {
+                    Log.d(TAG, "Max recording duration reached ($maxDurationMs ms)")
                     maxRecordingReached = true
                     isRecording = false
                     // Notify UI that recording stopped automatically (on main thread)
@@ -303,7 +325,9 @@ class AudioInputService(private val context: Context) {
                     }
 
                     // Write raw PCM to in-memory buffer for MediaPipe
-                    pcmStream.write(data, 0, bytesRead)
+                    synchronized(pcmStream) {
+                        pcmStream.write(data, 0, bytesRead)
+                    }
 
                     // Also write to WAV file on disk (optional, retains header)
                     output.write(data, 0, bytesRead)

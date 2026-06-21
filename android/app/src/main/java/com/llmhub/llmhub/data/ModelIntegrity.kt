@@ -26,7 +26,8 @@ fun isModelFileValid(file: File, modelFormat: String): Boolean {
     // Perform format-specific validation
     val valid = when (modelFormat) {
         "task", "litertlm" -> isTaskLikelyValid(file)
-        "gguf", "bin" -> isGgufValid(file) // 'bin' might be raw but often GGUF in this context? Or maybe just size check.
+        "gguf" -> isGgufValid(file)
+        "bin" -> isBinValid(file)
         "onnx" -> true // ONNX validation is complex (protobuf), we rely on size check in caller or basic existence
         else -> true // Fallback for unknown formats
     }
@@ -78,9 +79,27 @@ private fun isGgufValid(file: File): Boolean {
             val magic = ByteArray(4)
             raf.readFully(magic)
             val magicStr = String(magic)
-            magicStr == "GGUF"
+            magicStr == "GGUF" || magicStr == "ggml" || magicStr == "ggmf" || magicStr == "ggjt"
         }
     } catch (_: Exception) {
         false
+    }
+}
+
+private fun isBinValid(file: File): Boolean {
+    return try {
+        RandomAccessFile(file, "r").use { raf ->
+            if (raf.length() < 1024) return false
+            val magic = ByteArray(4)
+            raf.readFully(magic)
+            val magicStr = String(magic)
+            magicStr == "GGUF" || 
+            magicStr == "ggml" || magicStr == "lmgg" || 
+            magicStr == "ggmf" || magicStr == "fmgg" || 
+            magicStr == "ggjt" || magicStr == "jmgg" ||
+            file.length() >= 10L * 1024 * 1024
+        }
+    } catch (_: Exception) {
+        file.length() >= 10L * 1024 * 1024
     }
 }

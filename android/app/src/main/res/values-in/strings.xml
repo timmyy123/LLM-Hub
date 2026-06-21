@@ -484,7 +484,9 @@
     <string name="transcriber_result">Transkripsi</string>
     <string name="transcriber_recording">Merekam...</string>
     <string name="transcriber_stop">Hentikan Rekaman</string>
-    <string name="transcriber_requires_gemma3n">Fitur ini memerlukan model Gemma-3n atau Gemma-4 E2B/E4B dengan dukungan audio. Harap unduh satu dari layar Model.</string>
+    <string name="transcriber_requires_gemma3n">Fitur ini memerlukan model Gemma-3n/4 atau ASR. Harap unduh satu dari layar Model.</string>
+    <string name="asr_models">Model ASR</string>
+    <string name="asr_models_description">Model ucapan-ke-teks untuk transkripsi</string>
     
     <!-- Scam Detector Screen -->
     <string name="scam_detector_title">Detektor Penipuan</string>

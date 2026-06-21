@@ -12,9 +12,9 @@ object ModelAvailabilityProvider {
     private const val IMPORTED_MODELS_KEY = "imported_models"
     private val gson = Gson()
 
-    suspend fun loadAvailableModels(context: Context): List<LLMModel> = withContext(Dispatchers.IO) {
+    suspend fun loadAvailableModels(context: Context, includeAsr: Boolean = false): List<LLMModel> = withContext(Dispatchers.IO) {
         val baseModels = ModelData.models
-            .filter { it.category != "embedding" }
+            .filter { it.category != "embedding" && (includeAsr || it.category != "asr") }
             .mapNotNull { model ->
                 resolveModelFromStorage(context, model)
             }

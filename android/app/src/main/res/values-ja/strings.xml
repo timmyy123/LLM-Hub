@@ -479,7 +479,9 @@
     <string name="transcriber_result">文字起こし結果</string>
     <string name="transcriber_recording">録音中...</string>
     <string name="transcriber_stop">録音を停止</string>
-    <string name="transcriber_requires_gemma3n">この機能には音声サポート付きのGemma-3nまたはGemma-4 E2B/E4Bモデルが必要です。モデル画面から1つダウンロードしてください。</string>
+    <string name="transcriber_requires_gemma3n">この機能にはGemma-3n/4またはASRモデルが必要です。モデル画面から1つダウンロードしてください。</string>
+    <string name="asr_models">ASRモデル</string>
+    <string name="asr_models_description">文字起こし用の音声認識モデル</string>
     
     <!-- Scam Detector Screen -->
     <string name="scam_detector_title">詐欺検出器</string>

@@ -482,7 +482,9 @@
     <string name="transcriber_result">전사</string>
     <string name="transcriber_recording">녹음 중...</string>
     <string name="transcriber_stop">녹음 중지</string>
-    <string name="transcriber_requires_gemma3n">이 기능에는 오디오 지원이 있는 Gemma-3n 또는 Gemma-4 E2B/E4B 모델이 필요합니다. 모델 화면에서 다운로드하세요.</string>
+    <string name="transcriber_requires_gemma3n">이 기능에는 Gemma-3n/4 또는 ASR 모델이 필요합니다. 모델 화면에서 다운로드하세요.</string>
+    <string name="asr_models">ASR 모델</string>
+    <string name="asr_models_description">텍스트 변환용 음성 인식 모델</string>
     
     <!-- Scam Detector Screen -->
     <string name="scam_detector_title">사기 탐지기</string>

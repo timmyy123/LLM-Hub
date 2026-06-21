@@ -481,7 +481,9 @@
     <string name="transcriber_result">Transkripsiyon</string>
     <string name="transcriber_recording">Kaydediliyor...</string>
     <string name="transcriber_stop">Kaydı Durdur</string>
-    <string name="transcriber_requires_gemma3n">Bu özellik ses desteği olan bir Gemma-3n veya Gemma-4 E2B/E4B modeli gerektirir. Lütfen Modeller ekranından bir tane indirin.</string>
+    <string name="transcriber_requires_gemma3n">Bu özellik Gemma-3n/4 veya ASR modeli gerektirir. Lütfen Modeller ekranından bir tane indirin.</string>
+    <string name="asr_models">ASR Modelleri</string>
+    <string name="asr_models_description">Transkripsiyon için sesten metne modeller</string>
     
     <!-- Scam Detector Screen -->
     <string name="scam_detector_title">Dolandırıcılık Dedektörü</string>

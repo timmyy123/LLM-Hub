@@ -64,6 +64,10 @@ enum class ModelFormat {
     TASK, LITERTLM, GGUF, QNN_NPU, MNN_CPU
 }
 
+enum class DownloadCategory {
+    MULTIMODAL, TEXT, ASR, EMBEDDING, IMAGE_GENERATION
+}
+
 /**
  * Check if GPU is supported for this model
  * Simplified approach - just use the model's supportsGpu flag
@@ -115,17 +119,27 @@ fun ModelDownloadScreen(
     val models by downloadViewModel.models.collectAsState()
     val textModels = models.filter { it.category == "text" }
     val multimodalModels = models.filter { it.category == "multimodal" }
+    val asrModels = models.filter { it.category == "asr" }
     val embeddingModels = models.filter { it.category == "embedding" }
     val imageGenerationModels = models.filter {
         it.category == "image_generation" || it.category == "qnn_npu" || it.category == "mnn_cpu"
     }
     val textGrouped = textModels.groupBy { it.name.substringBefore("(").trim() }
     val multimodalGrouped = multimodalModels.groupBy { it.name.substringBefore("(").trim() }
+    val asrGrouped = asrModels.groupBy { it.name.substringBefore("(").trim() }
     val embeddingGrouped = embeddingModels.groupBy { it.name.substringBefore("(").trim() }
     val imageGenGrouped = imageGenerationModels.groupBy { it.name.substringBefore("(").trim() }
 
     var showImportDialog by remember { mutableStateOf(false) }
     var errorDialogInfo by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var selectedTab by remember { mutableStateOf(0) }
+    val tabs = listOf(
+        DownloadCategory.MULTIMODAL,
+        DownloadCategory.TEXT,
+        DownloadCategory.ASR,
+        DownloadCategory.EMBEDDING,
+        DownloadCategory.IMAGE_GENERATION
+    )
 
     LaunchedEffect(downloadViewModel) {
         downloadViewModel.downloadErrors.collect { errorInfo ->
@@ -188,107 +202,163 @@ fun ModelDownloadScreen(
         },
         containerColor = MaterialTheme.colorScheme.surface
     ) { paddingValues ->
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
-            contentPadding = PaddingValues(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(paddingValues)
         ) {
-            // Text Models Section
-            if (textGrouped.isNotEmpty()) {
-                item {
-                    SectionHeader(
-                        title = stringResource(R.string.text_models),
-                        subtitle = stringResource(R.string.text_models_description)
+            ScrollableTabRow(
+                selectedTabIndex = selectedTab,
+                edgePadding = 16.dp,
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.primary,
+                divider = {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                }
+            ) {
+                tabs.forEachIndexed { index, category ->
+                    val title = when (category) {
+                        DownloadCategory.MULTIMODAL -> stringResource(R.string.vision_models)
+                        DownloadCategory.TEXT -> stringResource(R.string.text_models)
+                        DownloadCategory.ASR -> stringResource(R.string.asr_models)
+                        DownloadCategory.EMBEDDING -> stringResource(R.string.embedding_models)
+                        DownloadCategory.IMAGE_GENERATION -> stringResource(R.string.image_generation_models)
+                    }
+                    val count = when (category) {
+                        DownloadCategory.MULTIMODAL -> multimodalModels.size
+                        DownloadCategory.TEXT -> textModels.size
+                        DownloadCategory.ASR -> asrModels.size
+                        DownloadCategory.EMBEDDING -> embeddingModels.size
+                        DownloadCategory.IMAGE_GENERATION -> imageGenerationModels.size
+                    }
+                    Tab(
+                        selected = selectedTab == index,
+                        onClick = { selectedTab = index },
+                        text = {
+                            Text(
+                                text = "$title ($count)",
+                                fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
                     )
                 }
+            }
+
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f),
+                contentPadding = PaddingValues(20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                val activeCategory = tabs[selectedTab]
                 
-                textGrouped.forEach { (family, variants) ->
-                    item {
-                        ModelFamilyCard(
-                            family = family,
-                            variants = variants,
-                            context = context,
-                            viewModel = downloadViewModel,
-                            isMultimodal = false,
-                            onDownload = { downloadViewModel.downloadModel(it) }
-                        )
+                when (activeCategory) {
+                    DownloadCategory.MULTIMODAL -> {
+                        item {
+                            SectionHeader(
+                                title = stringResource(R.string.vision_models),
+                                subtitle = stringResource(R.string.vision_models_description)
+                            )
+                        }
+                        multimodalGrouped.forEach { (family, variants) ->
+                            item {
+                                ModelFamilyCard(
+                                    family = family,
+                                    variants = variants,
+                                    context = context,
+                                    viewModel = downloadViewModel,
+                                    isMultimodal = true,
+                                    onDownload = { downloadViewModel.downloadModel(it) }
+                                )
+                            }
+                        }
+                    }
+                    DownloadCategory.TEXT -> {
+                        item {
+                            SectionHeader(
+                                title = stringResource(R.string.text_models),
+                                subtitle = stringResource(R.string.text_models_description)
+                            )
+                        }
+                        textGrouped.forEach { (family, variants) ->
+                            item {
+                                ModelFamilyCard(
+                                    family = family,
+                                    variants = variants,
+                                    context = context,
+                                    viewModel = downloadViewModel,
+                                    isMultimodal = false,
+                                    onDownload = { downloadViewModel.downloadModel(it) }
+                                )
+                            }
+                        }
+                    }
+                    DownloadCategory.ASR -> {
+                        item {
+                            SectionHeader(
+                                title = stringResource(R.string.asr_models),
+                                subtitle = stringResource(R.string.asr_models_description)
+                            )
+                        }
+                        asrGrouped.forEach { (family, variants) ->
+                            item {
+                                ModelFamilyCard(
+                                    family = family,
+                                    variants = variants,
+                                    context = context,
+                                    viewModel = downloadViewModel,
+                                    isMultimodal = false,
+                                    onDownload = { downloadViewModel.downloadModel(it) }
+                                )
+                            }
+                        }
+                    }
+                    DownloadCategory.EMBEDDING -> {
+                        item {
+                            SectionHeader(
+                                title = stringResource(R.string.embedding_models),
+                                subtitle = stringResource(R.string.embedding_models_description)
+                            )
+                        }
+                        embeddingGrouped.forEach { (family, variants) ->
+                            item {
+                                ModelFamilyCard(
+                                    family = family,
+                                    variants = variants,
+                                    context = context,
+                                    viewModel = downloadViewModel,
+                                    isMultimodal = false,
+                                    onDownload = { downloadViewModel.downloadModel(it) }
+                                )
+                            }
+                        }
+                    }
+                    DownloadCategory.IMAGE_GENERATION -> {
+                        item {
+                            SectionHeader(
+                                title = stringResource(R.string.image_generation_models),
+                                subtitle = stringResource(R.string.image_generation_models_description)
+                            )
+                        }
+                        imageGenGrouped.forEach { (family, variants) ->
+                            item {
+                                ModelFamilyCard(
+                                    family = family,
+                                    variants = variants,
+                                    context = context,
+                                    viewModel = downloadViewModel,
+                                    isMultimodal = false,
+                                    onDownload = { downloadViewModel.downloadModel(it) }
+                                )
+                            }
+                        }
                     }
                 }
-            }
-            
-            // Multimodal Models Section
-            if (multimodalGrouped.isNotEmpty()) {
+                
                 item {
-                    SectionHeader(
-                        title = stringResource(R.string.vision_models),
-                        subtitle = stringResource(R.string.vision_models_description)
-                    )
+                    Spacer(modifier = Modifier.height(80.dp))
                 }
-                
-                multimodalGrouped.forEach { (family, variants) ->
-                    item {
-                        ModelFamilyCard(
-                            family = family,
-                            variants = variants,
-                            context = context,
-                            viewModel = downloadViewModel,
-                            isMultimodal = true,
-                            onDownload = { downloadViewModel.downloadModel(it) }
-                        )
-                    }
-                }
-            }
-            
-            // Embedding Models Section
-            if (embeddingGrouped.isNotEmpty()) {
-                item {
-                    SectionHeader(
-                        title = stringResource(R.string.embedding_models),
-                        subtitle = stringResource(R.string.embedding_models_description)
-                    )
-                }
-                
-                embeddingGrouped.forEach { (family, variants) ->
-                    item {
-                        ModelFamilyCard(
-                            family = family,
-                            variants = variants,
-                            context = context,
-                            viewModel = downloadViewModel,
-                            isMultimodal = false,
-                            onDownload = { downloadViewModel.downloadModel(it) }
-                        )
-                    }
-                }
-            }
-            
-            // Image Generation Models Section
-            if (imageGenGrouped.isNotEmpty()) {
-                item {
-                    SectionHeader(
-                        title = stringResource(R.string.image_generation_models),
-                        subtitle = stringResource(R.string.image_generation_models_description)
-                    )
-                }
-                
-                imageGenGrouped.forEach { (family, variants) ->
-                    item {
-                        ModelFamilyCard(
-                            family = family,
-                            variants = variants,
-                            context = context,
-                            viewModel = downloadViewModel,
-                            isMultimodal = false,
-                            onDownload = { downloadViewModel.downloadModel(it) }
-                        )
-                    }
-                }
-            }
-            
-            item {
-                Spacer(modifier = Modifier.height(80.dp))
             }
         }
         

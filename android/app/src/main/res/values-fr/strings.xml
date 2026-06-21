@@ -510,7 +510,9 @@
     <string name="transcriber_result">Transcription</string>
     <string name="transcriber_recording">Enregistrement...</string>
     <string name="transcriber_stop">Arrêter l\'Enregistrement</string>
-    <string name="transcriber_requires_gemma3n">Cette fonctionnalité nécessite un modèle Gemma-3n ou Gemma-4 E2B/E4B avec support audio. Veuillez en télécharger un depuis l\'écran Modèles.</string>
+    <string name="transcriber_requires_gemma3n">Cette fonctionnalité nécessite un modèle Gemma-3n/4 ou ASR. Veuillez en télécharger un depuis l\'écran Modèles.</string>
+    <string name="asr_models">Modèles ASR</string>
+    <string name="asr_models_description">Modèles de transcription voix-texte</string>
     
     <!-- Scam Detector Screen -->
     <string name="scam_detector_title">Détecteur d\'Arnaques</string>

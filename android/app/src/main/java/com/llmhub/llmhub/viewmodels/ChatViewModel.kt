@@ -661,7 +661,7 @@ class ChatViewModel(
      */
     private suspend fun loadAvailableModelsSync(context: Context) {
         val downloadedModels = ModelData.models
-            .filter { it.category != "embedding" && !it.name.contains("Projector", ignoreCase = true) }
+            .filter { it.category != "embedding" && it.category != "asr" && !it.name.contains("Projector", ignoreCase = true) }
             .mapNotNull { model ->
             var isAvailable = false
             var actualSize = model.sizeBytes
