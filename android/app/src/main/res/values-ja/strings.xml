@@ -51,22 +51,22 @@
     <string name="about_llm_hub">LLM Hubについて</string>
     <string name="about_description">LLM Hubは、大規模言語モデルの力をモバイルデバイスに直接もたらすオープンソースのAndroidアプリケーションです。Gemma、Llama、Phiなどの最先端モデルとのAI会話を体験してください - すべて最大限のプライバシーとオフラインアクセスのために、スマートフォン上でローカルに実行されます。</string>
     <string name="key_features">主な機能</string>
-    <string name="feature_multiple_models">🤖 複数のLLMモデル：Gemma-3、Llama-3.2、Phi-4、Gemma-3n</string>
-    <string name="feature_on_device">📱 デバイス上処理：完全なプライバシー、インターネット不要</string>
-    <string name="feature_vision_support">🖼️ ビジョンサポート：画像を理解するマルチモーダルモデル</string>
-    <string name="feature_gpu_acceleration">⚡ GPU高速化：サポートされているデバイスでの最適化されたパフォーマンス</string>
-    <string name="feature_offline_usage">💾 オフライン使用：インターネット接続なしでチャット</string>
-    <string name="feature_privacy_first">🔒 プライバシー第一：会話がデバイスから出ることはありません</string>
-    <string name="feature_modern_ui">🎨 モダンUI：クリーンで直感的なMaterial Designインターフェース</string>
+    <string name="feature_multiple_models">複数のLLMモデル：Gemma-3、Llama-3.2、Phi-4、Gemma-3n</string>
+    <string name="feature_on_device">デバイス上処理：完全なプライバシー、インターネット不要</string>
+    <string name="feature_vision_support">ビジョンサポート：画像を理解するマルチモーダルモデル</string>
+    <string name="feature_gpu_acceleration">GPU高速化：サポートされているデバイスでの最適化されたパフォーマンス</string>
+    <string name="feature_offline_usage">オフライン使用：インターネット接続なしでチャット</string>
+    <string name="feature_privacy_first">プライバシー第一：会話がデバイスから出ることはありません</string>
+    <string name="feature_modern_ui">モダンUI：クリーンで直感的なMaterial Designインターフェース</string>
     <string name="developer_info">開発者情報</string>
     <string name="about_developer_info">このプロジェクトは、AI技術をすべての人にとってよりアクセスしやすくすることに情熱を注ぐ愛好家によって開発されています。フィードバックと貢献はいつでも歓迎します！</string>
     <string name="tech_stack">技術スタック</string>
     <string name="about_tech_stack">LLM Hubは、最新のAndroid開発技術を使用して構築されています：Kotlin、Jetpack Compose、Material Design 3、そして効率的なデバイス上推論のためのllama.cppライブラリ。</string>
-    <string name="tech_kotlin_compose">🏗️ KotlinとJetpack Composeで構築</string>
-    <string name="tech_mediapipe_litert">🧠 MediaPipeとLiteRTによって駆動</string>
-    <string name="tech_quantization">🚀 INT4/INT8量子化で最適化</string>
-    <string name="tech_gpu_acceleration">⚡ LiteRT XNNPACKによるGPU高速化</string>
-    <string name="tech_models_source">🔗 HuggingFaceとGoogleからのモデル</string>
+    <string name="tech_kotlin_compose">KotlinとJetpack Composeで構築</string>
+    <string name="tech_mediapipe_litert">MediaPipeとLiteRTによって駆動</string>
+    <string name="tech_quantization">INT4/INT8量子化で最適化</string>
+    <string name="tech_gpu_acceleration">LiteRT XNNPACKによるGPU高速化</string>
+    <string name="tech_models_source">HuggingFaceとGoogleからのモデル</string>
     <string name="contact_support">連絡先とサポート</string>
     <string name="contact_email">連絡先メール：</string>
     <string name="source_code">ソースコード：</string>
@@ -75,12 +75,12 @@
     <string name="acknowledgments_text">このアプリケーションを支える素晴らしいLLMモデルを提供してくれたGoogle、Meta、Microsoft、IBM、およびHuggingFaceコミュニティに特別な感謝を。このプロジェクトは、Android開発コミュニティとオープンソースエコシステムの素晴らしい仕事にも依存しています。</string>    <string name="sd_models_credit">画像生成モデルは、Qualcomm QNN（NPU）とAlibaba MNN（CPU）バックエンドを使用したxororzのStable Diffusion実装により提供されています。</string>    <string name="nexa_sdk_credit">GGUFモデルの推論はNexa SDKによって提供されています。</string>    <string name="ai_thinking">AIが考え中...</string>
     <string name="thinking_label">思考</string>
     <string name="thinking_tokens">思考（%1$d トークン）</string>
-    <string name="version_number">バージョン 3.7.7</string>
+    <string name="version_number">バージョン 3.8.0</string>
     <string name="app_version">アプリバージョン</string>
     
     <!-- Terms of Service -->
     <string name="terms_of_service">利用規約</string>
-    <string name="tos_last_updated">最終更新：2025年7月16日</string>
+    <string name="tos_last_updated">最終更新：2026年6月22日</string>
     <string name="tos_welcome_text">LLM Hubへようこそ。当アプリケーションを使用することにより、本利用規約に拘束されることに同意したものとみなされます。注意深くお読みください。</string>
     <string name="tos_welcome">LLM Hubへようこそ。当アプリケーションを使用することにより、本利用規約に拘束されることに同意したものとみなされます。注意深くお読みください。</string>
     <string name="tos_acceptance_title">1. 規約の承諾</string>
@@ -98,7 +98,7 @@
     <string name="tos_model_usage_title">7. モデルの使用とライセンス</string>
     <string name="tos_model_usage_text">LLM Hubを通じて利用可能なAIモデルは、それぞれのライセンスと利用規約の対象となります。ユーザーは、ダウンロードしたモデルを使用する際に、モデル固有のライセンス要件を遵守する責任があります。</string>
     <string name="tos_open_source_title">8. オープンソースライセンス</string>
-    <string name="tos_open_source_text">LLM Hubはオープンソースソフトウェアです。ソースコードはMITライセンスの下で利用可能であり、ライセンス条項に従って使用、変更、配布が許可されています。サードパーティのライブラリとモデルは異なるライセンス条項を持つ場合があります。</string>
+    <string name="tos_open_source_text">LLM Hubはオープンソースソフトウェアです。ソースコードはPolyForm Noncommercial License 1.0.0の下で利用可能であり、ライセンス条項に従って使用、変更、配布が許可されています。サードパーティのライブラリとモデルは異なるライセンス条項を持つ場合があります。</string>
     <string name="tos_changes_title">9. 規約の変更</string>
     <string name="tos_changes_text">本利用規約を随時更新することがあります。ユーザーは、アプリの更新を通じて重要な変更について通知されます。変更後もアプリケーションを継続して使用することは、新しい規約の承諾を構成します。</string>
     <string name="tos_contact_title">10. 連絡先情報</string>

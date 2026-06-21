@@ -51,22 +51,22 @@
     <string name="about_llm_hub">Sobre o LLM Hub</string>
     <string name="about_description">LLM Hub é uma aplicação Android de código aberto que traz o poder dos Modelos de Linguagem Grande diretamente para o seu dispositivo móvel. Experimente conversas de IA com modelos de última geração como Gemma, Llama e Phi - todos executando localmente no seu telefone para máxima privacidade e acessibilidade offline.</string>
     <string name="key_features">Recursos Principais</string>
-    <string name="feature_multiple_models">🤖 Múltiplos Modelos LLM: Gemma-3, Llama-3.2, Phi-4, e Gemma-3n</string>
-    <string name="feature_on_device">📱 Processamento no Dispositivo: Privacidade completa, não requer internet</string>
-    <string name="feature_vision_support">🖼️ Suporte a Visão: Modelos multimodais que entendem imagens</string>
-    <string name="feature_gpu_acceleration">⚡ Aceleração GPU: Performance otimizada em dispositivos suportados</string>
-    <string name="feature_offline_usage">💾 Uso Offline: Converse sem conexão à internet</string>
-    <string name="feature_privacy_first">🔒 Privacidade em Primeiro Lugar: Suas conversas nunca deixam o seu dispositivo</string>
-    <string name="feature_modern_ui">🎨 Interface Moderna: Interface limpa e intuitiva do Material Design</string>
+    <string name="feature_multiple_models">Múltiplos Modelos LLM: Gemma-3, Llama-3.2, Phi-4, e Gemma-3n</string>
+    <string name="feature_on_device">Processamento no Dispositivo: Privacidade completa, não requer internet</string>
+    <string name="feature_vision_support">Suporte a Visão: Modelos multimodais que entendem imagens</string>
+    <string name="feature_gpu_acceleration">Aceleração GPU: Performance otimizada em dispositivos suportados</string>
+    <string name="feature_offline_usage">Uso Offline: Converse sem conexão à internet</string>
+    <string name="feature_privacy_first">Privacidade em Primeiro Lugar: Suas conversas nunca deixam o seu dispositivo</string>
+    <string name="feature_modern_ui">Interface Moderna: Interface limpa e intuitiva do Material Design</string>
     <string name="developer_info">Informações do Desenvolvedor</string>
     <string name="about_developer_info">Este projeto é desenvolvido por um entusiasta apaixonado por tornar a tecnologia de IA mais acessível para todos. Seus comentários e contribuições são sempre bem-vindos!</string>
     <string name="tech_stack">Stack Tecnológico</string>
     <string name="about_tech_stack">LLM Hub é construído usando tecnologias modernas de desenvolvimento Android: Kotlin, Jetpack Compose, Material Design 3, e a biblioteca llama.cpp para inferência eficiente no dispositivo.</string>
-    <string name="tech_kotlin_compose">🏗️ Construído com Kotlin e Jetpack Compose</string>
-    <string name="tech_mediapipe_litert">🧠 Impulsionado por MediaPipe e LiteRT</string>
-    <string name="tech_quantization">🚀 Otimizado com quantização INT4/INT8</string>
-    <string name="tech_gpu_acceleration">⚡ Aceleração GPU via LiteRT XNNPACK</string>
-    <string name="tech_models_source">🔗 Modelos do HuggingFace e Google</string>
+    <string name="tech_kotlin_compose">Construído com Kotlin e Jetpack Compose</string>
+    <string name="tech_mediapipe_litert">Impulsionado por MediaPipe e LiteRT</string>
+    <string name="tech_quantization">Otimizado com quantização INT4/INT8</string>
+    <string name="tech_gpu_acceleration">Aceleração GPU via LiteRT XNNPACK</string>
+    <string name="tech_models_source">Modelos do HuggingFace e Google</string>
     <string name="contact_support">Contato e Suporte</string>
     <string name="contact_email">Email de Contato:</string>
     <string name="source_code">Código Fonte:</string>
@@ -78,7 +78,7 @@
     <string name="ai_thinking">A IA está pensando...</string>
     <string name="thinking_label">Pensamento</string>
     <string name="thinking_tokens">Pensamento (%1$d tokens)</string>
-    <string name="version_number">Versão 3.7.7</string>
+    <string name="version_number">Versão 3.8.0</string>
     <string name="app_version">Versão do App</string>
     
     <!-- Navigation -->
@@ -190,7 +190,7 @@
     
     <!-- Terms of Service -->
     <string name="terms_of_service">Termos de Serviço</string>
-    <string name="tos_last_updated">Última atualização: 16 de julho de 2025</string>
+    <string name="tos_last_updated">Última atualização: 22 de junho de 2026</string>
     <string name="tos_welcome_text">Bem-vindo ao LLM Hub. Ao usar nossa aplicação, você concorda em estar sujeito a estes Termos de Serviço. Por favor, leia-os cuidadosamente.</string>
     <string name="tos_acceptance_title">1. Aceitação dos Termos</string>
     <string name="tos_acceptance_text">Ao baixar, instalar ou usar o LLM Hub, você reconhece que leu, entendeu e concorda em estar sujeito a estes Termos de Serviço. Se você não concorda com estes termos, por favor não use a aplicação.</string>

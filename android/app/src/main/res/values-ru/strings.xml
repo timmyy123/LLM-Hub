@@ -104,22 +104,22 @@
     <string name="about_llm_hub">О LLM Hub</string>
     <string name="about_description">LLM Hub - это Android-приложение с открытым исходным кодом, которое приносит мощь Больших Языковых Моделей прямо на ваше мобильное устройство. Испытайте ИИ-разговоры с передовыми моделями как Gemma, Llama и Phi - все работают локально на вашем телефоне для максимальной конфиденциальности и доступности офлайн.</string>
     <string name="key_features">Ключевые Особенности</string>
-    <string name="feature_multiple_models">🤖 Множественные LLM Модели: Gemma-3, Llama-3.2, Phi-4, и Gemma-3n</string>
-    <string name="feature_on_device">📱 Локальная Обработка: Полная конфиденциальность, интернет не требуется</string>
-    <string name="feature_vision_support">🖼️ Поддержка Зрения: Мультимодальные модели, понимающие изображения</string>
-        <string name="feature_gpu_acceleration">⚡ Ускорение GPU: Оптимизированная производительность на поддерживаемых устройствах</string>
-    <string name="feature_offline_usage">💾 Автономное Использование: Общайтесь без подключения к интернету</string>
-    <string name="feature_privacy_first">🔒 Конфиденциальность Прежде Всего: Ваши разговоры никогда не покидают устройство</string>
-    <string name="feature_modern_ui">🎨 Современный Интерфейс: Чистый, интуитивный интерфейс Material Design</string>
+    <string name="feature_multiple_models">Множественные LLM Модели: Gemma-3, Llama-3.2, Phi-4, и Gemma-3n</string>
+    <string name="feature_on_device">Локальная Обработка: Полная конфиденциальность, интернет не требуется</string>
+    <string name="feature_vision_support">Поддержка Зрения: Мультимодальные модели, понимающие изображения</string>
+        <string name="feature_gpu_acceleration">Ускорение GPU: Оптимизированная производительность на поддерживаемых устройствах</string>
+    <string name="feature_offline_usage">Автономное Использование: Общайтесь без подключения к интернету</string>
+    <string name="feature_privacy_first">Конфиденциальность Прежде Всего: Ваши разговоры никогда не покидают устройство</string>
+    <string name="feature_modern_ui">Современный Интерфейс: Чистый, интуитивный интерфейс Material Design</string>
     <string name="developer_info">Информация о Разработчике</string>
     <string name="about_developer_info">Этот проект разрабатывается энтузиастом, увлеченным тем, чтобы сделать ИИ-технологии более доступными для всех. Ваши отзывы и вклад всегда приветствуются!</string>
     <string name="tech_stack">Технологический Стек</string>
     <string name="about_tech_stack">LLM Hub построен с использованием современных технологий разработки Android: Kotlin, Jetpack Compose, Material Design 3, и библиотеки llama.cpp для эффективного вывода на устройстве.</string>
-    <string name="tech_kotlin_compose">🏗️ Построено с Kotlin и Jetpack Compose</string>
-    <string name="tech_mediapipe_litert">🧠 Работает на MediaPipe и LiteRT</string>
-    <string name="tech_quantization">🚀 Оптимизировано с квантованием INT4/INT8</string>
-    <string name="tech_gpu_acceleration">⚡ Ускорение GPU через LiteRT XNNPACK</string>
-    <string name="tech_models_source">🔗 Модели от HuggingFace и Google</string>
+    <string name="tech_kotlin_compose">Построено с Kotlin и Jetpack Compose</string>
+    <string name="tech_mediapipe_litert">Работает на MediaPipe и LiteRT</string>
+    <string name="tech_quantization">Оптимизировано с квантованием INT4/INT8</string>
+    <string name="tech_gpu_acceleration">Ускорение GPU через LiteRT XNNPACK</string>
+    <string name="tech_models_source">Модели от HuggingFace и Google</string>
     <string name="contact_support">Контакт и Поддержка</string>
     <string name="contact_email">Контактный Email:</string>
     <string name="source_code">Исходный Код:</string>
@@ -128,7 +128,7 @@
     <string name="acknowledgments_text">Особая благодарность Google, Meta, Microsoft, IBM, и сообществу HuggingFace за предоставление невероятных LLM-моделей, которые питают это приложение. Этот проект также опирается на удивительную работу сообщества разработчиков Android и экосистемы открытого исходного кода.</string>
     <string name="sd_models_credit">Модели генерации изображений работают на основе реализаций Stable Diffusion от xororz с использованием бэкендов Qualcomm QNN (NPU) и Alibaba MNN (CPU).</string>
     <string name="nexa_sdk_credit">Вывод моделей GGUF работает на основе Nexa SDK.</string>
-    <string name="version_number">Версия 3.7.7</string>
+    <string name="version_number">Версия 3.8.0</string>
     <string name="ai_thinking">ИИ думает...</string>
     <string name="thinking_label">Размышление</string>
     <string name="thinking_tokens">Размышление (%1$d токенов)</string>
@@ -136,7 +136,7 @@
     
     <!-- Terms of Service -->
     <string name="terms_of_service">Условия Обслуживания</string>
-    <string name="tos_last_updated">Последнее обновление: 16 июля 2025</string>
+    <string name="tos_last_updated">Последнее обновление: 22 июня 2026</string>
     <string name="tos_welcome_text">Добро пожаловать в LLM Hub. Используя наше приложение, вы соглашаетесь быть связанными этими Условиями Обслуживания. Пожалуйста, внимательно прочитайте их.</string>
     <string name="tos_welcome">Добро пожаловать в LLM Hub. Используя наше приложение, вы соглашаетесь быть связанными этими Условиями Обслуживания. Пожалуйста, внимательно прочитайте их.</string>
     <string name="tos_acceptance_title">1. Принятие Условий</string>
@@ -154,7 +154,7 @@
     <string name="tos_model_usage_title">7. Использование Моделей и Лицензирование</string>
     <string name="tos_model_usage_text">ИИ-модели, доступные через LLM Hub, подчинены их соответствующим лицензиям и условиям использования. Пользователи ответственны за соблюдение специфических требований лицензирования модели при использовании скачанных моделей.</string>
     <string name="tos_open_source_title">8. Лицензия Открытого Исходного Кода</string>
-    <string name="tos_open_source_text">LLM Hub - это программное обеспечение с открытым исходным кодом. Исходный код доступен под лицензией MIT, которая разрешает использование, модификацию и распространение в соответствии с условиями лицензии. Сторонние библиотеки и модели могут иметь разные условия лицензии.</string>
+    <string name="tos_open_source_text">LLM Hub - это программное обеспечение с открытым исходным кодом. Исходный код доступен под лицензией PolyForm Noncommercial License 1.0.0, которая разрешает использование, модификацию и распространение в соответствии с условиями лицензии. Сторонние библиотеки и модели могут иметь разные условия лицензии.</string>
     <string name="tos_changes_title">9. Изменения в Условиях</string>
     <string name="tos_changes_text">Мы можем обновлять эти Условия Обслуживания время от времени. Пользователи будут уведомлены о значительных изменениях через обновления приложения. Продолжение использования приложения после изменений означает принятие новых условий.</string>
     <string name="tos_contact_title">10. Контактная Информация</string>
