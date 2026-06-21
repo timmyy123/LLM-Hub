@@ -47,7 +47,6 @@
 		DF4968608455CAC5D2C20BE3 /* ChatSettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E06F261B9A91F8AA8BAA4778 /* ChatSettingsSheet.swift */; };
 		E534E3B14352A9FCAA9F1A89 /* RunAnywhereLlamaCPP in Frameworks */ = {isa = PBXBuildFile; productRef = 72F0EB7DB1F54E3913BC8763 /* RunAnywhereLlamaCPP */; };
 		FA001122334455667788AABB /* StableDiffusionBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA001122334455667788AACC /* StableDiffusionBackend.swift */; };
-		FA001122334455667788AADD /* StableDiffusion in Frameworks */ = {isa = PBXBuildFile; productRef = FA001122334455667788AAEE /* StableDiffusion */; };
 		FA001122334455667788AAFF /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = FA001122334455667788AA11 /* ZIPFoundation */; };
 		FA0011BB334455667788AA01 /* PreviewServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0011BB334455667788AA02 /* PreviewServer.swift */; };
 		VG000001000000000000VG01 /* VideoGeneratorScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = VG000001000000000000VG02 /* VideoGeneratorScreen.swift */; };
@@ -128,7 +127,6 @@
 				E534E3B14352A9FCAA9F1A89 /* RunAnywhereLlamaCPP in Frameworks */,
 				B1C4A2D3F5E6789012345678 /* RunAnywhereONNX in Frameworks */,
 				9D4F93BDDE99FDE1ECFA704A /* Accelerate.framework in Frameworks */,
-				FA001122334455667788AADD /* StableDiffusion in Frameworks */,
 				FA001122334455667788AAFF /* ZIPFoundation in Frameworks */,
 				AD000002000000000000BB05 /* GoogleMobileAds in Frameworks */,
 				AD000002000000000000BB06 /* GoogleUserMessagingPlatform in Frameworks */,
@@ -234,7 +232,6 @@
 				9307F4EE8A20C529993E87D1 /* RunAnywhere */,
 				72F0EB7DB1F54E3913BC8763 /* RunAnywhereLlamaCPP */,
 				B1C4A2D4F5E6789012345678 /* RunAnywhereONNX */,
-				FA001122334455667788AAEE /* StableDiffusion */,
 				FA001122334455667788AA11 /* ZIPFoundation */,
 				AD000002000000000000BB03 /* GoogleMobileAds */,
 				AD000002000000000000BB04 /* GoogleUserMessagingPlatform */,
@@ -286,7 +283,6 @@
 			mainGroup = 60C52022B63693117913378C;
 			packageReferences = (
 				A26F31FFA020DC1866683F48 /* XCLocalSwiftPackageReference "../runanywhere-sdks-latest" */,
-				FA001122334455667788AA44 /* XCRemoteSwiftPackageReference "ml-stable-diffusion" */,
 				FA001122334455667788AA55 /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
 				AD000002000000000000BB01 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
 				AD000002000000000000BB02 /* XCRemoteSwiftPackageReference "swift-package-manager-google-user-messaging-platform" */,
@@ -457,7 +453,7 @@
 				CODE_SIGN_ENTITLEMENTS = LLMHub.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 23;
+				CURRENT_PROJECT_VERSION = 25;
 				DEVELOPMENT_TEAM = 76K65T869A;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "LLMHub-Info.plist";
@@ -494,7 +490,7 @@
 				CODE_SIGN_ENTITLEMENTS = LLMHub.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 23;
+				CURRENT_PROJECT_VERSION = 25;
 				DEVELOPMENT_TEAM = 76K65T869A;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "LLMHub-Info.plist";
@@ -635,14 +631,6 @@
 				minimumVersion = 2.0.0;
 			};
 		};
-		FA001122334455667788AA44 /* XCRemoteSwiftPackageReference "ml-stable-diffusion" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/apple/ml-stable-diffusion";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.1.1;
-			};
-		};
 		FA001122334455667788AA55 /* XCRemoteSwiftPackageReference "ZIPFoundation" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/weichsel/ZIPFoundation";
@@ -688,11 +676,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = FA001122334455667788AA55 /* XCRemoteSwiftPackageReference "ZIPFoundation" */;
 			productName = ZIPFoundation;
-		};
-		FA001122334455667788AAEE /* StableDiffusion */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = FA001122334455667788AA44 /* XCRemoteSwiftPackageReference "ml-stable-diffusion" */;
-			productName = StableDiffusion;
 		};
 		MGK00001000000000000MG02 /* MediaGenerationKit */ = {
 			isa = XCSwiftPackageProductDependency;

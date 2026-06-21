@@ -6026,8 +6026,11 @@ struct ImageGeneratorScreen: View {
             .tabViewStyle(.page(indexDisplayMode: .never))
             .aspectRatio(1, contentMode: .fit)
             .onChange(of: currentPage) { _, page in
-                if page == generatedImages.count && !isGenerating {
-                    triggerVariation()
+                checkForPrefetch(page: page)
+            }
+            .onChange(of: isGenerating) { _, generating in
+                if !generating {
+                    checkForPrefetch(page: currentPage)
                 }
             }
 
@@ -6160,6 +6163,15 @@ struct ImageGeneratorScreen: View {
         runGeneration(usingSeed: UInt32(bitPattern: Int32(truncatingIfNeeded: seed)))
     }
 
+    private func checkForPrefetch(page: Int) {
+        guard !isGenerating, sdBackend.isLoaded, !generatedImages.isEmpty else { return }
+        let shouldPrefetch = page < generatedImages.count && page == generatedImages.count - 1
+        let swipedToPlaceholder = page == generatedImages.count
+        if shouldPrefetch || swipedToPlaceholder {
+            triggerVariation()
+        }
+    }
+
     private func triggerVariation() {
         guard !isGenerating, sdBackend.isLoaded else { return }
         let varSeed = UInt32.random(in: 0..<UInt32.max)
@@ -6186,8 +6198,11 @@ struct ImageGeneratorScreen: View {
                     denoiseStrength: denoiseStrength
                 )
                 if let img {
+                    let oldCount = generatedImages.count
                     generatedImages.append(img)
-                    currentPage = generatedImages.count - 1
+                    if currentPage >= oldCount {
+                        currentPage = generatedImages.count - 1
+                    }
                 }
             } catch is CancellationError {
                 // ignore
