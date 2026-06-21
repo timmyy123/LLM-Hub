@@ -1,111 +1,66 @@
-🤖 LLM Hub - Your Private AI Assistant
-
-=== SHORT DESCRIPTION (45 chars max for ASO) ===
-AI Chat, Translate, Write - 100% Private
-
-=== ALTERNATIVE SHORT DESCRIPTIONS ===
-Private AI: Chat, Translate & Write Offline
-Offline AI Assistant - Chat, Translate, TTS
-AI Chat & Tools - Private, Offline, Secure
-Private AI Chat with Voice & Translation
-
 Advanced AI runs completely on your phone - no internet required, no data shared, complete privacy guaranteed. State-of-the-art Large Language Models in your pocket!
 
-✨ EIGHT POWERFUL AI TOOLS
+TEN POWERFUL AI TOOLS
 
-📝 SMART CHAT
-Multi-turn conversations with context awareness, RAG memory, optional web search, text-to-speech output with auto-readout, and support for text, images, and audio input. Create custom AI personas with personalized instructions.
+SMART CHAT: Multi-turn chats with context awareness, RAG memory, optional web search, TTS, and text/image/audio inputs. Create custom AI personas.
+WRITING AID: Summarize docs, expand ideas, rewrite text, fix grammar, and generate code.
+IMAGE GENERATOR: Create images with Stable Diffusion 1.5. Generate variations and upscale resolution on-device.
+TRANSLATOR: Real-time offline text, image (OCR), and audio translation for 50+ languages.
+TRANSCRIBER: Convert audio to text offline with high accuracy using Whisper ASR models.
+VIBECODE Creator: Build custom coded AI personas to control AI behavior across chat sessions.
+CODE ASSISTANT: Generate, debug, and explain code with optional web search for docs.
+SCAM DETECTOR: Analyze messages and images for phishing attempts with detailed risk explanations.
+IMAGE UPSCALER: Enhance and upscale image resolution and details on-device.
+VIBEVOICE: Hands-free real-time voice chat with local AI.
 
-✍️ WRITING AID
-Summarize documents, expand ideas, rewrite content, improve grammar, and generate code from natural language descriptions.
+CUTTING-EDGE AI MODELS
 
-🎨 IMAGE GENERATOR
-Create stunning images from text prompts using Stable Diffusion 1.5. Generate multiple variations with swipe-through gallery. All processing happens on-device.
-
-🌍 TRANSLATOR (50+ Languages)
-Translate text, images (OCR), and audio in real-time. Works completely offline with bidirectional support.
-
-🎙️ TRANSCRIBER
-Convert audio to text with high accuracy. Supports WAV. All processing on-device.
-
-🎵 VIBECODE Creator
-Create, customize, and share coded AI personas. Build personalized instruction sets that control AI behavior across all chat sessions. Design your perfect AI assistant with system prompts and descriptions.
-
-💻 CODE ASSISTANT
-Generate, debug, and explain code with VibeCode-enhanced AI models. Optional web search for documentation and best practices.
-
-🛡️ SCAM DETECTOR
-Analyze suspicious messages and images for phishing attempts. Get clear risk assessments and detailed explanations.
-
-🚀 CUTTING-EDGE AI MODELS
-
-Supported Model Formats: GGUF, ONNX, LiteRT, MediaPipe (MediaPipe, ONNX Runtime, and Nexa SDK inference backends)
-
-Featured Models:
+Formats: GGUF, ONNX, LiteRT, MediaPipe (MediaPipe, ONNX Runtime, Nexa SDK)
 • Gemma-3 1B (Google) - Fast and efficient
-• Gemma-3n E2B/E4B (Google) - Multimodal: text, vision, audio
+• Gemma-3n E2B/E4B (Google) - Multimodal (text, vision, audio)
+• Gemma-4 E2B/E4B (Google) - Multimodal (text, vision, audio)
+• Gemma-4 12B (Google)
 • Llama-3.2 1B/3B (Meta) - Powerful open-source
-• Phi-4 Mini (Microsoft) - Optimized for mobile
-• Ministral 3B/8B (Mistral AI) - High-performance multilingual with vision support
-• GPT-OSS Family - Fast, efficient models with ONNX optimization
-• LFM-2.5 Thinking (Thinking) - Reasoning and long-form generation
-• Granite Models (IBM) - Enterprise-ready language models
-• Stable Diffusion 1.5 - On-device image generation
+• Phi-4 Mini (Microsoft) - Mobile-optimized
+• Whisper ASR Family - Offline speech-to-text
+• Ministral 3B/8B (Mistral AI) - Multilingual with vision
+• GPT-OSS Family - Fast ONNX models
+• LFM-2.5 Thinking - Reasoning and long-form
+• Granite Models (IBM) - Enterprise-ready
+• Stable Diffusion 1.5 - On-device image gen and upscaling
 
-All models run 100% on-device with GPU/NPU acceleration.
-
-🔐 PRIVACY & SECURITY
-
-• Zero data collection - everything stays on your device
+PRIVACY & SECURITY
+• Zero data collection - everything stays on device
 • No internet required for AI inference
-• No accounts, no tracking, no cloud uploads
-• Open-source and transparent
+• No accounts, tracking, or cloud uploads
+• Open-source codebase
 
-⚡ ADVANCED FEATURES
-
-• Text-to-Speech with auto-readout for hands-free listening
+ADVANCED FEATURES
+• Text-to-Speech with auto-readout
 • GPU/NPU acceleration for fast performance
-• Multimodal: text, images, and audio
-• RAG with global memory for enhanced responses
-• Create custom AI personas (VibeCode) with personalized instructions
-• Import custom models (.gguf, .onnx, .task, .litertlm, .mnn)
-• Direct downloads from HuggingFace for GGUF and ONNX models
-• Multi-runtime inference: MediaPipe, ONNX Runtime, and Nexa SDK backends
-• Beautiful Material Design UI
-• 16 language interfaces
+• Multimodal support (text, images, audio)
+• RAG with global memory
+• Custom AI personas (creAItor)
+• On-device image upscale and detail enhancement
+• Custom model import (.gguf, .onnx, .task, .litertlm, .mnn)
+• Direct downloads from HuggingFace
+• MediaPipe, ONNX Runtime, and Nexa SDK backends
+• Beautiful Material Design UI with 17 languages
 
-📱 REQUIREMENTS
+HOW IT WORKS
+1. Download models in-app (one-time)
+2. Create custom AI personas with VibeCode
+3. Choose your tool (Chat, Writing, Image Gen, Translate, Transcribe, Code, Scam Detector, Image Upscaler, or VibeVoice)
+4. Use completely offline with full privacy
 
-Minimum: Android 8.0+, 2GB RAM, 1-5GB storage
-Recommended: 6GB+ RAM for best performance
+PERFECT FOR
+• Privacy-conscious users
+• Professionals needing offline AI
+• Developers coding and debugging
+• Artists generating AI images
+• Students and researchers
+• Travelers needing offline translation
+• Protecting against phishing scams
 
-💡 HOW IT WORKS
-
-1. Download AI models in-app (one-time) — GGUF, ONNX, LiteRT, and MediaPipe formats supported
-2. Create custom AI personas with VibeCode for personalized behavior
-3. Choose your tool: Chat (with personas), Writing Aid, Image Generator, Translator, Transcriber, Code Assistant, or Scam Detector
-4. Use AI completely offline with full privacy
-5. Optional: Enable web search, upload images/audio, use text-to-speech, or import custom models
-
-🌟 PERFECT FOR
-
-• Privacy-conscious users valuing data security
-• Professionals needing offline AI assistance (VibeCode Custom Personas)
-• Developers generating and debugging code
-• Artists and creators generating AI images
-• Users wanting hands-free voice responses
-• Students working on writing and research
-• Travelers requiring offline translation
-• Anyone protecting against scams
-• Teams building personalized AI workflows with custom personas
-
-📖 OPEN SOURCE (MIT License)
+OPEN SOURCE
 github.com/timmyy123/LLM-Hub
-
-🏆 POWERED BY
-Google MediaPipe & LiteRT, ONNX Runtime, Nexa SDK, MNN, Stable Diffusion, Gemma, Llama, Phi, Mistral, GPT-OSS, Granite, LFM, HuggingFace
-
-Experience the future of private, on-device AI with limitless customization through VibeCode!
-
----
-CHARACTER COUNT: ~2,400 / 4,000 (Google Play allows up to 4,000)
