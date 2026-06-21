@@ -261,10 +261,7 @@ fun ModelDownloadScreen(
                 when (activeCategory) {
                     DownloadCategory.MULTIMODAL -> {
                         item {
-                            SectionHeader(
-                                title = stringResource(R.string.vision_models),
-                                subtitle = stringResource(R.string.vision_models_description)
-                            )
+                            Text(stringResource(R.string.vision_models_description), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         multimodalGrouped.forEach { (family, variants) ->
                             item {
@@ -281,10 +278,7 @@ fun ModelDownloadScreen(
                     }
                     DownloadCategory.TEXT -> {
                         item {
-                            SectionHeader(
-                                title = stringResource(R.string.text_models),
-                                subtitle = stringResource(R.string.text_models_description)
-                            )
+                            Text(stringResource(R.string.text_models_description), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         textGrouped.forEach { (family, variants) ->
                             item {
@@ -301,10 +295,7 @@ fun ModelDownloadScreen(
                     }
                     DownloadCategory.ASR -> {
                         item {
-                            SectionHeader(
-                                title = stringResource(R.string.asr_models),
-                                subtitle = stringResource(R.string.asr_models_description)
-                            )
+                            Text(stringResource(R.string.asr_models_description), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         asrGrouped.forEach { (family, variants) ->
                             item {
@@ -321,10 +312,7 @@ fun ModelDownloadScreen(
                     }
                     DownloadCategory.EMBEDDING -> {
                         item {
-                            SectionHeader(
-                                title = stringResource(R.string.embedding_models),
-                                subtitle = stringResource(R.string.embedding_models_description)
-                            )
+                            Text(stringResource(R.string.embedding_models_description), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         embeddingGrouped.forEach { (family, variants) ->
                             item {
@@ -341,10 +329,7 @@ fun ModelDownloadScreen(
                     }
                     DownloadCategory.IMAGE_GENERATION -> {
                         item {
-                            SectionHeader(
-                                title = stringResource(R.string.image_generation_models),
-                                subtitle = stringResource(R.string.image_generation_models_description)
-                            )
+                            Text(stringResource(R.string.image_generation_models_description), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         imageGenGrouped.forEach { (family, variants) ->
                             item {
@@ -361,10 +346,7 @@ fun ModelDownloadScreen(
                     }
                     DownloadCategory.IMAGE_UPSCALE -> {
                         item {
-                            SectionHeader(
-                                title = stringResource(R.string.image_upscale_models_title),
-                                subtitle = stringResource(R.string.image_upscale_models_description)
-                            )
+                            Text(stringResource(R.string.image_upscale_models_description), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         imageUpscaleGrouped.forEach { (family, variants) ->
                             item {
