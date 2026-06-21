@@ -842,6 +842,21 @@
     <string name="model_system_prompt_hint">Застосовується автоматично, коли ця модель генерує відповідь.</string>
     <string name="agent_tools_label">Інструменти</string>
     <string name="agent_tools_description">Вмикає навички ШІ-агента: пошук у Вікіпедії, обчислювач хешу, надсилання email, надсилання SMS та відкриття карт.</string>
+
+    <!-- Image Upscale Feature -->
+    <string name="feature_image_upscale">Покращення зображень</string>
+    <string name="feature_image_upscale_desc">Покращення зображень за допомогою ШІ</string>
+    <string name="image_upscale_title">Покращення зображень</string>
+    <string name="image_upscale_download_model">Завантажити модель покращення</string>
+    <string name="image_upscale_download_model_desc">Завантажте модель для покращення зображень за допомогою ШІ</string>
+    <string name="image_upscale_load_model_title">Вибрати модель покращення</string>
+    <string name="image_upscale_load_model_desc">Натисніть налаштування, щоб вибрати та завантажити модель</string>
+    <string name="image_upscale_select_image">Натисніть для вибору зображення</string>
+    <string name="image_upscale_button">Покращити зображення</string>
+    <string name="image_upscale_upscaling">Покращення…</string>
+    <string name="image_upscale_save">Зберегти до галереї</string>
+    <string name="image_upscale_models_title">Моделі покращення зображень</string>
+    <string name="image_upscale_models_description">Моделі ШІ з прискоренням QNN для підвищення роздільності зображень до 4x</string>
 </resources>
 
 

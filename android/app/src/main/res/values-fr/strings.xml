@@ -828,7 +828,22 @@
     <string name="chat_now">Discuter maintenant</string>
     <string name="model_system_prompt_label">Invite système (par modèle)</string>
     <string name="model_system_prompt_hint">S’applique automatiquement lorsque ce modèle génère une réponse.</string>    <string name="agent_tools_label">Outils</string>
-    <string name="agent_tools_description">Active les compétences de l\'agent IA : recherche Wikipédia, calculateur de hash, envoyer un e-mail, envoyer un SMS et ouvrir des cartes.</string></resources>
+    <string name="agent_tools_description">Active les compétences de l\'agent IA : recherche Wikipédia, calculateur de hash, envoyer un e-mail, envoyer un SMS et ouvrir des cartes.</string>
+    <!-- Image Upscale Feature -->
+    <string name="feature_image_upscale">Améliorer l\'image</string>
+    <string name="feature_image_upscale_desc">Amélioration d\'images par IA</string>
+    <string name="image_upscale_title">Améliorer l\'image</string>
+    <string name="image_upscale_download_model">Télécharger un modèle d\'amélioration</string>
+    <string name="image_upscale_download_model_desc">Téléchargez un modèle pour améliorer vos images avec l\'IA</string>
+    <string name="image_upscale_load_model_title">Sélectionner un modèle d\'amélioration</string>
+    <string name="image_upscale_load_model_desc">Appuyez sur paramètres pour sélectionner et charger un modèle</string>
+    <string name="image_upscale_select_image">Appuyez pour sélectionner une image</string>
+    <string name="image_upscale_button">Améliorer l\'image</string>
+    <string name="image_upscale_upscaling">Amélioration en cours…</string>
+    <string name="image_upscale_save">Enregistrer dans la galerie</string>
+    <string name="image_upscale_models_title">Modèles d\'amélioration d\'image</string>
+    <string name="image_upscale_models_description">Modèles d\'IA accélérés QNN pour améliorer la résolution des images jusqu\'à 4x</string>
+</resources>
 
 
 

@@ -836,6 +836,21 @@
     <string name="model_system_prompt_hint">Applicato automaticamente quando questo modello genera una risposta.</string>
     <string name="agent_tools_label">Strumenti</string>
     <string name="agent_tools_description">Abilita le competenze dell\'agente AI: ricerca su Wikipedia, calcolatrice hash, invia email, invia SMS e apri mappe.</string>
+
+    <!-- Image Upscale Feature -->
+    <string name="feature_image_upscale">Migliora immagine</string>
+    <string name="feature_image_upscale_desc">Miglioramento immagini con IA</string>
+    <string name="image_upscale_title">Migliora immagine</string>
+    <string name="image_upscale_download_model">Scarica modello di miglioramento</string>
+    <string name="image_upscale_download_model_desc">Scarica un modello per migliorare le tue immagini con l\'IA</string>
+    <string name="image_upscale_load_model_title">Seleziona modello di miglioramento</string>
+    <string name="image_upscale_load_model_desc">Tocca impostazioni per selezionare e caricare un modello</string>
+    <string name="image_upscale_select_image">Tocca per selezionare un\'immagine</string>
+    <string name="image_upscale_button">Migliora immagine</string>
+    <string name="image_upscale_upscaling">Miglioramento in corso…</string>
+    <string name="image_upscale_save">Salva nella galleria</string>
+    <string name="image_upscale_models_title">Modelli di miglioramento immagine</string>
+    <string name="image_upscale_models_description">Modelli IA accelerati QNN per migliorare la risoluzione delle immagini fino a 4x</string>
 </resources>
 
 

@@ -839,6 +839,21 @@
     <string name="model_system_prompt_hint">このモデルが応答を生成する際に自動で適用されます。</string>
     <string name="agent_tools_label">ツール</string>
     <string name="agent_tools_description">AIエージェントスキルを有効化します：Wikipedia検索、ハッシュ計算、メール送信、SMS送信、地図を開く。</string>
+
+    <!-- Image Upscale Feature -->
+    <string name="feature_image_upscale">画像高解像度化</string>
+    <string name="feature_image_upscale_desc">AIによる画像高解像度化</string>
+    <string name="image_upscale_title">画像高解像度化</string>
+    <string name="image_upscale_download_model">高解像度化モデルをダウンロード</string>
+    <string name="image_upscale_download_model_desc">AIで画像を高解像度化するモデルをダウンロードしてください</string>
+    <string name="image_upscale_load_model_title">高解像度化モデルを選択</string>
+    <string name="image_upscale_load_model_desc">設定をタップしてモデルを選択・読み込んでください</string>
+    <string name="image_upscale_select_image">タップして画像を選択</string>
+    <string name="image_upscale_button">画像を高解像度化</string>
+    <string name="image_upscale_upscaling">高解像度化中…</string>
+    <string name="image_upscale_save">ギャラリーに保存</string>
+    <string name="image_upscale_models_title">画像高解像度化モデル</string>
+    <string name="image_upscale_models_description">QNN搭載AIモデルで最大4x画像解像度を向上</string>
 </resources>
 
 

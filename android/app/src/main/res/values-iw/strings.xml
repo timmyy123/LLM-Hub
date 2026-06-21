@@ -842,6 +842,21 @@
     <string name="model_system_prompt_hint">מוחל אוטומטית כאשר המודל הזה יוצר תשובה.</string>
     <string name="agent_tools_label">כלים</string>
     <string name="agent_tools_description">מפעיל מיומנויות סוכן AI: חיפוש בוויקיפדיה, מחשבון hash, שליחת אימייל, שליחת SMS ופתיחת מפות.</string>
+
+    <!-- Image Upscale Feature -->
+    <string name="feature_image_upscale">שיפור תמונה</string>
+    <string name="feature_image_upscale_desc">שיפור תמונות באמצעות בינה מלאכותית</string>
+    <string name="image_upscale_title">שיפור תמונה</string>
+    <string name="image_upscale_download_model">הורד מודל שיפור</string>
+    <string name="image_upscale_download_model_desc">הורד מודל שיפור לשיפור תמונותיך עם בינה מלאכותית</string>
+    <string name="image_upscale_load_model_title">בחר מודל שיפור</string>
+    <string name="image_upscale_load_model_desc">הקש על הגדרות לבחירה וטעינה של מודל שיפור</string>
+    <string name="image_upscale_select_image">הקש לבחירת תמונה</string>
+    <string name="image_upscale_button">שפר תמונה</string>
+    <string name="image_upscale_upscaling">משפר…</string>
+    <string name="image_upscale_save">שמור לגלריה</string>
+    <string name="image_upscale_models_title">מודלי שיפור תמונה</string>
+    <string name="image_upscale_models_description">מודלי בינה מלאכותית מואצי QNN לשיפור רזולוציית תמונות עד פי 4</string>
 </resources>
 
 

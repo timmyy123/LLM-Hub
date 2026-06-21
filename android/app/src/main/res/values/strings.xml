@@ -848,6 +848,21 @@
     <string name="feature_vibevoice">VibeVoice</string>
     <string name="feature_vibevoice_desc">Voice chat with AI locally</string>
     <string name="chat_now">Chat Now</string>
+
+    <!-- Image Upscale Feature -->
+    <string name="feature_image_upscale">Image Upscale</string>
+    <string name="feature_image_upscale_desc">AI-powered image upscaling</string>
+    <string name="image_upscale_title">Image Upscale</string>
+    <string name="image_upscale_download_model">Download an Upscale Model</string>
+    <string name="image_upscale_download_model_desc">Download an upscale model to enhance your images with AI</string>
+    <string name="image_upscale_load_model_title">Select Upscale Model</string>
+    <string name="image_upscale_load_model_desc">Tap settings to select and load an upscale model</string>
+    <string name="image_upscale_select_image">Tap to Select an Image</string>
+    <string name="image_upscale_button">Upscale Image</string>
+    <string name="image_upscale_upscaling">Upscaling…</string>
+    <string name="image_upscale_save">Save to Gallery</string>
+    <string name="image_upscale_models_title">Image Upscale Models</string>
+    <string name="image_upscale_models_description">QNN-accelerated AI models for upscaling and enhancing image resolution up to 4x</string>
 </resources>
 
 

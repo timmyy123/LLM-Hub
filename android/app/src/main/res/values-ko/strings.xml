@@ -842,6 +842,21 @@
     <string name="model_system_prompt_hint">이 모델이 응답을 생성할 때 자동으로 적용됩니다.</string>
     <string name="agent_tools_label">도구</string>
     <string name="agent_tools_description">AI 에이전트 기술 활성화: Wikipedia 검색, 해시 계산기, 이메일 보내기, SMS 보내기 및 지도 열기.</string>
+
+    <!-- Image Upscale Feature -->
+    <string name="feature_image_upscale">이미지 업스케일</string>
+    <string name="feature_image_upscale_desc">AI 기반 이미지 화질 향상</string>
+    <string name="image_upscale_title">이미지 업스케일</string>
+    <string name="image_upscale_download_model">업스케일 모델 다운로드</string>
+    <string name="image_upscale_download_model_desc">AI로 이미지를 향상시키려면 업스케일 모델을 다운로드하세요</string>
+    <string name="image_upscale_load_model_title">업스케일 모델 선택</string>
+    <string name="image_upscale_load_model_desc">설정을 눌러 업스케일 모델을 선택하고 로드하세요</string>
+    <string name="image_upscale_select_image">이미지를 선택하려면 탭하세요</string>
+    <string name="image_upscale_button">이미지 업스케일</string>
+    <string name="image_upscale_upscaling">업스케일 중…</string>
+    <string name="image_upscale_save">갤러리에 저장</string>
+    <string name="image_upscale_models_title">이미지 업스케일 모델</string>
+    <string name="image_upscale_models_description">QNN 가속 AI 모델로 이미지 해상도를 최대 4배 향상</string>
 </resources>
 
 

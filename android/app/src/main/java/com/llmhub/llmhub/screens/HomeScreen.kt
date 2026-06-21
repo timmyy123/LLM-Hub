@@ -22,7 +22,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -36,8 +35,6 @@ import com.llmhub.llmhub.R
 import com.llmhub.llmhub.repository.GithubRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.platform.LocalContext
 import com.llmhub.llmhub.ads.BannerAd
 import com.llmhub.llmhub.data.ThemePreferences
@@ -128,6 +125,13 @@ fun HomeScreen(
                 route = "creator_generation"
             ),
             FeatureCard(
+                title = R.string.feature_image_upscale,
+                description = R.string.feature_image_upscale_desc,
+                icon = Icons.Filled.AutoFixHigh,
+                gradient = Pair(Color(0xFF11998e), Color(0xFF38ef7d)),
+                route = "image_upscale"
+            ),
+            FeatureCard(
                 title = R.string.feature_vibevoice,
                 description = R.string.feature_vibevoice_desc,
                 icon = Icons.Filled.GraphicEq,
@@ -138,8 +142,7 @@ fun HomeScreen(
     }
 
     val aiChatFeature = features.first { it.route == "chat" }
-    val toolsFeatures = features.filter { it.route in setOf("writing_aid", "translator", "transcriber", "image_generator") }
-    val utilityFeatures = features.filter { it.route in setOf("scam_detector", "vibe_coder", "creator_generation", "vibevoice") }
+    val toolsFeatures = features.filter { it.route != "chat" }
     
     Scaffold(
         topBar = {
@@ -300,13 +303,6 @@ fun HomeScreen(
 
             val toolsColumns = if (isLandscapeLayout) 4 else 2
 
-            val utilityColumns = when {
-                isLandscapeLayout -> 4
-                isTabletPortrait -> 3
-                maxWidth >= 430.dp -> 3
-                else -> 2
-            }
-
             val featureCardHeight = when {
                 isPhoneLandscapeLayout -> 72.dp
                 isTabletPortrait -> 118.dp
@@ -367,41 +363,6 @@ fun HomeScreen(
                                     }
                                 }
                                 repeat((toolsColumns - rowFeatures.size).coerceAtLeast(0)) {
-                                    Spacer(modifier = Modifier.weight(1f))
-                                }
-                            }
-                        }
-                    }
-                }
-
-                item {
-                    Text(
-                        text = stringResource(R.string.home_section_utilities),
-                        style = sectionTitleStyle,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-
-                item {
-                    Column(verticalArrangement = Arrangement.spacedBy(rowSpacing)) {
-                        utilityFeatures.chunked(utilityColumns).forEach { rowFeatures ->
-                            Row(horizontalArrangement = Arrangement.spacedBy(rowSpacing), modifier = Modifier.fillMaxWidth()) {
-                                rowFeatures.forEach { feature ->
-                                    val isLocked = !isPremium && feature.route in PREMIUM_ROUTES
-                                    Box(modifier = Modifier.weight(1f)) {
-                                        SmallFeatureCard(
-                                            feature = feature,
-                                            cardHeight = featureCardHeight,
-                                            compact = compactCards,
-                                            isLocked = isLocked,
-                                            onClick = {
-                                                if (isLocked) onNavigateToPremium() else onNavigateToFeature(feature.route)
-                                            }
-                                        )
-                                    }
-                                }
-                                repeat((utilityColumns - rowFeatures.size).coerceAtLeast(0)) {
                                     Spacer(modifier = Modifier.weight(1f))
                                 }
                             }
@@ -768,45 +729,14 @@ fun rememberGithubIcon(): ImageVector {
             viewportWidth = 24f,
             viewportHeight = 24f
         ).apply {
-            path(
-                fill = SolidColor(Color.Black),
-                fillAlpha = 1f,
-                stroke = null,
-                strokeAlpha = 1f,
-                strokeLineWidth = 1f,
-                strokeLineCap = androidx.compose.ui.graphics.StrokeCap.Butt,
-                strokeLineJoin = androidx.compose.ui.graphics.StrokeJoin.Miter,
-                strokeLineMiter = 1f,
-                pathFillType = PathFillType.NonZero
-            ) {
-                moveTo(12.0f, 2.0f)
-                arcTo(10.0f, 10.0f, 0.0f, false, false, 2.0f, 12.0f)
-                curveToRelative(0.0f, 4.42f, 2.87f, 8.17f, 6.84f, 9.5f)
-                curveToRelative(0.5f, 0.09f, 0.68f, -0.22f, 0.68f, -0.48f)
-                verticalLineToRelative(-1.7f)
-                curveToRelative(-2.78f, 0.6f, -3.37f, -1.34f, -3.37f, -1.34f)
-                curveToRelative(-0.45f, -1.16f, -1.11f, -1.47f, -1.11f, -1.47f)
-                curveToRelative(-0.9f, -0.62f, 0.07f, -0.6f, 0.07f, -0.6f)
-                curveToRelative(1.0f, 0.07f, 1.53f, 1.03f, 1.53f, 1.03f)
-                curveToRelative(0.89f, 1.52f, 2.34f, 1.08f, 2.91f, 0.83f)
-                curveToRelative(0.09f, -0.65f, 0.35f, -1.08f, 0.63f, -1.34f)
-                curveToRelative(-2.22f, -0.25f, -4.55f, -1.11f, -4.55f, -4.94f)
-                curveToRelative(0.0f, -1.1f, 0.39f, -1.99f, 1.03f, -2.69f)
-                curveToRelative(-0.1f, -0.25f, -0.45f, -1.27f, 0.1f, -2.65f)
-                curveToRelative(0.0f, 0.0f, 0.84f, -0.27f, 2.75f, 1.02f)
-                curveTo(11.0f, 5.0f, 12.0f, 5.0f, 13.0f, 5.0f)
-                curveToRelative(1.0f, 0.0f, 2.0f, 0.0f, 3.0f, 0.0f)
-                curveToRelative(1.91f, -1.29f, 2.75f, -1.02f, 2.75f, -1.02f)
-                curveToRelative(0.55f, 1.38f, 0.2f, 2.4f, 0.1f, 2.65f)
-                curveToRelative(0.64f, 0.7f, 1.03f, 1.6f, 1.03f, 2.69f)
-                curveToRelative(0.0f, 3.84f, -2.34f, 4.68f, -4.57f, 4.93f)
-                curveToRelative(0.36f, 0.31f, 0.68f, 0.92f, 0.68f, 1.85f)
-                verticalLineToRelative(2.74f)
-                curveToRelative(0.0f, 0.27f, 0.18f, 0.58f, 0.69f, 0.48f)
-                curveTo(19.13f, 20.17f, 22.0f, 16.42f, 22.0f, 12.0f)
-                arcTo(10.0f, 10.0f, 0.0f, false, false, 12.0f, 2.0f)
-                close()
-            }
+            addPath(
+                pathData = androidx.compose.ui.graphics.vector.PathParser()
+                    .parsePathString(
+                        "M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2Z"
+                    )
+                    .toNodes(),
+                fill = androidx.compose.ui.graphics.SolidColor(androidx.compose.ui.graphics.Color.Black)
+            )
         }.build()
     }
 }

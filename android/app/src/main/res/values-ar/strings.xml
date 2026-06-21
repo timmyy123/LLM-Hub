@@ -842,6 +842,21 @@
     <string name="model_system_prompt_hint">تُطبّق تلقائيًا عند قيام هذا النموذج بإنشاء رد.</string>
     <string name="agent_tools_label">الأدوات</string>
     <string name="agent_tools_description">يُفعِّل مهارات وكيل الذكاء الاصطناعي: البحث في ويكيبيديا، حاسبة التجزئة، إرسال البريد الإلكتروني، إرسال رسالة نصية، وفتح الخرائط.</string>
+
+    <!-- Image Upscale Feature -->
+    <string name="feature_image_upscale">تحسين الصورة</string>
+    <string name="feature_image_upscale_desc">تحسين الصور بالذكاء الاصطناعي</string>
+    <string name="image_upscale_title">تحسين الصورة</string>
+    <string name="image_upscale_download_model">تنزيل نموذج التحسين</string>
+    <string name="image_upscale_download_model_desc">قم بتنزيل نموذج تحسين لتحسين صورك بالذكاء الاصطناعي</string>
+    <string name="image_upscale_load_model_title">اختر نموذج التحسين</string>
+    <string name="image_upscale_load_model_desc">اضغط على الإعدادات لاختيار نموذج التحسين وتحميله</string>
+    <string name="image_upscale_select_image">اضغط لاختيار صورة</string>
+    <string name="image_upscale_button">تحسين الصورة</string>
+    <string name="image_upscale_upscaling">جارٍ التحسين…</string>
+    <string name="image_upscale_save">حفظ في المعرض</string>
+    <string name="image_upscale_models_title">نماذج تحسين الصور</string>
+    <string name="image_upscale_models_description">نماذج ذكاء اصطناعي مسرَّعة بـ QNN لتحسين دقة الصور حتى 4x</string>
 </resources>
 
 

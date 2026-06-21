@@ -61,6 +61,14 @@ class SDBackendService : Service() {
                 }
             }
             ACTION_STOP -> stopBackend()
+            ACTION_START_UPSCALER -> {
+                if (startUpscalerBackend()) {
+                    updateNotification("Upscaler Ready")
+                } else {
+                    updateNotification("Upscaler Failed")
+                    stopSelf()
+                }
+            }
         }
         
         return START_NOT_STICKY
@@ -231,28 +239,11 @@ class SDBackendService : Service() {
         }
     }
     
-    private fun isSdxl(modelDir: File): Boolean {
-        val name = modelDir.name.lowercase()
-        val path = modelDir.absolutePath.lowercase()
-        val sdxlKeywords = listOf(
-            "xl", "illustrious", "animagine", "ponydiffusion", "anikawa", "chenkinnoob", 
-            "counterfeit", "cyber_realistic", "dreamshaper", "epic_realism", "furrytoonmix", 
-            "gonzalomo", "illustrij", "intorealism", "juggernaut", "lemonsugarmix", 
-            "miaomiao", "noobai", "orange_rex", "novaanime", "novafurry", "perfect_deliberate", 
-            "perfection_realistic", "pppanimix", "prefect", "raehoshi", "realvis", "reed_xxx", 
-            "rin_anime", "featherfall", "flanime"
-        )
-        return name.contains("xl") || path.contains("xl") || sdxlKeywords.any { name.contains(it) || path.contains(it) }
-    }
-
     /**
      * Build command line arguments based on model type
      */
     private fun buildCommand(executable: File, modelDir: File, modelType: String): List<String> {
         val actualDir = findActualModelDir(modelDir)
-        val isSdxlModel = isSdxl(actualDir)
-        val embeddingSize = if (isSdxlModel) "2048" else "768"
-        Log.i(TAG, "buildCommand: isSdxlModel=$isSdxlModel, embeddingSize=$embeddingSize for directory=${actualDir.absolutePath}")
         
         // Find clip file - for MNN models, always pass "clip.mnn" path
         // The native backend checks for clip.mnn suffix and auto-upgrades to clip_v2.mnn if exists
@@ -279,7 +270,7 @@ class SDBackendService : Service() {
                 "--backend", File(runtimeDir, "libQnnHtp.so").absolutePath,
                 "--system_library", File(runtimeDir, "libQnnSystem.so").absolutePath,
                 "--port", "8081",
-                "--text_embedding_size", embeddingSize
+                "--text_embedding_size", "768"
             )
             
             // Always include VAE encoder if available (for img2img support)
@@ -307,7 +298,7 @@ class SDBackendService : Service() {
                 "--vae_decoder", File(actualDir, "vae_decoder.mnn").absolutePath,
                 "--tokenizer", File(actualDir, "tokenizer.json").absolutePath,
                 "--port", "8081",
-                "--text_embedding_size", embeddingSize,
+                "--text_embedding_size", "768",
                 "--cpu" // Flag to indicate MNN mode (vs QNN mode)
             )
             
@@ -476,7 +467,38 @@ class SDBackendService : Service() {
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
-    
+
+    private fun startUpscalerBackend(): Boolean {
+        try {
+            val nativeDir = applicationInfo.nativeLibraryDir
+            val executable = File(nativeDir, EXECUTABLE_NAME)
+            if (!executable.exists()) return false
+
+            val command = listOf(
+                executable.absolutePath,
+                "--upscaler_mode",
+                "--lib_dir", runtimeDir.absolutePath,
+                "--port", "8081"
+            )
+            val env = buildEnvironment()
+
+            Log.d(TAG, "Upscaler command: ${command.joinToString(" ")}")
+
+            val processBuilder = ProcessBuilder(command).apply {
+                directory(File(nativeDir))
+                redirectErrorStream(true)
+                environment().putAll(env)
+            }
+            backendProcess = processBuilder.start()
+            startMonitorThread()
+            Log.i(TAG, "Upscaler backend started successfully")
+            return true
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start upscaler backend", e)
+            return false
+        }
+    }
+
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -513,6 +535,7 @@ class SDBackendService : Service() {
         const val ACTION_START = "com.llmhub.llmhub.SD_BACKEND_START"
         const val ACTION_STOP = "com.llmhub.llmhub.SD_BACKEND_STOP"
         const val EXTRA_MODEL_PATH = "model_path"
+        const val ACTION_START_UPSCALER = "com.llmhub.llmhub.SD_BACKEND_START_UPSCALER"
         
         fun start(context: Context, modelPath: String? = null, useGpu: Boolean = false) {
             val intent = Intent(context, SDBackendService::class.java).apply {
@@ -534,6 +557,17 @@ class SDBackendService : Service() {
                 action = ACTION_STOP
             }
             context.startService(intent)
+        }
+
+        fun startUpscaler(context: Context) {
+            val intent = Intent(context, SDBackendService::class.java).apply {
+                action = ACTION_START_UPSCALER
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(intent)
+            } else {
+                context.startService(intent)
+            }
         }
     }
 }

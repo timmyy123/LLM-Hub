@@ -65,7 +65,7 @@ enum class ModelFormat {
 }
 
 enum class DownloadCategory {
-    MULTIMODAL, TEXT, ASR, EMBEDDING, IMAGE_GENERATION
+    MULTIMODAL, TEXT, ASR, EMBEDDING, IMAGE_GENERATION, IMAGE_UPSCALE
 }
 
 /**
@@ -129,6 +129,8 @@ fun ModelDownloadScreen(
     val asrGrouped = asrModels.groupBy { it.name.substringBefore("(").trim() }
     val embeddingGrouped = embeddingModels.groupBy { it.name.substringBefore("(").trim() }
     val imageGenGrouped = imageGenerationModels.groupBy { it.name.substringBefore("(").trim() }
+    val imageUpscaleModels = models.filter { it.category == "image_upscale" }
+    val imageUpscaleGrouped = imageUpscaleModels.groupBy { it.name.substringBefore("(").trim() }
 
     var showImportDialog by remember { mutableStateOf(false) }
     var errorDialogInfo by remember { mutableStateOf<Pair<String, String>?>(null) }
@@ -138,7 +140,8 @@ fun ModelDownloadScreen(
         DownloadCategory.TEXT,
         DownloadCategory.ASR,
         DownloadCategory.EMBEDDING,
-        DownloadCategory.IMAGE_GENERATION
+        DownloadCategory.IMAGE_GENERATION,
+        DownloadCategory.IMAGE_UPSCALE
     )
 
     LaunchedEffect(downloadViewModel) {
@@ -223,6 +226,7 @@ fun ModelDownloadScreen(
                         DownloadCategory.ASR -> stringResource(R.string.asr_models)
                         DownloadCategory.EMBEDDING -> stringResource(R.string.embedding_models)
                         DownloadCategory.IMAGE_GENERATION -> stringResource(R.string.image_generation_models)
+                        DownloadCategory.IMAGE_UPSCALE -> stringResource(R.string.image_upscale_models_title)
                     }
                     val count = when (category) {
                         DownloadCategory.MULTIMODAL -> multimodalModels.size
@@ -230,6 +234,7 @@ fun ModelDownloadScreen(
                         DownloadCategory.ASR -> asrModels.size
                         DownloadCategory.EMBEDDING -> embeddingModels.size
                         DownloadCategory.IMAGE_GENERATION -> imageGenerationModels.size
+                        DownloadCategory.IMAGE_UPSCALE -> imageUpscaleModels.size
                     }
                     Tab(
                         selected = selectedTab == index,
@@ -342,6 +347,26 @@ fun ModelDownloadScreen(
                             )
                         }
                         imageGenGrouped.forEach { (family, variants) ->
+                            item {
+                                ModelFamilyCard(
+                                    family = family,
+                                    variants = variants,
+                                    context = context,
+                                    viewModel = downloadViewModel,
+                                    isMultimodal = false,
+                                    onDownload = { downloadViewModel.downloadModel(it) }
+                                )
+                            }
+                        }
+                    }
+                    DownloadCategory.IMAGE_UPSCALE -> {
+                        item {
+                            SectionHeader(
+                                title = stringResource(R.string.image_upscale_models_title),
+                                subtitle = stringResource(R.string.image_upscale_models_description)
+                            )
+                        }
+                        imageUpscaleGrouped.forEach { (family, variants) ->
                             item {
                                 ModelFamilyCard(
                                     family = family,

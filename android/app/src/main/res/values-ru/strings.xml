@@ -814,6 +814,21 @@
     <string name="model_system_prompt_hint">Применяется автоматически, когда эта модель генерирует ответ.</string>
     <string name="agent_tools_label">Инструменты</string>
     <string name="agent_tools_description">Включает навыки ИИ-агента: поиск Wikipedia, вычислитель хэша, отправка email, отправка SMS и открытие карт.</string>
+
+    <!-- Image Upscale Feature -->
+    <string name="feature_image_upscale">Улучшение изображений</string>
+    <string name="feature_image_upscale_desc">Улучшение изображений с помощью ИИ</string>
+    <string name="image_upscale_title">Улучшение изображений</string>
+    <string name="image_upscale_download_model">Загрузить модель улучшения</string>
+    <string name="image_upscale_download_model_desc">Загрузите модель улучшения для повышения качества изображений с помощью ИИ</string>
+    <string name="image_upscale_load_model_title">Выбрать модель улучшения</string>
+    <string name="image_upscale_load_model_desc">Нажмите настройки, чтобы выбрать и загрузить модель</string>
+    <string name="image_upscale_select_image">Нажмите, чтобы выбрать изображение</string>
+    <string name="image_upscale_button">Улучшить изображение</string>
+    <string name="image_upscale_upscaling">Улучшение…</string>
+    <string name="image_upscale_save">Сохранить в галерею</string>
+    <string name="image_upscale_models_title">Модели улучшения изображений</string>
+    <string name="image_upscale_models_description">Модели ИИ с ускорением QNN для повышения разрешения изображений до 4x</string>
 </resources>
 
 

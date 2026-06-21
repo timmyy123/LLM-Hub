@@ -844,6 +844,21 @@
     <string name="model_system_prompt_hint">Diterapkan secara otomatis saat model ini menghasilkan respons.</string>
     <string name="agent_tools_label">Alat</string>
     <string name="agent_tools_description">Mengaktifkan keahlian agen AI: pencarian Wikipedia, kalkulator hash, kirim email, kirim SMS, dan buka peta.</string>
+
+    <!-- Image Upscale Feature -->
+    <string name="feature_image_upscale">छवि सुधार</string>
+    <string name="feature_image_upscale_desc">AI से छवि सुधार</string>
+    <string name="image_upscale_title">छवि सुधार</string>
+    <string name="image_upscale_download_model">सुधार मॉडल डाउनलोड करें</string>
+    <string name="image_upscale_download_model_desc">AI से अपनी छवियों को बेहतर बनाने के लिए सुधार मॉडल डाउनलोड करें</string>
+    <string name="image_upscale_load_model_title">सुधार मॉडल चुनें</string>
+    <string name="image_upscale_load_model_desc">मॉडल चुनने और लोड करने के लिए सेटिंग्स पर टैप करें</string>
+    <string name="image_upscale_select_image">छवि चुनने के लिए टैप करें</string>
+    <string name="image_upscale_button">छवि सुधारें</string>
+    <string name="image_upscale_upscaling">सुधार हो रहा है…</string>
+    <string name="image_upscale_save">गैलरी में सहेजें</string>
+    <string name="image_upscale_models_title">छवि सुधार मॉडल</string>
+    <string name="image_upscale_models_description">QNN-त्वरित AI मॉडल जो छवि रिज़ॉल्यूशन को 4x तक बेहतर करते हैं</string>
 </resources>
 
 

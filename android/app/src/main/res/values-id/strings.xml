@@ -844,6 +844,21 @@
     <string name="model_system_prompt_hint">Diterapkan secara otomatis saat model ini menghasilkan respons.</string>
     <string name="agent_tools_label">Alat</string>
     <string name="agent_tools_description">Mengaktifkan keahlian agen AI: pencarian Wikipedia, kalkulator hash, kirim email, kirim SMS, dan buka peta.</string>
+
+    <!-- Image Upscale Feature -->
+    <string name="feature_image_upscale">Tingkatkan Gambar</string>
+    <string name="feature_image_upscale_desc">Peningkatan gambar dengan AI</string>
+    <string name="image_upscale_title">Tingkatkan Gambar</string>
+    <string name="image_upscale_download_model">Unduh Model Peningkatan</string>
+    <string name="image_upscale_download_model_desc">Unduh model peningkatan untuk menyempurnakan gambar Anda dengan AI</string>
+    <string name="image_upscale_load_model_title">Pilih Model Peningkatan</string>
+    <string name="image_upscale_load_model_desc">Ketuk pengaturan untuk memilih dan memuat model peningkatan</string>
+    <string name="image_upscale_select_image">Ketuk untuk Memilih Gambar</string>
+    <string name="image_upscale_button">Tingkatkan Gambar</string>
+    <string name="image_upscale_upscaling">Meningkatkan…</string>
+    <string name="image_upscale_save">Simpan ke Galeri</string>
+    <string name="image_upscale_models_title">Model Peningkatan Gambar</string>
+    <string name="image_upscale_models_description">Model AI yang dipercepat QNN untuk meningkatkan resolusi gambar hingga 4x</string>
 </resources>
 
 

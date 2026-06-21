@@ -839,6 +839,21 @@
     <string name="model_system_prompt_hint">Bu model yanıt oluşturduğunda otomatik olarak uygulanır.</string>
     <string name="agent_tools_label">Araçlar</string>
     <string name="agent_tools_description">Yapay zeka ajanı becerilerini etkinleştirir: Wikipedia arama, karma hesaplayıcı, e-posta gönderme, SMS gönderme ve harita açma.</string>
+
+    <!-- Image Upscale Feature -->
+    <string name="feature_image_upscale">Görüntü İyileştirme</string>
+    <string name="feature_image_upscale_desc">Yapay zeka ile görüntü iyileştirme</string>
+    <string name="image_upscale_title">Görüntü İyileştirme</string>
+    <string name="image_upscale_download_model">İyileştirme Modeli İndir</string>
+    <string name="image_upscale_download_model_desc">Görüntülerinizi yapay zeka ile iyileştirmek için bir model indirin</string>
+    <string name="image_upscale_load_model_title">İyileştirme Modeli Seç</string>
+    <string name="image_upscale_load_model_desc">Model seçmek ve yüklemek için ayarlara dokunun</string>
+    <string name="image_upscale_select_image">Görüntü seçmek için dokunun</string>
+    <string name="image_upscale_button">Görüntüyü İyileştir</string>
+    <string name="image_upscale_upscaling">İyileştiriliyor…</string>
+    <string name="image_upscale_save">Galeriye Kaydet</string>
+    <string name="image_upscale_models_title">Görüntü İyileştirme Modelleri</string>
+    <string name="image_upscale_models_description">Görüntü çözünürlüğünü 4x\'e kadar artırmak için QNN hızlandırmalı yapay zeka modelleri</string>
 </resources>
 
 

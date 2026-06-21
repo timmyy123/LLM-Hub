@@ -842,6 +842,21 @@
     <string name="model_system_prompt_hint">وقتی این مدل پاسخ تولید می‌کند، به‌صورت خودکار اعمال می‌شود.</string>
     <string name="agent_tools_label">ابزارها</string>
     <string name="agent_tools_description">فعال‌سازی مهارت‌های عامل هوش مصنوعی: جستجوی ویکی‌پدیا، ماشین‌حساب هش، ارسال ایمیل، ارسال پیامک کوتاه و باز کردن نقشه.</string>
+
+    <!-- Image Upscale Feature -->
+    <string name="feature_image_upscale">بزرگ‌نمایی تصویر</string>
+    <string name="feature_image_upscale_desc">بهبود تصویر با هوش مصنوعی</string>
+    <string name="image_upscale_title">بزرگ‌نمایی تصویر</string>
+    <string name="image_upscale_download_model">دانلود مدل بزرگ‌نمایی</string>
+    <string name="image_upscale_download_model_desc">یک مدل بزرگ‌نمایی دانلود کنید تا تصاویر خود را با هوش مصنوعی بهبود بخشید</string>
+    <string name="image_upscale_load_model_title">انتخاب مدل بزرگ‌نمایی</string>
+    <string name="image_upscale_load_model_desc">برای انتخاب و بارگذاری مدل، روی تنظیمات ضربه بزنید</string>
+    <string name="image_upscale_select_image">برای انتخاب تصویر ضربه بزنید</string>
+    <string name="image_upscale_button">بزرگ‌نمایی تصویر</string>
+    <string name="image_upscale_upscaling">در حال بزرگ‌نمایی…</string>
+    <string name="image_upscale_save">ذخیره در گالری</string>
+    <string name="image_upscale_models_title">مدل‌های بزرگ‌نمایی تصویر</string>
+    <string name="image_upscale_models_description">مدل‌های هوش مصنوعی شتاب‌دهنده QNN برای بزرگ‌نمایی تصاویر تا ۴ برابر</string>
 </resources>
 
 

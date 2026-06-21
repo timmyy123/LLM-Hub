@@ -298,6 +298,20 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                         totalBytes = if (sizeKnown) model.sizeBytes else null
                     )
                 }
+            } else if (model.category == "image_upscale") {
+                val upscalerModelsDir = File(context.filesDir, "upscaler_models")
+                val safeName = model.name.replace(Regex("[^a-zA-Z0-9_\\-]"), "_")
+                val modelFile = File(upscalerModelsDir, "$safeName/upscaler.bin")
+                val downloaded = modelFile.exists() && modelFile.length() > 0
+                val fileSize = if (downloaded) modelFile.length() else 0L
+                model.copy(
+                    isDownloaded = downloaded,
+                    isDownloading = false,
+                    downloadProgress = if (downloaded) 1f else 0f,
+                    downloadedBytes = fileSize,
+                    totalBytes = if (downloaded) fileSize else null,
+                    sizeBytes = if (downloaded) fileSize else model.sizeBytes
+                )
             } else {
                 // Regular single-file models
                 val primaryFile = File(modelsDir, model.localFileName())
@@ -573,7 +587,33 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                         }
                         return@onCompletion
                     }
-                    
+
+                    // Upscaler models (image_upscale category)
+                    if (model.category == "image_upscale") {
+                        val upscalerModelsDir = File(context.filesDir, "upscaler_models")
+                        upscalerModelsDir.mkdirs()
+                        val safeName = model.name.replace(Regex("[^a-zA-Z0-9_\\-]"), "_")
+                        val modelDir = File(upscalerModelsDir, safeName)
+                        modelDir.mkdirs()
+                        val destFile = File(modelDir, "upscaler.bin")
+                        // The downloaded file is in the standard models/ temp location — move/copy it
+                        val tempFile = File(context.filesDir, "models/${model.localFileName()}")
+                        if (tempFile.exists()) {
+                            tempFile.copyTo(destFile, overwrite = true)
+                            tempFile.delete()
+                        }
+                        val downloaded = destFile.exists() && destFile.length() > 0
+                        updateModel(model.name) {
+                            it.copy(
+                                isDownloaded = downloaded,
+                                isDownloading = false,
+                                downloadProgress = if (downloaded) 1f else 0f,
+                                downloadedBytes = if (downloaded) model.sizeBytes else 0L
+                            )
+                        }
+                        return@onCompletion
+                    }
+
                     // ONNX models with additional files (decoder + embed + tokenizer etc.) - files live in a subdir
                     if (model.modelFormat == "onnx" && model.additionalFiles.isNotEmpty()) {
                         val modelsDir = File(context.filesDir, "models")
@@ -874,11 +914,18 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
             if (model.modelFormat == "qnn_npu" || model.modelFormat == "mnn_cpu") {
                 val sdModelsDir = File(context.filesDir, "sd_models")
                 val modelTargetDir = File(sdModelsDir, model.name.replace(" ", "_"))
-                
+
                 if (modelTargetDir.exists() && modelTargetDir.isDirectory) {
                     // Delete all files and subdirectories recursively for this model only
                     modelTargetDir.deleteRecursively()
                     android.util.Log.d("ModelDownloadViewModel", "[deleteModel] Deleted SD model directory: ${modelTargetDir.absolutePath}")
+                }
+            } else if (model.category == "image_upscale") {
+                val safeName = model.name.replace(Regex("[^a-zA-Z0-9_\\-]"), "_")
+                val dir = File(context.filesDir, "upscaler_models/$safeName")
+                if (dir.exists()) {
+                    dir.deleteRecursively()
+                    android.util.Log.d("ModelDownloadViewModel", "[deleteModel] Deleted upscaler model directory: ${dir.absolutePath}")
                 }
             } else {
                 // Physically remove the file from the app's private storage so that

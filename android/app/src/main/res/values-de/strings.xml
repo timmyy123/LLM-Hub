@@ -808,6 +808,21 @@
     <string name="model_system_prompt_hint">Wird automatisch angewendet, wenn dieses Modell eine Antwort erzeugt.</string>
     <string name="agent_tools_label">Tools</string>
     <string name="agent_tools_description">Aktiviert KI-Agent-Fähigkeiten: Wikipedia-Suche, Hash-Rechner, E-Mail senden, SMS senden und Karten öffnen.</string>
+
+    <!-- Image Upscale Feature -->
+    <string name="feature_image_upscale">Bild hochskalieren</string>
+    <string name="feature_image_upscale_desc">KI-gestützte Bildverbesserung</string>
+    <string name="image_upscale_title">Bild hochskalieren</string>
+    <string name="image_upscale_download_model">Hochskalier-Modell herunterladen</string>
+    <string name="image_upscale_download_model_desc">Laden Sie ein Hochskalier-Modell herunter, um Ihre Bilder mit KI zu verbessern</string>
+    <string name="image_upscale_load_model_title">Hochskalier-Modell auswählen</string>
+    <string name="image_upscale_load_model_desc">Tippen Sie auf Einstellungen, um ein Hochskalier-Modell auszuwählen und zu laden</string>
+    <string name="image_upscale_select_image">Tippen Sie, um ein Bild auszuwählen</string>
+    <string name="image_upscale_button">Bild hochskalieren</string>
+    <string name="image_upscale_upscaling">Hochskalierung…</string>
+    <string name="image_upscale_save">In Galerie speichern</string>
+    <string name="image_upscale_models_title">Bildverbesserungsmodelle</string>
+    <string name="image_upscale_models_description">QNN-beschleunigte KI-Modelle zur Hochskalierung und Verbesserung der Bildauflösung bis zu 4x</string>
 </resources>
 
 
