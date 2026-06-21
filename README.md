@@ -35,10 +35,20 @@
 | **🎨 Image Generator** | Create images from text prompts using Stable Diffusion 1.5 with swipeable gallery |
 | **🎥 Video Generator** | **[NEW]** Generate videos from text prompts or images using Stable Video Diffusion on iOS |
 | **🌍 Translator** | Translate text, images (OCR), and audio across 50+ languages - offline |
-| **🎙️ Transcriber** | Convert speech to text with on-device processing |
+| **🎙️ Transcriber** | Convert speech to text with on-device processing using Whisper models (Tiny, Base, Small, Medium, Large V3 Turbo) |
 | **🛡️ Scam Detector** | Analyze messages and images for phishing with risk assessment |
 | **🗣️ VibeVoice** | **[NEW]** Hands-free AI voice chat |
 
+### 🎙️ Supported ASR Models (Android)
+The offline **Transcriber** feature on Android now supports on-device Whisper models for high-accuracy local speech-to-text:
+- **Whisper Tiny (English-only)** (~74MB)
+- **Whisper Tiny (Multilingual)** (~74MB)
+- **Whisper Base (English-only)** (~141MB)
+- **Whisper Base (Multilingual)** (~141MB)
+- **Whisper Small (English-only)** (~465MB)
+- **Whisper Small (Multilingual)** (~465MB)
+- **Whisper Medium (Multilingual)** (~1.43GB)
+- **Whisper Large V3 Turbo (Multilingual)** (~1.51GB)
 
 ### 🔐 Privacy First
 - **100% on-device processing** - no internet required for inference
@@ -61,9 +71,9 @@ Quick Start
 
 
 Technology
-- **Android**: Kotlin + Jetpack Compose (Material 3), [Nexa SDK](https://github.com/NexaAI/nexa-sdk)
+- **Android**: Kotlin + Jetpack Compose (Material 3), [Nexa SDK](https://github.com/NexaAI/nexa-sdk) (for LLM and ASR inference)
 - **iOS**: Swift + SwiftUI, [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks), [Draw Things (MediaGenerationKit)](https://drawthings.ai/), Apple Foundation Model
-- **LLM Runtime**: MediaPipe, LiteRT, Llama.cpp (via [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks))
+- **LLM & ASR Runtime**: MediaPipe, LiteRT, Nexa SDK ASR (Whisper GGML on Android), Llama.cpp (via [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks) on iOS)
 - **Image & Video Gen**: [Draw Things (MediaGenerationKit)](https://drawthings.ai/) (iOS), Qualcomm QNN (Android)
 
 
