@@ -45,6 +45,13 @@ class LlmHubApplication : Application() {
         applySavedLanguage()
         // Initialise AdMob SDK
         AdManager.initialize(this)
+        // Initialize Nexa SDK
+        try {
+            com.nexa.sdk.NexaSdk.getInstance().init(this)
+            android.util.Log.i("LlmHubApplication", "Nexa SDK initialized successfully")
+        } catch (t: Throwable) {
+            android.util.Log.e("LlmHubApplication", "Failed to initialize Nexa SDK", t)
+        }
         // Eagerly construct billing & ads managers so they start connecting immediately
         billingManager
         interstitialAdManager

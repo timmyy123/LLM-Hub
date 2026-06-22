@@ -35,6 +35,15 @@ class ThemeViewModel(private val context: Context) : ViewModel() {
 
     private val _autoReadoutEnabled = MutableStateFlow(false)
     val autoReadoutEnabled: StateFlow<Boolean> = _autoReadoutEnabled.asStateFlow()
+
+    private val _selectedTtsModel = MutableStateFlow<String?>(null)
+    val selectedTtsModel: StateFlow<String?> = _selectedTtsModel.asStateFlow()
+
+    private val _selectedTtsDevice = MutableStateFlow("gpu")
+    val selectedTtsDevice: StateFlow<String> = _selectedTtsDevice.asStateFlow()
+
+    private val _selectedTtsVoice = MutableStateFlow("af_sky")
+    val selectedTtsVoice: StateFlow<String> = _selectedTtsVoice.asStateFlow()
     
     init {
         // Load the saved theme preference
@@ -85,6 +94,27 @@ class ThemeViewModel(private val context: Context) : ViewModel() {
                 _autoReadoutEnabled.value = enabled
             }
         }
+
+        // Load the saved selected TTS model preference
+        viewModelScope.launch {
+            themePreferences.selectedTtsModel.collect { model ->
+                _selectedTtsModel.value = model
+            }
+        }
+
+        // Load the saved selected TTS device preference
+        viewModelScope.launch {
+            themePreferences.selectedTtsDevice.collect { device ->
+                _selectedTtsDevice.value = device
+            }
+        }
+
+        // Load the saved selected TTS voice preference
+        viewModelScope.launch {
+            themePreferences.selectedTtsVoice.collect { voice ->
+                _selectedTtsVoice.value = voice
+            }
+        }
     }
     
     fun setThemeMode(mode: ThemeMode) {
@@ -127,6 +157,27 @@ class ThemeViewModel(private val context: Context) : ViewModel() {
         viewModelScope.launch {
             themePreferences.setAutoReadoutEnabled(enabled)
             _autoReadoutEnabled.value = enabled
+        }
+    }
+
+    fun setSelectedTtsModel(modelName: String?) {
+        viewModelScope.launch {
+            themePreferences.setSelectedTtsModel(modelName)
+            _selectedTtsModel.value = modelName
+        }
+    }
+
+    fun setSelectedTtsDevice(device: String) {
+        viewModelScope.launch {
+            themePreferences.setSelectedTtsDevice(device)
+            _selectedTtsDevice.value = device
+        }
+    }
+
+    fun setSelectedTtsVoice(voice: String) {
+        viewModelScope.launch {
+            themePreferences.setSelectedTtsVoice(voice)
+            _selectedTtsVoice.value = voice
         }
     }
     

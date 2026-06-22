@@ -332,22 +332,11 @@ fun ImageUpscaleScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         // Selected model chip
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.AutoFixHigh,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                text = selectedModel!!.first,
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
+                        Text(
+                            text = selectedModel!!.first,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary
+                        )
 
                         if (isLandscape) {
                             // Landscape: 2 columns side by side filling remaining height

@@ -854,6 +854,23 @@
     <string name="image_upscale_save">ギャラリーに保存</string>
     <string name="image_upscale_models_title">画像高解像度化モデル</string>
     <string name="image_upscale_models_description">QNN搭載AIモデルで最大4x画像解像度を向上</string>
+    <string name="tts_models">TTS モデル</string>
+    <string name="tts_models_description">ローカル音声合成用のテキスト読み上げモデル</string>
+    <string name="tts_model_setting">TTS モデル</string>
+    <string name="tts_model_setting_desc">ダウンロードしたカスタムTTSモデルまたはシステムデフォルトを選択</string>
+    <string name="system_default_tts">システムデフォルト TTS</string>
+    <string name="tts_device_setting">TTS デバイス</string>
+    <string name="tts_device_setting_desc">テキスト読み上げモデルのCPUまたはGPUを選択</string>
+    <string name="stt_device_setting">STT デバイス</string>
+    <string name="stt_device_setting_desc">音声認識モデルのCPUまたはGPUを選択</string>
+    <string name="tts_voice_setting">TTS 音声</string>
+    <string name="tts_voice_en">English (Sky)</string>
+    <string name="tts_voice_ja">Japanese (Alpha)</string>
+    <string name="tts_voice_es">Spanish (Female)</string>
+    <string name="tts_voice_fr">French (Female)</string>
+    <string name="tts_voice_it">Italian (Female)</string>
+    <string name="tts_voice_pt">Portuguese (Female)</string>
+    <string name="tts_voice_zh">Chinese (Female)</string>
 </resources>
 
 

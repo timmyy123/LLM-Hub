@@ -1,23 +1,47 @@
 package com.llmhub.llmhub.ui.components
 
 import android.content.Context
+import android.media.MediaPlayer
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.util.Log
+import com.llmhub.llmhub.data.ThemePreferences
+import com.llmhub.llmhub.data.ModelData
+import com.llmhub.llmhub.data.localFileName
+import com.nexa.sdk.TtsWrapper
+import com.nexa.sdk.bean.TtsCreateInput
+import com.nexa.sdk.bean.TtsSynthesizeInput
+import com.nexa.sdk.bean.TtsConfig
+import com.nexa.sdk.bean.ModelConfig
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlin.coroutines.coroutineContext
+import java.io.File
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Text-to-Speech service for reading AI responses aloud.
  * Supports streaming TTS with sentence buffering for smooth playback.
+ * Integrates system default TTS with custom GGUF models.
  */
-class TtsService(private val context: Context) {
+class TtsService(private val context: Context, private val isTranslationFeature: Boolean = false) {
     
     private var tts: TextToSpeech? = null
+    private var ttsWrapper: TtsWrapper? = null
+    
     private var isInitialized = false
+    private var isCustomTts = false
     
     private val _isSpeaking = MutableStateFlow(false)
     val isSpeaking: StateFlow<Boolean> = _isSpeaking.asStateFlow()
@@ -28,142 +52,92 @@ class TtsService(private val context: Context) {
     // Buffer for streaming text
     private val textBuffer = StringBuilder()
     private var utteranceId = 0
-    // Track number of in-flight utterances so we can reliably set speaking=false
+    // Track whether we're currently inside a think block during streaming
+    private var insideThinkBlock = false
+    private val thinkBlockBuffer = StringBuilder()
+    // Track number of in-flight utterances so we can reliably set speaking=false for System TTS
     private val inFlightUtterances = AtomicInteger(0)
+    
+    private val themePreferences = ThemePreferences(context)
+    private var currentSpeechRate = 1.0f
+    
+    // Custom TTS Audio playback state
+    private val playQueue = Collections.synchronizedList(mutableListOf<File>())
+    private var mediaPlayer: MediaPlayer? = null
+    
+    // Mutex and scopes for concurrency management
+    private val ttsMutex = Mutex()
+    private val synthesisScope = CoroutineScope(Dispatchers.IO + Job())
     
     companion object {
         private const val TAG = "TtsService"
         
         // Sentence delimiters for buffering
         private val SENTENCE_DELIMITERS = setOf('.', '!', '?', '。', '！', '？')
-        
-        /*
-        /**
-         * Detect language from text using character-based heuristics.
-         * Prioritizes the 14 supported app locales.
-         * 
-         * NOTE: Currently not used - TTS uses app language setting instead.
-         * Kept here for potential future use.
-         */
-        // fun detectLanguage(text: String): Locale {
-        //     if (text.isBlank()) return Locale.getDefault()
-            
-        //     // Sample first 200 chars for detection
-        //     val sample = text.take(200)
-            
-        //     // Count character types
-        //     var arabicChars = 0
-        //     var cyrillicChars = 0
-        //     var greekChars = 0
-        //     var hangulChars = 0
-        //     var hiraganaKatakanaChars = 0
-        //     var latinChars = 0
-            
-        //     for (char in sample) {
-        //         when (char.code) {
-        //             in 0x0600..0x06FF, in 0x0750..0x077F, in 0xFB50..0xFDFF, in 0xFE70..0xFEFF -> arabicChars++
-        //             in 0x0400..0x04FF, in 0x0500..0x052F -> cyrillicChars++
-        //             in 0x0370..0x03FF, in 0x1F00..0x1FFF -> greekChars++
-        //             in 0xAC00..0xD7AF -> hangulChars++
-        //             in 0x3040..0x309F, in 0x30A0..0x30FF -> hiraganaKatakanaChars++
-        //             in 0x0041..0x005A, in 0x0061..0x007A, in 0x00C0..0x00FF, in 0x0100..0x017F -> latinChars++
-        //         }
-        //     }
-            
-        //     val totalChars = sample.length
-            
-        //     // Detect based on character percentages (threshold: 20%)
-        //     return when {
-        //         arabicChars > totalChars * 0.2 -> Locale("ar")
-        //         cyrillicChars > totalChars * 0.2 -> Locale("ru")
-        //         greekChars > totalChars * 0.2 -> Locale("el")
-        //         hangulChars > totalChars * 0.2 -> Locale("ko")
-        //         hiraganaKatakanaChars > totalChars * 0.2 -> Locale("ja")
-        //         latinChars > totalChars * 0.3 -> {
-        //             // For Latin scripts, check common words for specific languages
-        //             val lower = sample.lowercase()
-                    
-        //             // Count matches for each language (longer, more specific words get priority)
-        //             var deScore = 0
-        //             var esScore = 0
-        //             var frScore = 0
-        //             var itScore = 0
-        //             var ptScore = 0
-        //             var plScore = 0
-        //             var trScore = 0
-        //             var idScore = 0
-                    
-        //             // German - distinctive words
-        //             if (lower.containsAny("und", "nicht", "ist", "der", "die", "das", "mit", "für", "auch", "aber", "oder", "wird", "wurden", "worden")) deScore += 3
-        //             if (lower.containsAny("ich", "Sie", "sie", "wir", "ihm", "ihn", "vom", "zum", "zur")) deScore += 2
-                    
-        //             // Spanish - distinctive words
-        //             if (lower.containsAny("que", "está", "son", "están", "pero", "porque", "como", "muy", "donde", "cuando", "sobre", "entre")) esScore += 3
-        //             if (lower.containsAny("el", "la", "los", "las", "del", "por", "para", "con", "sin", "ser", "estar")) esScore += 2
-                    
-        //             // French - distinctive words
-        //             if (lower.containsAny("est", "sont", "être", "avec", "dans", "pour", "qui", "que", "mais", "où", "aussi", "très", "plus", "tous", "toutes", "leurs", "votre", "notre")) frScore += 3
-        //             if (lower.containsAny("le", "la", "les", "un", "une", "des", "du", "au", "aux", "ce", "cette", "ces", "vous", "nous", "elle", "ils", "elles")) frScore += 2
-                    
-        //             // Italian - distinctive words  
-        //             if (lower.containsAny("che", "sono", "è", "non", "essere", "anche", "più", "tutti", "quale", "dove", "quando", "quindi", "perché", "però", "ancora")) itScore += 3
-        //             if (lower.containsAny("il", "lo", "la", "gli", "le", "del", "della", "dei", "delle", "con", "per", "questa", "questo", "questi")) itScore += 2
-                    
-        //             // Portuguese - distinctive words
-        //             if (lower.containsAny("que", "não", "são", "está", "estão", "também", "muito", "mais", "com", "ser", "onde", "quando", "porque", "mas", "ainda", "sobre")) ptScore += 3
-        //             if (lower.containsAny("o", "os", "as", "um", "uma", "do", "da", "dos", "das", "para", "pelo", "pela", "pelos", "pelas", "você", "ele", "ela", "eles", "elas")) ptScore += 2
-                    
-        //             // Polish - distinctive words
-        //             if (lower.containsAny("jest", "nie", "się", "był", "była", "było", "były", "można", "który", "która", "które", "bardzo", "zawsze", "teraz", "tylko", "jeszcze", "przez")) plScore += 3
-        //             if (lower.containsAny("i", "w", "z", "na", "do", "po", "dla", "od", "za", "jego", "jej", "ich", "tym", "tego")) plScore += 2
-                    
-        //             // Turkish - distinctive words
-        //             if (lower.containsAny("bir", "için", "değil", "olan", "olarak", "gibi", "çok", "daha", "ama", "şu", "bu", "ile", "kadar", "diye")) trScore += 3
-        //             if (lower.containsAny("ve", "da", "de", "mi", "mı", "var", "yok", "ben", "sen", "biz", "onlar")) trScore += 2
-                    
-        //             // Indonesian - distinctive words
-        //             if (lower.containsAny("yang", "tidak", "adalah", "untuk", "dengan", "dari", "pada", "akan", "juga", "karena", "seperti", "atau", "sudah", "telah", "sebagai", "tersebut")) idScore += 3
-        //             if (lower.containsAny("dan", "di", "ke", "ini", "itu", "ada", "oleh", "dalam", "dapat", "bisa", "saya", "kami", "mereka", "anda", "kita")) idScore += 2
-                    
-        //             // Log detection scores for debugging
-        //             Log.d(TAG, "Language scores - DE:$deScore ES:$esScore FR:$frScore IT:$itScore PT:$ptScore PL:$plScore TR:$trScore ID:$idScore")
-                    
-        //             // Return language with highest score
-        //             val maxScore = maxOf(deScore, esScore, frScore, itScore, ptScore, plScore, trScore, idScore)
-        //             when {
-        //                 maxScore == 0 -> Locale("en") // No matches, default to English
-        //                 deScore == maxScore -> Locale("de")
-        //                 esScore == maxScore -> Locale("es")
-        //                 frScore == maxScore -> Locale("fr")
-        //                 itScore == maxScore -> Locale("it")
-        //                 ptScore == maxScore -> Locale("pt")
-        //                 plScore == maxScore -> Locale("pl")
-        //                 trScore == maxScore -> Locale("tr")
-        //                 idScore == maxScore -> Locale("id")
-        //                 else -> Locale("en")
-        //             }
-        //         }
-        //         // Fallback to device locale
-        //         else -> Locale.getDefault()
-        //     }
-        // }
-        
-        private fun String.containsAny(vararg words: String): Boolean {
-            val text = " $this "
-            return words.any { word -> text.contains(" $word ", ignoreCase = true) }
-        }
-        */
     }
     
     init {
+        clearTempTtsFiles()
         initializeTts()
     }
     
     private fun initializeTts() {
+        CoroutineScope(Dispatchers.Main).launch {
+            val selectedModel = if (isTranslationFeature) null else themePreferences.selectedTtsModel.first()
+            if (selectedModel != null) {
+                if (selectedModel.contains("eSpeak", ignoreCase = true) && !selectedModel.contains("No eSpeak", ignoreCase = true)) {
+                    Log.e(TAG, "eSpeak models are not supported on Android (no native espeak-ng). Falling back to system default.")
+                    themePreferences.setSelectedTtsModel(null)
+                    initializeSystemTts()
+                    return@launch
+                }
+                val model = ModelData.models.find { it.name == selectedModel }
+                val localName = model?.localFileName()
+                val modelFile = if (localName != null) File(File(context.filesDir, "models"), localName) else null
+                
+                if (modelFile != null && modelFile.exists() && modelFile.length() > 0) {
+                    try {
+                        val deviceId = themePreferences.selectedTtsDevice.first()
+                        val nGpuLayers = if (deviceId.lowercase() == "gpu") 999 else 0
+                        val config = ModelConfig(nCtx = 4096, nGpuLayers = nGpuLayers)
+                        val createInput = TtsCreateInput(
+                            model_name = selectedModel,
+                            model_path = modelFile.absolutePath,
+                            config = config,
+                            plugin_id = "tts_cpp",
+                            device_id = deviceId
+                        )
+                        val buildResult = TtsWrapper.builder()
+                            .ttsCreateInput(createInput)
+                            .build()
+                            
+                        if (buildResult.isSuccess) {
+                            ttsWrapper = buildResult.getOrNull()
+                            isCustomTts = true
+                            isInitialized = true
+                            Log.d(TAG, "Custom Kokoro GGUF TTS initialized successfully with model: $selectedModel")
+                        } else {
+                            Log.e(TAG, "Failed to initialize custom TTS wrapper, falling back to system TTS", buildResult.exceptionOrNull())
+                            initializeSystemTts()
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error building custom TTS wrapper: ${e.message}", e)
+                        initializeSystemTts()
+                    }
+                } else {
+                    Log.w(TAG, "Custom TTS model file not found or empty, falling back to system default")
+                    initializeSystemTts()
+                }
+            } else {
+                initializeSystemTts()
+            }
+        }
+    }
+    
+    private fun initializeSystemTts() {
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 isInitialized = true
-                // Set default language to device locale
                 val locale = Locale.getDefault()
                 val result = tts?.setLanguage(locale)
                 
@@ -172,16 +146,13 @@ class TtsService(private val context: Context) {
                     tts?.setLanguage(Locale.ENGLISH)
                 }
                 
-                // Set up progress listener
                 tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                     override fun onStart(utteranceId: String?) {
-                        // Each utterance triggers onStart; mark speaking and increment counter
                         inFlightUtterances.incrementAndGet()
                         _isSpeaking.value = true
                     }
                     
                     override fun onDone(utteranceId: String?) {
-                        // Decrement in-flight count and only mark not speaking when queue drains
                         val remaining = inFlightUtterances.decrementAndGet().coerceAtLeast(0)
                         if (remaining == 0) {
                             _isSpeaking.value = false
@@ -190,7 +161,6 @@ class TtsService(private val context: Context) {
                     
                     override fun onError(utteranceId: String?) {
                         Log.e(TAG, "TTS error for utterance: $utteranceId")
-                        // Treat errors as completion for the purpose of UI state
                         val remaining = inFlightUtterances.decrementAndGet().coerceAtLeast(0)
                         if (remaining == 0) {
                             _isSpeaking.value = false
@@ -198,9 +168,9 @@ class TtsService(private val context: Context) {
                     }
                 })
                 
-                Log.d(TAG, "TTS initialized successfully")
+                Log.d(TAG, "System TTS initialized successfully")
             } else {
-                Log.e(TAG, "TTS initialization failed")
+                Log.e(TAG, "System TTS initialization failed")
             }
         }
     }
@@ -211,7 +181,7 @@ class TtsService(private val context: Context) {
      * @param text The text to speak
      */
     fun speak(text: String) {
-        if (!isInitialized || tts == null) {
+        if (!isInitialized) {
             Log.w(TAG, "TTS not initialized")
             return
         }
@@ -221,20 +191,30 @@ class TtsService(private val context: Context) {
             return
         }
         
-    stop() // Stop any current speech
+        stop() // Stop any current speech and cancel active synthesis tasks
         textBuffer.clear()
         _currentText.value = text
         
-        // Clean text for TTS (remove markdown formatting)
-        val cleanText = cleanTextForTts(text)
-        
-        // Split into chunks if text is too long
-        val chunks = splitIntoChunks(cleanText)
-        
-        chunks.forEachIndexed { index, chunk ->
-            val id = "utterance_${utteranceId++}"
-            val queueMode = if (index == 0) TextToSpeech.QUEUE_FLUSH else TextToSpeech.QUEUE_ADD
-            tts?.speak(chunk, queueMode, null, id)
+        if (isCustomTts) {
+            val cleanText = cleanTextForTts(text)
+            val sentences = splitIntoSentences(cleanText)
+            
+            synthesisScope.launch {
+                val voice = themePreferences.selectedTtsVoice.first()
+                for (sentence in sentences) {
+                    if (!isActive) break
+                    synthesizeAndQueue(sentence, voice)
+                }
+            }
+        } else {
+            val cleanText = cleanTextForTts(text)
+            val chunks = splitIntoChunks(cleanText)
+            
+            chunks.forEachIndexed { index, chunk ->
+                val id = "utterance_${utteranceId++}"
+                val queueMode = if (index == 0) TextToSpeech.QUEUE_FLUSH else TextToSpeech.QUEUE_ADD
+                tts?.speak(chunk, queueMode, null, id)
+            }
         }
     }
 
@@ -243,7 +223,7 @@ class TtsService(private val context: Context) {
      * Used when enabling streaming so previously queued streaming utterances are not lost.
      */
     fun speakAppend(text: String) {
-        if (!isInitialized || tts == null) {
+        if (!isInitialized) {
             Log.w(TAG, "TTS not initialized")
             return
         }
@@ -253,16 +233,107 @@ class TtsService(private val context: Context) {
             return
         }
 
-        // Do not stop or clear buffer; just enqueue chunks
         _currentText.value = text
 
-        val cleanText = cleanTextForTts(text)
-        val chunks = splitIntoChunks(cleanText)
+        if (isCustomTts) {
+            val cleanText = cleanTextForTts(text)
+            val sentences = splitIntoSentences(cleanText)
 
-        chunks.forEach { chunk ->
-            val id = "utterance_${utteranceId++}"
-            // Always append to preserve existing queue
-            tts?.speak(chunk, TextToSpeech.QUEUE_ADD, null, id)
+            synthesisScope.launch {
+                val voice = themePreferences.selectedTtsVoice.first()
+                for (sentence in sentences) {
+                    if (!isActive) break
+                    synthesizeAndQueue(sentence, voice)
+                }
+            }
+        } else {
+            val cleanText = cleanTextForTts(text)
+            val chunks = splitIntoChunks(cleanText)
+
+            chunks.forEach { chunk ->
+                val id = "utterance_${utteranceId++}"
+                tts?.speak(chunk, TextToSpeech.QUEUE_ADD, null, id)
+            }
+        }
+    }
+    
+    private suspend fun synthesizeAndQueue(sentence: String, voice: String) {
+        if (sentence.isBlank()) return
+        try {
+            val tempFile = File.createTempFile("tts_chunk_", ".wav", context.cacheDir)
+            val config = TtsConfig(
+                voice = voice,
+                speed = currentSpeechRate,
+                sampleRate = 22050
+            )
+            val input = TtsSynthesizeInput(
+                textUtf8 = sentence,
+                config = config,
+                outputPath = tempFile.absolutePath
+            )
+            
+            // Protect native call from concurrency
+            val result = ttsMutex.withLock {
+                if (!coroutineContext.isActive) {
+                    return@withLock null
+                }
+                ttsWrapper?.synthesize(input)
+            }
+            
+            if (result != null && result.isSuccess) {
+                if (coroutineContext.isActive) {
+                    synchronized(playQueue) {
+                        val wasEmpty = playQueue.isEmpty() && mediaPlayer == null
+                        playQueue.add(tempFile)
+                        if (wasEmpty) {
+                            CoroutineScope(Dispatchers.Main).launch {
+                                playNextQueueItem()
+                            }
+                        }
+                    }
+                } else {
+                    try { tempFile.delete() } catch (_: Exception) {}
+                }
+            } else {
+                Log.e(TAG, "Synthesis failed for sentence: $sentence")
+                try { tempFile.delete() } catch (_: Exception) {}
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in synthesizeAndQueue: ${e.message}", e)
+        }
+    }
+    
+    private fun playNextQueueItem() {
+        synchronized(playQueue) {
+            if (playQueue.isEmpty()) {
+                mediaPlayer?.release()
+                mediaPlayer = null
+                _isSpeaking.value = false
+                return
+            }
+            val nextFile = playQueue.removeAt(0)
+            try {
+                mediaPlayer?.release()
+                mediaPlayer = MediaPlayer().apply {
+                    setDataSource(nextFile.absolutePath)
+                    setOnPreparedListener { start() }
+                    setOnCompletionListener {
+                        try { nextFile.delete() } catch (_: Exception) {}
+                        playNextQueueItem()
+                    }
+                    setOnErrorListener { _, _, _ ->
+                        try { nextFile.delete() } catch (_: Exception) {}
+                        playNextQueueItem()
+                        true
+                    }
+                    prepareAsync()
+                }
+                _isSpeaking.value = true
+            } catch (e: Exception) {
+                Log.e(TAG, "Error playing audio file: ${e.message}")
+                try { nextFile.delete() } catch (_: Exception) {}
+                playNextQueueItem()
+            }
         }
     }
     
@@ -271,44 +342,96 @@ class TtsService(private val context: Context) {
      * This is for read-as-generating functionality.
      */
     fun addStreamingText(partialText: String) {
-        if (!isInitialized || tts == null) return
-        
-        textBuffer.append(partialText)
-        
-        // Check if we have a complete sentence
+        if (!isInitialized) return
+
+        // Filter out think block content before buffering
+        val filtered = filterThinkBlocks(partialText)
+        if (filtered.isEmpty()) return
+
+        textBuffer.append(filtered)
+
         val bufferedText = textBuffer.toString()
         val lastChar = bufferedText.lastOrNull()
-        
+
         if (lastChar != null && lastChar in SENTENCE_DELIMITERS) {
-            // Extract complete sentences
             val sentences = extractCompleteSentences(bufferedText)
-            
+
             sentences.forEach { sentence ->
                 if (sentence.isNotBlank()) {
-                    val cleanText = cleanTextForTts(sentence)
-                    val id = "stream_${utteranceId++}"
-                    tts?.speak(cleanText, TextToSpeech.QUEUE_ADD, null, id)
+                    speakAppend(sentence)
                 }
             }
-            
-            // Keep only incomplete text in buffer
+
             val remaining = bufferedText.substringAfterLast(lastChar, "")
             textBuffer.clear()
             textBuffer.append(remaining)
         }
+    }
+
+    private fun filterThinkBlocks(text: String): String {
+        thinkBlockBuffer.append(text)
+        val combined = thinkBlockBuffer.toString()
+        thinkBlockBuffer.clear()
+
+        // Two possible open/close pairs used by different models
+        val openTags = listOf("​​THINK​​", "<think>")
+        val closeTags = listOf("​​ENDTHINK​​", "</think>")
+
+        val result = StringBuilder()
+        var pos = 0
+        while (pos < combined.length) {
+            if (!insideThinkBlock) {
+                // Find the earliest open tag
+                var nearestOpen = -1
+                var nearestOpenLen = 0
+                var nearestCloseLen = 0
+                for (i in openTags.indices) {
+                    val idx = combined.indexOf(openTags[i], pos, ignoreCase = true)
+                    if (idx != -1 && (nearestOpen == -1 || idx < nearestOpen)) {
+                        nearestOpen = idx
+                        nearestOpenLen = openTags[i].length
+                        nearestCloseLen = closeTags[i].length
+                    }
+                }
+                if (nearestOpen == -1) {
+                    result.append(combined.substring(pos))
+                    break
+                }
+                result.append(combined.substring(pos, nearestOpen))
+                insideThinkBlock = true
+                pos = nearestOpen + nearestOpenLen
+            } else {
+                // Find the earliest close tag
+                var nearestClose = -1
+                var nearestCloseLen = 0
+                for (closeTag in closeTags) {
+                    val idx = combined.indexOf(closeTag, pos, ignoreCase = true)
+                    if (idx != -1 && (nearestClose == -1 || idx < nearestClose)) {
+                        nearestClose = idx
+                        nearestCloseLen = closeTag.length
+                    }
+                }
+                if (nearestClose == -1) {
+                    // Think block not closed yet — hold remainder for next call
+                    thinkBlockBuffer.append(combined.substring(pos))
+                    break
+                }
+                insideThinkBlock = false
+                pos = nearestClose + nearestCloseLen
+            }
+        }
+        return result.toString()
     }
     
     /**
      * Flush any remaining text in the buffer (called when streaming completes).
      */
     fun flushStreamingBuffer() {
-        if (!isInitialized || tts == null) return
+        if (!isInitialized) return
         
         val remaining = textBuffer.toString().trim()
         if (remaining.isNotBlank()) {
-            val cleanText = cleanTextForTts(remaining)
-            val id = "stream_flush_${utteranceId++}"
-            tts?.speak(cleanText, TextToSpeech.QUEUE_ADD, null, id)
+            speakAppend(remaining)
         }
         textBuffer.clear()
     }
@@ -317,34 +440,67 @@ class TtsService(private val context: Context) {
      * Stop current speech and clear queue.
      */
     fun stop() {
-        tts?.stop()
-        textBuffer.clear()
-        inFlightUtterances.set(0)
-        _isSpeaking.value = false
-        _currentText.value = ""
+        if (isCustomTts) {
+            synthesisScope.coroutineContext[Job]?.cancelChildren()
+            synchronized(playQueue) {
+                try {
+                    mediaPlayer?.stop()
+                } catch (_: Exception) {}
+                mediaPlayer?.release()
+                mediaPlayer = null
+
+                for (file in playQueue) {
+                    try { file.delete() } catch (_: Exception) {}
+                }
+                playQueue.clear()
+            }
+            insideThinkBlock = false
+            thinkBlockBuffer.clear()
+            _isSpeaking.value = false
+            _currentText.value = ""
+        } else {
+            tts?.stop()
+            textBuffer.clear()
+            inFlightUtterances.set(0)
+            _isSpeaking.value = false
+            _currentText.value = ""
+        }
     }
     
     /**
-     * Pause speech (note: Not all TTS engines support pause/resume).
+     * Pause speech.
      */
     fun pause() {
-        // Android TTS doesn't have native pause, so we stop
-        tts?.stop()
-        _isSpeaking.value = false
+        if (isCustomTts) {
+            synchronized(playQueue) {
+                try {
+                    mediaPlayer?.pause()
+                } catch (_: Exception) {}
+            }
+            _isSpeaking.value = false
+        } else {
+            tts?.stop()
+            _isSpeaking.value = false
+        }
     }
     
     /**
      * Check if TTS is currently speaking.
      */
     fun isSpeaking(): Boolean {
-        return tts?.isSpeaking == true
+        return if (isCustomTts) {
+            _isSpeaking.value
+        } else {
+            tts?.isSpeaking == true
+        }
     }
     
     /**
      * Set the speech rate (0.5 to 2.0, default is 1.0).
      */
     fun setSpeechRate(rate: Float) {
-        tts?.setSpeechRate(rate.coerceIn(0.5f, 2.0f))
+        currentSpeechRate = rate.coerceIn(0.5f, 2.0f)
+        tts?.setSpeechRate(currentSpeechRate)
     }
     
     /**
@@ -356,25 +512,9 @@ class TtsService(private val context: Context) {
     
     /**
      * Set the language for TTS.
-     * Falls back to device default language if requested locale is not supported.
      */
     fun setLanguage(locale: Locale) {
-        val result = tts?.setLanguage(locale)
-        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-            Log.w(TAG, "Language not supported: $locale, trying device default")
-            // Fall back to device default locale
-            val defaultLocale = Locale.getDefault()
-            val fallbackResult = tts?.setLanguage(defaultLocale)
-            if (fallbackResult == TextToSpeech.LANG_MISSING_DATA || fallbackResult == TextToSpeech.LANG_NOT_SUPPORTED) {
-                Log.w(TAG, "Device default language also not supported: $defaultLocale, using English")
-                // Last resort: use English
-                tts?.setLanguage(Locale.ENGLISH)
-            } else {
-                Log.d(TAG, "Using device default language: ${defaultLocale.language}")
-            }
-        } else {
-            Log.d(TAG, "TTS language set to: ${locale.language}")
-        }
+        tts?.setLanguage(locale)
     }
     
     /**
@@ -382,21 +522,19 @@ class TtsService(private val context: Context) {
      */
     private fun cleanTextForTts(text: String): String {
         return text
-            // Remove markdown bold
+            // Strip think blocks (reasoning tokens not meant to be spoken)
+            .replace(Regex("​​THINK​​[\\s\\S]*?​​ENDTHINK​​"), "")
+            .replace(Regex("<think>[\\s\\S]*?</think>", RegexOption.IGNORE_CASE), "")
+            // Strip any leftover zero-width chars
+            .replace("​", "")
             .replace(Regex("\\*\\*(.+?)\\*\\*"), "$1")
-            // Remove markdown italic
             .replace(Regex("_(.+?)_"), "$1")
             .replace(Regex("\\*(.+?)\\*"), "$1")
-            // Remove markdown headers
             .replace(Regex("^#+\\s+"), "")
-            // Remove code blocks
             .replace(Regex("```[\\s\\S]*?```"), "")
             .replace(Regex("`(.+?)`"), "$1")
-            // Remove links
             .replace(Regex("\\[([^\\]]+)\\]\\([^)]+\\)"), "$1")
-            // Remove bullet points
             .replace(Regex("^[•\\-*]\\s+", RegexOption.MULTILINE), "")
-            // Normalize whitespace
             .replace(Regex("\\s+"), " ")
             .trim()
     }
@@ -438,7 +576,6 @@ class TtsService(private val context: Context) {
                     currentChunk = StringBuilder()
                 }
                 
-                // If a single sentence is too long, split it by words
                 if (sentence.length > maxLength) {
                     val words = sentence.split(" ")
                     for (word in words) {
@@ -461,8 +598,69 @@ class TtsService(private val context: Context) {
         if (currentChunk.isNotEmpty()) {
             chunks.add(currentChunk.toString())
         }
-        
         return chunks
+    }
+
+    private fun splitIntoSentences(text: String): List<String> {
+        if (text.isBlank()) return emptyList()
+        val rawChunks = text.split(Regex("(?<=[.!?。！？\\n])\\s*"))
+        val result = mutableListOf<String>()
+        for (chunk in rawChunks) {
+            val trimmed = chunk.trim()
+            if (trimmed.isEmpty()) continue
+            if (trimmed.length > 250) {
+                // Split by minor punctuation
+                val subChunks = trimmed.split(Regex("(?<=[,，;；:])\\s*"))
+                for (subChunk in subChunks) {
+                    val subTrimmed = subChunk.trim()
+                    if (subTrimmed.isEmpty()) continue
+                    if (subTrimmed.length > 250) {
+                        var start = 0
+                        while (start < subTrimmed.length) {
+                            val end = (start + 250).coerceAtMost(subTrimmed.length)
+                            val subSub = subTrimmed.substring(start, end).trim()
+                            if (subSub.isNotEmpty()) {
+                                result.add(subSub)
+                            }
+                            start = end
+                        }
+                    } else {
+                        result.add(subTrimmed)
+                    }
+                }
+            } else {
+                result.add(trimmed)
+            }
+        }
+        // Merge fragments until each chunk is large enough that its audio duration
+        // exceeds the synthesis time of the next chunk. With RTF > 1 on typical mobile
+        // hardware, each synthesis call takes ~10s regardless of chunk size due to fixed
+        // model overhead. At ~0.075s of audio per char, 200 chars ≈ 15s audio, which
+        // consistently exceeds observed synthesis latency and eliminates queue drain gaps.
+        val minMergeLength = 200
+        val merged = mutableListOf<String>()
+        val current = StringBuilder()
+        for (sentence in result) {
+            if (current.isNotEmpty()) current.append(" ")
+            current.append(sentence)
+            if (current.length >= minMergeLength) {
+                merged.add(current.toString())
+                current.clear()
+            }
+        }
+        if (current.isNotEmpty()) merged.add(current.toString())
+        return merged
+    }
+    
+    private fun clearTempTtsFiles() {
+        try {
+            val files = context.cacheDir.listFiles { _, name -> name.startsWith("tts_chunk_") || name.startsWith("tts_stream_") }
+            files?.forEach { file ->
+                try { file.delete() } catch (_: Exception) {}
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error cleaning temp files: ${e.message}")
+        }
     }
     
     /**
@@ -470,8 +668,19 @@ class TtsService(private val context: Context) {
      */
     fun shutdown() {
         stop()
+        synthesisScope.coroutineContext[Job]?.cancel()
         tts?.shutdown()
         tts = null
+        CoroutineScope(Dispatchers.IO).launch {
+            ttsMutex.withLock {
+                try {
+                    ttsWrapper?.close()
+                    ttsWrapper?.destroy()
+                } catch (_: Exception) {}
+                ttsWrapper = null
+            }
+        }
         isInitialized = false
+        clearTempTtsFiles()
     }
 }

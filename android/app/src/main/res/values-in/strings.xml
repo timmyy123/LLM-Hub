@@ -859,6 +859,23 @@
     <string name="image_upscale_save">गैलरी में सहेजें</string>
     <string name="image_upscale_models_title">छवि सुधार मॉडल</string>
     <string name="image_upscale_models_description">QNN-त्वरित AI मॉडल जो छवि रिज़ॉल्यूशन को 4x तक बेहतर करते हैं</string>
+    <string name="tts_models">Model TTS</string>
+    <string name="tts_models_description">Model text-to-speech untuk sintesis suara lokal</string>
+    <string name="tts_model_setting">Model TTS</string>
+    <string name="tts_model_setting_desc">Pilih model TTS khusus yang diunduh atau default sistem</string>
+    <string name="system_default_tts">TTS Default Sistem</string>
+    <string name="tts_device_setting">Perangkat TTS</string>
+    <string name="tts_device_setting_desc">Pilih CPU atau GPU untuk model text-to-speech</string>
+    <string name="stt_device_setting">Perangkat STT</string>
+    <string name="stt_device_setting_desc">Pilih CPU atau GPU untuk model speech-to-text</string>
+    <string name="tts_voice_setting">Suara TTS</string>
+    <string name="tts_voice_en">English (Sky)</string>
+    <string name="tts_voice_ja">Japanese (Alpha)</string>
+    <string name="tts_voice_es">Spanish (Female)</string>
+    <string name="tts_voice_fr">French (Female)</string>
+    <string name="tts_voice_it">Italian (Female)</string>
+    <string name="tts_voice_pt">Portuguese (Female)</string>
+    <string name="tts_voice_zh">Chinese (Female)</string>
 </resources>
 
 

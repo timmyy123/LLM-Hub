@@ -254,7 +254,7 @@ fun TranslatorScreen(
     val clipboardManager = LocalClipboardManager.current
     
     // TTS Service
-    val ttsService = remember { com.llmhub.llmhub.ui.components.TtsService(context) }
+    val ttsService = remember { com.llmhub.llmhub.ui.components.TtsService(context, isTranslationFeature = true) }
     val isTtsSpeaking by ttsService.isSpeaking.collectAsState()
     
     // Parsed transcription and translation for audio mode

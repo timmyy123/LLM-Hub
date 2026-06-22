@@ -240,84 +240,44 @@ class SDBackendService : Service() {
     }
     
     /**
-     * Build command line arguments based on model type
+     * Build command line arguments based on model type.
+     * Binary interface: --type <sd15cpu|sd15npu|sdxl> --model_dir <dir> [--lib_dir <dir>]
      */
     private fun buildCommand(executable: File, modelDir: File, modelType: String): List<String> {
         val actualDir = findActualModelDir(modelDir)
-        
-        // Find clip file - for MNN models, always pass "clip.mnn" path
-        // The native backend checks for clip.mnn suffix and auto-upgrades to clip_v2.mnn if exists
-        // This triggers automatic loading of token_emb.bin and pos_emb.bin
-        val clipFile = when {
-            File(actualDir, "clip.bin").exists() -> File(actualDir, "clip.bin")
-            // If clip_v2.mnn exists, pass clip.mnn path - backend auto-upgrades and loads embeddings
-            File(actualDir, "clip_v2.mnn").exists() -> File(actualDir, "clip.mnn")
-            File(actualDir, "clip.mnn").exists() -> File(actualDir, "clip.mnn")
-            else -> File(actualDir, "clip.bin") // fallback
+
+        // Determine --type: sdxl if path contains "sdxl", otherwise sd15npu/sd15cpu
+        val isSDXL = modelDir.absolutePath.contains("sdxl", ignoreCase = true) ||
+            actualDir.absolutePath.contains("sdxl", ignoreCase = true)
+
+        val type = when {
+            isSDXL -> "sdxl"
+            modelType == "qnn" -> "sd15npu"
+            else -> "sd15cpu"
         }
-        
-        // Check if using MNN CLIP (hybrid mode: MNN CLIP + QNN UNet/VAE)
-        val isClipMnn = clipFile.name.endsWith(".mnn")
-        
-        return if (modelType == "qnn") {
-            // NPU backend with Qualcomm QNN
-            val command = mutableListOf(
-                executable.absolutePath,
-                "--clip", clipFile.absolutePath,
-                "--unet", File(actualDir, "unet.bin").absolutePath,
-                "--vae_decoder", File(actualDir, "vae_decoder.bin").absolutePath,
-                "--tokenizer", File(actualDir, "tokenizer.json").absolutePath,
-                "--backend", File(runtimeDir, "libQnnHtp.so").absolutePath,
-                "--system_library", File(runtimeDir, "libQnnSystem.so").absolutePath,
-                "--port", "8081",
-                "--text_embedding_size", "768"
-            )
-            
-            // Always include VAE encoder if available (for img2img support)
-            val vaeEncoderFile = File(actualDir, "vae_encoder.bin")
-            if (vaeEncoderFile.exists()) {
-                command.add("--vae_encoder")
-                command.add(vaeEncoderFile.absolutePath)
-                Log.i(TAG, "VAE encoder included (img2img support enabled)")
-            }
-            
-            // Add --use_cpu_clip flag for hybrid mode (MNN CLIP + QNN UNet/VAE)
-            // The backend will auto-load token_emb.bin and pos_emb.bin when it detects clip_v2.mnn
-            if (isClipMnn) {
-                command.add("--use_cpu_clip")
-                Log.i(TAG, "Using hybrid mode: MNN CLIP + QNN UNet/VAE")
-            }
-            
-            command
-        } else {
-            // MNN backend - GPU selection is done via JSON request parameter, not command line
-            val command = mutableListOf(
-                executable.absolutePath,
-                "--clip", clipFile.absolutePath,
-                "--unet", File(actualDir, "unet.mnn").absolutePath,
-                "--vae_decoder", File(actualDir, "vae_decoder.mnn").absolutePath,
-                "--tokenizer", File(actualDir, "tokenizer.json").absolutePath,
-                "--port", "8081",
-                "--text_embedding_size", "768",
-                "--cpu" // Flag to indicate MNN mode (vs QNN mode)
-            )
-            
-            if (useGpu) {
-                Log.i(TAG, "MNN backend: GPU acceleration will be requested via API (use_opencl)")
-            } else {
-                Log.i(TAG, "MNN backend: CPU mode will be used")
-            }
-            
-            // Always include VAE encoder if available (for img2img support)
-            val vaeEncoderFile = File(actualDir, "vae_encoder.mnn")
-            if (vaeEncoderFile.exists()) {
-                command.add("--vae_encoder")
-                command.add(vaeEncoderFile.absolutePath)
-                Log.i(TAG, "VAE encoder included (img2img support enabled)")
-            }
-            
-            command
+
+        Log.i(TAG, "Starting backend type=$type model_dir=${actualDir.absolutePath}")
+
+        val command = mutableListOf(
+            executable.absolutePath,
+            "--type", type,
+            "--model_dir", actualDir.absolutePath,
+            "--port", "8081"
+        )
+
+        if (type == "sd15npu" || type == "sdxl") {
+            command.add("--lib_dir")
+            command.add(runtimeDir.absolutePath)
         }
+
+        // zstd resolution patch for sd15npu if present
+        val patchFile = File(actualDir, "unet_patch.zst")
+        if (patchFile.exists()) {
+            command.add("--patch")
+            command.add(patchFile.absolutePath)
+        }
+
+        return command
     }
     
     /**

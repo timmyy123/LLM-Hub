@@ -863,6 +863,24 @@
     <string name="image_upscale_save">Save to Gallery</string>
     <string name="image_upscale_models_title">Image Upscale Models</string>
     <string name="image_upscale_models_description">QNN-accelerated AI models for upscaling and enhancing image resolution up to 4x</string>
+    <string name="tts_models">TTS Models</string>
+    <string name="tts_models_description">Text-to-speech models for local voice synthesis</string>
+    <string name="tts_model_setting">TTS Model</string>
+    <string name="tts_model_setting_desc">Select a custom downloaded TTS model or system default</string>
+    <string name="system_default_tts">System Default TTS</string>
+    <string name="tts_device_setting">TTS Device</string>
+    <string name="tts_device_setting_desc">Select CPU or GPU for text-to-speech models</string>
+    <string name="stt_device_setting">STT Device</string>
+    <string name="stt_device_setting_desc">Select CPU or GPU for speech-to-text models</string>
+
+    <string name="tts_voice_setting">TTS Voice</string>
+    <string name="tts_voice_en">English (Sky)</string>
+    <string name="tts_voice_ja">Japanese (Alpha)</string>
+    <string name="tts_voice_es">Spanish (Female)</string>
+    <string name="tts_voice_fr">French (Female)</string>
+    <string name="tts_voice_it">Italian (Female)</string>
+    <string name="tts_voice_pt">Portuguese (Female)</string>
+    <string name="tts_voice_zh">Chinese (Female)</string>
 </resources>
 
 

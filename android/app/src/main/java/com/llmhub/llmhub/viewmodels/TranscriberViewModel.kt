@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +29,7 @@ import java.nio.ByteOrder
 class TranscriberViewModel(application: Application) : AndroidViewModel(application) {
     private val inferenceService = (application as com.llmhub.llmhub.LlmHubApplication).inferenceService
     private val prefs = application.getSharedPreferences("transcriber_prefs", android.content.Context.MODE_PRIVATE)
+    private val themePrefs = com.llmhub.llmhub.data.ThemePreferences(application)
     private var asrWrapper: com.nexa.sdk.AsrWrapper? = null
     private val asrMutex = Mutex()
     
@@ -170,12 +172,13 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
                         throw java.io.FileNotFoundException("Model file not found at ${modelFile.absolutePath}")
                     }
                     val config = com.nexa.sdk.bean.ModelConfig()
+                    val deviceId = "cpu"
                     val createInput = com.nexa.sdk.bean.AsrCreateInput(
                         model_name = model.name,
                         model_path = modelFile.absolutePath,
                         config = config,
                         plugin_id = "whisper_cpp",
-                        device_id = "cpu"
+                        device_id = deviceId
                     )
                     val buildResult = com.nexa.sdk.AsrWrapper.builder()
                         .asrCreateInput(createInput)

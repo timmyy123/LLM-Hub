@@ -856,6 +856,23 @@
     <string name="image_upscale_save">שמור לגלריה</string>
     <string name="image_upscale_models_title">מודלי שיפור תמונה</string>
     <string name="image_upscale_models_description">מודלי בינה מלאכותית מואצי QNN לשיפור רזולוציית תמונות עד פי 4</string>
+    <string name="tts_models">דגמי TTS</string>
+    <string name="tts_models_description">דגמי טקست לדיבור עבור סינתזת קול מקומית</string>
+    <string name="tts_model_setting">דגם TTS</string>
+    <string name="tts_model_setting_desc">בחר דגם TTS מותאם אישית שהורד או ברירת המחדל של המערכת</string>
+    <string name="system_default_tts">TTS ברירת מחדל של המערכת</string>
+    <string name="tts_device_setting">מכשיר TTS</string>
+    <string name="tts_device_setting_desc">בחר CPU או GPU עבור דגמי טקסט לדיבור</string>
+    <string name="stt_device_setting">מכשיר STT</string>
+    <string name="stt_device_setting_desc">בחר CPU או GPU עבור דגמי דיבור לטקست</string>
+    <string name="tts_voice_setting">קול TTS</string>
+    <string name="tts_voice_en">English (Sky)</string>
+    <string name="tts_voice_ja">Japanese (Alpha)</string>
+    <string name="tts_voice_es">Spanish (Female)</string>
+    <string name="tts_voice_fr">French (Female)</string>
+    <string name="tts_voice_it">Italian (Female)</string>
+    <string name="tts_voice_pt">Portuguese (Female)</string>
+    <string name="tts_voice_zh">Chinese (Female)</string>
 </resources>
 
 

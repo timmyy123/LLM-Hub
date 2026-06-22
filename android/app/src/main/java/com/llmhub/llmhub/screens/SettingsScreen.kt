@@ -110,6 +110,15 @@ fun SettingsScreen(
                     
                     // Embedding Model Selection
                     EmbeddingModelSelector(themeViewModel = themeViewModel)
+                    
+                    // TTS Model Selection
+                    TtsModelSelector(themeViewModel = themeViewModel)
+                    
+                    // TTS Voice Selection
+                    TtsVoiceSelector(themeViewModel = themeViewModel)
+                    
+                    // TTS Device Selection
+                    TtsDeviceSelector(themeViewModel = themeViewModel)
                 }
             }
             
@@ -1378,4 +1387,247 @@ fun EditMemoryDialog(
             }
         }
     )
+}
+
+@Composable
+private fun TtsModelSelector(themeViewModel: ThemeViewModel) {
+    val selectedTtsModel by themeViewModel.selectedTtsModel.collectAsState()
+    var showTtsModelDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    // Get downloaded TTS models
+    val downloadedTtsModels = remember(context) {
+        com.llmhub.llmhub.data.ModelData.models
+            .filter { it.category == "tts" }
+            .filter { model ->
+                val modelsDir = File(context.filesDir, "models")
+                val modelFile = File(modelsDir, model.localFileName())
+                modelFile.exists() && modelFile.length() > 0
+            }
+            .map { it.name }
+    }
+
+    SettingsItem(
+        icon = Icons.Default.VolumeUp,
+        title = stringResource(R.string.tts_model_setting),
+        subtitle = selectedTtsModel ?: stringResource(R.string.system_default_tts),
+        onClick = { showTtsModelDialog = true }
+    )
+
+    if (showTtsModelDialog) {
+        AlertDialog(
+            onDismissRequest = { showTtsModelDialog = false },
+            title = { Text(stringResource(R.string.tts_model_setting)) },
+            text = {
+                LazyColumn {
+                    // Option for system default TTS
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    themeViewModel.setSelectedTtsModel(null)
+                                    showTtsModelDialog = false
+                                }
+                                .padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selectedTtsModel == null,
+                                onClick = {
+                                    themeViewModel.setSelectedTtsModel(null)
+                                    showTtsModelDialog = false
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = stringResource(R.string.system_default_tts),
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                    }
+
+                    items(downloadedTtsModels.size) { index ->
+                        val model = downloadedTtsModels[index]
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    themeViewModel.setSelectedTtsModel(model)
+                                    showTtsModelDialog = false
+                                }
+                                .padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selectedTtsModel == model,
+                                onClick = {
+                                    themeViewModel.setSelectedTtsModel(model)
+                                    showTtsModelDialog = false
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = model,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showTtsModelDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun TtsDeviceSelector(themeViewModel: ThemeViewModel) {
+    val selectedTtsDevice by themeViewModel.selectedTtsDevice.collectAsState()
+    var showTtsDeviceDialog by remember { mutableStateOf(false) }
+
+    val displayDevice = if (selectedTtsDevice.lowercase() == "cpu") "CPU" else "GPU"
+
+    SettingsItem(
+        icon = Icons.Default.Memory,
+        title = stringResource(R.string.tts_device_setting),
+        subtitle = displayDevice,
+        onClick = { showTtsDeviceDialog = true }
+    )
+
+    if (showTtsDeviceDialog) {
+        AlertDialog(
+            onDismissRequest = { showTtsDeviceDialog = false },
+            title = { Text(stringResource(R.string.tts_device_setting)) },
+            text = {
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                themeViewModel.setSelectedTtsDevice("gpu")
+                                showTtsDeviceDialog = false
+                            }
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selectedTtsDevice.lowercase() != "cpu",
+                            onClick = {
+                                themeViewModel.setSelectedTtsDevice("gpu")
+                                showTtsDeviceDialog = false
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "GPU",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                themeViewModel.setSelectedTtsDevice("cpu")
+                                showTtsDeviceDialog = false
+                            }
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selectedTtsDevice.lowercase() == "cpu",
+                            onClick = {
+                                themeViewModel.setSelectedTtsDevice("cpu")
+                                showTtsDeviceDialog = false
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "CPU",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showTtsDeviceDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun TtsVoiceSelector(themeViewModel: ThemeViewModel) {
+    val selectedTtsModel by themeViewModel.selectedTtsModel.collectAsState()
+    if (selectedTtsModel == null) return
+
+    val selectedTtsVoice by themeViewModel.selectedTtsVoice.collectAsState()
+    var showTtsVoiceDialog by remember { mutableStateOf(false) }
+
+    val voices = listOf(
+        "af_sky" to stringResource(R.string.tts_voice_en),
+        "jf_alpha" to stringResource(R.string.tts_voice_ja),
+        "es_female" to stringResource(R.string.tts_voice_es),
+        "fr_female" to stringResource(R.string.tts_voice_fr),
+        "it_female" to stringResource(R.string.tts_voice_it),
+        "pt_female" to stringResource(R.string.tts_voice_pt),
+        "zh_female" to stringResource(R.string.tts_voice_zh)
+    )
+
+    val currentVoiceName = voices.find { it.first == selectedTtsVoice }?.second ?: selectedTtsVoice
+
+    SettingsItem(
+        icon = Icons.Default.Face,
+        title = stringResource(R.string.tts_voice_setting),
+        subtitle = currentVoiceName,
+        onClick = { showTtsVoiceDialog = true }
+    )
+
+    if (showTtsVoiceDialog) {
+        AlertDialog(
+            onDismissRequest = { showTtsVoiceDialog = false },
+            title = { Text(stringResource(R.string.tts_voice_setting)) },
+            text = {
+                LazyColumn {
+                    items(voices.size) { index ->
+                        val (voiceKey, voiceLabel) = voices[index]
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    themeViewModel.setSelectedTtsVoice(voiceKey)
+                                    showTtsVoiceDialog = false
+                                }
+                                .padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selectedTtsVoice == voiceKey,
+                                onClick = {
+                                    themeViewModel.setSelectedTtsVoice(voiceKey)
+                                    showTtsVoiceDialog = false
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = voiceLabel,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showTtsVoiceDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
 } 
