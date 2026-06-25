@@ -15,6 +15,8 @@
   </tr>
 </table>
 
+**Desktop & Web Versions:** Windows and macOS versions are planned, bringing desktop-class experiences with advanced cursor integration and Claude Code–like capabilities.
+
 
 ## 📸 Demo & Screenshots
 
@@ -64,6 +66,12 @@ The offline **Transcriber** feature on Android now supports on-device Whisper mo
 - Import custom models (.task, .litertlm, qnn,.mnn, .gguf)
 - Direct downloads from HuggingFace
 - 16 language interfaces
+
+### 🔮 Planned Features
+- **OpenClaw-like Agent** — Autonomous tool-using agent framework for complex multi-step tasks
+- **Advanced Vibe Coder** — Enhanced code generation with desktop-class IDE integration and real-time collaboration
+- **Advanced Media Generation** — Professional-grade image and video synthesis matching ComfyUI/Draw Things quality and feature parity
+- **Desktop Cursor Integration** — macOS/Windows versions with native cursor control and Claude Code–like experiences
 
 Quick Start
 1. Download from **Google Play** or the **App Store**, or build from source
