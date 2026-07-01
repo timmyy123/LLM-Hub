@@ -30,7 +30,7 @@ struct HomeScreen: View {
             FeatureCard(titleKey: "feature_translator", descriptionKey: "feature_translator_desc", iconSystemName: "network", gradient: [Color(hex: "84f1cf"), Color(hex: "4aa897")], route: "translator"),
             FeatureCard(titleKey: "feature_transcriber", descriptionKey: "feature_transcriber_desc", iconSystemName: "mic.fill", gradient: [Color(hex: "b4b2ff"), Color(hex: "6f77cf")], route: "transcriber"),
             FeatureCard(titleKey: "feature_image_generator", descriptionKey: "feature_image_generator_desc", iconSystemName: "paintpalette.fill", gradient: [Color(hex: "9cc3ff"), Color(hex: "5b86d2")], route: "image_generator"),
-            FeatureCard(titleKey: "feature_image_upscaler", descriptionKey: "feature_image_upscaler_desc", iconSystemName: "arrow.up.left.and.arrow.down.right", gradient: [Color(hex: "8fd3ff"), Color(hex: "3f7dd8")], route: "image_upscaler"),
+            FeatureCard(titleKey: "feature_image_upscaler", descriptionKey: "feature_image_upscaler_desc", iconSystemName: "wand.and.stars", gradient: [Color(hex: "8fd3ff"), Color(hex: "3f7dd8")], route: "image_upscaler"),
             FeatureCard(titleKey: "feature_video_generator", descriptionKey: "feature_video_generator_desc", iconSystemName: "video.fill", gradient: [Color(hex: "ff99c8"), Color(hex: "fc4b93")], route: "video_generator")
         ]
     }
@@ -188,8 +188,8 @@ struct HomeScreen: View {
                     .padding(.top, gridTopPadding)
                     .padding(.bottom, gridBottomPadding)
                 }
+                .ignoresSafeArea(.container, edges: .bottom)
             }
-            .padding(.bottom, 2)
             .onAppear {
                 if githubStars == nil {
                     Task {
