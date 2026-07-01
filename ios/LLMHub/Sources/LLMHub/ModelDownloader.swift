@@ -173,9 +173,9 @@ public actor ModelDownloader {
                 "open_clip_vit_h14_f16.ckpt": 682082304,
                 "sd_xl_base_1.0_q6p_q8p.ckpt": 2099683328,
                 "open_clip_vit_bigg14_f16.ckpt": 1391304704,
-                "flux_2_klein_4b_q6p.ckpt": 3117088768,
-                "qwen_3_4b_f16.ckpt": 8062853120,
+                "sdxl_vae_v1.0_f16.ckpt": 167534592,
                 "flux_1_schnell_q5p.ckpt": 9349296128,
+                "flux_1_vae_f16.ckpt": 167870464,
                 "t5_xxl_encoder_q6p.ckpt": 3884990464
             ]
             let allFiles: [String]

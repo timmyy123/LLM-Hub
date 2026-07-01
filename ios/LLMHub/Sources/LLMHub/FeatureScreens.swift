@@ -2544,7 +2544,25 @@ struct WritingAidScreen: View {
     @EnvironmentObject var settings: AppSettings
     @ObservedObject private var ttsManager = OnDeviceTtsManager.shared
     @AppStorage("feature_writing_model_name") private var selectedModelName: String = ""
-    @AppStorage("feature_writing_max_tokens") private var maxTokens: Double = 1024
+    @State private var maxTokens: Double = 4096
+
+    private func loadWritingContextWindow(for modelName: String) -> Double {
+        let key = "feature_writing_max_tokens_\(modelName)"
+        let val = UserDefaults.standard.double(forKey: key)
+        if val > 0 {
+            return val
+        }
+        if let model = selectedFeatureModel(named: modelName) {
+            let cap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+            return Double(min(4096, cap))
+        }
+        return 4096
+    }
+
+    private func saveWritingContextWindow(value: Double, for modelName: String) {
+        let key = "feature_writing_max_tokens_\(modelName)"
+        UserDefaults.standard.set(value, forKey: key)
+    }
     @AppStorage("feature_writing_enable_thinking") private var enableThinking: Bool = true
     @AppStorage("feature_writing_mode") private var selectedModeRaw: String = WritingAidMode.friendly.rawValue
     @State private var inputText: String = ""
@@ -2782,7 +2800,14 @@ struct WritingAidScreen: View {
                 if selectedModelName.isEmpty || !available.contains(where: { $0.name == selectedModelName }) {
                     selectedModelName = available.first?.name ?? ""
                 }
+                maxTokens = loadWritingContextWindow(for: selectedModelName)
             }
+        }
+        .onChange(of: selectedModelName) { _, newModelName in
+            maxTokens = loadWritingContextWindow(for: newModelName)
+        }
+        .onChange(of: maxTokens) { _, newValue in
+            saveWritingContextWindow(value: newValue, for: selectedModelName)
         }
         .onDisappear {
             generationTask?.cancel()
@@ -2900,7 +2925,25 @@ struct TranslatorScreen: View {
     @EnvironmentObject var settings: AppSettings
     @ObservedObject private var ttsManager = OnDeviceTtsManager.shared
     @AppStorage("feature_translator_model_name") private var selectedModelName: String = ""
-    @AppStorage("feature_translator_max_tokens") private var maxTokens: Double = 2048
+    @State private var maxTokens: Double = 2048
+
+    private func loadTranslatorContextWindow(for modelName: String) -> Double {
+        let key = "feature_translator_max_tokens_\(modelName)"
+        let val = UserDefaults.standard.double(forKey: key)
+        if val > 0 {
+            return val
+        }
+        if let model = selectedFeatureModel(named: modelName) {
+            let cap = model.contextWindowSize > 0 ? model.contextWindowSize : 2048
+            return Double(min(2048, cap))
+        }
+        return 2048
+    }
+
+    private func saveTranslatorContextWindow(value: Double, for modelName: String) {
+        let key = "feature_translator_max_tokens_\(modelName)"
+        UserDefaults.standard.set(value, forKey: key)
+    }
     @AppStorage("feature_translator_enable_vision") private var enableVision: Bool = true
     @AppStorage("feature_translator_enable_audio") private var enableAudio: Bool = true
     @AppStorage("feature_translator_source_lang") private var sourceLanguageCode: String = "en"
@@ -3035,7 +3078,14 @@ struct TranslatorScreen: View {
                 if selectedModelName.isEmpty || !available.contains(where: { $0.name == selectedModelName }) {
                     selectedModelName = available.first?.name ?? ""
                 }
+                maxTokens = loadTranslatorContextWindow(for: selectedModelName)
             }
+        }
+        .onChange(of: selectedModelName) { _, newModelName in
+            maxTokens = loadTranslatorContextWindow(for: newModelName)
+        }
+        .onChange(of: maxTokens) { _, newValue in
+            saveTranslatorContextWindow(value: newValue, for: selectedModelName)
         }
         .onChange(of: selectedImageItem) { _, item in
             guard let item else { selectedImageURL = nil; return }
@@ -3622,7 +3672,25 @@ struct ScamDetectorScreen: View {
     @EnvironmentObject var settings: AppSettings
     @ObservedObject private var ttsManager = OnDeviceTtsManager.shared
     @AppStorage("feature_scam_model_name") private var selectedModelName: String = ""
-    @AppStorage("feature_scam_max_tokens") private var maxTokens: Double = 1024
+    @State private var maxTokens: Double = 4096
+
+    private func loadScamContextWindow(for modelName: String) -> Double {
+        let key = "feature_scam_max_tokens_\(modelName)"
+        let val = UserDefaults.standard.double(forKey: key)
+        if val > 0 {
+            return val
+        }
+        if let model = selectedFeatureModel(named: modelName) {
+            let cap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+            return Double(min(4096, cap))
+        }
+        return 4096
+    }
+
+    private func saveScamContextWindow(value: Double, for modelName: String) {
+        let key = "feature_scam_max_tokens_\(modelName)"
+        UserDefaults.standard.set(value, forKey: key)
+    }
     @AppStorage("feature_scam_enable_thinking") private var enableThinking: Bool = true
     @AppStorage("feature_scam_enable_vision") private var enableVision: Bool = true
     @State private var inputText: String = ""
@@ -3925,7 +3993,14 @@ struct ScamDetectorScreen: View {
                 if selectedModelName.isEmpty || !available.contains(where: { $0.name == selectedModelName }) {
                     selectedModelName = available.first?.name ?? ""
                 }
+                maxTokens = loadScamContextWindow(for: selectedModelName)
             }
+        }
+        .onChange(of: selectedModelName) { _, newModelName in
+            maxTokens = loadScamContextWindow(for: newModelName)
+        }
+        .onChange(of: maxTokens) { _, newValue in
+            saveScamContextWindow(value: newValue, for: selectedModelName)
         }
         .onChange(of: selectedImageItem) { _, item in
             guard let item else { selectedImageURL = nil; return }
@@ -4334,7 +4409,25 @@ struct VibeCoderScreen: View {
     @EnvironmentObject var settings: AppSettings
     @ObservedObject private var ttsManager = OnDeviceTtsManager.shared
     @AppStorage("feature_vibecoder_model_name") private var selectedModelName: String = ""
-    @AppStorage("feature_vibecoder_max_tokens") private var maxTokens: Double = 2048
+    @State private var maxTokens: Double = 4096
+
+    private func loadVibecoderContextWindow(for modelName: String) -> Double {
+        let key = "feature_vibecoder_max_tokens_\(modelName)"
+        let val = UserDefaults.standard.double(forKey: key)
+        if val > 0 {
+            return val
+        }
+        if let model = selectedFeatureModel(named: modelName) {
+            let cap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+            return Double(min(4096, cap))
+        }
+        return 4096
+    }
+
+    private func saveVibecoderContextWindow(value: Double, for modelName: String) {
+        let key = "feature_vibecoder_max_tokens_\(modelName)"
+        UserDefaults.standard.set(value, forKey: key)
+    }
     @AppStorage("feature_vibecoder_enable_thinking") private var enableThinking: Bool = true
     @AppStorage("feature_vibecoder_folder_bookmark") private var folderBookmark: Data = Data()
     @AppStorage("feature_vibecoder_chat_sessions_data") private var chatSessionsData: Data = Data()
@@ -4876,6 +4969,7 @@ struct VibeCoderScreen: View {
                 if !hasSelectedModelName || !selectedModelExists {
                     selectedModelName = available.first?.name ?? ""
                 }
+                maxTokens = loadVibecoderContextWindow(for: selectedModelName)
             }
 
             if workspaceFolderURL == nil {
@@ -4897,6 +4991,12 @@ struct VibeCoderScreen: View {
         }
         .onChange(of: activeChatSessionId) { _, _ in
             persistChatSessionsToStorage()
+        }
+        .onChange(of: selectedModelName) { _, newModelName in
+            maxTokens = loadVibecoderContextWindow(for: newModelName)
+        }
+        .onChange(of: maxTokens) { _, newValue in
+            saveVibecoderContextWindow(value: newValue, for: selectedModelName)
         }
         .onChange(of: workspaceFolderURL) { _, newValue in
             if newValue != nil {
@@ -5879,7 +5979,7 @@ struct ImageGeneratorScreen: View {
     // MARK: - Landscape Layout (side-by-side)
 
     private var landscapeLayout: some View {
-        HStack(spacing: 14) {
+        HStack(alignment: .top, spacing: 14) {
             ScrollView {
                 VStack(spacing: 14) {
                     promptCard
@@ -5895,6 +5995,7 @@ struct ImageGeneratorScreen: View {
             }
             .frame(maxWidth: .infinity)
             imageSwipeView
+                .padding(.vertical, 12)
                 .frame(maxWidth: .infinity)
         }
         .padding(.horizontal)
