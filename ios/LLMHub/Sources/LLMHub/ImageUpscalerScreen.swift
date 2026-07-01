@@ -276,8 +276,8 @@ struct ImageUpscalerScreen: View {
             }
 
             // Buttons
-            upscaleButton
             if outputImage != nil { saveButton }
+            upscaleButton
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 16)
@@ -342,8 +342,8 @@ struct ImageUpscalerScreen: View {
             .frame(maxWidth: .infinity)
 
             HStack(spacing: 12) {
-                upscaleButton
                 if outputImage != nil { saveButton }
+                upscaleButton
             }
         }
         .padding(.horizontal, 16)
@@ -404,15 +404,8 @@ struct ImageUpscalerScreen: View {
             .frame(maxWidth: .infinity)
             .frame(height: 50)
         }
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(ApolloPalette.accentStrong.opacity(0.10))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(ApolloPalette.accentStrong.opacity(0.6), lineWidth: 1)
-        )
-        .foregroundStyle(ApolloPalette.accentStrong)
+        .foregroundStyle(.white)
+        .liquidGlassPrimaryButton(cornerRadius: 12)
     }
 
     private func resetZoom() {
