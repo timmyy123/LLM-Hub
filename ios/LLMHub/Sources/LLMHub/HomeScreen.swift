@@ -64,128 +64,140 @@ struct HomeScreen: View {
             let gridTopPadding: CGFloat = isLandscape ? 20 : 24
             let gridBottomPadding: CGFloat = 12
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    // Top Bar (now inside ScrollView so it scrolls away)
-                    HStack(spacing: 12) {
-                        Text(settings.localized("app_name"))
-                            .font(.title.bold())
-                            .foregroundColor(.white)
+            ZStack(alignment: .top) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        // Top Bar (now inside ScrollView so it scrolls away)
+                        HStack(spacing: 12) {
+                            Text(settings.localized("app_name"))
+                                .font(.title.bold())
+                                .foregroundColor(.white)
 
-                        Spacer()
+                            Spacer()
 
-                        if !purchases.isPremium {
-                            Button {
-                                showPremium = true
-                            } label: {
-                                Image(systemName: "crown.fill")
-                                    .font(.system(size: 18, weight: .semibold))
-                                    .foregroundStyle(Color(hex: "FFD700"))
-                                    .padding(8)
-                                    .background(.ultraThinMaterial, in: Circle())
-                                    .overlay(
-                                        Circle()
-                                            .stroke(
-                                                LinearGradient(
-                                                    colors: [Color.white.opacity(0.35), Color.white.opacity(0.08)],
-                                                    startPoint: .top,
-                                                    endPoint: .bottom
-                                                ),
-                                                lineWidth: 1
-                                            )
-                                    )
-                                    .shadow(color: .black.opacity(0.2), radius: 6, x: 0, y: 3)
-                            }
-                            .buttonStyle(.plain)
-                        }
-
-                        HStack(spacing: 10) {
-                            if let githubStars, githubStars > 0 {
+                            if !purchases.isPremium {
                                 Button {
-                                    openGithubRepository()
+                                    showPremium = true
                                 } label: {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "star.fill")
-                                            .font(.caption)
-                                        Text("\(githubStars)")
-                                            .font(.subheadline.bold())
-                                            .lineLimit(1)
-                                            .fixedSize(horizontal: true, vertical: false)
+                                    Image(systemName: "crown.fill")
+                                        .font(.system(size: 18, weight: .semibold))
+                                        .foregroundStyle(Color(hex: "FFD700"))
+                                        .padding(8)
+                                        .background(.ultraThinMaterial, in: Circle())
+                                        .overlay(
+                                            Circle()
+                                                .stroke(
+                                                    LinearGradient(
+                                                        colors: [Color.white.opacity(0.35), Color.white.opacity(0.08)],
+                                                        startPoint: .top,
+                                                        endPoint: .bottom
+                                                    ),
+                                                    lineWidth: 1
+                                                )
+                                        )
+                                        .shadow(color: .black.opacity(0.2), radius: 6, x: 0, y: 3)
+                                }
+                                .buttonStyle(.plain)
+                            }
+
+                            HStack(spacing: 10) {
+                                if let githubStars, githubStars > 0 {
+                                    Button {
+                                        openGithubRepository()
+                                    } label: {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "star.fill")
+                                                .font(.caption)
+                                            Text("\(githubStars)")
+                                                .font(.subheadline.bold())
+                                                .lineLimit(1)
+                                                .fixedSize(horizontal: true, vertical: false)
+                                        }
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 5)
                                     }
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 5)
+                                    .buttonStyle(.plain)
                                 }
-                                .buttonStyle(.plain)
-                            }
 
-                            Button {
-                                onNavigateToModels()
-                            } label: {
-                                Image(systemName: "arrow.down.circle")
-                                    .font(.system(size: 22))
-                            }
-                            .buttonStyle(ApolloIconButtonStyle())
-
-                            Button {
-                                onNavigateToSettings()
-                            } label: {
-                                Image(systemName: "gearshape")
-                                    .font(.system(size: 22))
-                            }
-                            .buttonStyle(ApolloIconButtonStyle())
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 7)
-                        .background(.ultraThinMaterial, in: Capsule())
-                        .overlay(
-                            Capsule()
-                                .stroke(
-                                    LinearGradient(
-                                        colors: [Color.white.opacity(0.35), Color.white.opacity(0.08)],
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    ),
-                                    lineWidth: 1
-                                )
-                        )
-                        .shadow(color: .black.opacity(0.32), radius: 10, x: 0, y: 6)
-                        .clipShape(Capsule())
-                        .fixedSize(horizontal: true, vertical: false)
-                    }
-                    .padding(.top, max(10, geo.safeAreaInsets.top) + topPadding)
-
-                    // Hero Card for Chat
-                    Button {
-                        onNavigateToChat()
-                    } label: {
-                        HomeHeroCardView(feature: heroFeature)
-                    }
-                    .buttonStyle(.plain)
-                    
-                    // Tools section
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text(settings.localized("home_section_tools"))
-                            .font(.title2.bold())
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 4)
-                        
-                        LazyVGrid(columns: toolsColumns, spacing: spacing) {
-                            ForEach(toolsFeatures + utilityFeatures, id: \.route) { feature in
                                 Button {
-                                    onNavigateToRoute(feature.route)
+                                    onNavigateToModels()
                                 } label: {
-                                    SmallFeatureCardView(feature: feature)
-                                        .frame(height: cardHeight)
+                                    Image(systemName: "arrow.down.circle")
+                                        .font(.system(size: 22))
                                 }
-                                .buttonStyle(.plain)
+                                .buttonStyle(ApolloIconButtonStyle())
+
+                                Button {
+                                    onNavigateToSettings()
+                                } label: {
+                                    Image(systemName: "gearshape")
+                                        .font(.system(size: 22))
+                                }
+                                .buttonStyle(ApolloIconButtonStyle())
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .background(.ultraThinMaterial, in: Capsule())
+                            .overlay(
+                                Capsule()
+                                    .stroke(
+                                        LinearGradient(
+                                            colors: [Color.white.opacity(0.35), Color.white.opacity(0.08)],
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        ),
+                                        lineWidth: 1
+                                    )
+                            )
+                            .shadow(color: .black.opacity(0.32), radius: 10, x: 0, y: 6)
+                            .clipShape(Capsule())
+                            .fixedSize(horizontal: true, vertical: false)
+                        }
+                        .padding(.top, max(10, geo.safeAreaInsets.top) + topPadding)
+
+                        // Hero Card for Chat
+                        Button {
+                            onNavigateToChat()
+                        } label: {
+                            HomeHeroCardView(feature: heroFeature)
+                        }
+                        .buttonStyle(.plain)
+                        
+                        // Tools section
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text(settings.localized("home_section_tools"))
+                                .font(.title2.bold())
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 4)
+                            
+                            LazyVGrid(columns: toolsColumns, spacing: spacing) {
+                                ForEach(toolsFeatures + utilityFeatures, id: \.route) { feature in
+                                    Button {
+                                        onNavigateToRoute(feature.route)
+                                    } label: {
+                                        SmallFeatureCardView(feature: feature)
+                                            .frame(height: cardHeight)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
                             }
                         }
                     }
+                    .padding(.horizontal, horizontalPadding)
+                    .padding(.bottom, gridBottomPadding)
                 }
-                .padding(.horizontal, horizontalPadding)
-                .padding(.bottom, gridBottomPadding)
+                .ignoresSafeArea(.container, edges: [.top, .bottom])
+
+                // Top Safe Area Cover: solid black matching background at the top, fading to clear
+                LinearGradient(
+                    colors: [Color.black, Color.black.opacity(0.85), Color.clear],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: max(10, geo.safeAreaInsets.top) + 15)
+                .ignoresSafeArea(.container, edges: .top)
+                .allowsHitTesting(false)
             }
-            .ignoresSafeArea(.container, edges: [.top, .bottom])
             .onAppear {
                 if githubStars == nil {
                     Task {
