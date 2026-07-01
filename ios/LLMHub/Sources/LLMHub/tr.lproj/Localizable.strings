@@ -780,3 +780,19 @@
 "image_generator_step_of" = "%1$d / %2$d Adım";
 "video_generator_save_failed" = "Video kaydedilemedi";
 "image_generator_save_failed" = "Görsel kaydedilemedi";
+
+"feature_image_upscaler" = "Görüntü İyileştirme";
+"feature_image_upscaler_desc" = "Yapay zeka ile görüntü iyileştirme";
+"image_upscale_title" = "Görüntü İyileştirme";
+"image_upscale_download_model" = "İyileştirme Modeli İndir";
+"image_upscale_download_model_desc" = "Görüntülerinizi yapay zeka ile iyileştirmek için bir model indirin";
+"image_upscale_load_model_title" = "İyileştirme Modeli Seç";
+"image_upscale_load_model_desc" = "Model seçmek ve yüklemek için ayarlara dokunun";
+"image_upscale_select_image" = "Görüntü seçmek için dokunun";
+"image_upscale_button" = "Görüntüyü İyileştir";
+"image_upscale_upscaling" = "İyileştiriliyor…";
+"image_upscale_save" = "Galeriye Kaydet";
+"image_upscale_models_title" = "Görüntü İyileştirme Modelleri";
+"image_upscale_models_description" = "Görüntü çözünürlüğünü 4x'e kadar artırmak için QNN hızlandırmalı yapay zeka modelleri";
+"image_upscale_models" = "Görüntü İyileştirme";
+"image_upscale_models_description" = "Görüntü çözünürlüğünü 4x'e kadar artırmak için QNN hızlandırmalı yapay zeka modelleri";

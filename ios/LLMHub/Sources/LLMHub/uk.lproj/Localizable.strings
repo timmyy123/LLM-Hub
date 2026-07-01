@@ -780,3 +780,19 @@
 "image_generator_step_of" = "Крок %1$d з %2$d";
 "video_generator_save_failed" = "Не вдалося зберегти відео";
 "image_generator_save_failed" = "Не вдалося зберегти зображення";
+
+"feature_image_upscaler" = "Покращення зображень";
+"feature_image_upscaler_desc" = "Покращення зображень за допомогою ШІ";
+"image_upscale_title" = "Покращення зображень";
+"image_upscale_download_model" = "Завантажити модель покращення";
+"image_upscale_download_model_desc" = "Завантажте модель для покращення зображень за допомогою ШІ";
+"image_upscale_load_model_title" = "Вибрати модель покращення";
+"image_upscale_load_model_desc" = "Натисніть налаштування, щоб вибрати та завантажити модель";
+"image_upscale_select_image" = "Натисніть для вибору зображення";
+"image_upscale_button" = "Покращити зображення";
+"image_upscale_upscaling" = "Покращення…";
+"image_upscale_save" = "Зберегти до галереї";
+"image_upscale_models_title" = "Моделі покращення зображень";
+"image_upscale_models_description" = "Моделі ШІ з прискоренням QNN для підвищення роздільності зображень до 4x";
+"image_upscale_models" = "Покращення зображень";
+"image_upscale_models_description" = "Моделі ШІ з прискоренням QNN для підвищення роздільності зображень до 4x";

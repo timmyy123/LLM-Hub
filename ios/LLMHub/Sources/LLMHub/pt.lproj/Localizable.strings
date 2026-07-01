@@ -737,3 +737,19 @@
 "tos_open_source_title" = "8. Licença de Código Aberto";
 
 "tos_open_source_text" = "O LLM Hub é um software de código aberto. O código-fonte está disponível sob a Licença Não Comercial, que permite o uso, modificação e distribuição sujeitos aos termos da licença. Bibliotecas e modelos de terceiros podem ter termos de licença diferentes.";
+
+"feature_image_upscaler" = "Melhorar imagem";
+"feature_image_upscaler_desc" = "Melhoria de imagens com IA";
+"image_upscale_title" = "Melhorar imagem";
+"image_upscale_download_model" = "Baixar modelo de melhoria";
+"image_upscale_download_model_desc" = "Baixe um modelo para melhorar suas imagens com IA";
+"image_upscale_load_model_title" = "Selecionar modelo de melhoria";
+"image_upscale_load_model_desc" = "Toque em configurações para selecionar e carregar um modelo";
+"image_upscale_select_image" = "Toque para selecionar uma imagem";
+"image_upscale_button" = "Melhorar imagem";
+"image_upscale_upscaling" = "Melhorando…";
+"image_upscale_save" = "Salvar na galeria";
+"image_upscale_models_title" = "Modelos de melhoria de imagem";
+"image_upscale_models_description" = "Modelos de IA acelerados por QNN para melhorar a resolução de imagens até 4x";
+"image_upscale_models" = "Melhorar imagem";
+"image_upscale_models_description" = "Modelos de IA acelerados por QNN para melhorar a resolução de imagens até 4x";

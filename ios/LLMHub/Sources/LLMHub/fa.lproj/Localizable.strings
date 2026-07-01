@@ -780,3 +780,19 @@
 "image_generator_step_of" = "مرحله %1$d از %2$d";
 "video_generator_save_failed" = "ذخیره ویدیو انجام نشد";
 "image_generator_save_failed" = "ذخیره تصویر انجام نشد";
+
+"feature_image_upscaler" = "بزرگ‌نمایی تصویر";
+"feature_image_upscaler_desc" = "بهبود تصویر با هوش مصنوعی";
+"image_upscale_title" = "بزرگ‌نمایی تصویر";
+"image_upscale_download_model" = "دانلود مدل بزرگ‌نمایی";
+"image_upscale_download_model_desc" = "یک مدل بزرگ‌نمایی دانلود کنید تا تصاویر خود را با هوش مصنوعی بهبود بخشید";
+"image_upscale_load_model_title" = "انتخاب مدل بزرگ‌نمایی";
+"image_upscale_load_model_desc" = "برای انتخاب و بارگذاری مدل، روی تنظیمات ضربه بزنید";
+"image_upscale_select_image" = "برای انتخاب تصویر ضربه بزنید";
+"image_upscale_button" = "بزرگ‌نمایی تصویر";
+"image_upscale_upscaling" = "در حال بزرگ‌نمایی…";
+"image_upscale_save" = "ذخیره در گالری";
+"image_upscale_models_title" = "مدل‌های بزرگ‌نمایی تصویر";
+"image_upscale_models_description" = "مدل‌های هوش مصنوعی شتاب‌دهنده QNN برای بزرگ‌نمایی تصاویر تا ۴ برابر";
+"image_upscale_models" = "بزرگ‌نمایی تصویر";
+"image_upscale_models_description" = "مدل‌های هوش مصنوعی شتاب‌دهنده QNN برای بزرگ‌نمایی تصاویر تا ۴ برابر";

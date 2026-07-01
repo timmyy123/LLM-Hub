@@ -752,3 +752,19 @@
 "image_generator_step_of" = "Шаг %1$d из %2$d";
 "video_generator_save_failed" = "Не удалось сохранить видео";
 "image_generator_save_failed" = "Не удалось сохранить изображение";
+
+"feature_image_upscaler" = "Улучшение изображений";
+"feature_image_upscaler_desc" = "Улучшение изображений с помощью ИИ";
+"image_upscale_title" = "Улучшение изображений";
+"image_upscale_download_model" = "Загрузить модель улучшения";
+"image_upscale_download_model_desc" = "Загрузите модель улучшения для повышения качества изображений с помощью ИИ";
+"image_upscale_load_model_title" = "Выбрать модель улучшения";
+"image_upscale_load_model_desc" = "Нажмите настройки, чтобы выбрать и загрузить модель";
+"image_upscale_select_image" = "Нажмите, чтобы выбрать изображение";
+"image_upscale_button" = "Улучшить изображение";
+"image_upscale_upscaling" = "Улучшение…";
+"image_upscale_save" = "Сохранить в галерею";
+"image_upscale_models_title" = "Модели улучшения изображений";
+"image_upscale_models_description" = "Модели ИИ с ускорением QNN для повышения разрешения изображений до 4x";
+"image_upscale_models" = "Улучшение изображений";
+"image_upscale_models_description" = "Модели ИИ с ускорением QNN для повышения разрешения изображений до 4x";

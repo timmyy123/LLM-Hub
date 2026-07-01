@@ -780,3 +780,19 @@
 "image_generator_step_of" = "الخطوة %1$d من %2$d";
 "video_generator_save_failed" = "فشل حفظ الفيديو";
 "image_generator_save_failed" = "فشل حفظ الصورة";
+
+"feature_image_upscaler" = "تحسين الصورة";
+"feature_image_upscaler_desc" = "تحسين الصور بالذكاء الاصطناعي";
+"image_upscale_title" = "تحسين الصورة";
+"image_upscale_download_model" = "تنزيل نموذج التحسين";
+"image_upscale_download_model_desc" = "قم بتنزيل نموذج تحسين لتحسين صورك بالذكاء الاصطناعي";
+"image_upscale_load_model_title" = "اختر نموذج التحسين";
+"image_upscale_load_model_desc" = "اضغط على الإعدادات لاختيار نموذج التحسين وتحميله";
+"image_upscale_select_image" = "اضغط لاختيار صورة";
+"image_upscale_button" = "تحسين الصورة";
+"image_upscale_upscaling" = "جارٍ التحسين…";
+"image_upscale_save" = "حفظ في المعرض";
+"image_upscale_models_title" = "نماذج تحسين الصور";
+"image_upscale_models_description" = "نماذج ذكاء اصطناعي مسرَّعة بـ QNN لتحسين دقة الصور حتى 4x";
+"image_upscale_models" = "تحسين الصورة";
+"image_upscale_models_description" = "نماذج ذكاء اصطناعي مسرَّعة بـ QNN لتحسين دقة الصور حتى 4x";

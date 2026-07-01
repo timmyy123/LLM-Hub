@@ -751,3 +751,19 @@
 "image_generator_step_of" = "Paso %1$d de %2$d";
 "video_generator_save_failed" = "Error al guardar el video";
 "image_generator_save_failed" = "Error al guardar la imagen";
+
+"feature_image_upscaler" = "Mejorar imagen";
+"feature_image_upscaler_desc" = "Mejora de imágenes con IA";
+"image_upscale_title" = "Mejorar imagen";
+"image_upscale_download_model" = "Descargar modelo de mejora";
+"image_upscale_download_model_desc" = "Descarga un modelo de mejora para mejorar tus imágenes con IA";
+"image_upscale_load_model_title" = "Seleccionar modelo de mejora";
+"image_upscale_load_model_desc" = "Toca ajustes para seleccionar y cargar un modelo de mejora";
+"image_upscale_select_image" = "Toca para seleccionar una imagen";
+"image_upscale_button" = "Mejorar imagen";
+"image_upscale_upscaling" = "Mejorando…";
+"image_upscale_save" = "Guardar en galería";
+"image_upscale_models_title" = "Modelos de mejora de imagen";
+"image_upscale_models_description" = "Modelos de IA acelerados por QNN para mejorar la resolución de imágenes hasta 4x";
+"image_upscale_models" = "Mejorar imagen";
+"image_upscale_models_description" = "Modelos de IA acelerados por QNN para mejorar la resolución de imágenes hasta 4x";

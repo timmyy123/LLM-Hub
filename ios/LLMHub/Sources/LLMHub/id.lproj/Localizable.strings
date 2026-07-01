@@ -780,3 +780,19 @@
 "image_generator_step_of" = "Langkah %1$d dari %2$d";
 "video_generator_save_failed" = "Gagal menyimpan video";
 "image_generator_save_failed" = "Gagal menyimpan gambar";
+
+"feature_image_upscaler" = "Tingkatkan Gambar";
+"feature_image_upscaler_desc" = "Peningkatan gambar dengan AI";
+"image_upscale_title" = "Tingkatkan Gambar";
+"image_upscale_download_model" = "Unduh Model Peningkatan";
+"image_upscale_download_model_desc" = "Unduh model peningkatan untuk menyempurnakan gambar Anda dengan AI";
+"image_upscale_load_model_title" = "Pilih Model Peningkatan";
+"image_upscale_load_model_desc" = "Ketuk pengaturan untuk memilih dan memuat model peningkatan";
+"image_upscale_select_image" = "Ketuk untuk Memilih Gambar";
+"image_upscale_button" = "Tingkatkan Gambar";
+"image_upscale_upscaling" = "Meningkatkan…";
+"image_upscale_save" = "Simpan ke Galeri";
+"image_upscale_models_title" = "Model Peningkatan Gambar";
+"image_upscale_models_description" = "Model AI yang dipercepat QNN untuk meningkatkan resolusi gambar hingga 4x";
+"image_upscale_models" = "Tingkatkan Gambar";
+"image_upscale_models_description" = "Model AI yang dipercepat QNN untuk meningkatkan resolusi gambar hingga 4x";

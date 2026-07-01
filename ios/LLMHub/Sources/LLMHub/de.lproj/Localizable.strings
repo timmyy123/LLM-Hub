@@ -752,3 +752,19 @@
 "image_generator_step_of" = "Schritt %1$d von %2$d";
 "video_generator_save_failed" = "Video konnte nicht gespeichert werden";
 "image_generator_save_failed" = "Bild konnte nicht gespeichert werden";
+
+"feature_image_upscaler" = "Bild hochskalieren";
+"feature_image_upscaler_desc" = "KI-gestützte Bildverbesserung";
+"image_upscale_title" = "Bild hochskalieren";
+"image_upscale_download_model" = "Hochskalier-Modell herunterladen";
+"image_upscale_download_model_desc" = "Laden Sie ein Hochskalier-Modell herunter, um Ihre Bilder mit KI zu verbessern";
+"image_upscale_load_model_title" = "Hochskalier-Modell auswählen";
+"image_upscale_load_model_desc" = "Tippen Sie auf Einstellungen, um ein Hochskalier-Modell auszuwählen und zu laden";
+"image_upscale_select_image" = "Tippen Sie, um ein Bild auszuwählen";
+"image_upscale_button" = "Bild hochskalieren";
+"image_upscale_upscaling" = "Hochskalierung…";
+"image_upscale_save" = "In Galerie speichern";
+"image_upscale_models_title" = "Bildverbesserungsmodelle";
+"image_upscale_models_description" = "QNN-beschleunigte KI-Modelle zur Hochskalierung und Verbesserung der Bildauflösung bis zu 4x";
+"image_upscale_models" = "Bild hochskalieren";
+"image_upscale_models_description" = "QNN-beschleunigte KI-Modelle zur Hochskalierung und Verbesserung der Bildauflösung bis zu 4x";

@@ -788,3 +788,19 @@
 "image_generator_step_of" = "第 %1$d 步，共 %2$d 步";
 "video_generator_save_failed" = "保存视频失败";
 "image_generator_save_failed" = "保存图像失败";
+
+"feature_image_upscaler" = "图像超分辨率";
+"feature_image_upscaler_desc" = "AI 驱动的图像增强";
+"image_upscale_title" = "图像超分辨率";
+"image_upscale_download_model" = "下载超分辨率模型";
+"image_upscale_download_model_desc" = "下载超分辨率模型，使用 AI 增强您的图像";
+"image_upscale_load_model_title" = "选择超分辨率模型";
+"image_upscale_load_model_desc" = "点击设置以选择并加载超分辨率模型";
+"image_upscale_select_image" = "点击选择图像";
+"image_upscale_button" = "增强图像";
+"image_upscale_upscaling" = "增强中…";
+"image_upscale_save" = "保存到相册";
+"image_upscale_models_title" = "图像超分辨率模型";
+"image_upscale_models_description" = "QNN 加速的 AI 模型，可将图像分辨率提升至 4 倍";
+"image_upscale_models" = "图像超分辨率";
+"image_upscale_models_description" = "QNN 加速的 AI 模型，可将图像分辨率提升至 4 倍";

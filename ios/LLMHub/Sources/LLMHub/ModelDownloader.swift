@@ -155,6 +155,113 @@ public actor ModelDownloader {
         onProgress: @Sendable @escaping (DownloadUpdate) -> Void
     ) async throws {
         if model.modelFormat == .drawthings {
+            // Upscaler models are standalone .ckpt files hosted at static.libnnc.org.
+            // They are NOT in the Draw Things model catalog, so env.ensure() would fail
+            // immediately with "unresolved model reference". Download them directly instead.
+            if model.category == .imageUpscale {
+                let destPath = ModelZoo.filePathForModelDownloaded(model.id)
+                let destURL = URL(fileURLWithPath: destPath)
+                let sourceURL = URL(string: model.url)!
+                
+                // Ensure the parent directory exists
+                try FileManager.default.createDirectory(
+                    at: destURL.deletingLastPathComponent(),
+                    withIntermediateDirectories: true
+                )
+                
+                // Check if already fully downloaded
+                if let attrs = try? FileManager.default.attributesOfItem(atPath: destPath),
+                   let existingSize = attrs[.size] as? Int64,
+                   existingSize == model.sizeBytes {
+                    onProgress(DownloadUpdate(bytesDownloaded: model.sizeBytes, totalBytes: model.sizeBytes, speedBytesPerSecond: 0))
+                    return
+                }
+                
+                let tracker = ThroughputTracker()
+                let maxRetries = 6
+                var attempt = 0
+                var finished = false
+                var restartedAfter416 = false
+                
+                while !finished {
+                    do {
+                        var existingBytes = localFileSize(at: destURL)
+                        var request = URLRequest(url: sourceURL, cachePolicy: .reloadIgnoringLocalCacheData)
+                        if existingBytes > 0 {
+                            request.addValue("bytes=\(existingBytes)-", forHTTPHeaderField: "Range")
+                        }
+                        
+                        let (bytes, response) = try await urlSession.bytes(for: request)
+                        guard let httpResponse = response as? HTTPURLResponse else {
+                            throw NSError(domain: "ModelDownloader", code: -1, userInfo: [NSLocalizedDescriptionKey: "No HTTP response"])
+                        }
+                        
+                        if !(200...299).contains(httpResponse.statusCode) {
+                            if httpResponse.statusCode == 416 {
+                                if !restartedAfter416 {
+                                    try? FileManager.default.removeItem(at: destURL)
+                                    restartedAfter416 = true
+                                    continue
+                                }
+                            }
+                            let reason = HTTPURLResponse.localizedString(forStatusCode: httpResponse.statusCode)
+                            throw NSError(domain: "ModelDownloader", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "HTTP \(httpResponse.statusCode): \(reason)"])
+                        }
+                        
+                        if !FileManager.default.fileExists(atPath: destPath) {
+                            FileManager.default.createFile(atPath: destPath, contents: nil)
+                        }
+                        if existingBytes > 0 && httpResponse.statusCode == 200 {
+                            try? FileManager.default.removeItem(at: destURL)
+                            FileManager.default.createFile(atPath: destPath, contents: nil)
+                            existingBytes = 0
+                        }
+                        
+                        let fileHandle = try FileHandle(forWritingTo: destURL)
+                        defer { try? fileHandle.close() }
+                        if existingBytes > 0 {
+                            try fileHandle.seekToEnd()
+                        } else {
+                            try fileHandle.truncate(atOffset: 0)
+                        }
+                        
+                        var byteCount: Int64 = existingBytes
+                        var buffer = Data()
+                        let chunkSize = 64 * 1024
+                        
+                        for try await byte in bytes {
+                            buffer.append(byte)
+                            byteCount += 1
+                            if buffer.count >= chunkSize {
+                                let flushed = Int64(buffer.count)
+                                try fileHandle.write(contentsOf: buffer)
+                                buffer.removeAll(keepingCapacity: true)
+                                let speed = tracker.recordTransfer(bytesWritten: flushed)
+                                onProgress(DownloadUpdate(bytesDownloaded: byteCount, totalBytes: model.sizeBytes, speedBytesPerSecond: speed))
+                            }
+                        }
+                        if !buffer.isEmpty {
+                            let flushed = Int64(buffer.count)
+                            try fileHandle.write(contentsOf: buffer)
+                            let speed = tracker.recordTransfer(bytesWritten: flushed)
+                            onProgress(DownloadUpdate(bytesDownloaded: byteCount, totalBytes: model.sizeBytes, speedBytesPerSecond: speed))
+                        }
+                        finished = true
+                    } catch {
+                        attempt += 1
+                        let urlErr = error as? URLError
+                        if attempt >= maxRetries || !(urlErr?.code.isTransientDownloadFailure ?? false) {
+                            throw error
+                        }
+                        let delay = min(pow(2.0, Double(attempt)), 30.0)
+                        try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                    }
+                }
+                return
+            }
+            
+            // Image/video generation drawthings models: resolved through env.ensure which
+            // handles catalog lookup + dependency downloading for multi-file models.
             struct EnvWrapper {
                 static let env = MediaGenerationEnvironment.default
             }
@@ -176,7 +283,13 @@ public actor ModelDownloader {
                 "sdxl_vae_v1.0_f16.ckpt": 167534592,
                 "flux_1_schnell_q5p.ckpt": 9349296128,
                 "flux_1_vae_f16.ckpt": 167870464,
-                "t5_xxl_encoder_q6p.ckpt": 3884990464
+                "t5_xxl_encoder_q6p.ckpt": 3884990464,
+                "realesrgan_x4plus_f16.ckpt": 33697792,
+                "realesrgan_x2plus_f16.ckpt": 33710080,
+                "realesrgan_x4plus_anime_6b_f16.ckpt": 9027584,
+                "esrgan_4x_universal_upscaler_v2_sharp_f16.ckpt": 33697792,
+                "remacri_4x_f16.ckpt": 33697792,
+                "4x_ultrasharp_f16.ckpt": 33697792
             ]
             let allFiles: [String]
             if let specification = ModelZoo.specificationForModel(model.id) {
@@ -248,6 +361,7 @@ public actor ModelDownloader {
             }
             return
         }
+
 
         // CoreML models (Stable Diffusion) are distributed as ZIP archives;
         // download, extract, and store a sentinel to mark completion.

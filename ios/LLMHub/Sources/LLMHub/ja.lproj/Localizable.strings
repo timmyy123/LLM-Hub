@@ -780,3 +780,19 @@
 "image_generator_step_of" = "ステップ %1$d / %2$d";
 "video_generator_save_failed" = "ビデオの保存に失敗しました";
 "image_generator_save_failed" = "画像の保存に失敗しました";
+
+"feature_image_upscaler" = "画像高解像度化";
+"feature_image_upscaler_desc" = "AIによる画像高解像度化";
+"image_upscale_title" = "画像高解像度化";
+"image_upscale_download_model" = "高解像度化モデルをダウンロード";
+"image_upscale_download_model_desc" = "AIで画像を高解像度化するモデルをダウンロードしてください";
+"image_upscale_load_model_title" = "高解像度化モデルを選択";
+"image_upscale_load_model_desc" = "設定をタップしてモデルを選択・読み込んでください";
+"image_upscale_select_image" = "タップして画像を選択";
+"image_upscale_button" = "画像を高解像度化";
+"image_upscale_upscaling" = "高解像度化中…";
+"image_upscale_save" = "ギャラリーに保存";
+"image_upscale_models_title" = "画像高解像度化モデル";
+"image_upscale_models_description" = "QNN搭載AIモデルで最大4x画像解像度を向上";
+"image_upscale_models" = "画像高解像度化";
+"image_upscale_models_description" = "QNN搭載AIモデルで最大4x画像解像度を向上";

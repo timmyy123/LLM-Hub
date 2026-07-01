@@ -312,7 +312,7 @@ private func downloadableFeatureModels() -> [AIModel] {
 
     var models = ModelData.allModels().filter { model in
         if model.isDependencyOnly { return false }
-        if model.category == .embedding || model.category == .imageGeneration || model.category == .videoGeneration { return false }
+        if model.category == .embedding || model.category == .imageGeneration || model.category == .videoGeneration || model.category == .imageUpscale { return false }
 
         guard ModelData.isModelFullyAvailableLocally(model) else { return false }
         return true

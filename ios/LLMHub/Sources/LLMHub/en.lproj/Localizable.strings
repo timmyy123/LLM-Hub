@@ -790,3 +790,19 @@
 "image_generator_step_of" = "Step %1$d of %2$d";
 "video_generator_save_failed" = "Failed to save video";
 "image_generator_save_failed" = "Failed to save image";
+
+"feature_image_upscaler" = "Image Upscale";
+"feature_image_upscaler_desc" = "AI-powered image upscaling";
+"image_upscale_title" = "Image Upscale";
+"image_upscale_download_model" = "Download an Upscale Model";
+"image_upscale_download_model_desc" = "Download an upscale model to enhance your images with AI";
+"image_upscale_load_model_title" = "Select Upscale Model";
+"image_upscale_load_model_desc" = "Tap settings to select and load an upscale model";
+"image_upscale_select_image" = "Tap to Select an Image";
+"image_upscale_button" = "Upscale Image";
+"image_upscale_upscaling" = "Upscaling…";
+"image_upscale_save" = "Save to Gallery";
+"image_upscale_models_title" = "Image Upscale Models";
+"image_upscale_models_description" = "QNN-accelerated AI models for upscaling and enhancing image resolution up to 4x";
+"image_upscale_models" = "Image Upscale";
+"image_upscale_models_description" = "QNN-accelerated AI models for upscaling and enhancing image resolution up to 4x";

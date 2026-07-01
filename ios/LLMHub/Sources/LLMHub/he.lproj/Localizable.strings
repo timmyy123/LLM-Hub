@@ -780,3 +780,19 @@
 "image_generator_step_of" = "שלב %1$d מתוך %2$d";
 "video_generator_save_failed" = "שמירת הוידאו נכשלה";
 "image_generator_save_failed" = "שמירת התמונה נכשله";
+
+"feature_image_upscaler" = "שיפור תמונה";
+"feature_image_upscaler_desc" = "שיפור תמונות באמצעות בינה מלאכותית";
+"image_upscale_title" = "שיפור תמונה";
+"image_upscale_download_model" = "הורד מודל שיפור";
+"image_upscale_download_model_desc" = "הורד מודל שיפור לשיפור תמונותיך עם בינה מלאכותית";
+"image_upscale_load_model_title" = "בחר מודל שיפור";
+"image_upscale_load_model_desc" = "הקש על הגדרות לבחירה וטעינה של מודל שיפור";
+"image_upscale_select_image" = "הקש לבחירת תמונה";
+"image_upscale_button" = "שפר תמונה";
+"image_upscale_upscaling" = "משפר…";
+"image_upscale_save" = "שמור לגלריה";
+"image_upscale_models_title" = "מודלי שיפור תמונה";
+"image_upscale_models_description" = "מודלי בינה מלאכותית מואצי QNN לשיפור רזולוציית תמונות עד פי 4";
+"image_upscale_models" = "שיפור תמונה";
+"image_upscale_models_description" = "מודלי בינה מלאכותית מואצי QNN לשיפור רזולוציית תמונות עד פי 4";

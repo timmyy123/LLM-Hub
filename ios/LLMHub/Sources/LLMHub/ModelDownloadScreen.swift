@@ -685,7 +685,7 @@ struct ModelRowView: View {
                                 capabilityBadge(settings.localized("audio"), color: ApolloPalette.warning)
                             }
                             if !model.supportsVision && !model.supportsAudio {
-                                if model.category != .imageGeneration && model.category != .videoGeneration {
+                                if model.category != .imageGeneration && model.category != .videoGeneration && model.category != .imageUpscale {
                                     capabilityBadge(settings.localized("text_only"), color: ApolloPalette.accent)
                                 }
                             }

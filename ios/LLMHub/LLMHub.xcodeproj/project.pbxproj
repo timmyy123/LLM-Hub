@@ -52,6 +52,8 @@
 		VG000001000000000000VG01 /* VideoGeneratorScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = VG000001000000000000VG02 /* VideoGeneratorScreen.swift */; };
 		VG000001000000000000VG03 /* VideoGeneratorBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = VG000001000000000000VG04 /* VideoGeneratorBackend.swift */; };
 		AF000001000000000000AF01 /* AppleFoundationModelSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF000001000000000000AF02 /* AppleFoundationModelSupport.swift */; };
+		UP000001000000000000UP01 /* ImageUpscalerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = UP000001000000000000UP02 /* ImageUpscalerScreen.swift */; };
+		UP000001000000000000UP03 /* ImageUpscalerBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = UP000001000000000000UP04 /* ImageUpscalerBackend.swift */; };
 		MGK00001000000000000MG01 /* MediaGenerationKit in Frameworks */ = {isa = PBXBuildFile; productRef = MGK00001000000000000MG02 /* MediaGenerationKit */; };
 /* End PBXBuildFile section */
 
@@ -115,6 +117,8 @@
 		VG000001000000000000VG02 /* VideoGeneratorScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoGeneratorScreen.swift; sourceTree = "<group>"; };
 		VG000001000000000000VG04 /* VideoGeneratorBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoGeneratorBackend.swift; sourceTree = "<group>"; };
 		AF000001000000000000AF02 /* AppleFoundationModelSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleFoundationModelSupport.swift; sourceTree = "<group>"; };
+		UP000001000000000000UP02 /* ImageUpscalerScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageUpscalerScreen.swift; sourceTree = "<group>"; };
+		UP000001000000000000UP04 /* ImageUpscalerBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageUpscalerBackend.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -188,6 +192,8 @@
 				VG000001000000000000VG02 /* VideoGeneratorScreen.swift */,
 				VG000001000000000000VG04 /* VideoGeneratorBackend.swift */,
 				AF000001000000000000AF02 /* AppleFoundationModelSupport.swift */,
+				UP000001000000000000UP02 /* ImageUpscalerScreen.swift */,
+				UP000001000000000000UP04 /* ImageUpscalerBackend.swift */,
 			);
 			name = LLMHub;
 			path = Sources/LLMHub;
@@ -348,6 +354,8 @@
 				VG000001000000000000VG01 /* VideoGeneratorScreen.swift in Sources */,
 				VG000001000000000000VG03 /* VideoGeneratorBackend.swift in Sources */,
 				AF000001000000000000AF01 /* AppleFoundationModelSupport.swift in Sources */,
+				UP000001000000000000UP01 /* ImageUpscalerScreen.swift in Sources */,
+				UP000001000000000000UP03 /* ImageUpscalerBackend.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

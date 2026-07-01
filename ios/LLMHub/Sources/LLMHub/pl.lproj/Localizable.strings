@@ -780,3 +780,19 @@
 "image_generator_step_of" = "Krok %1$d z %2$d";
 "video_generator_save_failed" = "Nie udało się zapisać wideo";
 "image_generator_save_failed" = "Nie udało się zapisać obrazu";
+
+"feature_image_upscaler" = "Powiększenie obrazu";
+"feature_image_upscaler_desc" = "Ulepszanie obrazów za pomocą AI";
+"image_upscale_title" = "Powiększenie obrazu";
+"image_upscale_download_model" = "Pobierz model powiększania";
+"image_upscale_download_model_desc" = "Pobierz model powiększania, aby ulepszyć swoje obrazy za pomocą AI";
+"image_upscale_load_model_title" = "Wybierz model powiększania";
+"image_upscale_load_model_desc" = "Dotknij ustawień, aby wybrać i załadować model powiększania";
+"image_upscale_select_image" = "Dotknij, aby wybrać obraz";
+"image_upscale_button" = "Powiększ obraz";
+"image_upscale_upscaling" = "Powiększanie…";
+"image_upscale_save" = "Zapisz do galerii";
+"image_upscale_models_title" = "Modele powiększania obrazu";
+"image_upscale_models_description" = "Modele AI z akceleracją QNN do poprawy rozdzielczości obrazów do 4x";
+"image_upscale_models" = "Powiększenie obrazu";
+"image_upscale_models_description" = "Modele AI z akceleracją QNN do poprawy rozdzielczości obrazów do 4x";

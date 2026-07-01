@@ -25,6 +25,7 @@ public enum ModelCategory: String, Codable, CaseIterable, Sendable {
     case embedding = "Embedding Models"
     case imageGeneration = "Image Generation"
     case videoGeneration = "Video Generation"
+    case imageUpscale = "Image Upscale"
 
     public var icon: String {
         switch self {
@@ -33,6 +34,7 @@ public enum ModelCategory: String, Codable, CaseIterable, Sendable {
         case .embedding: return "link.circle.fill"
         case .imageGeneration: return "photo.fill"
         case .videoGeneration: return "video.fill"
+        case .imageUpscale: return "sparkles"
         }
     }
 
@@ -43,6 +45,7 @@ public enum ModelCategory: String, Codable, CaseIterable, Sendable {
         case .embedding: return "embedding_models"
         case .imageGeneration: return "image_generation_models"
         case .videoGeneration: return "video_generation_models"
+        case .imageUpscale: return "image_upscale_models"
         }
     }
 
@@ -53,6 +56,7 @@ public enum ModelCategory: String, Codable, CaseIterable, Sendable {
         case .embedding: return "embedding_models_description"
         case .imageGeneration: return "image_generation_models_description"
         case .videoGeneration: return "video_generation_models_description"
+        case .imageUpscale: return "image_upscale_models_description"
         }
     }
 }
@@ -166,6 +170,10 @@ public struct AIModel: Identifiable, Codable, Sendable {
 
     public var isDrawThingsVideoGeneration: Bool {
         modelFormat == .drawthings && category == .videoGeneration
+    }
+
+    public var isDrawThingsImageUpscale: Bool {
+        modelFormat == .drawthings && category == .imageUpscale
     }
 
     public var imageGenerationResolution: Int? {
@@ -2850,8 +2858,109 @@ public static let models: [AIModel] = [
         requirements: ModelRequirements(minRamGB: 10, recommendedRamGB: 12),
         contextWindowSize: 512,
         modelFormat: .drawthings
+    ),
+    AIModel(
+        id: "realesrgan_x4plus_f16.ckpt",
+        name: "Real-ESRGAN X4+",
+        description: "AI super-resolution model for general images and photos. Enhances details and upscales resolution up to 4×. (33.7 MB)",
+        url: "https://static.libnnc.org/realesrgan_x4plus_f16.ckpt",
+        category: .imageUpscale,
+        sizeBytes: 33_697_792,
+        source: "Real-ESRGAN",
+        supportsVision: false,
+        supportsAudio: false,
+        supportsThinking: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 2, recommendedRamGB: 3),
+        contextWindowSize: 0,
+        modelFormat: .drawthings,
+        additionalFiles: []
+    ),
+    AIModel(
+        id: "realesrgan_x4plus_anime_6b_f16.ckpt",
+        name: "Real-ESRGAN X4+ Anime",
+        description: "Specialized 6-block Real-ESRGAN model optimized for anime, illustrations, and 2D artwork. Upscales up to 4×. (9.0 MB)",
+        url: "https://static.libnnc.org/realesrgan_x4plus_anime_6b_f16.ckpt",
+        category: .imageUpscale,
+        sizeBytes: 9_027_584,
+        source: "Real-ESRGAN",
+        supportsVision: false,
+        supportsAudio: false,
+        supportsThinking: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 1, recommendedRamGB: 2),
+        contextWindowSize: 0,
+        modelFormat: .drawthings,
+        additionalFiles: []
+    ),
+    AIModel(
+        id: "4x_ultrasharp_f16.ckpt",
+        name: "4x UltraSharp",
+        description: "UltraSharp realistic upscaler. Great for portrait photos, textures, and fine realistic details. Upscales up to 4×. (33.7 MB)",
+        url: "https://static.libnnc.org/4x_ultrasharp_f16.ckpt",
+        category: .imageUpscale,
+        sizeBytes: 33_697_792,
+        source: "UltraSharp",
+        supportsVision: false,
+        supportsAudio: false,
+        supportsThinking: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 2, recommendedRamGB: 3),
+        contextWindowSize: 0,
+        modelFormat: .drawthings,
+        additionalFiles: []
+    ),
+    AIModel(
+        id: "realesrgan_x2plus_f16.ckpt",
+        name: "Real-ESRGAN X2+",
+        description: "General super-resolution upscaler optimized for 2× scaling. Keeps natural details. (33.7 MB)",
+        url: "https://static.libnnc.org/realesrgan_x2plus_f16.ckpt",
+        category: .imageUpscale,
+        sizeBytes: 33_710_080,
+        source: "Real-ESRGAN",
+        supportsVision: false,
+        supportsAudio: false,
+        supportsThinking: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 2, recommendedRamGB: 3),
+        contextWindowSize: 0,
+        modelFormat: .drawthings,
+        additionalFiles: []
+    ),
+    AIModel(
+        id: "esrgan_4x_universal_upscaler_v2_sharp_f16.ckpt",
+        name: "UniversalUpscaler V2 Sharp",
+        description: "Sharpening general-purpose 4× upscaler. Ideal for a wide range of illustration and photographic content. (33.7 MB)",
+        url: "https://static.libnnc.org/esrgan_4x_universal_upscaler_v2_sharp_f16.ckpt",
+        category: .imageUpscale,
+        sizeBytes: 33_697_792,
+        source: "UniversalUpscaler",
+        supportsVision: false,
+        supportsAudio: false,
+        supportsThinking: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 2, recommendedRamGB: 3),
+        contextWindowSize: 0,
+        modelFormat: .drawthings,
+        additionalFiles: []
+    ),
+    AIModel(
+        id: "remacri_4x_f16.ckpt",
+        name: "Remacri",
+        description: "A popular 4× upscaler that excels at organic structures, wood, skin, and fine architectural details. (33.7 MB)",
+        url: "https://static.libnnc.org/remacri_4x_f16.ckpt",
+        category: .imageUpscale,
+        sizeBytes: 33_697_792,
+        source: "Remacri",
+        supportsVision: false,
+        supportsAudio: false,
+        supportsThinking: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 2, recommendedRamGB: 3),
+        contextWindowSize: 0,
+        modelFormat: .drawthings,
+        additionalFiles: []
     )
-
 ]
 }
 
