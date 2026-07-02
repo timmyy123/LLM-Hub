@@ -266,6 +266,9 @@ dependencies {
     // ONNX Runtime for Android - supports ONNX model inference
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.24.1")
 
+    // IPA Transcribers - pure-Kotlin G2P fallback for Kokoro TTS
+    implementation("com.github.medavox:IPA-Transcribers:v0.2")
+
     // Nexa SDK for GGUF model support
     // Nexa bundles libonnxruntime.so directly in its AAR (6.5MB) which conflicts with
     // Microsoft's ORT JNI bridge. The task below strips it from the cached AAR so only

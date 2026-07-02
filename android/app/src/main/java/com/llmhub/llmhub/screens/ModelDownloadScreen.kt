@@ -65,7 +65,7 @@ enum class ModelFormat {
 }
 
 enum class DownloadCategory {
-    MULTIMODAL, TEXT, ASR, EMBEDDING, IMAGE_GENERATION, IMAGE_UPSCALE
+    MULTIMODAL, TEXT, ASR, TTS, EMBEDDING, IMAGE_GENERATION, IMAGE_UPSCALE
 }
 
 /**
@@ -120,6 +120,7 @@ fun ModelDownloadScreen(
     val textModels = models.filter { it.category == "text" }
     val multimodalModels = models.filter { it.category == "multimodal" }
     val asrModels = models.filter { it.category == "asr" }
+    val ttsModels = models.filter { it.category == "tts" }
     val embeddingModels = models.filter { it.category == "embedding" }
     val imageGenerationModels = models.filter {
         it.category == "image_generation" || it.category == "qnn_npu" || it.category == "mnn_cpu"
@@ -127,6 +128,7 @@ fun ModelDownloadScreen(
     val textGrouped = textModels.groupBy { it.name.substringBefore("(").trim() }
     val multimodalGrouped = multimodalModels.groupBy { it.name.substringBefore("(").trim() }
     val asrGrouped = asrModels.groupBy { it.name.substringBefore("(").trim() }
+    val ttsGrouped = ttsModels.groupBy { it.name.substringBefore("(").trim() }
     val embeddingGrouped = embeddingModels.groupBy { it.name.substringBefore("(").trim() }
     val imageGenGrouped = imageGenerationModels.groupBy { it.name.substringBefore("(").trim() }
     val imageUpscaleModels = models.filter { it.category == "image_upscale" }
@@ -139,6 +141,7 @@ fun ModelDownloadScreen(
         DownloadCategory.MULTIMODAL,
         DownloadCategory.TEXT,
         DownloadCategory.ASR,
+        DownloadCategory.TTS,
         DownloadCategory.EMBEDDING,
         DownloadCategory.IMAGE_GENERATION,
         DownloadCategory.IMAGE_UPSCALE
@@ -224,6 +227,7 @@ fun ModelDownloadScreen(
                         DownloadCategory.MULTIMODAL -> stringResource(R.string.vision_models)
                         DownloadCategory.TEXT -> stringResource(R.string.text_models)
                         DownloadCategory.ASR -> stringResource(R.string.asr_models)
+                        DownloadCategory.TTS -> stringResource(R.string.tts_models)
                         DownloadCategory.EMBEDDING -> stringResource(R.string.embedding_models)
                         DownloadCategory.IMAGE_GENERATION -> stringResource(R.string.image_generation_models)
                         DownloadCategory.IMAGE_UPSCALE -> stringResource(R.string.image_upscale_models_title)
@@ -232,6 +236,7 @@ fun ModelDownloadScreen(
                         DownloadCategory.MULTIMODAL -> multimodalModels.size
                         DownloadCategory.TEXT -> textModels.size
                         DownloadCategory.ASR -> asrModels.size
+                        DownloadCategory.TTS -> ttsModels.size
                         DownloadCategory.EMBEDDING -> embeddingModels.size
                         DownloadCategory.IMAGE_GENERATION -> imageGenerationModels.size
                         DownloadCategory.IMAGE_UPSCALE -> imageUpscaleModels.size
@@ -298,6 +303,23 @@ fun ModelDownloadScreen(
                             Text(stringResource(R.string.asr_models_description), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         asrGrouped.forEach { (family, variants) ->
+                            item {
+                                ModelFamilyCard(
+                                    family = family,
+                                    variants = variants,
+                                    context = context,
+                                    viewModel = downloadViewModel,
+                                    isMultimodal = false,
+                                    onDownload = { downloadViewModel.downloadModel(it) }
+                                )
+                            }
+                        }
+                    }
+                    DownloadCategory.TTS -> {
+                        item {
+                            Text(stringResource(R.string.tts_models_description), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        ttsGrouped.forEach { (family, variants) ->
                             item {
                                 ModelFamilyCard(
                                     family = family,

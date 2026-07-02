@@ -1,5 +1,6 @@
 package com.llmhub.llmhub.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,6 +27,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.android.Android
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
@@ -44,6 +47,9 @@ import com.llmhub.llmhub.embedding.RagServiceManager
 import com.llmhub.llmhub.utils.FileUtils
 import com.llmhub.llmhub.R
 import java.io.File
+import com.llmhub.llmhub.BuildConfig
+import com.llmhub.llmhub.data.ModelData
+import com.llmhub.llmhub.data.ModelDownloader
 import com.llmhub.llmhub.data.ThemeMode
 import com.llmhub.llmhub.data.localFileName
 import com.llmhub.llmhub.viewmodels.ThemeViewModel
@@ -72,7 +78,7 @@ fun SettingsScreen(
     val autoReadoutEnabled by themeViewModel.autoReadoutEnabled.collectAsState()
     val isPremium by (context.applicationContext as com.llmhub.llmhub.LlmHubApplication)
         .billingManager.isPremium.collectAsState(initial = false)
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -83,7 +89,7 @@ fun SettingsScreen(
                         modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
-                            Icons.Default.ArrowBack, 
+                            Icons.Default.ArrowBack,
                             contentDescription = stringResource(R.string.content_description_back),
                             tint = MaterialTheme.colorScheme.onSurface
                         )
@@ -107,12 +113,21 @@ fun SettingsScreen(
                         subtitle = stringResource(R.string.browse_download_models),
                         onClick = onNavigateToModels
                     )
-                    
+
                     // Embedding Model Selection
                     EmbeddingModelSelector(themeViewModel = themeViewModel)
+
+                    // TTS Model Selection
+                    TtsModelSelector(themeViewModel = themeViewModel)
+
+                    // TTS Voice Selection
+                    TtsVoiceSelector(themeViewModel = themeViewModel)
+
+                    // TTS Device Selection
+                    TtsDeviceSelector(themeViewModel = themeViewModel)
                 }
             }
-            
+
             item {
                 SettingsSection(title = stringResource(R.string.features)) {
                     // Memory (global context) toggle (Premium feature)
@@ -381,13 +396,13 @@ fun SettingsScreen(
                                             try {
                                                 val db = com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context)
                                                 val info = pickedFileInfo!!
-                                                
+
                                                 // Check if file type is supported for memory
                                                 if (!FileUtils.isFileTypeSupportedForMemory(info.type)) {
                                                     android.widget.Toast.makeText(context, context.getString(R.string.memory_upload_unsupported_type), android.widget.Toast.LENGTH_SHORT).show()
                                                     return@launch
                                                 }
-                                                
+
                                                 val content = FileUtils.extractTextContent(context, info.uri, info.type)
                                                 if (content != null) {
                                                     val id = "mem_${System.currentTimeMillis()}"
@@ -524,7 +539,7 @@ fun SettingsScreen(
                                         }
 
                                         Spacer(modifier = Modifier.height(8.dp))
-                                        
+
                                         // Import Chat History button
                                         var showChatImportDialog by remember { mutableStateOf(false) }
                                         Button(
@@ -535,7 +550,7 @@ fun SettingsScreen(
                                         ) {
                                             Text(stringResource(R.string.import_chat_history))
                                         }
-                                        
+
                                         // Chat Import Dialog
                                         if (showChatImportDialog) {
                                             ChatImportDialog(
@@ -549,7 +564,7 @@ fun SettingsScreen(
                                                                 val role = if (msg.isFromUser) "User" else "Assistant"
                                                                 "$role: ${msg.content}"
                                                             }
-                                                            
+
                                                             if (chatText.isNotBlank()) {
                                                                 val id = "mem_chat_${chat.id}_${System.currentTimeMillis()}"
                                                                 val doc = com.llmhub.llmhub.data.MemoryDocument(
@@ -631,7 +646,7 @@ fun SettingsScreen(
                                             ) {
                                                 items(memoryList) { mem ->
                                                     var showEditDialog by remember { mutableStateOf(false) }
-                                                    
+
                                                     Row(
                                                         verticalAlignment = Alignment.CenterVertically,
                                                         modifier = Modifier
@@ -651,14 +666,14 @@ fun SettingsScreen(
                                                             }
                                                             Text(metaLabel + " • " + android.text.format.DateFormat.getDateFormat(context).format(mem.createdAt), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                                         }
-                                                        
+
                                                         // Edit button (only for pasted memories)
                                                         if (mem.metadata == "pasted") {
                                                             IconButton(onClick = { showEditDialog = true }) {
                                                                 Icon(Icons.Default.Edit, contentDescription = "Edit")
                                                             }
                                                         }
-                                                        
+
                                                         // Delete button
                                                         IconButton(onClick = {
                                                             coroutineScope.launch {
@@ -680,7 +695,7 @@ fun SettingsScreen(
                                                             Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete))
                                                         }
                                                     }
-                                                    
+
                                                     // Edit Dialog
                                                     if (showEditDialog) {
                                                         EditMemoryDialog(
@@ -697,15 +712,15 @@ fun SettingsScreen(
                                                                             status = "PENDING"
                                                                         )
                                                                         db.memoryDao().update(updatedMem)
-                                                                        
+
                                                                         // Delete old chunks and re-embed
                                                                         db.memoryDao().deleteChunksForDoc(mem.id)
                                                                         ragManager.removeGlobalDocumentChunks(mem.id)
-                                                                        
+
                                                                         // Trigger re-embedding
                                                                         val processor = com.llmhub.llmhub.data.MemoryProcessor(context, db)
                                                                         processor.processPending()
-                                                                        
+
                                                                         android.widget.Toast.makeText(
                                                                             context,
                                                                             "Memory updated and re-embedded",
@@ -744,7 +759,7 @@ fun SettingsScreen(
                     }
                 }
             }
-            
+
             item {
                 SettingsSection(title = stringResource(R.string.appearance)) {
                     SettingsItem(
@@ -759,7 +774,7 @@ fun SettingsScreen(
                             showThemeDialog = true
                         }
                     )
-                    
+
                     SettingsItem(
                         icon = Icons.Default.Language,
                         title = stringResource(R.string.language),
@@ -770,7 +785,7 @@ fun SettingsScreen(
                     )
                 }
             }
-            
+
             item {
                 SettingsSection(title = stringResource(R.string.information)) {
                     SettingsItem(
@@ -779,7 +794,7 @@ fun SettingsScreen(
                         subtitle = stringResource(R.string.app_info_contact),
                         onClick = onNavigateToAbout
                     )
-                    
+
                     SettingsItem(
                         icon = Icons.Default.Description,
                         title = stringResource(R.string.terms_of_service),
@@ -799,7 +814,7 @@ fun SettingsScreen(
                     )
                 }
             }
-            
+
             item {
                 SettingsSection(title = stringResource(R.string.source_code_section)) {
                     SettingsItem(
@@ -814,7 +829,7 @@ fun SettingsScreen(
             }
         }
     }
-    
+
     // Theme Selection Dialog
     if (showThemeDialog) {
         val configuration = LocalConfiguration.current
@@ -848,9 +863,9 @@ fun SettingsScreen(
                                     showThemeDialog = false
                                 }
                             )
-                            
+
                             Spacer(modifier = Modifier.width(8.dp))
-                            
+
                             Text(
                                 text = label,
                                 style = MaterialTheme.typography.bodyMedium
@@ -868,7 +883,7 @@ fun SettingsScreen(
             }
         )
     }
-    
+
     // Language Selection Dialog
     if (showLanguageDialog) {
         AlertDialog(
@@ -892,15 +907,15 @@ fun SettingsScreen(
                                 showLanguageDialog = false
                             }
                         )
-                        
+
                         Spacer(modifier = Modifier.width(8.dp))
-                        
+
                         Text(
                             text = stringResource(R.string.system_default),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
-                    
+
                     // Language options
                     themeViewModel.getSupportedLanguages().forEach { (code, displayName) ->
                         Row(
@@ -916,9 +931,9 @@ fun SettingsScreen(
                                     showLanguageDialog = false
                                 }
                             )
-                            
+
                             Spacer(modifier = Modifier.width(8.dp))
-                            
+
                             Text(
                                 text = displayName,
                                 style = MaterialTheme.typography.bodyMedium
@@ -1010,9 +1025,9 @@ private fun SettingsItem(
                 modifier = Modifier.size(24.dp),
                 tint = MaterialTheme.colorScheme.onSurface
             )
-            
+
             Spacer(modifier = Modifier.width(16.dp))
-            
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
@@ -1025,7 +1040,7 @@ private fun SettingsItem(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            
+
             Icon(
                 imageVector = Icons.Default.KeyboardArrowRight,
                 contentDescription = null,
@@ -1042,7 +1057,7 @@ private fun EmbeddingModelSelector(themeViewModel: ThemeViewModel) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var showReembedDialog by remember { mutableStateOf(false) }
-    
+
     // Function to handle embedding model change
     fun handleEmbeddingModelChange(newModel: String?) {
         themeViewModel.setSelectedEmbeddingModel(newModel)
@@ -1101,7 +1116,7 @@ private fun EmbeddingModelSelector(themeViewModel: ThemeViewModel) {
             }
         }
     }
-    
+
     // Get downloaded embedding models only
     val downloadedEmbeddingModels = remember(context) {
         com.llmhub.llmhub.data.ModelData.models
@@ -1113,14 +1128,14 @@ private fun EmbeddingModelSelector(themeViewModel: ThemeViewModel) {
             }
             .map { it.name }
     }
-    
+
     SettingsItem(
         icon = Icons.Default.Memory,
         title = stringResource(R.string.embedding_model),
         subtitle = selectedEmbeddingModel ?: stringResource(R.string.no_embedding_model_selected),
         onClick = { showEmbeddingModelDialog = true }
     )
-    
+
     if (showEmbeddingModelDialog) {
         AlertDialog(
             onDismissRequest = { showEmbeddingModelDialog = false },
@@ -1151,7 +1166,7 @@ private fun EmbeddingModelSelector(themeViewModel: ThemeViewModel) {
                             )
                         }
                     }
-                    
+
                     // Option to disable embedding
                     item {
                         Row(
@@ -1220,7 +1235,7 @@ fun ChatImportDialog(
     val db = remember { com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context) }
     val allChats by db.chatDao().getNonEmptyChats().collectAsState(initial = emptyList())
     val selectedChats = remember { mutableStateListOf<com.llmhub.llmhub.data.ChatEntity>() }
-    
+
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Surface(
             shape = MaterialTheme.shapes.large,
@@ -1244,7 +1259,7 @@ fun ChatImportDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 // Chat list
                 LazyColumn(
                     modifier = Modifier
@@ -1292,9 +1307,9 @@ fun ChatImportDialog(
                         }
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 // Action buttons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1337,7 +1352,7 @@ fun EditMemoryDialog(
 ) {
     val context = LocalContext.current
     var editedContent by remember { mutableStateOf(memory.content) }
-    
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.edit_memory)) },
@@ -1378,4 +1393,425 @@ fun EditMemoryDialog(
             }
         }
     )
-} 
+}
+
+@Composable
+private fun TtsModelSelector(themeViewModel: ThemeViewModel) {
+    val selectedTtsModel by themeViewModel.selectedTtsModel.collectAsState()
+    var showTtsModelDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    // Get downloaded TTS models
+    val downloadedTtsModels = remember(context) {
+        com.llmhub.llmhub.data.ModelData.models
+            .filter { it.category == "tts" }
+            .filter { model ->
+                val modelsDir = File(context.filesDir, "models")
+                val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
+                val modelFile = File(File(modelsDir, modelDirName), model.localFileName())
+                modelFile.exists() && modelFile.length() > 0
+            }
+            .map { it.name }
+    }
+
+    SettingsItem(
+        icon = Icons.Default.VolumeUp,
+        title = stringResource(R.string.tts_model_setting),
+        subtitle = selectedTtsModel ?: stringResource(R.string.system_default_tts),
+        onClick = { showTtsModelDialog = true }
+    )
+
+    if (showTtsModelDialog) {
+        AlertDialog(
+            onDismissRequest = { showTtsModelDialog = false },
+            title = { Text(stringResource(R.string.tts_model_setting)) },
+            text = {
+                LazyColumn {
+                    // Option for system default TTS
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    themeViewModel.setSelectedTtsModel(null)
+                                    showTtsModelDialog = false
+                                }
+                                .padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selectedTtsModel == null,
+                                onClick = {
+                                    themeViewModel.setSelectedTtsModel(null)
+                                    showTtsModelDialog = false
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = stringResource(R.string.system_default_tts),
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                    }
+
+                    items(downloadedTtsModels.size) { index ->
+                        val model = downloadedTtsModels[index]
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    themeViewModel.setSelectedTtsModel(model)
+                                    showTtsModelDialog = false
+                                }
+                                .padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selectedTtsModel == model,
+                                onClick = {
+                                    themeViewModel.setSelectedTtsModel(model)
+                                    showTtsModelDialog = false
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = model,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showTtsModelDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun TtsDeviceSelector(themeViewModel: ThemeViewModel) {
+    val selectedTtsModel by themeViewModel.selectedTtsModel.collectAsState()
+    if (selectedTtsModel == null) return
+
+    val selectedTtsDevice by themeViewModel.selectedTtsDevice.collectAsState()
+    var showTtsDeviceDialog by remember { mutableStateOf(false) }
+
+    val displayDevice = if (selectedTtsDevice.lowercase() == "cpu") "CPU" else "GPU"
+
+    SettingsItem(
+        icon = Icons.Default.Memory,
+        title = stringResource(R.string.tts_device_setting),
+        subtitle = displayDevice,
+        onClick = { showTtsDeviceDialog = true }
+    )
+
+    if (showTtsDeviceDialog) {
+        AlertDialog(
+            onDismissRequest = { showTtsDeviceDialog = false },
+            title = { Text(stringResource(R.string.tts_device_setting)) },
+            text = {
+                Column {
+                    Row(
+                        modifier = Modifier
+                             .fillMaxWidth()
+                             .clickable {
+                                 themeViewModel.setSelectedTtsDevice("gpu")
+                                 showTtsDeviceDialog = false
+                             }
+                             .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selectedTtsDevice.lowercase() != "cpu",
+                            onClick = {
+                                themeViewModel.setSelectedTtsDevice("gpu")
+                                showTtsDeviceDialog = false
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "GPU",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier
+                             .fillMaxWidth()
+                             .clickable {
+                                 themeViewModel.setSelectedTtsDevice("cpu")
+                                 showTtsDeviceDialog = false
+                             }
+                             .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selectedTtsDevice.lowercase() == "cpu",
+                            onClick = {
+                                themeViewModel.setSelectedTtsDevice("cpu")
+                                showTtsDeviceDialog = false
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "CPU",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showTtsDeviceDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun TtsVoiceSelector(themeViewModel: ThemeViewModel) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val selectedTtsModel by themeViewModel.selectedTtsModel.collectAsState()
+    if (selectedTtsModel == null) return
+
+    val selectedTtsVoice by themeViewModel.selectedTtsVoice.collectAsState()
+    var showTtsVoiceDialog by remember { mutableStateOf(false) }
+    var downloadingVoiceKey by remember(selectedTtsModel) { mutableStateOf<String?>(null) }
+    val downloadedVoiceKeys = remember(selectedTtsModel) { mutableStateMapOf<String, Boolean>() }
+
+    val selectedModel = remember(selectedTtsModel) {
+        ModelData.models.find { it.name == selectedTtsModel }
+    } ?: return
+
+    val modelDir = remember(selectedTtsModel) {
+        File(
+            File(context.filesDir, "models"),
+            selectedModel.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
+        )
+    }
+
+    val modelsRoot = remember { File(context.filesDir, "models") }
+
+    fun voiceFileExists(voiceKey: String): Boolean {
+        val kokoro = modelsRoot.listFiles { f -> f.isDirectory && f.name.startsWith("Kokoro") }
+        return kokoro?.any { File(it, "$voiceKey.bin").exists() } == true
+    }
+
+    val voices = listOf(
+        // American English Female
+        "af" to "American Female (Default)",
+        "af_alloy" to "American Female — Alloy",
+        "af_aoede" to "American Female — Aoede",
+        "af_bella" to "American Female — Bella",
+        "af_heart" to "American Female — Heart",
+        "af_jessica" to "American Female — Jessica",
+        "af_kore" to "American Female — Kore",
+        "af_nicole" to "American Female — Nicole",
+        "af_nova" to "American Female — Nova",
+        "af_river" to "American Female — River",
+        "af_sarah" to "American Female — Sarah",
+        "af_sky" to "American Female — Sky",
+        // American English Male
+        "am_adam" to "American Male — Adam",
+        "am_echo" to "American Male — Echo",
+        "am_eric" to "American Male — Eric",
+        "am_fenrir" to "American Male — Fenrir",
+        "am_liam" to "American Male — Liam",
+        "am_michael" to "American Male — Michael",
+        "am_onyx" to "American Male — Onyx",
+        "am_puck" to "American Male — Puck",
+        "am_santa" to "American Male — Santa",
+        // British English Female
+        "bf_alice" to "British Female — Alice",
+        "bf_emma" to "British Female — Emma",
+        "bf_isabella" to "British Female — Isabella",
+        "bf_lily" to "British Female — Lily",
+        // British English Male
+        "bm_daniel" to "British Male — Daniel",
+        "bm_fable" to "British Male — Fable",
+        "bm_george" to "British Male — George",
+        "bm_lewis" to "British Male — Lewis",
+        // Spanish
+        "ef_dora" to "Spanish Female — Dora",
+        "em_alex" to "Spanish Male — Alex",
+        "em_santa" to "Spanish Male — Santa",
+        // French
+        "ff_siwis" to "French Female — Siwis",
+        // Hindi
+        "hf_alpha" to "Hindi Female — Alpha",
+        "hf_beta" to "Hindi Female — Beta",
+        "hm_omega" to "Hindi Male — Omega",
+        "hm_psi" to "Hindi Male — Psi",
+        // Italian
+        "if_sara" to "Italian Female — Sara",
+        "im_nicola" to "Italian Male — Nicola",
+        // Japanese
+        "jf_alpha" to "Japanese Female — Alpha",
+        "jf_gongitsune" to "Japanese Female — Gongitsune",
+        "jf_nezumi" to "Japanese Female — Nezumi",
+        "jf_tebukuro" to "Japanese Female — Tebukuro",
+        "jm_kumo" to "Japanese Male — Kumo",
+        // Portuguese
+        "pf_dora" to "Portuguese Female — Dora",
+        "pm_alex" to "Portuguese Male — Alex",
+        "pm_santa" to "Portuguese Male — Santa",
+        // Chinese
+        "zf_xiaobei" to "Chinese Female — Xiaobei",
+        "zf_xiaoni" to "Chinese Female — Xiaoni",
+        "zf_xiaoxiao" to "Chinese Female — Xiaoxiao",
+        "zf_xiaoyi" to "Chinese Female — Xiaoyi",
+        "zm_yunjian" to "Chinese Male — Yunjian",
+        "zm_yunxi" to "Chinese Male — Yunxi",
+        "zm_yunxia" to "Chinese Male — Yunxia",
+        "zm_yunyang" to "Chinese Male — Yunyang"
+    )
+
+    LaunchedEffect(selectedTtsModel) {
+        voices.forEach { (voiceKey, _) ->
+            downloadedVoiceKeys[voiceKey] = voiceFileExists(voiceKey)
+        }
+    }
+
+    val currentVoiceName = voices.find { it.first == selectedTtsVoice }?.second ?: selectedTtsVoice
+
+    SettingsItem(
+        icon = Icons.Default.Face,
+        title = stringResource(R.string.tts_voice_setting),
+        subtitle = currentVoiceName,
+        onClick = { showTtsVoiceDialog = true }
+    )
+
+    if (showTtsVoiceDialog) {
+        AlertDialog(
+            onDismissRequest = { showTtsVoiceDialog = false },
+            title = { Text(stringResource(R.string.tts_voice_setting)) },
+            text = {
+                LazyColumn {
+                    items(voices.size) { index ->
+                        val (voiceKey, voiceLabel) = voices[index]
+                        val isDownloaded = downloadedVoiceKeys[voiceKey] == true
+                        val isDownloading = downloadingVoiceKey == voiceKey
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp)
+                                .clickable(enabled = isDownloaded && !isDownloading) {
+                                    themeViewModel.setSelectedTtsVoice(voiceKey)
+                                    showTtsVoiceDialog = false
+                                },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selectedTtsVoice == voiceKey,
+                                onClick = {
+                                    if (isDownloaded && !isDownloading) {
+                                        themeViewModel.setSelectedTtsVoice(voiceKey)
+                                        showTtsVoiceDialog = false
+                                    }
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = voiceLabel,
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.weight(1f),
+                                color = if (isDownloaded) {
+                                    MaterialTheme.colorScheme.onSurface
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            val buttonModifier = Modifier.height(40.dp).widthIn(min = 120.dp)
+                            val buttonPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+                            if (isDownloaded) {
+                                OutlinedButton(
+                                    onClick = {
+                                        val kokoro = modelsRoot.listFiles { f -> f.isDirectory && f.name.startsWith("Kokoro") }
+                                        kokoro?.forEach { dir -> File(dir, "$voiceKey.bin").delete() }
+                                        downloadedVoiceKeys[voiceKey] = false
+                                        if (selectedTtsVoice == voiceKey) {
+                                            themeViewModel.setSelectedTtsVoice("af_heart")
+                                        }
+                                    },
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = MaterialTheme.colorScheme.error
+                                    ),
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+                                    modifier = buttonModifier,
+                                    contentPadding = buttonPadding
+                                ) {
+                                    Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(stringResource(R.string.delete), style = MaterialTheme.typography.labelLarge)
+                                }
+                            } else {
+                                Button(
+                                    onClick = {
+                                        if (downloadingVoiceKey != null) return@Button
+                                        downloadingVoiceKey = voiceKey
+                                        coroutineScope.launch {
+                                            val prefs = context.getSharedPreferences("model_prefs", android.content.Context.MODE_PRIVATE)
+                                            val hfToken = prefs.getString("hf_token", BuildConfig.HF_TOKEN)
+                                            val client = HttpClient(Android)
+                                            try {
+                                                ModelDownloader(client, context, hfToken)
+                                                    .downloadVoiceFile(selectedModel, voiceKey)
+                                                    .collectLatest { status ->
+                                                        if (status.downloadedBytes > 0) {
+                                                            downloadedVoiceKeys[voiceKey] = voiceFileExists(voiceKey) ||
+                                                                (status.totalBytes > 0 && status.downloadedBytes >= status.totalBytes)
+                                                        }
+                                                    }
+                                                downloadedVoiceKeys[voiceKey] = voiceFileExists(voiceKey)
+                                                themeViewModel.setSelectedTtsVoice(voiceKey)
+                                                android.widget.Toast.makeText(
+                                                    context,
+                                                    "$voiceLabel downloaded",
+                                                    android.widget.Toast.LENGTH_SHORT
+                                                ).show()
+                                            } catch (e: Exception) {
+                                                android.widget.Toast.makeText(
+                                                    context,
+                                                    e.message ?: "Voice download failed",
+                                                    android.widget.Toast.LENGTH_SHORT
+                                                ).show()
+                                            } finally {
+                                                client.close()
+                                                downloadingVoiceKey = null
+                                            }
+                                        }
+                                    },
+                                    enabled = downloadingVoiceKey == null,
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary
+                                    ),
+                                    modifier = buttonModifier,
+                                    contentPadding = buttonPadding
+                                ) {
+                                    if (isDownloading) {
+                                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                                    } else {
+                                        Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(stringResource(R.string.download), style = MaterialTheme.typography.labelLarge)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showTtsVoiceDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+}

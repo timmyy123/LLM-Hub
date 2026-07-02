@@ -32,6 +32,34 @@ class ModelDownloader(
     private val context: android.content.Context,
     private val hfToken: String? = null // optional Hugging Face access token
 ) {
+    private fun getSanitizedModelDirName(model: LLMModel): String {
+        return model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
+    }
+
+    private fun getModelsDir(): File {
+        val modelsDir = File(context.filesDir, "models")
+        if (!modelsDir.exists()) {
+            modelsDir.mkdirs()
+        }
+        return modelsDir
+    }
+
+    private fun getOnnxModelDir(model: LLMModel): File {
+        val modelDir = File(getModelsDir(), getSanitizedModelDirName(model))
+        if (!modelDir.exists()) {
+            modelDir.mkdirs()
+        }
+        return modelDir
+    }
+
+    private fun extractFileName(url: String): String {
+        return url.substringAfterLast("/").substringBefore("?")
+    }
+
+    private fun buildKokoroVoiceUrl(model: LLMModel, voiceKey: String): String {
+        val repoBaseUrl = model.url.substringBefore("/onnx/")
+        return "$repoBaseUrl/voices/$voiceKey.bin"
+    }
 
     /**
      * Validates if the HuggingFace token has access to a specific model by testing a HEAD request
@@ -43,7 +71,7 @@ class ModelDownloader(
             // If we have the actual file URL, test access directly (most reliable)
             if (!fileUrl.isNullOrBlank()) {
                 Log.i(TAG, "Testing token access via HEAD request to file: $fileUrl")
-                
+
                 val url = URL(fileUrl)
                 val connection = (url.openConnection() as HttpURLConnection).apply {
                     requestMethod = "HEAD"
@@ -94,7 +122,7 @@ class ModelDownloader(
 
             Log.i(TAG, "Checking token access via HuggingFace API for repo: $repoId")
             val apiUrl = "https://huggingface.co/api/models/$repoId"
-            
+
             val url = URL(apiUrl)
             val connection = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "HEAD"
@@ -141,14 +169,14 @@ class ModelDownloader(
                 readTimeout = 60_000
                 instanceFollowRedirects = false // Manually handle redirects to preserve auth header
                 setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-                
+
                 // Only send HuggingFace token to huggingface.co or hf.co domains.
                 // Sending it to a redirected domain (like an AWS S3 pre-signed URL) will cause
                 // the S3 strictly-enforced signature verification to fail with a 403 Forbidden.
                 val host = url.host ?: ""
-                val isHuggingFaceDomain = host == "huggingface.co" || host.endsWith(".huggingface.co") || 
+                val isHuggingFaceDomain = host == "huggingface.co" || host.endsWith(".huggingface.co") ||
                                           host == "hf.co" || host.endsWith(".hf.co")
-                                          
+
                 if (isHuggingFaceDomain && !hfToken.isNullOrBlank()) {
                     setRequestProperty("Authorization", "Bearer $hfToken")
                 }
@@ -179,14 +207,14 @@ class ModelDownloader(
                     Log.d(TAG, "Redirect: $responseCode to $location")
                 }
                 responseCode == 416 -> {
-                    // Range not satisfiable means we already have the whole file. 
+                    // Range not satisfiable means we already have the whole file.
                     // Let the caller handle this response code.
                     return connection
                 }
                 else -> {
                     // Error
                     connection.disconnect()
-                    
+
                     // For 403 errors, try to provide diagnostic information
                     val errorMsg = if (responseCode == 403) {
                         try {
@@ -201,7 +229,7 @@ class ModelDownloader(
                     } else {
                         "HTTP $responseCode at URL $currentUrl"
                     }
-                    
+
                     throw RuntimeException("Download failed with $errorMsg")
                 }
             }
@@ -212,7 +240,7 @@ class ModelDownloader(
 
     fun downloadModel(model: LLMModel): Flow<DownloadStatus> = flow {
         Log.i(TAG, "Preparing to download model: ${model.name} from ${model.url}")
-        
+
         if (model.modelFormat == "onnx" && model.additionalFiles.isNotEmpty()) {
             downloadOnnxModel(model).collect { emit(it) }
             return@flow
@@ -223,20 +251,20 @@ class ModelDownloader(
             downloadGgufMultiFile(model).collect { emit(it) }
             return@flow
         }
-        
+
         // Handle image_generator models specially (multi-file format)
         if (model.modelFormat == "image_generator") {
             downloadImageGeneratorModel(model).collect { emit(it) }
             return@flow
         }
-        
+
         // Handle stable_diffusion models (ZIP extraction) - check by category
         if (model.category == "image_generation") {
             Log.i(TAG, "Routing to Stable Diffusion downloader for: ${model.name}")
             downloadStableDiffusionModel(model).collect { emit(it) }
             return@flow
         }
-        
+
         val modelsDir = File(context.filesDir, "models")
         if (!modelsDir.exists()) {
             modelsDir.mkdirs()
@@ -262,7 +290,7 @@ class ModelDownloader(
                 Log.w(TAG, "Error validating model file ${modelFile.absolutePath}: ${e.message}")
                 false
             }
-            
+
             if (fileIsValid) {
                 emit(DownloadStatus(inferredTotalBytes, inferredTotalBytes, 0))
                 Log.i(TAG, "Model already fully downloaded and validated: ${model.name}")
@@ -282,7 +310,7 @@ class ModelDownloader(
         val connection = openConnectionWithAuthRedirects(model.url, if (downloadedBytes > 0) downloadedBytes else null)
 
         val responseCode = connection.responseCode
-        
+
         // HTTP 416 = "Range Not Satisfiable" - file is already complete
         if (responseCode == 416) {
             connection.disconnect()
@@ -290,7 +318,7 @@ class ModelDownloader(
             emit(DownloadStatus(downloadedBytes, downloadedBytes, 0))
             return@flow
         }
-        
+
         if (responseCode !in 200..299 && responseCode != 206) {
             connection.disconnect()
             throw RuntimeException("Download failed with HTTP $responseCode at final URL ${connection.url}")
@@ -369,7 +397,7 @@ class ModelDownloader(
                             break
                         }
                     }
-                    
+
                     // Emit final progress after download completes naturally
                     val finalTotalBytes = if (inferredTotalBytes > 0) maxOf(inferredTotalBytes, downloadedBytes) else downloadedBytes
                     emit(DownloadStatus(downloadedBytes, finalTotalBytes, 0))
@@ -385,34 +413,109 @@ class ModelDownloader(
 
         Log.i(TAG, "Finished downloading ${model.name}. Total bytes written: $downloadedBytes")
     }.flowOn(Dispatchers.IO)
-    
+
+    fun downloadVoiceFile(model: LLMModel, voiceKey: String): Flow<DownloadStatus> = flow {
+        require(model.modelFormat == "onnx") { "Voice downloads are only supported for ONNX TTS models" }
+
+        val modelDir = getOnnxModelDir(model)
+        val fileName = "$voiceKey.bin"
+        val fileUrl = buildKokoroVoiceUrl(model, voiceKey)
+        val targetFile = File(modelDir, fileName)
+        val existingBytes = if (targetFile.exists()) targetFile.length() else 0L
+
+        Log.i(TAG, "Downloading voice file $fileName for model ${model.name} from $fileUrl")
+
+        val connection = openConnectionWithAuthRedirects(fileUrl, if (existingBytes > 0) existingBytes else null)
+        try {
+            val responseCode = connection.responseCode
+            if (responseCode == 416) {
+                emit(DownloadStatus(targetFile.length(), targetFile.length(), 0))
+                return@flow
+            }
+
+            if (responseCode !in 200..299 && responseCode != 206) {
+                throw RuntimeException("Download failed for $fileName with HTTP $responseCode")
+            }
+
+            val contentLength = connection.contentLengthLong.takeIf { it > 0 } ?: -1L
+            val totalSize = if (contentLength > 0 && responseCode == 206) {
+                existingBytes + contentLength
+            } else if (contentLength > 0) {
+                contentLength
+            } else {
+                existingBytes
+            }
+
+            var downloadedBytes = existingBytes
+            var bytesSinceLastEmit = 0L
+            var lastEmitTime = System.currentTimeMillis()
+
+            if (existingBytes > 0 && responseCode == 200) {
+                Log.w(TAG, "Server ignored Range. Restarting full voice download for $fileName.")
+                if (targetFile.exists()) targetFile.delete()
+                targetFile.createNewFile()
+                downloadedBytes = 0L
+            }
+
+            connection.inputStream.use { input ->
+                RandomAccessFile(targetFile, "rw").use { raf ->
+                    raf.seek(downloadedBytes)
+                    val buffer = ByteArray(8192)
+                    var bytesRead: Int
+                    while (input.read(buffer).also { bytesRead = it } != -1) {
+                        raf.write(buffer, 0, bytesRead)
+                        downloadedBytes += bytesRead
+                        bytesSinceLastEmit += bytesRead
+
+                        val currentTime = System.currentTimeMillis()
+                        val elapsed = currentTime - lastEmitTime
+                        if (elapsed > 500) {
+                            val speed = if (elapsed > 0) (bytesSinceLastEmit * 1000 / elapsed) else 0L
+                            emit(DownloadStatus(downloadedBytes, totalSize, speed))
+                            lastEmitTime = currentTime
+                            bytesSinceLastEmit = 0L
+                        }
+                    }
+                }
+            }
+
+            emit(DownloadStatus(downloadedBytes, if (totalSize > 0) totalSize else downloadedBytes, 0))
+            Log.i(TAG, "Completed voice download for $fileName into ${targetFile.absolutePath}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to download voice file $fileName: ${e.message}")
+            throw e
+        } finally {
+            connection.disconnect()
+        }
+    }.flowOn(Dispatchers.IO)
+
     /**
      * Downloads image generator models (multi-file format with manifest.json)
      */
     private fun downloadImageGeneratorModel(model: LLMModel): Flow<DownloadStatus> = flow {
         Log.i(TAG, "Downloading image generator model: ${model.name}")
-        
+
         // Target directory: app's files dir + image_generator/bins (app has write access)
         val targetDir = File(context.filesDir, "image_generator/bins")
         if (!targetDir.exists()) {
             targetDir.mkdirs()
             Log.d(TAG, "Created directory: ${targetDir.absolutePath}")
         }
-        
+
         // Step 1: Download manifest.json
         Log.d(TAG, "Downloading manifest from: ${model.url}")
         val connection = openConnectionWithAuthRedirects(model.url)
-        
+
         val manifestJson = connection.inputStream.bufferedReader().use { it.readText() }
         connection.disconnect()
-        
+
         val manifest = JSONObject(manifestJson)
         val filesArray = manifest.getJSONArray("files")
         val baseUrl = manifest.optString("base_url", model.url.substringBeforeLast("/") + "/")
         val totalFiles = filesArray.length()
-        
+
         Log.i(TAG, "Manifest loaded: $totalFiles files to download")
-        
+
         // Check how many files already exist to calculate baseline for totalDownloaded
         var totalDownloaded = 0L
         for (i in 0 until totalFiles) {
@@ -422,25 +525,25 @@ class ModelDownloader(
                 totalDownloaded += targetFile.length()
             }
         }
-        
+
         Log.i(TAG, "Starting to download remaining files... (total existing length: $totalDownloaded)")
-        
+
         // Step 2: Download each file
         val totalSize = model.sizeBytes
         var lastEmitTime = System.currentTimeMillis()
         var bytesSinceLastEmit = 0L
         var filesDownloaded = 0
-        
+
         for (i in 0 until totalFiles) {
             val fileName = filesArray.getString(i)
             val targetFile = File(targetDir, fileName)
-            
+
             val existingBytes = if (targetFile.exists()) targetFile.length() else 0L
-            
+
             Log.d(TAG, "Downloading ($i/$totalFiles): $fileName")
             val fileUrl = baseUrl + fileName
             val fileConnection = openConnectionWithAuthRedirects(fileUrl, if (existingBytes > 0) existingBytes else null)
-            
+
             try {
                 val responseCode = fileConnection.responseCode
                 if (responseCode == 416) {
@@ -448,11 +551,11 @@ class ModelDownloader(
                     filesDownloaded++
                     continue
                 }
-                
+
                 if (responseCode !in 200..299 && responseCode != 206) {
                     throw RuntimeException("Download failed for $fileName with HTTP $responseCode")
                 }
-                
+
                 var fileOutputBytes = existingBytes
                 if (responseCode == 200 && existingBytes > 0) {
                     Log.w(TAG, "Server ignored Range. Restarting full download for $fileName.")
@@ -461,7 +564,7 @@ class ModelDownloader(
                     targetFile.createNewFile()
                     fileOutputBytes = 0L
                 }
-                
+
                 fileConnection.inputStream.use { input ->
                     RandomAccessFile(targetFile, "rw").use { raf ->
                         raf.seek(fileOutputBytes)
@@ -472,7 +575,7 @@ class ModelDownloader(
                             totalDownloaded += bytesRead
                             fileOutputBytes += bytesRead
                             bytesSinceLastEmit += bytesRead
-                            
+
                             // Emit progress every 500ms
                             val currentTime = System.currentTimeMillis()
                             val elapsed = currentTime - lastEmitTime
@@ -494,34 +597,34 @@ class ModelDownloader(
                 fileConnection.disconnect()
             }
         }
-        
+
         // Final emit - use authoritative total if we have it (manifest may contain size)
         val finalTotal = if (totalSize > 0) totalSize else totalDownloaded
         emit(DownloadStatus(totalDownloaded, finalTotal, 0))
         Log.i(TAG, "Completed downloading all $totalFiles files for ${model.name}. final=${finalTotal} downloaded=${totalDownloaded}")
     }.flowOn(Dispatchers.IO)
-    
+
     /**
      * Downloads Stable Diffusion models (ZIP format from HuggingFace)
      * Downloads ZIP, then extracts to sd_models directory
      */
     private fun downloadStableDiffusionModel(model: LLMModel): Flow<DownloadStatus> = flow {
         Log.i(TAG, "Downloading Stable Diffusion model: ${model.name}")
-        
+
         // Target directory for extracted model files
         val sdModelsDir = File(context.filesDir, "sd_models")
         if (!sdModelsDir.exists()) {
             sdModelsDir.mkdirs()
             Log.d(TAG, "Created directory: ${sdModelsDir.absolutePath}")
         }
-        
+
         // Model-specific folder for this model
         val modelTargetDir = File(sdModelsDir, model.name.replace(" ", "_"))
-        
+
         // Check if model already extracted by searching recursively for unet files
-        val modelType = if (model.name.contains("NPU", ignoreCase = true) || 
+        val modelType = if (model.name.contains("NPU", ignoreCase = true) ||
                             model.modelFormat.contains("qnn", ignoreCase = true)) "qnn" else "mnn"
-        
+
         fun findUnetFile(dir: File, depth: Int = 0): Boolean {
             if (depth > 6 || !dir.exists() || !dir.isDirectory) return false
             val files = dir.listFiles() ?: return false
@@ -538,16 +641,16 @@ class ModelDownloader(
             }
             return false
         }
-        
+
         val modelAlreadyExtracted = modelTargetDir.exists() && findUnetFile(modelTargetDir)
         Log.i(TAG, "Model type detected: $modelType, checking in: ${modelTargetDir.absolutePath}, exists: $modelAlreadyExtracted")
-        
+
         if (modelAlreadyExtracted) {
             Log.i(TAG, "Model already extracted at ${modelTargetDir.absolutePath}")
             emit(DownloadStatus(model.sizeBytes, model.sizeBytes, 0))
             return@flow
         }
-        
+
         // Download ZIP to a persistent temp location so it survives process death and
         // the user can resume after killing/restarting the app.
         val tempDir = File(context.filesDir, "sd_downloads")
@@ -555,16 +658,16 @@ class ModelDownloader(
             tempDir.mkdirs()
         }
         val zipFile = File(tempDir, "${model.name.replace(" ", "_")}.zip")
-        
+
         // Download the ZIP if not already present
         if (!zipFile.exists() || zipFile.length() < model.sizeBytes * 0.9) {
             Log.d(TAG, "Downloading ZIP from: ${model.url}")
-            
+
             // Support resume: if a partial zip exists, request Range header and append to file
             val existingBytes = if (zipFile.exists()) zipFile.length() else 0L
 
             val connection = openConnectionWithAuthRedirects(model.url, if (existingBytes > 0) existingBytes else null)
-            
+
             val responseCode = connection.responseCode
             val acceptRanges = connection.getHeaderField("Accept-Ranges")
             val contentRangeHeader = connection.getHeaderField("Content-Range")
@@ -618,22 +721,22 @@ class ModelDownloader(
         } else {
             Log.i(TAG, "Using existing ZIP file: ${zipFile.absolutePath}")
         }
-        
+
         // Clean up model folder if it exists (from a previous failed extraction)
         if (modelTargetDir.exists()) {
             modelTargetDir.deleteRecursively()
         }
         modelTargetDir.mkdirs()
-        
+
         // Extract the ZIP with progress updates
         // Reset progress to 0 for extraction phase (separate from download progress)
         Log.i(TAG, "Extracting model files to ${modelTargetDir.absolutePath}...")
         emit(DownloadStatus(0, model.sizeBytes, 0, isExtracting = true))
-        
+
         // Use atomic reference to track progress from callback
         val extractProgress = java.util.concurrent.atomic.AtomicReference(0f)
         var extractSuccess = false
-        
+
         // Run extraction in a separate coroutine so we can poll progress
         coroutineScope {
             val extractJob = async(Dispatchers.IO) {
@@ -645,7 +748,7 @@ class ModelDownloader(
                     }
                 )
             }
-            
+
             // Poll and emit progress while extraction is running
             while (!extractJob.isCompleted) {
                 val progress = extractProgress.get()
@@ -653,14 +756,14 @@ class ModelDownloader(
                 emit(DownloadStatus(progressBytes, model.sizeBytes, 0, isExtracting = true))
                 delay(100)
             }
-            
+
             extractSuccess = extractJob.await()
         }
-        
+
         if (!extractSuccess) {
             throw RuntimeException("Failed to extract model ZIP")
         }
-        
+
         // Clean up ZIP file
         try {
             zipFile.delete()
@@ -668,54 +771,39 @@ class ModelDownloader(
         } catch (e: Exception) {
             Log.w(TAG, "Failed to delete temp ZIP: ${e.message}")
         }
-        
+
         // Final emit
         emit(DownloadStatus(model.sizeBytes, model.sizeBytes, 0))
         Log.i(TAG, "Completed downloading and extracting ${model.name}")
     }.flowOn(Dispatchers.IO)
-    
+
     /**
      * Downloads ONNX models with additional files (tokenizer.json, data files, etc.)
      * All files are downloaded to the same directory as the main model file.
      */
     private fun downloadOnnxModel(model: LLMModel): Flow<DownloadStatus> = flow {
         Log.i(TAG, "Downloading ONNX model: ${model.name} with ${model.additionalFiles.size} additional files")
-        
-        val modelsDir = File(context.filesDir, "models")
-        if (!modelsDir.exists()) {
-            modelsDir.mkdirs()
-        }
-        
-        // Create model-specific subdirectory for ONNX models using sanitized model name
-        val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
-        val modelDir = File(modelsDir, modelDirName)
-        if (!modelDir.exists()) {
-            modelDir.mkdirs()
-            Log.d(TAG, "Created ONNX model directory: ${modelDir.absolutePath}")
-        }
-        
-        // Helper to extract clean filename from URL (strip query params)
-        fun extractFileName(url: String): String {
-            return url.substringAfterLast("/").substringBefore("?")
-        }
-        
+
+        val modelDir = getOnnxModelDir(model)
+        Log.d(TAG, "Using ONNX model directory: ${modelDir.absolutePath}")
+
         // Build list of all files to download: main model + additional files
         val baseUrl = model.url.substringBefore("?").substringBeforeLast("/") + "/"
         val allFiles = mutableListOf<Pair<String, String>>() // (url, localFileName)
-        
+
         // Add main model file
         val mainFileName = extractFileName(model.url)
         allFiles.add(model.url to mainFileName)
-        
+
         // Add additional files (they use the same base URL)
         for (additionalFile in model.additionalFiles) {
             val fileName = extractFileName(additionalFile)
             val fileUrl = if (additionalFile.startsWith("http")) additionalFile else baseUrl + additionalFile
             allFiles.add(fileUrl to fileName)
         }
-        
+
         Log.i(TAG, "Total files to download: ${allFiles.size}")
-        
+
         // Check which files already exist to calculate baseline for totalDownloaded
         var totalDownloaded = 0L
         for ((_, fileName) in allFiles) {
@@ -724,24 +812,24 @@ class ModelDownloader(
                 totalDownloaded += file.length()
             }
         }
-        
+
         Log.i(TAG, "Starting ONNX downloads... (total existing length: $totalDownloaded)")
-        
+
         val totalSize = model.sizeBytes
         var lastEmitTime = System.currentTimeMillis()
         var bytesSinceLastEmit = 0L
         var currentFileIndex = 0
-        
+
         for ((fileUrl, fileName) in allFiles) {
             currentFileIndex++
             val targetFile = File(modelDir, fileName)
-            
+
             val existingBytes = if (targetFile.exists()) targetFile.length() else 0L
-            
+
             Log.d(TAG, "Downloading ($currentFileIndex/${allFiles.size}): $fileName from $fileUrl -> target: ${targetFile.absolutePath}")
-            
+
             val connection = openConnectionWithAuthRedirects(fileUrl, if (existingBytes > 0) existingBytes else null)
-            
+
             try {
                 val responseCode = connection.responseCode
                 if (responseCode == 416) {
@@ -749,13 +837,13 @@ class ModelDownloader(
                     Log.d(TAG, "File $fileName already complete (HTTP 416).")
                     continue
                 }
-                
+
                 if (responseCode !in 200..299 && responseCode != 206) {
                     throw RuntimeException("Download failed for $fileName with HTTP $responseCode")
                 }
-                
+
                 var fileOutputBytes = existingBytes
-                
+
                 if (existingBytes > 0 && responseCode == 200) {
                     Log.w(TAG, "Server ignored Range. Restarting full download for $fileName.")
                     totalDownloaded -= existingBytes
@@ -763,7 +851,7 @@ class ModelDownloader(
                     targetFile.createNewFile()
                     fileOutputBytes = 0L
                 }
-                
+
                 connection.inputStream.use { input ->
                     RandomAccessFile(targetFile, "rw").use { raf ->
                         raf.seek(fileOutputBytes)
@@ -774,7 +862,7 @@ class ModelDownloader(
                             fileOutputBytes += bytesRead
                             totalDownloaded += bytesRead
                             bytesSinceLastEmit += bytesRead
-                            
+
                             // Emit progress every 500ms
                             val currentTime = System.currentTimeMillis()
                             val elapsed = currentTime - lastEmitTime
@@ -795,7 +883,7 @@ class ModelDownloader(
                 connection.disconnect()
             }
         }
-        
+
         // Final emit - use authoritative total if we have it
         val authoritativeFinal = if (totalSize > 0) totalSize else totalDownloaded
         emit(DownloadStatus(totalDownloaded, authoritativeFinal, 0))
@@ -885,42 +973,42 @@ class ModelDownloader(
         var lastEmitTime = System.currentTimeMillis()
         var bytesSinceLastEmit = 0L
 
-        
+
         // We will iterate and download missing files.
         // Note: this simple logic assumes we download sequentially.
-        
+
         for ((index, fileData) in allFiles.withIndex()) {
             val (fileUrl, fileName) = fileData
             val targetFile = File(modelDir, fileName) // save into model-specific dir
-            
+
             val existingBytes = if (targetFile.exists()) targetFile.length() else 0L
             Log.d(TAG, "File $fileName: existing=$existingBytes")
 
             var fileTotalBytes = -1L // Unknown initially
-            
+
             // Connect to check size / resume
              val connection = openConnectionWithAuthRedirects(fileUrl, if (existingBytes > 0) existingBytes else null)
-            
+
             try {
                 val responseCode = connection.responseCode
-                
+
                 // 416 = Range Not Satisfiable (file complete)
                 if (responseCode == 416) {
                     Log.i(TAG, "File $fileName already complete ($existingBytes bytes)")
                     cumulativeDownloaded += existingBytes
                     reportedTotalAcrossFiles += existingBytes
                     connection.disconnect()
-                    continue 
+                    continue
                 }
-                
+
                 if (responseCode !in 200..299 && responseCode != 206) {
                     throw RuntimeException("Download failed for $fileName: HTTP $responseCode")
                 }
-                
+
                 // Determine file total size
                  val contentLength = connection.getHeaderField("Content-Length")?.toLongOrNull() ?: 0L
                  val contentRange = connection.getHeaderField("Content-Range")
-                 
+
                  if (contentRange != null) {
                      val total = contentRange.substringAfter("/").toLongOrNull() ?: 0L
                      if (total > 0) fileTotalBytes = total
@@ -929,18 +1017,18 @@ class ModelDownloader(
                  }
 
                  if (fileTotalBytes > 0) reportedTotalAcrossFiles += fileTotalBytes
-                 
+
                  // If we got 200 (no partial content), we must restart this file
                  var fileOutputBytes = existingBytes
                  val append = responseCode == 206
-                 
+
                  if (responseCode == 200 && existingBytes > 0) {
                      Log.w(TAG, "Server doesn't support resume for $fileName. Restarting.")
                      targetFile.delete()
                      targetFile.createNewFile()
                      fileOutputBytes = 0L
                  }
-                 
+
                  // If file is already complete (size match), skip
                  if (fileTotalBytes > 0 && fileOutputBytes >= fileTotalBytes) {
                      Log.i(TAG, "File $fileName is complete ($fileOutputBytes/$fileTotalBytes)")
@@ -948,25 +1036,25 @@ class ModelDownloader(
                      connection.disconnect()
                      continue
                  }
-                 
+
                  // Perform download
                  Log.i(TAG, "Downloading $fileName ($fileOutputBytes / $fileTotalBytes)...")
-                 
+
                  // Add the partial bytes of current file to cumulative total so resume starts at correct %
                  cumulativeDownloaded += fileOutputBytes
-                 
+
                  connection.inputStream.use { input ->
                      RandomAccessFile(targetFile, "rw").use { raf ->
                          if (append) raf.seek(fileOutputBytes) else raf.setLength(0)
-                         
+
                          val buffer = ByteArray(8192)
                          var bytesRead: Int
                          while (input.read(buffer).also { bytesRead = it } != -1) {
                              raf.write(buffer, 0, bytesRead)
-                             
+
                              fileOutputBytes += bytesRead
                              cumulativeDownloaded += bytesRead
-                             
+
                              bytesSinceLastEmit += bytesRead
                              val currentTime = System.currentTimeMillis()
                              val elapsed = currentTime - lastEmitTime
@@ -987,7 +1075,7 @@ class ModelDownloader(
                 connection.disconnect()
             }
         }
-        
+
         // Final emit - pick authoritative total if available
         val authoritativeTotal = if (reportedTotalAcrossFiles > 0) reportedTotalAcrossFiles else maxOf(model.sizeBytes, cumulativeDownloaded)
         emit(DownloadStatus(cumulativeDownloaded, authoritativeTotal, 0))

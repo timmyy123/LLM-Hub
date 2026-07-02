@@ -29,6 +29,9 @@ class ThemePreferences(private val context: Context) {
         private val AUTO_READOUT_ENABLED_KEY = booleanPreferencesKey("auto_readout_enabled")
         private val IS_PREMIUM_KEY = booleanPreferencesKey("is_premium")
         private val GITHUB_STARS_KEY = androidx.datastore.preferences.core.intPreferencesKey("github_stars")
+        private val SELECTED_TTS_MODEL_KEY = stringPreferencesKey("selected_tts_model")
+        private val SELECTED_TTS_DEVICE_KEY = stringPreferencesKey("selected_tts_device")
+        private val SELECTED_TTS_VOICE_KEY = stringPreferencesKey("selected_tts_voice")
     }
 
     val themeMode: Flow<ThemeMode> = context.dataStore.data
@@ -140,6 +143,43 @@ class ThemePreferences(private val context: Context) {
     suspend fun setGithubStars(stars: Int) {
         context.dataStore.edit { preferences ->
             preferences[GITHUB_STARS_KEY] = stars
+        }
+    }
+
+    val selectedTtsModel: Flow<String?> = context.dataStore.data
+        .map { preferences ->
+            preferences[SELECTED_TTS_MODEL_KEY]
+        }
+
+    val selectedTtsDevice: Flow<String> = context.dataStore.data
+        .map { preferences ->
+            preferences[SELECTED_TTS_DEVICE_KEY] ?: "gpu" // Default to GPU
+        }
+
+    val selectedTtsVoice: Flow<String> = context.dataStore.data
+        .map { preferences ->
+            preferences[SELECTED_TTS_VOICE_KEY] ?: "af_sky" // Default to English Sky
+        }
+
+    suspend fun setSelectedTtsModel(modelName: String?) {
+        context.dataStore.edit { preferences ->
+            if (modelName != null) {
+                preferences[SELECTED_TTS_MODEL_KEY] = modelName
+            } else {
+                preferences.remove(SELECTED_TTS_MODEL_KEY)
+            }
+        }
+    }
+
+    suspend fun setSelectedTtsDevice(device: String) {
+        context.dataStore.edit { preferences ->
+            preferences[SELECTED_TTS_DEVICE_KEY] = device
+        }
+    }
+
+    suspend fun setSelectedTtsVoice(voice: String) {
+        context.dataStore.edit { preferences ->
+            preferences[SELECTED_TTS_VOICE_KEY] = voice
         }
     }
 }

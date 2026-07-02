@@ -13,7 +13,7 @@ object DeviceInfo {
             "UNKNOWN"
         }
     }
-    
+
     private val chipsetModelSuffixes = mapOf(
         "SM8475" to "8gen1",  // 8+ Gen 1
         "SM8450" to "8gen1",  // 8 Gen 1
@@ -30,12 +30,12 @@ object DeviceInfo {
         "SM8850" to "8gen5",  // Snapdragon 8 Elite Gen 5
         "SM8850P" to "8gen5"
     )
-    
+
     fun getChipsetSuffix(): String? {
         val soc = getDeviceSoc()
         return chipsetModelSuffixes[soc] ?: if (soc.startsWith("SM")) "min" else null
     }
-    
+
     fun isQualcommNpuSupported(): Boolean {
         // App policy: expose GGUF NPU option on 8 Gen 4 and 8 Gen 5 class devices.
         return getChipsetSuffix() in setOf("8gen4", "8gen5")
@@ -734,6 +734,46 @@ object ModelData {
         )
     )
 
+    val ttsModels = listOf(
+        LLMModel(
+            name = "Kokoro-82M (ONNX Quantized)",
+            description = "8-bit integer quantized Kokoro-82M ONNX model. Good balance of speed and size. ~92 MB download.",
+            url = "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/468588286ebb2dd77c25b9771e5d165896538cce/onnx/model_quantized.onnx",
+            category = "tts",
+            sizeBytes = 92361116L,
+            source = "hexgrad (ONNX Community)",
+            supportsVision = false,
+            supportsAudio = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 2),
+            contextWindowSize = 0,
+            modelFormat = "onnx",
+            additionalFiles = listOf(
+                "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/468588286ebb2dd77c25b9771e5d165896538cce/tokenizer.json",
+                "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/468588286ebb2dd77c25b9771e5d165896538cce/config.json",
+                "https://raw.githubusercontent.com/puff-dayo/Kokoro-82M-Android/latest/app/src/main/res/raw/cmudict_ipa.dict"
+            )
+        ),
+        LLMModel(
+            name = "Kokoro-82M (ONNX FP32)",
+            description = "Full-precision floating-point Kokoro-82M ONNX model. Maximum quality speech synthesis. ~326 MB download.",
+            url = "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/468588286ebb2dd77c25b9771e5d165896538cce/onnx/model.onnx",
+            category = "tts",
+            sizeBytes = 325532232L,
+            source = "hexgrad (ONNX Community)",
+            supportsVision = false,
+            supportsAudio = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            contextWindowSize = 0,
+            modelFormat = "onnx",
+            additionalFiles = listOf(
+                "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/468588286ebb2dd77c25b9771e5d165896538cce/tokenizer.json",
+                "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/468588286ebb2dd77c25b9771e5d165896538cce/config.json",
+                "https://raw.githubusercontent.com/puff-dayo/Kokoro-82M-Android/latest/app/src/main/res/raw/cmudict_ipa.dict"
+            )
+        )
+    )
 
     val models = listOf(
         // Gemma-3 1B Models
@@ -804,12 +844,12 @@ object ModelData {
             contextWindowSize = 4096,
             modelFormat = "task"
         ),
-        
+
         LLMModel(
             name = "Llama-3.2 3B (INT8)",
             description = "Meta's Llama 3.2 3B model with INT8 quantization. Larger model for better performance. Ready to download from HuggingFace (5.11GB)",
             url = "https://huggingface.co/vimal-yuvabe/llama-3.2-3b-tflite/resolve/main/llama-3.2-3B-q8.task?download=true",
-            category = "text", 
+            category = "text",
             sizeBytes = 5491473637L, // 5.11GB (actual size from HuggingFace)
             source = "Meta via vimal-yuvabe",
             supportsVision = false,
@@ -1740,7 +1780,7 @@ object ModelData {
             contextWindowSize = 128000,
             modelFormat = "gguf"
         ),
-        
+
         // LFM-2.5 1.2B Thinking Models (LiquidAI GGUF)
         LLMModel(
             name = "LFM-2.5 1.2B Thinking (Q4_0)",
@@ -2432,7 +2472,7 @@ object ModelData {
             contextWindowSize = 0,
             modelFormat = "gguf"
         ),
-        
+
         // Gecko Embedding Models - Various dimension sizes for different use cases
         LLMModel(
             name = "Gecko-110M (64D Quantized)",
@@ -2538,7 +2578,7 @@ object ModelData {
             contextWindowSize = 1024,
             modelFormat = "tflite"
         ),
-        
+
         // EmbeddingGemma Models - High-quality text embeddings from Google
         LLMModel(
             name = "EmbeddingGemma 300M (256 seq)",
@@ -2592,7 +2632,7 @@ object ModelData {
             contextWindowSize = 2048,
             modelFormat = "tflite"
         ),
-        
+
         // Image Generation Models - Absolute Reality (Stable Diffusion 1.5)
         LLMModel(
             name = "Absolute Reality (NPU - ${DeviceInfo.getSdQnnPackageSuffix()})",
@@ -2601,7 +2641,7 @@ object ModelData {
             category = "image_generation",
             sizeBytes = when(DeviceInfo.getSdQnnPackageSuffix()) {
                 "8gen1" -> 1138900992L    // 1.06 GB
-                "8gen2" -> 1128267776L    // 1.05 GB  
+                "8gen2" -> 1128267776L    // 1.05 GB
                 else -> 1041235968L       // 993 MB (min)
             },
             source = "Stable Diffusion 1.5 (QNN SDK via xororz)",
@@ -3197,7 +3237,7 @@ object ModelData {
             modelFormat = "bin"
         )
         // Note: Gecko tokenizer removed - Gecko models have built-in tokenizers
-    ) + upscalerModels + (if (DeviceInfo.getChipsetSuffix() in setOf("8gen3", "8gen4", "8gen5")) sdxlModels else emptyList())
+    ) + upscalerModels + ttsModels + (if (DeviceInfo.getChipsetSuffix() in setOf("8gen3", "8gen4", "8gen5")) sdxlModels else emptyList())
 
     /**
      * Current Status and Next Steps
@@ -3205,35 +3245,35 @@ object ModelData {
     fun getStatusMessage(): String {
         return """
         🎯 ON-DEVICE AI MODELS FOR ANDROID
-        
+
         📱 READY FOR DIRECT DOWNLOAD:
-        
+
         ✅ MULTIMODAL MODELS (Text + Vision + Audio):
-        
+
         🔹 GEMMA-3N SERIES (Google):
         • Gemma-3n E2B (Vision+Audio+Text, 4k context) - 3.41GB
         • Gemma-3n E4B (Vision+Audio+Text, 4k context) - 4.58GB
-        
+
         🔹 MINSTRAL-3 SERIES (MistralAI - Multimodal GGUF):
         • Ministral-3 3B Instruct (Vision enabled, 32k context)
         • Ministral-3 3B Reasoning (Thinking + Vision, 32k context)
         * Note: Vision support modules are now downloaded automatically with these models.
-        
+
         ✅ TEXT MODELS:
-        
+
         🔹 LFM-2.5 SERIES (LiquidAI - GGUF):
         • LFM-2.5 1.2B Instruct (128k context)
         • LFM-2.5 1.2B Thinking (128k context, Optimized for reasoning)
-        
+
         🔹 GEMMA-3 SERIES (Google):
         • Gemma-3 1B (INT4/INT8, 2k-4k context)
-        
+
         � LLAMA-3.2 SERIES (Meta):
         • Llama-3.2 1B/3B (INT8, 4k context)
-        
+
         � PHI-4 SERIES (Microsoft):
-        • Phi-4 Mini (INT8, 4k context) 
-        
+        • Phi-4 Mini (INT8, 4k context)
+
         � DOWNLOAD STATUS: Your app is ready for global model downloads via Nexa SDK integration!
         """.trimIndent()
     }
