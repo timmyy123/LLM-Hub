@@ -854,6 +854,23 @@
     <string name="image_upscale_save">Galeriye Kaydet</string>
     <string name="image_upscale_models_title">Görüntü İyileştirme Modelleri</string>
     <string name="image_upscale_models_description">Görüntü çözünürlüğünü 4x\'e kadar artırmak için QNN hızlandırmalı yapay zeka modelleri</string>
+    <string name="tts_models">TTS Modelleri</string>
+    <string name="tts_models_description">Yerel ses sentezi için metinden sese modelleri</string>
+    <string name="tts_model_setting">TTS Modeli</string>
+    <string name="tts_model_setting_desc">İndirilen özel bir TTS modelini veya sistem varsayılanını seçin</string>
+    <string name="system_default_tts">Sistem Varsayılanı TTS</string>
+    <string name="tts_device_setting">TTS Cihazı</string>
+    <string name="tts_device_setting_desc">Metin okuma modelleri için CPU veya GPU seçin</string>
+    <string name="stt_device_setting">STT Cihazı</string>
+    <string name="stt_device_setting_desc">Ses tanıma modelleri için CPU veya GPU seçin</string>
+    <string name="tts_voice_setting">TTS Sesi</string>
+    <string name="tts_voice_en">English (Sky)</string>
+    <string name="tts_voice_ja">Japanese (Alpha)</string>
+    <string name="tts_voice_es">Spanish (Female)</string>
+    <string name="tts_voice_fr">French (Female)</string>
+    <string name="tts_voice_it">Italian (Female)</string>
+    <string name="tts_voice_pt">Portuguese (Female)</string>
+    <string name="tts_voice_zh">Chinese (Female)</string>
 </resources>
 
 

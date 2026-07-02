@@ -829,6 +829,23 @@
     <string name="image_upscale_save">Сохранить в галерею</string>
     <string name="image_upscale_models_title">Модели улучшения изображений</string>
     <string name="image_upscale_models_description">Модели ИИ с ускорением QNN для повышения разрешения изображений до 4x</string>
+    <string name="tts_models">Модели TTS</string>
+    <string name="tts_models_description">Модели синтеза речи для локального озвучивания текста</string>
+    <string name="tts_model_setting">Модель TTS</string>
+    <string name="tts_model_setting_desc">Выберите загруженную пользовательскую модель TTS или системную по умолчанию</string>
+    <string name="system_default_tts">Системная служба TTS по умолчанию</string>
+    <string name="tts_device_setting">Устройство TTS</string>
+    <string name="tts_device_setting_desc">Выберите CPU или GPU для моделей синтеза речи</string>
+    <string name="stt_device_setting">Устройство STT</string>
+    <string name="stt_device_setting_desc">Выберите CPU или GPU для моделей распознавания речи</string>
+    <string name="tts_voice_setting">Голос TTS</string>
+    <string name="tts_voice_en">English (Sky)</string>
+    <string name="tts_voice_ja">Japanese (Alpha)</string>
+    <string name="tts_voice_es">Spanish (Female)</string>
+    <string name="tts_voice_fr">French (Female)</string>
+    <string name="tts_voice_it">Italian (Female)</string>
+    <string name="tts_voice_pt">Portuguese (Female)</string>
+    <string name="tts_voice_zh">Chinese (Female)</string>
 </resources>
 
 

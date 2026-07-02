@@ -857,6 +857,23 @@
     <string name="image_upscale_save">حفظ في المعرض</string>
     <string name="image_upscale_models_title">نماذج تحسين الصور</string>
     <string name="image_upscale_models_description">نماذج ذكاء اصطناعي مسرَّعة بـ QNN لتحسين دقة الصور حتى 4x</string>
+    <string name="tts_models">نماذج TTS</string>
+    <string name="tts_models_description">نماذج تحويل النص إلى كلام لتوليف الصوت محليًا</string>
+    <string name="tts_model_setting">نموذج TTS</string>
+    <string name="tts_model_setting_desc">اختر نموذج TTS مخصص تم تنزيله أو النموذج الافتراضي للنظام</string>
+    <string name="system_default_tts">TTS الافتراضي للنظام</string>
+    <string name="tts_device_setting">جهاز TTS</string>
+    <string name="tts_device_setting_desc">اختر المعالج (CPU) أو كرت الشاشة (GPU) لنماذج تحويل النص إلى كلام</string>
+    <string name="stt_device_setting">جهاز STT</string>
+    <string name="stt_device_setting_desc">اختر المعالج (CPU) أو كرت الشاشة (GPU) لنماذج التعرف على الكلام</string>
+    <string name="tts_voice_setting">صوت TTS</string>
+    <string name="tts_voice_en">English (Sky)</string>
+    <string name="tts_voice_ja">Japanese (Alpha)</string>
+    <string name="tts_voice_es">Spanish (Female)</string>
+    <string name="tts_voice_fr">French (Female)</string>
+    <string name="tts_voice_it">Italian (Female)</string>
+    <string name="tts_voice_pt">Portuguese (Female)</string>
+    <string name="tts_voice_zh">Chinese (Female)</string>
 </resources>
 
 

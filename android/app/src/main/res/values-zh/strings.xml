@@ -865,4 +865,21 @@
     <string name="image_upscale_save">保存到相册</string>
     <string name="image_upscale_models_title">图像超分辨率模型</string>
     <string name="image_upscale_models_description">QNN 加速的 AI 模型，可将图像分辨率提升至 4 倍</string>
+    <string name="tts_models">TTS 模型</string>
+    <string name="tts_models_description">用于本地语音合成的文本转语音模型</string>
+    <string name="tts_model_setting">TTS 模型</string>
+    <string name="tts_model_setting_desc">选择已下载的自定义 TTS 模型或系统默认模型</string>
+    <string name="system_default_tts">系统默认 TTS</string>
+    <string name="tts_device_setting">TTS 设备</string>
+    <string name="tts_device_setting_desc">为文字转语音模型选择 CPU 或 GPU</string>
+    <string name="stt_device_setting">STT 设备</string>
+    <string name="stt_device_setting_desc">为语音转文字模型选择 CPU 或 GPU</string>
+    <string name="tts_voice_setting">TTS 语音</string>
+    <string name="tts_voice_en">English (Sky)</string>
+    <string name="tts_voice_ja">Japanese (Alpha)</string>
+    <string name="tts_voice_es">Spanish (Female)</string>
+    <string name="tts_voice_fr">French (Female)</string>
+    <string name="tts_voice_it">Italian (Female)</string>
+    <string name="tts_voice_pt">Portuguese (Female)</string>
+    <string name="tts_voice_zh">Chinese (Female)</string>
 </resources>

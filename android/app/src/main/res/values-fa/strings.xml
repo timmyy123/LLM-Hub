@@ -857,6 +857,23 @@
     <string name="image_upscale_save">ذخیره در گالری</string>
     <string name="image_upscale_models_title">مدل‌های بزرگ‌نمایی تصویر</string>
     <string name="image_upscale_models_description">مدل‌های هوش مصنوعی شتاب‌دهنده QNN برای بزرگ‌نمایی تصاویر تا ۴ برابر</string>
+    <string name="tts_models">مدل‌های TTS</string>
+    <string name="tts_models_description">مدل‌های تبدیل متن به گفتار برای سنتز محلی صدا</string>
+    <string name="tts_model_setting">مدل TTS</string>
+    <string name="tts_model_setting_desc">یک مدل TTS سفارشی دانلود شده یا پیش‌فرض سیستم را انتخاب کنید</string>
+    <string name="system_default_tts">TTS پیش‌فرض سیستم</string>
+    <string name="tts_device_setting">دستگاه TTS</string>
+    <string name="tts_device_setting_desc">انتخاب CPU یا GPU برای مدل‌های تبدیل متن به گفتار</string>
+    <string name="stt_device_setting">دستگاه STT</string>
+    <string name="stt_device_setting_desc">انتخاب CPU یا GPU برای مدل‌های تبدیل گفتار به متن</string>
+    <string name="tts_voice_setting">صدای TTS</string>
+    <string name="tts_voice_en">English (Sky)</string>
+    <string name="tts_voice_ja">Japanese (Alpha)</string>
+    <string name="tts_voice_es">Spanish (Female)</string>
+    <string name="tts_voice_fr">French (Female)</string>
+    <string name="tts_voice_it">Italian (Female)</string>
+    <string name="tts_voice_pt">Portuguese (Female)</string>
+    <string name="tts_voice_zh">Chinese (Female)</string>
 </resources>
 
 

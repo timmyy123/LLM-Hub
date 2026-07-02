@@ -823,6 +823,23 @@
     <string name="image_upscale_save">In Galerie speichern</string>
     <string name="image_upscale_models_title">Bildverbesserungsmodelle</string>
     <string name="image_upscale_models_description">QNN-beschleunigte KI-Modelle zur Hochskalierung und Verbesserung der Bildauflösung bis zu 4x</string>
+    <string name="tts_models">TTS-Modelle</string>
+    <string name="tts_models_description">Text-to-Speech-Modelle für lokale Sprachsynthese</string>
+    <string name="tts_model_setting">TTS-Modell</string>
+    <string name="tts_model_setting_desc">Wählen Sie ein heruntergeladenes benutzerdefiniertes TTS-Modell oder den Systemstandard</string>
+    <string name="system_default_tts">Systemstandard-TTS</string>
+    <string name="tts_device_setting">TTS-Gerät</string>
+    <string name="tts_device_setting_desc">Wählen Sie CPU oder GPU für Text-zu-Sprache-Modelle</string>
+    <string name="stt_device_setting">STT-Gerät</string>
+    <string name="stt_device_setting_desc">Wählen Sie CPU oder GPU für Sprache-zu-Text-Modelle</string>
+    <string name="tts_voice_setting">TTS-Stimme</string>
+    <string name="tts_voice_en">English (Sky)</string>
+    <string name="tts_voice_ja">Japanese (Alpha)</string>
+    <string name="tts_voice_es">Spanish (Female)</string>
+    <string name="tts_voice_fr">French (Female)</string>
+    <string name="tts_voice_it">Italian (Female)</string>
+    <string name="tts_voice_pt">Portuguese (Female)</string>
+    <string name="tts_voice_zh">Chinese (Female)</string>
 </resources>
 
 
