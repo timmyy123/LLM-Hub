@@ -108,7 +108,7 @@ fun VibeVoiceScreen(
     val coroutineScope = rememberCoroutineScope()
 
     val audioService = remember { AudioInputService(context) }
-    val ttsService = remember { TtsService(context) }
+    val ttsService = remember { TtsService(context, isTranslationFeature = true) }
     val isTtsSpeaking by ttsService.isSpeaking.collectAsState()
 
     var recordedAudioData by remember { mutableStateOf<ByteArray?>(null) }

@@ -87,8 +87,8 @@ fun WritingAidScreen(
         }
     }
     
-    // TTS Service
-    val ttsService = remember { com.llmhub.llmhub.ui.components.TtsService(context) }
+    // TTS Service — always use system TTS
+    val ttsService = remember { com.llmhub.llmhub.ui.components.TtsService(context, isTranslationFeature = true) }
     val isTtsSpeaking by ttsService.isSpeaking.collectAsState()
     
     // Scroll state for auto-scrolling

@@ -253,10 +253,10 @@ fun TranslatorScreen(
     // Clipboard manager
     val clipboardManager = LocalClipboardManager.current
     
-    // TTS Service
-    val ttsService = remember { com.llmhub.llmhub.ui.components.TtsService(context) }
+    // TTS Service — translator always uses system TTS (Kokoro is English-only)
+    val ttsService = remember { com.llmhub.llmhub.ui.components.TtsService(context, isTranslationFeature = true) }
     val isTtsSpeaking by ttsService.isSpeaking.collectAsState()
-    
+
     // Parsed transcription and translation for audio mode
     var transcriptionText by remember { mutableStateOf("") }
     var translationText by remember { mutableStateOf("") }
@@ -2026,10 +2026,10 @@ fun ScamDetectorScreen(
     var gpuLayersScam by remember(selectedNGpuLayersScam) { mutableStateOf(selectedNGpuLayersScam ?: 999) }
     val isGgufScam by remember(selectedModel) { derivedStateOf { selectedModel?.modelFormat == "gguf" } }
     
-    // TTS Service
-    val ttsService = remember { com.llmhub.llmhub.ui.components.TtsService(context) }
+    // TTS Service — always use system TTS (Kokoro is English-only)
+    val ttsService = remember { com.llmhub.llmhub.ui.components.TtsService(context, isTranslationFeature = true) }
     val isTtsSpeaking by ttsService.isSpeaking.collectAsState()
-    
+
     // Scroll state for auto-scrolling
     val scrollState = rememberScrollState()
     

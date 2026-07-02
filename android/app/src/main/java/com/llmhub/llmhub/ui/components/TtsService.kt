@@ -680,6 +680,15 @@ class TtsService(private val context: Context, private val isTranslationFeature:
             .replace(Regex("`(.+?)`"), "$1")
             .replace(Regex("\\[([^\\]]+)\\]\\([^)]+\\)"), "$1")
             .replace(Regex("^[•\\-*]\\s+", RegexOption.MULTILINE), "")
+            // Expand common abbreviations so they don't break sentence splitting
+            .replace(Regex("\\be\\.g\\."), "for example")
+            .replace(Regex("\\bi\\.e\\."), "that is")
+            .replace(Regex("\\betc\\."), "et cetera")
+            .replace(Regex("\\bvs\\."), "versus")
+            .replace(Regex("\\bDr\\."), "Doctor")
+            .replace(Regex("\\bMr\\."), "Mister")
+            .replace(Regex("\\bMrs\\."), "Missus")
+            .replace(Regex("\\bMs\\."), "Miss")
             .replace(Regex("\\s+"), " ")
             .trim()
     }
@@ -743,28 +752,47 @@ class TtsService(private val context: Context, private val isTranslationFeature:
 
     private fun splitIntoSentences(text: String): List<String> {
         if (text.isBlank()) return emptyList()
-        val maxChunkLength = 120
-        val rawChunks = text.split(Regex("(?<=[.!?。！？\\n])\\s*"))
-        val result = mutableListOf<String>()
+        val maxChunkLength = 200
+
+        // Strip markdown list markers and join bullet items into prose so they
+        // don't produce orphaned tiny fragments like "topics)?"
+        val normalized = text
+            .replace(Regex("^\\s*[-*•]\\s+", RegexOption.MULTILINE), "")
+            .replace(Regex("^\\s*\\d+\\.\\s+", RegexOption.MULTILINE), "")
+            .replace(Regex("\\n{2,}"), ". ")
+            .replace('\n', ' ')
+            .replace(Regex("\\s+"), " ")
+            .trim()
+
+        val rawChunks = normalized.split(Regex("(?<=[.!?。！？])\\s+"))
+        val merged = mutableListOf<String>()
         for (chunk in rawChunks) {
             val trimmed = chunk.trim()
             if (trimmed.isEmpty()) continue
-            if (trimmed.length > maxChunkLength) {
-                // Only hard-split on word boundary, never on comma/semicolon
+            // Merge orphaned short fragments (closing parens, single words) into previous
+            if (trimmed.length < 30 && merged.isNotEmpty()) {
+                merged[merged.lastIndex] = merged.last() + " " + trimmed
+            } else {
+                merged.add(trimmed)
+            }
+        }
+
+        val result = mutableListOf<String>()
+        for (chunk in merged) {
+            if (chunk.length > maxChunkLength) {
                 var start = 0
-                while (start < trimmed.length) {
-                    val end = (start + maxChunkLength).coerceAtMost(trimmed.length)
-                    // Back up to last space to avoid splitting mid-word
-                    val breakAt = if (end < trimmed.length) {
-                        val spaceIdx = trimmed.lastIndexOf(' ', end)
+                while (start < chunk.length) {
+                    val end = (start + maxChunkLength).coerceAtMost(chunk.length)
+                    val breakAt = if (end < chunk.length) {
+                        val spaceIdx = chunk.lastIndexOf(' ', end)
                         if (spaceIdx > start) spaceIdx else end
                     } else end
-                    val sub = trimmed.substring(start, breakAt).trim()
+                    val sub = chunk.substring(start, breakAt).trim()
                     if (sub.isNotEmpty()) result.add(sub)
                     start = breakAt
                 }
             } else {
-                result.add(trimmed)
+                result.add(chunk)
             }
         }
         return result
@@ -815,6 +843,36 @@ class TtsService(private val context: Context, private val isTranslationFeature:
     }
 
     // CMU dict: WORD -> IPA string, loaded lazily from cmudict_ipa.dict in any Kokoro model dir
+    // Overrides for words the CMU dict gets wrong — typically abbreviations that
+    // share spelling with common pronouns/articles (IT=I.T., A=letter A, I=letter I)
+    private val DICT_OVERRIDES = mapOf(
+        "IT"  to "ɪt",
+        "ITS" to "ɪts",
+        "IS"  to "ɪz",
+        "IN"  to "ɪn",
+        "IF"  to "ɪf",
+        "A"   to "ə",
+        "AN"  to "æn",
+        "AS"  to "æz",
+        "AT"  to "æt",
+        "BE"  to "biː",
+        "BY"  to "baɪ",
+        "DO"  to "duː",
+        "GO"  to "ɡoʊ",
+        "HE"  to "hiː",
+        "ME"  to "miː",
+        "MY"  to "maɪ",
+        "NO"  to "noʊ",
+        "OF"  to "əv",
+        "ON"  to "ɒn",
+        "OR"  to "ɔːɹ",
+        "SO"  to "soʊ",
+        "TO"  to "tuː",
+        "UP"  to "ʌp",
+        "US"  to "ʌs",
+        "WE"  to "wiː"
+    )
+
     private var cmuDict: Map<String, String>? = null
 
     private fun loadCmuDictIfNeeded() {
@@ -858,22 +916,43 @@ class TtsService(private val context: Context, private val isTranslationFeature:
                 token.isBlank() -> result.append(' ')
                 token.matches(Regex("[.,!?;:\"]")) -> result.append(token)
                 token.matches(Regex("[a-zA-Z']+")) -> {
-                    val ipa = if (dict != null) {
-                        dict[token.uppercase().trimEnd('\'')]
-                    } else null
+                    val upper = token.uppercase().trimEnd('\'')
+                    // Check overrides first — CMU dict has wrong pronunciations for
+                    // common function words that share spelling with abbreviations
+                    val ipa = DICT_OVERRIDES[upper] ?: dict?.get(upper)
+                    val dictValidChars = ipa?.filter { it in validChars } ?: ""
+                    Log.d(TAG, "G2P: '$token' upper='$upper' ipa=${ipa?.take(20)} dictValid='$dictValidChars'")
 
-                    val phonemes = if (ipa != null) {
-                        ipa
-                    } else {
-                        try {
-                            com.github.medavox.ipa_transcribers.Language.ENGLISH.transcriber.transcribe(token)
-                        } catch (e: Exception) {
-                            token
+                    // All-caps acronym not in dict (or dict returned no valid tokens) → spell each letter
+                    if (dictValidChars.isEmpty() && token.length in 2..6 && token.all { c -> c.isUpperCase() }) {
+                        token.forEachIndexed { i, ch ->
+                            val letterIpa = dict?.get(ch.toString())
+                            if (letterIpa != null) {
+                                for (char in letterIpa) { if (char in validChars) result.append(char) }
+                            } else {
+                                try {
+                                    val lp = com.github.medavox.ipa_transcribers.Language.ENGLISH.transcriber.transcribe(ch.toString().lowercase())
+                                    for (char in lp) { if (char in validChars) result.append(char) }
+                                } catch (_: Exception) {}
+                            }
+                            if (i < token.length - 1) result.append(' ')
                         }
-                    }
-                    // Apply en-us adjustments and filter to valid tokens
-                    for (char in phonemes) {
-                        if (char in validChars) result.append(char)
+                    } else {
+                        val phonemes = if (dictValidChars.isNotEmpty()) {
+                            // Use dict IPA — already confirmed it has valid chars
+                            ipa!!
+                        } else {
+                            // Dict missing or useless — always pass lowercase so IPA transcriber
+                            // treats the input as a word, not letter names
+                            try {
+                                com.github.medavox.ipa_transcribers.Language.ENGLISH.transcriber.transcribe(token.lowercase())
+                            } catch (e: Exception) {
+                                token.lowercase()
+                            }
+                        }
+                        for (char in phonemes) {
+                            if (char in validChars) result.append(char)
+                        }
                     }
                 }
             }
