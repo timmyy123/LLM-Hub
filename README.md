@@ -38,20 +38,14 @@
 | **🔍 Image Upscale** | **[NEW]** Upscale images up to 4× using AI super-resolution models (RealESRGAN, UltraSharp) with NPU acceleration |
 | **🎥 Video Generator** | **[NEW]** Generate videos from text prompts or images using Stable Video Diffusion on iOS |
 | **🌍 Translator** | Translate text, images (OCR), and audio across 50+ languages - offline |
-| **🎙️ Transcriber** | Convert speech to text with on-device processing using Whisper models (Tiny, Base, Small, Medium, Large V3 Turbo) |
+| **🎙️ Transcriber** | Convert speech to text with on-device processing using Whisper models |
 | **🛡️ Scam Detector** | Analyze messages and images for phishing with risk assessment |
 | **🗣️ VibeVoice** | **[NEW]** Hands-free AI voice chat |
 
 ### 🎙️ Supported ASR Models (Android)
-The offline **Transcriber** feature on Android now supports on-device Whisper models for high-accuracy local speech-to-text:
-- **Whisper Tiny (English-only)** (~74MB)
-- **Whisper Tiny (Multilingual)** (~74MB)
-- **Whisper Base (English-only)** (~141MB)
-- **Whisper Base (Multilingual)** (~141MB)
-- **Whisper Small (English-only)** (~465MB)
-- **Whisper Small (Multilingual)** (~465MB)
-- **Whisper Medium (Multilingual)** (~1.43GB)
-- **Whisper Large V3 Turbo (Multilingual)** (~1.51GB)
+The offline **Transcriber** feature on Android supports on-device Whisper models for high-accuracy local speech-to-text.
+
+Android also includes Kokoro TTS models for local text-to-speech.
 
 ### 🔐 Privacy First
 - **100% on-device processing** - no internet required for inference
