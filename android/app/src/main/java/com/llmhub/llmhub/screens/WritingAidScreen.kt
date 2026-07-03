@@ -344,8 +344,8 @@ fun WritingAidScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        // Show "Load Model First" screen if model not loaded
-        if (!isModelLoaded) {
+        // Show "Load Model First" screen if no model selected
+        if (selectedModel == null) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -420,10 +420,7 @@ fun WritingAidScreen(
                         onValueChange = { inputText = it },
                         placeholder = { 
                             Text(
-                                stringResource(
-                                    if (!isModelLoaded) R.string.load_model_to_start 
-                                    else R.string.writing_aid_input_hint
-                                )
+                                stringResource(R.string.writing_aid_input_hint)
                             ) 
                         },
                         modifier = Modifier
@@ -556,7 +553,7 @@ fun WritingAidScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp),
-                        enabled = inputText.isNotBlank() && !isProcessing && isModelLoaded,
+                        enabled = inputText.isNotBlank() && !isProcessing && selectedModel != null,
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(Icons.Default.PlayArrow, contentDescription = null)

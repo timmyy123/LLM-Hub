@@ -267,11 +267,7 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
     fun processText(inputText: String, mode: WritingMode) {
         if (inputText.isBlank()) return
         val model = _selectedModel.value ?: return
-        
-        if (!_isModelLoaded.value) {
-            _errorMessage.value = "Please load a model first"
-            return
-        }
+        val backend = _selectedBackend.value ?: LlmInference.Backend.GPU
         
         // Cancel any previous processing before starting a new one (like TranslatorViewModel)
         processingJob?.cancel()
@@ -282,6 +278,37 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
             _errorMessage.value = null
             
             try {
+                // Auto-load model if not loaded
+                if (!_isModelLoaded.value) {
+                    _isLoading.value = true
+                    try {
+                        inferenceService.unloadModel()
+                        applyGenerationParametersToService()
+                        (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
+
+                        val success = inferenceService.loadModel(
+                            model = model,
+                            preferredBackend = backend,
+                            disableVision = true,
+                            disableAudio = true,
+                            deviceId = _selectedNpuDeviceId.value
+                        )
+                        if (success) {
+                            _isModelLoaded.value = true
+                        } else {
+                            _errorMessage.value = "Failed to load model"
+                            _isProcessing.value = false
+                            return@launch
+                        }
+                    } catch (e: Exception) {
+                        _errorMessage.value = e.message ?: "Failed to load model"
+                        _isProcessing.value = false
+                        return@launch
+                    } finally {
+                        _isLoading.value = false
+                    }
+                }
+
                 applyGenerationParametersToService()
                 val prompt = buildPrompt(mode, inputText)
                 

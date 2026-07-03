@@ -335,7 +335,7 @@ fun ChatScreen(
                                 val isTargetModelLoaded = targetModelName != null && currentlyLoadedModel?.name == targetModelName
                                 
                                 WelcomeMessage(
-                                    currentModel = currentlyLoadedModel?.name,
+                                    currentModel = selectedModel?.name ?: currentChat?.modelName,
                                     onNavigateToModels = onNavigateToModels,
                                     hasDownloadedModels = viewModel.hasDownloadedModels()
                                 )
@@ -344,7 +344,7 @@ fun ChatScreen(
                     }
                     
                     // Show model loading indicator after the latest message
-                    if (isLoadingModel) {
+                    if (isLoadingModel && !isLoading) {
                         item {
                             val name = (selectedModel ?: currentlyLoadedModel)?.name
                                 ?: currentChat?.modelName ?: "AI Model"

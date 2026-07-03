@@ -59,7 +59,7 @@ fun CreatorGenerationScreen(
     
     var userPrompt by remember { mutableStateOf("") }
     var showSettingsSheet by remember { mutableStateOf(false) }
-    var navigatingBack by remember { mutableStateOf(false) }
+    var keepModelOnExit by remember { mutableStateOf(false) }
     var editedIcon by remember { mutableStateOf("") }
     var editedName by remember { mutableStateOf("") }
     var editedDescription by remember { mutableStateOf("") }
@@ -91,7 +91,7 @@ fun CreatorGenerationScreen(
 
     // Unload model when leaving this screen
     DisposableEffect(Unit) {
-        onDispose { if (!navigatingBack) viewModel.stopAndUnloadOnExit() }
+        onDispose { if (!keepModelOnExit) viewModel.stopAndUnloadOnExit() }
     }
 
     LaunchedEffect(imeVisible.value) {
@@ -116,7 +116,6 @@ fun CreatorGenerationScreen(
                 title = { Text(stringResource(R.string.creator_screen_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = {
-                        navigatingBack = true
                         viewModel.stopAndUnloadOnExit()
                         onNavigateBack()
                     }) {
@@ -135,7 +134,7 @@ fun CreatorGenerationScreen(
             )
         }
     ) { paddingValues ->
-        if (!isModelLoaded) {
+        if (selectedModel == null) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -249,7 +248,7 @@ fun CreatorGenerationScreen(
             // Generate Button
             Button(
                 onClick = { viewModel.generateCreator(userPrompt) },
-                enabled = userPrompt.isNotBlank() && !isGenerating && isModelLoaded,
+                enabled = userPrompt.isNotBlank() && !isGenerating && selectedModel != null,
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
@@ -271,14 +270,7 @@ fun CreatorGenerationScreen(
                 }
             }
             
-            if (!isModelLoaded && userPrompt.isNotBlank()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = stringResource(R.string.creator_load_model_first),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
+
 
             // Error Display
             if (error != null) {
@@ -377,6 +369,7 @@ fun CreatorGenerationScreen(
                                 )
                                 viewModel.saveCreator(creatorToSave) {
                                     // Navigate to a new chat with this creator
+                                    keepModelOnExit = true
                                     onNavigateToChat(creatorToSave.id)
                                 }
                             },

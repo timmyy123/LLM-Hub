@@ -362,6 +362,32 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
             _detectedLanguage.value = null
             
             try {
+                // Auto-load model if not loaded
+                if (!_isModelLoaded.value) {
+                    _isLoadingModel.value = true
+                    _loadError.value = null
+                    try {
+                        val disableVision = !_visionEnabled.value
+                        val disableAudio = !_audioEnabled.value
+                        inferenceService.setGenerationParameters(null, null, null, null, enableThinking = if (model.name.contains("Gemma-4", ignoreCase = true)) false else _enableThinking.value)
+                        (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
+                        inferenceService.loadModel(
+                            model = model,
+                            preferredBackend = _selectedBackend.value,
+                            disableVision = disableVision,
+                            disableAudio = disableAudio,
+                            deviceId = _selectedNpuDeviceId.value
+                        )
+                        _isModelLoaded.value = true
+                    } catch (e: Exception) {
+                        _loadError.value = e.message ?: "Failed to load model"
+                        _isTranslating.value = false
+                        return@launch
+                    } finally {
+                        _isLoadingModel.value = false
+                    }
+                }
+
                 val prompt = buildTranslationPrompt(
                     sourceLanguage = if (_autoDetectSource.value) null else sourceLanguage,
                     targetLanguage = targetLanguage,

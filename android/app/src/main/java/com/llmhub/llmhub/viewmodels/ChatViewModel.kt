@@ -340,6 +340,13 @@ class ChatViewModel(
     // Public method to select model and persist
     fun selectModel(model: LLMModel) {
         _selectedModel.value = model
+        currentModel = model
+        currentChatId?.let { chatId ->
+            viewModelScope.launch {
+                repository.updateChatModel(chatId, model.name)
+                _currentChat.value = repository.getChatById(chatId)
+            }
+        }
         val isGemma4_12B = model.name.contains("Gemma-4 12B", ignoreCase = true) || model.name.contains("Gemma 4 12B", ignoreCase = true)
         if (isGemma4_12B) {
             _selectedBackend.value = LlmInference.Backend.GPU
@@ -625,9 +632,26 @@ class ChatViewModel(
                     // Don't auto-load previous model either - keep current state
                     Log.d("ChatViewModel", "Previous model reference set but not loaded")
                 } else {
-                    // No valid model available
-                    Log.d("ChatViewModel", "No valid model available for chat")
-                    currentModel = null
+                    // Try to fall back to the user's last selected model
+                    val selected = _selectedModel.value
+                    if (selected != null && selected.isDownloaded) {
+                        Log.d("ChatViewModel", "Using last selected model: ${selected.name}")
+                        currentModel = selected
+                        repository.updateChatModel(chatId, selected.name)
+                        _currentChat.value = repository.getChatById(chatId)
+                    } else {
+                        // Fallback to first available downloaded model
+                        val firstDownloaded = _availableModels.value.find { it.isDownloaded }
+                        if (firstDownloaded != null) {
+                            Log.d("ChatViewModel", "Using first downloaded model: ${firstDownloaded.name}")
+                            currentModel = firstDownloaded
+                            repository.updateChatModel(chatId, firstDownloaded.name)
+                            _currentChat.value = repository.getChatById(chatId)
+                        } else {
+                            Log.d("ChatViewModel", "No valid model available for chat")
+                            currentModel = null
+                        }
+                    }
                 }
                 
                 // Always ensure we have a fresh session for the chat when switching
@@ -807,6 +831,16 @@ class ChatViewModel(
             }
 
             // Verify we have a working model
+            if (currentModel == null || !currentModel!!.isDownloaded) {
+                val fallbackModel = _selectedModel.value ?: _availableModels.value.find { it.isDownloaded }
+                if (fallbackModel != null && fallbackModel.isDownloaded) {
+                    Log.d("ChatViewModel", "sendMessage: falling back to model ${fallbackModel.name}")
+                    currentModel = fallbackModel
+                    repository.updateChatModel(chatId, fallbackModel.name)
+                    _currentChat.value = repository.getChatById(chatId)
+                }
+            }
+
             if (currentModel == null || !currentModel!!.isDownloaded) {
                 Log.e("ChatViewModel", "No valid model available for chat $chatId. CurrentModel: ${currentModel?.name}, isDownloaded: ${currentModel?.isDownloaded}, availableModels: ${_availableModels.value.size}")
                 val errorMessage = if (_availableModels.value.isEmpty()) {

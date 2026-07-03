@@ -307,18 +307,45 @@ class CreatorViewModel(
             try {
                 // Ensure model is loaded
                 if (!_isModelLoaded.value) {
-                     _error.value = "Please load a model first."
-                    _isGenerating.value = false
-                    return@launch
+                    val modelToLoad = _selectedModel.value
+                    if (modelToLoad == null) {
+                        _error.value = "No model selected."
+                        _isGenerating.value = false
+                        return@launch
+                    }
+                    _isLoading.value = true
+                    try {
+                        inferenceService.unloadModel()
+                        applyGenerationParametersToService()
+                        (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
+
+                        val success = inferenceService.loadModel(
+                            model = modelToLoad,
+                            preferredBackend = _selectedBackend.value ?: LlmInference.Backend.GPU,
+                            disableVision = true,
+                            disableAudio = true,
+                            deviceId = _selectedNpuDeviceId.value
+                        )
+                        if (success) {
+                            _isModelLoaded.value = true
+                        } else {
+                            _error.value = "Failed to load model"
+                            _isGenerating.value = false
+                            return@launch
+                        }
+                    } catch (e: Exception) {
+                        _error.value = "Failed to load model: ${e.message}"
+                        _isGenerating.value = false
+                        return@launch
+                    } finally {
+                        _isLoading.value = false
+                    }
                 }
                 
-                // Double check service state just in case
                 val model = inferenceService.getCurrentlyLoadedModel()
                 if (model == null) {
-                     // Try to reload implicitly if we think we are loaded but service isn't
-                     // Or just fail. Let's fail to be safe and update state.
-                     _isModelLoaded.value = false
-                    _error.value = "Model not loaded in service. Please load again."
+                    _isModelLoaded.value = false
+                    _error.value = "Model not loaded in service."
                     _isGenerating.value = false
                     return@launch
                 }

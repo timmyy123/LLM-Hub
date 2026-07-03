@@ -898,10 +898,6 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         if (prompt.isBlank()) return
         val model = _selectedModel.value ?: return
         
-        if (!_isModelLoaded.value) {
-            _errorMessage.value = "Please load a model first"
-            return
-        }
         if (_currentFileName.value.isNullOrBlank()) {
             _errorMessage.value = "Create or open a file first (e.g. .py, .js, .ts)"
             return
@@ -933,6 +929,38 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         processingJob = viewModelScope.launch {
             _isProcessing.value = true
             _errorMessage.value = null
+            
+            // Auto-load model if not loaded
+            if (!_isModelLoaded.value) {
+                _isLoading.value = true
+                try {
+                    inferenceService.unloadModel()
+                    applyGenerationParametersToService()
+                    (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
+
+                    val success = inferenceService.loadModel(
+                        model = model,
+                        preferredBackend = _selectedBackend.value ?: LlmInference.Backend.GPU,
+                        disableVision = true,
+                        disableAudio = true,
+                        deviceId = _selectedNpuDeviceId.value
+                    )
+                    if (success) {
+                        _isModelLoaded.value = true
+                    } else {
+                        _errorMessage.value = "Failed to load model"
+                        _isProcessing.value = false
+                        return@launch
+                    }
+                } catch (e: Exception) {
+                    _errorMessage.value = "Failed to load model: ${e.message}"
+                    _isProcessing.value = false
+                    return@launch
+                } finally {
+                    _isLoading.value = false
+                }
+            }
+            
             val currentCode = _generatedCode.value
             var codeChatId: String? = null
             // Hoisted so the SDK-Error retry path in catch can also access it

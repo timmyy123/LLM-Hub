@@ -428,7 +428,7 @@ fun VibeCoderScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
-        if (!isModelLoaded) {
+        if (selectedModel == null) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()

@@ -335,6 +335,44 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
                 _isAnalyzing.value = true
                 _outputText.value = ""
                 
+                // Auto-load model if not loaded
+                if (!_isModelLoaded.value) {
+                    _isLoadingModel.value = true
+                    _loadError.value = null
+                    try {
+                        inferenceService.unloadModel()
+                        (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
+                        val effectiveCtx = _selectedMaxTokens.value.coerceIn(1, model.contextWindowSize.coerceAtLeast(1))
+                        inferenceService.setGenerationParameters(
+                            maxTokens = effectiveCtx,
+                            topK = null, topP = null, temperature = null,
+                            nGpuLayers = _selectedNGpuLayers.value,
+                            enableThinking = if (model.name.contains("Gemma-4", ignoreCase = true)) false else _enableThinking.value,
+                            contextWindow = effectiveCtx
+                        )
+                        val disableVision = !_visionEnabled.value || !modelSupportsVisionInput(model)
+                        val success = inferenceService.loadModel(
+                            model = model,
+                            preferredBackend = _selectedBackend.value ?: LlmInference.Backend.GPU,
+                            disableVision = disableVision,
+                            disableAudio = true,
+                            deviceId = _selectedNpuDeviceId.value
+                        )
+                        _isModelLoaded.value = success
+                        if (!success) {
+                            _loadError.value = "Failed to load model"
+                            _isAnalyzing.value = false
+                            return@launch
+                        }
+                    } catch (e: Exception) {
+                        _loadError.value = "Failed to load model: ${e.message}"
+                        _isAnalyzing.value = false
+                        return@launch
+                    } finally {
+                        _isLoadingModel.value = false
+                    }
+                }
+                
                 var contentToAnalyze = inputText
                 
                 // Check if input contains a URL

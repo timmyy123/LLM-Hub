@@ -600,7 +600,7 @@ fun ImageGeneratorScreen(
                     Text(stringResource(R.string.download_models))
                 }
             }
-        } else if (!isModelLoaded) {
+        } else if (selectedModel == null) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -774,6 +774,19 @@ fun ImageGeneratorScreen(
                             currentGenerationIndex = 0
                             coroutineScope.launch {
                                 try {
+                                    if (!isModelLoaded) {
+                                        selectedModel?.let { model ->
+                                            isModelLoading = true
+                                            val success = imageGeneratorHelper.initialize(model.path, model.type, useGpu)
+                                            isModelLoaded = success
+                                            isModelLoading = false
+                                            if (!success) {
+                                                errorMessage = context.getString(R.string.image_generator_failed_load)
+                                                isGenerating = false
+                                                return@launch
+                                            }
+                                        }
+                                    }
                                     // Generate first image
                                     val bitmap = imageGeneratorHelper.generateImage(
                                         prompt = promptText,
@@ -799,7 +812,7 @@ fun ImageGeneratorScreen(
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !isGenerating && isModelLoaded && promptText.isNotBlank()
+                    enabled = !isGenerating && selectedModel != null && promptText.isNotBlank()
                 ) {
                     if (isGenerating) {
                         CircularProgressIndicator(
@@ -948,6 +961,19 @@ fun ImageGeneratorScreen(
                                             currentGenerationIndex = 0
                                             coroutineScope.launch {
                                                 try {
+                                                    if (!isModelLoaded) {
+                                                        selectedModel?.let { model ->
+                                                            isModelLoading = true
+                                                            val success = imageGeneratorHelper.initialize(model.path, model.type, useGpu)
+                                                            isModelLoaded = success
+                                                            isModelLoading = false
+                                                            if (!success) {
+                                                                errorMessage = context.getString(R.string.image_generator_failed_load)
+                                                                isGenerating = false
+                                                                return@launch
+                                                            }
+                                                        }
+                                                    }
                                                     // Generate first image
                                                     val bitmap = imageGeneratorHelper.generateImage(
                                                         prompt = promptText,
@@ -973,7 +999,7 @@ fun ImageGeneratorScreen(
                                         }
                                     },
                                     modifier = Modifier.fillMaxWidth(),
-                                    enabled = !isGenerating && isModelLoaded && promptText.isNotBlank()
+                                    enabled = !isGenerating && selectedModel != null && promptText.isNotBlank()
                                 ) {
                                     if (isGenerating) {
                                         CircularProgressIndicator(
@@ -1305,6 +1331,19 @@ fun ImageGeneratorScreen(
                                     currentGenerationIndex = 0
                                     coroutineScope.launch {
                                         try {
+                                            if (!isModelLoaded) {
+                                                selectedModel?.let { model ->
+                                                    isModelLoading = true
+                                                    val success = imageGeneratorHelper.initialize(model.path, model.type, useGpu)
+                                                    isModelLoaded = success
+                                                    isModelLoading = false
+                                                    if (!success) {
+                                                        errorMessage = context.getString(R.string.image_generator_failed_load)
+                                                        isGenerating = false
+                                                        return@launch
+                                                    }
+                                                }
+                                            }
                                             // Generate first image
                                             val bitmap = imageGeneratorHelper.generateImage(
                                                 prompt = promptText,
@@ -1330,7 +1369,7 @@ fun ImageGeneratorScreen(
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
-                            enabled = !isGenerating && isModelLoaded && promptText.isNotBlank()
+                            enabled = !isGenerating && selectedModel != null && promptText.isNotBlank()
                         ) {
                             if (isGenerating) {
                                 CircularProgressIndicator(

@@ -694,8 +694,8 @@ fun TranslatorScreen(
             
             Divider()
             
-            // Show "Load Model First" screen if model not loaded
-            if (!isModelLoaded) {
+            // Show "Load Model First" screen if no model selected
+            if (selectedModel == null) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -774,10 +774,7 @@ fun TranslatorScreen(
                                         onValueChange = { viewModel.setInputText(it) },
                                         placeholder = { 
                                             Text(
-                                                stringResource(
-                                                    if (!isModelLoaded) R.string.load_model_to_start 
-                                                    else R.string.translator_input_hint
-                                                )
+                                                stringResource(R.string.translator_input_hint)
                                             ) 
                                         },
                                         modifier = Modifier
@@ -1402,7 +1399,7 @@ fun TranslatorScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp),
-                            enabled = (inputText.isNotBlank() || inputImageUri != null || inputAudioUri != null || recordedAudioData != null) && !isTranslating && isModelLoaded,
+                            enabled = (inputText.isNotBlank() || inputImageUri != null || inputAudioUri != null || recordedAudioData != null) && !isTranslating && selectedModel != null,
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Text(stringResource(R.string.translator_translate))
@@ -2288,8 +2285,8 @@ fun ScamDetectorScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Show "Load Model First" message if no model is loaded
-            if (!isModelLoaded) {
+            // Show "Load Model First" message if no model is selected
+            if (selectedModel == null) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -2559,7 +2556,7 @@ fun ScamDetectorScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp),
-                            enabled = (inputText.isNotBlank() || inputImageUri != null) && !isAnalyzing && isModelLoaded,
+                            enabled = (inputText.isNotBlank() || inputImageUri != null) && !isAnalyzing && selectedModel != null,
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Text(stringResource(R.string.scam_detector_analyze))
