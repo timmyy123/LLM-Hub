@@ -28,3 +28,10 @@ data class LLMModel(
     var totalBytes: Long? = null,
     var downloadSpeedBytesPerSec: Long? = null
 )
+
+fun LLMModel.hasNativeVoiceSupport(): Boolean {
+    return this.supportsAudio && 
+           (this.name.contains("Gemma-3n", ignoreCase = true) ||
+            this.name.contains("Gemma-4 E2", ignoreCase = true) ||
+            this.name.contains("Gemma-4 E4", ignoreCase = true))
+}

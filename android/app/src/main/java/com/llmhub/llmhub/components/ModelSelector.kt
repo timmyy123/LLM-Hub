@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.hasNativeVoiceSupport
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,7 +36,12 @@ fun ModelSelectorCard(
     onUnloadModel: (() -> Unit)? = null,
     filterMultimodalOnly: Boolean = false,
     modifier: Modifier = Modifier,
-    extraContent: (@Composable ColumnScope.() -> Unit)? = null
+    extraContent: (@Composable ColumnScope.() -> Unit)? = null,
+    voiceModels: List<LLMModel> = emptyList(),
+    selectedVoiceModel: LLMModel? = null,
+    onVoiceModelSelected: ((LLMModel?) -> Unit)? = null,
+    llmModelLabel: String? = null,
+    voiceModelLabel: String? = null
 ) {
     val filteredModels = if (filterMultimodalOnly) {
         models.filter { 
@@ -106,10 +112,10 @@ fun ModelSelectorCard(
                     onExpandedChange = { showModelMenu = !showModelMenu }
                 ) {
                     OutlinedTextField(
-                        value = selectedModel?.name ?: stringResource(R.string.select_model),
+                        value = selectedModel?.name ?: (llmModelLabel ?: stringResource(R.string.select_model)),
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text(stringResource(R.string.select_model)) },
+                        label = { Text(llmModelLabel ?: stringResource(R.string.select_model)) },
                         trailingIcon = { 
                             ExposedDropdownMenuDefaults.TrailingIcon(expanded = showModelMenu) 
                         },
@@ -149,6 +155,94 @@ fun ModelSelectorCard(
                                     }
                                 }
                             )
+                        }
+                    }
+                }
+
+                // Voice Model Dropdown
+                if (onVoiceModelSelected != null) {
+                    var showVoiceModelMenu by remember { mutableStateOf(false) }
+                    val showGemmaOption = selectedModel?.hasNativeVoiceSupport() == true
+                    val currentVoiceText = if (selectedVoiceModel == null) {
+                        if (showGemmaOption) stringResource(R.string.gemma_voice_option)
+                        else stringResource(R.string.select_model)
+                    } else {
+                        selectedVoiceModel.name
+                    }
+                    
+                    ExposedDropdownMenuBox(
+                        expanded = showVoiceModelMenu,
+                        onExpandedChange = { showVoiceModelMenu = !showVoiceModelMenu }
+                    ) {
+                        OutlinedTextField(
+                            value = currentVoiceText,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text(voiceModelLabel ?: stringResource(R.string.voice_model)) },
+                            trailingIcon = { 
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = showVoiceModelMenu) 
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Default.Mic, contentDescription = null)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(),
+                            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        ExposedDropdownMenu(
+                            expanded = showVoiceModelMenu,
+                            onDismissRequest = { showVoiceModelMenu = false }
+                        ) {
+                            if (showGemmaOption) {
+                                DropdownMenuItem(
+                                    text = { 
+                                        Text(
+                                            text = stringResource(R.string.gemma_voice_option),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    },
+                                    onClick = {
+                                        onVoiceModelSelected(null)
+                                        showVoiceModelMenu = false
+                                    },
+                                    leadingIcon = {
+                                        if (selectedVoiceModel == null) {
+                                            Icon(
+                                                Icons.Default.CheckCircle,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    }
+                                )
+                            }
+                            voiceModels.forEach { model ->
+                                DropdownMenuItem(
+                                    text = { 
+                                        Text(
+                                            text = model.name,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    },
+                                    onClick = {
+                                        onVoiceModelSelected(model)
+                                        showVoiceModelMenu = false
+                                    },
+                                    leadingIcon = {
+                                        if (selectedVoiceModel?.name == model.name) {
+                                            Icon(
+                                                Icons.Default.CheckCircle,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -283,6 +377,13 @@ fun ModelSelectorCard(
                 }
                 
                 // Load/Reload/Unload Model Buttons
+                val showGemmaOption = selectedModel?.hasNativeVoiceSupport() == true
+                val isConfigValid = if (onVoiceModelSelected != null) {
+                    selectedModel != null && (showGemmaOption || selectedVoiceModel != null)
+                } else {
+                    selectedModel != null
+                }
+
                 AnimatedVisibility(
                     visible = selectedModel != null && selectedBackend != null,
                     enter = fadeIn() + expandVertically()
@@ -294,7 +395,7 @@ fun ModelSelectorCard(
                         Button(
                             onClick = onLoadModel,
                             modifier = Modifier.fillMaxWidth(),
-                            enabled = !isLoading,
+                            enabled = !isLoading && isConfigValid,
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary

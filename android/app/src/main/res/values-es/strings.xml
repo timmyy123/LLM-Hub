@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">LLM Hub</string>
     
@@ -877,6 +877,12 @@
     <string name="tts_voice_it">Italian (Female)</string>
     <string name="tts_voice_pt">Portuguese (Female)</string>
     <string name="tts_voice_zh">Chinese (Female)</string>
+    <string name="vibevoice_requires_models">Esta función requiere un modelo Gemma que admita voz, o cualquier modelo LLM con un modelo ASR. Descargue los modelos necesarios desde la pantalla de Modelos.</string>
+    <string name="vibevoice_load_model">Cargar modelo VibeVoice</string>
+    <string name="vibevoice_load_model_desc">Cargue una configuración de modelo compatible con voz para comenzar a chatear</string>
+    <string name="llm_model">Modelo LLM</string>
+    <string name="voice_model">Modelo de voz</string>
+    <string name="gemma_voice_option">Gemma</string>
 </resources>
 
 

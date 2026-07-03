@@ -1,4 +1,4 @@
-﻿<resources>
+<resources>
     <string name="app_name">LLM Hub</string>
     
     <!-- Common -->
@@ -876,6 +876,12 @@
     <string name="tts_voice_it">Italian (Female)</string>
     <string name="tts_voice_pt">Portuguese (Female)</string>
     <string name="tts_voice_zh">Chinese (Female)</string>
+    <string name="vibevoice_requires_models">Fitur ini memerlukan model Gemma yang mendukung suara, atau model LLM apa pun dengan model ASR. Harap unduh model yang diperlukan dari layar Model.</string>
+    <string name="vibevoice_load_model">Muat Model VibeVoice</string>
+    <string name="vibevoice_load_model_desc">Harap muat konfigurasi model yang kompatibel dengan suara untuk mulai mengobrol</string>
+    <string name="llm_model">Model LLM</string>
+    <string name="voice_model">Model Suara</string>
+    <string name="gemma_voice_option">Gemma</string>
 </resources>
 
 

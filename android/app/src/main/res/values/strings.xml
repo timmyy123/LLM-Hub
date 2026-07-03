@@ -880,7 +880,12 @@
     <string name="tts_voice_fr">French (Siwis)</string>
     <string name="tts_voice_it">Italian (Sara)</string>
     <string name="tts_voice_pt">Portuguese (Dora)</string>
-    <string name="tts_voice_zh">Chinese (Xiaoxiao)</string>
+    <string name="vibevoice_requires_models">This feature requires a Gemma model that supports voice, or any LLM model with an ASR model. Please download the required models from the Models screen.</string>
+    <string name="vibevoice_load_model">Load VibeVoice Model</string>
+    <string name="vibevoice_load_model_desc">Please load a voice-compatible model configuration to start chatting</string>
+    <string name="llm_model">LLM Model</string>
+    <string name="voice_model">Voice Model</string>
+    <string name="gemma_voice_option">Gemma</string>
 </resources>
 
 

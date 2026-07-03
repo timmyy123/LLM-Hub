@@ -90,8 +90,11 @@ fun VibeVoiceScreen(
     onNavigateToModels: () -> Unit,
     viewModel: VibeVoiceViewModel = viewModel()
 ) {
-    val availableModels by viewModel.availableModels.collectAsState()
+    val availableLlmModels by viewModel.availableLlmModels.collectAsState()
+    val availableAsrModels by viewModel.availableAsrModels.collectAsState()
     val selectedModel by viewModel.selectedModel.collectAsState()
+    val selectedVoiceModel by viewModel.selectedVoiceModel.collectAsState()
+    val hasRequiredModels by viewModel.hasRequiredModels.collectAsState()
     val selectedBackend by viewModel.selectedBackend.collectAsState()
     val selectedNpuDeviceId by viewModel.selectedNpuDeviceId.collectAsState()
     val isLoadingModel by viewModel.isLoadingModel.collectAsState()
@@ -338,8 +341,8 @@ fun VibeVoiceScreen(
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(
                     text = stringResource(
-                        if (availableModels.isEmpty()) R.string.transcriber_requires_gemma3n
-                        else R.string.scam_detector_load_model
+                        if (!hasRequiredModels) R.string.download_models
+                        else R.string.vibevoice_load_model
                     ),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
@@ -347,7 +350,10 @@ fun VibeVoiceScreen(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = stringResource(R.string.scam_detector_load_model_desc),
+                    text = stringResource(
+                        if (!hasRequiredModels) R.string.vibevoice_requires_models
+                        else R.string.vibevoice_load_model_desc
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
@@ -355,19 +361,19 @@ fun VibeVoiceScreen(
                 Spacer(modifier = Modifier.height(32.dp))
                 FilledTonalButton(
                     onClick = {
-                        if (availableModels.isEmpty()) onNavigateToModels()
+                        if (!hasRequiredModels) onNavigateToModels()
                         else showSettingsSheet = true
                     },
                     modifier = Modifier.fillMaxWidth(0.6f)
                 ) {
                     Icon(
-                        imageVector = if (availableModels.isEmpty()) Icons.Default.GetApp else Icons.Default.Tune,
+                        imageVector = if (!hasRequiredModels) Icons.Default.GetApp else Icons.Default.Tune,
                         contentDescription = null
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         stringResource(
-                            if (availableModels.isEmpty()) R.string.download_models
+                            if (!hasRequiredModels) R.string.download_models
                             else R.string.feature_settings_title
                         )
                     )
@@ -516,7 +522,7 @@ fun VibeVoiceScreen(
                 )
 
                 ModelSelectorCard(
-                    models = availableModels,
+                    models = availableLlmModels,
                     selectedModel = selectedModel,
                     selectedBackend = selectedBackend,
                     selectedNpuDeviceId = selectedNpuDeviceId,
@@ -534,7 +540,12 @@ fun VibeVoiceScreen(
                         }
                         viewModel.unloadModel()
                     },
-                    filterMultimodalOnly = true
+                    filterMultimodalOnly = false,
+                    voiceModels = availableAsrModels,
+                    selectedVoiceModel = selectedVoiceModel,
+                    onVoiceModelSelected = { viewModel.selectVoiceModel(it) },
+                    llmModelLabel = stringResource(R.string.llm_model),
+                    voiceModelLabel = stringResource(R.string.voice_model)
                 )
             }
         }

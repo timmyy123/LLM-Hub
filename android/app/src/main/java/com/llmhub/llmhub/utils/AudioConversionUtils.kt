@@ -277,6 +277,45 @@ object AudioConversionUtils {
         return audioFormat == 3 && channels == 1 && sampleRate == TARGET_SAMPLE_RATE && bitsPerSample == 32
     }
 
+    fun float32WavToPcm16Wav(float32Wav: ByteArray): ByteArray {
+        if (float32Wav.size < 44) return float32Wav
+        val bb = ByteBuffer.wrap(float32Wav).order(ByteOrder.LITTLE_ENDIAN)
+        // Check RIFF/WAVE magic
+        val riff = String(float32Wav, 0, 4)
+        val wave = String(float32Wav, 8, 4)
+        if (riff != "RIFF" || wave != "WAVE") return float32Wav // not a WAV
+        val audioFormat = bb.getShort(20).toInt() and 0xFFFF
+        if (audioFormat != 3) return float32Wav // already PCM or other; pass through
+        val channels = bb.getShort(22).toInt() and 0xFFFF
+        val sampleRate = bb.getInt(24)
+        val dataSize = bb.getInt(40)
+        val numSamples = dataSize / 4
+        // Convert float32 samples -> int16 samples
+        val pcm16Bytes = ByteArray(numSamples * 2)
+        val pcm16Buf = ByteBuffer.wrap(pcm16Bytes).order(ByteOrder.LITTLE_ENDIAN)
+        bb.position(44)
+        for (i in 0 until numSamples) {
+            val f = bb.getFloat().coerceIn(-1f, 1f)
+            pcm16Buf.putShort((f * 32767f).toInt().toShort())
+        }
+        // Build PCM16 WAV header
+        val header = ByteBuffer.allocate(44).order(ByteOrder.LITTLE_ENDIAN)
+        header.put("RIFF".toByteArray())
+        header.putInt(36 + pcm16Bytes.size)
+        header.put("WAVE".toByteArray())
+        header.put("fmt ".toByteArray())
+        header.putInt(16)
+        header.putShort(1)                              // PCM
+        header.putShort(channels.toShort())
+        header.putInt(sampleRate)
+        header.putInt(sampleRate * channels * 2)        // ByteRate
+        header.putShort((channels * 2).toShort())       // BlockAlign
+        header.putShort(16)                             // BitsPerSample
+        header.put("data".toByteArray())
+        header.putInt(pcm16Bytes.size)
+        return header.array() + pcm16Bytes
+    }
+
     private fun android.media.MediaFormat.getIntegerOrDefault(key: String, defaultValue: Int): Int {
         return if (containsKey(key)) getInteger(key) else defaultValue
     }

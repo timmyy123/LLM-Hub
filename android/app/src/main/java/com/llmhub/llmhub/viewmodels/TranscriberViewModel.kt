@@ -248,7 +248,7 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
                 
                 if (model.category == "asr") {
                     // Whisper expects PCM16 WAV; convert from float32 WAV if needed
-                    val pcm16Wav = float32WavToPcm16Wav(audioBytes)
+                    val pcm16Wav = AudioConversionUtils.float32WavToPcm16Wav(audioBytes)
                     android.util.Log.d("TranscriberViewModel", "ASR batch: input=${audioBytes.size}B float32WAV → pcm16WAV=${pcm16Wav.size}B")
                     val tempWavFile = withContext(Dispatchers.IO) {
                         val file = java.io.File.createTempFile("asr_input_", ".wav", getApplication<Application>().cacheDir)
@@ -339,7 +339,7 @@ Do not add any commentary or explanations.""".trimIndent()
             _isTranscribing.value = true
             try {
                 // Whisper expects PCM16 WAV; convert from float32 WAV
-                val pcm16Wav = float32WavToPcm16Wav(audioBytes)
+                val pcm16Wav = AudioConversionUtils.float32WavToPcm16Wav(audioBytes)
                 android.util.Log.d("TranscriberViewModel", "ASR live: input=${audioBytes.size}B → pcm16WAV=${pcm16Wav.size}B")
                 val tempWavFile = withContext(Dispatchers.IO) {
                     val file = java.io.File.createTempFile("asr_live_", ".wav", getApplication<Application>().cacheDir)
@@ -380,49 +380,6 @@ Do not add any commentary or explanations.""".trimIndent()
         }
     }
 
-    /**
-     * Convert a float32 WAV (AudioFormat=3, 32-bit IEEE float) to PCM16 WAV (AudioFormat=1, 16-bit signed int).
-     * Whisper/AsrWrapper requires standard PCM16 WAV input.
-     * If the input is already PCM16 or not a recognized WAV, it is returned unchanged.
-     */
-    private fun float32WavToPcm16Wav(float32Wav: ByteArray): ByteArray {
-        if (float32Wav.size < 44) return float32Wav
-        val bb = ByteBuffer.wrap(float32Wav).order(ByteOrder.LITTLE_ENDIAN)
-        // Check RIFF/WAVE magic
-        val riff = String(float32Wav, 0, 4)
-        val wave = String(float32Wav, 8, 4)
-        if (riff != "RIFF" || wave != "WAVE") return float32Wav // not a WAV
-        val audioFormat = bb.getShort(20).toInt() and 0xFFFF
-        if (audioFormat != 3) return float32Wav // already PCM or other; pass through
-        val channels = bb.getShort(22).toInt() and 0xFFFF
-        val sampleRate = bb.getInt(24)
-        val dataSize = bb.getInt(40)
-        val numSamples = dataSize / 4
-        // Convert float32 samples → int16 samples
-        val pcm16Bytes = ByteArray(numSamples * 2)
-        val pcm16Buf = ByteBuffer.wrap(pcm16Bytes).order(ByteOrder.LITTLE_ENDIAN)
-        bb.position(44)
-        for (i in 0 until numSamples) {
-            val f = bb.getFloat().coerceIn(-1f, 1f)
-            pcm16Buf.putShort((f * 32767f).toInt().toShort())
-        }
-        // Build PCM16 WAV header
-        val header = ByteBuffer.allocate(44).order(ByteOrder.LITTLE_ENDIAN)
-        header.put("RIFF".toByteArray())
-        header.putInt(36 + pcm16Bytes.size)
-        header.put("WAVE".toByteArray())
-        header.put("fmt ".toByteArray())
-        header.putInt(16)
-        header.putShort(1)                              // PCM
-        header.putShort(channels.toShort())
-        header.putInt(sampleRate)
-        header.putInt(sampleRate * channels * 2)        // ByteRate
-        header.putShort((channels * 2).toShort())       // BlockAlign
-        header.putShort(16)                             // BitsPerSample
-        header.put("data".toByteArray())
-        header.putInt(pcm16Bytes.size)
-        return header.array() + pcm16Bytes
-    }
 
     private fun getModelDirectory(model: LLMModel): java.io.File {
         val context = getApplication<Application>()

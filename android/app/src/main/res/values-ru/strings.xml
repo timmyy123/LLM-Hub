@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="multimodal">Мультимодальный</string>
     <string name="text_only">Только текст</string>
@@ -846,6 +846,12 @@
     <string name="tts_voice_it">Italian (Female)</string>
     <string name="tts_voice_pt">Portuguese (Female)</string>
     <string name="tts_voice_zh">Chinese (Female)</string>
+    <string name="vibevoice_requires_models">Для этой функции требуется модель Gemma с поддержкой голоса или любая модель LLM с моделью ASR. Пожалуйста, скачайте необходимые модели с экрана «Модели».</string>
+    <string name="vibevoice_load_model">Загрузить модель VibeVoice</string>
+    <string name="vibevoice_load_model_desc">Пожалуйста, загрузите совместимую с голосом конфигурацию модели, чтобы начать общение</string>
+    <string name="llm_model">Модель LLM</string>
+    <string name="voice_model">Голосовая модель</string>
+    <string name="gemma_voice_option">Gemma</string>
 </resources>
 
 

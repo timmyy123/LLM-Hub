@@ -827,4 +827,10 @@
     <string name="tts_voice_it">Italian (Female)</string>
     <string name="tts_voice_pt">Portuguese (Female)</string>
     <string name="tts_voice_zh">Chinese (Female)</string>
+    <string name="vibevoice_requires_models">Este recurso requer um modelo Gemma que suporte voz, ou qualquer modelo LLM com um modelo ASR. Por favor, baixe os modelos necessários na tela de Modelos.</string>
+    <string name="vibevoice_load_model">Carregar modelo VibeVoice</string>
+    <string name="vibevoice_load_model_desc">Por favor, carregue uma configuração de modelo compatível com voz para começar a conversar</string>
+    <string name="llm_model">Modelo LLM</string>
+    <string name="voice_model">Modelo de voz</string>
+    <string name="gemma_voice_option">Gemma</string>
 </resources>

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Common -->
     <string name="app_name">LLM Hub</string>
@@ -874,6 +874,12 @@
     <string name="tts_voice_it">Italian (Female)</string>
     <string name="tts_voice_pt">Portuguese (Female)</string>
     <string name="tts_voice_zh">Chinese (Female)</string>
+    <string name="vibevoice_requires_models">این ویژگی به یک مدل Gemma که از صدا پشتیبانی می‌کند، یا هر مدل LLM به همراه یک مدل ASR نیاز دارد. لطفاً مدل‌های مورد نیاز را از صفحه مدل‌ها دانلود کنید.</string>
+    <string name="vibevoice_load_model">بارگذاری مدل VibeVoice</string>
+    <string name="vibevoice_load_model_desc">لطفاً برای شروع چت، یک پیکربندی مدل سازگار با صدا بارگذاری کنید</string>
+    <string name="llm_model">مدل LLM</string>
+    <string name="voice_model">مدل صوتی</string>
+    <string name="gemma_voice_option">Gemma</string>
 </resources>
 
 

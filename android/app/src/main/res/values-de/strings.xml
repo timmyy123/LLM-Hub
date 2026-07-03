@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="multimodal">Multimodal</string>
     <string name="text_only">Nur Text</string>
@@ -839,8 +839,10 @@
     <string name="tts_voice_fr">French (Female)</string>
     <string name="tts_voice_it">Italian (Female)</string>
     <string name="tts_voice_pt">Portuguese (Female)</string>
-    <string name="tts_voice_zh">Chinese (Female)</string>
+    <string name="vibevoice_requires_models">Diese Funktion erfordert ein Gemma-Modell, das Sprache unterstützt, oder ein beliebiges LLM-Modell mit einem ASR-Modell. Bitte laden Sie die erforderlichen Modelle über den Modellbildschirm herunter.</string>
+    <string name="vibevoice_load_model">VibeVoice-Modell laden</string>
+    <string name="vibevoice_load_model_desc">Bitte laden Sie eine sprachkompatible Modellkonfiguration, um den Chat zu starten</string>
+    <string name="llm_model">LLM-Modell</string>
+    <string name="voice_model">Sprachmodell</string>
+    <string name="gemma_voice_option">Gemma</string>
 </resources>
-
-
-

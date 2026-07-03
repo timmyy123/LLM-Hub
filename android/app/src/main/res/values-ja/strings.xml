@@ -1,4 +1,4 @@
-﻿<resources>
+<resources>
     <string name="app_name">LLM Hub</string>
     
     <!-- Common -->
@@ -871,6 +871,12 @@
     <string name="tts_voice_it">Italian (Female)</string>
     <string name="tts_voice_pt">Portuguese (Female)</string>
     <string name="tts_voice_zh">Chinese (Female)</string>
+    <string name="vibevoice_requires_models">この機能には音声対応のGemmaモデル、またはASRモデルと組み合わせたLLMモデルが必要です。モデル画面から必要なモデルをダウンロードしてください。</string>
+    <string name="vibevoice_load_model">VibeVoiceモデルを読み込む</string>
+    <string name="vibevoice_load_model_desc">音声対応モデル構成を読み込んでチャットを開始してください</string>
+    <string name="llm_model">LLMモデル</string>
+    <string name="voice_model">音声モデル</string>
+    <string name="gemma_voice_option">Gemma</string>
 </resources>
 
 

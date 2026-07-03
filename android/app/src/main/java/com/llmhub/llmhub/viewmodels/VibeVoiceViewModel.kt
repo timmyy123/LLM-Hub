@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.ModelAvailabilityProvider
+import com.llmhub.llmhub.data.hasNativeVoiceSupport
 import com.llmhub.llmhub.inference.InferenceService
 import com.llmhub.llmhub.inference.UnifiedInferenceService
 import com.llmhub.llmhub.utils.AudioConversionUtils
@@ -18,6 +19,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class VibeVoiceViewModel(application: Application) : AndroidViewModel(application) {
     companion object {
@@ -50,11 +55,23 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
         val assistantText: String
     )
 
-    private val _availableModels = MutableStateFlow<List<LLMModel>>(emptyList())
-    val availableModels: StateFlow<List<LLMModel>> = _availableModels.asStateFlow()
+    private val _availableLlmModels = MutableStateFlow<List<LLMModel>>(emptyList())
+    val availableLlmModels: StateFlow<List<LLMModel>> = _availableLlmModels.asStateFlow()
+
+    // Compatibility field so VibeVoiceScreen doesn't break
+    val availableModels: StateFlow<List<LLMModel>> = _availableLlmModels.asStateFlow()
+
+    private val _availableAsrModels = MutableStateFlow<List<LLMModel>>(emptyList())
+    val availableAsrModels: StateFlow<List<LLMModel>> = _availableAsrModels.asStateFlow()
 
     private val _selectedModel = MutableStateFlow<LLMModel?>(null)
     val selectedModel: StateFlow<LLMModel?> = _selectedModel.asStateFlow()
+
+    private val _selectedVoiceModel = MutableStateFlow<LLMModel?>(null)
+    val selectedVoiceModel: StateFlow<LLMModel?> = _selectedVoiceModel.asStateFlow()
+
+    private val _hasRequiredModels = MutableStateFlow(false)
+    val hasRequiredModels: StateFlow<Boolean> = _hasRequiredModels.asStateFlow()
 
     private val _selectedBackend = MutableStateFlow(LlmInference.Backend.GPU)
     val selectedBackend: StateFlow<LlmInference.Backend> = _selectedBackend.asStateFlow()
@@ -93,6 +110,9 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
     private var sessionChatId: String = "vibevoice-${UUID.randomUUID()}"
     private var isSessionPrimed: Boolean = false
 
+    private var asrWrapper: com.nexa.sdk.AsrWrapper? = null
+    private val asrMutex = Mutex()
+
     init {
         loadAvailableModels()
         loadSavedSettings()
@@ -101,17 +121,46 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
     private fun loadAvailableModels() {
         viewModelScope.launch {
             val context = getApplication<Application>()
-            val allModels = ModelAvailabilityProvider.loadAvailableModels(context)
-            val audioModels = allModels.filter { it.supportsAudio }
-            _availableModels.value = audioModels
+            
+            // Standard LLM models (not ASR, not embedding)
+            val allModels = ModelAvailabilityProvider.loadAvailableModels(context, includeAsr = false)
+            val llmModels = allModels.filter { it.category == "text" || it.category == "multimodal" }
+            _availableLlmModels.value = llmModels
+
+            // ASR models
+            val allWithAsr = ModelAvailabilityProvider.loadAvailableModels(context, includeAsr = true)
+            val asrModels = allWithAsr.filter { it.category == "asr" }
+            _availableAsrModels.value = asrModels
+
+            // Check if required models are present
+            val hasGemmaVoice = llmModels.any { it.hasNativeVoiceSupport() }
+            val hasLlmAndAsr = llmModels.isNotEmpty() && asrModels.isNotEmpty()
+            _hasRequiredModels.value = hasGemmaVoice || hasLlmAndAsr
 
             val savedModelName = prefs.getString("selected_model_name", null)
             if (savedModelName != null) {
-                val saved = audioModels.find { it.name == savedModelName }
+                val saved = llmModels.find { it.name == savedModelName }
                 if (saved != null) _selectedModel.value = saved
             }
-            if (audioModels.isNotEmpty() && _selectedModel.value == null) {
-                _selectedModel.value = audioModels.first()
+            if (llmModels.isNotEmpty() && _selectedModel.value == null) {
+                _selectedModel.value = llmModels.first()
+            }
+
+            val savedVoiceName = prefs.getString("selected_voice_model_name", null)
+            if (savedVoiceName != null) {
+                if (savedVoiceName == "gemma") {
+                    _selectedVoiceModel.value = null
+                } else {
+                    val savedVoice = asrModels.find { it.name == savedVoiceName }
+                    _selectedVoiceModel.value = savedVoice
+                }
+            } else {
+                val currentLlm = _selectedModel.value
+                if (currentLlm != null && currentLlm.hasNativeVoiceSupport()) {
+                    _selectedVoiceModel.value = null
+                } else {
+                    _selectedVoiceModel.value = asrModels.firstOrNull()
+                }
             }
         }
     }
@@ -128,6 +177,7 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
     private fun saveSettings() {
         prefs.edit().apply {
             putString("selected_model_name", _selectedModel.value?.name)
+            putString("selected_voice_model_name", _selectedVoiceModel.value?.name ?: "gemma")
             putString("selected_backend", _selectedBackend.value.name)
             apply()
         }
@@ -136,6 +186,16 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
     fun selectModel(model: LLMModel) {
         if (_isModelLoaded.value) unloadModel()
         _selectedModel.value = model
+        
+        if (!model.hasNativeVoiceSupport() && _selectedVoiceModel.value == null) {
+            _selectedVoiceModel.value = _availableAsrModels.value.firstOrNull()
+        }
+        saveSettings()
+    }
+
+    fun selectVoiceModel(voiceModel: LLMModel?) {
+        if (_isModelLoaded.value) unloadModel()
+        _selectedVoiceModel.value = voiceModel
         saveSettings()
     }
 
@@ -172,19 +232,59 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
             _isLoadingModel.value = true
             _loadError.value = null
             try {
+                val voiceModel = _selectedVoiceModel.value
+                val isUsingAsr = voiceModel != null && !model.hasNativeVoiceSupport()
+                val disableAudio = isUsingAsr
+                
                 (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
                 inferenceService.setGenerationParameters(null, null, null, null, enableThinking = if (model.name.contains("Gemma-4", ignoreCase = true)) false else null)
                 inferenceService.loadModel(
                     model = model,
                     preferredBackend = _selectedBackend.value,
                     disableVision = true,
-                    disableAudio = false,
+                    disableAudio = disableAudio,
                     deviceId = _selectedNpuDeviceId.value
                 )
+                
+                if (isUsingAsr && voiceModel != null) {
+                    val modelDir = getModelDirectory(voiceModel)
+                    val modelFile = findModelFile(modelDir, voiceModel)
+                    if (!modelFile.exists()) {
+                        throw java.io.FileNotFoundException("Model file not found at ${modelFile.absolutePath}")
+                    }
+                    val config = com.nexa.sdk.bean.ModelConfig()
+                    val createInput = com.nexa.sdk.bean.AsrCreateInput(
+                        model_name = voiceModel.name,
+                        model_path = modelFile.absolutePath,
+                        config = config,
+                        plugin_id = "whisper_cpp",
+                        device_id = "cpu"
+                    )
+                    val buildResult = com.nexa.sdk.AsrWrapper.builder()
+                        .asrCreateInput(createInput)
+                        .build()
+                    
+                    if (buildResult.isSuccess) {
+                        asrWrapper = buildResult.getOrNull()
+                    } else {
+                        throw buildResult.exceptionOrNull() ?: Exception("Failed to build AsrWrapper")
+                    }
+                }
+                
                 _isModelLoaded.value = true
             } catch (e: Exception) {
                 _loadError.value = e.message ?: "Failed to load model"
                 _isModelLoaded.value = false
+                // Clean up ASR if initialized
+                try {
+                    asrMutex.withLock {
+                        if (asrWrapper != null) {
+                            try { asrWrapper?.close() } catch (_: Exception) {}
+                            try { asrWrapper?.destroy() } catch (_: Exception) {}
+                            asrWrapper = null
+                        }
+                    }
+                } catch (_: Exception) {}
             } finally {
                 _isLoadingModel.value = false
             }
@@ -195,6 +295,13 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             try {
                 respondJob?.cancel()
+                asrMutex.withLock {
+                    if (asrWrapper != null) {
+                        try { asrWrapper?.close() } catch (_: Exception) {}
+                        try { asrWrapper?.destroy() } catch (_: Exception) {}
+                        asrWrapper = null
+                    }
+                }
                 inferenceService.unloadModel()
                 _isModelLoaded.value = false
             } catch (e: Exception) {
@@ -239,27 +346,97 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
                     assistantText = ""
                 )
 
-                val turnPrompt = if (!isSessionPrimed) {
-                    isSessionPrimed = true
-                    "system: $VIBEVOICE_SYSTEM_PROMPT\n\nuser: $VOICE_TURN_PROMPT"
-                } else {
-                    "user: $VOICE_TURN_PROMPT"
-                }
+                val asr = asrWrapper
+                if (asr != null) {
+                    // Translate voice input to text using ASR model first
+                    val pcm16Wav = AudioConversionUtils.float32WavToPcm16Wav(audioBytes)
+                    android.util.Log.d("VibeVoiceViewModel", "ASR transcribe: input=${audioBytes.size}B → pcm16WAV=${pcm16Wav.size}B")
+                    val tempWavFile = withContext(Dispatchers.IO) {
+                        val file = java.io.File.createTempFile("asr_vibevoice_", ".wav", getApplication<Application>().cacheDir)
+                        file.writeBytes(pcm16Wav)
+                        file
+                    }
+                    val transcription = try {
+                        val asrModel = _selectedVoiceModel.value ?: throw IllegalStateException("ASR model not selected")
+                        val isEnglishModel = asrModel.name.contains("english", ignoreCase = true) || asrModel.url.contains(".en.", ignoreCase = true)
+                        val lang = if (isEnglishModel) "english" else "auto"
+                        val transcribeInput = com.nexa.sdk.bean.AsrTranscribeInput(
+                            audioPath = tempWavFile.absolutePath,
+                            language = lang,
+                            config = com.nexa.sdk.bean.AsrConfig()
+                        )
+                        val result = withContext(Dispatchers.IO) {
+                            asrMutex.withLock {
+                                asr.transcribe(transcribeInput)
+                            }
+                        }
+                        if (result != null && result.isSuccess) {
+                            result.getOrNull()?.result?.transcript ?: ""
+                        } else {
+                            throw result?.exceptionOrNull() ?: Exception("ASR Transcription failed")
+                        }
+                    } finally {
+                        tempWavFile.delete()
+                    }
 
-                val responseFlow = inferenceService.generateResponseStreamWithSession(
-                    prompt = turnPrompt,
-                    model = model,
-                    chatId = sessionChatId,
-                    images = emptyList(),
-                    audioData = audioBytes,
-                    webSearchEnabled = false
-                )
-
-                responseFlow.collect { token ->
-                    if (token.isNotEmpty()) {
-                        _liveResponseText.value += token
+                    if (transcription.isBlank()) {
+                        _liveResponseText.value = VOICE_FALLBACK_REPLY
                         _conversationTurns.value = _conversationTurns.value.map {
-                            if (it.id == turnId) it.copy(assistantText = _liveResponseText.value) else it
+                            if (it.id == turnId) it.copy(assistantText = VOICE_FALLBACK_REPLY) else it
+                        }
+                        return@launch
+                    }
+
+                    val turnPrompt = if (!isSessionPrimed) {
+                        isSessionPrimed = true
+                        "system: $VIBEVOICE_SYSTEM_PROMPT\n\nuser: $transcription"
+                    } else {
+                        "user: $transcription"
+                    }
+
+                    android.util.Log.d("VibeVoiceViewModel", "ASR Transcription: $transcription -> LLM Prompt: $turnPrompt")
+
+                    val responseFlow = inferenceService.generateResponseStreamWithSession(
+                        prompt = turnPrompt,
+                        model = model,
+                        chatId = sessionChatId,
+                        images = emptyList(),
+                        audioData = null,
+                        webSearchEnabled = false
+                    )
+
+                    responseFlow.collect { token ->
+                        if (token.isNotEmpty()) {
+                            _liveResponseText.value += token
+                            _conversationTurns.value = _conversationTurns.value.map {
+                                if (it.id == turnId) it.copy(assistantText = _liveResponseText.value) else it
+                            }
+                        }
+                    }
+                } else {
+                    // Native Gemma voice input
+                    val turnPrompt = if (!isSessionPrimed) {
+                        isSessionPrimed = true
+                        "system: $VIBEVOICE_SYSTEM_PROMPT\n\nuser: $VOICE_TURN_PROMPT"
+                    } else {
+                        "user: $VOICE_TURN_PROMPT"
+                    }
+
+                    val responseFlow = inferenceService.generateResponseStreamWithSession(
+                        prompt = turnPrompt,
+                        model = model,
+                        chatId = sessionChatId,
+                        images = emptyList(),
+                        audioData = audioBytes,
+                        webSearchEnabled = false
+                    )
+
+                    responseFlow.collect { token ->
+                        if (token.isNotEmpty()) {
+                            _liveResponseText.value += token
+                            _conversationTurns.value = _conversationTurns.value.map {
+                                if (it.id == turnId) it.copy(assistantText = _liveResponseText.value) else it
+                            }
                         }
                     }
                 }
@@ -345,5 +522,31 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
     private suspend fun readAudioBytes(uri: Uri): ByteArray? {
         val app = getApplication<Application>()
         return AudioConversionUtils.convertUriToFloat32Wav(app, uri)
+    }
+
+    private fun getModelDirectory(model: LLMModel): java.io.File {
+        val context = getApplication<Application>()
+        val modelsDir = java.io.File(context.filesDir, "models")
+        val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
+        val modelDir = java.io.File(modelsDir, modelDirName)
+        return if (modelDir.exists()) modelDir else modelsDir
+    }
+    
+    private fun findModelFile(modelDir: java.io.File, model: LLMModel): java.io.File {
+        val localName = model.url.substringAfterLast("/").substringBefore("?")
+        var modelFile = java.io.File(modelDir, localName)
+        if (modelFile.exists()) return modelFile
+        
+        val context = getApplication<Application>()
+        val modelsDir = java.io.File(context.filesDir, "models")
+        modelFile = java.io.File(modelsDir, localName)
+        if (modelFile.exists()) return modelFile
+        
+        val files = modelDir.listFiles { _, name -> 
+            name.endsWith(".bin") || name.endsWith(".gguf")
+        }
+        if (files?.isNotEmpty() == true) return files.first()
+        
+        return java.io.File(modelDir, localName)
     }
 }

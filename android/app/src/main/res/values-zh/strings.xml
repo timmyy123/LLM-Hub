@@ -882,4 +882,10 @@
     <string name="tts_voice_it">Italian (Female)</string>
     <string name="tts_voice_pt">Portuguese (Female)</string>
     <string name="tts_voice_zh">Chinese (Female)</string>
+    <string name="vibevoice_requires_models">此功能需要支持语音的 Gemma 模型，或任何带有 ASR 模型的 LLM 模型。请从模型列表下载所需模型。</string>
+    <string name="vibevoice_load_model">加载 VibeVoice 模型</string>
+    <string name="vibevoice_load_model_desc">请加载支持语音的模型配置以开始聊天</string>
+    <string name="llm_model">LLM 模型</string>
+    <string name="voice_model">语音模型</string>
+    <string name="gemma_voice_option">Gemma</string>
 </resources>
