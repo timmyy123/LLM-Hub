@@ -687,7 +687,7 @@ fun ImageGeneratorScreen(
                                             modifier = Modifier.fillMaxWidth(),
                                             minLines = 5,
                                             maxLines = 10,
-                                            enabled = !isGenerating && isModelLoaded
+                                            enabled = !isGenerating && selectedModel != null
                                         )
                                     }
                                 }
@@ -874,7 +874,7 @@ fun ImageGeneratorScreen(
                                             modifier = Modifier.fillMaxWidth(),
                                             minLines = 5,
                                             maxLines = 10,
-                                            enabled = !isGenerating && isModelLoaded
+                                            enabled = !isGenerating && selectedModel != null
                                         )
                                     }
                                 }
@@ -1244,7 +1244,7 @@ fun ImageGeneratorScreen(
                                     modifier = Modifier.fillMaxWidth(),
                                     minLines = 3,
                                     maxLines = 5,
-                                    enabled = !isGenerating && isModelLoaded
+                                    enabled = !isGenerating && selectedModel != null
                                 )
                             }
                         }
