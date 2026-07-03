@@ -53,6 +53,22 @@ object DeviceInfo {
             else -> "min"
         }
     }
+
+    /**
+     * Normalize chipset suffix specifically for Hugging Face upscaler models path.
+     * Currently hosted upscaler models in xororz/upscaler have binaries up to 8gen4.
+     * Snapdragon 8 Gen 5 devices fall back to the 8gen2 binary (exactly like local dream).
+     */
+    fun getUpscalerSuffix(): String {
+        return when (val suffix = getChipsetSuffix()) {
+            "8gen1" -> "8gen1"
+            "8gen2" -> "8gen2"
+            "8gen3" -> "8gen3"
+            "8gen4" -> "8gen4"
+            "8gen5" -> "8gen2"
+            else -> "min"
+        }
+    }
 }
 
 object ModelData {
@@ -60,7 +76,7 @@ object ModelData {
         LLMModel(
             name = "Real-ESRGAN Anime Upscaler (NPU)",
             description = "Real-ESRGAN x4plus anime upscaler optimized for Qualcomm NPU. Upscales anime/illustration images 4x. Requires Snapdragon 8 Gen 1+. ~70 MB download.",
-            url = "https://huggingface.co/xororz/upscaler/resolve/main/realesrgan_x4plus_anime_6b/upscaler_${DeviceInfo.getChipsetSuffix()}.bin",
+            url = "https://huggingface.co/xororz/upscaler/resolve/main/realesrgan_x4plus_anime_6b/upscaler_${DeviceInfo.getUpscalerSuffix()}.bin",
             category = "image_upscale",
             sizeBytes = 0L,
             source = "Real-ESRGAN (QNN via xororz)",
@@ -74,7 +90,7 @@ object ModelData {
         LLMModel(
             name = "UltraSharp Realistic Upscaler (NPU)",
             description = "4x UltraSharpV2 Lite upscaler optimized for Qualcomm NPU. Upscales realistic photos 4x. Requires Snapdragon 8 Gen 1+. ~70 MB download.",
-            url = "https://huggingface.co/xororz/upscaler/resolve/main/4x_UltraSharpV2_Lite/upscaler_${DeviceInfo.getChipsetSuffix()}.bin",
+            url = "https://huggingface.co/xororz/upscaler/resolve/main/4x_UltraSharpV2_Lite/upscaler_${DeviceInfo.getUpscalerSuffix()}.bin",
             category = "image_upscale",
             sizeBytes = 0L,
             source = "4x UltraSharpV2 Lite (QNN via xororz)",
