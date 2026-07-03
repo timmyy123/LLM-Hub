@@ -452,6 +452,9 @@ class ChatViewModel(
                 _currentlyLoadedModel.value = loadedModel
                 // Also update the local currentModel to keep them in sync
                 currentModel = loadedModel
+                if (loadedModel != null) {
+                    _selectedModel.value = loadedModel
+                }
                 
                 // Sync the modality disabled states from the inference service
                 isVisionDisabled = inferenceService.isVisionCurrentlyDisabled()
@@ -3076,6 +3079,7 @@ inferenceService.loadModel(currentModel!!, _selectedBackend.value, _selectedNpuD
         // Set the current model in the ViewModel
         if (modelToUse != null) {
             this.currentModel = modelToUse
+            _selectedModel.value = modelToUse
             repository.updateChatModel(newChatId, modelToUse.name)
             _currentChat.value = repository.getChatById(newChatId)
             
