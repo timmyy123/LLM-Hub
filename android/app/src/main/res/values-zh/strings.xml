@@ -888,4 +888,5 @@
     <string name="llm_model">LLM 模型</string>
     <string name="voice_model">语音模型</string>
     <string name="gemma_voice_option">Gemma</string>
+    <string name="llm_model_backend">LLM 模型后端</string>
 </resources>

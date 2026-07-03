@@ -866,6 +866,7 @@
     <string name="llm_model">Modèle LLM</string>
     <string name="voice_model">Modèle vocal</string>
     <string name="gemma_voice_option">Gemma</string>
+    <string name="llm_model_backend">Backend du modèle LLM</string>
 </resources>
 
 

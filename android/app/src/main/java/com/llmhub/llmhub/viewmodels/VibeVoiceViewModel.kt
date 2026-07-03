@@ -52,6 +52,7 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
 
     data class VoiceTurn(
         val id: String,
+        val userText: String,
         val assistantText: String
     )
 
@@ -78,6 +79,9 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
 
     private val _selectedNpuDeviceId = MutableStateFlow<String?>(null)
     val selectedNpuDeviceId: StateFlow<String?> = _selectedNpuDeviceId.asStateFlow()
+
+    private val _transcription = MutableStateFlow("")
+    val transcription: StateFlow<String> = _transcription.asStateFlow()
 
     private val _isLoadingModel = MutableStateFlow(false)
     val isLoadingModel: StateFlow<Boolean> = _isLoadingModel.asStateFlow()
@@ -191,12 +195,14 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
             _selectedVoiceModel.value = _availableAsrModels.value.firstOrNull()
         }
         saveSettings()
+        clearConversation()
     }
 
     fun selectVoiceModel(voiceModel: LLMModel?) {
         if (_isModelLoaded.value) unloadModel()
         _selectedVoiceModel.value = voiceModel
         saveSettings()
+        clearConversation()
     }
 
     fun selectBackend(backend: LlmInference.Backend, deviceId: String? = null) {
@@ -204,6 +210,7 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
         _selectedBackend.value = backend
         _selectedNpuDeviceId.value = deviceId
         saveSettings()
+        clearConversation()
     }
 
     fun setAudioUri(uri: Uri?) {
@@ -233,7 +240,7 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
             _loadError.value = null
             try {
                 val voiceModel = _selectedVoiceModel.value
-                val isUsingAsr = voiceModel != null && !model.hasNativeVoiceSupport()
+                val isUsingAsr = voiceModel != null
                 val disableAudio = isUsingAsr
                 
                 (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
@@ -295,6 +302,7 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             try {
                 respondJob?.cancel()
+                _transcription.value = ""
                 asrMutex.withLock {
                     if (asrWrapper != null) {
                         try { asrWrapper?.close() } catch (_: Exception) {}
@@ -315,6 +323,7 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
         respondJob = null
         _isResponding.value = false
         _liveResponseText.value = ""
+        _transcription.value = ""
 
         // Ensure the underlying MediaPipe generation is also cancelled so it cannot resume later.
         viewModelScope.launch {
@@ -334,6 +343,7 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
         respondJob = viewModelScope.launch {
             _isResponding.value = true
             _liveResponseText.value = ""
+            _transcription.value = ""
 
             try {
                 val uriToUse = audioUri ?: _audioUri.value
@@ -343,6 +353,7 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
                 val turnId = UUID.randomUUID().toString()
                 _conversationTurns.value = _conversationTurns.value + VoiceTurn(
                     id = turnId,
+                    userText = "",
                     assistantText = ""
                 )
 
@@ -379,20 +390,34 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
                         tempWavFile.delete()
                     }
 
+                    _transcription.value = transcription
+
                     if (transcription.isBlank()) {
                         _liveResponseText.value = VOICE_FALLBACK_REPLY
                         _conversationTurns.value = _conversationTurns.value.map {
-                            if (it.id == turnId) it.copy(assistantText = VOICE_FALLBACK_REPLY) else it
+                            if (it.id == turnId) it.copy(userText = "", assistantText = VOICE_FALLBACK_REPLY) else it
                         }
                         return@launch
                     }
 
-                    val turnPrompt = if (!isSessionPrimed) {
-                        isSessionPrimed = true
-                        "system: $VIBEVOICE_SYSTEM_PROMPT\n\nuser: $transcription"
-                    } else {
-                        "user: $transcription"
+                    // Update userText for the current turn
+                    _conversationTurns.value = _conversationTurns.value.map {
+                        if (it.id == turnId) it.copy(userText = transcription) else it
                     }
+
+                    // Build multi-turn prompt from history
+                    val sb = StringBuilder("system: $VIBEVOICE_SYSTEM_PROMPT")
+                    for (turn in _conversationTurns.value) {
+                        val uText = turn.userText
+                        if (uText.isNotBlank()) {
+                            sb.append("\n\nuser: $uText")
+                        }
+                        val aText = turn.assistantText
+                        if (aText.isNotBlank() && turn.id != turnId) {
+                            sb.append("\n\nassistant: $aText")
+                        }
+                    }
+                    val turnPrompt = sb.toString()
 
                     android.util.Log.d("VibeVoiceViewModel", "ASR Transcription: $transcription -> LLM Prompt: $turnPrompt")
 
@@ -415,12 +440,23 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
                     }
                 } else {
                     // Native Gemma voice input
-                    val turnPrompt = if (!isSessionPrimed) {
-                        isSessionPrimed = true
-                        "system: $VIBEVOICE_SYSTEM_PROMPT\n\nuser: $VOICE_TURN_PROMPT"
-                    } else {
-                        "user: $VOICE_TURN_PROMPT"
+                    _conversationTurns.value = _conversationTurns.value.map {
+                        if (it.id == turnId) it.copy(userText = VOICE_TURN_PROMPT) else it
                     }
+
+                    // Build multi-turn prompt from history
+                    val sb = StringBuilder("system: $VIBEVOICE_SYSTEM_PROMPT")
+                    for (turn in _conversationTurns.value) {
+                        val uText = turn.userText
+                        if (uText.isNotBlank()) {
+                            sb.append("\n\nuser: $uText")
+                        }
+                        val aText = turn.assistantText
+                        if (aText.isNotBlank() && turn.id != turnId) {
+                            sb.append("\n\nassistant: $aText")
+                        }
+                    }
+                    val turnPrompt = sb.toString()
 
                     val responseFlow = inferenceService.generateResponseStreamWithSession(
                         prompt = turnPrompt,

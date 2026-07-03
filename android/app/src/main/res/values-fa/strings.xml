@@ -880,6 +880,7 @@
     <string name="llm_model">مدل LLM</string>
     <string name="voice_model">مدل صوتی</string>
     <string name="gemma_voice_option">Gemma</string>
+    <string name="llm_model_backend">بک‌اند مدل LLM</string>
 </resources>
 
 

@@ -880,6 +880,7 @@
     <string name="llm_model">Модель LLM</string>
     <string name="voice_model">Голосова модель</string>
     <string name="gemma_voice_option">Gemma</string>
+    <string name="llm_model_backend">Бекенд моделі LLM</string>
 </resources>
 
 

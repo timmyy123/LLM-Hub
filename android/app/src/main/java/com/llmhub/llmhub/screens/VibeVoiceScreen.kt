@@ -103,6 +103,7 @@ fun VibeVoiceScreen(
     val isResponding by viewModel.isResponding.collectAsState()
     val loadError by viewModel.loadError.collectAsState()
     val conversationTurns by viewModel.conversationTurns.collectAsState()
+    val transcription by viewModel.transcription.collectAsState()
 
     val context = LocalContext.current
     val isPremium by (context.applicationContext as LlmHubApplication).billingManager.isPremium.collectAsState(initial = false)
@@ -111,7 +112,7 @@ fun VibeVoiceScreen(
     val coroutineScope = rememberCoroutineScope()
 
     val audioService = remember { AudioInputService(context) }
-    val ttsService = remember { TtsService(context, isTranslationFeature = true) }
+    val ttsService = remember { TtsService(context, isTranslationFeature = false) }
     val isTtsSpeaking by ttsService.isSpeaking.collectAsState()
 
     var recordedAudioData by remember { mutableStateOf<ByteArray?>(null) }
@@ -226,6 +227,12 @@ fun VibeVoiceScreen(
         }
     }
 
+    LaunchedEffect(isTtsSpeaking) {
+        if (isTtsSpeaking && isRecording) {
+            viewModel.setRecording(false)
+        }
+    }
+
     LaunchedEffect(isModelLoaded, isChatActive) {
         if (!isModelLoaded) {
             isChatActive = false
@@ -278,7 +285,7 @@ fun VibeVoiceScreen(
     // Safety valve: if TTS gets stuck after generation, stop it so hands-free listening can continue.
     LaunchedEffect(isTtsSpeaking, isResponding, isChatActive) {
         if (isChatActive && isTtsSpeaking && !isResponding) {
-            delay(12000)
+            delay(90000)
             if (isChatActive && isTtsSpeaking && !isResponding) {
                 ttsService.stop()
             }
@@ -460,6 +467,19 @@ fun VibeVoiceScreen(
                             )
                         }
                     }
+                    
+                    if (transcription.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = transcription,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier
+                                .padding(horizontal = 32.dp)
+                                .fillMaxWidth()
+                        )
+                    }
 
                     if (latestAssistantText.isNotBlank()) {
                         Spacer(modifier = Modifier.height(24.dp))
@@ -545,7 +565,8 @@ fun VibeVoiceScreen(
                     selectedVoiceModel = selectedVoiceModel,
                     onVoiceModelSelected = { viewModel.selectVoiceModel(it) },
                     llmModelLabel = stringResource(R.string.llm_model),
-                    voiceModelLabel = stringResource(R.string.voice_model)
+                    voiceModelLabel = stringResource(R.string.voice_model),
+                    backendLabel = stringResource(R.string.llm_model_backend)
                 )
             }
         }

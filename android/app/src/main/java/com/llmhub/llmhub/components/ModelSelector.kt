@@ -41,7 +41,8 @@ fun ModelSelectorCard(
     selectedVoiceModel: LLMModel? = null,
     onVoiceModelSelected: ((LLMModel?) -> Unit)? = null,
     llmModelLabel: String? = null,
-    voiceModelLabel: String? = null
+    voiceModelLabel: String? = null,
+    backendLabel: String? = null
 ) {
     val filteredModels = if (filterMultimodalOnly) {
         models.filter { 
@@ -264,11 +265,11 @@ fun ModelSelectorCard(
                             value = when(selectedBackend) {
                                 LlmInference.Backend.GPU -> if (isNpuSelected) stringResource(R.string.backend_npu) else stringResource(R.string.backend_gpu)
                                 LlmInference.Backend.CPU -> stringResource(R.string.backend_cpu)
-                                else -> stringResource(R.string.select_backend)
+                                else -> backendLabel ?: stringResource(R.string.select_backend)
                             },
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text(stringResource(R.string.select_backend)) },
+                            label = { Text(backendLabel ?: stringResource(R.string.select_backend)) },
                             trailingIcon = { 
                                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = showBackendMenu) 
                             },

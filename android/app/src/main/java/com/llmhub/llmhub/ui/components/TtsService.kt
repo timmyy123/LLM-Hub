@@ -33,6 +33,8 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.Collections
 import java.util.Locale
+import java.util.EnumSet
+import ai.onnxruntime.providers.NNAPIFlags
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -81,6 +83,9 @@ class TtsService(private val context: Context, private val isTranslationFeature:
     private val pcmQueue = LinkedBlockingQueue<ShortArray?>()
     private var audioTrack: AudioTrack? = null
     private var playbackJob: Job? = null
+    private var playbackEndTimeMs = 0L
+    private var delayJob: Job? = null
+    private var totalSamplesWritten = 0L
 
     // Single-worker synthesis queue: sentences are processed strictly in order.
     // UNLIMITED capacity so senders never block; one coroutine drains serially.
@@ -138,7 +143,8 @@ class TtsService(private val context: Context, private val isTranslationFeature:
         Log.d(TAG, "initializeTts() started")
         CoroutineScope(Dispatchers.Main).launch {
             val selectedModel = if (isTranslationFeature) null else themePreferences.selectedTtsModel.first()
-            Log.d(TAG, "initializeTts: selectedModel = $selectedModel")
+            val selectedDevice = themePreferences.selectedTtsDevice.first()
+            Log.d(TAG, "initializeTts: selectedModel = $selectedModel, selectedDevice = $selectedDevice")
             if (selectedModel != null) {
                 val model = ModelData.models.find { it.name == selectedModel }
                 val modelDirName = model?.name?.replace(" ", "_")?.replace(Regex("[^a-zA-Z0-9_.-]"), "")
@@ -158,13 +164,54 @@ class TtsService(private val context: Context, private val isTranslationFeature:
                         withContext(Dispatchers.IO) {
                             val env = OrtEnvironment.getEnvironment()
                             val cpuCount = Runtime.getRuntime().availableProcessors()
-                            val opts = OrtSession.SessionOptions().apply {
-                                setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
-                                setIntraOpNumThreads(cpuCount)
-                                setInterOpNumThreads(cpuCount)
+                            val useGpu = selectedDevice.lowercase() == "gpu"
+                            
+                            val opts = if (useGpu) {
+                                try {
+                                    OrtSession.SessionOptions().apply {
+                                        setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
+                                        setIntraOpNumThreads(cpuCount)
+                                        try { addConfigEntry("ep.nnapi.partitioning_stop_ops", "") } catch (_: Exception) { }
+                                        addConfigEntry("session.disable_cpu_ep_fallback", "1")
+                                        addNnapi(EnumSet.of(NNAPIFlags.USE_FP16, NNAPIFlags.CPU_DISABLED))
+                                    }
+                                } catch (e: Exception) {
+                                    Log.w(TAG, "TTS NNAPI-only options build failed: $e, falling back to NNAPI+CPU")
+                                    OrtSession.SessionOptions().apply {
+                                        setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
+                                        setIntraOpNumThreads(cpuCount)
+                                        try { addConfigEntry("ep.nnapi.partitioning_stop_ops", "") } catch (_: Exception) { }
+                                        addNnapi(EnumSet.of(NNAPIFlags.USE_FP16, NNAPIFlags.CPU_DISABLED))
+                                        addCPU(true)
+                                    }
+                                }
+                            } else {
+                                OrtSession.SessionOptions().apply {
+                                    setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
+                                    setIntraOpNumThreads(cpuCount)
+                                    setInterOpNumThreads(cpuCount)
+                                }
                             }
+
                             ortEnvironment = env
-                            val session = env.createSession(modelFile.absolutePath, opts)
+                            var session: OrtSession? = null
+                            try {
+                                session = env.createSession(modelFile.absolutePath, opts)
+                                Log.i(TAG, "ONNX TTS session created successfully (useGpu=$useGpu)")
+                            } catch (e: Exception) {
+                                if (useGpu) {
+                                    Log.w(TAG, "Failed to create NNAPI session, falling back to CPU session: ${e.message}")
+                                    val cpuOpts = OrtSession.SessionOptions().apply {
+                                        setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
+                                        setIntraOpNumThreads(cpuCount)
+                                        setInterOpNumThreads(cpuCount)
+                                    }
+                                    session = env.createSession(modelFile.absolutePath, cpuOpts)
+                                    Log.i(TAG, "ONNX TTS session created successfully with CPU fallback")
+                                } else {
+                                    throw e
+                                }
+                            }
                             ortSession = session
                             Log.d(TAG, "Model inputs: ${session.inputNames.toList()}")
                             Log.d(TAG, "Model outputs: ${session.outputNames.toList()}")
@@ -272,6 +319,7 @@ class TtsService(private val context: Context, private val isTranslationFeature:
             val chunks = splitIntoChunks(cleanText)
             Log.d(TAG, "speak() system TTS: split into ${chunks.size} chunks")
 
+            _isSpeaking.value = true
             chunks.forEachIndexed { index, chunk ->
                 val id = "utterance_${utteranceId++}"
                 val queueMode = if (index == 0) TextToSpeech.QUEUE_FLUSH else TextToSpeech.QUEUE_ADD
@@ -308,6 +356,7 @@ class TtsService(private val context: Context, private val isTranslationFeature:
             val chunks = splitIntoChunks(cleanText)
             Log.d(TAG, "speakAppend() system TTS: split into ${chunks.size} chunks")
 
+            _isSpeaking.value = true
             chunks.forEach { chunk ->
                 val id = "utterance_${utteranceId++}"
                 tts?.speak(chunk, TextToSpeech.QUEUE_ADD, null, id)
@@ -338,6 +387,7 @@ class TtsService(private val context: Context, private val isTranslationFeature:
             .build()
         track.play()
         audioTrack = track
+        totalSamplesWritten = 0L
 
         playbackJob = synthesisScope.launch(Dispatchers.IO) {
             while (isActive) {
@@ -355,8 +405,32 @@ class TtsService(private val context: Context, private val isTranslationFeature:
                     if (written <= 0) break
                     offset += written
                 }
+                
+                totalSamplesWritten += pcm.size
+
                 val rem = activeJobsCount.decrementAndGet().coerceAtLeast(0)
-                if (rem == 0) _isSpeaking.value = false
+                if (rem == 0) {
+                    delayJob?.cancel()
+                    delayJob = launch {
+                        val trackInstance = audioTrack
+                        if (trackInstance != null) {
+                            while (isActive && trackInstance.playState == AudioTrack.PLAYSTATE_PLAYING) {
+                                val played = try {
+                                    trackInstance.playbackHeadPosition.toLong()
+                                } catch (e: Exception) {
+                                    totalSamplesWritten
+                                }
+                                if (played >= totalSamplesWritten) {
+                                    break
+                                }
+                                kotlinx.coroutines.delay(20)
+                            }
+                        }
+                        if (activeJobsCount.get() == 0) {
+                            _isSpeaking.value = false
+                        }
+                    }
+                }
             }
         }
     }
@@ -496,6 +570,10 @@ class TtsService(private val context: Context, private val isTranslationFeature:
     private fun stopAudioTrack() {
         synthesisWorkerJob?.cancel()
         synthesisWorkerJob = null
+        delayJob?.cancel()
+        delayJob = null
+        playbackEndTimeMs = 0L
+        totalSamplesWritten = 0L
         // Drain pending sentences so the channel is empty for next use
         while (!sentenceChannel.isEmpty) sentenceChannel.tryReceive()
         playbackJob?.cancel()
