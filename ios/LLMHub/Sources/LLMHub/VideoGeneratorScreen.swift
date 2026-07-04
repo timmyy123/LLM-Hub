@@ -39,11 +39,16 @@ struct VideoGeneratorScreen: View {
         availableModels.first(where: { $0.id == selectedModelId }) ?? availableModels.first
     }
 
+    private var isModelDownloaded: Bool {
+        guard let model = selectedModel else { return false }
+        return ModelData.isModelFullyAvailableLocally(model)
+    }
+
     var body: some View {
         Group {
             if availableModels.isEmpty {
                 noModelView
-            } else if !videoBackend.isLoaded {
+            } else if !isModelDownloaded {
                 loadModelView
             } else {
                 mainGenerationView
@@ -363,12 +368,17 @@ struct VideoGeneratorScreen: View {
             }
         } label: {
             HStack(spacing: 8) {
-                if isGenerating {
+                if isGenerating || videoBackend.isLoading {
                     ProgressView()
                         .tint(.white)
                         .scaleEffect(0.85)
-                    Text("\(settings.localized("video_generator_generating")) (\(videoBackend.generationStep)/\(videoBackend.generationTotalSteps))")
-                        .lineLimit(1)
+                    if videoBackend.isLoading {
+                        Text(settings.localized("model_loading"))
+                            .lineLimit(1)
+                    } else {
+                        Text("\(settings.localized("video_generator_generating")) (\(videoBackend.generationStep)/\(videoBackend.generationTotalSteps))")
+                            .lineLimit(1)
+                    }
                 } else {
                     Image(systemName: "sparkles")
                         .font(.system(size: 13, weight: .bold))
@@ -431,6 +441,14 @@ struct VideoGeneratorScreen: View {
         generateTask?.cancel()
         generateTask = Task {
             do {
+                if !videoBackend.isLoaded {
+                    guard let model = selectedModel else {
+                        errorMessage = settings.localized("video_generator_no_model")
+                        isGenerating = false
+                        return
+                    }
+                    try await videoBackend.loadModel(url: URL(fileURLWithPath: "/"), modelId: model.id)
+                }
                 let url = try await videoBackend.generateVideo(
                     prompt: prompt,
                     steps: steps,

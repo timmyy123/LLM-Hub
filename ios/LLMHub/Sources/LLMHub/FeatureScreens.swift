@@ -2163,7 +2163,7 @@ private struct IOS17VibeVoiceScreen: View {
     // MARK: - Computed
 
     private var globeIcon: String {
-        if !isChatActive { return "mic.circle" }
+        if !isChatActive { return "mic" }
         switch voiceState {
         case .listening: return "mic.fill"
         case .responding: return "ellipsis.circle"
@@ -2581,6 +2581,17 @@ struct WritingAidScreen: View {
         llm.isLoaded && llm.currentlyLoadedModel == selectedModelName
     }
 
+    private var isModelDownloaded: Bool {
+        guard let model = selectedFeatureModel(named: selectedModelName) else { return false }
+        if isAppleFoundationModel(model) {
+            return true
+        }
+        if case .downloaded = ModelManager.shared.modelStatuses[model.id] {
+            return true
+        }
+        return false
+    }
+
     private var selectedModeBinding: Binding<WritingAidMode> {
         Binding(
             get: { WritingAidMode(rawValue: selectedModeRaw) ?? .friendly },
@@ -2590,7 +2601,7 @@ struct WritingAidScreen: View {
 
     var body: some View {
         Group {
-            if !isCurrentModelLoaded {
+            if selectedModelName.isEmpty {
                 VStack(spacing: 12) {
                     Image(systemName: "cpu")
                         .font(.system(size: 48, weight: .semibold))
@@ -2731,7 +2742,7 @@ struct WritingAidScreen: View {
                         toggleProcess()
                     } label: {
                         HStack(spacing: 8) {
-                            if isProcessing {
+                            if isProcessing || isLoading {
                                 ProgressView()
                                     .tint(.white)
                                     .scaleEffect(0.85)
@@ -2739,7 +2750,7 @@ struct WritingAidScreen: View {
                                 Image(systemName: "play.fill")
                                     .font(.system(size: 12, weight: .bold))
                             }
-                            Text(settings.localized("writing_aid_process"))
+                            Text(isLoading ? settings.localized("model_loading") : settings.localized("writing_aid_process"))
                                 .lineLimit(1)
                         }
                         .frame(maxWidth: .infinity)
@@ -2976,6 +2987,17 @@ struct TranslatorScreen: View {
         llm.isLoaded && llm.currentlyLoadedModel == selectedModelName
     }
 
+    private var isModelDownloaded: Bool {
+        guard let model = selectedModel else { return false }
+        if isAppleFoundationModel(model) {
+            return true
+        }
+        if case .downloaded = ModelManager.shared.modelStatuses[model.id] {
+            return true
+        }
+        return false
+    }
+
     private var sourceLanguage: TranslatorLanguage {
         translatorLanguages.first(where: { $0.code == sourceLanguageCode })
             ?? translatorLanguages.first(where: { $0.code == "en" })
@@ -3012,7 +3034,7 @@ struct TranslatorScreen: View {
 
     var body: some View {
         Group {
-            if !isCurrentModelLoaded {
+            if selectedModelName.isEmpty {
                 unloadedStateView
             } else {
                 loadedStateView
@@ -3412,7 +3434,7 @@ struct TranslatorScreen: View {
                 toggleTranslate()
             } label: {
                 HStack(spacing: 8) {
-                    if isTranslating {
+                    if isTranslating || isLoading {
                         ProgressView()
                             .tint(.white)
                             .scaleEffect(0.85)
@@ -3420,7 +3442,7 @@ struct TranslatorScreen: View {
                         Image(systemName: "network")
                             .font(.system(size: 12, weight: .bold))
                     }
-                    Text(settings.localized("translator_translate"))
+                    Text(isLoading ? settings.localized("model_loading") : settings.localized("translator_translate"))
                         .lineLimit(1)
                 }
                 .frame(maxWidth: .infinity)
@@ -3712,9 +3734,20 @@ struct ScamDetectorScreen: View {
         llm.isLoaded && llm.currentlyLoadedModel == selectedModelName
     }
 
+    private var isModelDownloaded: Bool {
+        guard let model = selectedFeatureModel(named: selectedModelName) else { return false }
+        if isAppleFoundationModel(model) {
+            return true
+        }
+        if case .downloaded = ModelManager.shared.modelStatuses[model.id] {
+            return true
+        }
+        return false
+    }
+
     var body: some View {
         Group {
-            if !isCurrentModelLoaded {
+            if selectedModelName.isEmpty {
                 VStack(spacing: 12) {
                     Image(systemName: "shield.lefthalf.filled")
                         .font(.system(size: 48, weight: .semibold))
@@ -3924,7 +3957,7 @@ struct ScamDetectorScreen: View {
                         toggleAnalyze()
                     } label: {
                         HStack(spacing: 8) {
-                            if isAnalyzing {
+                            if isAnalyzing || isLoading {
                                 ProgressView()
                                     .tint(.white)
                                     .scaleEffect(0.85)
@@ -3932,7 +3965,7 @@ struct ScamDetectorScreen: View {
                                 Image(systemName: "shield.lefthalf.filled")
                                     .font(.system(size: 12, weight: .bold))
                             }
-                            Text(settings.localized("scam_detector_analyze"))
+                            Text(isLoading ? settings.localized("model_loading") : settings.localized("scam_detector_analyze"))
                                 .lineLimit(1)
                         }
                         .frame(maxWidth: .infinity)
@@ -4470,6 +4503,23 @@ struct VibeCoderScreen: View {
         llm.isLoaded && llm.currentlyLoadedModel == selectedModelName
     }
 
+    private var isModelDownloaded: Bool {
+        guard let model = selectedFeatureModel(named: selectedModelName) else { return false }
+        if isAppleFoundationModel(model) {
+            return true
+        }
+        if case .downloaded = ModelManager.shared.modelStatuses[model.id] {
+            return true
+        }
+        return false
+    }
+
+    private var preferThinkingWhileStreaming: Bool {
+        enableThinking
+            && (selectedFeatureModel(named: selectedModelName)?.supportsThinking == true)
+            && supportsUnmarkedStreamingThinkingHeuristic(forModelNamed: selectedModelName)
+    }
+
     private var hasFileSession: Bool {
         !(currentFileName ?? "").isEmpty
     }
@@ -4483,7 +4533,7 @@ struct VibeCoderScreen: View {
     }
 
     private var isSendButtonDisabled: Bool {
-        (!isGenerating && chatInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) || !hasFileSession
+        (!isGenerating && chatInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) || !hasFileSession || isLoading
     }
 
     private var activeMessages: [VibeChatMessage] {
@@ -4565,7 +4615,7 @@ struct VibeCoderScreen: View {
 
     var body: some View {
         Group {
-            if !isCurrentModelLoaded {
+            if selectedModelName.isEmpty {
                 VStack(spacing: 12) {
                     Image(systemName: "curlybraces.square")
                         .font(.system(size: 48, weight: .semibold))
@@ -4711,9 +4761,7 @@ struct VibeCoderScreen: View {
                                                             ThinkingAwareResultContent(
                                                                 content: message.text,
                                                                 isGenerating: isGenerating && message.id == activeMessages.last?.id,
-                                                                preferThinkingWhileStreaming: enableThinking
-                                                                    && (selectedFeatureModel(named: selectedModelName)?.supportsThinking == true)
-                                                                    && supportsUnmarkedStreamingThinkingHeuristic(forModelNamed: selectedModelName)
+                                                                preferThinkingWhileStreaming: preferThinkingWhileStreaming
                                                             )
                                                             .padding(8)
                                                             .background(.ultraThinMaterial)
@@ -4749,7 +4797,7 @@ struct VibeCoderScreen: View {
                                         )
                                         .lineLimit(1...5)
                                         .focused($focusedField, equals: .chat)
-                                        .disabled(!hasFileSession || isGenerating)
+                                        .disabled(!hasFileSession || isGenerating || isLoading)
                                         .padding(.vertical, 10)
                                         .padding(.horizontal, 12)
                                         .background(Color.white.opacity(0.05))
@@ -4762,9 +4810,16 @@ struct VibeCoderScreen: View {
                                                 sendChat()
                                             }
                                         } label: {
-                                            Image(systemName: sendButtonIconName)
-                                                .font(.system(size: 16, weight: .semibold))
-                                                .frame(width: 44, height: 44)
+                                            if isLoading {
+                                                ProgressView()
+                                                    .tint(.white)
+                                                    .scaleEffect(0.85)
+                                                    .frame(width: 44, height: 44)
+                                            } else {
+                                                Image(systemName: sendButtonIconName)
+                                                    .font(.system(size: 16, weight: .semibold))
+                                                    .frame(width: 44, height: 44)
+                                            }
                                         }
                                         .foregroundStyle(.white)
                                         .background(
@@ -5772,11 +5827,16 @@ struct ImageGeneratorScreen: View {
         return StableDiffusionBackend.supportsImageToImage(modelId: selectedModel.id)
     }
 
+    private var isModelDownloaded: Bool {
+        guard let model = selectedModel else { return false }
+        return StableDiffusionBackend.isModelDownloaded(modelId: model.id)
+    }
+
     var body: some View {
         Group {
             if availableModels.isEmpty {
                 noModelView
-            } else if !sdBackend.isLoaded {
+            } else if !isModelDownloaded {
                 loadModelView
             } else {
                 mainGenerationView
@@ -6213,11 +6273,11 @@ struct ImageGeneratorScreen: View {
             }
         } label: {
             HStack(spacing: 8) {
-                if isGenerating {
+                if isGenerating || sdBackend.isLoading {
                     ProgressView()
                         .tint(.white)
                         .scaleEffect(0.85)
-                    Text(settings.localized("image_generator_generating"))
+                    Text(sdBackend.isLoading ? settings.localized("model_loading") : settings.localized("image_generator_generating"))
                         .lineLimit(1)
                 } else {
                     Image(systemName: "sparkles")
@@ -6291,6 +6351,13 @@ struct ImageGeneratorScreen: View {
         generateTask = Task {
             defer { isGenerating = false }
             do {
+                if !sdBackend.isLoaded {
+                    guard let model = selectedModel else {
+                        errorMessage = settings.localized("image_generator_no_model")
+                        return
+                    }
+                    try await sdBackend.loadModel(model)
+                }
                 let img = try await sdBackend.generateImage(
                     prompt: prompt,
                     steps: steps,
