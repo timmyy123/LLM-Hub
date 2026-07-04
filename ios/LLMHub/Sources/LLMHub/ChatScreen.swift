@@ -2863,18 +2863,26 @@ struct ChatScreen: View {
     @FocusState private var isComposerFocused: Bool
     @State private var userHasScrolledUp = false
     @State private var isAtBottom = true
-    @State private var isDragging = false
+    @State private var scrollDetectorCoordinator: ScrollDragDetector.Coordinator?
+
 
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .bottom) {
                 ScrollViewReader { proxy in
+                    ZStack(alignment: .bottom) {
                     ScrollView {
                         // VStack instead of LazyVStack: the lazy view recycling can
                         // leave the scroll area blank when streaming rapidly mutates
                         // the last message's height near the context window limit.
                         // Chat sessions are capped in length so eager layout is fine.
                         VStack(spacing: 12) {
+                            ScrollDragDetector(onDragBegan: {
+                                userHasScrolledUp = true
+                            }, onAttached: { coordinator in
+                                scrollDetectorCoordinator = coordinator
+                            })
+                            .frame(width: 0, height: 0)
                             if vm.messages.isEmpty {
                                 emptyState
                             } else {
@@ -2889,7 +2897,7 @@ struct ChatScreen: View {
                                     .background(
                                         GeometryReader { sentinelGeo in
                                             let minY = sentinelGeo.frame(in: .named("chat_geo")).minY
-                                            let atBottom = minY <= geo.size.height - 115
+                                            let atBottom = minY <= geo.size.height - 130
                                             Color.clear
                                                 .preference(key: AtBottomPreferenceKey.self, value: atBottom)
                                         }
@@ -2904,23 +2912,6 @@ struct ChatScreen: View {
                     .onTapGesture {
                         isComposerFocused = false
                     }
-                    .simultaneousGesture(
-                        DragGesture()
-                            .onChanged { gesture in
-                                isDragging = true
-                                // Detach from auto-scroll immediately if we scroll up/away from bottom
-                                if isAtBottom {
-                                    if gesture.translation.height > 2 {
-                                        userHasScrolledUp = true
-                                    }
-                                } else {
-                                    userHasScrolledUp = true
-                                }
-                            }
-                            .onEnded { _ in
-                                isDragging = false
-                            }
-                    )
                     .onChange(of: userHasScrolledUp) { _, scrolledUp in
                         if !scrolledUp, let last = vm.messages.last {
                             withAnimation {
@@ -2934,6 +2925,10 @@ struct ChatScreen: View {
                             withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
                         }
                     }
+                    .onChange(of: vm.messages.last?.content) { _, _ in
+                        guard vm.isGenerating, !userHasScrolledUp, let last = vm.messages.last else { return }
+                        proxy.scrollTo(last.id, anchor: .bottom)
+                    }
                     .onChange(of: vm.currentSessionId) { _, _ in
                         userHasScrolledUp = false
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
@@ -2941,12 +2936,6 @@ struct ChatScreen: View {
                                 withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
                             }
                         }
-                    }
-                    .onChange(of: vm.messages.last?.content ?? "") { _, newContent in
-                        // Scroll to bottom during streaming — debounce to every ~200ms
-                        // to avoid overwhelming layout but still keep up with output.
-                        guard vm.isGenerating, !userHasScrolledUp, let last = vm.messages.last else { return }
-                        proxy.scrollTo(last.id, anchor: .bottom)
                     }
                     .onChange(of: isComposerFocused) { _, focused in
                         if focused {
@@ -2958,13 +2947,10 @@ struct ChatScreen: View {
                             }
                         }
                     }
-                    .onChange(of: vm.isGenerating) { _, isGenerating in
-                        if isGenerating {
-                            userHasScrolledUp = false
-                        }
-                    }
+                    scrollToBottomButton(proxy: proxy)
+                    } // ZStack
                 }
-                
+
                 // Floating composer panel on top layer
                 VStack(spacing: 8) {
                     if let _ = copiedMessageId {
@@ -3220,11 +3206,7 @@ struct ChatScreen: View {
         .onPreferenceChange(AtBottomPreferenceKey.self) { atBottom in
             isAtBottom = atBottom
             if atBottom {
-                if !isDragging {
-                    userHasScrolledUp = false
-                }
-            } else {
-                userHasScrolledUp = true
+                userHasScrolledUp = false
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -3500,6 +3482,35 @@ struct ChatScreen: View {
     }
 
     @ViewBuilder
+    private func scrollToBottomButton(proxy: ScrollViewProxy) -> some View {
+        if userHasScrolledUp {
+            HStack {
+                Spacer()
+                Button {
+                    userHasScrolledUp = false
+                    if let coordinator = scrollDetectorCoordinator {
+                        coordinator.scrollToBottom()
+                    } else if let last = vm.messages.last {
+                        withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
+                    }
+                } label: {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(.primary.opacity(0.7))
+                        .frame(width: 36, height: 36)
+                        .background(.ultraThinMaterial, in: Circle())
+                        .overlay(Circle().strokeBorder(.white.opacity(0.08), lineWidth: 0.5))
+                }
+                .buttonStyle(.plain)
+                .padding(.trailing, 16)
+                .padding(.bottom, 148)
+            }
+            .transition(.opacity.combined(with: .scale(scale: 0.8, anchor: .bottomTrailing)))
+            .animation(.spring(response: 0.3), value: userHasScrolledUp)
+        }
+    }
+
+    @ViewBuilder
     private func messageBubble(for msg: ChatMessage) -> some View {
         let isLatestAssistant = (msg.id == vm.latestAssistantMessageId)
         let canRegenerate = isLatestAssistant && !vm.isGenerating && !msg.isGenerating
@@ -3646,9 +3657,80 @@ private struct FullScreenImagePreview: View {
 }
 
 // MARK: - PreferenceKey for Scroll-to-Bottom detection
+
 struct AtBottomPreferenceKey: PreferenceKey {
     static let defaultValue: Bool = true
     static func reduce(value: inout Bool, nextValue: () -> Bool) {
         value = nextValue()
+    }
+}
+
+// Placed *inside* scroll content so it is a real UIScrollView descendant.
+// Attaches a target to panGestureRecognizer — no delegate replacement needed.
+// scrollToBottom() stops any active deceleration and jumps to bottom via UIScrollView directly.
+private struct ScrollDragDetector: UIViewRepresentable {
+    let onDragBegan: @MainActor () -> Void
+    let onAttached: @MainActor (Coordinator) -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(onDragBegan: onDragBegan) }
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.backgroundColor = .clear
+        view.isUserInteractionEnabled = false
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        let coordinator = context.coordinator
+        let onAttached = onAttached
+        Task { @MainActor in
+            guard let scrollView = uiView.nearestScrollView() else { return }
+            let wasAttached = coordinator.isAttached
+            coordinator.attach(to: scrollView)
+            if !wasAttached { onAttached(coordinator) }
+        }
+    }
+
+    @MainActor
+    class Coordinator: NSObject {
+        let onDragBegan: @MainActor () -> Void
+        private weak var attachedScrollView: UIScrollView?
+
+        init(onDragBegan: @escaping @MainActor () -> Void) {
+            self.onDragBegan = onDragBegan
+        }
+
+        var isAttached: Bool { attachedScrollView != nil }
+
+        func attach(to scrollView: UIScrollView) {
+            guard scrollView !== attachedScrollView else { return }
+            attachedScrollView?.panGestureRecognizer.removeTarget(self, action: nil)
+            attachedScrollView = scrollView
+            scrollView.panGestureRecognizer.addTarget(self, action: #selector(handlePan(_:)))
+        }
+
+        func scrollToBottom() {
+            guard let scrollView = attachedScrollView else { return }
+            let maxOffset = scrollView.contentSize.height
+                - scrollView.bounds.height
+                + scrollView.contentInset.bottom
+            guard maxOffset > 0 else { return }
+            // setContentOffset stops deceleration immediately, unlike scrollTo
+            scrollView.setContentOffset(CGPoint(x: 0, y: maxOffset), animated: true)
+        }
+
+        @objc private func handlePan(_ recognizer: UIPanGestureRecognizer) {
+            if recognizer.state == .began {
+                onDragBegan()
+            }
+        }
+    }
+}
+
+private extension UIView {
+    func nearestScrollView() -> UIScrollView? {
+        if let sv = self as? UIScrollView { return sv }
+        return superview?.nearestScrollView()
     }
 }
