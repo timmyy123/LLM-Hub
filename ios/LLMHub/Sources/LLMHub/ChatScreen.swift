@@ -2863,6 +2863,7 @@ struct ChatScreen: View {
     @FocusState private var isComposerFocused: Bool
     @State private var userHasScrolledUp = false
     @State private var isAtBottom = true
+    @State private var isDragging = false
 
     var body: some View {
         GeometryReader { geo in
@@ -2878,51 +2879,7 @@ struct ChatScreen: View {
                                 emptyState
                             } else {
                                 ForEach(vm.messages) { msg in
-                                    let isLatestAssistant = (msg.id == vm.latestAssistantMessageId)
-                                    let canRegenerate = isLatestAssistant && !vm.isGenerating && !msg.isGenerating
-                                    let canEditUser = msg.isFromUser && msg.id == vm.latestUserMessageId && !vm.isGenerating
-                                    let canEditAssistant = !msg.isFromUser && !vm.isGenerating && !msg.isGenerating
-                                    let modelSupportsThinking = chatModel(named: vm.selectedModelName)?.supportsThinking == true
-                                    let useStreamingThinkingHeuristic = supportsUnmarkedStreamingThinkingHeuristic(forModelNamed: vm.selectedModelName)
-                                    let regenerateAction: (() -> Void)? = canRegenerate ? {
-                                        userHasScrolledUp = false
-                                        vm.regenerateResponse(for: msg.id)
-                                    } : nil
-                                    MessageBubble(
-                                        message: msg,
-                                        preferThinkingWhileStreaming: modelSupportsThinking && vm.enableThinking && useStreamingThinkingHeuristic,
-                                        onCopy: {
-                                            vm.copyMessage(msg)
-                                            copiedMessageId = msg.id
-                                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                                copiedMessageId = nil
-                                            }
-                                        },
-                                        onOpenImage: { imagePath in
-                                            previewImagePath = imagePath
-                                        },
-                                        onEditUserMessage: { updatedPrompt in
-                                            if canEditUser {
-                                                vm.editUserPrompt(msg.id, newText: updatedPrompt)
-                                            }
-                                        },
-                                        onEditAssistantMessage: { updatedResponse in
-                                            if canEditAssistant {
-                                                vm.editAssistantMessage(msg.id, newText: updatedResponse)
-                                            }
-                                        },
-                                        onRegenerateResponse: regenerateAction,
-                                        onToggleTts: !msg.isFromUser && !msg.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? {
-                                            ttsManager.toggleSpeaking(
-                                                msg.content,
-                                                fallbackLanguage: settings.selectedLanguage,
-                                                key: msg.id.uuidString
-                                            )
-                                        } : nil,
-                                        isTtsSpeaking: ttsManager.isSpeaking(key: msg.id.uuidString)
-                                    )
-                                    .id(msg.id)
-                                    .padding(.horizontal, 16)
+                                    messageBubble(for: msg)
                                 }
                                 
                                 // Bottom sentinel to check when user scrolls back to the bottom
@@ -2948,17 +2905,29 @@ struct ChatScreen: View {
                         isComposerFocused = false
                     }
                     .simultaneousGesture(
-                        DragGesture().onChanged { gesture in
-                            // Detach from auto-scroll immediately if we scroll up/away from bottom
-                            if isAtBottom {
-                                if gesture.translation.height > 2 {
+                        DragGesture()
+                            .onChanged { gesture in
+                                isDragging = true
+                                // Detach from auto-scroll immediately if we scroll up/away from bottom
+                                if isAtBottom {
+                                    if gesture.translation.height > 2 {
+                                        userHasScrolledUp = true
+                                    }
+                                } else {
                                     userHasScrolledUp = true
                                 }
-                            } else {
-                                userHasScrolledUp = true
+                            }
+                            .onEnded { _ in
+                                isDragging = false
+                            }
+                    )
+                    .onChange(of: userHasScrolledUp) { _, scrolledUp in
+                        if !scrolledUp, let last = vm.messages.last {
+                            withAnimation {
+                                proxy.scrollTo(last.id, anchor: .bottom)
                             }
                         }
-                    )
+                    }
                     .onChange(of: vm.messages.count) { _, _ in
                         guard !userHasScrolledUp else { return }
                         if let last = vm.messages.last {
@@ -3127,8 +3096,10 @@ struct ChatScreen: View {
                             // ─── context usage ring ─────────────────────────────
                             ZStack {
                                 Circle()
+                                    .inset(by: 0.75)
                                     .stroke(Color.white.opacity(0.18), lineWidth: 1.5)
                                 Circle()
+                                    .inset(by: 1.0)
                                     .trim(from: 0, to: vm.contextUsageFractionDisplay)
                                     .stroke(
                                         vm.contextUsageFractionRaw < 0.90 ? ApolloPalette.accentStrong : ApolloPalette.warning,
@@ -3249,11 +3220,11 @@ struct ChatScreen: View {
         .onPreferenceChange(AtBottomPreferenceKey.self) { atBottom in
             isAtBottom = atBottom
             if atBottom {
-                userHasScrolledUp = false
-            } else {
-                if vm.isGenerating {
-                    userHasScrolledUp = true
+                if !isDragging {
+                    userHasScrolledUp = false
                 }
+            } else {
+                userHasScrolledUp = true
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -3526,6 +3497,56 @@ struct ChatScreen: View {
         guard let model = chatModel(named: vm.selectedModelName) else { return false }
         guard model.isGemma4LiteRTLM, vm.enableAudio else { return false }
         return vm.loadedModelName == vm.selectedModelName
+    }
+
+    @ViewBuilder
+    private func messageBubble(for msg: ChatMessage) -> some View {
+        let isLatestAssistant = (msg.id == vm.latestAssistantMessageId)
+        let canRegenerate = isLatestAssistant && !vm.isGenerating && !msg.isGenerating
+        let canEditUser = msg.isFromUser && msg.id == vm.latestUserMessageId && !vm.isGenerating
+        let canEditAssistant = !msg.isFromUser && !vm.isGenerating && !msg.isGenerating
+        let modelSupportsThinking = chatModel(named: vm.selectedModelName)?.supportsThinking == true
+        let useStreamingThinkingHeuristic = supportsUnmarkedStreamingThinkingHeuristic(forModelNamed: vm.selectedModelName)
+        let regenerateAction: (() -> Void)? = canRegenerate ? {
+            userHasScrolledUp = false
+            vm.regenerateResponse(for: msg.id)
+        } : nil
+        
+        MessageBubble(
+            message: msg,
+            preferThinkingWhileStreaming: modelSupportsThinking && vm.enableThinking && useStreamingThinkingHeuristic,
+            onCopy: {
+                vm.copyMessage(msg)
+                copiedMessageId = msg.id
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    copiedMessageId = nil
+                }
+            },
+            onOpenImage: { imagePath in
+                previewImagePath = imagePath
+            },
+            onEditUserMessage: { updatedPrompt in
+                if canEditUser {
+                    vm.editUserPrompt(msg.id, newText: updatedPrompt)
+                }
+            },
+            onEditAssistantMessage: { updatedResponse in
+                if canEditAssistant {
+                    vm.editAssistantMessage(msg.id, newText: updatedResponse)
+                }
+            },
+            onRegenerateResponse: regenerateAction,
+            onToggleTts: !msg.isFromUser && !msg.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? {
+                ttsManager.toggleSpeaking(
+                    msg.content,
+                    fallbackLanguage: settings.selectedLanguage,
+                    key: msg.id.uuidString
+                )
+            } : nil,
+            isTtsSpeaking: ttsManager.isSpeaking(key: msg.id.uuidString)
+        )
+        .id(msg.id)
+        .padding(.horizontal, 16)
     }
 
     var emptyState: some View {
