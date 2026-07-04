@@ -2864,64 +2864,6 @@ struct ChatScreen: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                Button {
-                    showSettings = true
-                } label: {
-                    HStack(spacing: 4) {
-                        Text(vm.selectedModelName)
-                            .font(.caption.bold())
-                            .foregroundColor(.white)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 8, weight: .bold))
-                            .foregroundColor(.white.opacity(0.78))
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(vm.isBackendLoading ? Color.orange.opacity(0.26) : Color.white.opacity(0.12))
-                    .clipShape(Capsule())
-                    .overlay(
-                        Capsule()
-                            .stroke(Color.white.opacity(0.18), lineWidth: 1)
-                    )
-                }
-
-                Spacer()
-
-                // RAG enabled badge
-                if vm.isRagEnabled {
-                    Text(settings.localized("rag_enabled"))
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(Color(hex: "3a7d44").opacity(0.85))
-                        .clipShape(Capsule())
-                }
-
-                ZStack {
-                    Circle()
-                        .stroke(Color.white.opacity(0.18), lineWidth: 2)
-                    Circle()
-                        .trim(from: 0, to: vm.contextUsageFractionDisplay)
-                        .stroke(
-                            vm.contextUsageFractionRaw < 0.90 ? ApolloPalette.accentStrong : ApolloPalette.warning,
-                            style: StrokeStyle(lineWidth: 2.5, lineCap: .round)
-                        )
-                        .rotationEffect(.degrees(-90))
-
-                    Text(vm.contextUsageFractionRaw < 0.995 ? vm.contextUsageLabel : "!")
-                        .font(.system(size: 8, weight: .bold, design: .rounded))
-                }
-                .frame(width: 28, height: 28)
-                .accessibilityLabel("Context usage \(vm.contextUsageLabel)")
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(.ultraThinMaterial)
-
             ScrollViewReader { proxy in
                 ScrollView {
                     // VStack instead of LazyVStack: the lazy view recycling can
@@ -3023,9 +2965,6 @@ struct ChatScreen: View {
                     .clipShape(Capsule())
                     .transition(.scale.combined(with: .opacity))
             }
-
-            Divider()
-
             if attachedImageURL != nil || attachedAudioURL != nil || attachedDocumentURL != nil {
                 HStack(spacing: 8) {
                     if attachedImageURL != nil {
@@ -3141,6 +3080,25 @@ struct ChatScreen: View {
 
                     Spacer()
 
+                    // ─── context usage ring ─────────────────────────────
+                    ZStack {
+                        Circle()
+                            .stroke(Color.white.opacity(0.18), lineWidth: 1.5)
+                        Circle()
+                            .trim(from: 0, to: vm.contextUsageFractionDisplay)
+                            .stroke(
+                                vm.contextUsageFractionRaw < 0.90 ? ApolloPalette.accentStrong : ApolloPalette.warning,
+                                style: StrokeStyle(lineWidth: 2.0, lineCap: .round)
+                            )
+                            .rotationEffect(.degrees(-90))
+
+                        Text(vm.contextUsageFractionRaw < 0.995 ? vm.contextUsageLabel : "!")
+                            .font(.system(size: 8, weight: .bold, design: .rounded))
+                    }
+                    .frame(width: 22, height: 22)
+                    .padding(.trailing, 4)
+                    .accessibilityLabel("Context usage \(vm.contextUsageLabel)")
+
                     // ─── mic ─────────────────────────────────────────────────
                     Button {
                         if shouldUseModelAudioInput {
@@ -3229,21 +3187,21 @@ struct ChatScreen: View {
                 .padding(.horizontal, 10)
                 .padding(.bottom, 10)
             }
-            .background(Color.white.opacity(0.08))
-            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 24))
             .overlay(
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
             )
             .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.bottom, 12)
+            .padding(.top, 4)
             .animation(.easeOut(duration: 0.2), value: isComposerFocused)
         }
         .apolloScreenBackground()
         .safeAreaInset(edge: .bottom, spacing: 0) {
             BannerAdContainer()
         }
-        .navigationTitle(vm.chatSessions.first(where: { $0.id == vm.currentSessionId })?.title ?? settings.localized("chat"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
@@ -3254,11 +3212,35 @@ struct ChatScreen: View {
                     Image(systemName: "line.3.horizontal")
                 }
             }
-            ToolbarItem(placement: .navigationBarTrailing) {
+            ToolbarItem(placement: .principal) {
                 Button {
                     showSettings = true
                 } label: {
-                    Image(systemName: "slider.horizontal.3")
+                    HStack(spacing: 4) {
+                        Text(vm.selectedModelName)
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.white.opacity(0.78))
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(vm.isBackendLoading ? Color.orange.opacity(0.26) : Color.white.opacity(0.12))
+                    .clipShape(Capsule())
+                    .overlay(
+                        Capsule()
+                            .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                    )
+                }
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    vm.newChat()
+                } label: {
+                    Image(systemName: "square.and.pencil")
                 }
             }
         }
@@ -3492,17 +3474,6 @@ struct ChatScreen: View {
     var emptyState: some View {
         VStack(spacing: 20) {
             Spacer(minLength: 60)
-            if let uiImage = UIImage(named: "Icon") {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 80, height: 80)
-                    .cornerRadius(16)
-            } else {
-                Image(systemName: "cpu")
-                    .font(.system(size: 64))
-                    .foregroundStyle(.linearGradient(colors: [ApolloPalette.accentStrong, ApolloPalette.accentMuted], startPoint: .top, endPoint: .bottom))
-            }
             
             Text(settings.localized("welcome_to_llm_hub"))
                 .font(.title2.bold())
