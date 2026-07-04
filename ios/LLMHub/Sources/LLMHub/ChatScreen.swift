@@ -3569,18 +3569,6 @@ struct ChatScreen: View {
             } else if vm.selectedModelName == settings.localized("no_model_selected") {
                 Text(settings.localized("load_model_to_start"))
                     .foregroundColor(.white.opacity(0.68))
-            } else {
-                Text(vm.selectedModelName)
-                    .font(.caption)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .padding(.horizontal, 12).padding(.vertical, 6)
-                    .background(Color.white.opacity(0.12))
-                    .clipShape(Capsule())
-                    .foregroundColor(.white)
-                Text(settings.localized("start_chatting"))
-                    .foregroundColor(.white.opacity(0.68))
-                    .multilineTextAlignment(.center)
             }
         }
         .padding(.horizontal, 32)
