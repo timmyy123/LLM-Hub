@@ -8,6 +8,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.ModelAvailabilityProvider
+import com.llmhub.llmhub.data.ModelConfig
+import com.llmhub.llmhub.data.ModelPreferences
 import com.llmhub.llmhub.screens.Language
 import com.llmhub.llmhub.screens.languageCodeToEnglishName
 import com.llmhub.llmhub.inference.InferenceService
@@ -28,6 +30,10 @@ import kotlinx.coroutines.withContext
 class TranslatorViewModel(application: Application) : AndroidViewModel(application) {
     private val inferenceService = (application as com.llmhub.llmhub.LlmHubApplication).inferenceService
     private val prefs = application.getSharedPreferences("translator_prefs", android.content.Context.MODE_PRIVATE)
+    private val modelPrefs = ModelPreferences(application)
+
+    private var lastAppliedModelName: String? = null
+    private var lastAppliedConfig: ModelConfig? = null
     
     // Model selection state
     private val _availableModels = MutableStateFlow<List<LLMModel>>(emptyList())
@@ -301,23 +307,29 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
     
     suspend fun loadModelInternal() {
         val model = _selectedModel.value ?: return
+        val disableVision = !_visionEnabled.value
+        val disableAudio = !_audioEnabled.value
+        if (_isModelLoaded.value && lastAppliedModelName == model.name &&
+            lastAppliedConfig?.disableVision == disableVision && lastAppliedConfig?.disableAudio == disableAudio) {
+            android.util.Log.d("TranslatorVM", "Skipping reload — model already loaded with same config")
+            return
+        }
         _isLoadingModel.value = true
         _loadError.value = null
-        
         try {
-            // Load model with appropriate modality settings
-            val disableVision = !_visionEnabled.value
-            val disableAudio = !_audioEnabled.value
-            inferenceService.setGenerationParameters(null, null, null, null, enableThinking = if (model.name.contains("Gemma-4", ignoreCase = true)) false else _enableThinking.value)
-            (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
-            inferenceService.loadModel(
+            val success = com.llmhub.llmhub.data.loadModelWithSavedConfig(
                 model = model,
-                preferredBackend = _selectedBackend.value,
-                disableVision = disableVision,
-                disableAudio = disableAudio,
-                deviceId = _selectedNpuDeviceId.value
+                modelPrefs = modelPrefs,
+                inferenceService = inferenceService,
+                disableVisionOverride = disableVision,
+                disableAudioOverride = disableAudio,
+                onConfigApplied = { cfg ->
+                    lastAppliedModelName = model.name
+                    lastAppliedConfig = cfg
+                }
             )
-            _isModelLoaded.value = true
+            if (success) _isModelLoaded.value = true
+            else { _loadError.value = "Failed to load model"; _isModelLoaded.value = false }
         } catch (e: Exception) {
             _loadError.value = e.message ?: "Failed to load model"
             _isModelLoaded.value = false
@@ -339,11 +351,12 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
     fun unloadModel() {
         viewModelScope.launch {
             try {
-                // Cancel any in-flight translation before unloading
                 translationJob?.cancel()
                 inferenceService.unloadModel()
                 _isModelLoaded.value = false
                 _outputText.value = ""
+                lastAppliedModelName = null
+                lastAppliedConfig = null
             } catch (e: Exception) {
                 _loadError.value = e.message ?: "Failed to unload model"
             }

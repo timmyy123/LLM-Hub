@@ -7,7 +7,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.ModelAvailabilityProvider
-import com.llmhub.llmhub.inference.MediaPipeInferenceService
+import com.llmhub.llmhub.data.ModelConfig
+import com.llmhub.llmhub.data.ModelPreferences
 import com.llmhub.llmhub.inference.UnifiedInferenceService
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import java.util.UUID
@@ -24,6 +25,10 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
     
     private val inferenceService = (application as com.llmhub.llmhub.LlmHubApplication).inferenceService
     private val prefs = application.getSharedPreferences("writing_aid_prefs", Context.MODE_PRIVATE)
+    private val modelPrefs = ModelPreferences(application)
+
+    private var lastAppliedModelName: String? = null
+    private var lastAppliedConfig: ModelConfig? = null
     
     private var processingJob: Job? = null
     
@@ -213,30 +218,25 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
 
     suspend fun loadModelInternal() {
         val model = _selectedModel.value ?: return
-        val backend = _selectedBackend.value ?: return
+        if (_isModelLoaded.value && lastAppliedModelName == model.name && lastAppliedConfig != null) {
+            Log.d("WritingAidVM", "Skipping reload — model already loaded with same config")
+            return
+        }
         _isLoading.value = true
         _errorMessage.value = null
-        
         try {
-            // Unload any existing model first
             inferenceService.unloadModel()
-            applyGenerationParametersToService()
-            (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
-
-            // Load the selected model with text-only mode (disable vision and audio)
-            val success = inferenceService.loadModel(
+            val success = com.llmhub.llmhub.data.loadModelWithSavedConfig(
                 model = model,
-                preferredBackend = backend,
-                disableVision = true,  // Writing aid only needs text
-                disableAudio = true,
-                deviceId = _selectedNpuDeviceId.value
+                modelPrefs = modelPrefs,
+                inferenceService = inferenceService,
+                onConfigApplied = { cfg ->
+                    lastAppliedModelName = model.name
+                    lastAppliedConfig = cfg
+                }
             )
-            
-            if (success) {
-                _isModelLoaded.value = true
-            } else {
-                _errorMessage.value = "Failed to load model"
-            }
+            if (success) _isModelLoaded.value = true
+            else _errorMessage.value = "Failed to load model"
         } catch (e: Exception) {
             _errorMessage.value = e.message ?: "Unknown error"
         } finally {
@@ -260,6 +260,8 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
                 inferenceService.unloadModel()
                 _isModelLoaded.value = false
                 _outputText.value = ""
+                lastAppliedModelName = null
+                lastAppliedConfig = null
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "Failed to unload model"
             }

@@ -60,6 +60,7 @@ data class ModelConfig(
                 agentToolsEnabled = obj.optBoolean("agentToolsEnabled", true)
             )
         }
+
     }
 }
 

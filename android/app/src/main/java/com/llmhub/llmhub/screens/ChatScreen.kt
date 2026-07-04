@@ -37,7 +37,6 @@ import com.llmhub.llmhub.components.ChatDrawer
 import com.llmhub.llmhub.components.MessageBubble
 import com.llmhub.llmhub.components.MessageInput
 import com.llmhub.llmhub.components.ChatSettingsSheet
-import com.llmhub.llmhub.ui.components.ModernCard
 import com.llmhub.llmhub.ui.components.StatusChip
 import com.llmhub.llmhub.ui.components.SectionHeader
 import com.llmhub.llmhub.viewmodels.ChatViewModel
@@ -519,62 +518,58 @@ private fun WelcomeMessage(
     onNavigateToModels: () -> Unit,
     hasDownloadedModels: Boolean
 ) {
-    ModernCard(
+    Column(
         modifier = Modifier
-            .widthIn(max = 640.dp) // limit width on large screens/tablets
-            .wrapContentWidth(Alignment.CenterHorizontally) // center the card horizontally
+            .widthIn(max = 640.dp)
+            .wrapContentWidth(Alignment.CenterHorizontally)
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
-            modifier = Modifier.padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = stringResource(R.string.welcome_to_llm_hub),
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            if (!hasDownloadedModels) {
-                Text(
-                    text = stringResource(R.string.no_models_downloaded),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                FilledTonalButton(
-                    onClick = onNavigateToModels,
-                    modifier = Modifier.height(48.dp)
-                ) {
-                    Icon(
-                        Icons.Default.GetApp, 
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        stringResource(R.string.download_a_model),
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                }
-            } else if (currentModel == null) {
-                Text(
-                    text = stringResource(R.string.load_model_to_start),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            } else {
+        Text(
+            text = stringResource(R.string.welcome_to_llm_hub),
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onSurface
+        )
 
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = stringResource(R.string.start_chatting),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center
-                    )
-                }
+        Spacer(modifier = Modifier.height(8.dp))
+
+        if (!hasDownloadedModels) {
+            Text(
+                text = stringResource(R.string.no_models_downloaded),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            FilledTonalButton(
+                onClick = onNavigateToModels,
+                modifier = Modifier.height(48.dp)
+            ) {
+                Icon(
+                    Icons.Default.GetApp,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    stringResource(R.string.download_a_model),
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+        } else if (currentModel == null) {
+            Text(
+                text = stringResource(R.string.load_model_to_start),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.start_chatting),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
         }
     }
 }

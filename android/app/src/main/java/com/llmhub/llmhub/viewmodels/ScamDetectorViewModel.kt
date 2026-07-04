@@ -9,9 +9,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.ModelAvailabilityProvider
+import com.llmhub.llmhub.data.ModelConfig
+import com.llmhub.llmhub.data.ModelPreferences
 import com.llmhub.llmhub.data.hasDownloadedVisionProjector
 import com.llmhub.llmhub.data.requiresExternalVisionProjector
-import com.llmhub.llmhub.inference.MediaPipeInferenceService
 import com.llmhub.llmhub.inference.UnifiedInferenceService
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import kotlinx.coroutines.CancellationException
@@ -31,6 +32,10 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
     
     private val inferenceService = (application as com.llmhub.llmhub.LlmHubApplication).inferenceService
     private val prefs = application.getSharedPreferences("scam_detector_prefs", android.content.Context.MODE_PRIVATE)
+    private val modelPrefs = ModelPreferences(application)
+
+    private var lastAppliedModelName: String? = null
+    private var lastAppliedConfig: ModelConfig? = null
     
     companion object {
         private const val TAG = "ScamDetectorViewModel"
@@ -242,39 +247,29 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
 
     suspend fun loadModelInternal() {
         val model = _selectedModel.value ?: return
-        val backend = _selectedBackend.value ?: return
+        val disableVision = !_visionEnabled.value || !modelSupportsVisionInput(model)
+        if (_isModelLoaded.value && lastAppliedModelName == model.name &&
+            lastAppliedConfig?.disableVision == disableVision) {
+            Log.d(TAG, "Skipping reload — model already loaded with same config")
+            return
+        }
         _isLoadingModel.value = true
         _loadError.value = null
-        
         try {
-            // Unload any existing model first
             inferenceService.unloadModel()
-            (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
-            val effectiveCtx = _selectedMaxTokens.value.coerceIn(1, model.contextWindowSize.coerceAtLeast(1))
-            inferenceService.setGenerationParameters(
-                maxTokens = effectiveCtx,
-                topK = null, topP = null, temperature = null,
-                nGpuLayers = _selectedNGpuLayers.value,
-                enableThinking = if (model.name.contains("Gemma-4", ignoreCase = true)) false else _enableThinking.value,
-                contextWindow = effectiveCtx
-            )
-
-            // Load the selected model with vision setting
-            val disableVision = !_visionEnabled.value || !modelSupportsVisionInput(model)
-            val success = inferenceService.loadModel(
+            val success = com.llmhub.llmhub.data.loadModelWithSavedConfig(
                 model = model,
-                preferredBackend = backend,
-                disableVision = disableVision,
-                disableAudio = true,
-                deviceId = _selectedNpuDeviceId.value
+                modelPrefs = modelPrefs,
+                inferenceService = inferenceService,
+                disableVisionOverride = disableVision,
+                disableAudioOverride = true,
+                onConfigApplied = { cfg ->
+                    lastAppliedModelName = model.name
+                    lastAppliedConfig = cfg
+                }
             )
-            
             _isModelLoaded.value = success
-            if (success) {
-                Log.d(TAG, "Model loaded successfully: ${model.name}")
-            } else {
-                _loadError.value = "Failed to load model"
-            }
+            if (!success) _loadError.value = "Failed to load model"
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load model", e)
             _loadError.value = "Failed to load model: ${e.message}"
@@ -301,6 +296,8 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
             try {
                 inferenceService.unloadModel()
                 _isModelLoaded.value = false
+                lastAppliedModelName = null
+                lastAppliedConfig = null
                 Log.d(TAG, "Model unloaded")
             } catch (e: Exception) {
                 Log.e(TAG, "Error unloading model", e)

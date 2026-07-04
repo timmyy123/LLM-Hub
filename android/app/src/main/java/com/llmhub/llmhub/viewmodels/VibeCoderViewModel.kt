@@ -7,6 +7,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.ModelAvailabilityProvider
+import com.llmhub.llmhub.data.ModelConfig
+import com.llmhub.llmhub.data.ModelPreferences
 import com.llmhub.llmhub.inference.UnifiedInferenceService
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import org.json.JSONArray
@@ -101,6 +103,10 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     
     private val inferenceService = (application as com.llmhub.llmhub.LlmHubApplication).inferenceService
     private val prefs = application.getSharedPreferences("vibe_coder_prefs", Context.MODE_PRIVATE)
+    private val modelPrefs = ModelPreferences(application)
+
+    private var lastAppliedModelName: String? = null
+    private var lastAppliedConfig: ModelConfig? = null
     
     private var processingJob: Job? = null
     private var streamingAssistantMessageId: String? = null
@@ -832,29 +838,25 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     
     suspend fun loadModelInternal() {
         val model = _selectedModel.value ?: return
-        val backend = _selectedBackend.value ?: return
+        if (_isModelLoaded.value && lastAppliedModelName == model.name && lastAppliedConfig != null) {
+            Log.d("VibeCoderVM", "Skipping reload — model already loaded with same config")
+            return
+        }
         _isLoading.value = true
         _errorMessage.value = null
-        
         try {
             inferenceService.unloadModel()
-            applyGenerationParametersToService()
-            (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
-
-            // Load model with text-only mode (vibe coder generates code as text)
-            val success = inferenceService.loadModel(
+            val success = com.llmhub.llmhub.data.loadModelWithSavedConfig(
                 model = model,
-                preferredBackend = backend,
-                disableVision = true,
-                disableAudio = true,
-                deviceId = _selectedNpuDeviceId.value
+                modelPrefs = modelPrefs,
+                inferenceService = inferenceService,
+                onConfigApplied = { cfg ->
+                    lastAppliedModelName = model.name
+                    lastAppliedConfig = cfg
+                }
             )
-            
-            if (success) {
-                _isModelLoaded.value = true
-            } else {
-                _errorMessage.value = "Failed to load model"
-            }
+            if (success) _isModelLoaded.value = true
+            else _errorMessage.value = "Failed to load model"
         } catch (e: Exception) {
             _errorMessage.value = e.message ?: "Unknown error"
         } finally {
@@ -880,6 +882,8 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                 cancelGenerationInternal()
                 inferenceService.unloadModel()
                 _isModelLoaded.value = false
+                lastAppliedModelName = null
+                lastAppliedConfig = null
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "Failed to unload model"
             }
