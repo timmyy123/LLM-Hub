@@ -210,9 +210,12 @@ final class LiteRTLMBackend {
         var currentOutput = ""
         var sentThinkOpen = false
         var sentThinkClose = false
+        var tokenCount = 0
+        let startTime = Date()
 
         for try await chunk in conversation.sendMessageStream(message) {
             try Task.checkCancellation()
+            tokenCount += 1
 
             let textChunk = chunk.toString
             let thinkingChunk = useThinking ? chunk.channels["thought"] : nil
@@ -237,15 +240,20 @@ final class LiteRTLMBackend {
                     currentOutput += cleaned
                 }
             }
-            onUpdate(currentOutput, 0, 0)
+            let elapsed = Date().timeIntervalSince(startTime)
+            let tps = elapsed > 0 ? (Double(tokenCount) / elapsed) : 0.0
+            onUpdate(currentOutput, tokenCount, tps)
         }
+
+        let elapsed = Date().timeIntervalSince(startTime)
+        let tps = elapsed > 0 ? (Double(tokenCount) / elapsed) : 0.0
 
         if useThinking && sentThinkOpen && !sentThinkClose {
             currentOutput += "\u{200B}\u{200B}ENDTHINK\u{200B}\u{200B}"
-            onUpdate(currentOutput, 0, 0)
+            onUpdate(currentOutput, tokenCount, tps)
         } else {
             // Final update with accumulated text
-            onUpdate(currentOutput, 0, 0)
+            onUpdate(currentOutput, tokenCount, tps)
         }
         print("✅ [LiteRTLMBackend] generation complete chars=\(currentOutput.count)")
     }

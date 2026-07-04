@@ -2861,344 +2861,401 @@ struct ChatScreen: View {
     @StateObject private var micTranscriber = ChatMicTranscriber()
     @StateObject private var audioRecorder = AudioRecorder()
     @FocusState private var isComposerFocused: Bool
+    @State private var userHasScrolledUp = false
+    @State private var isAtBottom = true
 
     var body: some View {
-        VStack(spacing: 0) {
-            ScrollViewReader { proxy in
-                ScrollView {
-                    // VStack instead of LazyVStack: the lazy view recycling can
-                    // leave the scroll area blank when streaming rapidly mutates
-                    // the last message's height near the context window limit.
-                    // Chat sessions are capped in length so eager layout is fine.
-                    VStack(spacing: 12) {
-                        if vm.messages.isEmpty {
-                            emptyState
-                        } else {
-                            ForEach(vm.messages) { msg in
-                                let isLatestAssistant = (msg.id == vm.latestAssistantMessageId)
-                                let canRegenerate = isLatestAssistant && !vm.isGenerating && !msg.isGenerating
-                                let canEditUser = msg.isFromUser && msg.id == vm.latestUserMessageId && !vm.isGenerating
-                                let canEditAssistant = !msg.isFromUser && !vm.isGenerating && !msg.isGenerating
-                                let modelSupportsThinking = chatModel(named: vm.selectedModelName)?.supportsThinking == true
-                                let useStreamingThinkingHeuristic = supportsUnmarkedStreamingThinkingHeuristic(forModelNamed: vm.selectedModelName)
-                                let regenerateAction: (() -> Void)? = canRegenerate ? {
-                                    vm.regenerateResponse(for: msg.id)
-                                } : nil
-                                MessageBubble(
-                                    message: msg,
-                                    preferThinkingWhileStreaming: modelSupportsThinking && vm.enableThinking && useStreamingThinkingHeuristic,
-                                    onCopy: {
-                                        vm.copyMessage(msg)
-                                        copiedMessageId = msg.id
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                            copiedMessageId = nil
+        GeometryReader { geo in
+            ZStack(alignment: .bottom) {
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        // VStack instead of LazyVStack: the lazy view recycling can
+                        // leave the scroll area blank when streaming rapidly mutates
+                        // the last message's height near the context window limit.
+                        // Chat sessions are capped in length so eager layout is fine.
+                        VStack(spacing: 12) {
+                            if vm.messages.isEmpty {
+                                emptyState
+                            } else {
+                                ForEach(vm.messages) { msg in
+                                    let isLatestAssistant = (msg.id == vm.latestAssistantMessageId)
+                                    let canRegenerate = isLatestAssistant && !vm.isGenerating && !msg.isGenerating
+                                    let canEditUser = msg.isFromUser && msg.id == vm.latestUserMessageId && !vm.isGenerating
+                                    let canEditAssistant = !msg.isFromUser && !vm.isGenerating && !msg.isGenerating
+                                    let modelSupportsThinking = chatModel(named: vm.selectedModelName)?.supportsThinking == true
+                                    let useStreamingThinkingHeuristic = supportsUnmarkedStreamingThinkingHeuristic(forModelNamed: vm.selectedModelName)
+                                    let regenerateAction: (() -> Void)? = canRegenerate ? {
+                                        userHasScrolledUp = false
+                                        vm.regenerateResponse(for: msg.id)
+                                    } : nil
+                                    MessageBubble(
+                                        message: msg,
+                                        preferThinkingWhileStreaming: modelSupportsThinking && vm.enableThinking && useStreamingThinkingHeuristic,
+                                        onCopy: {
+                                            vm.copyMessage(msg)
+                                            copiedMessageId = msg.id
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                                copiedMessageId = nil
+                                            }
+                                        },
+                                        onOpenImage: { imagePath in
+                                            previewImagePath = imagePath
+                                        },
+                                        onEditUserMessage: { updatedPrompt in
+                                            if canEditUser {
+                                                vm.editUserPrompt(msg.id, newText: updatedPrompt)
+                                            }
+                                        },
+                                        onEditAssistantMessage: { updatedResponse in
+                                            if canEditAssistant {
+                                                vm.editAssistantMessage(msg.id, newText: updatedResponse)
+                                            }
+                                        },
+                                        onRegenerateResponse: regenerateAction,
+                                        onToggleTts: !msg.isFromUser && !msg.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? {
+                                            ttsManager.toggleSpeaking(
+                                                msg.content,
+                                                fallbackLanguage: settings.selectedLanguage,
+                                                key: msg.id.uuidString
+                                            )
+                                        } : nil,
+                                        isTtsSpeaking: ttsManager.isSpeaking(key: msg.id.uuidString)
+                                    )
+                                    .id(msg.id)
+                                    .padding(.horizontal, 16)
+                                }
+                                
+                                // Bottom sentinel to check when user scrolls back to the bottom
+                                Color.clear
+                                    .frame(height: 1)
+                                    .id("bottom_sentinel")
+                                    .background(
+                                        GeometryReader { sentinelGeo in
+                                            let minY = sentinelGeo.frame(in: .named("chat_geo")).minY
+                                            let atBottom = minY <= geo.size.height - 115
+                                            Color.clear
+                                                .preference(key: AtBottomPreferenceKey.self, value: atBottom)
                                         }
-                                    },
-                                    onOpenImage: { imagePath in
-                                        previewImagePath = imagePath
-                                    },
-                                    onEditUserMessage: { updatedPrompt in
-                                        if canEditUser {
-                                            vm.editUserPrompt(msg.id, newText: updatedPrompt)
-                                        }
-                                    },
-                                    onEditAssistantMessage: { updatedResponse in
-                                        if canEditAssistant {
-                                            vm.editAssistantMessage(msg.id, newText: updatedResponse)
-                                        }
-                                    },
-                                    onRegenerateResponse: regenerateAction,
-                                    onToggleTts: !msg.isFromUser && !msg.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? {
-                                        ttsManager.toggleSpeaking(
-                                            msg.content,
-                                            fallbackLanguage: settings.selectedLanguage,
-                                            key: msg.id.uuidString
-                                        )
-                                    } : nil,
-                                    isTtsSpeaking: ttsManager.isSpeaking(key: msg.id.uuidString)
-                                )
-                                .id(msg.id)
-                                .padding(.horizontal, 16)
+                                    )
                             }
                         }
+                        .padding(.vertical, 12)
+                        .padding(.bottom, 12)
                     }
-                    .padding(.vertical, 12)
-                }
-                .scrollDismissesKeyboard(.interactively)
-                .onTapGesture {
-                    isComposerFocused = false
-                }
-                .onChange(of: vm.messages.count) { _, _ in
-                    if let last = vm.messages.last {
-                        withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
+                    .safeAreaPadding(.bottom, 130)
+                    .scrollDismissesKeyboard(.interactively)
+                    .onTapGesture {
+                        isComposerFocused = false
                     }
-                }
-                .onChange(of: vm.currentSessionId) { _, _ in
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    .simultaneousGesture(
+                        DragGesture().onChanged { gesture in
+                            // Detach from auto-scroll immediately if we scroll up/away from bottom
+                            if isAtBottom {
+                                if gesture.translation.height > 2 {
+                                    userHasScrolledUp = true
+                                }
+                            } else {
+                                userHasScrolledUp = true
+                            }
+                        }
+                    )
+                    .onChange(of: vm.messages.count) { _, _ in
+                        guard !userHasScrolledUp else { return }
                         if let last = vm.messages.last {
                             withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
                         }
                     }
-                }
-                .onChange(of: vm.messages.last?.content ?? "") { _, newContent in
-                    // Scroll to bottom during streaming — debounce to every ~200ms
-                    // to avoid overwhelming layout but still keep up with output.
-                    guard vm.isGenerating, let last = vm.messages.last else { return }
-                    proxy.scrollTo(last.id, anchor: .bottom)
-                }
-                .onChange(of: isComposerFocused) { _, focused in
-                    if focused, let last = vm.messages.last {
+                    .onChange(of: vm.currentSessionId) { _, _ in
+                        userHasScrolledUp = false
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                            withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
-                        }
-                    }
-                }
-            }
-
-            if let _ = copiedMessageId {
-                Text(settings.localized("message_copied"))
-                    .font(.caption)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Capsule())
-                    .transition(.scale.combined(with: .opacity))
-            }
-            if attachedImageURL != nil || attachedAudioURL != nil || attachedDocumentURL != nil {
-                HStack(spacing: 8) {
-                    if attachedImageURL != nil {
-                        attachmentPill(label: settings.localized("vision"), icon: "photo") {
-                            attachedImageURL = nil
-                            selectedImageItem = nil
-                        }
-                    }
-                    if attachedAudioURL != nil {
-                        attachmentPill(label: settings.localized("audio"), icon: "waveform") {
-                            attachedAudioURL = nil
-                        }
-                    }
-                    if let docName = attachedDocumentName {
-                        attachmentPill(label: docName, icon: "doc.text") {
-                            attachedDocumentURL = nil
-                            attachedDocumentName = nil
-                        }
-                    }
-                    Spacer()
-                }
-                .padding(.horizontal, 12)
-                .padding(.top, 6)
-            }
-
-            // ─── Liquid Apollo-style tall input box ──────────────────────────
-            VStack(spacing: 0) {
-                // Text field fills the top of the box
-                ZStack(alignment: .leading) {
-                    if micTranscriber.isPreparing && !shouldUseModelAudioInput {
-                        Text(settings.localized("preparing_mic"))
-                            .foregroundColor(.white.opacity(0.45))
-                            .font(.body)
-                            .padding(.horizontal, 16)
-                            .padding(.top, 14)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    TextField(settings.localized("type_a_message"), text: $vm.inputText, axis: .vertical)
-                        .lineLimit(1...6)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 14)
-                        .padding(.bottom, 8)
-                        .focused($isComposerFocused)
-                        .foregroundColor(.white)
-                        .onSubmit {
-                            if vm.isWebSearchEnabled {
-                                if vm.sendMessageWithWebSearch(documentURL: attachedDocumentURL, documentName: attachedDocumentName) {
-                                    clearAttachments()
-                                }
-                            } else {
-                                if vm.sendMessage(imageURL: attachedImageURL, audioURL: attachedAudioURL, documentURL: attachedDocumentURL, documentName: attachedDocumentName) {
-                                    clearAttachments()
-                                }
+                            if let last = vm.messages.last {
+                                withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
                             }
                         }
+                    }
+                    .onChange(of: vm.messages.last?.content ?? "") { _, newContent in
+                        // Scroll to bottom during streaming — debounce to every ~200ms
+                        // to avoid overwhelming layout but still keep up with output.
+                        guard vm.isGenerating, !userHasScrolledUp, let last = vm.messages.last else { return }
+                        proxy.scrollTo(last.id, anchor: .bottom)
+                    }
+                    .onChange(of: isComposerFocused) { _, focused in
+                        if focused {
+                            userHasScrolledUp = false
+                        }
+                        if focused, let last = vm.messages.last {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                                withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
+                            }
+                        }
+                    }
+                    .onChange(of: vm.isGenerating) { _, isGenerating in
+                        if isGenerating {
+                            userHasScrolledUp = false
+                        }
+                    }
                 }
-
-                // Action row — all buttons in one row at the bottom of the box
-                HStack(spacing: 6) {
-                    // ─── + attach ────────────────────────────────────────────
-                    Button {
-                        showAttachMenu = true
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(
-                                (attachedImageURL != nil || attachedDocumentURL != nil)
-                                    ? ApolloPalette.accentStrong : .white.opacity(0.75)
-                            )
-                            .frame(width: 34, height: 34)
-                            .background(Color.white.opacity(0.09))
-                            .clipShape(Circle())
+                
+                // Floating composer panel on top layer
+                VStack(spacing: 8) {
+                    if let _ = copiedMessageId {
+                        Text(settings.localized("message_copied"))
+                            .font(.caption)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(.ultraThinMaterial)
+                            .clipShape(Capsule())
+                            .transition(.scale.combined(with: .opacity))
                     }
-                    .disabled(vm.isGenerating)
-                    .confirmationDialog("", isPresented: $showAttachMenu) {
-                        let attachSelectedModel = chatModel(named: vm.selectedModelName)
-                        let attachCanVision = vm.enableVision
-                            && (attachSelectedModel?.supportsVision == true)
-                            && (attachSelectedModel.map { LLMBackend.shared.isVisionProjectorAvailable(for: $0) } ?? false)
-                        if attachCanVision {
-                            Button(settings.localized("images"))    { showPhotosPicker = true }
-                        }
-                        Button(settings.localized("documents")) { showDocumentImporter = true }
-                        Button(settings.localized("audio_file")){ showAudioTranscribeImporter = true }
-                        Button(settings.localized("cancel"), role: .cancel) {}
-                    }
-
-                    // ─── 🌐 Web Search toggle ─────────────────────────────────
-                    Button {
-                        vm.isWebSearchEnabled.toggle()
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: vm.isSearching ? "arrow.triangle.2.circlepath" : "globe")
-                                .font(.system(size: 12, weight: .semibold))
-                                .symbolEffect(.pulse, isActive: vm.isSearching)
-                            Text(settings.localized("web_search"))
-                                .font(.system(size: 12, weight: .semibold))
-                        }
-                        .foregroundColor(vm.isWebSearchEnabled ? .black : .white.opacity(0.75))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(vm.isWebSearchEnabled ? Color.white : Color.white.opacity(0.09))
-                        .clipShape(Capsule())
-                        .overlay(
-                            Capsule().stroke(
-                                vm.isWebSearchEnabled ? Color.clear : Color.white.opacity(0.15),
-                                lineWidth: 1
-                            )
-                        )
-                    }
-                    .disabled(vm.isGenerating)
-                    .animation(.easeInOut(duration: 0.15), value: vm.isWebSearchEnabled)
-
-                    Spacer()
-
-                    // ─── context usage ring ─────────────────────────────
-                    ZStack {
-                        Circle()
-                            .stroke(Color.white.opacity(0.18), lineWidth: 1.5)
-                        Circle()
-                            .trim(from: 0, to: vm.contextUsageFractionDisplay)
-                            .stroke(
-                                vm.contextUsageFractionRaw < 0.90 ? ApolloPalette.accentStrong : ApolloPalette.warning,
-                                style: StrokeStyle(lineWidth: 2.0, lineCap: .round)
-                            )
-                            .rotationEffect(.degrees(-90))
-
-                        Text(vm.contextUsageFractionRaw < 0.995 ? vm.contextUsageLabel : "!")
-                            .font(.system(size: 8, weight: .bold, design: .rounded))
-                    }
-                    .frame(width: 22, height: 22)
-                    .padding(.trailing, 4)
-                    .accessibilityLabel("Context usage \(vm.contextUsageLabel)")
-
-                    // ─── mic ─────────────────────────────────────────────────
-                    Button {
-                        if shouldUseModelAudioInput {
-                            if audioRecorder.isRecording {
-                                if let url = audioRecorder.stopRecording() {
-                                    attachedAudioURL = url
+                    
+                    VStack(spacing: 0) {
+                        if attachedImageURL != nil || attachedAudioURL != nil || attachedDocumentURL != nil {
+                            HStack(spacing: 8) {
+                                if attachedImageURL != nil {
+                                    attachmentPill(label: settings.localized("vision"), icon: "photo") {
+                                        attachedImageURL = nil
+                                        selectedImageItem = nil
+                                    }
                                 }
-                            } else {
-                                Task { @MainActor in
-                                    let destination = attachmentStorageDirectory()
-                                        .appendingPathComponent("audio_\(UUID().uuidString)")
-                                        .appendingPathExtension("wav")
-                                    _ = await audioRecorder.startRecording(outputURL: destination, autoStopAfterSilence: false, isFloat32Wav: true) { url in
-                                        Task { @MainActor in
-                                            attachedAudioURL = url
+                                if attachedAudioURL != nil {
+                                    attachmentPill(label: settings.localized("audio"), icon: "waveform") {
+                                        attachedAudioURL = nil
+                                    }
+                                }
+                                if let docName = attachedDocumentName {
+                                    attachmentPill(label: docName, icon: "doc.text") {
+                                        attachedDocumentURL = nil
+                                        attachedDocumentName = nil
+                                    }
+                                }
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.top, 12)
+                            .padding(.bottom, 4)
+                        }
+                        
+                        // Text field fills the top of the box
+                        ZStack(alignment: .leading) {
+                            if micTranscriber.isPreparing && !shouldUseModelAudioInput {
+                                Text(settings.localized("preparing_mic"))
+                                    .foregroundColor(.white.opacity(0.45))
+                                    .font(.body)
+                                    .padding(.horizontal, 16)
+                                    .padding(.top, 14)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            TextField(settings.localized("type_a_message"), text: $vm.inputText, axis: .vertical)
+                                .lineLimit(1...6)
+                                .padding(.horizontal, 16)
+                                .padding(.top, 14)
+                                .padding(.bottom, 8)
+                                .focused($isComposerFocused)
+                                .foregroundColor(.white)
+                                .onSubmit {
+                                    if vm.isWebSearchEnabled {
+                                        if vm.sendMessageWithWebSearch(documentURL: attachedDocumentURL, documentName: attachedDocumentName) {
+                                            clearAttachments()
+                                        }
+                                    } else {
+                                        if vm.sendMessage(imageURL: attachedImageURL, audioURL: attachedAudioURL, documentURL: attachedDocumentURL, documentName: attachedDocumentName) {
+                                            clearAttachments()
                                         }
                                     }
                                 }
-                            }
-                        } else {
-                            if micTranscriber.isRecording {
-                                Task {
-                                    // Text is already in vm.inputText via live onChange — just stop.
-                                    _ = await micTranscriber.stopLive()
-                                }
-                            } else {
-                                Task { await micTranscriber.startLive() }
-                            }
                         }
-                    } label: {
-                        ZStack {
-                            Circle()
-                                .fill(.ultraThinMaterial)
-                                .frame(width: 34, height: 34)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.white.opacity(0.18), lineWidth: 1)
-                                )
-                            if micTranscriber.isRecording || audioRecorder.isRecording {
-                                Circle()
-                                    .fill(Color.red.opacity(0.25))
+                        
+                        // Action row — all buttons in one row at the bottom of the box
+                        HStack(spacing: 6) {
+                            // ─── + attach ────────────────────────────────────────────
+                            Button {
+                                showAttachMenu = true
+                            } label: {
+                                Image(systemName: "plus")
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(
+                                        (attachedImageURL != nil || attachedDocumentURL != nil)
+                                            ? ApolloPalette.accentStrong : .white.opacity(0.75)
+                                    )
                                     .frame(width: 34, height: 34)
+                                    .background(Color.white.opacity(0.09))
+                                    .clipShape(Circle())
                             }
-                            Image(systemName: (micTranscriber.isPreparing || audioRecorder.isPreparing) ? "ellipsis"
-                                             : (micTranscriber.isRecording || audioRecorder.isRecording) ? "stop.fill" : "mic.fill")
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundColor((micTranscriber.isRecording || audioRecorder.isRecording) ? .red : .white)
-                        }
-                    }
-                    .disabled(vm.isGenerating)
-
-                    // ─── send / stop ──────────────────────────────────────────
-                    Button {
-                        isComposerFocused = false
-                        // Stop mic recording immediately so the spoken text stays in inputText.
-                        if micTranscriber.isRecording {
-                            Task { _ = await micTranscriber.stopLive() }
-                        }
-                        if vm.isGenerating {
-                            vm.stopGeneration()
-                        } else if vm.isWebSearchEnabled {
-                            if vm.sendMessageWithWebSearch(documentURL: attachedDocumentURL, documentName: attachedDocumentName) {
-                                clearAttachments()
+                            .disabled(vm.isGenerating)
+                            .confirmationDialog("", isPresented: $showAttachMenu) {
+                                let attachSelectedModel = chatModel(named: vm.selectedModelName)
+                                let attachCanVision = vm.enableVision
+                                    && (attachSelectedModel?.supportsVision == true)
+                                    && (attachSelectedModel.map { LLMBackend.shared.isVisionProjectorAvailable(for: $0) } ?? false)
+                                if attachCanVision {
+                                    Button(settings.localized("images"))    { showPhotosPicker = true }
+                                }
+                                Button(settings.localized("documents")) { showDocumentImporter = true }
+                                Button(settings.localized("audio_file")){ showAudioTranscribeImporter = true }
+                                Button(settings.localized("cancel"), role: .cancel) {}
                             }
-                        } else {
-                            if vm.sendMessage(imageURL: attachedImageURL, audioURL: attachedAudioURL, documentURL: attachedDocumentURL, documentName: attachedDocumentName) {
-                                clearAttachments()
+                            
+                            // ─── 🌐 Web Search toggle ─────────────────────────────────
+                            Button {
+                                vm.isWebSearchEnabled.toggle()
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: vm.isSearching ? "arrow.triangle.2.circlepath" : "globe")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .symbolEffect(.pulse, isActive: vm.isSearching)
+                                    Text(settings.localized("web_search"))
+                                        .font(.system(size: 12, weight: .semibold))
+                                }
+                                .foregroundColor(vm.isWebSearchEnabled ? .black : .white.opacity(0.75))
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(vm.isWebSearchEnabled ? Color.white : Color.white.opacity(0.09))
+                                .clipShape(Capsule())
+                                .overlay(
+                                    Capsule().stroke(
+                                        vm.isWebSearchEnabled ? Color.clear : Color.white.opacity(0.15),
+                                        lineWidth: 1
+                                    )
+                                )
                             }
-                        }
-                    } label: {
-                        Image(systemName: vm.isGenerating ? "stop.fill" : "arrow.up")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundColor(vm.isGenerating ? .white : .black)
+                            .disabled(vm.isGenerating)
+                            .animation(.easeInOut(duration: 0.15), value: vm.isWebSearchEnabled)
+                            
+                            Spacer()
+                            
+                            // ─── context usage ring ─────────────────────────────
+                            ZStack {
+                                Circle()
+                                    .stroke(Color.white.opacity(0.18), lineWidth: 1.5)
+                                Circle()
+                                    .trim(from: 0, to: vm.contextUsageFractionDisplay)
+                                    .stroke(
+                                        vm.contextUsageFractionRaw < 0.90 ? ApolloPalette.accentStrong : ApolloPalette.warning,
+                                        style: StrokeStyle(lineWidth: 2.0, lineCap: .round)
+                                    )
+                                    .rotationEffect(.degrees(-90))
+                                
+                                Text(vm.contextUsageFractionRaw < 0.995 ? vm.contextUsageLabel : "!")
+                                    .font(.system(size: 8, weight: .bold, design: .rounded))
+                            }
                             .frame(width: 32, height: 32)
-                            .background(vm.isGenerating ? Color.red.opacity(0.8) : Color.white)
-                            .clipShape(Circle())
+                            .padding(.trailing, 4)
+                            .accessibilityLabel("Context usage \(vm.contextUsageLabel)")
+                            
+                            // ─── mic ─────────────────────────────────────────────────
+                            Button {
+                                if shouldUseModelAudioInput {
+                                    if audioRecorder.isRecording {
+                                        if let url = audioRecorder.stopRecording() {
+                                            attachedAudioURL = url
+                                        }
+                                    } else {
+                                        Task { @MainActor in
+                                            let destination = attachmentStorageDirectory()
+                                                .appendingPathComponent("audio_\(UUID().uuidString)")
+                                                .appendingPathExtension("wav")
+                                            _ = await audioRecorder.startRecording(outputURL: destination, autoStopAfterSilence: false, isFloat32Wav: true) { url in
+                                                Task { @MainActor in
+                                                    attachedAudioURL = url
+                                                }
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    if micTranscriber.isRecording {
+                                        Task {
+                                            // Text is already in vm.inputText via live onChange — just stop.
+                                            _ = await micTranscriber.stopLive()
+                                        }
+                                    } else {
+                                        Task { await micTranscriber.startLive() }
+                                    }
+                                }
+                            } label: {
+                                ZStack {
+                                    Circle()
+                                        .fill(.ultraThinMaterial)
+                                        .frame(width: 32, height: 32)
+                                        .overlay(
+                                            Circle()
+                                                .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                                        )
+                                    if micTranscriber.isRecording || audioRecorder.isRecording {
+                                        Circle()
+                                            .fill(Color.red.opacity(0.25))
+                                            .frame(width: 32, height: 32)
+                                    }
+                                    Image(systemName: (micTranscriber.isPreparing || audioRecorder.isPreparing) ? "ellipsis"
+                                          : (micTranscriber.isRecording || audioRecorder.isRecording) ? "stop.fill" : "mic.fill")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor((micTranscriber.isRecording || audioRecorder.isRecording) ? .red : .white)
+                                }
+                            }
+                            .disabled(vm.isGenerating)
+                            
+                            // ─── send / stop ──────────────────────────────────────────
+                            Button {
+                                isComposerFocused = false
+                                // Stop mic recording immediately so the spoken text stays in inputText.
+                                if micTranscriber.isRecording {
+                                    Task { _ = await micTranscriber.stopLive() }
+                                }
+                                if vm.isGenerating {
+                                    vm.stopGeneration()
+                                } else if vm.isWebSearchEnabled {
+                                    if vm.sendMessageWithWebSearch(documentURL: attachedDocumentURL, documentName: attachedDocumentName) {
+                                        clearAttachments()
+                                    }
+                                } else {
+                                    if vm.sendMessage(imageURL: attachedImageURL, audioURL: attachedAudioURL, documentURL: attachedDocumentURL, documentName: attachedDocumentName) {
+                                        clearAttachments()
+                                    }
+                                }
+                            } label: {
+                                Image(systemName: vm.isGenerating ? "stop.fill" : "arrow.up")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(vm.isGenerating ? .white : .black)
+                                    .frame(width: 32, height: 32)
+                                    .background(vm.isGenerating ? Color.red.opacity(0.8) : Color.white)
+                                    .clipShape(Circle())
+                            }
+                            .disabled(
+                                !vm.isGenerating
+                                && vm.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                && attachedImageURL == nil
+                                && attachedAudioURL == nil
+                                && attachedDocumentURL == nil
+                            )
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.bottom, 10)
                     }
-                    .disabled(
-                        !vm.isGenerating
-                            && vm.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                            && attachedImageURL == nil
-                            && attachedAudioURL == nil
-                            && attachedDocumentURL == nil
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 24))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24)
+                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
                     )
                 }
-                .padding(.horizontal, 10)
-                .padding(.bottom, 10)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 12)
+                .padding(.top, 4)
+                .animation(.easeOut(duration: 0.2), value: isComposerFocused)
             }
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 24))
-            .overlay(
-                RoundedRectangle(cornerRadius: 24)
-                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
-            )
-            .padding(.horizontal, 16)
-            .padding(.bottom, 12)
-            .padding(.top, 4)
-            .animation(.easeOut(duration: 0.2), value: isComposerFocused)
         }
+        .coordinateSpace(name: "chat_geo")
         .apolloScreenBackground()
+        .onPreferenceChange(AtBottomPreferenceKey.self) { atBottom in
+            isAtBottom = atBottom
+            if atBottom {
+                userHasScrolledUp = false
+            } else {
+                if vm.isGenerating {
+                    userHasScrolledUp = true
+                }
+            }
+        }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             BannerAdContainer()
         }
@@ -3576,5 +3633,13 @@ private struct FullScreenImagePreview: View {
     private func loadImage() -> UIImage? {
         guard let resolvedURL = resolveStoredAttachmentURL(path) else { return nil }
         return UIImage(contentsOfFile: resolvedURL.path)
+    }
+}
+
+// MARK: - PreferenceKey for Scroll-to-Bottom detection
+struct AtBottomPreferenceKey: PreferenceKey {
+    static let defaultValue: Bool = true
+    static func reduce(value: inout Bool, nextValue: () -> Bool) {
+        value = nextValue()
     }
 }
