@@ -189,14 +189,16 @@ struct HomeScreen: View {
                 .ignoresSafeArea(.container, edges: [.top, .bottom])
 
                 // Top Safe Area Cover: solid black matching background at the top, fading to clear
-                LinearGradient(
-                    colors: [Color.black, Color.black.opacity(0.85), Color.clear],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(height: max(10, geo.safeAreaInsets.top) + 15)
-                .ignoresSafeArea(.container, edges: .top)
-                .allowsHitTesting(false)
+                if !isLandscape && geo.safeAreaInsets.top > 0 {
+                    LinearGradient(
+                        colors: [Color.black, Color.black.opacity(0.85), Color.clear],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(height: geo.safeAreaInsets.top)
+                    .ignoresSafeArea(.container, edges: .top)
+                    .allowsHitTesting(false)
+                }
             }
             .onAppear {
                 if githubStars == nil {

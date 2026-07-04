@@ -21,7 +21,7 @@ struct ApolloLiquidBackground: View {
             .ignoresSafeArea()
 
             Circle()
-                .fill(Color.white.opacity(0.18))
+                .fill(ApolloPalette.accentSoft.opacity(0.06))
                 .frame(width: 260, height: 260)
                 .blur(radius: 80)
                 .offset(x: 130, y: -260)
