@@ -240,10 +240,51 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
         saveSettings()
     }
 
-    fun loadModel() {
+    suspend fun loadModelInternal() {
         val model = _selectedModel.value ?: return
         val backend = _selectedBackend.value ?: return
+        _isLoadingModel.value = true
+        _loadError.value = null
         
+        try {
+            // Unload any existing model first
+            inferenceService.unloadModel()
+            (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
+            val effectiveCtx = _selectedMaxTokens.value.coerceIn(1, model.contextWindowSize.coerceAtLeast(1))
+            inferenceService.setGenerationParameters(
+                maxTokens = effectiveCtx,
+                topK = null, topP = null, temperature = null,
+                nGpuLayers = _selectedNGpuLayers.value,
+                enableThinking = if (model.name.contains("Gemma-4", ignoreCase = true)) false else _enableThinking.value,
+                contextWindow = effectiveCtx
+            )
+
+            // Load the selected model with vision setting
+            val disableVision = !_visionEnabled.value || !modelSupportsVisionInput(model)
+            val success = inferenceService.loadModel(
+                model = model,
+                preferredBackend = backend,
+                disableVision = disableVision,
+                disableAudio = true,
+                deviceId = _selectedNpuDeviceId.value
+            )
+            
+            _isModelLoaded.value = success
+            if (success) {
+                Log.d(TAG, "Model loaded successfully: ${model.name}")
+            } else {
+                _loadError.value = "Failed to load model"
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to load model", e)
+            _loadError.value = "Failed to load model: ${e.message}"
+            _isModelLoaded.value = false
+        } finally {
+            _isLoadingModel.value = false
+        }
+    }
+
+    fun loadModel() {
         // Prevent concurrent loads
         if (_isLoadingModel.value || _isModelLoaded.value) {
             Log.d(TAG, "Model already loading or loaded, ignoring duplicate request")
@@ -251,46 +292,7 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
         }
         
         viewModelScope.launch {
-            _isLoadingModel.value = true
-            _loadError.value = null
-            
-            try {
-                // Unload any existing model first
-                inferenceService.unloadModel()
-                (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
-                val effectiveCtx = _selectedMaxTokens.value.coerceIn(1, model.contextWindowSize.coerceAtLeast(1))
-                inferenceService.setGenerationParameters(
-                    maxTokens = effectiveCtx,
-                    topK = null, topP = null, temperature = null,
-                    nGpuLayers = _selectedNGpuLayers.value,
-                    enableThinking = if (model.name.contains("Gemma-4", ignoreCase = true)) false else _enableThinking.value,
-                    contextWindow = effectiveCtx
-                )
-
-                // Load the selected model with vision setting
-                val disableVision = !_visionEnabled.value || !modelSupportsVisionInput(model)
-                val success = inferenceService.loadModel(
-                    model = model,
-                    preferredBackend = backend,
-                    disableVision = disableVision,
-                    disableAudio = true,
-                    deviceId = _selectedNpuDeviceId.value
-                )
-                
-                _isModelLoaded.value = success
-                if (success) {
-                    Log.d(TAG, "Model loaded successfully: ${model.name}")
-                } else {
-                    _loadError.value = "Failed to load model"
-                }
-                
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to load model", e)
-                _loadError.value = "Failed to load model: ${e.message}"
-                _isModelLoaded.value = false
-            } finally {
-                _isLoadingModel.value = false
-            }
+            loadModelInternal()
         }
     }
     
@@ -337,39 +339,10 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
                 
                 // Auto-load model if not loaded
                 if (!_isModelLoaded.value) {
-                    _isLoadingModel.value = true
-                    _loadError.value = null
-                    try {
-                        inferenceService.unloadModel()
-                        (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
-                        val effectiveCtx = _selectedMaxTokens.value.coerceIn(1, model.contextWindowSize.coerceAtLeast(1))
-                        inferenceService.setGenerationParameters(
-                            maxTokens = effectiveCtx,
-                            topK = null, topP = null, temperature = null,
-                            nGpuLayers = _selectedNGpuLayers.value,
-                            enableThinking = if (model.name.contains("Gemma-4", ignoreCase = true)) false else _enableThinking.value,
-                            contextWindow = effectiveCtx
-                        )
-                        val disableVision = !_visionEnabled.value || !modelSupportsVisionInput(model)
-                        val success = inferenceService.loadModel(
-                            model = model,
-                            preferredBackend = _selectedBackend.value ?: LlmInference.Backend.GPU,
-                            disableVision = disableVision,
-                            disableAudio = true,
-                            deviceId = _selectedNpuDeviceId.value
-                        )
-                        _isModelLoaded.value = success
-                        if (!success) {
-                            _loadError.value = "Failed to load model"
-                            _isAnalyzing.value = false
-                            return@launch
-                        }
-                    } catch (e: Exception) {
-                        _loadError.value = "Failed to load model: ${e.message}"
+                    loadModelInternal()
+                    if (!_isModelLoaded.value) {
                         _isAnalyzing.value = false
                         return@launch
-                    } finally {
-                        _isLoadingModel.value = false
                     }
                 }
                 

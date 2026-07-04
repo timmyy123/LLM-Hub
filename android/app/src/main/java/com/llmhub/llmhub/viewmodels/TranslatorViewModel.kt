@@ -299,38 +299,40 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
         _enableThinking.value = enabled
     }
     
-    fun loadModel() {
+    suspend fun loadModelInternal() {
         val model = _selectedModel.value ?: return
+        _isLoadingModel.value = true
+        _loadError.value = null
         
+        try {
+            // Load model with appropriate modality settings
+            val disableVision = !_visionEnabled.value
+            val disableAudio = !_audioEnabled.value
+            inferenceService.setGenerationParameters(null, null, null, null, enableThinking = if (model.name.contains("Gemma-4", ignoreCase = true)) false else _enableThinking.value)
+            (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
+            inferenceService.loadModel(
+                model = model,
+                preferredBackend = _selectedBackend.value,
+                disableVision = disableVision,
+                disableAudio = disableAudio,
+                deviceId = _selectedNpuDeviceId.value
+            )
+            _isModelLoaded.value = true
+        } catch (e: Exception) {
+            _loadError.value = e.message ?: "Failed to load model"
+            _isModelLoaded.value = false
+        } finally {
+            _isLoadingModel.value = false
+        }
+    }
+
+    fun loadModel() {
         // Prevent concurrent loads
         if (_isLoadingModel.value || _isModelLoaded.value) {
             return
         }
-        
         viewModelScope.launch {
-            _isLoadingModel.value = true
-            _loadError.value = null
-            
-            try {
-                // Load model with appropriate modality settings
-                val disableVision = !_visionEnabled.value
-                val disableAudio = !_audioEnabled.value
-                inferenceService.setGenerationParameters(null, null, null, null, enableThinking = if (model.name.contains("Gemma-4", ignoreCase = true)) false else _enableThinking.value)
-                (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
-                inferenceService.loadModel(
-                    model = model,
-                    preferredBackend = _selectedBackend.value,
-                    disableVision = disableVision,
-                    disableAudio = disableAudio,
-                    deviceId = _selectedNpuDeviceId.value
-                )
-                _isModelLoaded.value = true
-            } catch (e: Exception) {
-                _loadError.value = e.message ?: "Failed to load model"
-                _isModelLoaded.value = false
-            } finally {
-                _isLoadingModel.value = false
-            }
+            loadModelInternal()
         }
     }
     
@@ -364,27 +366,10 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
             try {
                 // Auto-load model if not loaded
                 if (!_isModelLoaded.value) {
-                    _isLoadingModel.value = true
-                    _loadError.value = null
-                    try {
-                        val disableVision = !_visionEnabled.value
-                        val disableAudio = !_audioEnabled.value
-                        inferenceService.setGenerationParameters(null, null, null, null, enableThinking = if (model.name.contains("Gemma-4", ignoreCase = true)) false else _enableThinking.value)
-                        (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
-                        inferenceService.loadModel(
-                            model = model,
-                            preferredBackend = _selectedBackend.value,
-                            disableVision = disableVision,
-                            disableAudio = disableAudio,
-                            deviceId = _selectedNpuDeviceId.value
-                        )
-                        _isModelLoaded.value = true
-                    } catch (e: Exception) {
-                        _loadError.value = e.message ?: "Failed to load model"
+                    loadModelInternal()
+                    if (!_isModelLoaded.value) {
                         _isTranslating.value = false
                         return@launch
-                    } finally {
-                        _isLoadingModel.value = false
                     }
                 }
 

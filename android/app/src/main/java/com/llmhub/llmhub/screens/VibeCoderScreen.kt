@@ -84,6 +84,8 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
@@ -801,6 +803,14 @@ private fun ChatPane(
     val chatListState = rememberLazyListState()
     var editingPromptId by remember { mutableStateOf<String?>(null) }
     var editingPromptText by rememberSaveable { mutableStateOf("") }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+
+    val onSendClick = {
+        keyboardController?.hide()
+        focusManager.clearFocus()
+        if (isProcessing) onStopGeneration() else onSend()
+    }
 
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
@@ -1032,20 +1042,20 @@ private fun ChatPane(
                 },
                 maxLines = 5,
                 enabled = hasFileSession,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                keyboardActions = KeyboardActions(onSend = { if (isProcessing) onStopGeneration() else onSend() }),
-                trailingIcon = {
-                    IconButton(
-                        onClick = { if (isProcessing) onStopGeneration() else onSend() },
-                        enabled = if (isProcessing) true else (input.isNotBlank() && hasFileSession)
-                    ) {
-                        if (isProcessing) {
-                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.vibe_coder_stop_generation))
-                        } else {
-                            Icon(Icons.Default.Send, contentDescription = stringResource(R.string.send))
-                        }
-                    }
-                }
+                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                 keyboardActions = KeyboardActions(onSend = { onSendClick() }),
+                 trailingIcon = {
+                     IconButton(
+                         onClick = { onSendClick() },
+                         enabled = if (isProcessing) true else (input.isNotBlank() && hasFileSession)
+                     ) {
+                         if (isProcessing) {
+                             Icon(Icons.Default.Close, contentDescription = stringResource(R.string.vibe_coder_stop_generation))
+                         } else {
+                             Icon(Icons.Default.Send, contentDescription = stringResource(R.string.send))
+                         }
+                     }
+                 }
             )
         }
     }

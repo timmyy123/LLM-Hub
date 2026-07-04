@@ -20,56 +20,11 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
     
     private var currentService: InferenceService = mediaPipeService
     private var currentModel: LLMModel? = null
+    private var isVisionDisabled: Boolean = false
+    private var isAudioDisabled: Boolean = false
 
-    override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?, deviceId: String?): Boolean {
-        // Determine which service to use initially
-        if (model.modelFormat == "gguf" && (nexaService as? com.llmhub.llmhub.inference.NexaInferenceService)?.isAvailable() != true) {
-            throw AllBackendsFailedException("GGUF models require the Nexa SDK which is not available on this device")
-        }
-        val isGemma4 = model.name.contains("Gemma-4", ignoreCase = true)
-        val targetService = when (model.modelFormat) {
-            "onnx" -> onnxService
-            "gguf" -> nexaService
-            "litertlm" -> if (isGemma4) liteRtLmService else mediaPipeService
-            else -> mediaPipeService
-        }
-
-        // Same service and same model already loaded with same backend: skip reload (honor user's CPU/GPU choice on next load)
-        if (currentService == targetService) {
-            val loaded = currentService.getCurrentlyLoadedModel()
-            val currentBackend = currentService.getCurrentlyLoadedBackend()
-            if (loaded?.name == model.name && (preferredBackend == null || preferredBackend == currentBackend)) {
-                currentModel = model
-                updateAgentTools(model)
-                return true
-            }
-        }
-
-        // If switching services, unload the old one
-        if (currentService != targetService && currentModel != null) {
-            currentService.unloadModel()
-        }
-
-        currentService = targetService
-        currentModel = model
-        
-        try {
-            val success = currentService.loadModel(model, preferredBackend, deviceId)
-            if (!success) {
-                currentModel = null
-                throw AllBackendsFailedException("Backend ${currentService.javaClass.simpleName} failed to load model '${model.name}'")
-            }
-            updateAgentTools(model)
-            return true
-        } catch (e: AllBackendsFailedException) {
-            currentModel = null
-            throw e
-        } catch (e: Exception) {
-            android.util.Log.e("UnifiedInferenceService", "Service ${currentService.javaClass.simpleName} failed to load model '${model.name}'", e)
-            currentModel = null
-            throw AllBackendsFailedException("Failed to load model '${model.name}': ${e.message}")
-        }
-    }
+    override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?, deviceId: String?): Boolean =
+        loadModel(model, preferredBackend, disableVision = false, disableAudio = false, deviceId = deviceId)
 
     override suspend fun loadModel(
         model: LLMModel, 
@@ -78,6 +33,17 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         disableAudio: Boolean,
         deviceId: String?
     ): Boolean {
+        val modelPrefs = com.llmhub.llmhub.data.ModelPreferences(context)
+        val cfg = modelPrefs.getModelConfig(model.name)
+        val finalBackend = if (cfg?.backend != null) {
+            try { LlmInference.Backend.valueOf(cfg.backend) } catch (_: Exception) { preferredBackend }
+        } else {
+            preferredBackend
+        }
+        val finalDeviceId = cfg?.deviceId ?: deviceId
+        val finalDisableVision = disableVision
+        val finalDisableAudio = disableAudio
+
         if (model.modelFormat == "gguf" && (nexaService as? com.llmhub.llmhub.inference.NexaInferenceService)?.isAvailable() != true) {
             throw AllBackendsFailedException("GGUF models require the Nexa SDK which is not available on this device")
         }
@@ -89,19 +55,23 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
             else -> mediaPipeService
         }
 
-        // Same service and same model already loaded with same backend: skip reload (honor user's CPU/GPU choice on next load)
+        // Same service and same model already loaded with same backend and same vision/audio modality settings: skip reload
         if (currentService == targetService) {
             val loaded = currentService.getCurrentlyLoadedModel()
             val currentBackend = currentService.getCurrentlyLoadedBackend()
-            if (loaded?.name == model.name && (preferredBackend == null || preferredBackend == currentBackend)) {
+            if (loaded?.name == model.name && 
+                (finalBackend == null || finalBackend == currentBackend) &&
+                finalDisableVision == isVisionDisabled &&
+                finalDisableAudio == isAudioDisabled
+            ) {
                 currentModel = model
                 updateAgentTools(model)
                 return true
             }
         }
 
-        // If switching services, unload the old one
-        if (currentService != targetService && currentModel != null) {
+        // If switching services, or configuration changed, unload the old one
+        if (currentModel != null) {
             currentService.unloadModel()
         }
 
@@ -109,11 +79,13 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         currentModel = model
         
         try {
-            val success = currentService.loadModel(model, preferredBackend, disableVision, disableAudio, deviceId)
+            val success = currentService.loadModel(model, finalBackend, finalDisableVision, finalDisableAudio, finalDeviceId)
             if (!success) {
                 currentModel = null
                 throw AllBackendsFailedException("Backend ${currentService.javaClass.simpleName} failed to load model '${model.name}'")
             }
+            isVisionDisabled = finalDisableVision
+            isAudioDisabled = finalDisableAudio
             updateAgentTools(model)
             return true
         } catch (e: AllBackendsFailedException) {

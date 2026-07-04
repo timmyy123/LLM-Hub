@@ -228,45 +228,47 @@ class CreatorViewModel(
         applyGenerationParametersToService()
     }
 
-    fun loadModel() {
+    suspend fun loadModelInternal() {
         val model = _selectedModel.value ?: return
         val backend = _selectedBackend.value ?: return
+        _isLoading.value = true
+        _error.value = null
         
-        if (_isLoading.value || _isModelLoaded.value) {
-            return
-        }
-        
-        viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
-            
-            try {
-                // Unload current if any
-                inferenceService.unloadModel()
-                applyGenerationParametersToService()
-                (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
+        try {
+            // Unload current if any
+            inferenceService.unloadModel()
+            applyGenerationParametersToService()
+            (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
 
-                val success = inferenceService.loadModel(
-                    model = model,
-                    preferredBackend = backend,
-                    disableVision = true,  // Creator is text-only; skip vision backend init
-                    disableAudio = true,   // Creator is text-only; skip audio backend init
-                    deviceId = _selectedNpuDeviceId.value
-                )
-                
-                if (success) {
-                    _isModelLoaded.value = true
-                } else {
-                    _error.value = "Failed to load model"
-                }
-            } catch (e: Exception) {
-                _error.value = e.message ?: "Unknown error loading model"
-            } finally {
-                _isLoading.value = false
+            val success = inferenceService.loadModel(
+                model = model,
+                preferredBackend = backend,
+                disableVision = true,  // Creator is text-only; skip vision backend init
+                disableAudio = true,   // Creator is text-only; skip audio backend init
+                deviceId = _selectedNpuDeviceId.value
+            )
+            
+            if (success) {
+                _isModelLoaded.value = true
+            } else {
+                _error.value = "Failed to load model"
             }
+        } catch (e: Exception) {
+            _error.value = e.message ?: "Unknown error loading model"
+        } finally {
+            _isLoading.value = false
         }
     }
 
+    fun loadModel() {
+        if (_isLoading.value || _isModelLoaded.value) {
+            return
+        }
+        viewModelScope.launch {
+            loadModelInternal()
+        }
+    }
+    
     fun unloadModel() {
         viewModelScope.launch {
             unloadMutex.withLock {
@@ -307,38 +309,10 @@ class CreatorViewModel(
             try {
                 // Ensure model is loaded
                 if (!_isModelLoaded.value) {
-                    val modelToLoad = _selectedModel.value
-                    if (modelToLoad == null) {
-                        _error.value = "No model selected."
+                    loadModelInternal()
+                    if (!_isModelLoaded.value) {
                         _isGenerating.value = false
                         return@launch
-                    }
-                    _isLoading.value = true
-                    try {
-                        inferenceService.unloadModel()
-                        applyGenerationParametersToService()
-                        (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
-
-                        val success = inferenceService.loadModel(
-                            model = modelToLoad,
-                            preferredBackend = _selectedBackend.value ?: LlmInference.Backend.GPU,
-                            disableVision = true,
-                            disableAudio = true,
-                            deviceId = _selectedNpuDeviceId.value
-                        )
-                        if (success) {
-                            _isModelLoaded.value = true
-                        } else {
-                            _error.value = "Failed to load model"
-                            _isGenerating.value = false
-                            return@launch
-                        }
-                    } catch (e: Exception) {
-                        _error.value = "Failed to load model: ${e.message}"
-                        _isGenerating.value = false
-                        return@launch
-                    } finally {
-                        _isLoading.value = false
                     }
                 }
                 

@@ -19,13 +19,13 @@ plugins {
 
 android {
     namespace = "com.llmhub.llmhub"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.llmhub.llmhub"
         minSdk = 27
-        targetSdk = 36
-        versionCode = 110
+        targetSdk = 37
+        versionCode = 111
         versionName = "3.8.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

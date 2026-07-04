@@ -152,22 +152,6 @@ fun HomeScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        // App launcher icon - center cropped with equal edges removed
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(RoundedCornerShape(8.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.mipmap.ic_launcher_foreground),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(52.dp)
-                                    .scale(1.6f),
-                                tint = Color.Unspecified
-                            )
-                        }
                         Text(
                             text = stringResource(R.string.app_name),
                             style = MaterialTheme.typography.headlineSmall,

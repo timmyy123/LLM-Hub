@@ -830,42 +830,44 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         )
     }
     
-    fun loadModel() {
+    suspend fun loadModelInternal() {
         val model = _selectedModel.value ?: return
         val backend = _selectedBackend.value ?: return
+        _isLoading.value = true
+        _errorMessage.value = null
         
+        try {
+            inferenceService.unloadModel()
+            applyGenerationParametersToService()
+            (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
+
+            // Load model with text-only mode (vibe coder generates code as text)
+            val success = inferenceService.loadModel(
+                model = model,
+                preferredBackend = backend,
+                disableVision = true,
+                disableAudio = true,
+                deviceId = _selectedNpuDeviceId.value
+            )
+            
+            if (success) {
+                _isModelLoaded.value = true
+            } else {
+                _errorMessage.value = "Failed to load model"
+            }
+        } catch (e: Exception) {
+            _errorMessage.value = e.message ?: "Unknown error"
+        } finally {
+            _isLoading.value = false
+        }
+    }
+
+    fun loadModel() {
         if (_isLoading.value || _isModelLoaded.value) {
             return
         }
-        
         viewModelScope.launch {
-            _isLoading.value = true
-            _errorMessage.value = null
-            
-            try {
-                inferenceService.unloadModel()
-                applyGenerationParametersToService()
-                (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
-
-                // Load model with text-only mode (vibe coder generates code as text)
-                val success = inferenceService.loadModel(
-                    model = model,
-                    preferredBackend = backend,
-                    disableVision = true,
-                    disableAudio = true,
-                    deviceId = _selectedNpuDeviceId.value
-                )
-                
-                if (success) {
-                    _isModelLoaded.value = true
-                } else {
-                    _errorMessage.value = "Failed to load model"
-                }
-            } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Unknown error"
-            } finally {
-                _isLoading.value = false
-            }
+            loadModelInternal()
         }
     }
     
@@ -932,32 +934,10 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             
             // Auto-load model if not loaded
             if (!_isModelLoaded.value) {
-                _isLoading.value = true
-                try {
-                    inferenceService.unloadModel()
-                    applyGenerationParametersToService()
-                    (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
-
-                    val success = inferenceService.loadModel(
-                        model = model,
-                        preferredBackend = _selectedBackend.value ?: LlmInference.Backend.GPU,
-                        disableVision = true,
-                        disableAudio = true,
-                        deviceId = _selectedNpuDeviceId.value
-                    )
-                    if (success) {
-                        _isModelLoaded.value = true
-                    } else {
-                        _errorMessage.value = "Failed to load model"
-                        _isProcessing.value = false
-                        return@launch
-                    }
-                } catch (e: Exception) {
-                    _errorMessage.value = "Failed to load model: ${e.message}"
+                loadModelInternal()
+                if (!_isModelLoaded.value) {
                     _isProcessing.value = false
                     return@launch
-                } finally {
-                    _isLoading.value = false
                 }
             }
             

@@ -240,8 +240,26 @@ fun ChatScreen(
                             val targetModel = selectedModel ?: (if (isTargetModelLoaded) currentlyLoadedModel else null) 
                                 ?: availableModels.find { it.name == targetModelName }
 
-                            // Only show subtitle when model is actually loaded
-                            if (isTargetModelLoaded) {
+                            // Only show subtitle when model is actually loaded or loading
+                            if (isLoadingModel) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(top = 2.dp)
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(12.dp),
+                                        strokeWidth = 1.5.dp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = stringResource(R.string.model_loading),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            } else if (isTargetModelLoaded) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
                                         text = if (targetModel != null) getLocalizedModelName(targetModel) else targetModelName!!,
@@ -343,14 +361,7 @@ fun ChatScreen(
                         }
                     }
                     
-                    // Show model loading indicator after the latest message
-                    if (isLoadingModel && !isLoading) {
-                        item {
-                            val name = (selectedModel ?: currentlyLoadedModel)?.name
-                                ?: currentChat?.modelName ?: "AI Model"
-                            ModelLoadingIndicator(modelName = name)
-                        }
-                    }
+
                     
                     // Show typing indicator for regular generation
                     if (isLoading && streamingContents.isEmpty() && !isLoadingModel) {
@@ -517,29 +528,6 @@ private fun WelcomeMessage(
             modifier = Modifier.padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Surface(
-                modifier = Modifier.size(64.dp),
-                shape = MaterialTheme.shapes.medium,
-                color = MaterialTheme.colorScheme.primaryContainer,
-                tonalElevation = 8.dp
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.clip(MaterialTheme.shapes.medium)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.mipmap.ic_launcher_foreground),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(54.dp)
-                            .scale(2.0f),
-                        tint = Color.Unspecified
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
             Text(
                 text = stringResource(R.string.welcome_to_llm_hub),
                 style = MaterialTheme.typography.headlineSmall,
@@ -577,15 +565,7 @@ private fun WelcomeMessage(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             } else {
-                    // Ensure the chip is horizontally centered even in landscape/tablet widths
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                        StatusChip(
-                            text = currentModel,
-                            icon = Icons.Default.Link,
-                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-                        )
-                    }
+
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = stringResource(R.string.start_chatting),

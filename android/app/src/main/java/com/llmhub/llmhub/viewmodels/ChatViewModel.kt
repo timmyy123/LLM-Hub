@@ -1137,16 +1137,17 @@ class ChatViewModel(
                 // Ensure the model is loaded in the inference service before generating
                 try {
                     _isLoadingModel.value = true
-                    // Perform model load on IO dispatcher to avoid UI blocking / ANR
-                    val loaded = withContext(Dispatchers.IO) {
-                        inferenceService.loadModel(
-                            currentModel!!,
-                            _selectedBackend.value,
-                            isVisionDisabled,
-                            isAudioDisabled,
-                            _selectedNpuDeviceId.value
-                        )
-                    }
+                     // Perform model load on IO dispatcher to avoid UI blocking / ANR
+                     val loaded = withContext(Dispatchers.IO) {
+                         applySavedModelConfig(currentModel!!)
+                         inferenceService.loadModel(
+                             currentModel!!,
+                             _selectedBackend.value,
+                             isVisionDisabled,
+                             isAudioDisabled,
+                             _selectedNpuDeviceId.value
+                         )
+                     }
                     // Sync the currently loaded model state
                     syncCurrentlyLoadedModel()
                     _isLoadingModel.value = false
@@ -2373,6 +2374,27 @@ inferenceService.loadModel(currentModel!!, _selectedBackend.value, _selectedNpuD
         return cleaned
     }
     
+    private suspend fun applySavedModelConfig(model: LLMModel) {
+        try {
+            val cfg = modelPrefs.getModelConfig(model.name)
+            if (cfg != null) {
+                inferenceService.setGenerationParameters(
+                    maxTokens = cfg.maxTokens,
+                    topK = cfg.topK,
+                    topP = cfg.topP,
+                    temperature = cfg.temperature,
+                    nGpuLayers = cfg.nGpuLayers,
+                    enableThinking = cfg.enableThinking,
+                    contextWindow = cfg.contextWindow
+                )
+                (inferenceService as? com.llmhub.llmhub.inference.UnifiedInferenceService)?.setAgentToolsEnabled(cfg.agentToolsEnabled ?: false)
+                Log.d("ChatViewModel", "Applied saved model config for lazy load of ${model.name}")
+            }
+        } catch (e: Exception) {
+            Log.w("ChatViewModel", "Failed to apply saved model config: ${e.message}")
+        }
+    }
+
     fun switchModelWithBackend(newModel: LLMModel, backend: LlmInference.Backend, disableVision: Boolean) {
         // Call the new overloaded method with disableAudio = false for backward compatibility
         switchModelWithBackend(newModel, backend, disableVision, disableAudio = false)
@@ -3625,6 +3647,7 @@ inferenceService.loadModel(currentModel!!, _selectedBackend.value, _selectedNpuD
 
             // Ensure model is ready
             try {
+                applySavedModelConfig(currentModel!!)
                 inferenceService.loadModel(currentModel!!, _selectedBackend.value, _selectedNpuDeviceId.value)
                 syncCurrentlyLoadedModel()
             } catch (e: Exception) {
@@ -3676,9 +3699,10 @@ inferenceService.loadModel(currentModel!!, _selectedBackend.value, _selectedNpuD
                         "user: ${trimmed}\nassistant:"
                     }
 
-                    _isLoadingModel.value = true
-                    inferenceService.loadModel(currentModel!!, _selectedBackend.value, _selectedNpuDeviceId.value)
-                    _isLoadingModel.value = false
+                     _isLoadingModel.value = true
+                     applySavedModelConfig(currentModel!!)
+                     inferenceService.loadModel(currentModel!!, _selectedBackend.value, _selectedNpuDeviceId.value)
+                     _isLoadingModel.value = false
 
                     val webSearchEnabled = runBlocking { themePreferences.webSearchEnabled.first() }
 

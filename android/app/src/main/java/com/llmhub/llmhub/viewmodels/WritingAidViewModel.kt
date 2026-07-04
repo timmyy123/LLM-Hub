@@ -211,44 +211,46 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
         )
     }
 
-    fun loadModel() {
+    suspend fun loadModelInternal() {
         val model = _selectedModel.value ?: return
         val backend = _selectedBackend.value ?: return
+        _isLoading.value = true
+        _errorMessage.value = null
         
+        try {
+            // Unload any existing model first
+            inferenceService.unloadModel()
+            applyGenerationParametersToService()
+            (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
+
+            // Load the selected model with text-only mode (disable vision and audio)
+            val success = inferenceService.loadModel(
+                model = model,
+                preferredBackend = backend,
+                disableVision = true,  // Writing aid only needs text
+                disableAudio = true,
+                deviceId = _selectedNpuDeviceId.value
+            )
+            
+            if (success) {
+                _isModelLoaded.value = true
+            } else {
+                _errorMessage.value = "Failed to load model"
+            }
+        } catch (e: Exception) {
+            _errorMessage.value = e.message ?: "Unknown error"
+        } finally {
+            _isLoading.value = false
+        }
+    }
+
+    fun loadModel() {
         // Prevent concurrent loads
         if (_isLoading.value || _isModelLoaded.value) {
             return
         }
-        
         viewModelScope.launch {
-            _isLoading.value = true
-            _errorMessage.value = null
-            
-            try {
-                // Unload any existing model first
-                inferenceService.unloadModel()
-                applyGenerationParametersToService()
-                (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
-
-                // Load the selected model with text-only mode (disable vision and audio)
-                val success = inferenceService.loadModel(
-                    model = model,
-                    preferredBackend = backend,
-                    disableVision = true,  // Writing aid only needs text
-                    disableAudio = true,
-                    deviceId = _selectedNpuDeviceId.value
-                )
-                
-                if (success) {
-                    _isModelLoaded.value = true
-                } else {
-                    _errorMessage.value = "Failed to load model"
-                }
-            } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Unknown error"
-            } finally {
-                _isLoading.value = false
-            }
+            loadModelInternal()
         }
     }
     
@@ -267,7 +269,6 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
     fun processText(inputText: String, mode: WritingMode) {
         if (inputText.isBlank()) return
         val model = _selectedModel.value ?: return
-        val backend = _selectedBackend.value ?: LlmInference.Backend.GPU
         
         // Cancel any previous processing before starting a new one (like TranslatorViewModel)
         processingJob?.cancel()
@@ -280,32 +281,10 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
             try {
                 // Auto-load model if not loaded
                 if (!_isModelLoaded.value) {
-                    _isLoading.value = true
-                    try {
-                        inferenceService.unloadModel()
-                        applyGenerationParametersToService()
-                        (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
-
-                        val success = inferenceService.loadModel(
-                            model = model,
-                            preferredBackend = backend,
-                            disableVision = true,
-                            disableAudio = true,
-                            deviceId = _selectedNpuDeviceId.value
-                        )
-                        if (success) {
-                            _isModelLoaded.value = true
-                        } else {
-                            _errorMessage.value = "Failed to load model"
-                            _isProcessing.value = false
-                            return@launch
-                        }
-                    } catch (e: Exception) {
-                        _errorMessage.value = e.message ?: "Failed to load model"
+                    loadModelInternal()
+                    if (!_isModelLoaded.value) {
                         _isProcessing.value = false
                         return@launch
-                    } finally {
-                        _isLoading.value = false
                     }
                 }
 
