@@ -796,3 +796,6 @@
 "image_upscale_models_description" = "Моделі ШІ з прискоренням QNN для підвищення роздільності зображень до 4x";
 "image_upscale_models" = "Покращення зображень";
 "image_upscale_models_description" = "Моделі ШІ з прискоренням QNN для підвищення роздільності зображень до 4x";
+
+"on_device_ai_engine" = "ЛОКАЛЬНИЙ ІІ-ДВИГУН";
+"secure_private" = "БЕЗПЕЧНО ТА КОНФІДЕНЦІЙНО";

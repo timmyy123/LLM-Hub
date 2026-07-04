@@ -804,3 +804,6 @@
 "image_upscale_models_description" = "QNN 加速的 AI 模型，可将图像分辨率提升至 4 倍";
 "image_upscale_models" = "图像超分辨率";
 "image_upscale_models_description" = "QNN 加速的 AI 模型，可将图像分辨率提升至 4 倍";
+
+"on_device_ai_engine" = "端侧 AI 引擎";
+"secure_private" = "安全与私密";

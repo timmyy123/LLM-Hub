@@ -796,3 +796,6 @@
 "image_upscale_models_description" = "מודלי בינה מלאכותית מואצי QNN לשיפור רזולוציית תמונות עד פי 4";
 "image_upscale_models" = "שיפור תמונה";
 "image_upscale_models_description" = "מודלי בינה מלאכותית מואצי QNN לשיפור רזולוציית תמונות עד פי 4";
+
+"on_device_ai_engine" = "מנוע בינה מלאכותית על המכשיר";
+"secure_private" = "מאובטח ופרטי";

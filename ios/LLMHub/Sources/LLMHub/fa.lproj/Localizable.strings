@@ -796,3 +796,6 @@
 "image_upscale_models_description" = "مدل‌های هوش مصنوعی شتاب‌دهنده QNN برای بزرگ‌نمایی تصاویر تا ۴ برابر";
 "image_upscale_models" = "بزرگ‌نمایی تصویر";
 "image_upscale_models_description" = "مدل‌های هوش مصنوعی شتاب‌دهنده QNN برای بزرگ‌نمایی تصاویر تا ۴ برابر";
+
+"on_device_ai_engine" = "موتور هوش مصنوعی روی دستگاه";
+"secure_private" = "امن و خصوصی";

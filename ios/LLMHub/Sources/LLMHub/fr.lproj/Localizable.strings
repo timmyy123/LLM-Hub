@@ -783,3 +783,6 @@
 "image_upscale_models_description" = "Modèles d'IA accélérés QNN pour améliorer la résolution des images jusqu'à 4x";
 "image_upscale_models" = "Améliorer l'image";
 "image_upscale_models_description" = "Modèles d'IA accélérés QNN pour améliorer la résolution des images jusqu'à 4x";
+
+"on_device_ai_engine" = "MOTEUR D'IA SUR L'APPAREIL";
+"secure_private" = "SÉCURISÉ & PRIVÉ";

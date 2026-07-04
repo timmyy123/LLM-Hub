@@ -768,3 +768,6 @@
 "image_upscale_models_description" = "QNN-beschleunigte KI-Modelle zur Hochskalierung und Verbesserung der Bildauflösung bis zu 4x";
 "image_upscale_models" = "Bild hochskalieren";
 "image_upscale_models_description" = "QNN-beschleunigte KI-Modelle zur Hochskalierung und Verbesserung der Bildauflösung bis zu 4x";
+
+"on_device_ai_engine" = "ON-DEVICE-KI-ENGINE";
+"secure_private" = "SICHER & PRIVAT";

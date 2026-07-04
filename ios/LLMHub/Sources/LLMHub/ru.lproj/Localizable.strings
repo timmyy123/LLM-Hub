@@ -768,3 +768,6 @@
 "image_upscale_models_description" = "Модели ИИ с ускорением QNN для повышения разрешения изображений до 4x";
 "image_upscale_models" = "Улучшение изображений";
 "image_upscale_models_description" = "Модели ИИ с ускорением QNN для повышения разрешения изображений до 4x";
+
+"on_device_ai_engine" = "ЛОКАЛЬНЫЙ ИИ-ДВИЖОК";
+"secure_private" = "БЕЗОПАСНО И КОНФИДЕНЦИАЛЬНО";

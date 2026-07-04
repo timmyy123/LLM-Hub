@@ -796,3 +796,6 @@
 "image_upscale_models_description" = "Modele AI z akceleracją QNN do poprawy rozdzielczości obrazów do 4x";
 "image_upscale_models" = "Powiększenie obrazu";
 "image_upscale_models_description" = "Modele AI z akceleracją QNN do poprawy rozdzielczości obrazów do 4x";
+
+"on_device_ai_engine" = "LOKALNY SILNIK AI";
+"secure_private" = "BEZPIECZNE I PRYWATNE";

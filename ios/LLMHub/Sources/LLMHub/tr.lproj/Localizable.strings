@@ -796,3 +796,6 @@
 "image_upscale_models_description" = "Görüntü çözünürlüğünü 4x'e kadar artırmak için QNN hızlandırmalı yapay zeka modelleri";
 "image_upscale_models" = "Görüntü İyileştirme";
 "image_upscale_models_description" = "Görüntü çözünürlüğünü 4x'e kadar artırmak için QNN hızlandırmalı yapay zeka modelleri";
+
+"on_device_ai_engine" = "CİHAZ ÜZERİ YAPAY ZEKA MOTORU";
+"secure_private" = "GÜVENLİ VE ÖZEL";

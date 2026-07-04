@@ -796,3 +796,6 @@
 "image_upscale_models_description" = "نماذج ذكاء اصطناعي مسرَّعة بـ QNN لتحسين دقة الصور حتى 4x";
 "image_upscale_models" = "تحسين الصورة";
 "image_upscale_models_description" = "نماذج ذكاء اصطناعي مسرَّعة بـ QNN لتحسين دقة الصور حتى 4x";
+
+"on_device_ai_engine" = "محرك الذكاء الاصطناعي على الجهاز";
+"secure_private" = "آمن وخاص";

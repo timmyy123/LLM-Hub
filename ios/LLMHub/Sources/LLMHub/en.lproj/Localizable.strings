@@ -806,3 +806,6 @@
 "image_upscale_models_description" = "QNN-accelerated AI models for upscaling and enhancing image resolution up to 4x";
 "image_upscale_models" = "Image Upscale";
 "image_upscale_models_description" = "QNN-accelerated AI models for upscaling and enhancing image resolution up to 4x";
+
+"on_device_ai_engine" = "ON-DEVICE AI ENGINE";
+"secure_private" = "SECURE & PRIVATE";

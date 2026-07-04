@@ -796,3 +796,6 @@
 "image_upscale_models_description" = "Model AI yang dipercepat QNN untuk meningkatkan resolusi gambar hingga 4x";
 "image_upscale_models" = "Tingkatkan Gambar";
 "image_upscale_models_description" = "Model AI yang dipercepat QNN untuk meningkatkan resolusi gambar hingga 4x";
+
+"on_device_ai_engine" = "MESIN AI PADA PERANGKAT";
+"secure_private" = "AMAN & PRIVAT";

@@ -796,3 +796,6 @@
 "image_upscale_models_description" = "QNN 가속 AI 모델로 이미지 해상도를 최대 4배 향상";
 "image_upscale_models" = "이미지 업스케일";
 "image_upscale_models_description" = "QNN 가속 AI 모델로 이미지 해상도를 최대 4배 향상";
+
+"on_device_ai_engine" = "온디바이스 AI 엔진";
+"secure_private" = "안전 및 개인정보 보호";
