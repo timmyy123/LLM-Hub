@@ -139,7 +139,7 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
         viewModelScope.launch {
             val context = getApplication<Application>()
             val available = ModelAvailabilityProvider.loadAvailableModels(context)
-                .filter { it.category != "embedding" && !it.name.contains("Projector", ignoreCase = true) }
+                .filter { it.category != "embedding" && it.category != "tts" && it.category != "asr" && !it.name.contains("Projector", ignoreCase = true) }
             _availableModels.value = available
             
             // Restore saved model or use first as default

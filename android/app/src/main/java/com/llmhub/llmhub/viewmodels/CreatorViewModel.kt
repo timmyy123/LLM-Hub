@@ -154,7 +154,7 @@ class CreatorViewModel(
     private fun loadAvailableModels() {
         viewModelScope.launch {
             val available = ModelAvailabilityProvider.loadAvailableModels(context)
-                .filter { it.category != "embedding" && !it.name.contains("Projector", ignoreCase = true) }
+                .filter { it.category != "embedding" && it.category != "tts" && it.category != "asr" && !it.name.contains("Projector", ignoreCase = true) }
             _availableModels.value = available
             
             // If no model selected yet and not loaded, pick first

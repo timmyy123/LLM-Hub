@@ -852,6 +852,7 @@
     <string name="tts_device_setting_desc">Sélectionnez CPU ou GPU pour les modèles de synthèse vocale</string>
     <string name="stt_device_setting">Périphérique STT</string>
     <string name="stt_device_setting_desc">Sélectionnez CPU ou GPU pour les modèles de reconnaissance vocale</string>
+    <string name="tts_please_download_voice">Veuillez télécharger une voix</string>
     <string name="tts_voice_setting">Voix TTS</string>
     <string name="tts_voice_en">English (Sky)</string>
     <string name="tts_voice_ja">Japanese (Alpha)</string>

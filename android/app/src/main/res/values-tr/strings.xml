@@ -863,6 +863,7 @@
     <string name="tts_device_setting_desc">Metin okuma modelleri için CPU veya GPU seçin</string>
     <string name="stt_device_setting">STT Cihazı</string>
     <string name="stt_device_setting_desc">Ses tanıma modelleri için CPU veya GPU seçin</string>
+    <string name="tts_please_download_voice">Lütfen bir ses indirin</string>
     <string name="tts_voice_setting">TTS Sesi</string>
     <string name="tts_voice_en">English (Sky)</string>
     <string name="tts_voice_ja">Japanese (Alpha)</string>

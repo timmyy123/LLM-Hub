@@ -82,7 +82,7 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
         viewModelScope.launch {
             val context = getApplication<Application>()
             val allModels = ModelAvailabilityProvider.loadAvailableModels(context, includeAsr = true)
-            val audioModels = allModels.filter { it.supportsAudio }
+            val audioModels = allModels.filter { it.supportsAudio && it.category != "tts" }
             _availableModels.value = audioModels
 
             // restore selected model by name

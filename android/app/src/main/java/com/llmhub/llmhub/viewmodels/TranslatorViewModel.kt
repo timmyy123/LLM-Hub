@@ -119,11 +119,11 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
         viewModelScope.launch {
             val context = getApplication<Application>()
             val allModels = ModelAvailabilityProvider.loadAvailableModels(context)
-             val multimodalModels = allModels.filter {
+             val multimodalModels = allModels.filter { it.category != "tts" && it.category != "embedding" && it.category != "asr" && (
                  it.supportsVision || it.supportsAudio ||
                  it.name.contains("Gemma-4 12B", ignoreCase = true) ||
                  it.name.contains("Gemma 4 12B", ignoreCase = true)
-             }
+             ) }
              _availableModels.value = multimodalModels
 
             // Restore saved model or use first as default

@@ -866,6 +866,7 @@
     <string name="tts_device_setting_desc">انتخاب CPU یا GPU برای مدل‌های تبدیل متن به گفتار</string>
     <string name="stt_device_setting">دستگاه STT</string>
     <string name="stt_device_setting_desc">انتخاب CPU یا GPU برای مدل‌های تبدیل گفتار به متن</string>
+    <string name="tts_please_download_voice">لطفاً یک صدا دانلود کنید</string>
     <string name="tts_voice_setting">صدای TTS</string>
     <string name="tts_voice_en">English (Sky)</string>
     <string name="tts_voice_ja">Japanese (Alpha)</string>

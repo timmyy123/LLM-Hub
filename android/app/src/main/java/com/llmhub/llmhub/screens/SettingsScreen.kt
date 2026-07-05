@@ -1677,7 +1677,12 @@ private fun TtsVoiceSelector(themeViewModel: ThemeViewModel) {
         }
     }
 
-    val currentVoiceName = voices.find { it.first == selectedTtsVoice }?.second ?: selectedTtsVoice
+    val anyVoiceDownloaded = downloadedVoiceKeys.values.any { it }
+    val currentVoiceName = if (!anyVoiceDownloaded) {
+        stringResource(R.string.tts_please_download_voice)
+    } else {
+        voices.find { it.first == selectedTtsVoice }?.second ?: selectedTtsVoice
+    }
 
     SettingsItem(
         icon = Icons.Default.Face,
@@ -1692,6 +1697,16 @@ private fun TtsVoiceSelector(themeViewModel: ThemeViewModel) {
             title = { Text(stringResource(R.string.tts_voice_setting)) },
             text = {
                 LazyColumn {
+                    if (!anyVoiceDownloaded) {
+                        item {
+                            Text(
+                                text = stringResource(R.string.tts_please_download_voice),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                        }
+                    }
                     items(voices.size) { index ->
                         val (voiceKey, voiceLabel) = voices[index]
                         val isDownloaded = downloadedVoiceKeys[voiceKey] == true
