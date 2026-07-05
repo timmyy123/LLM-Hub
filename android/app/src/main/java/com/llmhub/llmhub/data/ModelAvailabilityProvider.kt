@@ -44,8 +44,7 @@ object ModelAvailabilityProvider {
         } catch (_: Exception) {
             val modelsDir = File(context.filesDir, "models")
 
-            // ONNX multi-file models: same logic as ChatViewModel.loadAvailableModelsSync (subdir, all files required)
-            if (model.modelFormat == "onnx" && model.additionalFiles.isNotEmpty()) {
+            if ((model.modelFormat == "whisperkit" || model.modelFormat == "onnx") && model.additionalFiles.isNotEmpty()) {
                 val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
                 val onnxModelDir = File(modelsDir, modelDirName)
                 Log.d("ModelAvailability", "Checking ONNX model: ${model.name}")

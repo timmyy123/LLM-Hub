@@ -202,8 +202,8 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                 } else {
                     model.copy(isDownloaded = false, isDownloading = false, downloadProgress = 0f, downloadedBytes = 0, totalBytes = model.sizeBytes)
                 }
-            } else if (model.modelFormat == "onnx" && model.additionalFiles.isNotEmpty()) {
-                // ONNX models with additional files (tokenizer, data files, etc.)
+            } else if ((model.modelFormat == "onnx" || model.modelFormat == "whisperkit") && model.additionalFiles.isNotEmpty()) {
+                // ONNX/WhisperKit models with additional files (tokenizer, data files, TFLite files, etc.)
                 val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
                 val onnxModelDir = File(modelsDir, modelDirName)
                 
@@ -615,7 +615,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                     }
 
                     // ONNX models with additional files (decoder + embed + tokenizer etc.) - files live in a subdir
-                    if (model.modelFormat == "onnx" && model.additionalFiles.isNotEmpty()) {
+                    if ((model.modelFormat == "onnx" || model.modelFormat == "whisperkit") && model.additionalFiles.isNotEmpty()) {
                         val modelsDir = File(context.filesDir, "models")
                         val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
                         val onnxModelDir = File(modelsDir, modelDirName)
@@ -629,7 +629,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                             val completeEnough = fileCount >= expectedFileCount && (expectedTotal <= 0 || totalDownloaded >= (expectedTotal * 0.98).toLong())
                             
                             if (completeEnough && cause == null) {
-                                android.util.Log.i("ModelDownloadViewModel", "ONNX model download completed: ${model.name}, files: $fileCount/$expectedFileCount, size: $totalDownloaded")
+                                android.util.Log.i("ModelDownloadViewModel", "ONNX/WhisperKit model download completed: ${model.name}, files: $fileCount/$expectedFileCount, size: $totalDownloaded")
                                 updateModel(model.name) {
                                     it.copy(
                                         isDownloaded = true,
@@ -808,7 +808,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         if (modelsDir.exists() && modelsDir.isDirectory) {
             try {
                 // Determine if this is a directory-based model (ONNX or GGUF multi-file)
-                if ((model.modelFormat == "onnx" || model.modelFormat == "gguf") && model.additionalFiles.isNotEmpty()) {
+                if ((model.modelFormat == "onnx" || model.modelFormat == "whisperkit" || model.modelFormat == "gguf") && model.additionalFiles.isNotEmpty()) {
                     val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
                     val modelDir = File(modelsDir, modelDirName)
                     if (modelDir.exists() && modelDir.isDirectory) {
@@ -932,6 +932,19 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                 // the model will no longer be detected as «downloaded» next time we
                 // build the list (e.g. after an app restart).
                 val modelsDir = File(context.filesDir, "models")
+
+                // Delete subdirectory for multi-file formats (onnx, whisperkit, gguf with additionalFiles)
+                if ((model.modelFormat == "onnx" || model.modelFormat == "whisperkit" ||
+                            (model.modelFormat == "gguf" && model.additionalFiles.isNotEmpty())) &&
+                    model.additionalFiles.isNotEmpty()) {
+                    val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
+                    val modelSubDir = File(modelsDir, modelDirName)
+                    if (modelSubDir.exists() && modelSubDir.isDirectory) {
+                        modelSubDir.deleteRecursively()
+                        android.util.Log.d("ModelDownloadViewModel", "[deleteModel] Deleted model directory: ${modelSubDir.absolutePath}")
+                    }
+                }
+
                 val primaryFile = File(modelsDir, model.localFileName())
                 val legacyFile = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
                 

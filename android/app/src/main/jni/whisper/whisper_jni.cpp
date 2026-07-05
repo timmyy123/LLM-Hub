@@ -18,6 +18,8 @@ Java_com_llmhub_llmhub_inference_WhisperCppService_nativeInitContext(
 
     const char *path = env->GetStringUTFChars(model_path, nullptr);
     struct whisper_context_params cparams = whisper_context_default_params();
+    cparams.use_gpu = false;
+    cparams.flash_attn = false;
     struct whisper_context *ctx = whisper_init_from_file_with_params(path, cparams);
     env->ReleaseStringUTFChars(model_path, path);
 
@@ -133,7 +135,7 @@ Java_com_llmhub_llmhub_inference_WhisperCppService_nativeTranscribe(
     params.print_special = false;
     params.single_segment = false;
     params.no_timestamps = true;
-    params.n_threads = 4;
+    params.n_threads = 8;
 
     if (lang[0] != '\0') {
         params.language = lang;

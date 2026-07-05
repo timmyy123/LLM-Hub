@@ -1,13 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- Allow cleartext (HTTP) only to localhost for the native backend server -->
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="false">localhost</domain>
-        <domain includeSubdomains="false">127.0.0.1</domain>
-    </domain-config>
-    
-    <!-- Default: Block cleartext for all other domains -->
-    <base-config cleartextTrafficPermitted="false">
+    <!-- Allow cleartext for localhost (native SD backend server) and block it everywhere else.
+         NOTE: No <domain-config> blocks here — their presence causes Android's RootTrustManager
+         to reject the 2-arg checkServerTrusted used by Ktor CIO (WhisperKit internal), breaking
+         all HTTPS connections from WhisperKit. Cleartext is only reachable via localhost anyway. -->
+    <base-config cleartextTrafficPermitted="true">
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>

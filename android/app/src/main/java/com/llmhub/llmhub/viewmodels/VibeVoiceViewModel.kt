@@ -5,9 +5,11 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
+import com.llmhub.llmhub.data.DeviceInfo
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.ModelAvailabilityProvider
 import com.llmhub.llmhub.data.hasNativeVoiceSupport
+import com.llmhub.llmhub.inference.WhisperBackend
 import com.llmhub.llmhub.inference.InferenceService
 import com.llmhub.llmhub.inference.UnifiedInferenceService
 import com.llmhub.llmhub.utils.AudioConversionUtils
@@ -80,6 +82,11 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
     private val _selectedNpuDeviceId = MutableStateFlow<String?>(null)
     val selectedNpuDeviceId: StateFlow<String?> = _selectedNpuDeviceId.asStateFlow()
 
+    private val _selectedAsrBackend = MutableStateFlow(
+        if (DeviceInfo.isQualcommNpuSupported()) WhisperBackend.NPU else WhisperBackend.CPU
+    )
+    val selectedAsrBackend: StateFlow<WhisperBackend> = _selectedAsrBackend.asStateFlow()
+
     private val _transcription = MutableStateFlow("")
     val transcription: StateFlow<String> = _transcription.asStateFlow()
 
@@ -114,7 +121,7 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
     private var sessionChatId: String = "vibevoice-${UUID.randomUUID()}"
     private var isSessionPrimed: Boolean = false
 
-    private val whisperService = com.llmhub.llmhub.inference.WhisperCppService(application)
+    private val whisperKitService = com.llmhub.llmhub.inference.WhisperKitService(application)
     private val asrMutex = Mutex()
 
     init {
@@ -176,6 +183,13 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
         } catch (_: IllegalArgumentException) {
             LlmInference.Backend.GPU
         }
+        val defaultAsrBackend = if (DeviceInfo.isQualcommNpuSupported()) WhisperBackend.NPU else WhisperBackend.CPU
+        val savedAsrBackendName = prefs.getString("selected_asr_backend", defaultAsrBackend.name)
+        _selectedAsrBackend.value = try {
+            WhisperBackend.valueOf(savedAsrBackendName ?: defaultAsrBackend.name)
+        } catch (_: IllegalArgumentException) {
+            defaultAsrBackend
+        }
     }
 
     private fun saveSettings() {
@@ -183,6 +197,7 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
             putString("selected_model_name", _selectedModel.value?.name)
             putString("selected_voice_model_name", _selectedVoiceModel.value?.name ?: "gemma")
             putString("selected_backend", _selectedBackend.value.name)
+            putString("selected_asr_backend", _selectedAsrBackend.value.name)
             apply()
         }
     }
@@ -209,6 +224,13 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
         if (_isModelLoaded.value) unloadModel()
         _selectedBackend.value = backend
         _selectedNpuDeviceId.value = deviceId
+        saveSettings()
+        clearConversation()
+    }
+
+    fun selectAsrBackend(backend: WhisperBackend) {
+        if (_isModelLoaded.value) unloadModel()
+        _selectedAsrBackend.value = backend
         saveSettings()
         clearConversation()
     }
@@ -254,14 +276,11 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
                 )
                 
                 if (isUsingAsr && voiceModel != null) {
-                    val modelDir = getModelDirectory(voiceModel)
-                    val modelFile = findModelFile(modelDir, voiceModel)
-                    if (!modelFile.exists()) {
-                        throw java.io.FileNotFoundException("Model file not found at ${modelFile.absolutePath}")
-                    }
-                    val loaded = whisperService.loadModel(modelFile.absolutePath)
+                    val modelDirName = voiceModel.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
+                    val modelDir = java.io.File(getApplication<Application>().filesDir, "models/$modelDirName")
+                    val loaded = whisperKitService.loadModel(modelDir.absolutePath, _selectedAsrBackend.value)
                     if (!loaded) {
-                        throw Exception("Failed to load whisper model from ${modelFile.absolutePath}")
+                        throw Exception("Failed to load WhisperKit model from: ${modelDir.absolutePath}")
                     }
                 }
                 
@@ -270,7 +289,7 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
                 _loadError.value = e.message ?: "Failed to load model"
                 _isModelLoaded.value = false
                 try {
-                    asrMutex.withLock { whisperService.release() }
+                    asrMutex.withLock { whisperKitService.release() }
                 } catch (_: Exception) {}
             } finally {
                 _isLoadingModel.value = false
@@ -284,7 +303,7 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
                 respondJob?.cancel()
                 _transcription.value = ""
                 asrMutex.withLock {
-                    whisperService.release()
+                    whisperKitService.release()
                 }
                 inferenceService.unloadModel()
                 _isModelLoaded.value = false
@@ -333,26 +352,19 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
                     assistantText = ""
                 )
 
-                if (whisperService.isLoaded) {
+                if (whisperKitService.isLoaded) {
                     val pcm16Wav = AudioConversionUtils.float32WavToPcm16Wav(audioBytes)
-                    android.util.Log.d("VibeVoiceViewModel", "ASR transcribe: input=${audioBytes.size}B → pcm16WAV=${pcm16Wav.size}B")
-                    val tempWavFile = withContext(Dispatchers.IO) {
-                        val file = java.io.File.createTempFile("asr_vibevoice_", ".wav", getApplication<Application>().cacheDir)
-                        file.writeBytes(pcm16Wav)
-                        file
-                    }
+                    val pcm16Raw = if (pcm16Wav.size > 44) pcm16Wav.copyOfRange(44, pcm16Wav.size) else pcm16Wav
+                    android.util.Log.d("VibeVoiceViewModel", "ASR transcribe: input=${audioBytes.size}B → pcm16=${pcm16Raw.size}B")
                     val transcription = try {
-                        val asrModel = _selectedVoiceModel.value ?: throw IllegalStateException("ASR model not selected")
-                        val isEnglishModel = asrModel.name.contains("english", ignoreCase = true) || asrModel.url.contains(".en.", ignoreCase = true)
-                        val lang = if (isEnglishModel) "en" else "auto"
                         val result = withContext(Dispatchers.IO) {
                             asrMutex.withLock {
-                                whisperService.transcribe(tempWavFile.absolutePath, lang)
+                                whisperKitService.transcribe(pcm16Raw)
                             }
                         }
                         result ?: throw Exception("ASR Transcription failed")
-                    } finally {
-                        tempWavFile.delete()
+                    } catch (e: Exception) {
+                        throw e
                     }
 
                     _transcription.value = transcription
@@ -525,29 +537,4 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
         return AudioConversionUtils.convertUriToFloat32Wav(app, uri)
     }
 
-    private fun getModelDirectory(model: LLMModel): java.io.File {
-        val context = getApplication<Application>()
-        val modelsDir = java.io.File(context.filesDir, "models")
-        val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
-        val modelDir = java.io.File(modelsDir, modelDirName)
-        return if (modelDir.exists()) modelDir else modelsDir
-    }
-    
-    private fun findModelFile(modelDir: java.io.File, model: LLMModel): java.io.File {
-        val localName = model.url.substringAfterLast("/").substringBefore("?")
-        var modelFile = java.io.File(modelDir, localName)
-        if (modelFile.exists()) return modelFile
-        
-        val context = getApplication<Application>()
-        val modelsDir = java.io.File(context.filesDir, "models")
-        modelFile = java.io.File(modelsDir, localName)
-        if (modelFile.exists()) return modelFile
-        
-        val files = modelDir.listFiles { _, name -> 
-            name.endsWith(".bin") || name.endsWith(".gguf")
-        }
-        if (files?.isNotEmpty() == true) return files.first()
-        
-        return java.io.File(modelDir, localName)
-    }
 }

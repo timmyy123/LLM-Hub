@@ -1425,6 +1425,7 @@ fun TranscriberScreen(
     val selectedModel by viewModel.selectedModel.collectAsState()
     val selectedBackend by viewModel.selectedBackend.collectAsState()
     val selectedNpuDeviceId by viewModel.selectedNpuDeviceId.collectAsState()
+    val selectedAsrBackend by viewModel.selectedAsrBackend.collectAsState()
     val isLoadingModel by viewModel.isLoadingModel.collectAsState()
     val isTranscribing by viewModel.isTranscribing.collectAsState()
     val isRecording by viewModel.isRecording.collectAsState()
@@ -1433,7 +1434,7 @@ fun TranscriberScreen(
     val transcriptionText by viewModel.transcriptionText.collectAsState()
     val transcriptionHistory by viewModel.transcriptionHistory.collectAsState()
     val audioUri by viewModel.audioUri.collectAsState()
-    
+
     // Snackbar
     val snackbarHostState = remember { SnackbarHostState() }
     
@@ -1952,20 +1953,22 @@ fun TranscriberScreen(
                 )
                 
                 // Model Selector (always enable audio, vision disabled)
+                val isAsrModel = selectedModel?.category == "asr"
                 ModelSelectorCard(
                     models = availableModels,
                     selectedModel = selectedModel,
-                    selectedBackend = selectedBackend,
-                    selectedNpuDeviceId = selectedNpuDeviceId,
+                    selectedBackend = if (isAsrModel) null else selectedBackend,
+                    selectedNpuDeviceId = if (isAsrModel) null else selectedNpuDeviceId,
                     isLoading = isLoadingModel,
                     isModelLoaded = isModelLoaded,
                     onModelSelected = { viewModel.selectModel(it) },
                     onBackendSelected = { backend, deviceId -> viewModel.selectBackend(backend, deviceId) },
-                    onLoadModel = {
-                        viewModel.loadModel()
-                    },
+                    onLoadModel = { viewModel.loadModel() },
                     onUnloadModel = { viewModel.unloadModel() },
-                    filterMultimodalOnly = true
+                    filterMultimodalOnly = true,
+                    selectedVoiceModel = if (isAsrModel) selectedModel else null,
+                    selectedAsrBackend = if (isAsrModel) selectedAsrBackend else null,
+                    onAsrBackendSelected = { viewModel.selectAsrBackend(it) }
                 )
             }
         }

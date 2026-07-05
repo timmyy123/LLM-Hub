@@ -22,13 +22,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import com.llmhub.llmhub.data.DeviceInfo
+import com.llmhub.llmhub.inference.WhisperBackend
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 class TranscriberViewModel(application: Application) : AndroidViewModel(application) {
     private val inferenceService = (application as com.llmhub.llmhub.LlmHubApplication).inferenceService
     private val prefs = application.getSharedPreferences("transcriber_prefs", android.content.Context.MODE_PRIVATE)
-    private val whisperService = com.llmhub.llmhub.inference.WhisperCppService(application)
+    private val whisperKitService = com.llmhub.llmhub.inference.WhisperKitService(application)
     private val asrMutex = Mutex()
     
     // Model selection state
@@ -44,6 +46,11 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
     // Optional selected NPU device id when user chooses NPU for GGUF
     private val _selectedNpuDeviceId = MutableStateFlow<String?>(null)
     val selectedNpuDeviceId: StateFlow<String?> = _selectedNpuDeviceId.asStateFlow()
+
+    private val _selectedAsrBackend = MutableStateFlow(
+        if (DeviceInfo.isQualcommNpuSupported()) WhisperBackend.NPU else WhisperBackend.CPU
+    )
+    val selectedAsrBackend: StateFlow<WhisperBackend> = _selectedAsrBackend.asStateFlow()
     
     // Loading states
     private val _isLoadingModel = MutableStateFlow(false)
@@ -103,11 +110,19 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
         } catch (_: IllegalArgumentException) {
             LlmInference.Backend.GPU
         }
+        val defaultAsrBackend = if (DeviceInfo.isQualcommNpuSupported()) WhisperBackend.NPU else WhisperBackend.CPU
+        val savedAsrBackendName = prefs.getString("selected_asr_backend", defaultAsrBackend.name)
+        _selectedAsrBackend.value = try {
+            WhisperBackend.valueOf(savedAsrBackendName ?: defaultAsrBackend.name)
+        } catch (_: IllegalArgumentException) {
+            defaultAsrBackend
+        }
     }
     private fun saveSettings() {
         prefs.edit().apply {
             putString("selected_model_name", _selectedModel.value?.name)
             putString("selected_backend", _selectedBackend.value.name)
+            putString("selected_asr_backend", _selectedAsrBackend.value.name)
             apply()
         }
     }
@@ -123,13 +138,15 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
     }
     
     fun selectBackend(backend: LlmInference.Backend, deviceId: String? = null) {
-        // Unload current model before switching backend
-        if (_isModelLoaded.value) {
-            unloadModel()
-        }
-        
+        if (_isModelLoaded.value) unloadModel()
         _selectedBackend.value = backend
         _selectedNpuDeviceId.value = deviceId
+        saveSettings()
+    }
+
+    fun selectAsrBackend(backend: WhisperBackend) {
+        if (_isModelLoaded.value) unloadModel()
+        _selectedAsrBackend.value = backend
         saveSettings()
     }
     
@@ -164,16 +181,13 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
             
             try {
                 if (model.category == "asr") {
-                    val modelDir = getModelDirectory(model)
-                    val modelFile = findModelFile(modelDir, model)
-                    if (!modelFile.exists()) {
-                        throw java.io.FileNotFoundException("Model file not found at ${modelFile.absolutePath}")
-                    }
-                    val loaded = whisperService.loadModel(modelFile.absolutePath)
+                    val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
+                    val modelDir = java.io.File(getApplication<Application>().filesDir, "models/$modelDirName")
+                    val loaded = whisperKitService.loadModel(modelDir.absolutePath, _selectedAsrBackend.value)
                     if (loaded) {
                         _isModelLoaded.value = true
                     } else {
-                        throw Exception("Failed to load whisper model from ${modelFile.absolutePath}")
+                        throw Exception("Failed to load WhisperKit model from: ${modelDir.absolutePath}")
                     }
                 } else {
                     // Load model with audio modality enabled
@@ -201,7 +215,7 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
             try {
                 transcribeJob?.cancel()
                 asrMutex.withLock {
-                    whisperService.release()
+                    whisperKitService.release()
                 }
                 inferenceService.unloadModel()
                 _isModelLoaded.value = false
@@ -233,29 +247,22 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
                 if (model.category == "asr") {
                     val pcm16Wav = AudioConversionUtils.float32WavToPcm16Wav(audioBytes)
                     android.util.Log.d("TranscriberViewModel", "ASR batch: input=${audioBytes.size}B float32WAV → pcm16WAV=${pcm16Wav.size}B")
-                    val tempWavFile = withContext(Dispatchers.IO) {
-                        val file = java.io.File.createTempFile("asr_input_", ".wav", getApplication<Application>().cacheDir)
-                        file.writeBytes(pcm16Wav)
-                        file
-                    }
-                    try {
-                        val isEnglishModel = model.name.contains("english", ignoreCase = true) || model.url.contains(".en.", ignoreCase = true)
-                        val lang = if (isEnglishModel) "en" else "auto"
-                        android.util.Log.d("TranscriberViewModel", "ASR batch: lang=$lang, wavFile=${tempWavFile.absolutePath} size=${tempWavFile.length()}B")
+                    // Strip WAV header (44 bytes) to get raw PCM16 bytes for WhisperKit
+                    val pcm16Raw = if (pcm16Wav.size > 44) pcm16Wav.copyOfRange(44, pcm16Wav.size) else pcm16Wav
+                    val isEnglishModel = model.name.contains("english", ignoreCase = true) || model.name.contains("English", ignoreCase = true)
+                    val lang = if (isEnglishModel) "en" else "auto"
+                    android.util.Log.d("TranscriberViewModel", "ASR batch: lang=$lang, pcmBytes=${pcm16Raw.size}B")
 
-                        val transcript = withContext(Dispatchers.IO) {
-                            asrMutex.withLock {
-                                whisperService.transcribe(tempWavFile.absolutePath, lang)
-                            }
+                    val transcript = withContext(Dispatchers.IO) {
+                        asrMutex.withLock {
+                            whisperKitService.transcribe(pcm16Raw, lang)
                         }
-                        android.util.Log.d("TranscriberViewModel", "ASR batch result: transcript='$transcript'")
-                        if (!transcript.isNullOrEmpty()) {
-                            _transcriptionText.value = transcript
-                        } else {
-                            throw Exception("ASR Transcription returned empty result")
-                        }
-                    } finally {
-                        tempWavFile.delete()
+                    }
+                    android.util.Log.d("TranscriberViewModel", "ASR batch result: transcript='$transcript'")
+                    if (!transcript.isNullOrEmpty()) {
+                        _transcriptionText.value = transcript
+                    } else {
+                        throw Exception("ASR Transcription returned empty result")
                     }
                 } else {
                     val prompt = """You are a professional transcriber.
@@ -309,36 +316,25 @@ Do not add any commentary or explanations.""".trimIndent()
 
     fun transcribeLive(audioBytes: ByteArray) {
         val model = _selectedModel.value ?: return
-        if (!whisperService.isLoaded) return
+        if (!whisperKitService.isLoaded) return
         if (_isTranscribing.value || asrMutex.isLocked) return
 
         viewModelScope.launch {
             _isTranscribing.value = true
             try {
                 val pcm16Wav = AudioConversionUtils.float32WavToPcm16Wav(audioBytes)
-                android.util.Log.d("TranscriberViewModel", "ASR live: input=${audioBytes.size}B → pcm16WAV=${pcm16Wav.size}B")
-                val tempWavFile = withContext(Dispatchers.IO) {
-                    val file = java.io.File.createTempFile("asr_live_", ".wav", getApplication<Application>().cacheDir)
-                    file.writeBytes(pcm16Wav)
-                    file
+                // Strip WAV header to get raw PCM16
+                val pcm16Raw = if (pcm16Wav.size > 44) pcm16Wav.copyOfRange(44, pcm16Wav.size) else pcm16Wav
+                android.util.Log.d("TranscriberViewModel", "ASR live: input=${audioBytes.size}B → pcm16=${pcm16Raw.size}B")
+
+                val transcript = withContext(Dispatchers.IO) {
+                    asrMutex.withLock {
+                        whisperKitService.transcribe(pcm16Raw)
+                    }
                 }
-
-                try {
-                    val isEnglishModel = model.name.contains("english", ignoreCase = true) || model.url.contains(".en.", ignoreCase = true)
-                    val lang = if (isEnglishModel) "en" else "auto"
-                    android.util.Log.d("TranscriberViewModel", "ASR live: lang=$lang, wavFile=${tempWavFile.absolutePath} size=${tempWavFile.length()}B")
-
-                    val transcript = withContext(Dispatchers.IO) {
-                        asrMutex.withLock {
-                            whisperService.transcribe(tempWavFile.absolutePath, lang)
-                        }
-                    }
-                    android.util.Log.d("TranscriberViewModel", "ASR live result: transcript='$transcript'")
-                    if (!transcript.isNullOrEmpty()) {
-                        _transcriptionText.value = transcript
-                    }
-                } finally {
-                    tempWavFile.delete()
+                android.util.Log.d("TranscriberViewModel", "ASR live result: transcript='$transcript'")
+                if (!transcript.isNullOrEmpty()) {
+                    _transcriptionText.value = transcript
                 }
             } catch (e: Exception) {
                 android.util.Log.e("TranscriberViewModel", "Live transcription error", e)
@@ -349,31 +345,6 @@ Do not add any commentary or explanations.""".trimIndent()
     }
 
 
-    private fun getModelDirectory(model: LLMModel): java.io.File {
-        val context = getApplication<Application>()
-        val modelsDir = java.io.File(context.filesDir, "models")
-        val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
-        val modelDir = java.io.File(modelsDir, modelDirName)
-        return if (modelDir.exists()) modelDir else modelsDir
-    }
-    
-    private fun findModelFile(modelDir: java.io.File, model: LLMModel): java.io.File {
-        val localName = model.url.substringAfterLast("/").substringBefore("?")
-        var modelFile = java.io.File(modelDir, localName)
-        if (modelFile.exists()) return modelFile
-        
-        val context = getApplication<Application>()
-        val modelsDir = java.io.File(context.filesDir, "models")
-        modelFile = java.io.File(modelsDir, localName)
-        if (modelFile.exists()) return modelFile
-        
-        val files = modelDir.listFiles { _, name -> 
-            name.endsWith(".bin") || name.endsWith(".gguf")
-        }
-        if (files?.isNotEmpty() == true) return files.first()
-        
-        return java.io.File(modelDir, localName)
-    }
 }
 
 data class TranscriptionSession(

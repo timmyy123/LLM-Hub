@@ -97,6 +97,7 @@ fun VibeVoiceScreen(
     val hasRequiredModels by viewModel.hasRequiredModels.collectAsState()
     val selectedBackend by viewModel.selectedBackend.collectAsState()
     val selectedNpuDeviceId by viewModel.selectedNpuDeviceId.collectAsState()
+    val selectedAsrBackend by viewModel.selectedAsrBackend.collectAsState()
     val isLoadingModel by viewModel.isLoadingModel.collectAsState()
     val isModelLoaded by viewModel.isModelLoaded.collectAsState()
     val isRecording by viewModel.isRecording.collectAsState()
@@ -544,8 +545,8 @@ fun VibeVoiceScreen(
                 ModelSelectorCard(
                     models = availableLlmModels,
                     selectedModel = selectedModel,
-                    selectedBackend = selectedBackend,
-                    selectedNpuDeviceId = selectedNpuDeviceId,
+                    selectedBackend = if (selectedModel != null) selectedBackend else null,
+                    selectedNpuDeviceId = if (selectedModel != null) selectedNpuDeviceId else null,
                     isLoading = isLoadingModel,
                     isModelLoaded = isModelLoaded,
                     onModelSelected = { viewModel.selectModel(it) },
@@ -564,6 +565,8 @@ fun VibeVoiceScreen(
                     voiceModels = availableAsrModels,
                     selectedVoiceModel = selectedVoiceModel,
                     onVoiceModelSelected = { viewModel.selectVoiceModel(it) },
+                    selectedAsrBackend = selectedAsrBackend,
+                    onAsrBackendSelected = { viewModel.selectAsrBackend(it) },
                     llmModelLabel = stringResource(R.string.llm_model),
                     voiceModelLabel = stringResource(R.string.voice_model),
                     backendLabel = stringResource(R.string.llm_model_backend)

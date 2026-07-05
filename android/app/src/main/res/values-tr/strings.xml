@@ -878,6 +878,7 @@
     <string name="llm_model">LLM Modeli</string>
     <string name="voice_model">Ses Modeli</string>
     <string name="gemma_voice_option">Gemma</string>
+        <string name="asr_model_backend"></string>
     <string name="llm_model_backend">LLM Model Arka Ucu</string>
 </resources>
 

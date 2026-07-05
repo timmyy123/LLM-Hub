@@ -880,6 +880,7 @@
     <string name="llm_model">מודל LLM</string>
     <string name="voice_model">מודל קול</string>
     <string name="gemma_voice_option">Gemma</string>
+        <string name="asr_model_backend"></string>
     <string name="llm_model_backend">בקאנד של מודל LLM</string>
 </resources>
 

@@ -883,6 +883,7 @@
     <string name="llm_model">Model LLM</string>
     <string name="voice_model">Model Suara</string>
     <string name="gemma_voice_option">Gemma</string>
+        <string name="asr_model_backend"></string>
     <string name="llm_model_backend">Backend Model LLM</string>
 </resources>
 
