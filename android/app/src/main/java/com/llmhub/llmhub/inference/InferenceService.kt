@@ -68,6 +68,9 @@ interface InferenceService {
     fun isVisionCurrentlyDisabled(): Boolean
     fun isAudioCurrentlyDisabled(): Boolean
     fun isGpuBackendEnabled(): Boolean
+    fun isNpuBackendEnabled(): Boolean = false
+    /** Decode speed in tok/s from the most recent generation; null if unavailable. */
+    fun getLastDecodeSpeedTokPerSec(): Double? = null
     // Return the applied/effective max tokens for a model (honors overrides)
     fun getEffectiveMaxTokens(model: LLMModel): Int
 }

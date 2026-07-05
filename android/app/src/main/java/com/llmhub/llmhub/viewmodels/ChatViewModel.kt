@@ -1809,11 +1809,8 @@ class ChatViewModel(
         if (finalContent.isNotBlank()) {
 
             val actualTokens = kotlin.math.ceil(finalContent.length / 4.0).toInt()
-            val tokensPerSecond = if (generationTimeMs > 0) {
-                (actualTokens * 1000.0) / generationTimeMs
-            } else {
-                0.0
-            }
+            val tokensPerSecond = inferenceService.getLastDecodeSpeedTokPerSec()
+                ?: if (generationTimeMs > 0) (actualTokens * 1000.0) / generationTimeMs else 0.0
 
             Log.d("ChatViewModel", "Saving stats for message $placeholderId: $actualTokens tokens, ${String.format("%.1f", tokensPerSecond)} tok/sec")
 
@@ -2301,7 +2298,8 @@ class ChatViewModel(
                 syncCurrentlyLoadedModel()
                 // Set the first-generation guard
                 firstGenerationSinceLoad = true
-                Log.d("ChatViewModel", "Successfully loaded new model: ${newModel.name} with backend: $backend")
+                val loadedBackendLabel = if (inferenceService.isNpuBackendEnabled()) "NPU" else backend?.name ?: "CPU"
+                Log.d("ChatViewModel", "Successfully loaded new model: ${newModel.name} with backend: $loadedBackendLabel")
                 
                 // Clear the first generation guard after a reasonable timeout
                 viewModelScope.launch {
@@ -2454,7 +2452,8 @@ class ChatViewModel(
                 syncCurrentlyLoadedModel()
                 // Set the first-generation guard
                 firstGenerationSinceLoad = true
-                Log.d("ChatViewModel", "Successfully loaded new model: ${newModel.name} with backend: ${_selectedBackend.value}, vision disabled: $isVisionDisabled, audio disabled: $isAudioDisabled")
+                val loadedBackendLabel2 = if (inferenceService.isNpuBackendEnabled()) "NPU" else _selectedBackend.value?.name ?: "CPU"
+                Log.d("ChatViewModel", "Successfully loaded new model: ${newModel.name} with backend: $loadedBackendLabel2, vision disabled: $isVisionDisabled, audio disabled: $isAudioDisabled")
                 
                 // Clear the first generation guard after a reasonable timeout
                 viewModelScope.launch {

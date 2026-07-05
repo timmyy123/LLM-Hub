@@ -63,6 +63,8 @@ class GeniexInferenceService @Inject constructor(
 
     private var currentModel: LLMModel? = null
     private var currentPreferredBackend: LlmInference.Backend? = null
+    private var currentIsNpu: Boolean = false
+    private var lastDecodeSpeedTokPerSec: Double? = null
     private var currentVisionDisabled: Boolean = false
     private var currentAudioDisabled: Boolean = false
 
@@ -148,7 +150,7 @@ class GeniexInferenceService @Inject constructor(
      * - Returns Pair(allowed:Boolean, reason:String?) where reason is non-null when denied.
      * - This is defensive: it catches native/SELinux failures and returns a human-friendly reason.
      */
-    suspend fun probeNpuAvailability(deviceId: String = "HTP0"): Pair<Boolean, String?> {
+    suspend fun probeNpuAvailability(deviceId: String = "npu"): Pair<Boolean, String?> {
         if (!geniexAvailable) {
             Log.w(TAG, "NPU probe: GenieX SDK unavailable")
             return Pair(false, "GenieX SDK unavailable on device")
@@ -322,7 +324,7 @@ class GeniexInferenceService @Inject constructor(
                 if (rawCtx != nCtx) {
                     Log.w(TAG, "Capped nCtx from $rawCtx to $nCtx to prevent OOM (Device RAM ~${String.format("%.1f", totalRamGb)}GB)")
                 }
-                // Determine device/plugin to use. If caller provided an explicit deviceId (e.g. "HTP0") prefer it
+                // Determine compute_unit: "npu" for Hexagon/HTP, "gpu" for OpenCL, "cpu" for CPU
                 val userRequestedNpu = !deviceId.isNullOrBlank() && (
                     deviceId.startsWith("dev", ignoreCase = true) ||
                     deviceId.startsWith("htp", ignoreCase = true)
@@ -334,13 +336,7 @@ class GeniexInferenceService @Inject constructor(
                 // - explicit user request: fail fast (return false) if probe denies — do NOT fall back
                 // - automatic request: fall back to gpu on probe denial
                 if (isNpuRequested) {
-                    val normalizedNpuDeviceId = when {
-                        deviceId.isNullOrBlank() -> "HTP0"
-                        deviceId.startsWith("dev", ignoreCase = true) ->
-                            "HTP${deviceId.replaceFirst(Regex("(?i)^dev"), "")}"
-                        else -> deviceId
-                    }
-                    val (allowed, reason) = probeNpuAvailability(normalizedNpuDeviceId)
+                    val (allowed, reason) = probeNpuAvailability("npu")
                     if (!allowed) {
                         if (userRequestedNpu) {
                             // User explicitly asked for NPU — do not silently fall back. Return failure
@@ -357,29 +353,21 @@ class GeniexInferenceService @Inject constructor(
 
                 val deviceToUse = when {
                     backendId == "CPU" -> "cpu"
-                    isNpuRequested -> when {
-                        deviceId.isNullOrBlank() -> "HTP0"
-                        deviceId.startsWith("dev", ignoreCase = true) ->
-                            "HTP${deviceId.replaceFirst(Regex("(?i)^dev"), "")}"
-                        else -> deviceId
-                    }
-                    else -> "GPUOpenCL"
+                    isNpuRequested -> "npu"
+                    else -> "gpu"
                 }
                 val pluginToUse = "llama_cpp"
 
                 // nGpuLayers > 0 is required to enable offloading to GPU/Hexagon (GGUF llama_cpp path).
-                // GenieX docs: device_id="GPUOpenCL" for GPU, "HTP0" for NPU/Hexagon, "cpu" for CPU.
+                // GenieX compute_unit values: "cpu", "gpu", "npu", "hybrid" (from ComputeUnitValue enum).
                 // When the user has set a custom layer count via the slider, honour it; otherwise default 999.
                 val gpuLayers = when {
                     backendId == "CPU" -> 0
                     else -> overrideNGpuLayers ?: 999
                 }
 
-                Log.i(TAG, "Load config: backend=$backendId deviceId=$deviceId nGpuLayers=$gpuLayers (override=$overrideNGpuLayers) nCtx=$nCtx enableThinking=$overrideEnableThinking")
-
-                if (isNpuRequested) {
-                    Log.i(TAG, "NPU requested: deviceId=$deviceId -> nGpuLayers=$gpuLayers plugin=llama_cpp (per GenieX docs)")
-                }
+                val effectiveBackendLabel = if (isNpuRequested) "npu" else backendId
+                Log.i(TAG, "Load config: backend=$effectiveBackendLabel deviceId=$deviceId nGpuLayers=$gpuLayers (override=$overrideNGpuLayers) nCtx=$nCtx enableThinking=$overrideEnableThinking")
 
                 val isThinkingModelForConfig = model.name.contains("Thinking", ignoreCase = true) ||
                     model.name.contains("Reasoning", ignoreCase = true) ||
@@ -393,7 +381,7 @@ class GeniexInferenceService @Inject constructor(
                 )
                 Log.i(
                     TAG,
-                    "GenieX create config: backend=$backendId plugin=$pluginToUse device=$deviceToUse requestedNGpuLayers=${overrideNGpuLayers ?: 999} appliedNGpuLayers=${modelConfig.nGpuLayers}"
+                    "GenieX create config: backend=$effectiveBackendLabel plugin=$pluginToUse device=$deviceToUse requestedNGpuLayers=${overrideNGpuLayers ?: 999} appliedNGpuLayers=${modelConfig.nGpuLayers}"
                 )
 
                 // Find mmproj path for VLM models (only when vision is enabled)
@@ -424,19 +412,13 @@ class GeniexInferenceService @Inject constructor(
                         isVlmLoaded = true
                         currentModel = model
                         currentPreferredBackend = if (backendId == "CPU") LlmInference.Backend.CPU else LlmInference.Backend.GPU
+                        currentIsNpu = deviceToUse == "npu"
                         currentVisionDisabled = disableVision
                         Log.i(
                             TAG,
-                            "GenieX applied config (VLM): backend=$backendId plugin=$pluginToUse device=$deviceToUse appliedNGpuLayers=${modelConfig.nGpuLayers}"
+                            "GenieX applied config (VLM): backend=${if (deviceToUse == "npu") "npu" else backendId} plugin=$pluginToUse device=$deviceToUse appliedNGpuLayers=${modelConfig.nGpuLayers}"
                         )
-                        val resolvedBackend = if (!deviceToUse.isNullOrBlank() && (
-                            deviceToUse.startsWith("dev", ignoreCase = true) ||
-                            deviceToUse.startsWith("htp", ignoreCase = true)
-                        )) {
-                            "NPU($deviceToUse)"
-                        } else {
-                            backendId
-                        }
+                        val resolvedBackend = if (deviceToUse == "npu") "NPU" else backendId
                         Log.i(TAG, "✓ Successfully loaded VLM with $resolvedBackend backend")
                         return true
                     } else {
@@ -466,19 +448,13 @@ class GeniexInferenceService @Inject constructor(
                         isVlmLoaded = false
                         currentModel = model
                         currentPreferredBackend = if (backendId == "CPU") LlmInference.Backend.CPU else LlmInference.Backend.GPU
+                        currentIsNpu = deviceToUse == "npu"
                         currentVisionDisabled = disableVision
                         Log.i(
                             TAG,
-                            "GenieX applied config (LLM): backend=$backendId plugin=$pluginToUse device=$deviceToUse appliedNGpuLayers=${modelConfig.nGpuLayers}"
+                            "GenieX applied config (LLM): backend=${if (deviceToUse == "npu") "npu" else backendId} plugin=$pluginToUse device=$deviceToUse appliedNGpuLayers=${modelConfig.nGpuLayers}"
                         )
-                        val resolvedBackend = if (!deviceToUse.isNullOrBlank() && (
-                            deviceToUse.startsWith("dev", ignoreCase = true) ||
-                            deviceToUse.startsWith("htp", ignoreCase = true)
-                        )) {
-                            "NPU($deviceToUse)"
-                        } else {
-                            backendId
-                        }
+                        val resolvedBackend = if (deviceToUse == "npu") "NPU" else backendId
                         Log.i(TAG, "✓ Successfully loaded LLM with $resolvedBackend backend")
                         return true
                     } else {
@@ -849,6 +825,9 @@ class GeniexInferenceService @Inject constructor(
                                         val end = System.currentTimeMillis()
                                         val decodeMs = if (firstTokenAt > 0L) end - firstTokenAt else 0L
                                         val totalMs = end - requestStart
+                                        if (decodeMs > 0 && tokenCount > 0) {
+                                            lastDecodeSpeedTokPerSec = tokenCount * 1000.0 / decodeMs
+                                        }
                                         Log.i(TAG, "GEN[$requestId] VLM completed total=${totalMs}ms decode=${decodeMs}ms tokens=$tokenCount")
                                     }
                                     handleStreamResult(streamResult, isThinkingModel, isHarmonyModel)
@@ -920,6 +899,9 @@ class GeniexInferenceService @Inject constructor(
                                         val end = System.currentTimeMillis()
                                         val decodeMs = if (firstTokenAt > 0L) end - firstTokenAt else 0L
                                         val totalMs = end - requestStart
+                                        if (decodeMs > 0 && tokenCount > 0) {
+                                            lastDecodeSpeedTokPerSec = tokenCount * 1000.0 / decodeMs
+                                        }
                                         Log.i(TAG, "GEN[$requestId] LLM completed total=${totalMs}ms decode=${decodeMs}ms tokens=$tokenCount")
                                     }
                                     handleStreamResult(streamResult, isThinkingModel, isHarmonyModel)
@@ -1505,5 +1487,7 @@ class GeniexInferenceService @Inject constructor(
     override fun isVisionCurrentlyDisabled(): Boolean = currentVisionDisabled
     override fun isAudioCurrentlyDisabled(): Boolean = currentAudioDisabled
     override fun isGpuBackendEnabled(): Boolean = currentPreferredBackend == LlmInference.Backend.GPU
+    override fun isNpuBackendEnabled(): Boolean = currentIsNpu
+    override fun getLastDecodeSpeedTokPerSec(): Double? = lastDecodeSpeedTokPerSec
     override fun getEffectiveMaxTokens(model: LLMModel): Int = overrideContextWindow ?: overrideMaxTokens ?: model.contextWindowSize
 }

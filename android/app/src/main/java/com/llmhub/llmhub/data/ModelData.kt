@@ -15,20 +15,24 @@ object DeviceInfo {
     }
 
     private val chipsetModelSuffixes = mapOf(
+        "SM8350" to "888",    // Snapdragon 888
+        "SM8350P" to "888",   // Snapdragon 888+
         "SM8475" to "8gen1",  // 8+ Gen 1
         "SM8450" to "8gen1",  // 8 Gen 1
         "SM8550" to "8gen2",  // 8 Gen 2
         "SM8550P" to "8gen2",
         "QCS8550" to "8gen2",
         "QCM8550" to "8gen2",
-        "SM8650" to "8gen3",  // 8 Gen 3 (updated)
+        "SM8650" to "8gen3",  // 8 Gen 3
         "SM8650P" to "8gen3",
+        "SM8735" to "8gen3",  // 8s Gen 3
         "SM8750" to "8gen4",  // 8 Elite / Gen 4
         "SM8750P" to "8gen4",
-        "SM8735" to "8gen3",  // 8s Gen 3
         "SM8845" to "8gen5",  // Snapdragon 8 Gen 5
         "SM8850" to "8gen5",  // Snapdragon 8 Elite Gen 5
-        "SM8850P" to "8gen5"
+        "SM8850P" to "8gen5",
+        "SM7675" to "7gen4",  // Snapdragon 7 Gen 4
+        "SM7675P" to "7gen4"
     )
 
     fun getChipsetSuffix(): String? {
@@ -37,8 +41,7 @@ object DeviceInfo {
     }
 
     fun isQualcommNpuSupported(): Boolean {
-        // App policy: expose GGUF NPU option on 8 Gen 4 and 8 Gen 5 class devices.
-        return getChipsetSuffix() in setOf("8gen4", "8gen5")
+        return getChipsetSuffix() in setOf("888", "8gen1", "8gen2", "8gen3", "8gen4", "8gen5", "7gen4")
     }
 
     /**
