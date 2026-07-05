@@ -16,7 +16,7 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
     private val mediaPipeService = MediaPipeInferenceService(context)
     private val liteRtLmService = LiteRtLmInferenceService(context)
     private val onnxService = OnnxInferenceService(context)
-    private val nexaService = NexaInferenceService(context)
+    private val geniexService = GeniexInferenceService(context)
     
     private var currentService: InferenceService = mediaPipeService
     private var currentModel: LLMModel? = null
@@ -44,13 +44,13 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         val finalDisableVision = disableVision
         val finalDisableAudio = disableAudio
 
-        if (model.modelFormat == "gguf" && (nexaService as? com.llmhub.llmhub.inference.NexaInferenceService)?.isAvailable() != true) {
-            throw AllBackendsFailedException("GGUF models require the Nexa SDK which is not available on this device")
+        if (model.modelFormat == "gguf" && (geniexService as? com.llmhub.llmhub.inference.GeniexInferenceService)?.isAvailable() != true) {
+            throw AllBackendsFailedException("GGUF models require the GenieX SDK which is not available on this device")
         }
         val isGemma4 = model.name.contains("Gemma-4", ignoreCase = true)
         val targetService = when (model.modelFormat) {
             "onnx" -> onnxService
-            "gguf" -> nexaService
+            "gguf" -> geniexService
             "litertlm" -> if (isGemma4) liteRtLmService else mediaPipeService
             else -> mediaPipeService
         }
@@ -131,8 +131,8 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         mediaPipeService.onCleared()
         liteRtLmService.onCleared()
         onnxService.onCleared()
-        if ((nexaService as? com.llmhub.llmhub.inference.NexaInferenceService)?.isAvailable() == true) {
-            nexaService.onCleared()
+        if ((geniexService as? com.llmhub.llmhub.inference.GeniexInferenceService)?.isAvailable() == true) {
+            geniexService.onCleared()
         }
     }
 
@@ -156,8 +156,8 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         mediaPipeService.setGenerationParameters(maxTokens, topK, topP, temperature, nGpuLayers, enableThinking, contextWindow)
         liteRtLmService.setGenerationParameters(maxTokens, topK, topP, temperature, nGpuLayers, enableThinking, contextWindow)
         onnxService.setGenerationParameters(maxTokens, topK, topP, temperature, nGpuLayers, enableThinking, contextWindow)
-        if ((nexaService as? com.llmhub.llmhub.inference.NexaInferenceService)?.isAvailable() == true) {
-            nexaService.setGenerationParameters(maxTokens, topK, topP, temperature, nGpuLayers, enableThinking, contextWindow)
+        if ((geniexService as? com.llmhub.llmhub.inference.GeniexInferenceService)?.isAvailable() == true) {
+            geniexService.setGenerationParameters(maxTokens, topK, topP, temperature, nGpuLayers, enableThinking, contextWindow)
         }
     }
 
@@ -176,7 +176,7 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
     override fun getEffectiveMaxTokens(model: LLMModel): Int {
         return when (model.modelFormat) {
             "onnx" -> onnxService.getEffectiveMaxTokens(model)
-            "gguf" -> if ((nexaService as? com.llmhub.llmhub.inference.NexaInferenceService)?.isAvailable() == true) nexaService.getEffectiveMaxTokens(model) else mediaPipeService.getEffectiveMaxTokens(model)
+            "gguf" -> if ((geniexService as? com.llmhub.llmhub.inference.GeniexInferenceService)?.isAvailable() == true) geniexService.getEffectiveMaxTokens(model) else mediaPipeService.getEffectiveMaxTokens(model)
             "litertlm" -> liteRtLmService.getEffectiveMaxTokens(model)
             else -> mediaPipeService.getEffectiveMaxTokens(model)
         }

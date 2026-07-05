@@ -714,7 +714,7 @@ private const val RAW_OPEN_THINK = "<think>"
 private const val RAW_CLOSE_THINK = "</think>"
 
 private fun parseThinkingAndAnswer(content: String): Pair<String, String> {
-    // 1) Same as chat: sentinels from OnnxInferenceService / NexaInferenceService
+    // 1) Same as chat: sentinels from OnnxInferenceService / GeniexInferenceService
     if (content.contains(SENTINEL_THINK)) {
         val afterThink = content.substringAfter(SENTINEL_THINK)
         if (afterThink.contains(SENTINEL_ENDTHINK)) {

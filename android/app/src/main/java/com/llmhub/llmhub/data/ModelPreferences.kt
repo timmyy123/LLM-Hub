@@ -17,7 +17,7 @@ data class ModelConfig(
     val deviceId: String?, // e.g. "dev0" for NPU, "gpu" for GPU
     val disableVision: Boolean,
     val disableAudio: Boolean,
-    val nGpuLayers: Int = 999, // layers offloaded to GPU/NPU (GGUF/Nexa SDK only)
+    val nGpuLayers: Int = 999, // layers offloaded to GPU/NPU (GGUF/GenieX SDK only)
     val enableThinking: Boolean = true, // whether thinking/reasoning output is enabled
     val systemPrompt: String = "", // optional per-model system prompt injected for chat generation
     val contextWindow: Int = 0, // KV cache allocation (context window size); 0 = use model default

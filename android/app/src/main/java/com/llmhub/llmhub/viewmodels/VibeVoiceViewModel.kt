@@ -114,7 +114,7 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
     private var sessionChatId: String = "vibevoice-${UUID.randomUUID()}"
     private var isSessionPrimed: Boolean = false
 
-    private var asrWrapper: com.nexa.sdk.AsrWrapper? = null
+    private val whisperService = com.llmhub.llmhub.inference.WhisperCppService(application)
     private val asrMutex = Mutex()
 
     init {
@@ -259,22 +259,9 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
                     if (!modelFile.exists()) {
                         throw java.io.FileNotFoundException("Model file not found at ${modelFile.absolutePath}")
                     }
-                    val config = com.nexa.sdk.bean.ModelConfig()
-                    val createInput = com.nexa.sdk.bean.AsrCreateInput(
-                        model_name = voiceModel.name,
-                        model_path = modelFile.absolutePath,
-                        config = config,
-                        plugin_id = "whisper_cpp",
-                        device_id = "cpu"
-                    )
-                    val buildResult = com.nexa.sdk.AsrWrapper.builder()
-                        .asrCreateInput(createInput)
-                        .build()
-                    
-                    if (buildResult.isSuccess) {
-                        asrWrapper = buildResult.getOrNull()
-                    } else {
-                        throw buildResult.exceptionOrNull() ?: Exception("Failed to build AsrWrapper")
+                    val loaded = whisperService.loadModel(modelFile.absolutePath)
+                    if (!loaded) {
+                        throw Exception("Failed to load whisper model from ${modelFile.absolutePath}")
                     }
                 }
                 
@@ -282,15 +269,8 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
             } catch (e: Exception) {
                 _loadError.value = e.message ?: "Failed to load model"
                 _isModelLoaded.value = false
-                // Clean up ASR if initialized
                 try {
-                    asrMutex.withLock {
-                        if (asrWrapper != null) {
-                            try { asrWrapper?.close() } catch (_: Exception) {}
-                            try { asrWrapper?.destroy() } catch (_: Exception) {}
-                            asrWrapper = null
-                        }
-                    }
+                    asrMutex.withLock { whisperService.release() }
                 } catch (_: Exception) {}
             } finally {
                 _isLoadingModel.value = false
@@ -304,11 +284,7 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
                 respondJob?.cancel()
                 _transcription.value = ""
                 asrMutex.withLock {
-                    if (asrWrapper != null) {
-                        try { asrWrapper?.close() } catch (_: Exception) {}
-                        try { asrWrapper?.destroy() } catch (_: Exception) {}
-                        asrWrapper = null
-                    }
+                    whisperService.release()
                 }
                 inferenceService.unloadModel()
                 _isModelLoaded.value = false
@@ -357,9 +333,7 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
                     assistantText = ""
                 )
 
-                val asr = asrWrapper
-                if (asr != null) {
-                    // Translate voice input to text using ASR model first
+                if (whisperService.isLoaded) {
                     val pcm16Wav = AudioConversionUtils.float32WavToPcm16Wav(audioBytes)
                     android.util.Log.d("VibeVoiceViewModel", "ASR transcribe: input=${audioBytes.size}B → pcm16WAV=${pcm16Wav.size}B")
                     val tempWavFile = withContext(Dispatchers.IO) {
@@ -370,22 +344,13 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
                     val transcription = try {
                         val asrModel = _selectedVoiceModel.value ?: throw IllegalStateException("ASR model not selected")
                         val isEnglishModel = asrModel.name.contains("english", ignoreCase = true) || asrModel.url.contains(".en.", ignoreCase = true)
-                        val lang = if (isEnglishModel) "english" else "auto"
-                        val transcribeInput = com.nexa.sdk.bean.AsrTranscribeInput(
-                            audioPath = tempWavFile.absolutePath,
-                            language = lang,
-                            config = com.nexa.sdk.bean.AsrConfig()
-                        )
+                        val lang = if (isEnglishModel) "en" else "auto"
                         val result = withContext(Dispatchers.IO) {
                             asrMutex.withLock {
-                                asr.transcribe(transcribeInput)
+                                whisperService.transcribe(tempWavFile.absolutePath, lang)
                             }
                         }
-                        if (result != null && result.isSuccess) {
-                            result.getOrNull()?.result?.transcript ?: ""
-                        } else {
-                            throw result?.exceptionOrNull() ?: Exception("ASR Transcription failed")
-                        }
+                        result ?: throw Exception("ASR Transcription failed")
                     } finally {
                         tempWavFile.delete()
                     }

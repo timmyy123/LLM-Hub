@@ -45,14 +45,14 @@ fun LLMModel.localFileName(): String {
 } 
 
 /**
- * GGUF vision models require an external mmproj file for image input in Nexa VLM mode.
+ * GGUF vision models require an external mmproj file for image input in GenieX VLM mode.
  */
 fun LLMModel.requiresExternalVisionProjector(): Boolean {
     return modelFormat.equals("gguf", ignoreCase = true) && supportsVision
 }
 
 /**
- * Mirrors NexaInferenceService mmproj lookup logic to determine if vision can be enabled.
+ * Mirrors GeniexInferenceService mmproj lookup logic to determine if vision can be enabled.
  */
 fun LLMModel.hasDownloadedVisionProjector(context: Context): Boolean {
     if (!requiresExternalVisionProjector()) return true

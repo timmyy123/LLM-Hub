@@ -2768,7 +2768,7 @@ class ChatViewModel(
         
         val limitBase = inferenceService.getEffectiveMaxTokens(model)
         
-        // For local GGUF/Nexa, we can use most of the window for history. 
+        // For local GGUF/GenieX, we can use most of the window for history. 
         // We'll leave only a 2048 token buffer for the response, using the rest for history.
         val maxContextTokens = if (model.modelFormat.equals("gguf", ignoreCase = true)) {
             (limitBase - 2048).coerceAtLeast(limitBase / 2).coerceAtLeast(512)

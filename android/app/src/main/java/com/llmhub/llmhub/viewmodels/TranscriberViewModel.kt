@@ -28,7 +28,7 @@ import java.nio.ByteOrder
 class TranscriberViewModel(application: Application) : AndroidViewModel(application) {
     private val inferenceService = (application as com.llmhub.llmhub.LlmHubApplication).inferenceService
     private val prefs = application.getSharedPreferences("transcriber_prefs", android.content.Context.MODE_PRIVATE)
-    private var asrWrapper: com.nexa.sdk.AsrWrapper? = null
+    private val whisperService = com.llmhub.llmhub.inference.WhisperCppService(application)
     private val asrMutex = Mutex()
     
     // Model selection state
@@ -169,23 +169,11 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
                     if (!modelFile.exists()) {
                         throw java.io.FileNotFoundException("Model file not found at ${modelFile.absolutePath}")
                     }
-                    val config = com.nexa.sdk.bean.ModelConfig()
-                    val createInput = com.nexa.sdk.bean.AsrCreateInput(
-                        model_name = model.name,
-                        model_path = modelFile.absolutePath,
-                        config = config,
-                        plugin_id = "whisper_cpp",
-                        device_id = "cpu"
-                    )
-                    val buildResult = com.nexa.sdk.AsrWrapper.builder()
-                        .asrCreateInput(createInput)
-                        .build()
-                    
-                    if (buildResult.isSuccess) {
-                        asrWrapper = buildResult.getOrNull()
+                    val loaded = whisperService.loadModel(modelFile.absolutePath)
+                    if (loaded) {
                         _isModelLoaded.value = true
                     } else {
-                        throw buildResult.exceptionOrNull() ?: Exception("Failed to build AsrWrapper")
+                        throw Exception("Failed to load whisper model from ${modelFile.absolutePath}")
                     }
                 } else {
                     // Load model with audio modality enabled
@@ -213,11 +201,7 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
             try {
                 transcribeJob?.cancel()
                 asrMutex.withLock {
-                    if (asrWrapper != null) {
-                        try { asrWrapper?.close() } catch (_: Exception) {}
-                        try { asrWrapper?.destroy() } catch (_: Exception) {}
-                        asrWrapper = null
-                    }
+                    whisperService.release()
                 }
                 inferenceService.unloadModel()
                 _isModelLoaded.value = false
@@ -247,7 +231,6 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
                     ?: throw IllegalStateException("Unable to read audio input")
                 
                 if (model.category == "asr") {
-                    // Whisper expects PCM16 WAV; convert from float32 WAV if needed
                     val pcm16Wav = AudioConversionUtils.float32WavToPcm16Wav(audioBytes)
                     android.util.Log.d("TranscriberViewModel", "ASR batch: input=${audioBytes.size}B float32WAV → pcm16WAV=${pcm16Wav.size}B")
                     val tempWavFile = withContext(Dispatchers.IO) {
@@ -257,25 +240,19 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
                     }
                     try {
                         val isEnglishModel = model.name.contains("english", ignoreCase = true) || model.url.contains(".en.", ignoreCase = true)
-                        val lang = if (isEnglishModel) "english" else "auto"
+                        val lang = if (isEnglishModel) "en" else "auto"
                         android.util.Log.d("TranscriberViewModel", "ASR batch: lang=$lang, wavFile=${tempWavFile.absolutePath} size=${tempWavFile.length()}B")
-                        
-                        val transcribeInput = com.nexa.sdk.bean.AsrTranscribeInput(
-                            audioPath = tempWavFile.absolutePath,
-                            language = lang,
-                            config = com.nexa.sdk.bean.AsrConfig()
-                        )
-                        val result = withContext(Dispatchers.IO) {
+
+                        val transcript = withContext(Dispatchers.IO) {
                             asrMutex.withLock {
-                                asrWrapper?.transcribe(transcribeInput)
+                                whisperService.transcribe(tempWavFile.absolutePath, lang)
                             }
                         }
-                        android.util.Log.d("TranscriberViewModel", "ASR batch result: success=${result?.isSuccess}, transcript='${result?.getOrNull()?.result?.transcript}'")
-                        if (result != null && result.isSuccess) {
-                            val transcript = result.getOrNull()?.result?.transcript ?: ""
+                        android.util.Log.d("TranscriberViewModel", "ASR batch result: transcript='$transcript'")
+                        if (!transcript.isNullOrEmpty()) {
                             _transcriptionText.value = transcript
                         } else {
-                            throw result?.exceptionOrNull() ?: Exception("ASR Transcription failed")
+                            throw Exception("ASR Transcription returned empty result")
                         }
                     } finally {
                         tempWavFile.delete()
@@ -332,13 +309,12 @@ Do not add any commentary or explanations.""".trimIndent()
 
     fun transcribeLive(audioBytes: ByteArray) {
         val model = _selectedModel.value ?: return
-        val asr = asrWrapper ?: return
-        if (_isTranscribing.value || asrMutex.isLocked) return // avoid concurrent transcription runs
-        
+        if (!whisperService.isLoaded) return
+        if (_isTranscribing.value || asrMutex.isLocked) return
+
         viewModelScope.launch {
             _isTranscribing.value = true
             try {
-                // Whisper expects PCM16 WAV; convert from float32 WAV
                 val pcm16Wav = AudioConversionUtils.float32WavToPcm16Wav(audioBytes)
                 android.util.Log.d("TranscriberViewModel", "ASR live: input=${audioBytes.size}B → pcm16WAV=${pcm16Wav.size}B")
                 val tempWavFile = withContext(Dispatchers.IO) {
@@ -346,28 +322,20 @@ Do not add any commentary or explanations.""".trimIndent()
                     file.writeBytes(pcm16Wav)
                     file
                 }
-                
+
                 try {
                     val isEnglishModel = model.name.contains("english", ignoreCase = true) || model.url.contains(".en.", ignoreCase = true)
-                    val lang = if (isEnglishModel) "english" else "auto"
+                    val lang = if (isEnglishModel) "en" else "auto"
                     android.util.Log.d("TranscriberViewModel", "ASR live: lang=$lang, wavFile=${tempWavFile.absolutePath} size=${tempWavFile.length()}B")
-                    
-                    val transcribeInput = com.nexa.sdk.bean.AsrTranscribeInput(
-                        audioPath = tempWavFile.absolutePath,
-                        language = lang,
-                        config = com.nexa.sdk.bean.AsrConfig()
-                    )
-                    val result = withContext(Dispatchers.IO) {
+
+                    val transcript = withContext(Dispatchers.IO) {
                         asrMutex.withLock {
-                            asr.transcribe(transcribeInput)
+                            whisperService.transcribe(tempWavFile.absolutePath, lang)
                         }
                     }
-                    android.util.Log.d("TranscriberViewModel", "ASR live result: success=${result?.isSuccess}, transcript='${result?.getOrNull()?.result?.transcript}'")
-                    if (result != null && result.isSuccess) {
-                        val transcript = result.getOrNull()?.result?.transcript ?: ""
-                        if (transcript.isNotEmpty()) {
-                            _transcriptionText.value = transcript
-                        }
+                    android.util.Log.d("TranscriberViewModel", "ASR live result: transcript='$transcript'")
+                    if (!transcript.isNullOrEmpty()) {
+                        _transcriptionText.value = transcript
                     }
                 } finally {
                     tempWavFile.delete()
