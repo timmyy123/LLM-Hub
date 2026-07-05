@@ -314,37 +314,6 @@ Do not add any commentary or explanations.""".trimIndent()
         return AudioConversionUtils.convertUriToFloat32Wav(app, uri)
     }
 
-    fun transcribeLive(audioBytes: ByteArray) {
-        val model = _selectedModel.value ?: return
-        if (!whisperKitService.isLoaded) return
-        if (_isTranscribing.value || asrMutex.isLocked) return
-
-        viewModelScope.launch {
-            _isTranscribing.value = true
-            try {
-                val pcm16Wav = AudioConversionUtils.float32WavToPcm16Wav(audioBytes)
-                // Strip WAV header to get raw PCM16
-                val pcm16Raw = if (pcm16Wav.size > 44) pcm16Wav.copyOfRange(44, pcm16Wav.size) else pcm16Wav
-                android.util.Log.d("TranscriberViewModel", "ASR live: input=${audioBytes.size}B → pcm16=${pcm16Raw.size}B")
-
-                val transcript = withContext(Dispatchers.IO) {
-                    asrMutex.withLock {
-                        whisperKitService.transcribe(pcm16Raw)
-                    }
-                }
-                android.util.Log.d("TranscriberViewModel", "ASR live result: transcript='$transcript'")
-                if (!transcript.isNullOrEmpty()) {
-                    _transcriptionText.value = transcript
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("TranscriberViewModel", "Live transcription error", e)
-            } finally {
-                _isTranscribing.value = asrMutex.isLocked
-            }
-        }
-    }
-
-
 }
 
 data class TranscriptionSession(

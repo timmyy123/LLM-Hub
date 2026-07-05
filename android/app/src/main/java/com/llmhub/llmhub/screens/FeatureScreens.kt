@@ -1498,12 +1498,12 @@ fun TranscriberScreen(
             audioService.maxDurationMs = if (isAsrModel) 3600000L else 29500L
             // ASR (Whisper) models handle silence detection internally; disable early silence cut-off
             audioService.silenceAutoStopEnabled = !isAsrModel
-            
+
             // Clear previous audio inputs so a new recording session starts fresh
             recordedAudioData = null
             viewModel.setAudioData(null)
             viewModel.setAudioUri(null)
-            
+
             val ok = audioService.startRecording()
             if (!ok) viewModel.setRecording(false)
         } else if (!isRecording) {
@@ -1513,7 +1513,7 @@ fun TranscriberScreen(
                 if (data != null) {
                     recordedAudioData = data
                     viewModel.setAudioData(data)
-                    // Auto-run transcription when recording is stopped for ASR models
+                    // Final batch transcription on the full recording
                     if (isAsrModel) {
                         viewModel.transcribe()
                     }
@@ -1521,6 +1521,7 @@ fun TranscriberScreen(
             }
         }
     }
+
 
 
 
