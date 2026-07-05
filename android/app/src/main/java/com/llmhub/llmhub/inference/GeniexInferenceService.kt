@@ -67,6 +67,9 @@ class GeniexInferenceService @Inject constructor(
     private var lastDecodeSpeedTokPerSec: Double? = null
     private var currentVisionDisabled: Boolean = false
     private var currentAudioDisabled: Boolean = false
+    // True once at least one token has been generated since the last model load/reset.
+    // resetChatSession only needs to destroy+reload when this is true (stale recurrent state).
+    private var hasGeneratedTokensSinceLoad: Boolean = false
 
     private var overrideMaxTokens: Int? = null
     private var overrideContextWindow: Int? = null
@@ -243,6 +246,7 @@ class GeniexInferenceService @Inject constructor(
             return true
         }
 
+        hasGeneratedTokensSinceLoad = false
         unloadModel()
 
         val modelFile: File
@@ -888,6 +892,7 @@ class GeniexInferenceService @Inject constructor(
                                 if (isActive) {
                                     if (streamResult is com.geniex.sdk.bean.LlmStreamResult.Token) {
                                         tokenCount++
+                                        hasGeneratedTokensSinceLoad = true
                                         if (firstTokenAt == 0L) {
                                             firstTokenAt = System.currentTimeMillis()
                                             Log.i(
@@ -1435,34 +1440,34 @@ class GeniexInferenceService @Inject constructor(
     }
 
     override suspend fun resetChatSession(chatId: String) {
-        // Clear KV cache by destroying and reloading the model wrapper.
-        // The GenieX SDK has no explicit KV-cache-clear API, so a full
-        // destroy + rebuild cycle is the only reliable way to reset state.
         try {
             val modelToReload = currentModel
             val backendToUse = currentPreferredBackend
 
             if (isVlmLoaded && vlmWrapper != null) {
+                // VLM always needs a full reload to reset vision encoder state
                 Log.d(TAG, "VLM: Destroying wrapper to clear vision state for new chat")
                 vlmWrapper?.stopStream()
                 vlmWrapper?.destroy()
                 vlmWrapper = null
-
-                // Reload the model to get fresh vision encoder state
                 if (modelToReload != null) {
                     Log.d(TAG, "VLM: Reloading model ${modelToReload.name} for fresh state (visionDisabled=$currentVisionDisabled)")
                     loadModelInternal(modelToReload, backendToUse, currentVisionDisabled)
                 }
             } else if (llmWrapper != null) {
-                Log.d(TAG, "LLM: Destroying wrapper to clear KV cache")
-                llmWrapper?.stopStream()
-                llmWrapper?.destroy()
-                llmWrapper = null
-
-                // Reload the model to get a fresh KV cache
-                if (modelToReload != null) {
-                    Log.d(TAG, "LLM: Reloading model ${modelToReload.name} for fresh KV cache")
-                    loadModelInternal(modelToReload, backendToUse, currentVisionDisabled)
+                if (!hasGeneratedTokensSinceLoad) {
+                    // Model was just loaded and never used — recurrent/KV state is already clean.
+                    Log.d(TAG, "LLM: skipping wrapper destroy — no tokens generated since last load")
+                } else {
+                    // Model has been used; recurrent state (LFM etc.) must be reset via reload.
+                    Log.d(TAG, "LLM: Destroying wrapper to clear recurrent/KV state for new chat")
+                    llmWrapper?.stopStream()
+                    llmWrapper?.destroy()
+                    llmWrapper = null
+                    if (modelToReload != null) {
+                        Log.d(TAG, "LLM: Reloading model ${modelToReload.name} for fresh state")
+                        loadModelInternal(modelToReload, backendToUse, currentVisionDisabled)
+                    }
                 }
             }
         } catch (e: Exception) {
