@@ -86,7 +86,8 @@ class ModelDownloadViewModel: ObservableObject {
             return (false, 0)
         }
 
-        for fileName in model.requiredFileNames {
+        // ZIP files are extracted and deleted; check only the persisted files
+        for fileName in model.requiredFileNames where !fileName.hasSuffix(".zip") {
             let filePath = directory.appendingPathComponent(fileName)
             if !FileManager.default.fileExists(atPath: filePath.path) {
                 allExist = false
@@ -134,9 +135,10 @@ class ModelDownloadViewModel: ObservableObject {
             return false
         }
 
+        let expectedFileNames = model.requiredFileNames.filter { !$0.hasSuffix(".zip") }
         return marker.version == 1
             && marker.modelId == model.id
-            && marker.fileNames == model.requiredFileNames
+            && marker.fileNames == expectedFileNames
     }
 
     private func backfillVerifiedInstallMarker(in directory: URL, for model: AIModel, totalBytes: Int64) {
@@ -151,7 +153,7 @@ class ModelDownloadViewModel: ObservableObject {
             version: 1,
             modelId: model.id,
             totalBytes: totalBytes,
-            fileNames: model.requiredFileNames
+            fileNames: model.requiredFileNames.filter { !$0.hasSuffix(".zip") }
         )
 
         guard let data = try? JSONEncoder().encode(marker) else { return }

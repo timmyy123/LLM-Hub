@@ -301,7 +301,7 @@
 				AD000002000000000000BB02 /* XCRemoteSwiftPackageReference "swift-package-manager-google-user-messaging-platform" */,
 				AD000002000000000000BB07 /* XCLocalSwiftPackageReference "LocalPackages/LiteRT-LM" */,
 				MGK00001000000000000MG03 /* XCLocalSwiftPackageReference "LocalPackages/media-generation-kit" */,
-				WH000001000000000000WH01 /* XCRemoteSwiftPackageReference "whisper.spm" */,
+				WH000001000000000000WH01 /* XCLocalSwiftPackageReference "LocalPackages/whisper-wrapper" */,
 			);
 			projectDirPath = "";
 			projectRoot = "";
@@ -471,7 +471,7 @@
 				CODE_SIGN_ENTITLEMENTS = LLMHub.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 29;
+				CURRENT_PROJECT_VERSION = 30;
 				DEVELOPMENT_TEAM = 76K65T869A;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "LLMHub-Info.plist";
@@ -508,7 +508,7 @@
 				CODE_SIGN_ENTITLEMENTS = LLMHub.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 29;
+				CURRENT_PROJECT_VERSION = 30;
 				DEVELOPMENT_TEAM = 76K65T869A;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "LLMHub-Info.plist";
@@ -630,6 +630,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = "LocalPackages/media-generation-kit";
 		};
+		WH000001000000000000WH01 /* XCLocalSwiftPackageReference "LocalPackages/whisper-wrapper" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "LocalPackages/whisper-wrapper";
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -655,14 +659,6 @@
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 0.9.20;
-			};
-		};
-		WH000001000000000000WH01 /* XCRemoteSwiftPackageReference "whisper.spm" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/ggerganov/whisper.spm";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.6.2;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -708,10 +704,10 @@
 			package = MGK00001000000000000MG03 /* XCLocalSwiftPackageReference "LocalPackages/media-generation-kit" */;
 			productName = MediaGenerationKit;
 		};
-		WH000001000000000000WH02 /* whisper */ = {
+		WH000001000000000000WH02 /* WhisperWrapper */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = WH000001000000000000WH01 /* XCRemoteSwiftPackageReference "whisper.spm" */;
-			productName = whisper;
+			package = WH000001000000000000WH01 /* XCLocalSwiftPackageReference "LocalPackages/whisper-wrapper" */;
+			productName = WhisperWrapper;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

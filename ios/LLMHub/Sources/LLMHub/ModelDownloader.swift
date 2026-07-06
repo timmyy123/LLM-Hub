@@ -560,6 +560,10 @@ public actor ModelDownloader {
             if optionalModelFiles.contains(fileName) {
                 continue
             }
+            // ZIP files are extracted then deleted; skip post-extraction verification
+            if fileName.hasSuffix(".zip") {
+                continue
+            }
 
             let localURL = destinationDir.appendingPathComponent(fileName)
             let localBytes = localFileSize(at: localURL)
@@ -595,11 +599,22 @@ public actor ModelDownloader {
             onProgress(DownloadUpdate(bytesDownloaded: finalBytes, totalBytes: totalSize, speedBytesPerSecond: 0))
         }
 
+        // Extract any .zip files downloaded as additionalFiles (e.g. CoreML encoder bundles)
+        let fm = FileManager.default
+        for fileName in model.requiredFileNames where fileName.hasSuffix(".zip") {
+            let zipURL = destinationDir.appendingPathComponent(fileName)
+            guard fm.fileExists(atPath: zipURL.path) else { continue }
+            try fm.unzipItem(at: zipURL, to: destinationDir)
+            try? fm.removeItem(at: zipURL)
+        }
+
+        // Store marker without transient zip names (zips were extracted and deleted)
+        let persistedFileNames = model.requiredFileNames.filter { !$0.hasSuffix(".zip") }
         let marker = ModelInstallMarker(
             version: 1,
             modelId: model.id,
             totalBytes: finalBytes,
-            fileNames: model.requiredFileNames
+            fileNames: persistedFileNames
         )
         let markerData = try JSONEncoder().encode(marker)
         FileManager.default.createFile(atPath: markerURL.path, contents: markerData)

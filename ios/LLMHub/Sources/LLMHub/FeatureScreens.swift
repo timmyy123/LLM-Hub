@@ -299,6 +299,18 @@ private func downloadableFeatureModels() -> [AIModel] {
         let minimumExpectedBytes = Int64(Double(model.sizeBytes) * completionThreshold)
         var totalBytes: Int64 = 0
 
+        if model.isWhisperModel {
+            // Whisper: zip is extracted and deleted; trust _downloaded marker
+            let hasMarker = FileManager.default.fileExists(
+                atPath: directory.appendingPathComponent("_downloaded").path)
+            let persistedNames = model.requiredFileNames.filter { !$0.hasSuffix(".zip") }
+            guard !persistedNames.isEmpty else { return false }
+            let allExist = persistedNames.allSatisfy { fileName in
+                FileManager.default.fileExists(atPath: directory.appendingPathComponent(fileName).path)
+            }
+            return allExist && hasMarker
+        }
+
         let allExist = model.requiredFileNames.allSatisfy { fileName in
             let fileURL = directory.appendingPathComponent(fileName)
             guard FileManager.default.fileExists(atPath: fileURL.path) else { return false }
@@ -465,8 +477,13 @@ private struct FeatureModelSettingsSheet: View {
         return Double(max(1, advertised))
     }
 
+    @ObservedObject private var whisperBackend = WhisperBackend.shared
+
     private var isSelectedModelLoaded: Bool {
-        llm.isLoaded && llm.currentlyLoadedModel == selectedModelName
+        if let model = selectedModel, model.isWhisperModel {
+            return whisperBackend.isLoaded && whisperBackend.currentModelName == model.name
+        }
+        return llm.isLoaded && llm.currentlyLoadedModel == selectedModelName
     }
 
     var body: some View {
@@ -488,29 +505,34 @@ private struct FeatureModelSettingsSheet: View {
                                         .foregroundStyle(.white.opacity(0.7))
                                 }
                             } else {
-                                Picker("", selection: $selectedModelName) {
-                                    ForEach(models, id: \.id) { model in
-                                        Text(model.name).tag(model.name)
+                                HStack {
+                                    Picker("", selection: $selectedModelName) {
+                                        ForEach(models, id: \.id) { model in
+                                            Text(model.name).tag(model.name)
+                                        }
                                     }
+                                    .pickerStyle(.menu)
+                                    .tint(ApolloPalette.accentStrong)
+                                    Spacer()
                                 }
-                                .pickerStyle(.menu)
-                                .tint(ApolloPalette.accentStrong)
                             }
 
-                            HStack {
-                                Text(settings.localized("context_window_size"))
-                                    .foregroundColor(.white)
-                                Spacer()
-                                Text("\(Int(maxTokens))")
-                                    .foregroundColor(.white.opacity(0.9))
-                                    .monospacedDigit()
-                            }
-                            Slider(value: $maxTokens, in: 1...maxContextCap, step: 1) { editing in
-                                if !editing {
-                                    maxTokens = min(max(1, maxTokens), maxContextCap)
+                            if selectedModel?.isWhisperModel != true {
+                                HStack {
+                                    Text(settings.localized("context_window_size"))
+                                        .foregroundColor(.white)
+                                    Spacer()
+                                    Text("\(Int(maxTokens))")
+                                        .foregroundColor(.white.opacity(0.9))
+                                        .monospacedDigit()
                                 }
+                                Slider(value: $maxTokens, in: 1...maxContextCap, step: 1) { editing in
+                                    if !editing {
+                                        maxTokens = min(max(1, maxTokens), maxContextCap)
+                                    }
+                                }
+                                .tint(ApolloPalette.accentStrong)
                             }
-                            .tint(ApolloPalette.accentStrong)
 
                             if selectedModelSupportsVision {
                                 Toggle(settings.localized(visionToggleTitleKey), isOn: $enableVision)

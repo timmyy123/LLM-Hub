@@ -1,6 +1,6 @@
 import Foundation
-import AVFoundation
-import whisper
+@preconcurrency import AVFoundation
+import WhisperWrapper
 
 private enum WhisperError: Error, LocalizedError {
     case modelNotLoaded
@@ -17,14 +17,14 @@ private enum WhisperError: Error, LocalizedError {
 }
 
 private actor WhisperContext {
-    private var ctx: OpaquePointer
+    private nonisolated(unsafe) var ctx: OpaquePointer
 
     init(ctx: OpaquePointer) { self.ctx = ctx }
     deinit { whisper_free(ctx) }
 
     static func load(path: String) throws -> WhisperContext {
         var params = whisper_context_default_params()
-        params.use_gpu = false
+        params.use_gpu = true
         guard let c = whisper_init_from_file_with_params(path, params) else {
             throw WhisperError.couldNotLoadModel(path)
         }
@@ -53,7 +53,9 @@ private actor WhisperContext {
                 text += String(cString: t)
             }
         }
-        return text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return text
+            .replacingOccurrences(of: "[BLANK_AUDIO]", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
 
@@ -72,7 +74,7 @@ private func toWhisperSamples(from url: URL) async throws -> [Float] {
                                         frameCapacity: AVAudioFrameCount(file.length))
     else { throw WhisperError.transcriptionFailed }
     try file.read(into: inBuf)
-    var inputDone = false
+    nonisolated(unsafe) var inputDone = false
     var convertError: NSError?
     converter.convert(to: outBuf, error: &convertError) { _, status in
         if inputDone { status.pointee = .noDataNow; return nil }

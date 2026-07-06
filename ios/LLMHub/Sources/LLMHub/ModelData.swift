@@ -242,6 +242,20 @@ public struct ModelData {
             return (false, 0)
         }
 
+        if model.isWhisperModel {
+            // Zip files are extracted and deleted after download; trust _downloaded marker
+            let hasMarker = FileManager.default.fileExists(
+                atPath: directory.appendingPathComponent("_downloaded").path)
+            guard hasMarker else { return (false, 0) }
+            let persistedNames = model.requiredFileNames.filter { !$0.hasSuffix(".zip") }
+            guard !persistedNames.isEmpty else { return (false, 0) }
+            let allExist = persistedNames.allSatisfy { fileName in
+                FileManager.default.fileExists(atPath: directory.appendingPathComponent(fileName).path)
+            }
+            guard allExist else { return (false, 0) }
+            return (true, model.sizeBytes)
+        }
+
         var totalBytes: Int64 = 0
         for fileName in model.requiredFileNames {
             let fileURL = directory.appendingPathComponent(fileName)
@@ -2970,154 +2984,171 @@ public static let models: [AIModel] = [
         additionalFiles: []
     ),
     // MARK: - ASR / Whisper models
+    // URLs pinned to commit 5359861 which includes CoreML encoder bundles
     AIModel(
         id: "whisper_tiny",
         name: "Whisper Tiny",
-        description: "OpenAI Whisper tiny multilingual model. Fastest, lowest accuracy. (~74 MB)",
-        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin",
+        description: "OpenAI Whisper tiny multilingual model. Fastest, lowest accuracy. (~89 MB)",
+        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny.bin",
         category: .asr,
-        sizeBytes: 77_691_713,
+        sizeBytes: 77_691_713 + 15_037_446,
         source: "OpenAI via ggerganov",
         supportsVision: false,
         supportsAudio: true,
         supportsThinking: false,
-        supportsGpu: false,
+        supportsGpu: true,
         requirements: ModelRequirements(minRamGB: 1, recommendedRamGB: 2),
         contextWindowSize: 0,
         modelFormat: .task,
-        additionalFiles: []
+        additionalFiles: [
+            "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny-encoder.mlmodelc.zip"
+        ]
     ),
     AIModel(
         id: "whisper_tiny_en",
         name: "Whisper Tiny (English)",
-        description: "OpenAI Whisper tiny English-only model. Fastest, optimized for English. (~74 MB)",
-        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.en.bin",
+        description: "OpenAI Whisper tiny English-only model. Fastest, optimized for English. (~89 MB)",
+        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny.en.bin",
         category: .asr,
-        sizeBytes: 77_704_715,
+        sizeBytes: 77_704_715 + 15_034_655,
         source: "OpenAI via ggerganov",
         supportsVision: false,
         supportsAudio: true,
         supportsThinking: false,
-        supportsGpu: false,
+        supportsGpu: true,
         requirements: ModelRequirements(minRamGB: 1, recommendedRamGB: 2),
         contextWindowSize: 0,
         modelFormat: .task,
-        additionalFiles: []
+        additionalFiles: [
+            "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny.en-encoder.mlmodelc.zip"
+        ]
     ),
     AIModel(
         id: "whisper_base",
         name: "Whisper Base",
-        description: "OpenAI Whisper base multilingual model. Good balance of speed and accuracy. (~141 MB)",
-        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin",
+        description: "OpenAI Whisper base multilingual model. Good balance of speed and accuracy. (~178 MB)",
+        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base.bin",
         category: .asr,
-        sizeBytes: 147_951_465,
+        sizeBytes: 147_951_465 + 37_922_638,
         source: "OpenAI via ggerganov",
         supportsVision: false,
         supportsAudio: true,
         supportsThinking: false,
-        supportsGpu: false,
+        supportsGpu: true,
         requirements: ModelRequirements(minRamGB: 1, recommendedRamGB: 2),
         contextWindowSize: 0,
         modelFormat: .task,
-        additionalFiles: []
+        additionalFiles: [
+            "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base-encoder.mlmodelc.zip"
+        ]
     ),
     AIModel(
         id: "whisper_base_en",
         name: "Whisper Base (English)",
-        description: "OpenAI Whisper base English-only model. Fast with good English accuracy. (~141 MB)",
-        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin",
+        description: "OpenAI Whisper base English-only model. Fast with good English accuracy. (~178 MB)",
+        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base.en.bin",
         category: .asr,
-        sizeBytes: 147_964_211,
+        sizeBytes: 147_964_211 + 37_950_917,
         source: "OpenAI via ggerganov",
         supportsVision: false,
         supportsAudio: true,
         supportsThinking: false,
-        supportsGpu: false,
+        supportsGpu: true,
         requirements: ModelRequirements(minRamGB: 1, recommendedRamGB: 2),
         contextWindowSize: 0,
         modelFormat: .task,
-        additionalFiles: []
+        additionalFiles: [
+            "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base.en-encoder.mlmodelc.zip"
+        ]
     ),
     AIModel(
         id: "whisper_small",
         name: "Whisper Small",
-        description: "OpenAI Whisper small multilingual model. Good accuracy across many languages. (~465 MB)",
-        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin",
+        description: "OpenAI Whisper small multilingual model. Good accuracy across many languages. (~621 MB)",
+        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small.bin",
         category: .asr,
-        sizeBytes: 487_601_967,
+        sizeBytes: 487_601_967 + 163_083_239,
         source: "OpenAI via ggerganov",
         supportsVision: false,
         supportsAudio: true,
         supportsThinking: false,
-        supportsGpu: false,
+        supportsGpu: true,
         requirements: ModelRequirements(minRamGB: 2, recommendedRamGB: 3),
         contextWindowSize: 0,
         modelFormat: .task,
-        additionalFiles: []
+        additionalFiles: [
+            "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small-encoder.mlmodelc.zip"
+        ]
     ),
     AIModel(
         id: "whisper_small_en",
         name: "Whisper Small (English)",
-        description: "OpenAI Whisper small English-only model. Strong English accuracy. (~465 MB)",
-        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.en.bin",
+        description: "OpenAI Whisper small English-only model. Strong English accuracy. (~621 MB)",
+        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small.en.bin",
         category: .asr,
-        sizeBytes: 487_614_201,
+        sizeBytes: 487_614_201 + 162_952_446,
         source: "OpenAI via ggerganov",
         supportsVision: false,
         supportsAudio: true,
         supportsThinking: false,
-        supportsGpu: false,
+        supportsGpu: true,
         requirements: ModelRequirements(minRamGB: 2, recommendedRamGB: 3),
         contextWindowSize: 0,
         modelFormat: .task,
-        additionalFiles: []
+        additionalFiles: [
+            "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small.en-encoder.mlmodelc.zip"
+        ]
     ),
     AIModel(
         id: "whisper_medium",
         name: "Whisper Medium",
-        description: "OpenAI Whisper medium multilingual model. High accuracy, moderate size. (~1.4 GB)",
-        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.bin",
+        description: "OpenAI Whisper medium multilingual model. High accuracy, moderate size. (~2.0 GB)",
+        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-medium.bin",
         category: .asr,
-        sizeBytes: 1_533_763_059,
+        sizeBytes: 1_533_763_059 + 567_829_413,
         source: "OpenAI via ggerganov",
         supportsVision: false,
         supportsAudio: true,
         supportsThinking: false,
-        supportsGpu: false,
+        supportsGpu: true,
         requirements: ModelRequirements(minRamGB: 4, recommendedRamGB: 6),
         contextWindowSize: 0,
         modelFormat: .task,
-        additionalFiles: []
+        additionalFiles: [
+            "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-medium-encoder.mlmodelc.zip"
+        ]
     ),
     AIModel(
         id: "whisper_medium_en",
         name: "Whisper Medium (English)",
-        description: "OpenAI Whisper medium English-only model. Excellent English accuracy. (~1.4 GB)",
-        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.en.bin",
+        description: "OpenAI Whisper medium English-only model. Excellent English accuracy. (~2.0 GB)",
+        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-medium.en.bin",
         category: .asr,
-        sizeBytes: 1_533_774_781,
+        sizeBytes: 1_533_774_781 + 566_993_085,
         source: "OpenAI via ggerganov",
         supportsVision: false,
         supportsAudio: true,
         supportsThinking: false,
-        supportsGpu: false,
+        supportsGpu: true,
         requirements: ModelRequirements(minRamGB: 4, recommendedRamGB: 6),
         contextWindowSize: 0,
         modelFormat: .task,
-        additionalFiles: []
+        additionalFiles: [
+            "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-medium.en-encoder.mlmodelc.zip"
+        ]
     ),
     AIModel(
         id: "whisper_large_v1",
         name: "Whisper Large v1",
         description: "OpenAI Whisper large v1 multilingual model. Best accuracy, highest resource usage. (~2.9 GB)",
-        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v1.bin",
+        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-large-v1.bin",
         category: .asr,
         sizeBytes: 3_094_623_691,
         source: "OpenAI via ggerganov",
         supportsVision: false,
         supportsAudio: true,
         supportsThinking: false,
-        supportsGpu: false,
+        supportsGpu: true,
         requirements: ModelRequirements(minRamGB: 6, recommendedRamGB: 8),
         contextWindowSize: 0,
         modelFormat: .task,
@@ -3127,14 +3158,14 @@ public static let models: [AIModel] = [
         id: "whisper_large_v2",
         name: "Whisper Large v2",
         description: "OpenAI Whisper large v2 multilingual model. Improved over v1 with better accuracy. (~2.9 GB)",
-        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v2.bin",
+        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-large-v2.bin",
         category: .asr,
         sizeBytes: 3_094_623_691,
         source: "OpenAI via ggerganov",
         supportsVision: false,
         supportsAudio: true,
         supportsThinking: false,
-        supportsGpu: false,
+        supportsGpu: true,
         requirements: ModelRequirements(minRamGB: 6, recommendedRamGB: 8),
         contextWindowSize: 0,
         modelFormat: .task,
@@ -3144,14 +3175,14 @@ public static let models: [AIModel] = [
         id: "whisper_large_v3",
         name: "Whisper Large v3",
         description: "OpenAI Whisper large v3 multilingual model. Latest and most accurate large model. (~2.9 GB)",
-        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3.bin",
+        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-large-v3.bin",
         category: .asr,
         sizeBytes: 3_095_033_483,
         source: "OpenAI via ggerganov",
         supportsVision: false,
         supportsAudio: true,
         supportsThinking: false,
-        supportsGpu: false,
+        supportsGpu: true,
         requirements: ModelRequirements(minRamGB: 6, recommendedRamGB: 8),
         contextWindowSize: 0,
         modelFormat: .task,
@@ -3161,14 +3192,14 @@ public static let models: [AIModel] = [
         id: "whisper_large_v3_turbo",
         name: "Whisper Large v3 Turbo",
         description: "OpenAI Whisper large v3 turbo model. Near large-v3 accuracy at ~3x the speed. (~1.5 GB)",
-        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin",
+        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-large-v3-turbo.bin",
         category: .asr,
         sizeBytes: 1_624_555_275,
         source: "OpenAI via ggerganov",
         supportsVision: false,
         supportsAudio: true,
         supportsThinking: false,
-        supportsGpu: false,
+        supportsGpu: true,
         requirements: ModelRequirements(minRamGB: 4, recommendedRamGB: 6),
         contextWindowSize: 0,
         modelFormat: .task,
