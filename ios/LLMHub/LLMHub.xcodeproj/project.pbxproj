@@ -55,6 +55,7 @@
 		UP000001000000000000UP01 /* ImageUpscalerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = UP000001000000000000UP02 /* ImageUpscalerScreen.swift */; };
 		SS000001000000000000SS01 /* SplashScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SS000001000000000000SS02 /* SplashScreenView.swift */; };
 		UP000001000000000000UP03 /* ImageUpscalerBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = UP000001000000000000UP04 /* ImageUpscalerBackend.swift */; };
+		WB000001000000000000WB01 /* WhisperBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = WB000001000000000000WB02 /* WhisperBackend.swift */; };
 		MGK00001000000000000MG01 /* MediaGenerationKit in Frameworks */ = {isa = PBXBuildFile; productRef = MGK00001000000000000MG02 /* MediaGenerationKit */; };
 /* End PBXBuildFile section */
 
@@ -121,6 +122,7 @@
 		UP000001000000000000UP02 /* ImageUpscalerScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageUpscalerScreen.swift; sourceTree = "<group>"; };
 		SS000001000000000000SS02 /* SplashScreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashScreenView.swift; sourceTree = "<group>"; };
 		UP000001000000000000UP04 /* ImageUpscalerBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageUpscalerBackend.swift; sourceTree = "<group>"; };
+		WB000001000000000000WB02 /* WhisperBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhisperBackend.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -197,6 +199,7 @@
 				UP000001000000000000UP02 /* ImageUpscalerScreen.swift */,
 				SS000001000000000000SS02 /* SplashScreenView.swift */,
 				UP000001000000000000UP04 /* ImageUpscalerBackend.swift */,
+				WB000001000000000000WB02 /* WhisperBackend.swift */,
 			);
 			name = LLMHub;
 			path = Sources/LLMHub;
@@ -246,6 +249,7 @@
 				AD000002000000000000BB04 /* GoogleUserMessagingPlatform */,
 				AD000002000000000000BB08 /* LiteRTLM */,
 				MGK00001000000000000MG02 /* MediaGenerationKit */,
+				WH000001000000000000WH02 /* whisper */,
 			);
 			productName = LLMHub;
 			productReference = 5F60B98E5AE21634E4E47E99 /* LLMHub.app */;
@@ -297,6 +301,7 @@
 				AD000002000000000000BB02 /* XCRemoteSwiftPackageReference "swift-package-manager-google-user-messaging-platform" */,
 				AD000002000000000000BB07 /* XCLocalSwiftPackageReference "LocalPackages/LiteRT-LM" */,
 				MGK00001000000000000MG03 /* XCLocalSwiftPackageReference "LocalPackages/media-generation-kit" */,
+				WH000001000000000000WH01 /* XCRemoteSwiftPackageReference "whisper.spm" */,
 			);
 			projectDirPath = "";
 			projectRoot = "";
@@ -360,6 +365,7 @@
 				UP000001000000000000UP01 /* ImageUpscalerScreen.swift in Sources */,
 				SS000001000000000000SS01 /* SplashScreenView.swift in Sources */,
 				UP000001000000000000UP03 /* ImageUpscalerBackend.swift in Sources */,
+				WB000001000000000000WB01 /* WhisperBackend.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -651,6 +657,14 @@
 				minimumVersion = 0.9.20;
 			};
 		};
+		WH000001000000000000WH01 /* XCRemoteSwiftPackageReference "whisper.spm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ggerganov/whisper.spm";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.6.2;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -693,6 +707,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = MGK00001000000000000MG03 /* XCLocalSwiftPackageReference "LocalPackages/media-generation-kit" */;
 			productName = MediaGenerationKit;
+		};
+		WH000001000000000000WH02 /* whisper */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = WH000001000000000000WH01 /* XCRemoteSwiftPackageReference "whisper.spm" */;
+			productName = whisper;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

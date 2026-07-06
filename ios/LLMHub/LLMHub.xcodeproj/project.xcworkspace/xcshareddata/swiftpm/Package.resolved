@@ -1,5 +1,5 @@
 {
-  "originHash" : "b4a777ab1e14db6004b7b1a073dc22de46305b3efca66a202d4400317edddccd",
+  "originHash" : "c2a9729d4859d9854da3526798d2211b71ce0e90c09d336184fafb1b083ca41c",
   "pins" : [
     {
       "identity" : "alamofire",
@@ -366,6 +366,15 @@
       "state" : {
         "revision" : "150169bfba0889c229a2ce7494cf8949f18e6906",
         "version" : "1.1.9"
+      }
+    },
+    {
+      "identity" : "whisper.spm",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ggerganov/whisper.spm",
+      "state" : {
+        "revision" : "a2085436c2eb796af90956b62bd64731f5e5b823",
+        "version" : "1.6.2"
       }
     },
     {

@@ -183,6 +183,9 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
                 if (model.category == "asr") {
                     val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
                     val modelDir = java.io.File(getApplication<Application>().filesDir, "models/$modelDirName")
+                    // For English-only models force "en"; for multilingual set empty = auto-detect.
+                    val isEnglishOnly = model.name.contains("english", ignoreCase = true)
+                    whisperKitService.transcribeLanguage = if (isEnglishOnly) "en" else ""
                     val loaded = whisperKitService.loadModel(modelDir.absolutePath, _selectedAsrBackend.value)
                     if (loaded) {
                         _isModelLoaded.value = true
@@ -249,13 +252,11 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
                     android.util.Log.d("TranscriberViewModel", "ASR batch: input=${audioBytes.size}B float32WAV → pcm16WAV=${pcm16Wav.size}B")
                     // Strip WAV header (44 bytes) to get raw PCM16 bytes for WhisperKit
                     val pcm16Raw = if (pcm16Wav.size > 44) pcm16Wav.copyOfRange(44, pcm16Wav.size) else pcm16Wav
-                    val isEnglishModel = model.name.contains("english", ignoreCase = true) || model.name.contains("English", ignoreCase = true)
-                    val lang = if (isEnglishModel) "en" else "auto"
-                    android.util.Log.d("TranscriberViewModel", "ASR batch: lang=$lang, pcmBytes=${pcm16Raw.size}B")
+                    android.util.Log.d("TranscriberViewModel", "ASR batch: lang=${whisperKitService.transcribeLanguage.ifEmpty { "auto" }}, pcmBytes=${pcm16Raw.size}B")
 
                     val transcript = withContext(Dispatchers.IO) {
                         asrMutex.withLock {
-                            whisperKitService.transcribe(pcm16Raw, lang)
+                            whisperKitService.transcribe(pcm16Raw, whisperKitService.transcribeLanguage)
                         }
                     }
                     android.util.Log.d("TranscriberViewModel", "ASR batch result: transcript='$transcript'")

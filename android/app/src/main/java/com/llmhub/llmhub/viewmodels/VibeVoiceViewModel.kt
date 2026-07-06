@@ -281,6 +281,8 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
                 if (isUsingAsr && voiceModel != null) {
                     val modelDirName = voiceModel.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
                     val modelDir = java.io.File(getApplication<Application>().filesDir, "models/$modelDirName")
+                    val isEnglishOnly = voiceModel.name.contains("english", ignoreCase = true)
+                    whisperKitService.transcribeLanguage = if (isEnglishOnly) "en" else ""
                     val loaded = whisperKitService.loadModel(modelDir.absolutePath, _selectedAsrBackend.value)
                     if (!loaded) {
                         throw Exception("Failed to load WhisperKit model from: ${modelDir.absolutePath}")

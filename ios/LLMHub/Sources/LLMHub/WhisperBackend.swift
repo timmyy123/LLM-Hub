@@ -39,7 +39,8 @@ private actor WhisperContext {
         params.print_progress   = false
         params.print_timestamps = false
         params.print_special    = false
-        params.translate        = false
+        params.translate        = false  // never translate — preserve original language
+        params.language         = nil    // nil = auto-detect, do not force English
         params.no_context       = true
         params.single_segment   = false
         let result = samples.withUnsafeBufferPointer { buf in

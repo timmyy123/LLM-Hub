@@ -40,6 +40,9 @@ class WhisperKitService(private val context: Context) {
      * flow via reflection and calls the JNI loadModels() directly with our own config JSON.
      * All 5 required files (3 TFLite + tokenizer.json + config.json) must already be on disk.
      */
+    // Language to use for transcription. Empty string = auto-detect (multilingual models).
+    @Volatile var transcribeLanguage: String = ""
+
     suspend fun loadModel(modelDirPath: String, backend: WhisperBackend = WhisperBackend.NPU): Boolean = withContext(Dispatchers.IO) {
         try {
             release()
@@ -79,6 +82,38 @@ class WhisperKitService(private val context: Context) {
                     Log.d(TAG, "Copied $fileName to SDK cache")
                 }
             }
+
+            // WhisperKit Android SDK bug workaround (argmaxinc/WhisperKitAndroid#75):
+            // The SDK lacks forced-token logic — the decoder freely generates all positions.
+            // We ship a patched libwhisperkit.so that applies suppress_tokens at idx>=1.
+            // Replace suppress_tokens with explicit list (removing -1 sentinel which has
+            // special meaning in the SDK). Suppress all non-text specials so only transcribe
+            // (50359), endoftext (50257), and text vocab (0-50256) are available.
+            val isMultilingual = !modelVariant.endsWith(".en")
+            if (isMultilingual) {
+                val configFile = File(sdkCacheDir, "config.json")
+                if (configFile.exists()) {
+                    var configText = configFile.readText()
+                    // Build suppress list: SOT + all languages + translate + startoflm +
+                    // startofprev + nospeech/nocaptions + notimestamps + all timestamps
+                    // Explicitly omit -1 (SDK sentinel) and 50359 (transcribe)
+                    val suppressIds = (50258..50358).toList() + (50360..51865).toList()
+                    val suppressJson = suppressIds.joinToString(",")
+                    // REPLACE the entire suppress_tokens array (don't merge with -1 sentinel)
+                    configText = if (configText.contains("\"suppress_tokens\"")) {
+                        configText.replace(
+                            Regex("\"suppress_tokens\"\\s*:\\s*\\[[^\\]]*\\]"),
+                            "\"suppress_tokens\": [$suppressJson]"
+                        )
+                    } else {
+                        configText.trimEnd().removeSuffix("}") +
+                            ",\"suppress_tokens\":[$suppressJson]}"
+                    }
+                    configFile.writeText(configText)
+                    Log.i(TAG, "Patched config.json: replaced suppress_tokens with ${suppressIds.size} explicit IDs")
+                }
+            }
+
 
             val wkBackend = when (backend) {
                 WhisperBackend.CPU -> WhisperKit.Builder.CPU_ONLY
@@ -160,9 +195,13 @@ class WhisperKitService(private val context: Context) {
         }
     }
 
-    suspend fun transcribe(pcm16Bytes: ByteArray, language: String = "en"): String? = withContext(Dispatchers.IO) {
+    suspend fun transcribe(pcm16Bytes: ByteArray, language: String = ""): String? = withContext(Dispatchers.IO) {
         val kit = whisperKit ?: return@withContext null
         if (!isInitialized) return@withContext null
+
+        // Update transcribeLanguage so callers can override per-request.
+        // Empty / "auto" both mean auto-detect; WhisperKit JNI ignores unknown values.
+        transcribeLanguage = if (language == "auto") "" else language
 
         try {
             lastTranscript = ""
