@@ -1304,7 +1304,18 @@ private struct IOS26TranscriberScreen: View {
             case .success(let urls):
                 if let first = urls.first {
                     if useWhisperTranscription {
-                        selectedAudioURL = first
+                        // Copy to sandbox — fileImporter URLs lose security scope after the handler returns
+                        let accessing = first.startAccessingSecurityScopedResource()
+                        let ext = first.pathExtension.isEmpty ? "m4a" : first.pathExtension
+                        let dest = persistentAudioStorageDirectory()
+                            .appendingPathComponent("whisper_upload_\(UUID().uuidString)")
+                            .appendingPathExtension(ext)
+                        if let _ = try? FileManager.default.copyItem(at: first, to: dest) {
+                            selectedAudioURL = dest
+                        } else {
+                            selectedAudioURL = first
+                        }
+                        if accessing { first.stopAccessingSecurityScopedResource() }
                     } else if useModelAudioInput {
                         selectedAudioURL = prepareGemmaAudioInput(
                             from: first,
@@ -1331,12 +1342,9 @@ private struct IOS26TranscriberScreen: View {
             }
         }
         .onAppear {
-            selectedModelName = ""
-            Task {
-                await syncRunAnywhereModelDiscovery()
-                // Default to empty = system transcriber.
-                // User picks a model from the config sheet to use AI transcription.
-            }
+            // Don't reset selectedModelName — preserve last-used model across visits.
+            // Empty = system transcriber (default on first launch via @AppStorage default).
+            Task { await syncRunAnywhereModelDiscovery() }
         }
     }
 
