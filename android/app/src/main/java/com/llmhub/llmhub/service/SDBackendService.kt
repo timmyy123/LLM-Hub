@@ -246,12 +246,16 @@ class SDBackendService : Service() {
     private fun buildCommand(executable: File, modelDir: File, modelType: String): List<String> {
         val actualDir = findActualModelDir(modelDir)
 
-        // Determine --type: sdxl if path contains "sdxl", otherwise sd15npu/sd15cpu
+        // Determine --type based on model contents and path
         val isSDXL = modelDir.absolutePath.contains("sdxl", ignoreCase = true) ||
             actualDir.absolutePath.contains("sdxl", ignoreCase = true)
+        // anima-qnn format: uses unet_part1.bin + unet_part2.bin + clip.bin (no clip_v2.mnn)
+        val isAnima = modelType == "qnn" && !isSDXL &&
+            File(actualDir, "unet_part1.bin").exists() && File(actualDir, "unet_part2.bin").exists()
 
         val type = when {
             isSDXL -> "sdxl"
+            isAnima -> "anima"
             modelType == "qnn" -> "sd15npu"
             else -> "sd15cpu"
         }
@@ -265,7 +269,7 @@ class SDBackendService : Service() {
             "--port", "8081"
         )
 
-        if (type == "sd15npu" || type == "sdxl") {
+        if (type == "sd15npu" || type == "sdxl" || type == "anima") {
             command.add("--lib_dir")
             command.add(runtimeDir.absolutePath)
         }
@@ -367,7 +371,7 @@ class SDBackendService : Service() {
 
         return searchDir(baseDir, 0) ?: baseDir
     }
-    
+
     /**
      * Monitor backend process output
      * Logs all stdout/stderr from the native process

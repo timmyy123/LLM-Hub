@@ -25,6 +25,7 @@ class ImageGeneratorHelper(private val context: Context) {
     private val sdHelper = StableDiffusionHelper(context)
     private var currentModelType: ModelType? = null
     private var isSdxlModel = false
+    private var isAnimaModel = false
     
     suspend fun initialize(modelPath: String? = null, modelType: ModelType? = null, useGpu: Boolean = false): Boolean = withContext(Dispatchers.IO) {
         try {
@@ -61,8 +62,12 @@ class ImageGeneratorHelper(private val context: Context) {
             )
             isSdxlModel = modelName.contains("xl") || modelPathLower.contains("xl") ||
                     sdxlKeywords.any { modelName.contains(it) || modelPathLower.contains(it) }
-            
-            Log.i(TAG, "Found model: ${modelInfo.name} (${modelInfo.type}), isSdxl=$isSdxlModel")
+
+            // Anima format uses split unet (unet_part1.bin + unet_part2.bin), requires 1024x1024
+            isAnimaModel = currentModelType == ModelType.QNN_NPU && !isSdxlModel &&
+                    File(modelInfo.path).walkTopDown().any { it.name == "unet_part1.bin" }
+
+            Log.i(TAG, "Found model: ${modelInfo.name} (${modelInfo.type}), isSdxl=$isSdxlModel, isAnima=$isAnimaModel")
             
             // Start backend service
             SDBackendService.start(context, modelInfo.path, useGpu)
@@ -111,10 +116,10 @@ class ImageGeneratorHelper(private val context: Context) {
         try {
             val img2imgInfo = if (inputImage != null) " [img2img, denoise: $denoiseStrength]" else ""
             val targetWidth = if (currentModelType == ModelType.QNN_NPU) {
-                if (isSdxlModel) 1024 else 512
+                if (isSdxlModel || isAnimaModel) 1024 else 512
             } else width
             val targetHeight = if (currentModelType == ModelType.QNN_NPU) {
-                if (isSdxlModel) 1024 else 512
+                if (isSdxlModel || isAnimaModel) 1024 else 512
             } else height
 
             Log.i(
@@ -196,6 +201,8 @@ class ImageGeneratorHelper(private val context: Context) {
         try {
             SDBackendService.stop(context)
             currentModelType = null
+            isSdxlModel = false
+            isAnimaModel = false
             Log.i(TAG, "ImageGenerator closed")
         } catch (e: Exception) {
             Log.e(TAG, "Error closing ImageGenerator: ${e.message}", e)
