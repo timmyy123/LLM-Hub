@@ -51,7 +51,7 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         val targetService = when (model.modelFormat) {
             "onnx" -> onnxService
             "gguf" -> geniexService
-            "litertlm" -> if (isGemma4) liteRtLmService else mediaPipeService
+            "litertlm" -> if (isGemma4 || model.source == "Custom") liteRtLmService else mediaPipeService
             else -> mediaPipeService
         }
 
