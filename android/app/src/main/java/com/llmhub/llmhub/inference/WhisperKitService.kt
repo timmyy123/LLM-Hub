@@ -142,7 +142,7 @@ class WhisperKitService(private val context: Context) {
                                 (result.text ?: "")
                                     .replace(Regex("<\\|[^>]*\\|>"), "")
                                     .trim()
-                            }
+                            }.trimStart(',', ' ')
                         }
                         WhisperKit.TextOutputCallback.MSG_CLOSE -> {
                             Log.i(TAG, "WhisperKit closed")
@@ -199,44 +199,58 @@ class WhisperKitService(private val context: Context) {
         val kit = whisperKit ?: return@withContext null
         if (!isInitialized) return@withContext null
 
-        // Update transcribeLanguage so callers can override per-request.
-        // Empty / "auto" both mean auto-detect; WhisperKit JNI ignores unknown values.
         transcribeLanguage = if (language == "auto") "" else language
 
-        try {
-            lastTranscript = ""
+        // WhisperKit processes exactly one 30-second window per init/deinitialize cycle.
+        // Split longer audio into 30-second chunks and concatenate results.
+        val windowBytes = 960_000  // 16kHz * 2 bytes * 30s
+        val chunkSize = 3200
+        val segments = mutableListOf<String>()
 
-            isStreaming = true
-            kit.init(frequency = 16000, channels = 1, duration = 0)
+        var windowStart = 0
+        while (windowStart < pcm16Bytes.size) {
+            val windowEnd = minOf(windowStart + windowBytes, pcm16Bytes.size)
+            val window = pcm16Bytes.copyOfRange(windowStart, windowEnd)
 
-            val chunkSize = 3200
-            var offset = 0
-            while (offset < pcm16Bytes.size) {
-                val end = minOf(offset + chunkSize, pcm16Bytes.size)
-                kit.transcribe(pcm16Bytes.copyOfRange(offset, end))
-                offset = end
-            }
+            try {
+                lastTranscript = ""
+                isStreaming = true
+                kit.init(frequency = 16000, channels = 1, duration = 0)
 
-            // Pad to 30s frame boundary (960000 bytes = 16kHz mono 16-bit 30s)
-            val minFrameBytes = 960_000
-            if (pcm16Bytes.size < minFrameBytes) {
-                kit.transcribe(ByteArray(minFrameBytes - pcm16Bytes.size))
-            }
+                var offset = 0
+                while (offset < window.size) {
+                    val end = minOf(offset + chunkSize, window.size)
+                    kit.transcribe(window.copyOfRange(offset, end))
+                    offset = end
+                }
 
-            kit.deinitialize()
-            isStreaming = false
+                // Pad short final window to 30s
+                if (window.size < windowBytes) {
+                    kit.transcribe(ByteArray(windowBytes - window.size))
+                }
 
-            val result = lastTranscript.trim()
-            Log.i(TAG, "Transcription result: '$result'")
-            result.ifEmpty { null }
-        } catch (e: Exception) {
-            Log.e(TAG, "Transcription failed", e)
-            if (isStreaming) {
-                try { kit.deinitialize() } catch (_: Exception) {}
+                // MSG_TEXT_OUT fires synchronously during transcribe() once the 30s frame
+                // is fully processed, so lastTranscript is already set at this point.
+                kit.deinitialize()
                 isStreaming = false
+
+                val segText = lastTranscript.trim()
+                Log.i(TAG, "Window $windowStart..${windowEnd}: '$segText'")
+                if (segText.isNotEmpty()) segments.add(segText)
+            } catch (e: Exception) {
+                Log.e(TAG, "Transcription failed at window $windowStart", e)
+                if (isStreaming) {
+                    try { kit.deinitialize() } catch (_: Exception) {}
+                    isStreaming = false
+                }
             }
-            null
+
+            windowStart += windowBytes
         }
+
+        val result = segments.joinToString(" ").trim()
+        Log.i(TAG, "Transcription result: '$result'")
+        result.ifEmpty { null }
     }
 
     fun release() {

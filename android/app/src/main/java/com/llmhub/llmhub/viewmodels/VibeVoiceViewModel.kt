@@ -186,6 +186,7 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
         } catch (_: IllegalArgumentException) {
             LlmInference.Backend.GPU
         }
+        _selectedNpuDeviceId.value = prefs.getString("selected_npu_device_id", null)
         val defaultAsrBackend = if (DeviceInfo.isQualcommNpuSupported()) WhisperBackend.NPU else WhisperBackend.CPU
         val savedAsrBackendName = prefs.getString("selected_asr_backend", defaultAsrBackend.name)
         _selectedAsrBackend.value = try {
@@ -200,6 +201,7 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
             putString("selected_model_name", _selectedModel.value?.name)
             putString("selected_voice_model_name", _selectedVoiceModel.value?.name ?: "gemma")
             putString("selected_backend", _selectedBackend.value.name)
+            putString("selected_npu_device_id", _selectedNpuDeviceId.value)
             putString("selected_asr_backend", _selectedAsrBackend.value.name)
             apply()
         }
