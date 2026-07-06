@@ -29,6 +29,7 @@ let package = Package(
             from: "2.0.0"
         ),
         .package(url: "https://github.com/google-ai-edge/LiteRT-LM", exact: "0.14.0"),
+        .package(url: "https://github.com/ggerganov/whisper.spm", from: "1.6.2"),
     ],
     targets: [
         .target(
@@ -43,6 +44,7 @@ let package = Package(
                 .product(name: "GoogleUserMessagingPlatform", package: "swift-package-manager-google-user-messaging-platform"),
                 .product(name: "LiteRTLM", package: "LiteRT-LM"),
                 .product(name: "MediaGenerationKit", package: "media-generation-kit"),
+                .product(name: "whisper", package: "whisper.spm"),
             ],
             exclude: [
                 "check_strings.py"

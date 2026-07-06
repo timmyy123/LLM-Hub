@@ -797,5 +797,15 @@
 "image_upscale_models" = "بزرگ‌نمایی تصویر";
 "image_upscale_models_description" = "مدل‌های هوش مصنوعی شتاب‌دهنده QNN برای بزرگ‌نمایی تصاویر تا ۴ برابر";
 
+"asr_models" = "مدل‌های ASR";
+"asr_models_description" = "مدل‌های تشخیص گفتار Whisper برای رونویسی آفلاین";
+"whisper_model_label" = "مدل Whisper";
+"whisper_select_model" = "انتخاب مدل Whisper";
+"whisper_no_model" = "هیچ مدل Whisper بارگذاری نشده";
+"whisper_load_model_hint" = "روی تنظیمات ضربه بزنید تا مدل Whisper را انتخاب و بارگذاری کنید";
+"whisper_download_hint" = "یک مدل ASR دانلود کنید تا از رونویسی Whisper استفاده کنید";
+"whisper_live_transcription" = "رونویسی زنده با Whisper";
+"whisper_transcribing" = "در حال رونویسی با Whisper…";
+
 "on_device_ai_engine" = "موتور هوش مصنوعی روی دستگاه";
 "secure_private" = "امن و خصوصی";

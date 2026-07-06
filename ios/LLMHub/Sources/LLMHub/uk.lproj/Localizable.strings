@@ -797,5 +797,15 @@
 "image_upscale_models" = "Покращення зображень";
 "image_upscale_models_description" = "Моделі ШІ з прискоренням QNN для підвищення роздільності зображень до 4x";
 
+"asr_models" = "ASR-моделі";
+"asr_models_description" = "Моделі розпізнавання мовлення Whisper для офлайн-транскрипції";
+"whisper_model_label" = "Модель Whisper";
+"whisper_select_model" = "Вибрати модель Whisper";
+"whisper_no_model" = "Модель Whisper не завантажена";
+"whisper_load_model_hint" = "Натисніть «Налаштування», щоб вибрати та завантажити модель Whisper";
+"whisper_download_hint" = "Завантажте модель ASR для використання транскрипції Whisper";
+"whisper_live_transcription" = "Пряма транскрипція з Whisper";
+"whisper_transcribing" = "Транскрипція Whisper…";
+
 "on_device_ai_engine" = "ЛОКАЛЬНИЙ ІІ-ДВИГУН";
 "secure_private" = "БЕЗПЕЧНО ТА КОНФІДЕНЦІЙНО";

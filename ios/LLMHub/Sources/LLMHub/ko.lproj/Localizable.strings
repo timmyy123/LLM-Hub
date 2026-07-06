@@ -797,5 +797,15 @@
 "image_upscale_models" = "이미지 업스케일";
 "image_upscale_models_description" = "QNN 가속 AI 모델로 이미지 해상도를 최대 4배 향상";
 
+"asr_models" = "ASR 모델";
+"asr_models_description" = "오프라인 전사를 위한 Whisper 음성 인식 모델";
+"whisper_model_label" = "Whisper 모델";
+"whisper_select_model" = "Whisper 모델 선택";
+"whisper_no_model" = "로드된 Whisper 모델 없음";
+"whisper_load_model_hint" = "설정을 탭하여 Whisper 모델을 선택하고 로드하세요";
+"whisper_download_hint" = "Whisper 전사를 사용하려면 ASR 모델을 다운로드하세요";
+"whisper_live_transcription" = "Whisper 실시간 전사";
+"whisper_transcribing" = "Whisper로 전사 중…";
+
 "on_device_ai_engine" = "온디바이스 AI 엔진";
 "secure_private" = "안전 및 개인정보 보호";

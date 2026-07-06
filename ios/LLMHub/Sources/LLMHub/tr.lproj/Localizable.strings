@@ -797,5 +797,15 @@
 "image_upscale_models" = "Görüntü İyileştirme";
 "image_upscale_models_description" = "Görüntü çözünürlüğünü 4x'e kadar artırmak için QNN hızlandırmalı yapay zeka modelleri";
 
+"asr_models" = "ASR Modelleri";
+"asr_models_description" = "Çevrimdışı transkripsiyon için Whisper konuşma tanıma modelleri";
+"whisper_model_label" = "Whisper Modeli";
+"whisper_select_model" = "Whisper Modeli Seç";
+"whisper_no_model" = "Yüklü Whisper modeli yok";
+"whisper_load_model_hint" = "Whisper modeli seçmek ve yüklemek için ayarlara dokunun";
+"whisper_download_hint" = "Whisper transkripsiyonunu kullanmak için bir ASR modeli indirin";
+"whisper_live_transcription" = "Whisper ile Canlı Transkripsiyon";
+"whisper_transcribing" = "Whisper ile transkribe ediliyor…";
+
 "on_device_ai_engine" = "CİHAZ ÜZERİ YAPAY ZEKA MOTORU";
 "secure_private" = "GÜVENLİ VE ÖZEL";

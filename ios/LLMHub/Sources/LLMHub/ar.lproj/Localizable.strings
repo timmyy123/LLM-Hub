@@ -797,5 +797,15 @@
 "image_upscale_models" = "تحسين الصورة";
 "image_upscale_models_description" = "نماذج ذكاء اصطناعي مسرَّعة بـ QNN لتحسين دقة الصور حتى 4x";
 
+"asr_models" = "نماذج التعرف على الكلام";
+"asr_models_description" = "نماذج Whisper للتعرف على الكلام للنسخ دون اتصال";
+"whisper_model_label" = "نموذج Whisper";
+"whisper_select_model" = "اختر نموذج Whisper";
+"whisper_no_model" = "لم يتم تحميل نموذج Whisper";
+"whisper_load_model_hint" = "اضغط على الإعدادات لاختيار نموذج Whisper وتحميله";
+"whisper_download_hint" = "قم بتنزيل نموذج ASR لاستخدام نسخ Whisper";
+"whisper_live_transcription" = "النسخ المباشر بـ Whisper";
+"whisper_transcribing" = "جارٍ النسخ بـ Whisper…";
+
 "on_device_ai_engine" = "محرك الذكاء الاصطناعي على الجهاز";
 "secure_private" = "آمن وخاص";

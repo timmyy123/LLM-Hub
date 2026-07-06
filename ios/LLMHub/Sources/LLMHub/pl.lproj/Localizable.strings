@@ -797,5 +797,15 @@
 "image_upscale_models" = "Powiększenie obrazu";
 "image_upscale_models_description" = "Modele AI z akceleracją QNN do poprawy rozdzielczości obrazów do 4x";
 
+"asr_models" = "Modele ASR";
+"asr_models_description" = "Modele rozpoznawania mowy Whisper do transkrypcji offline";
+"whisper_model_label" = "Model Whisper";
+"whisper_select_model" = "Wybierz model Whisper";
+"whisper_no_model" = "Brak załadowanego modelu Whisper";
+"whisper_load_model_hint" = "Dotknij ustawień, aby wybrać i załadować model Whisper";
+"whisper_download_hint" = "Pobierz model ASR, aby użyć transkrypcji Whisper";
+"whisper_live_transcription" = "Transkrypcja na żywo z Whisper";
+"whisper_transcribing" = "Transkrypcja Whisper w toku…";
+
 "on_device_ai_engine" = "LOKALNY SILNIK AI";
 "secure_private" = "BEZPIECZNE I PRYWATNE";

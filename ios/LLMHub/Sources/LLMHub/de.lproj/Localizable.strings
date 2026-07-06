@@ -769,5 +769,15 @@
 "image_upscale_models" = "Bild hochskalieren";
 "image_upscale_models_description" = "QNN-beschleunigte KI-Modelle zur Hochskalierung und Verbesserung der Bildauflösung bis zu 4x";
 
+"asr_models" = "ASR-Modelle";
+"asr_models_description" = "Whisper-Spracherkennungsmodelle für Offline-Transkription";
+"whisper_model_label" = "Whisper-Modell";
+"whisper_select_model" = "Whisper-Modell auswählen";
+"whisper_no_model" = "Kein Whisper-Modell geladen";
+"whisper_load_model_hint" = "Tippen Sie auf Einstellungen, um ein Whisper-Modell auszuwählen und zu laden";
+"whisper_download_hint" = "Laden Sie ein ASR-Modell herunter, um die Whisper-Transkription zu nutzen";
+"whisper_live_transcription" = "Live-Whisper-Transkription";
+"whisper_transcribing" = "Whisper transkribiert…";
+
 "on_device_ai_engine" = "ON-DEVICE-KI-ENGINE";
 "secure_private" = "SICHER & PRIVAT";

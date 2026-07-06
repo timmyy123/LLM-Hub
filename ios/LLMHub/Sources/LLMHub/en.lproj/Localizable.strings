@@ -807,5 +807,15 @@
 "image_upscale_models" = "Image Upscale";
 "image_upscale_models_description" = "QNN-accelerated AI models for upscaling and enhancing image resolution up to 4x";
 
+"asr_models" = "ASR Models";
+"asr_models_description" = "Whisper speech recognition models for offline transcription";
+"whisper_model_label" = "Whisper Model";
+"whisper_select_model" = "Select Whisper Model";
+"whisper_no_model" = "No Whisper model loaded";
+"whisper_load_model_hint" = "Tap settings to select and load a Whisper model";
+"whisper_download_hint" = "Download an ASR model to use Whisper transcription";
+"whisper_live_transcription" = "Live Whisper Transcription";
+"whisper_transcribing" = "Transcribing with Whisper…";
+
 "on_device_ai_engine" = "ON-DEVICE AI ENGINE";
 "secure_private" = "SECURE & PRIVATE";

@@ -754,5 +754,15 @@
 "image_upscale_models" = "Melhorar imagem";
 "image_upscale_models_description" = "Modelos de IA acelerados por QNN para melhorar a resolução de imagens até 4x";
 
+"asr_models" = "Modelos ASR";
+"asr_models_description" = "Modelos de reconhecimento de fala Whisper para transcrição offline";
+"whisper_model_label" = "Modelo Whisper";
+"whisper_select_model" = "Selecionar modelo Whisper";
+"whisper_no_model" = "Nenhum modelo Whisper carregado";
+"whisper_load_model_hint" = "Toque em configurações para selecionar e carregar um modelo Whisper";
+"whisper_download_hint" = "Baixe um modelo ASR para usar a transcrição Whisper";
+"whisper_live_transcription" = "Transcrição ao vivo com Whisper";
+"whisper_transcribing" = "Transcrevendo com Whisper…";
+
 "on_device_ai_engine" = "MOTOR DE IA NO DISPOSITIVO";
 "secure_private" = "SEGURO E PRIVADO";

@@ -797,5 +797,15 @@
 "image_upscale_models" = "Tingkatkan Gambar";
 "image_upscale_models_description" = "Model AI yang dipercepat QNN untuk meningkatkan resolusi gambar hingga 4x";
 
+"asr_models" = "Model ASR";
+"asr_models_description" = "Model pengenalan suara Whisper untuk transkripsi offline";
+"whisper_model_label" = "Model Whisper";
+"whisper_select_model" = "Pilih Model Whisper";
+"whisper_no_model" = "Tidak ada model Whisper yang dimuat";
+"whisper_load_model_hint" = "Ketuk pengaturan untuk memilih dan memuat model Whisper";
+"whisper_download_hint" = "Unduh model ASR untuk menggunakan transkripsi Whisper";
+"whisper_live_transcription" = "Transkripsi Langsung dengan Whisper";
+"whisper_transcribing" = "Mentranskrip dengan Whisper…";
+
 "on_device_ai_engine" = "MESIN AI PADA PERANGKAT";
 "secure_private" = "AMAN & PRIVAT";

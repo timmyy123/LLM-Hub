@@ -769,5 +769,15 @@
 "image_upscale_models" = "Улучшение изображений";
 "image_upscale_models_description" = "Модели ИИ с ускорением QNN для повышения разрешения изображений до 4x";
 
+"asr_models" = "ASR-модели";
+"asr_models_description" = "Модели распознавания речи Whisper для офлайн-транскрипции";
+"whisper_model_label" = "Модель Whisper";
+"whisper_select_model" = "Выбрать модель Whisper";
+"whisper_no_model" = "Модель Whisper не загружена";
+"whisper_load_model_hint" = "Нажмите «Настройки», чтобы выбрать и загрузить модель Whisper";
+"whisper_download_hint" = "Загрузите модель ASR, чтобы использовать транскрипцию Whisper";
+"whisper_live_transcription" = "Прямая транскрипция с Whisper";
+"whisper_transcribing" = "Транскрипция Whisper…";
+
 "on_device_ai_engine" = "ЛОКАЛЬНЫЙ ИИ-ДВИЖОК";
 "secure_private" = "БЕЗОПАСНО И КОНФИДЕНЦИАЛЬНО";

@@ -805,5 +805,15 @@
 "image_upscale_models" = "图像超分辨率";
 "image_upscale_models_description" = "QNN 加速的 AI 模型，可将图像分辨率提升至 4 倍";
 
+"asr_models" = "ASR 模型";
+"asr_models_description" = "用于离线转录的 Whisper 语音识别模型";
+"whisper_model_label" = "Whisper 模型";
+"whisper_select_model" = "选择 Whisper 模型";
+"whisper_no_model" = "未加载 Whisper 模型";
+"whisper_load_model_hint" = "点击设置以选择并加载 Whisper 模型";
+"whisper_download_hint" = "下载 ASR 模型以使用 Whisper 转录";
+"whisper_live_transcription" = "Whisper 实时转录";
+"whisper_transcribing" = "Whisper 转录中…";
+
 "on_device_ai_engine" = "端侧 AI 引擎";
 "secure_private" = "安全与私密";

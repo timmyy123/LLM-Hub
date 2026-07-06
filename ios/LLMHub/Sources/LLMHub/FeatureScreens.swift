@@ -1005,6 +1005,7 @@ private struct IOS26TranscriberScreen: View {
     @StateObject private var audioRecorder = AudioRecorder()
     @ObservedObject private var ttsManager = OnDeviceTtsManager.shared
     @ObservedObject private var llm = LLMBackend.shared
+    @ObservedObject private var whisper = WhisperBackend.shared
     @State private var showAudioImporter = false
     @State private var showSettings = false
     @State private var audioTranscript: String = ""
@@ -1016,6 +1017,7 @@ private struct IOS26TranscriberScreen: View {
     @AppStorage("feature_transcriber_max_tokens") private var maxTokens: Double = 512
     @State private var isModelLoading = false
     @State private var modelLoadError: String? = nil
+    @State private var whisperHistory: [TranscriptionSession] = []
 
     let onNavigateBack: () -> Void
 
@@ -1044,9 +1046,16 @@ private struct IOS26TranscriberScreen: View {
         return model.isGemma4LiteRTLM && llm.isLoaded && llm.currentlyLoadedModel == model.name
     }
 
+    private var useWhisperTranscription: Bool {
+        guard let model = selectedModel else { return false }
+        return model.isWhisperModel && whisper.isLoaded && whisper.currentModelName == model.name
+    }
+
     var body: some View {
         Group {
-            if useModelAudioInput {
+            if useWhisperTranscription {
+                whisperTranscriberView
+            } else if useModelAudioInput {
                 gemmaAudioTranscriberView
             } else {
                 VStack(spacing: 12) {
@@ -1240,19 +1249,26 @@ private struct IOS26TranscriberScreen: View {
                 audioToggleTitleKey: nil,
                 visionAvailableCheck: nil,
                 writingMode: nil,
-                modelFilter: { $0.modelFormat == .litertlm && $0.supportsAudio },
-                onLoad: { 
+                modelFilter: {
+                    ($0.modelFormat == .litertlm && $0.supportsAudio) || $0.isWhisperModel
+                },
+                onLoad: {
                     isModelLoading = true
                     modelLoadError = nil
-                    llm.isLoaded = false
-                    llm.currentlyLoadedModel = nil
-                    await ensureAudioModelLoaded(force: true) 
+                    if let model = selectedFeatureModel(named: selectedModelName), model.isWhisperModel {
+                        await loadWhisperModel(model)
+                    } else {
+                        llm.isLoaded = false
+                        llm.currentlyLoadedModel = nil
+                        await ensureAudioModelLoaded(force: true)
+                    }
                     isModelLoading = false
                 },
-                onUnload: { 
+                onUnload: {
+                    whisper.unload()
                     llm.isLoaded = false
                     llm.currentlyLoadedModel = nil
-                    llm.unloadModel() 
+                    llm.unloadModel()
                 }
             )
             .environmentObject(settings)
@@ -1265,7 +1281,9 @@ private struct IOS26TranscriberScreen: View {
             switch result {
             case .success(let urls):
                 if let first = urls.first {
-                    if useModelAudioInput {
+                    if useWhisperTranscription {
+                        selectedAudioURL = first
+                    } else if useModelAudioInput {
                         selectedAudioURL = prepareGemmaAudioInput(
                             from: first,
                             destinationDirectory: persistentAudioStorageDirectory(),
@@ -1295,8 +1313,7 @@ private struct IOS26TranscriberScreen: View {
             Task {
                 await syncRunAnywhereModelDiscovery()
                 // Default to empty = system transcriber.
-                // User picks a Gemma4 LiteRT-LM model from the config sheet to use AI transcription.
-                // Don't auto-select an audio model on appear.
+                // User picks a model from the config sheet to use AI transcription.
             }
         }
     }
@@ -1645,6 +1662,171 @@ private struct IOS26TranscriberScreen: View {
                 modelLoadError = error.localizedDescription
             }
         }
+    }
+
+    private func loadWhisperModel(_ model: AIModel) async {
+        guard model.isWhisperModel else { return }
+        do {
+            let modelDir = try SimplifiedFileManager.shared.getModelFolderURL(modelId: model.id, framework: .llamaCpp)
+            let fileName = URL(string: model.url)?.lastPathComponent ?? "ggml-model.bin"
+            let modelPath = modelDir.appendingPathComponent(fileName).path
+            try await whisper.load(modelPath: modelPath, modelName: model.name)
+        } catch {
+            modelLoadError = error.localizedDescription
+        }
+    }
+
+    // MARK: - Whisper Transcriber View
+
+    private var whisperTranscriberView: some View {
+        VStack(spacing: 12) {
+            VStack(spacing: 16) {
+                Button {
+                    if audioRecorder.isRecording {
+                        _ = audioRecorder.stopRecording()
+                    } else {
+                        Task { @MainActor in
+                            let destination = persistentAudioStorageDirectory()
+                                .appendingPathComponent("whisper_audio_\(UUID().uuidString)")
+                                .appendingPathExtension("m4a")
+                            _ = await audioRecorder.startRecording(
+                                outputURL: destination,
+                                autoStopAfterSilence: false,
+                                isFloat32Wav: false
+                            ) { url in
+                                selectedAudioURL = url
+                            }
+                        }
+                    }
+                } label: {
+                    ZStack {
+                        Circle()
+                            .fill(.ultraThinMaterial)
+                            .frame(width: 124, height: 124)
+                            .overlay(Circle().stroke(Color.white.opacity(0.2), lineWidth: 1))
+                        if audioRecorder.isPreparing {
+                            ProgressView().tint(.white).scaleEffect(1.2)
+                        } else {
+                            Image(systemName: audioRecorder.isRecording ? "stop.fill" : "mic.fill")
+                                .font(.system(size: 42, weight: .bold))
+                                .foregroundStyle(audioRecorder.isRecording ? .red : .white)
+                        }
+                    }
+                }
+                .contentShape(Circle())
+                .buttonStyle(.plain)
+                .disabled(audioRecorder.isPreparing || whisper.isTranscribing || isAudioTranscribing)
+
+                Text(
+                    audioRecorder.isPreparing
+                        ? settings.localized("processing")
+                        : audioRecorder.isRecording
+                        ? settings.localized("transcriber_recording")
+                        : settings.localized("transcriber_record")
+                )
+                .font(.headline)
+
+                Button {
+                    showAudioImporter = true
+                } label: {
+                    HStack {
+                        Image(systemName: "waveform.badge.plus")
+                        Text(settings.localized("transcriber_upload"))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.white)
+                .liquidGlassPrimaryButton(cornerRadius: 12)
+                .disabled(audioRecorder.isRecording || whisper.isTranscribing || isAudioTranscribing)
+
+                if let url = selectedAudioURL {
+                    HStack(spacing: 8) {
+                        Image(systemName: "waveform").foregroundStyle(.white.opacity(0.85))
+                        Text(url.lastPathComponent)
+                            .font(.subheadline)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Button(role: .destructive) { selectedAudioURL = nil }
+                            label: { Image(systemName: "trash") }
+                            .buttonStyle(.plain)
+                    }
+                    .padding(10)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+            }
+            .padding()
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.14), lineWidth: 1))
+            .padding(.horizontal)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    ForEach(whisperHistory) { session in
+                        transcriptionBoxView(for: session.text)
+                    }
+                    if whisper.isTranscribing || isAudioTranscribing {
+                        transcriptionBoxView(for: "")
+                    }
+                }
+                .padding(.horizontal)
+            }
+
+            Spacer(minLength: 0)
+
+            Button {
+                guard let url = selectedAudioURL else { return }
+                audioTranscriptionTask?.cancel()
+                audioTranscriptionTask = Task {
+                    isAudioTranscribing = true
+                    defer { isAudioTranscribing = false }
+                    do {
+                        let text = try await whisper.transcribeFile(url: url)
+                        if !text.isEmpty {
+                            whisperHistory.append(TranscriptionSession(id: UUID(), text: text, timestamp: Date()))
+                        }
+                        selectedAudioURL = nil
+                    } catch {
+                        NSLog("[WhisperBackend] transcription error: \(error)")
+                    }
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    if whisper.isTranscribing || isAudioTranscribing {
+                        ProgressView().tint(.white).scaleEffect(0.85)
+                    } else {
+                        Image(systemName: "waveform")
+                            .font(.system(size: 12, weight: .bold))
+                    }
+                    Text(whisperBottomButtonTitle).lineLimit(1)
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 52)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.white)
+            .liquidGlassPrimaryButton(cornerRadius: 12)
+            .disabled(whisperBottomButtonDisabled)
+            .padding(.horizontal)
+            .padding(.bottom, 8)
+        }
+    }
+
+    private var whisperBottomButtonTitle: String {
+        if whisper.isTranscribing || isAudioTranscribing { return settings.localized("whisper_transcribing") }
+        if selectedAudioURL != nil { return settings.localized("transcriber_transcribe") }
+        return settings.localized("transcriber_record")
+    }
+
+    private var whisperBottomButtonDisabled: Bool {
+        if whisper.isTranscribing || isAudioTranscribing { return false }
+        return selectedAudioURL == nil
     }
 }
 

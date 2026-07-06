@@ -797,5 +797,15 @@
 "image_upscale_models" = "שיפור תמונה";
 "image_upscale_models_description" = "מודלי בינה מלאכותית מואצי QNN לשיפור רזולוציית תמונות עד פי 4";
 
+"asr_models" = "מודלי ASR";
+"asr_models_description" = "מודלי Whisper לזיהוי דיבור לתמלול ללא חיבור";
+"whisper_model_label" = "מודל Whisper";
+"whisper_select_model" = "בחר מודל Whisper";
+"whisper_no_model" = "לא נטען מודל Whisper";
+"whisper_load_model_hint" = "הקש על הגדרות כדי לבחור ולטעון מודל Whisper";
+"whisper_download_hint" = "הורד מודל ASR כדי להשתמש בתמלול Whisper";
+"whisper_live_transcription" = "תמלול חי עם Whisper";
+"whisper_transcribing" = "מתמלל עם Whisper…";
+
 "on_device_ai_engine" = "מנוע בינה מלאכותית על המכשיר";
 "secure_private" = "מאובטח ופרטי";
