@@ -914,7 +914,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         }
         val normalizedPrompt = prompt.trim()
 
-        // Proactively reset Nexa KV cache at 90% context — keeps all chat messages visible.
+        // Proactively reset GenieX KV cache at 90% context — keeps all chat messages visible.
         val needsContextReset = shouldResetSessionBeforeMessage(normalizedPrompt)
         if (needsContextReset) {
             // Advance the ring offset to the current message chars so the ring drops back down.
@@ -952,7 +952,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             
             try {
                 // Reset the inference session synchronously (before generation) when context was at 75%.
-                // This clears the Nexa KV cache via destroy+reload so the new generation starts fresh.
+                // This clears the GenieX KV cache via destroy+reload so the new generation starts fresh.
                 if (needsContextReset) {
                     val session = chatSessionStore[_activeChatSessionId.value]
                     if (session != null) {

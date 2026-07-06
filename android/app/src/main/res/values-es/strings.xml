@@ -884,6 +884,7 @@
     <string name="llm_model">Modelo LLM</string>
     <string name="voice_model">Modelo de voz</string>
     <string name="gemma_voice_option">Gemma</string>
+        <string name="asr_model_backend"></string>
     <string name="llm_model_backend">Backend del modelo LLM</string>
 </resources>
 

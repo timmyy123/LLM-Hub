@@ -173,7 +173,7 @@ class OnnxInferenceService @Inject constructor(
     }
 
     override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?, deviceId: String?): Boolean {
-        // ONNX backend does not use deviceId (NPU handled by Nexa/GGUF path)
+        // ONNX backend does not use deviceId (NPU handled by GenieX/GGUF path)
         return loadModelInternal(model, preferredBackend)
     }
 
@@ -213,7 +213,7 @@ class OnnxInferenceService @Inject constructor(
                         ortEnvironment = OrtEnvironment.getEnvironment()
                     } catch (e: UnsatisfiedLinkError) {
                         Log.e(TAG, "ONNX Runtime native library conflict (libonnxruntime.so). " +
-                            "This usually means the Nexa SDK's bundled copy was loaded instead of Microsoft's. " +
+                            "This usually means the GenieX SDK's bundled copy was loaded instead of Microsoft's. " +
                             "Clean build and reinstall required.", e)
                         return@withContext
                     } catch (e: ExceptionInInitializerError) {

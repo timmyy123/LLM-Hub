@@ -881,6 +881,7 @@
     <string name="llm_model">LLM 모델</string>
     <string name="voice_model">음성 모델</string>
     <string name="gemma_voice_option">Gemma</string>
+        <string name="asr_model_backend"></string>
     <string name="llm_model_backend">LLM 모델 백엔드</string>
 </resources>
 

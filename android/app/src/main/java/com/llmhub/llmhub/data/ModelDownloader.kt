@@ -241,7 +241,7 @@ class ModelDownloader(
     fun downloadModel(model: LLMModel): Flow<DownloadStatus> = flow {
         Log.i(TAG, "Preparing to download model: ${model.name} from ${model.url}")
 
-        if (model.modelFormat == "onnx" && model.additionalFiles.isNotEmpty()) {
+        if ((model.modelFormat == "onnx" || model.modelFormat == "whisperkit") && model.additionalFiles.isNotEmpty()) {
             downloadOnnxModel(model).collect { emit(it) }
             return@flow
         }

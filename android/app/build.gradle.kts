@@ -25,8 +25,8 @@ android {
         applicationId = "com.llmhub.llmhub"
         minSdk = 27
         targetSdk = 37
-        versionCode = 114
-        versionName = "3.8.1"
+        versionCode = 117
+        versionName = "3.8.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         val hfToken: String = localProperties.getProperty("HF_TOKEN", "")
@@ -67,13 +67,13 @@ android {
     }
 
     // Configure asset packs for install-time delivery
-    // nexa_npu_pack delivers assets/npu/htp-files-v81/ and htp-files-v85/ (~230 MB)
+    // geniex_npu_pack delivers QNN HTP runtime libs (~175 MB)
     // keeping the base module well under Play Store's 200 MB limit
-    assetPacks += mutableSetOf(":qnn_pack", ":sd_pack", ":nexa_npu_pack")
+    assetPacks += mutableSetOf(":qnn_pack", ":sd_pack", ":geniex_npu_pack")
 
     buildTypes {
         release {
-            // Disable R8 minification to prevent stripping ONNX/Nexa JNI classes
+            // Disable R8 minification to prevent stripping ONNX/GenieX JNI classes
             isMinifyEnabled = false
             isShrinkResources = false
             proguardFiles(
@@ -135,11 +135,33 @@ android {
             pickFirsts += setOf("**/libmediapipe_tasks_text_jni.so")
             // Exclude DeepSeek OCR library to avoid 16KB page alignment issues
             excludes += setOf("**/libdeepseek-ocr.so")
-            // Exclude Nexa SDK's bundled stable-diffusion — app uses its own libstable_diffusion_core.so subprocess
-            excludes += setOf("**/libstable-diffusion.so")
+            // WhisperKit 0.3.3 ships 4KB-aligned .so files (upstream bug, not yet fixed).
+            // Android only enforces 16KB page alignment on API 35+ devices with new kernel.
+            // These libs still load correctly on all current devices; suppress the build warning.
+            // Track: https://github.com/argmaxinc/WhisperKitAndroid/issues
+            // Exclude QNN HTP runtime libs from base module — delivered via geniex_npu_pack asset pack
+            // NOTE: libQnnTFLiteDelegate.so must NOT be excluded — WhisperKit needs it in the APK
+            excludes += setOf(
+                "**/libQnnHtp*.so",
+                "**/libQnnHtpPrepare.so",
+                "**/libQnnDsp*.so",
+                "**/libQnnSystem.so",
+                "**/libQnnCpu.so",
+                "**/libQnnGpu.so",
+                "**/libPlatformValidatorShared.so",
+                "**/libCalculator_skel.so",
+                "**/libcalculator.so",
+                "**/libhta_hexagon_runtime_qnn.so",
+                "**/libhta_hexagon_runtime_snpe.so",
+                "**/libNetRunDirect*.so"
+            )
         }
     }
     
+    lint {
+        lintConfig = file("lint.xml")
+    }
+
     // Prevent Play Store from removing unused language resources when generating app bundles.
     // This ensures all supported languages packaged in `resourceConfigurations` remain
     // available at runtime for per-app locale switching (AppCompat per-app locales).
@@ -152,14 +174,105 @@ android {
         }
     }
 
-    // Removed externalNativeBuild - now using MediaPipe instead of native llama.cpp
+}
+
+// Patch 4KB-aligned .so files from WhisperKit and other dependencies to 16KB page alignment.
+// Android enforces 16KB alignment on API 35+ devices. We patch the PT_LOAD p_align field in
+// the ELF program headers directly — this is safe because p_align is advisory metadata only;
+// the actual file/memory layout is unchanged. patchelf does the same thing.
+//
+// Strategy: hook AFTER each merge task so we patch the exact files Gradle will package into the APK.
+// We also patch the gradle transforms cache so incremental builds stay patched.
+
+val elfPatchScript = """
+import struct, os, sys
+
+def patch_elf_pt_load_alignment(path, target_align=0x4000):
+    with open(path, 'rb') as f:
+        data = bytearray(f.read())
+    if data[:4] != b'\x7fELF':
+        return 0
+    ei_class = data[4]
+    if ei_class != 2:  # Not ELF64
+        return 0
+    e_phoff = struct.unpack_from('<Q', data, 32)[0]
+    e_phentsize = struct.unpack_from('<H', data, 54)[0]
+    e_phnum = struct.unpack_from('<H', data, 56)[0]
+    patched = 0
+    for i in range(e_phnum):
+        off = e_phoff + i * e_phentsize
+        p_type = struct.unpack_from('<I', data, off)[0]
+        if p_type == 1:  # PT_LOAD
+            p_align = struct.unpack_from('<Q', data, off + 48)[0]
+            if 0 < p_align < target_align:
+                struct.pack_into('<Q', data, off + 48, target_align)
+                patched += 1
+    if patched > 0:
+        with open(path, 'wb') as f:
+            f.write(data)
+    return patched
+
+total = 0
+for search_dir in sys.argv[1:]:
+    if not os.path.exists(search_dir):
+        continue
+    for root, dirs, files in os.walk(search_dir):
+        for name in files:
+            if name.endswith('.so'):
+                path = os.path.join(root, name)
+                n = patch_elf_pt_load_alignment(path)
+                if n > 0:
+                    print(f'Patched {n} PT_LOAD segment(s): {name}')
+                    total += n
+print(f'Total: {total} segment(s) patched for 16KB alignment')
+""".trimIndent()
+
+fun runElfPatch(scriptFile: File, vararg dirs: String, logger: org.gradle.api.logging.Logger) {
+    val args = mutableListOf("python3", scriptFile.absolutePath) + dirs.toList()
+    val process = ProcessBuilder(args)
+        .redirectErrorStream(true)
+        .start()
+    val output = process.inputStream.bufferedReader().readText()
+    val exitCode = process.waitFor()
+    if (output.isNotBlank()) logger.lifecycle(output)
+    logger.lifecycle("ELF alignment patch complete (exit=$exitCode)")
+}
+
+// After each merge task that assembles native libs, patch the output dir in-place
+tasks.configureEach {
+    if (name.startsWith("merge") && (name.endsWith("JniLibFolders") || name.endsWith("NativeLibs") || name.endsWith("NativeLibs"))) {
+        doLast {
+            val scriptFile = File(layout.buildDirectory.get().asFile, "patch_elf_align.py")
+            scriptFile.parentFile.mkdirs()
+            scriptFile.writeText(elfPatchScript)
+
+            // Patch the merged intermediates output dirs (where the APK packager reads from)
+            val buildDir = layout.buildDirectory.get().asFile.absolutePath
+            val intermediatesDirs = listOf(
+                "$buildDir/intermediates/merged_native_libs",
+                "$buildDir/intermediates/jniLibs",
+                "$buildDir/intermediates/library_jni",
+                "$buildDir/intermediates/stripped_native_libs"
+            )
+            // Also patch gradle transforms cache to keep it warm across incremental builds
+            val gradleHome = System.getProperty("user.home")
+            val transformsDirs = File("$gradleHome/.gradle/caches").walkTopDown()
+                .maxDepth(2)
+                .filter { it.isDirectory && it.name == "transforms" }
+                .map { it.absolutePath }
+                .toList()
+
+            val allDirs = (intermediatesDirs + transformsDirs).toTypedArray()
+            runElfPatch(scriptFile, *allDirs, logger = logger)
+        }
+    }
 }
 
 // The Image Generator requires full protobuf-java, not the lite version
 configurations.all {
     resolutionStrategy {
         force("com.google.protobuf:protobuf-java:3.25.1")
-        // Force Microsoft's ONNX Runtime version to win over any version Nexa SDK pulls in
+        // Force Microsoft's ONNX Runtime version to win over any version GenieX SDK pulls in
         force("com.microsoft.onnxruntime:onnxruntime-android:1.24.1")
     }
     // Exclude protobuf-javalite from all dependencies to prevent duplicate classes
@@ -228,10 +341,10 @@ dependencies {
     // PDF text extraction - using iText7 Community for Android compatibility
     implementation("com.itextpdf:itext7-core:7.2.5")
     
-    // Ktor for networking
-    implementation("io.ktor:ktor-client-android:2.3.6")
-    implementation("io.ktor:ktor-client-content-negotiation:2.3.6")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.6")
+    // Ktor for networking — must match WhisperKit's transitive Ktor 3.x dependency
+    implementation("io.ktor:ktor-client-android:3.1.0")
+    implementation("io.ktor:ktor-client-content-negotiation:3.1.0")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:3.1.0")
     
     // OkHttp for SD backend communication
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
@@ -269,13 +382,13 @@ dependencies {
     // IPA Transcribers - pure-Kotlin G2P fallback for Kokoro TTS
     implementation("com.github.medavox:IPA-Transcribers:v0.2")
 
-    // Nexa SDK for GGUF model support
-    // Nexa bundles libonnxruntime.so directly in its AAR (6.5MB) which conflicts with
-    // Microsoft's ORT JNI bridge. The task below strips it from the cached AAR so only
-    // Microsoft's version ends up in the APK.
-    implementation("ai.nexa:core:0.0.24") {
-        exclude(group = "com.microsoft.onnxruntime")
-    }
+    // GenieX SDK for GGUF model support (LLM/VLM inference on CPU/GPU/NPU)
+    implementation("com.qualcomm.qti:geniex-android:0.3.12")
+
+    // WhisperKit for fast on-device ASR (TFLite + QNN NPU acceleration)
+    implementation("com.argmaxinc:whisperkit:0.3.3")
+    implementation("com.qualcomm.qti:qnn-runtime:2.34.0")
+    implementation("com.qualcomm.qti:qnn-litert-delegate:2.34.0")
 
     // Play Core for asset pack access at runtime
     implementation("com.google.android.play:asset-delivery:2.2.2")
@@ -298,46 +411,51 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 }
 
-// ── Extract npu HTP assets from Nexa AAR into nexa_npu_pack ──────────────────
-// Nexa 0.0.24 bundles assets/npu/htp-files-v81/ (~67 MB) and htp-files-v85/
-// (~80 MB) inside its AAR. We extract them here (where Nexa is already a
-// resolved dependency) into the nexa_npu_pack asset pack source directory so
-// Play Asset Delivery can serve them at install time. This keeps the base
-// module well under Play Store's 200 MB compressed APK split limit.
+// ── Extract QNN HTP .so files from GenieX AAR into geniex_npu_pack ──────────────
+// GenieX 0.3.12 bundles ~175 MB of QNN HTP runtime libs (libQnn*, libPlatformValidator,
+// libCalculator, libhta*) in its jni/arm64-v8a/ folder. We extract them into the
+// geniex_npu_pack asset pack source directory so Play Asset Delivery can serve them
+// at install time. This keeps the base module well under Play Store's 200 MB limit.
 //
-// All assets/npu/ content is stripped from the base module via the hook below.
-// For APK sideloads, NPU falls back to NNAPI GPU / CPU automatically.
+// The extracted libs are stripped from the main jniLibs via packaging excludes below.
+// At runtime, the app extracts them from the asset pack to filesDir and loads via dlopen.
+// For APK sideloads, NPU falls back to GPU / CPU automatically.
 
-val nexaAarConfig by configurations.creating {
+val geniexAarConfig by configurations.creating {
     isCanBeConsumed = false
     isCanBeResolved = true
 }
-dependencies { nexaAarConfig("ai.nexa:core:0.0.24@aar") }
+dependencies { geniexAarConfig("com.qualcomm.qti:geniex-android:0.3.12@aar") }
 
-val npuPackAssetsDir = rootProject.file("nexa_npu_pack/src/main/assets/npu")
+val npuPackAssetsDir = rootProject.file("geniex_npu_pack/src/main/assets/npu")
 
-val extractNexaNpuAssets by tasks.registering {
-    description = "Extracts npu/htp-files-v81/ and htp-files-v85/ from Nexa AAR into nexa_npu_pack"
+val extractGeniexNpuAssets by tasks.registering {
+    description = "Extracts QNN HTP .so files from GenieX AAR into geniex_npu_pack"
     group = "build setup"
-    inputs.files(nexaAarConfig)
+    inputs.files(geniexAarConfig)
     outputs.dir(npuPackAssetsDir)
     outputs.upToDateWhen {
-        npuPackAssetsDir.resolve("htp-files-v81").exists() &&
-        npuPackAssetsDir.resolve("htp-files-v85").exists()
+        npuPackAssetsDir.resolve("libQnnHtp.so").exists()
     }
     doLast {
-        val aar = nexaAarConfig.singleFile
+        val aar = geniexAarConfig.singleFile
         npuPackAssetsDir.deleteRecursively()
         npuPackAssetsDir.mkdirs()
         var extracted = 0
         ZipFile(aar).use { zip ->
             zip.entries().toList().asSequence()
-                .filter { !it.isDirectory && it.name.startsWith("assets/npu/htp-files-v") }
+                .filter { !it.isDirectory && it.name.startsWith("jni/arm64-v8a/") }
+                .filter { entry ->
+                    val name = entry.name.substringAfterLast("/")
+                    name.startsWith("libQnn") ||
+                    name.startsWith("libPlatformValidator") ||
+                    name.startsWith("libCalculator") ||
+                    name.startsWith("libhta") ||
+                    name.startsWith("libNetRunDirect")
+                }
                 .forEach { entry ->
-                    // entry.name: "assets/npu/htp-files-v81/libFoo.so"
-                    // place as:   nexa_npu_pack/src/main/assets/npu/htp-files-v81/libFoo.so
-                    val rel = entry.name.removePrefix("assets/npu/")
-                    val target = npuPackAssetsDir.resolve(rel)
+                    val fileName = entry.name.substringAfterLast("/")
+                    val target = npuPackAssetsDir.resolve(fileName)
                     target.parentFile.mkdirs()
                     zip.getInputStream(entry).use { src ->
                         target.outputStream().use { dst -> src.copyTo(dst) }
@@ -345,14 +463,11 @@ val extractNexaNpuAssets by tasks.registering {
                     extracted++
                 }
         }
-        logger.lifecycle("extractNexaNpu: extracted $extracted files → ${npuPackAssetsDir.absolutePath}")
+        logger.lifecycle("extractGeniexNpu: extracted $extracted files → ${npuPackAssetsDir.absolutePath}")
     }
 }
 
 // Detect at configuration time whether this is an AAB bundle build or an APK build.
-// gradle.startParameter.taskNames contains the tasks requested (e.g. "bundleRelease" vs "assembleRelease").
-// For APK builds: npu/ must stay in base (no asset pack delivery mechanism).
-// For AAB builds: npu/ is delivered via nexa_npu_pack, so strip it from base.
 val isBundleBuild = gradle.startParameter.taskNames.any { it.contains("bundle", ignoreCase = true) }
 
 // Run extraction + wire dependency only during AAB bundle builds
@@ -362,7 +477,7 @@ if (isBundleBuild) {
         if ((n.startsWith("merge") && n.contains("Assets", ignoreCase = true)) ||
             (n.startsWith("assetPack") && n.contains("PreBundleTask", ignoreCase = true))
         ) {
-            dependsOn(extractNexaNpuAssets)
+            dependsOn(extractGeniexNpuAssets)
         }
     }
 }

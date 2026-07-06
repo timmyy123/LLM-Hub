@@ -881,6 +881,7 @@
     <string name="llm_model">نموذج LLM</string>
     <string name="voice_model">نموذج الصوت</string>
     <string name="gemma_voice_option">Gemma</string>
+        <string name="asr_model_backend"></string>
     <string name="llm_model_backend">الواجهة الخلفية لنموذج LLM</string>
 </resources>
 

@@ -68,6 +68,9 @@ interface InferenceService {
     fun isVisionCurrentlyDisabled(): Boolean
     fun isAudioCurrentlyDisabled(): Boolean
     fun isGpuBackendEnabled(): Boolean
+    fun isNpuBackendEnabled(): Boolean = false
+    /** Decode speed in tok/s from the most recent generation; null if unavailable. */
+    fun getLastDecodeSpeedTokPerSec(): Double? = null
     // Return the applied/effective max tokens for a model (honors overrides)
     fun getEffectiveMaxTokens(model: LLMModel): Int
 }
@@ -225,10 +228,7 @@ class MediaPipeInferenceService(private val applicationContext: Context) : Infer
     override suspend fun resetChatSession(chatId: String) {
         sessionMutex.withLock {
             Log.d(TAG, "Resetting session for chat $chatId")
-            
-            // Record the session reset
-            recordSessionReset(chatId)
-            
+
             val instance = modelInstance ?: return@withLock
             
             // Close current session and create a new one (Gallery approach)
@@ -290,9 +290,10 @@ class MediaPipeInferenceService(private val applicationContext: Context) : Infer
                 // Create new session with same options
                 val newSession = createSession(instance.engine)
                 instance.session = newSession
+                recordSessionReset(chatId)
                 Log.d(TAG, "Created new session for chat $chatId")
                 estimatedSessionTokens = 0
-                
+
                 // Give MediaPipe time to clean up (Gallery uses 500ms)
                 delay(500)
                 

@@ -17,8 +17,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.llmhub.llmhub.R
+import com.llmhub.llmhub.data.DeviceInfo
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.hasNativeVoiceSupport
+import com.llmhub.llmhub.inference.WhisperBackend
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,6 +42,8 @@ fun ModelSelectorCard(
     voiceModels: List<LLMModel> = emptyList(),
     selectedVoiceModel: LLMModel? = null,
     onVoiceModelSelected: ((LLMModel?) -> Unit)? = null,
+    selectedAsrBackend: WhisperBackend? = null,
+    onAsrBackendSelected: ((WhisperBackend) -> Unit)? = null,
     llmModelLabel: String? = null,
     voiceModelLabel: String? = null,
     backendLabel: String? = null
@@ -248,13 +252,74 @@ fun ModelSelectorCard(
                     }
                 }
                 
+                // ASR Backend Selection (shown when a WhisperKit voice model is selected)
+                val isWhisperKitVoice = selectedVoiceModel?.modelFormat == "whisperkit"
+                if (onAsrBackendSelected != null && isWhisperKitVoice && selectedAsrBackend != null) {
+                    var showAsrBackendMenu by remember { mutableStateOf(false) }
+                    val npuAvailable = DeviceInfo.isQualcommNpuSupported()
+                    ExposedDropdownMenuBox(
+                        expanded = showAsrBackendMenu,
+                        onExpandedChange = { showAsrBackendMenu = !showAsrBackendMenu }
+                    ) {
+                        OutlinedTextField(
+                            value = when (selectedAsrBackend) {
+                                WhisperBackend.CPU -> stringResource(R.string.backend_cpu)
+                                WhisperBackend.GPU -> stringResource(R.string.backend_gpu)
+                                WhisperBackend.NPU -> stringResource(R.string.backend_npu)
+                            },
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text(stringResource(R.string.asr_model_backend)) },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showAsrBackendMenu) },
+                            leadingIcon = {
+                                Icon(
+                                    when (selectedAsrBackend) {
+                                        WhisperBackend.NPU -> Icons.Default.Bolt
+                                        WhisperBackend.GPU -> Icons.Default.Speed
+                                        else -> Icons.Default.Computer
+                                    },
+                                    contentDescription = null
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth().menuAnchor(),
+                            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        ExposedDropdownMenu(
+                            expanded = showAsrBackendMenu,
+                            onDismissRequest = { showAsrBackendMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.backend_cpu)) },
+                                onClick = { onAsrBackendSelected(WhisperBackend.CPU); showAsrBackendMenu = false },
+                                leadingIcon = { Icon(Icons.Default.Computer, contentDescription = null) },
+                                trailingIcon = { if (selectedAsrBackend == WhisperBackend.CPU) Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.backend_gpu)) },
+                                onClick = { onAsrBackendSelected(WhisperBackend.GPU); showAsrBackendMenu = false },
+                                leadingIcon = { Icon(Icons.Default.Speed, contentDescription = null) },
+                                trailingIcon = { if (selectedAsrBackend == WhisperBackend.GPU) Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary) }
+                            )
+                            if (npuAvailable) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.backend_npu)) },
+                                    onClick = { onAsrBackendSelected(WhisperBackend.NPU); showAsrBackendMenu = false },
+                                    leadingIcon = { Icon(Icons.Default.Bolt, contentDescription = null) },
+                                    trailingIcon = { if (selectedAsrBackend == WhisperBackend.NPU) Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary) }
+                                )
+                            }
+                        }
+                    }
+                }
+
                 // Backend Selection
                 val isGemma4_12B = remember(selectedModel) {
                     selectedModel?.name?.contains("Gemma-4 12B", ignoreCase = true) == true ||
                         selectedModel?.name?.contains("Gemma 4 12B", ignoreCase = true) == true
                 }
                 AnimatedVisibility(
-                    visible = selectedModel != null && !isGemma4_12B,
+                    visible = selectedModel != null && selectedBackend != null && !isGemma4_12B,
                     enter = fadeIn() + expandVertically()
                 ) {
                     ExposedDropdownMenuBox(
@@ -386,7 +451,7 @@ fun ModelSelectorCard(
                 }
 
                 AnimatedVisibility(
-                    visible = selectedModel != null && selectedBackend != null,
+                    visible = selectedModel != null && (selectedBackend != null || selectedVoiceModel?.modelFormat == "whisperkit"),
                     enter = fadeIn() + expandVertically()
                 ) {
                     Column(

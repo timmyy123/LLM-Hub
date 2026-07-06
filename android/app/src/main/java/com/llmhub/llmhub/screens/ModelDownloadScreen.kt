@@ -88,7 +88,7 @@ private fun is8GenFamilyDeviceForQnn(): Boolean {
 private fun shouldShowNpuBadge(model: LLMModel): Boolean {
     val format = model.modelFormat.lowercase()
     return when (format) {
-        // GGUF NPU badge only on 8 Gen 4 devices (includes imported GGUF)
+        // GGUF NPU badge on 888/8gen1/8gen2/8gen3/8gen4/8gen5/7gen4 devices
         "gguf" -> is8Gen4Device()
         // QNN models (listed + imported) on 8 Gen 1/2/3/4-class devices
         "qnn_npu" -> is8GenFamilyDeviceForQnn()

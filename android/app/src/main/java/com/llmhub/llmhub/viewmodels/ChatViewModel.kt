@@ -1809,11 +1809,8 @@ class ChatViewModel(
         if (finalContent.isNotBlank()) {
 
             val actualTokens = kotlin.math.ceil(finalContent.length / 4.0).toInt()
-            val tokensPerSecond = if (generationTimeMs > 0) {
-                (actualTokens * 1000.0) / generationTimeMs
-            } else {
-                0.0
-            }
+            val tokensPerSecond = inferenceService.getLastDecodeSpeedTokPerSec()
+                ?: if (generationTimeMs > 0) (actualTokens * 1000.0) / generationTimeMs else 0.0
 
             Log.d("ChatViewModel", "Saving stats for message $placeholderId: $actualTokens tokens, ${String.format("%.1f", tokensPerSecond)} tok/sec")
 
@@ -2301,7 +2298,8 @@ class ChatViewModel(
                 syncCurrentlyLoadedModel()
                 // Set the first-generation guard
                 firstGenerationSinceLoad = true
-                Log.d("ChatViewModel", "Successfully loaded new model: ${newModel.name} with backend: $backend")
+                val loadedBackendLabel = if (inferenceService.isNpuBackendEnabled()) "NPU" else backend?.name ?: "CPU"
+                Log.d("ChatViewModel", "Successfully loaded new model: ${newModel.name} with backend: $loadedBackendLabel")
                 
                 // Clear the first generation guard after a reasonable timeout
                 viewModelScope.launch {
@@ -2454,7 +2452,8 @@ class ChatViewModel(
                 syncCurrentlyLoadedModel()
                 // Set the first-generation guard
                 firstGenerationSinceLoad = true
-                Log.d("ChatViewModel", "Successfully loaded new model: ${newModel.name} with backend: ${_selectedBackend.value}, vision disabled: $isVisionDisabled, audio disabled: $isAudioDisabled")
+                val loadedBackendLabel2 = if (inferenceService.isNpuBackendEnabled()) "NPU" else _selectedBackend.value?.name ?: "CPU"
+                Log.d("ChatViewModel", "Successfully loaded new model: ${newModel.name} with backend: $loadedBackendLabel2, vision disabled: $isVisionDisabled, audio disabled: $isAudioDisabled")
                 
                 // Clear the first generation guard after a reasonable timeout
                 viewModelScope.launch {
@@ -2768,7 +2767,7 @@ class ChatViewModel(
         
         val limitBase = inferenceService.getEffectiveMaxTokens(model)
         
-        // For local GGUF/Nexa, we can use most of the window for history. 
+        // For local GGUF/GenieX, we can use most of the window for history. 
         // We'll leave only a 2048 token buffer for the response, using the rest for history.
         val maxContextTokens = if (model.modelFormat.equals("gguf", ignoreCase = true)) {
             (limitBase - 2048).coerceAtLeast(limitBase / 2).coerceAtLeast(512)

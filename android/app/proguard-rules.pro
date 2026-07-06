@@ -59,9 +59,7 @@
     public static ** valueOf(java.lang.String);
 }
 
-# ── Nexa SDK Protection ─────────────────────────────────────────────
-# Nexa SDK uses native libraries and JNI - preserve all classes
--keep class ai.nexa.** { *; }
--keepclassmembers class ai.nexa.** { *; }
--keep class ai.nexa.core.** { *; }
--keepclassmembers class ai.nexa.core.** { *; }
+# ── GenieX SDK Protection ───────────────────────────────────────────
+# GenieX SDK uses native libraries and JNI - preserve all classes
+-keep class com.geniex.sdk.** { *; }
+-keepclassmembers class com.geniex.sdk.** { *; }

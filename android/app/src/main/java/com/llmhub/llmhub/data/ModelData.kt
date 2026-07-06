@@ -15,20 +15,24 @@ object DeviceInfo {
     }
 
     private val chipsetModelSuffixes = mapOf(
+        "SM8350" to "888",    // Snapdragon 888
+        "SM8350P" to "888",   // Snapdragon 888+
         "SM8475" to "8gen1",  // 8+ Gen 1
         "SM8450" to "8gen1",  // 8 Gen 1
         "SM8550" to "8gen2",  // 8 Gen 2
         "SM8550P" to "8gen2",
         "QCS8550" to "8gen2",
         "QCM8550" to "8gen2",
-        "SM8650" to "8gen3",  // 8 Gen 3 (updated)
+        "SM8650" to "8gen3",  // 8 Gen 3
         "SM8650P" to "8gen3",
+        "SM8735" to "8gen3",  // 8s Gen 3
         "SM8750" to "8gen4",  // 8 Elite / Gen 4
         "SM8750P" to "8gen4",
-        "SM8735" to "8gen3",  // 8s Gen 3
         "SM8845" to "8gen5",  // Snapdragon 8 Gen 5
         "SM8850" to "8gen5",  // Snapdragon 8 Elite Gen 5
-        "SM8850P" to "8gen5"
+        "SM8850P" to "8gen5",
+        "SM7675" to "7gen4",  // Snapdragon 7 Gen 4
+        "SM7675P" to "7gen4"
     )
 
     fun getChipsetSuffix(): String? {
@@ -37,8 +41,7 @@ object DeviceInfo {
     }
 
     fun isQualcommNpuSupported(): Boolean {
-        // App policy: expose GGUF NPU option on 8 Gen 4 and 8 Gen 5 class devices.
-        return getChipsetSuffix() in setOf("8gen4", "8gen5")
+        return getChipsetSuffix() in setOf("888", "8gen1", "8gen2", "8gen3", "8gen4", "8gen5", "7gen4")
     }
 
     /**
@@ -3224,118 +3227,88 @@ object ModelData {
             contextWindowSize = 524288,
             modelFormat = "gguf"
         ),
-        // Whisper ASR Models (whisper.cpp GGML)
+        // WhisperKit ASR Models (TFLite + QNN NPU acceleration via argmaxinc/WhisperKit)
+        // Each model needs 5 files: AudioEncoder.tflite, MelSpectrogram.tflite, TextDecoder.tflite,
+        // tokenizer.json, config.json — all required by the WhisperKit JNI layer.
         LLMModel(
             name = "Whisper Tiny (English-only)",
-            description = "High-speed English-only automatic speech recognition model (74MB)",
-            url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny.en.bin?download=true",
+            description = "Ultra-fast English-only ASR with NPU acceleration",
+            url = "https://huggingface.co/argmaxinc/whisperkit-litert/resolve/main/openai_whisper-tiny.en/AudioEncoder.tflite",
             category = "asr",
-            sizeBytes = 77704715L,
-            source = "OpenAI via ggerganov",
+            sizeBytes = 155209020L, // 3 TFLite + tokenizer.json (2405679) + config.json (1937)
+            source = "OpenAI via WhisperKit",
             supportsVision = false,
             supportsAudio = true,
-            supportsGpu = false,
+            supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 2),
             contextWindowSize = 0,
-            modelFormat = "bin"
+            modelFormat = "whisperkit",
+            additionalFiles = listOf(
+                "https://huggingface.co/argmaxinc/whisperkit-litert/resolve/main/openai_whisper-tiny.en/MelSpectrogram.tflite",
+                "https://huggingface.co/argmaxinc/whisperkit-litert/resolve/main/openai_whisper-tiny.en/TextDecoder.tflite",
+                "https://huggingface.co/openai/whisper-tiny.en/resolve/main/tokenizer.json",
+                "https://huggingface.co/openai/whisper-tiny.en/resolve/main/config.json"
+            )
         ),
         LLMModel(
             name = "Whisper Tiny (Multilingual)",
-            description = "High-speed multilingual automatic speech recognition model with auto-detect (74MB)",
-            url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny.bin?download=true",
+            description = "Ultra-fast multilingual ASR with NPU acceleration and auto language detect",
+            url = "https://huggingface.co/argmaxinc/whisperkit-litert/resolve/main/openai_whisper-tiny/AudioEncoder.tflite",
             category = "asr",
-            sizeBytes = 77691713L,
-            source = "OpenAI via ggerganov",
+            sizeBytes = 155232685L, // 3 TFLite + tokenizer.json (2480466) + config.json (1983)
+            source = "OpenAI via WhisperKit",
             supportsVision = false,
             supportsAudio = true,
-            supportsGpu = false,
+            supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 2),
             contextWindowSize = 0,
-            modelFormat = "bin"
+            modelFormat = "whisperkit",
+            additionalFiles = listOf(
+                "https://huggingface.co/argmaxinc/whisperkit-litert/resolve/main/openai_whisper-tiny/MelSpectrogram.tflite",
+                "https://huggingface.co/argmaxinc/whisperkit-litert/resolve/main/openai_whisper-tiny/TextDecoder.tflite",
+                "https://huggingface.co/openai/whisper-tiny/resolve/main/tokenizer.json",
+                "https://huggingface.co/openai/whisper-tiny/resolve/main/config.json"
+            )
         ),
         LLMModel(
             name = "Whisper Base (English-only)",
-            description = "Balanced English-only speech recognition model (141MB)",
-            url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base.en.bin?download=true",
+            description = "Fast English-only ASR with NPU acceleration",
+            url = "https://huggingface.co/argmaxinc/whisperkit-litert/resolve/main/openai_whisper-base.en/AudioEncoder.tflite",
             category = "asr",
-            sizeBytes = 147964211L,
-            source = "OpenAI via ggerganov",
+            sizeBytes = 294658912L, // 3 TFLite + tokenizer.json (2405679) + config.json (1937)
+            source = "OpenAI via WhisperKit",
             supportsVision = false,
             supportsAudio = true,
-            supportsGpu = false,
-            requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 2),
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
             contextWindowSize = 0,
-            modelFormat = "bin"
+            modelFormat = "whisperkit",
+            additionalFiles = listOf(
+                "https://huggingface.co/argmaxinc/whisperkit-litert/resolve/main/openai_whisper-base.en/MelSpectrogram.tflite",
+                "https://huggingface.co/argmaxinc/whisperkit-litert/resolve/main/openai_whisper-base.en/TextDecoder.tflite",
+                "https://huggingface.co/openai/whisper-base.en/resolve/main/tokenizer.json",
+                "https://huggingface.co/openai/whisper-base.en/resolve/main/config.json"
+            )
         ),
         LLMModel(
             name = "Whisper Base (Multilingual)",
-            description = "Balanced multilingual speech recognition model with auto-detect (141MB)",
-            url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base.bin?download=true",
+            description = "Fast multilingual ASR with NPU acceleration and auto language detect",
+            url = "https://huggingface.co/argmaxinc/whisperkit-litert/resolve/main/openai_whisper-base/AudioEncoder.tflite",
             category = "asr",
-            sizeBytes = 147951465L,
-            source = "OpenAI via ggerganov",
+            sizeBytes = 294735793L, // 3 TFLite + tokenizer.json (2480466) + config.json (1983)
+            source = "OpenAI via WhisperKit",
             supportsVision = false,
             supportsAudio = true,
-            supportsGpu = false,
-            requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 2),
-            contextWindowSize = 0,
-            modelFormat = "bin"
-        ),
-        LLMModel(
-            name = "Whisper Small (English-only)",
-            description = "High-accuracy English-only speech recognition model (465MB)",
-            url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small.en.bin?download=true",
-            category = "asr",
-            sizeBytes = 487614201L,
-            source = "OpenAI via ggerganov",
-            supportsVision = false,
-            supportsAudio = true,
-            supportsGpu = false,
+            supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
             contextWindowSize = 0,
-            modelFormat = "bin"
-        ),
-        LLMModel(
-            name = "Whisper Small (Multilingual)",
-            description = "High-accuracy multilingual speech recognition model with auto-detect (465MB)",
-            url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small.bin?download=true",
-            category = "asr",
-            sizeBytes = 487601967L,
-            source = "OpenAI via ggerganov",
-            supportsVision = false,
-            supportsAudio = true,
-            supportsGpu = false,
-            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
-            contextWindowSize = 0,
-            modelFormat = "bin"
-        ),
-        LLMModel(
-            name = "Whisper Medium (Multilingual)",
-            description = "Very high-accuracy multilingual speech recognition model (1.43GB)",
-            url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-medium.bin?download=true",
-            category = "asr",
-            sizeBytes = 1533763059L,
-            source = "OpenAI via ggerganov",
-            supportsVision = false,
-            supportsAudio = true,
-            supportsGpu = false,
-            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
-            contextWindowSize = 0,
-            modelFormat = "bin"
-        ),
-        LLMModel(
-            name = "Whisper Large V3 Turbo (Multilingual)",
-            description = "State-of-the-art OpenAI multilingual speech recognition model (1.51GB)",
-            url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-large-v3-turbo.bin?download=true",
-            category = "asr",
-            sizeBytes = 1624555275L,
-            source = "OpenAI via ggerganov",
-            supportsVision = false,
-            supportsAudio = true,
-            supportsGpu = false,
-            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
-            contextWindowSize = 0,
-            modelFormat = "bin"
+            modelFormat = "whisperkit",
+            additionalFiles = listOf(
+                "https://huggingface.co/argmaxinc/whisperkit-litert/resolve/main/openai_whisper-base/MelSpectrogram.tflite",
+                "https://huggingface.co/argmaxinc/whisperkit-litert/resolve/main/openai_whisper-base/TextDecoder.tflite",
+                "https://huggingface.co/openai/whisper-base/resolve/main/tokenizer.json",
+                "https://huggingface.co/openai/whisper-base/resolve/main/config.json"
+            )
         )
         // Note: Gecko tokenizer removed - Gecko models have built-in tokenizers
     ) + upscalerModels + ttsModels + (if (DeviceInfo.getChipsetSuffix() in setOf("8gen3", "8gen4", "8gen5")) sdxlModels else emptyList())
