@@ -59,7 +59,7 @@ Android also includes Kokoro TTS models for local text-to-speech.
 - RAG with global memory for enhanced responses
 - Import custom models (.task, .litertlm, qnn,.mnn, .gguf)
 - Direct downloads from HuggingFace
-- 16 language interfaces
+- 17 language interfaces
 
 ## 🚧 Upcoming Features & Roadmap
 
