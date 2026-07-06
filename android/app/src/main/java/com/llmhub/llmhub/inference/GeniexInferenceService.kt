@@ -37,6 +37,7 @@ import com.geniex.sdk.bean.GenerationConfig
 import com.geniex.sdk.bean.LlmStreamResult
 import com.geniex.sdk.bean.ChatMessage
 import com.geniex.sdk.bean.LlmApplyChatTemplateOutput
+import com.geniex.sdk.bean.SamplerConfig
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.websearch.WebSearchService
 import com.llmhub.llmhub.websearch.DuckDuckGoSearchService
@@ -381,7 +382,7 @@ class GeniexInferenceService @Inject constructor(
                     nCtx = nCtx,
                     max_tokens = nCtx,
                     nGpuLayers = gpuLayers,
-                    enable_thinking = overrideEnableThinking ?: isThinkingModelForConfig
+                    enable_thinking = if (isThinkingModelForConfig) (overrideEnableThinking ?: true) else false
                 )
                 Log.i(
                     TAG,
@@ -769,24 +770,13 @@ class GeniexInferenceService @Inject constructor(
                     )
 
                     // Build base generation config
+                    val vlmSampler = SamplerConfig(
+                        temperatureVal, topPVal, topKVal,
+                        0.05f, 1.1f, 0f, 0f, 0, null, null
+                    )
                     val baseConfig = GenerationConfig().apply {
-                        try {
-                            val cls = this::class.java
-                            val fields = mapOf(
-                                "maxTokens" to maxTokensVal,
-                                "max_tokens" to maxTokensVal,
-                                "temperature" to temperatureVal,
-                                "topP" to topPVal,
-                                "top_p" to topPVal,
-                                "topK" to topKVal,
-                                "top_k" to topKVal
-                            )
-                            for ((fname, value) in fields) {
-                                try {
-                                    cls.getDeclaredField(fname).apply { isAccessible = true }.set(this, value)
-                                } catch (_: Exception) {}
-                            }
-                        } catch (_: Exception) {}
+                        maxTokens = maxTokensVal
+                        samplerConfig = vlmSampler
                     }
 
                     // APPLY: time the template + inject + generate steps so we can measure bottlenecks
@@ -863,24 +853,13 @@ class GeniexInferenceService @Inject constructor(
                             "<|channel|>analysis<|message|><|end|><|start|>assistant<|channel|>final<|message|>"
                     }
 
+                    val sampler = SamplerConfig(
+                        temperatureVal, topPVal, topKVal,
+                        0.05f, 1.1f, 0f, 0f, 0, null, null
+                    )
                     val genConfig = GenerationConfig().apply {
-                        try {
-                            val cls = this::class.java
-                            val fields = mapOf(
-                                "maxTokens" to maxTokensVal,
-                                "max_tokens" to maxTokensVal,
-                                "temperature" to temperatureVal,
-                                "topP" to topPVal,
-                                "top_p" to topPVal,
-                                "topK" to topKVal,
-                                "top_k" to topKVal
-                            )
-                            for ((fname, value) in fields) {
-                                try {
-                                    cls.getDeclaredField(fname).apply { isAccessible = true }.set(this, value)
-                                } catch (_: Exception) {}
-                            }
-                        } catch (_: Exception) {}
+                        maxTokens = maxTokensVal
+                        samplerConfig = sampler
                     }
 
                     val llmStart = System.currentTimeMillis()
