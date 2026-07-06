@@ -75,14 +75,15 @@ Quick Start
 
 
 Technology
-- **Android**: Kotlin + Jetpack Compose (Material 3), [Nexa SDK](https://github.com/NexaAI/nexa-sdk) (for LLM and ASR inference)
+- **Android**: Kotlin + Jetpack Compose (Material 3), [GenieX SDK](https://github.com/qualcomm-ai-research/geniex-android) (for LLM and VLM inference), [WhisperKit](https://github.com/argmaxinc/WhisperKitAndroid) (for ASR)
 - **iOS**: Swift + SwiftUI, [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks), [Draw Things (MediaGenerationKit)](https://drawthings.ai/), Apple Foundation Model
-- **LLM & ASR Runtime**: MediaPipe, LiteRT, Nexa SDK ASR (Whisper GGML on Android), Llama.cpp (via [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks) on iOS)
+- **LLM & ASR Runtime**: MediaPipe, LiteRT, GenieX SDK (GGUF on Android), WhisperKit (ASR with TFLite + QNN NPU on Android), Llama.cpp (via [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks) on iOS)
 - **Image & Video Gen**: [Draw Things (MediaGenerationKit)](https://drawthings.ai/) (iOS), Qualcomm QNN (Android)
 
 
 Acknowledgments
-- [Nexa SDK](https://github.com/NexaAI/nexa-sdk) — GGUF model inference support (credit shown in-app About) ⚡
+- [GenieX SDK](https://github.com/qualcomm-ai-research/geniex-android) — GGUF model inference support (credit shown in-app About) ⚡
+- [WhisperKit](https://github.com/argmaxinc/WhisperKitAndroid) — On-device ASR with TFLite + NPU acceleration
 - [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks) — iOS model runtime and LLM execution framework 🚀
 - [Draw Things](https://drawthings.ai/) — iOS image and video generation engine (MediaGenerationKit) 🎨
 - **Google, OpenAI, Meta, Microsoft, IBM, LiquidAI, Mistral, Primsm ML, HuggingFace** — model and tooling contributions
