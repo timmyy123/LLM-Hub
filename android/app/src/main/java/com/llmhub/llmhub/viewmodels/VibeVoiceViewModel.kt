@@ -133,9 +133,12 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             val context = getApplication<Application>()
             
-            // Standard LLM models (not ASR, not embedding)
+            // Standard LLM models (not ASR, not embedding, not vision projectors)
             val allModels = ModelAvailabilityProvider.loadAvailableModels(context, includeAsr = false)
-            val llmModels = allModels.filter { it.category == "text" || it.category == "multimodal" }
+            val llmModels = allModels.filter {
+                (it.category == "text" || it.category == "multimodal") &&
+                !it.name.contains("Projector", ignoreCase = true)
+            }
             _availableLlmModels.value = llmModels
 
             // ASR models
