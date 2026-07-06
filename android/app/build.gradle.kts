@@ -25,8 +25,8 @@ android {
         applicationId = "com.llmhub.llmhub"
         minSdk = 27
         targetSdk = 37
-        versionCode = 118
-        versionName = "3.8.2"
+        versionCode = 119
+        versionName = "3.8.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         val hfToken: String = localProperties.getProperty("HF_TOKEN", "")
