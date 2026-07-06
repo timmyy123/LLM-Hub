@@ -91,8 +91,9 @@ fun ChatSettingsSheet(
     }
     
     val isGemma4_12B = remember(selectedModel) {
-        selectedModel?.name?.contains("Gemma-4 12B", ignoreCase = true) == true ||
-            selectedModel?.name?.contains("Gemma 4 12B", ignoreCase = true) == true
+        selectedModel?.modelFormat == "litertlm" &&
+            (selectedModel?.name?.contains("Gemma-4 12B", ignoreCase = true) == true ||
+                selectedModel?.name?.contains("Gemma 4 12B", ignoreCase = true) == true)
     }
     
     val showBackendSelection = remember(selectedModel, canSelectAccelerator, isGemma4_12B) {
@@ -167,7 +168,7 @@ fun ChatSettingsSheet(
             val newBaseCap = MediaPipeInferenceService.getMaxTokensForModelStatic(model)
             val newIsGemma3n = model.name.contains("Gemma-3n", ignoreCase = true)
             val newIsPhi4Mini = model.name.contains("Phi-4 Mini", ignoreCase = true)
-            val newIsGemma4_12B = model.name.contains("Gemma-4 12B", ignoreCase = true) || model.name.contains("Gemma 4 12B", ignoreCase = true)
+            val newIsGemma4_12B = model.modelFormat == "litertlm" && (model.name.contains("Gemma-4 12B", ignoreCase = true) || model.name.contains("Gemma 4 12B", ignoreCase = true))
             val newDefaultUseGpu = if (newIsGemma4_12B) true else if (newIsPhi4Mini) false else model.supportsGpu
             
             try {
@@ -239,8 +240,9 @@ fun ChatSettingsSheet(
     }
 
     LaunchedEffect(selectedModel?.name, canSelectAccelerator, canUseNpuForSelectedModel) {
-        val isGemma4_12B = selectedModel?.name?.contains("Gemma-4 12B", ignoreCase = true) == true ||
-            selectedModel?.name?.contains("Gemma 4 12B", ignoreCase = true) == true
+        val isGemma4_12B = selectedModel?.modelFormat == "litertlm" &&
+            (selectedModel?.name?.contains("Gemma-4 12B", ignoreCase = true) == true ||
+                selectedModel?.name?.contains("Gemma 4 12B", ignoreCase = true) == true)
         if (isGemma4_12B) {
             useGpu = true
             useNpu = false

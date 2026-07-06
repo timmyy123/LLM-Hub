@@ -49,11 +49,7 @@ fun ModelSelectorCard(
     backendLabel: String? = null
 ) {
     val filteredModels = if (filterMultimodalOnly) {
-        models.filter { 
-            it.supportsAudio || it.supportsVision || 
-            it.name.contains("Gemma-4 12B", ignoreCase = true) || 
-            it.name.contains("Gemma 4 12B", ignoreCase = true)
-        }
+        models.filter { it.supportsAudio || it.supportsVision }
     } else {
         models
     }
@@ -314,12 +310,13 @@ fun ModelSelectorCard(
                 }
 
                 // Backend Selection
-                val isGemma4_12B = remember(selectedModel) {
-                    selectedModel?.name?.contains("Gemma-4 12B", ignoreCase = true) == true ||
-                        selectedModel?.name?.contains("Gemma 4 12B", ignoreCase = true) == true
+                val isLiteRtLmGemma4_12B = remember(selectedModel) {
+                    selectedModel?.modelFormat == "litertlm" &&
+                        (selectedModel.name.contains("Gemma-4 12B", ignoreCase = true) ||
+                            selectedModel.name.contains("Gemma 4 12B", ignoreCase = true))
                 }
                 AnimatedVisibility(
-                    visible = selectedModel != null && selectedBackend != null && !isGemma4_12B,
+                    visible = selectedModel != null && selectedBackend != null && !isLiteRtLmGemma4_12B,
                     enter = fadeIn() + expandVertically()
                 ) {
                     ExposedDropdownMenuBox(

@@ -92,8 +92,9 @@ fun FeatureModelSettingsSheet(
         selectedModel?.supportsGpu == true
     }
     val isGemma4_12B = remember(selectedModel) {
-        selectedModel?.name?.contains("Gemma-4 12B", ignoreCase = true) == true ||
-            selectedModel?.name?.contains("Gemma 4 12B", ignoreCase = true) == true
+        selectedModel?.modelFormat == "litertlm" &&
+            (selectedModel?.name?.contains("Gemma-4 12B", ignoreCase = true) == true ||
+                selectedModel?.name?.contains("Gemma 4 12B", ignoreCase = true) == true)
     }
     val showBackendSelection = remember(selectedModel, canSelectAccelerator, isGemma4_12B) {
         canSelectAccelerator && !isGemma4_12B
@@ -164,8 +165,9 @@ fun FeatureModelSettingsSheet(
     }
 
     LaunchedEffect(selectedModel?.name, canSelectAccelerator, canUseNpuForSelectedModel) {
-        val isGemma4_12B = selectedModel?.name?.contains("Gemma-4 12B", ignoreCase = true) == true ||
-            selectedModel?.name?.contains("Gemma 4 12B", ignoreCase = true) == true
+        val isGemma4_12B = selectedModel?.modelFormat == "litertlm" &&
+            (selectedModel?.name?.contains("Gemma-4 12B", ignoreCase = true) == true ||
+                selectedModel?.name?.contains("Gemma 4 12B", ignoreCase = true) == true)
         if (isGemma4_12B) {
             useGpu = true
             useNpu = false

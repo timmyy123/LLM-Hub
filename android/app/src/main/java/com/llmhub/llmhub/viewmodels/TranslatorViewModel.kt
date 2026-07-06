@@ -120,9 +120,7 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
             val context = getApplication<Application>()
             val allModels = ModelAvailabilityProvider.loadAvailableModels(context)
              val multimodalModels = allModels.filter { it.category != "tts" && it.category != "embedding" && it.category != "asr" && (
-                 it.supportsVision || it.supportsAudio ||
-                 it.name.contains("Gemma-4 12B", ignoreCase = true) ||
-                 it.name.contains("Gemma 4 12B", ignoreCase = true)
+                 it.supportsVision || it.supportsAudio
              ) }
              _availableModels.value = multimodalModels
 
@@ -199,7 +197,7 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
             _audioEnabled.value = false
         }
         
-        val isGemma4_12B = model.name.contains("Gemma-4 12B", ignoreCase = true) || model.name.contains("Gemma 4 12B", ignoreCase = true)
+        val isGemma4_12B = model.modelFormat == "litertlm" && (model.name.contains("Gemma-4 12B", ignoreCase = true) || model.name.contains("Gemma 4 12B", ignoreCase = true))
         if (isGemma4_12B) {
             _selectedBackend.value = LlmInference.Backend.GPU
             _selectedNpuDeviceId.value = null
