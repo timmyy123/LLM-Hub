@@ -147,74 +147,6 @@ class GeniexInferenceService @Inject constructor(
      */
     fun isAvailable(): Boolean = geniexAvailable
 
-    /**
-     * Lightweight runtime probe to verify whether Hexagon/HTP device access is usable.
-     * - Attempts to build a tiny GenieX LlmWrapper using `runtime_id = "llama_cpp"`,
-     *   `compute_unit = deviceId`, and `nGpuLayers = 1` against any local GGUF model.
-     * - Returns Pair(allowed:Boolean, reason:String?) where reason is non-null when denied.
-     * - This is defensive: it catches native/SELinux failures and returns a human-friendly reason.
-     */
-    suspend fun probeNpuAvailability(deviceId: String = "npu"): Pair<Boolean, String?> {
-        if (!geniexAvailable) {
-            Log.w(TAG, "NPU probe: GenieX SDK unavailable")
-            return Pair(false, "GenieX SDK unavailable on device")
-        }
-
-        // Find any local GGUF model to use as a harmless probe target (do not change files)
-        val modelsDir = File(context.filesDir, "models")
-        val ggufFile = modelsDir.listFiles { _, name -> name.endsWith(".gguf", ignoreCase = true) && !name.contains("mmproj", ignoreCase = true) }?.firstOrNull()
-        if (ggufFile == null) {
-            Log.w(TAG, "NPU probe: no local GGUF model available to probe")
-            return Pair(false, "no local GGUF model available to probe")
-        }
-
-        return try {
-            val probeConfig = ModelConfig(nCtx = 8, nGpuLayers = 1)
-            val createInput = LlmCreateInput(
-                model_name = "",
-                model_path = ggufFile.absolutePath,
-                tokenizer_path = null,
-                config = probeConfig,
-                runtime_id = "llama_cpp",
-                compute_unit = deviceId
-            )
-
-            val buildResult = withContext(Dispatchers.IO) {
-                LlmWrapper.builder()
-                    .llmCreateInput(createInput)
-                    .build()
-            }
-
-            if (buildResult.isSuccess) {
-                // Close immediately — this was only a probe
-                try { buildResult.getOrNull()?.close() } catch (_: Exception) {}
-                Log.i(TAG, "NPU probe: allowed — device responded successfully (deviceId=$deviceId)")
-                Pair(true, null)
-            } else {
-                val err = buildResult.exceptionOrNull()
-                val reason = err?.message ?: "unknown error"
-                val friendly = when {
-                    reason.contains("Permission denied", ignoreCase = true) -> "Permission denied (fastrpc/SELinux)"
-                    reason.contains("open_shell failed", ignoreCase = true) -> "vendor fastRPC open_shell failed"
-                    reason.contains("Bad address", ignoreCase = true) -> "kernel FastRPC optimization failure"
-                    else -> reason
-                }
-                Log.w(TAG, "NPU probe: denied — $friendly", err)
-                Pair(false, friendly)
-            }
-        } catch (t: Throwable) {
-            val reason = t.message ?: t.toString()
-            val friendly = when {
-                reason.contains("Permission denied", ignoreCase = true) -> "Permission denied (fastrpc/SELinux)"
-                reason.contains("open_shell failed", ignoreCase = true) -> "vendor fastRPC open_shell failed"
-                reason.contains("Bad address", ignoreCase = true) -> "kernel FastRPC optimization failure"
-                else -> reason
-            }
-            Log.w(TAG, "NPU probe: denied — $friendly", t)
-            Pair(false, friendly)
-        }
-    }
-
     override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?, deviceId: String?): Boolean {
         // Default to vision enabled for the two-arg load; clear any previous override
         currentVisionDisabled = false
@@ -303,58 +235,12 @@ class GeniexInferenceService @Inject constructor(
             try {
                 Log.d(TAG, "Attempting load with $backendId...")
 
-                // Cap context size to prevent OOM on mobile devices.
-                // GGUF models allocate KV cache proportional to nCtx.
-                // VLM models' memory cost grows with nCtx. Cap to 8192 for vision-enabled GGUF to keep allocations reasonable
-                // For text models, determine maximum safe context based on total device RAM.
-                val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
-                val memoryInfo = android.app.ActivityManager.MemoryInfo()
-                activityManager.getMemoryInfo(memoryInfo)
-                val totalRamGb = memoryInfo.totalMem.toDouble() / (1024 * 1024 * 1024)
-
-                val MAX_SAFE_CTX = if (model.supportsVision && !disableVision) {
-                    8192
-                } else {
-                    when {
-                        totalRamGb >= 20.0 -> 131072 // e.g. 24GB devices (true heavyweights)
-                        totalRamGb >= 14.0 -> 65536  // e.g. 16GB devices
-                        totalRamGb >= 10.0 -> 32768  // e.g. 12GB devices
-                        totalRamGb >= 6.0 -> 16384   // e.g. 8GB devices
-                        else -> 8192                 // < 6GB devices
-                    }
-                }
-
-        val rawCtx = overrideContextWindow ?: overrideMaxTokens ?: model.contextWindowSize
-                val nCtx = rawCtx.coerceAtMost(MAX_SAFE_CTX)
-                if (rawCtx != nCtx) {
-                    Log.w(TAG, "Capped nCtx from $rawCtx to $nCtx to prevent OOM (Device RAM ~${String.format("%.1f", totalRamGb)}GB)")
-                }
+                val nCtx = overrideContextWindow ?: overrideMaxTokens ?: model.contextWindowSize
                 // Determine compute_unit: "npu" for Hexagon/HTP, "gpu" for OpenCL, "cpu" for CPU
-                val userRequestedNpu = !deviceId.isNullOrBlank() && (
+                val isNpuRequested = !deviceId.isNullOrBlank() && (
                     deviceId.startsWith("dev", ignoreCase = true) ||
                     deviceId.startsWith("htp", ignoreCase = true)
                 )
-                var isNpuRequested = userRequestedNpu
-
-                // If a dev (NPU/Hexagon) device is requested (either explicitly by user or by auto-selection),
-                // run a lightweight probe. Behavior differs based on intent:
-                // - explicit user request: fail fast (return false) if probe denies — do NOT fall back
-                // - automatic request: fall back to gpu on probe denial
-                if (isNpuRequested) {
-                    val (allowed, reason) = probeNpuAvailability("npu")
-                    if (!allowed) {
-                        if (userRequestedNpu) {
-                            // User explicitly asked for NPU — do not silently fall back. Return failure
-                            Log.e(TAG, "NPU probe denied for explicit request deviceId=$deviceId; reason=$reason — refusing to load model")
-                            return false
-                        } else {
-                            Log.w(TAG, "NPU probe denied for deviceId=$deviceId; reason=$reason — falling back to gpu")
-                            isNpuRequested = false
-                        }
-                    } else {
-                        Log.i(TAG, "NPU probe allowed for deviceId=$deviceId — proceeding with Hexagon")
-                    }
-                }
 
                 val deviceToUse = when {
                     backendId == "CPU" -> "cpu"
