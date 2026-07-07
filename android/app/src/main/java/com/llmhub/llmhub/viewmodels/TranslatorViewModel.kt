@@ -26,6 +26,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
+import com.llmhub.llmhub.data.DeviceInfo
 
 class TranslatorViewModel(application: Application) : AndroidViewModel(application) {
     private val inferenceService = (application as com.llmhub.llmhub.LlmHubApplication).inferenceService
@@ -136,9 +137,15 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
             if (multimodalModels.isNotEmpty() && _selectedModel.value == null) {
                 _selectedModel.value = multimodalModels.first()
             }
+
+            val model = _selectedModel.value
+            if (model?.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported() && _selectedNpuDeviceId.value == null) {
+                _selectedBackend.value = LlmInference.Backend.GPU
+                _selectedNpuDeviceId.value = "dev0"
+            }
         }
     }
-    
+
     private fun loadSavedSettings() {
         // Restore backend (store enum name, fallback to GPU)
         val savedBackendName = prefs.getString("selected_backend", LlmInference.Backend.GPU.name)
@@ -201,8 +208,11 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
         if (isGemma4_12B) {
             _selectedBackend.value = LlmInference.Backend.GPU
             _selectedNpuDeviceId.value = null
+        } else if (model.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported() && _selectedNpuDeviceId.value == null) {
+            _selectedBackend.value = LlmInference.Backend.GPU
+            _selectedNpuDeviceId.value = "dev0"
         }
-        
+
         saveSettings()
     }
     
@@ -321,6 +331,8 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
                 inferenceService = inferenceService,
                 disableVisionOverride = disableVision,
                 disableAudioOverride = disableAudio,
+                backendOverride = _selectedBackend.value,
+                deviceIdOverride = _selectedNpuDeviceId.value,
                 onConfigApplied = { cfg ->
                     lastAppliedModelName = model.name
                     lastAppliedConfig = cfg

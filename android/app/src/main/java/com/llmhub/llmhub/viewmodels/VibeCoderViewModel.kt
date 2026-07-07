@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.llmhub.llmhub.data.DeviceInfo
 
 enum class CodeLanguage {
     HTML,
@@ -252,6 +253,9 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             prefs.getString("selected_npu_device_id_${model.name}", prefs.getString("selected_npu_device_id", null))
         } else {
             null
+        }
+        if (model.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported() && _selectedNpuDeviceId.value == null) {
+            _selectedNpuDeviceId.value = "dev0"
         }
 
         _enableThinking.value = prefs.getBoolean("enable_thinking_${model.name}", prefs.getBoolean("enable_thinking", true))
@@ -850,6 +854,8 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                 model = model,
                 modelPrefs = modelPrefs,
                 inferenceService = inferenceService,
+                backendOverride = _selectedBackend.value,
+                deviceIdOverride = _selectedNpuDeviceId.value,
                 onConfigApplied = { cfg ->
                     lastAppliedModelName = model.name
                     lastAppliedConfig = cfg

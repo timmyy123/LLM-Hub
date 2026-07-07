@@ -35,6 +35,7 @@ import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import androidx.lifecycle.ViewModelProvider
 import androidx.activity.ComponentActivity
 import com.llmhub.llmhub.ui.components.TtsService
+import com.llmhub.llmhub.data.DeviceInfo
 
 class ChatViewModel(
     private val inferenceService: InferenceService,
@@ -298,6 +299,7 @@ class ChatViewModel(
 
     var currentModel: LLMModel? = null
         private set
+    private var backendExplicitlySet = false
     
     // Load saved settings from SharedPreferences
     private fun loadSavedSettings() {
@@ -346,6 +348,7 @@ class ChatViewModel(
     fun selectModel(model: LLMModel) {
         _selectedModel.value = model
         currentModel = model
+        backendExplicitlySet = false
         currentChatId?.let { chatId ->
             viewModelScope.launch {
                 repository.updateChatModel(chatId, model.name)
@@ -357,8 +360,10 @@ class ChatViewModel(
         if (isLiteRtLmGemma4_12B) {
             _selectedBackend.value = LlmInference.Backend.GPU
             _selectedNpuDeviceId.value = null
+        } else if (model.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported() && _selectedNpuDeviceId.value == null) {
+            _selectedBackend.value = LlmInference.Backend.GPU
+            _selectedNpuDeviceId.value = "dev0"
         } else {
-            // Auto-select backend if not set or if current backend is not supported by the model
             if (_selectedBackend.value == null || (!model.supportsGpu && _selectedBackend.value == LlmInference.Backend.GPU)) {
                 _selectedBackend.value = if (model.supportsGpu) {
                     LlmInference.Backend.GPU
@@ -374,6 +379,7 @@ class ChatViewModel(
     fun selectBackend(backend: LlmInference.Backend, deviceId: String? = null) {
         _selectedBackend.value = backend
         _selectedNpuDeviceId.value = deviceId
+        backendExplicitlySet = true
         saveChatSettings()
     }
 
@@ -2364,20 +2370,22 @@ class ChatViewModel(
         return cleaned
     }
     
-    // Mirrors exactly what ChatSettingsSheet shows on first open for a model with no saved config.
-    // Single entry point used by both lazy-load (send path) and switchModelWithBackend.
     private suspend fun loadModelWithSavedConfig(model: LLMModel): Boolean {
+        val deviceId = if (!backendExplicitlySet && model.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported() && _selectedNpuDeviceId.value == null) {
+            _selectedNpuDeviceId.value = "dev0"
+            "dev0"
+        } else {
+            _selectedNpuDeviceId.value
+        }
         return com.llmhub.llmhub.data.loadModelWithSavedConfig(
             model = model,
             modelPrefs = modelPrefs,
             inferenceService = inferenceService,
+            backendOverride = _selectedBackend.value,
+            deviceIdOverride = deviceId,
             onConfigApplied = { cfg ->
                 isVisionDisabled = cfg.disableVision
                 isAudioDisabled = cfg.disableAudio
-                cfg.backend?.let { name ->
-                    try { _selectedBackend.value = LlmInference.Backend.valueOf(name) } catch (_: Exception) {}
-                }
-                _selectedNpuDeviceId.value = cfg.deviceId
                 lastAppliedModelName = model.name
                 lastAppliedConfig = cfg
             }

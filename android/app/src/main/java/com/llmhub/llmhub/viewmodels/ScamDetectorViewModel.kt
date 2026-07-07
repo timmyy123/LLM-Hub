@@ -27,6 +27,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import com.llmhub.llmhub.data.DeviceInfo
 
 class ScamDetectorViewModel(application: Application) : AndroidViewModel(application) {
     
@@ -153,9 +154,15 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
                     }
                 }
             }
-            
+
             if (available.isNotEmpty() && _selectedModel.value == null) {
                 _selectedModel.value = available.first()
+            }
+
+            val model = _selectedModel.value
+            if (model?.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported() && _selectedNpuDeviceId.value == null) {
+                _selectedBackend.value = LlmInference.Backend.GPU
+                _selectedNpuDeviceId.value = "dev0"
             }
         }
     }
@@ -178,8 +185,10 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
         if (isGemma4_12B) {
             _selectedBackend.value = LlmInference.Backend.GPU
             _selectedNpuDeviceId.value = null
+        } else if (model.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported() && _selectedNpuDeviceId.value == null) {
+            _selectedBackend.value = LlmInference.Backend.GPU
+            _selectedNpuDeviceId.value = "dev0"
         } else {
-            // Force CPU when model doesn't support GPU (e.g. ONNX); otherwise keep or set backend
             _selectedBackend.value = if (model.supportsGpu) {
                 _selectedBackend.value ?: LlmInference.Backend.GPU
             } else {
@@ -263,6 +272,8 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
                 inferenceService = inferenceService,
                 disableVisionOverride = disableVision,
                 disableAudioOverride = true,
+                backendOverride = _selectedBackend.value,
+                deviceIdOverride = _selectedNpuDeviceId.value,
                 onConfigApplied = { cfg ->
                     lastAppliedModelName = model.name
                     lastAppliedConfig = cfg

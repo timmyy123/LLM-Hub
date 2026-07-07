@@ -160,6 +160,12 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
                 _selectedModel.value = llmModels.first()
             }
 
+            val currentModel = _selectedModel.value
+            if (currentModel?.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported() && _selectedNpuDeviceId.value == null) {
+                _selectedBackend.value = LlmInference.Backend.GPU
+                _selectedNpuDeviceId.value = "dev0"
+            }
+
             val savedVoiceName = prefs.getString("selected_voice_model_name", null)
             if (savedVoiceName != null) {
                 if (savedVoiceName == "gemma") {
@@ -210,7 +216,12 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
     fun selectModel(model: LLMModel) {
         if (_isModelLoaded.value) unloadModel()
         _selectedModel.value = model
-        
+
+        if (model.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported() && _selectedNpuDeviceId.value == null) {
+            _selectedBackend.value = LlmInference.Backend.GPU
+            _selectedNpuDeviceId.value = "dev0"
+        }
+
         if (!model.hasNativeVoiceSupport() && _selectedVoiceModel.value == null) {
             _selectedVoiceModel.value = _availableAsrModels.value.firstOrNull()
         }
@@ -271,7 +282,8 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
                 val disableAudio = isUsingAsr
                 
                 (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
-                inferenceService.setGenerationParameters(null, null, null, null, enableThinking = if (model.name.contains("Gemma-4", ignoreCase = true)) false else null)
+                val vibeVoiceCtx = minOf(model.contextWindowSize, 4096)
+                inferenceService.setGenerationParameters(null, null, null, null, enableThinking = if (model.name.contains("Gemma-4", ignoreCase = true)) false else null, contextWindow = vibeVoiceCtx)
                 inferenceService.loadModel(
                     model = model,
                     preferredBackend = _selectedBackend.value,

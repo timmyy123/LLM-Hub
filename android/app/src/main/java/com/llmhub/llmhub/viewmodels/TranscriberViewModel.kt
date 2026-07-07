@@ -132,7 +132,7 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
         if (_isModelLoaded.value) {
             unloadModel()
         }
-        
+
         _selectedModel.value = model
         saveSettings()
     }

@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.llmhub.llmhub.data.DeviceInfo
 
 class WritingAidViewModel(application: Application) : AndroidViewModel(application) {
     
@@ -127,13 +128,18 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
                 } ?: available.firstOrNull()
                 modelToSelect?.let {
                     _selectedModel.value = it
-                    _selectedBackend.value = if (it.supportsGpu) {
-                        _selectedBackend.value ?: LlmInference.Backend.GPU
+                    if (it.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported() && _selectedNpuDeviceId.value == null) {
+                        _selectedBackend.value = LlmInference.Backend.GPU
+                        _selectedNpuDeviceId.value = "dev0"
                     } else {
-                        LlmInference.Backend.CPU
-                    }
-                    if (!it.supportsGpu) {
-                        _selectedNpuDeviceId.value = null
+                        _selectedBackend.value = if (it.supportsGpu) {
+                            _selectedBackend.value ?: LlmInference.Backend.GPU
+                        } else {
+                            LlmInference.Backend.CPU
+                        }
+                        if (!it.supportsGpu) {
+                            _selectedNpuDeviceId.value = null
+                        }
                     }
                 }
                 pendingSavedModelName = null
@@ -154,8 +160,10 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
         if (isGemma4_12B) {
             _selectedBackend.value = LlmInference.Backend.GPU
             _selectedNpuDeviceId.value = null
+        } else if (model.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported() && _selectedNpuDeviceId.value == null) {
+            _selectedBackend.value = LlmInference.Backend.GPU
+            _selectedNpuDeviceId.value = "dev0"
         } else {
-            // Force CPU when model doesn't support GPU (e.g. ONNX); otherwise keep or set backend
             _selectedBackend.value = if (model.supportsGpu) {
                 _selectedBackend.value ?: LlmInference.Backend.GPU
             } else {
@@ -226,17 +234,20 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
         _errorMessage.value = null
         try {
             inferenceService.unloadModel()
-            val success = com.llmhub.llmhub.data.loadModelWithSavedConfig(
+            applyGenerationParametersToService()
+            val backend = _selectedBackend.value
+            val deviceId = _selectedNpuDeviceId.value
+            val success = inferenceService.loadModel(
                 model = model,
-                modelPrefs = modelPrefs,
-                inferenceService = inferenceService,
-                onConfigApplied = { cfg ->
-                    lastAppliedModelName = model.name
-                    lastAppliedConfig = cfg
-                }
+                preferredBackend = backend,
+                deviceId = deviceId
             )
-            if (success) _isModelLoaded.value = true
-            else _errorMessage.value = "Failed to load model"
+            if (success) {
+                _isModelLoaded.value = true
+                lastAppliedModelName = model.name
+            } else {
+                _errorMessage.value = "Failed to load model"
+            }
         } catch (e: Exception) {
             _errorMessage.value = e.message ?: "Unknown error"
         } finally {

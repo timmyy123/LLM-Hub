@@ -131,8 +131,12 @@ fun ChatSettingsSheet(
         )
     }
 
-    // Track whether NPU (Hexagon GGUF) is selected — initial value comes from the caller
-    var useNpu by remember(initialSelectedNpuDeviceId) { mutableStateOf(initialSelectedNpuDeviceId != null) }
+    var useNpu by remember {
+        mutableStateOf(
+            initialSelectedNpuDeviceId != null ||
+                (selectedModel?.modelFormat == "gguf" && com.llmhub.llmhub.data.DeviceInfo.isQualcommNpuSupported())
+        )
+    }
     var gpuLayers by remember { mutableStateOf(999) }
 
     var disableVision by remember { mutableStateOf(isGemma3nModel) }
@@ -208,8 +212,9 @@ fun ChatSettingsSheet(
                     topK = 64
                     topP = 0.95f
                     temperature = 1.0f
+                    val ggufNpuDefault = model.modelFormat == "gguf" && com.llmhub.llmhub.data.DeviceInfo.isQualcommNpuSupported()
                     useGpu = if (newIsGemma4_12B) true else newDefaultUseGpu
-                    useNpu = false
+                    useNpu = ggufNpuDefault
                     disableVision = newIsGemma3n || !selectedModelSupportsVisionInput
                     disableAudio = newIsGemma3n
                     enableThinking = true
@@ -228,8 +233,9 @@ fun ChatSettingsSheet(
                 topK = 64
                 topP = 0.95f
                 temperature = 1.0f
+                val ggufNpuDefault = selectedModel?.modelFormat == "gguf" && com.llmhub.llmhub.data.DeviceInfo.isQualcommNpuSupported()
                 useGpu = if (newIsGemma4_12B) true else newDefaultUseGpu
-                useNpu = false
+                useNpu = ggufNpuDefault
                 disableVision = newIsGemma3n || !selectedModelSupportsVisionInput
                 disableAudio = newIsGemma3n
                 enableThinking = true

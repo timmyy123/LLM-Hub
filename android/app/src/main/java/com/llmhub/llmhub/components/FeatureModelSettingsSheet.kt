@@ -122,7 +122,12 @@ fun FeatureModelSettingsSheet(
             }
         )
     }
-    var useNpu by remember(initialSelectedNpuDeviceId) { mutableStateOf(initialSelectedNpuDeviceId != null) }
+    var useNpu by remember(initialSelectedNpuDeviceId, selectedModel) {
+        mutableStateOf(
+            initialSelectedNpuDeviceId != null ||
+                (selectedModel?.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported())
+        )
+    }
     var gpuLayers by remember { mutableStateOf(999) }
     var enableThinking by remember { mutableStateOf(true) }
 
