@@ -61,7 +61,7 @@
       </SelectionState>
       <SelectionState runConfigName="androidTest">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-07-06T15:14:21.505617Z">
+        <DropdownSelection timestamp="2026-07-07T14:41:41.704701Z">
           <Target type="DEFAULT_BOOT">
             <handle>
               <DeviceId pluginId="PhysicalDevice" identifier="serial=R52Y60B9V4P" />
