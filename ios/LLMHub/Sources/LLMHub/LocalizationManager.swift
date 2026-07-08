@@ -184,6 +184,7 @@ final class OnDeviceTtsManager: NSObject, ObservableObject, AVSpeechSynthesizerD
     /// Streaming token buffer — mirrors Android TtsService.textBuffer.
     private var streamingBuffer = ""
     private static let sentenceDelimiters: Set<Character> = [".", "!", "?", "。", "！", "？"]
+    private var activeUtterancesCount = 0
 
     private override init() {
         super.init()
@@ -193,6 +194,7 @@ final class OnDeviceTtsManager: NSObject, ObservableObject, AVSpeechSynthesizerD
     // MARK: - Non-streaming speak (manual tap)
 
     func speak(_ text: String, fallbackLanguage: AppLanguage, key: String? = nil) {
+        NSLog("[LLMHub][TTS] speak() called. text: \"\(text.prefix(40))...\" key: \(key ?? "nil")")
         let cleaned = sanitize(text)
         guard !cleaned.isEmpty else { return }
 
@@ -200,6 +202,7 @@ final class OnDeviceTtsManager: NSObject, ObservableObject, AVSpeechSynthesizerD
 
         currentKey = key
         isSpeaking = true
+        activeUtterancesCount = 1
 
         let fallback = fallbackLanguage
         Task { @MainActor [weak self, cleaned, fallback] in
@@ -227,6 +230,7 @@ final class OnDeviceTtsManager: NSObject, ObservableObject, AVSpeechSynthesizerD
             try? AVAudioSession.sharedInstance().setActive(true)
             currentKey = key
             isSpeaking = true
+            activeUtterancesCount = 0
         }
 
         streamingBuffer += token
@@ -245,6 +249,8 @@ final class OnDeviceTtsManager: NSObject, ObservableObject, AVSpeechSynthesizerD
             utterance.voice = bestVoice(for: cleaned, fallbackLanguage: fallbackLanguage)
             utterance.rate = AVSpeechUtteranceDefaultSpeechRate
             utterance.prefersAssistiveTechnologySettings = true
+            
+            activeUtterancesCount += 1
             synthesizer.speak(utterance)  // QUEUE_ADD behaviour — AVSpeechSynthesizer queues by default
         }
     }
@@ -260,6 +266,8 @@ final class OnDeviceTtsManager: NSObject, ObservableObject, AVSpeechSynthesizerD
         utterance.voice = bestVoice(for: cleaned, fallbackLanguage: fallbackLanguage)
         utterance.rate = AVSpeechUtteranceDefaultSpeechRate
         utterance.prefersAssistiveTechnologySettings = true
+        
+        activeUtterancesCount += 1
         synthesizer.speak(utterance)
     }
 
@@ -289,25 +297,36 @@ final class OnDeviceTtsManager: NSObject, ObservableObject, AVSpeechSynthesizerD
         }
         isSpeaking = false
         currentKey = nil
+        activeUtterancesCount = 0
     }
 
     nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+        NSLog("[LLMHub][TTS] didFinish called. synthesizer.isSpeaking: \(synthesizer.isSpeaking)")
         // Do NOT call setActive(false) here — calling it tears down the audio server
         // connection (IPCAUClient: can't connect to server). SpeechEngine.start() will
         // switch the category and call setActive(true) itself when the mic restarts.
         Task { @MainActor in
-            // Only clear speaking state if the native queue is now empty
-            if !self.synthesizer.isSpeaking {
+            self.activeUtterancesCount -= 1
+            NSLog("[LLMHub][TTS] didFinish on MainActor. activeUtterancesCount: \(self.activeUtterancesCount)")
+            if self.activeUtterancesCount <= 0 {
+                NSLog("[LLMHub][TTS] Clearing speaking state to false")
                 self.isSpeaking = false
                 self.currentKey = nil
+                self.activeUtterancesCount = 0
             }
         }
     }
 
     nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
+        NSLog("[LLMHub][TTS] didCancel called")
         Task { @MainActor in
-            self.isSpeaking = false
-            self.currentKey = nil
+            self.activeUtterancesCount -= 1
+            NSLog("[LLMHub][TTS] didCancel on MainActor. activeUtterancesCount: \(self.activeUtterancesCount)")
+            if self.activeUtterancesCount <= 0 {
+                self.isSpeaking = false
+                self.currentKey = nil
+                self.activeUtterancesCount = 0
+            }
         }
     }
 

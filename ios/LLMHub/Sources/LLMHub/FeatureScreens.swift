@@ -1950,6 +1950,7 @@ private final class IOSVibeVoiceTranscriber: NSObject, ObservableObject {
             }
 
             do {
+                await self.logError("Starting engine...")
                 try await self.engine.start(onResult: { result in
                     let text = result.bestTranscription.formattedString
                     let isFinal = result.isFinal
@@ -1971,6 +1972,7 @@ private final class IOSVibeVoiceTranscriber: NSObject, ObservableObject {
                 })
 
                 await MainActor.run {
+                    self.logError("Engine started successfully. Setting isRecording = true")
                     self.isRecording = true
                     self.isPreparing = false
                 }
@@ -1985,6 +1987,7 @@ private final class IOSVibeVoiceTranscriber: NSObject, ObservableObject {
     }
 
     func stopListening() async {
+        logError("stopListening() called")
         silenceTask?.cancel()
         silenceTask = nil
         utteranceHandler = nil
@@ -1997,6 +2000,7 @@ private final class IOSVibeVoiceTranscriber: NSObject, ObservableObject {
     }
 
     func cancelListening() {
+        logError("cancelListening() called")
         silenceTask?.cancel()
         silenceTask = nil
         utteranceHandler = nil
@@ -2024,6 +2028,7 @@ private final class IOSVibeVoiceTranscriber: NSObject, ObservableObject {
 
     private func finishCurrentUtterance() async {
         let finalTranscript = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+        logError("finishCurrentUtterance() called. finalTranscript: \"\(finalTranscript)\"")
         silenceTask?.cancel()
         silenceTask = nil
         await engine.stop()
@@ -2193,21 +2198,26 @@ private struct IOS17VibeVoiceScreen: View {
             llm.unloadModel()
         }
         .onChange(of: ttsManager.isSpeaking) { oldValue, newValue in
+            NSLog("[LLMHub][VibeVoice] onChange(ttsManager.isSpeaking): \(oldValue) -> \(newValue), current voiceState: \(voiceState)")
             guard isChatActive else { return }
             if oldValue && !newValue && voiceState == .speaking {
+                NSLog("[LLMHub][VibeVoice] TTS finished speaking. Setting voiceState to .idle and scheduling startListeningCycle()")
                 voiceState = .idle
                 Task { @MainActor in
                     // 700ms: give audio hardware time to switch from playback → record
                     try? await Task.sleep(nanoseconds: 700_000_000)
                     guard isChatActive && isCurrentModelLoaded else { return }
+                    NSLog("[LLMHub][VibeVoice] Triggering startListeningCycle() from TTS onChange")
                     await startListeningCycle()
                 }
             }
         }
         .onChange(of: transcriber.isRecording) { oldValue, newValue in
+            NSLog("[LLMHub][VibeVoice] onChange(transcriber.isRecording): \(oldValue) -> \(newValue), voiceState: \(voiceState), isPreparing: \(transcriber.isPreparing)")
             guard !useModelAudioInput else { return }
             if oldValue && !newValue && !transcriber.isPreparing {
                 if voiceState == .listening {
+                    NSLog("[LLMHub][VibeVoice] Recording stopped while in .listening. Setting voiceState to .idle")
                     voiceState = .idle
                 }
                 // Auto-restart the listen cycle if chat is still active
@@ -2216,6 +2226,7 @@ private struct IOS17VibeVoiceScreen: View {
                 Task { @MainActor in
                     try? await Task.sleep(nanoseconds: 700_000_000)
                     guard isChatActive && isCurrentModelLoaded && voiceState == .idle else { return }
+                    NSLog("[LLMHub][VibeVoice] Auto-restarting startListeningCycle() from recording onChange")
                     await startListeningCycle()
                 }
             }
@@ -2409,10 +2420,12 @@ private struct IOS17VibeVoiceScreen: View {
     }
 
     private func startListeningCycle() async {
+        NSLog("[LLMHub][VibeVoice] startListeningCycle() entered. isChatActive: \(isChatActive), isCurrentModelLoaded: \(isCurrentModelLoaded)")
         guard isChatActive && isCurrentModelLoaded else { return }
 
         voiceState = .listening
         if useModelAudioInput {
+            NSLog("[LLMHub][VibeVoice] using model audio input")
             let isGemma4 = useModelAudioInput
             let ext = isGemma4 ? "wav" : "m4a"
             let destination = persistentAudioStorageDirectory()
@@ -2432,17 +2445,21 @@ private struct IOS17VibeVoiceScreen: View {
             }
 
             if !audioRecorder.isRecording && !audioRecorder.isPreparing {
+                NSLog("[LLMHub][VibeVoice] AudioRecorder failed to start. Resetting to idle.")
                 voiceState = .idle
             }
         } else {
+            NSLog("[LLMHub][VibeVoice] calling transcriber.startListening()")
             await transcriber.startListening { text in
                 Task { @MainActor in
                     guard self.isChatActive else { return }
                     await self.handleTranscript(text)
                 }
             }
+            NSLog("[LLMHub][VibeVoice] transcriber.startListening() returned. isRecording: \(transcriber.isRecording), isPreparing: \(transcriber.isPreparing)")
 
             if !transcriber.isRecording && !transcriber.isPreparing {
+                NSLog("[LLMHub][VibeVoice] Transcriber failed to start. Resetting to idle.")
                 voiceState = .idle
             }
         }
