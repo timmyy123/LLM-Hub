@@ -154,6 +154,18 @@ sudo xcode-select -s /Applications/Xcode-beta.app/Contents/Developer
 xcodebuild -version
 ```
 
+#### iOS TTS voice troubleshooting
+
+**TTS falls back to a robotic default voice after changing Siri voices**
+
+iOS can get into a state where the system TTS voice cache doesn't update after a Siri voice change, causing the app to fall back to the old default voice. To fix:
+
+1. Go to **Settings → Accessibility → Spoken Content → Voices**
+2. Tap your language and select any voice (even a different one)
+3. Switch back to your preferred Siri voice or whichever voice you want
+
+This forces iOS to refresh the voice selection and the app will use the correct voice immediately.
+
 #### Useful iOS dev troubleshooting
 - If signing fails, re-check Team + Bundle Identifier in target settings.
 - If build cache acts stale, clean DerivedData:
