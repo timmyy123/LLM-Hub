@@ -38,6 +38,8 @@ final class LiteRTLMBackend {
     private var currentConversation: Conversation?
     /// Prevents re-entrancy bugs where a new session is created before the old one is destroyed.
     private var generationInProgress = false
+    /// Track background invalidation tasks so we don't block the main thread.
+    private var activeInvalidationTask: Task<Void, Never>? = nil
 
     private init() {}
 
@@ -77,10 +79,17 @@ final class LiteRTLMBackend {
 
     /// Unload the engine and release all resources.
     func unload() async {
-        // Explicitly invalidate the conversation (calls litert_lm_conversation_delete
-        // synchronously) before niling the reference, so the C session is freed immediately.
-        currentConversation?.invalidate()
-        currentConversation = nil
+        if let previousTask = activeInvalidationTask {
+            _ = await previousTask.result
+            activeInvalidationTask = nil
+        }
+        if let conv = currentConversation {
+            currentConversation = nil
+            let task = Task.detached(priority: .userInitiated) {
+                conv.invalidate()
+            }
+            _ = await task.result
+        }
         engine = nil
         loadedModelPath = nil
         print("ℹ️ [LiteRTLMBackend] unloaded")
@@ -148,14 +157,10 @@ final class LiteRTLMBackend {
             }
         }
 
-        // LiteRT-LM supports only ONE session at a time.
-        // Must call invalidate() EXPLICITLY (not just nil the Swift reference) because
-        // the local `conversation` variable on this stack frame keeps the object alive
-        // past the ARC deinit — causing FAILED_PRECONDITION on the next createConversation.
-        if currentConversation != nil {
-            currentConversation?.invalidate()  // synchronously calls litert_lm_conversation_delete
-            currentConversation = nil
-            print("ℹ️ [LiteRTLMBackend] invalidated previous conversation")
+        // Ensure any pending conversation invalidation from a previous run is complete
+        if let previousTask = activeInvalidationTask {
+            _ = await previousTask.result
+            activeInvalidationTask = nil
         }
 
         let conversation: Conversation
@@ -183,9 +188,14 @@ final class LiteRTLMBackend {
         // Also open any URL deferred by tools (Maps/Email/SMS) — they must NOT open mid-stream
         // because that sends the app to background and kills Metal GPU access.
         defer {
-            currentConversation?.invalidate()  // frees litert_lm session NOW
+            let conv = currentConversation
             self.currentConversation = nil
-            print("ℹ️ [LiteRTLMBackend] conversation invalidated after generation")
+            if let conv = conv {
+                self.activeInvalidationTask = Task.detached(priority: .userInitiated) {
+                    conv.invalidate()
+                }
+            }
+            print("ℹ️ [LiteRTLMBackend] conversation invalidation dispatched to background")
 
             // Open deferred URL now that GPU work is done
             if let urlToOpen = ChatAgentSkillsTools.deferredOpenURL {
