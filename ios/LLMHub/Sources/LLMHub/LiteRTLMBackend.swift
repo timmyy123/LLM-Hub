@@ -57,6 +57,7 @@ final class LiteRTLMBackend {
         let isGemma4_12B = path.lowercased().hasSuffix(".litertlm") && (path.lowercased().contains("gemma-4-12b") || path.lowercased().contains("gemma4_12b"))
         ExperimentalFlags.optIntoExperimentalAPIs()
         ExperimentalFlags.enableSpeculativeDecoding = !isGemma4_12B
+        ExperimentalFlags.enableBenchmark = true
 
         let config = try EngineConfig(
             modelPath: path,
@@ -211,11 +212,14 @@ final class LiteRTLMBackend {
         var sentThinkOpen = false
         var sentThinkClose = false
         var tokenCount = 0
-        let startTime = Date()
+        var generationStartTime: Date? = nil
 
         for try await chunk in conversation.sendMessageStream(message) {
             try Task.checkCancellation()
             tokenCount += 1
+            if generationStartTime == nil {
+                generationStartTime = Date()
+            }
 
             let textChunk = chunk.toString
             let thinkingChunk = useThinking ? chunk.channels["thought"] : nil
@@ -240,20 +244,40 @@ final class LiteRTLMBackend {
                     currentOutput += cleaned
                 }
             }
-            let elapsed = Date().timeIntervalSince(startTime)
-            let tps = elapsed > 0 ? (Double(tokenCount) / elapsed) : 0.0
-            onUpdate(currentOutput, tokenCount, tps)
+            let elapsed = generationStartTime != nil ? Date().timeIntervalSince(generationStartTime!) : 0.0
+            let estimatedTokens = Double(currentOutput.count) / 3.5
+            let tps = (elapsed > 0 && estimatedTokens > 0) ? (estimatedTokens / elapsed) : 0.0
+            onUpdate(currentOutput, Int(estimatedTokens), tps)
         }
 
-        let elapsed = Date().timeIntervalSince(startTime)
-        let tps = elapsed > 0 ? (Double(tokenCount) / elapsed) : 0.0
+        var finalTokens = tokenCount
+        var finalTps = 0.0
+        
+        let elapsed = generationStartTime != nil ? Date().timeIntervalSince(generationStartTime!) : 0.0
+        if elapsed > 0 {
+            let estimatedTokens = Double(currentOutput.count) / 3.5
+            finalTps = estimatedTokens / elapsed
+            finalTokens = Int(estimatedTokens)
+        }
+        
+        if let benchmark = try? conversation.getBenchmarkInfo() {
+            if benchmark.lastDecodeTokenCount > 0 {
+                finalTokens = benchmark.lastDecodeTokenCount
+            }
+            if benchmark.lastDecodeTokensPerSecond > 0 {
+                finalTps = benchmark.lastDecodeTokensPerSecond
+            }
+            print("📊 [LiteRTLMBackend] Benchmark metrics: prefillCount=\(benchmark.lastPrefillTokenCount) prefillTps=\(benchmark.lastPrefillTokensPerSecond) decodeCount=\(benchmark.lastDecodeTokenCount) decodeTps=\(benchmark.lastDecodeTokensPerSecond)")
+        } else {
+            print("⚠️ [LiteRTLMBackend] getBenchmarkInfo returned nil or threw")
+        }
 
         if useThinking && sentThinkOpen && !sentThinkClose {
             currentOutput += "\u{200B}\u{200B}ENDTHINK\u{200B}\u{200B}"
-            onUpdate(currentOutput, tokenCount, tps)
+            onUpdate(currentOutput, finalTokens, finalTps)
         } else {
             // Final update with accumulated text
-            onUpdate(currentOutput, tokenCount, tps)
+            onUpdate(currentOutput, finalTokens, finalTps)
         }
         print("✅ [LiteRTLMBackend] generation complete chars=\(currentOutput.count)")
     }
