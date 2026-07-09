@@ -218,7 +218,7 @@ private func usesGemma4TurnTemplate(_ model: AIModel) -> Bool {
 }
 
 private func isNonTranslatorFeatureModel(_ model: AIModel) -> Bool {
-    !model.name.hasPrefix("Translate Gemma")
+    !model.name.hasPrefix("Translate Gemma") && model.category != .asr
 }
 
 private func translatorQuantizationTag(for modelName: String) -> String? {
