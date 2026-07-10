@@ -374,6 +374,58 @@ class ChatViewModel(
         }
         saveChatSettings()
     }
+
+    fun loadSettingsForModel(model: LLMModel) {
+        viewModelScope.launch {
+            try {
+                // If this model is already actively loaded in the inference service,
+                // read the actual running hardware state as the source of truth.
+                // Don't let stale saved prefs (e.g. deviceId=null) overwrite the live NPU/GPU state.
+                val currentlyLoaded = inferenceService.getCurrentlyLoadedModel()
+                if (currentlyLoaded?.name == model.name) {
+                    if (inferenceService.isNpuBackendEnabled()) {
+                        _selectedNpuDeviceId.value = "dev0"
+                        _selectedBackend.value = LlmInference.Backend.GPU
+                    } else if (inferenceService.isGpuBackendEnabled()) {
+                        _selectedNpuDeviceId.value = null
+                        _selectedBackend.value = LlmInference.Backend.GPU
+                    } else {
+                        _selectedNpuDeviceId.value = null
+                        _selectedBackend.value = LlmInference.Backend.CPU
+                    }
+                    isVisionDisabled = inferenceService.isVisionCurrentlyDisabled()
+                    isAudioDisabled = inferenceService.isAudioCurrentlyDisabled()
+                    return@launch
+                }
+
+                // Model not loaded yet — fall back to saved prefs or defaults
+                val cfg = modelPrefs.getModelConfig(model.name)
+                if (cfg != null) {
+                    _selectedBackend.value = cfg.backend?.let {
+                        try { LlmInference.Backend.valueOf(it) } catch (_: Exception) { LlmInference.Backend.GPU }
+                    } ?: LlmInference.Backend.GPU
+                    _selectedNpuDeviceId.value = cfg.deviceId
+                    isVisionDisabled = cfg.disableVision
+                    isAudioDisabled = cfg.disableAudio
+                } else {
+                    val isLiteRtLmGemma4_12B = model.modelFormat == "litertlm" &&
+                        (model.name.contains("Gemma-4 12B", ignoreCase = true) || model.name.contains("Gemma 4 12B", ignoreCase = true))
+                    if (isLiteRtLmGemma4_12B) {
+                        _selectedBackend.value = LlmInference.Backend.GPU
+                        _selectedNpuDeviceId.value = null
+                    } else if (model.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported()) {
+                        _selectedBackend.value = LlmInference.Backend.GPU
+                        _selectedNpuDeviceId.value = "dev0"
+                    } else {
+                        _selectedBackend.value = if (model.supportsGpu) LlmInference.Backend.GPU else LlmInference.Backend.CPU
+                        _selectedNpuDeviceId.value = null
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w("ChatViewModel", "Failed to load settings for model ${model.name}: ${e.message}")
+            }
+        }
+    }
     
     // Public method to select backend and persist
     fun selectBackend(backend: LlmInference.Backend, deviceId: String? = null) {
@@ -466,6 +518,18 @@ class ChatViewModel(
                 currentModel = loadedModel
                 if (loadedModel != null) {
                     _selectedModel.value = loadedModel
+                    
+                    // Sync the backend and deviceId from the inference service
+                    if (inferenceService.isNpuBackendEnabled()) {
+                        _selectedNpuDeviceId.value = "dev0"
+                        _selectedBackend.value = LlmInference.Backend.GPU
+                    } else if (inferenceService.isGpuBackendEnabled()) {
+                        _selectedNpuDeviceId.value = null
+                        _selectedBackend.value = LlmInference.Backend.GPU
+                    } else {
+                        _selectedNpuDeviceId.value = null
+                        _selectedBackend.value = LlmInference.Backend.CPU
+                    }
                 }
                 
                 // Sync the modality disabled states from the inference service
@@ -558,13 +622,16 @@ class ChatViewModel(
                 }
                 
                 // Preserve the current model for new chats but don't auto-load it
-                currentModel = previousModel
+                val modelToUse = previousModel ?: _selectedModel.value ?: _availableModels.value.find { it.isDownloaded }
+                currentModel = modelToUse
                 
                 // If we have a model, update the chat to use it but don't load it
-                if (previousModel != null) {
-                    repository.updateChatModel(newChatId, previousModel.name)
+                if (modelToUse != null) {
+                    repository.updateChatModel(newChatId, modelToUse.name)
                     _currentChat.value = repository.getChatById(newChatId)
-                    Log.d("ChatViewModel", "Set model ${previousModel.name} for new chat but didn't auto-load it")
+                    _selectedModel.value = modelToUse
+                    loadSettingsForModel(modelToUse)
+                    Log.d("ChatViewModel", "Set model ${modelToUse.name} for new chat")
                 }
 
                 // Begin collecting messages for the newly created chat
@@ -635,6 +702,8 @@ class ChatViewModel(
                     // Use the model associated with this chat
                     Log.d("ChatViewModel", "Chat requires model: ${foundModel.name}")
                     currentModel = foundModel
+                    _selectedModel.value = foundModel
+                    loadSettingsForModel(foundModel)
                     // Don't auto-load the model - let user manually load it if needed
                     // Users can select the model from the dropdown if they want to load it
                     Log.d("ChatViewModel", "Model not auto-loaded, user can select it manually")
@@ -642,6 +711,8 @@ class ChatViewModel(
                     // Fallback to the previously loaded model and assign it to this chat
                     Log.d("ChatViewModel", "Using previous model for chat: ${previousModel.name}")
                     currentModel = previousModel
+                    _selectedModel.value = previousModel
+                    loadSettingsForModel(previousModel)
                     repository.updateChatModel(chatId, previousModel.name)
                     _currentChat.value = repository.getChatById(chatId)
                     // Don't auto-load previous model either - keep current state
@@ -652,6 +723,8 @@ class ChatViewModel(
                     if (selected != null && selected.isDownloaded) {
                         Log.d("ChatViewModel", "Using last selected model: ${selected.name}")
                         currentModel = selected
+                        _selectedModel.value = selected
+                        loadSettingsForModel(selected)
                         repository.updateChatModel(chatId, selected.name)
                         _currentChat.value = repository.getChatById(chatId)
                     } else {
@@ -660,6 +733,8 @@ class ChatViewModel(
                         if (firstDownloaded != null) {
                             Log.d("ChatViewModel", "Using first downloaded model: ${firstDownloaded.name}")
                             currentModel = firstDownloaded
+                            _selectedModel.value = firstDownloaded
+                            loadSettingsForModel(firstDownloaded)
                             repository.updateChatModel(chatId, firstDownloaded.name)
                             _currentChat.value = repository.getChatById(chatId)
                         } else {
@@ -3107,6 +3182,7 @@ class ChatViewModel(
         if (modelToUse != null) {
             this.currentModel = modelToUse
             _selectedModel.value = modelToUse
+            loadSettingsForModel(modelToUse)
             repository.updateChatModel(newChatId, modelToUse.name)
             _currentChat.value = repository.getChatById(newChatId)
             

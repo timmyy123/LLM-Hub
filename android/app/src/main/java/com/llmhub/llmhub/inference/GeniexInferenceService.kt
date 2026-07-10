@@ -1320,20 +1320,7 @@ class GeniexInferenceService @Inject constructor(
                     loadModelInternal(modelToReload, backendToUse, currentVisionDisabled)
                 }
             } else if (llmWrapper != null) {
-                if (!hasGeneratedTokensSinceLoad) {
-                    // Model was just loaded and never used — recurrent/KV state is already clean.
-                    Log.d(TAG, "LLM: skipping wrapper destroy — no tokens generated since last load")
-                } else {
-                    // Model has been used; recurrent state (LFM etc.) must be reset via reload.
-                    Log.d(TAG, "LLM: Destroying wrapper to clear recurrent/KV state for new chat")
-                    llmWrapper?.stopStream()
-                    llmWrapper?.destroy()
-                    llmWrapper = null
-                    if (modelToReload != null) {
-                        Log.d(TAG, "LLM: Reloading model ${modelToReload.name} for fresh state")
-                        loadModelInternal(modelToReload, backendToUse, currentVisionDisabled)
-                    }
-                }
+                llmWrapper?.stopStream()
             }
         } catch (e: Exception) {
             Log.w(TAG, "Error resetting chat session: ${e.message}")

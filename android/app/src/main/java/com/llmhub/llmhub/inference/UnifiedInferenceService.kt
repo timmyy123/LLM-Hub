@@ -173,6 +173,10 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         return currentService.isGpuBackendEnabled()
     }
 
+    override fun isNpuBackendEnabled(): Boolean {
+        return currentService.isNpuBackendEnabled()
+    }
+
     override fun getEffectiveMaxTokens(model: LLMModel): Int {
         return when (model.modelFormat) {
             "onnx" -> onnxService.getEffectiveMaxTokens(model)
