@@ -8,6 +8,7 @@ import android.util.Log
 import com.google.ai.edge.litertlm.Backend
 import com.google.ai.edge.litertlm.Content
 import com.google.ai.edge.litertlm.Contents
+import com.google.ai.edge.litertlm.Conversation
 import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
@@ -25,8 +26,12 @@ import com.llmhub.llmhub.utils.LocaleHelper
 import com.llmhub.llmhub.websearch.DuckDuckGoSearchService
 import com.llmhub.llmhub.websearch.SearchIntentDetector
 import com.llmhub.llmhub.websearch.WebSearchService
+import com.google.ai.edge.litertlm.Message
+import com.google.ai.edge.litertlm.MessageCallback
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.sync.Mutex
@@ -334,7 +339,7 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
         return withContext(Dispatchers.IO) {
             val sb = StringBuilder()
             eng.createConversation(buildConversationConfig()).use { conv ->
-                conv.sendMessageAsync(prompt).collect { msg ->
+                conv.sendMessageAsyncWithCallback(prompt).collect { msg ->
                     sb.append(msg.contents.contents.filterIsInstance<Content.Text>().joinToString("") { it.text })
                 }
             }
@@ -347,7 +352,7 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
         val eng = engine ?: throw IllegalStateException("No engine loaded")
         return flow {
             eng.createConversation(buildConversationConfig()).use { conv ->
-                conv.sendMessageAsync(prompt).collect { msg ->
+                conv.sendMessageAsyncWithCallback(prompt).collect { msg ->
                     val chunk = msg.contents.contents.filterIsInstance<Content.Text>().joinToString("") { it.text }
                     if (chunk.isNotEmpty()) emit(chunk)
                 }
@@ -462,7 +467,7 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
                 var sentThinkOpen = false
                 var sentThinkClose = false
                 eng.createConversation(agentConfig).use { conv ->
-                    conv.sendMessageAsync(contents).collect { msg ->
+                    conv.sendMessageAsyncWithCallback(contents).collect { msg ->
                         val chunk = msg.contents.contents.filterIsInstance<Content.Text>().joinToString("") { it.text }
                         val thinkingChunk = if (useThinking) {
                             try { msg.channels?.get("thought") } catch (_: Exception) { null }
@@ -484,7 +489,7 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
                 var sentThinkOpen = false
                 var sentThinkClose = false
                 eng.createConversation(buildConversationConfig()).use { conv ->
-                    conv.sendMessageAsync(contents).collect { msg ->
+                    conv.sendMessageAsyncWithCallback(contents).collect { msg ->
                         val chunk = msg.contents.contents.filterIsInstance<Content.Text>().joinToString("") { it.text }
                         val thinkingChunk = if (useThinking) {
                             try { msg.channels?.get("thought") } catch (_: Exception) { null }
@@ -536,6 +541,44 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
             .replace("<|start_header_id|>", "")
             .replace("<|end_header_id|>", "")
         return Pair(cleaned, shouldStop)
+    }
+
+    private fun Conversation.sendMessageAsyncWithCallback(prompt: String): Flow<Message> = callbackFlow {
+        try {
+            sendMessageAsync(prompt, object : MessageCallback {
+                override fun onMessage(message: Message) {
+                    trySend(message)
+                }
+                override fun onDone() {
+                    close()
+                }
+                override fun onError(throwable: Throwable) {
+                    close(throwable)
+                }
+            })
+        } catch (e: Exception) {
+            close(e)
+        }
+        awaitClose {}
+    }
+
+    private fun Conversation.sendMessageAsyncWithCallback(contents: Contents): Flow<Message> = callbackFlow {
+        try {
+            sendMessageAsync(contents, object : MessageCallback {
+                override fun onMessage(message: Message) {
+                    trySend(message)
+                }
+                override fun onDone() {
+                    close()
+                }
+                override fun onError(throwable: Throwable) {
+                    close(throwable)
+                }
+            })
+        } catch (e: Exception) {
+            close(e)
+        }
+        awaitClose {}
     }
 
 }
