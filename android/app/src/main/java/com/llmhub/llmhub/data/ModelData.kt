@@ -3750,6 +3750,144 @@ object ModelData {
             contextWindowSize = 524288,
             modelFormat = "gguf"
         ),
+
+        // Ministral-3 8B Instruct GGUF Models (MistralAI GGUF)
+        LLMModel(
+            name = "Ministral-3 8B Instruct (Q4_K_M)",
+            description = "MistralAI's 8B instruct model. Q4_K_M quantization. 128k context. Supports Vision (Requires mmproj).",
+            url = "https://huggingface.co/mistralai/Ministral-3-8B-Instruct-2512-GGUF/resolve/0102285ad796bd99af90f58de616092e5630e970/Ministral-3-8B-Instruct-2512-Q4_K_M.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 5198911904L,
+            source = "MistralAI",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 8),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Ministral-3 8B Instruct (Q5_K_M)",
+            description = "MistralAI's 8B instruct model. Q5_K_M quantization. 128k context. Supports Vision (Requires mmproj).",
+            url = "https://huggingface.co/mistralai/Ministral-3-8B-Instruct-2512-GGUF/resolve/0102285ad796bd99af90f58de616092e5630e970/Ministral-3-8B-Instruct-2512-Q5_K_M.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 6059268512L,
+            source = "MistralAI",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 8, recommendedRamGB = 10),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Ministral-3 8B Instruct (Q8_0)",
+            description = "MistralAI's 8B instruct model. Q8_0 quantization. 128k context. Supports Vision (Requires mmproj).",
+            url = "https://huggingface.co/mistralai/Ministral-3-8B-Instruct-2512-GGUF/resolve/0102285ad796bd99af90f58de616092e5630e970/Ministral-3-8B-Instruct-2512-Q8_0.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 9029392800L,
+            source = "MistralAI",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 10, recommendedRamGB = 12),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Ministral-3 8B Instruct (Vision Projector, BF16)",
+            description = "Multimodal Vision Projector for Ministral-3 8B models. Specifically the BF16 variant required for image input capabilities.",
+            url = "https://huggingface.co/mistralai/Ministral-3-8B-Instruct-2512-GGUF/resolve/0102285ad796bd99af90f58de616092e5630e970/Ministral-3-8B-Instruct-2512-BF16-mmproj.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 858283168L,
+            source = "MistralAI",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 2),
+            contextWindowSize = 0,
+            modelFormat = "gguf"
+        ),
+
+        // Ministral-3 14B Instruct GGUF Models (MistralAI GGUF)
+        LLMModel(
+            name = "Ministral-3 14B Instruct (Q4_K_M)",
+            description = "MistralAI's 14B instruct model. Q4_K_M quantization. 128k context. Supports Vision (Requires mmproj).",
+            url = "https://huggingface.co/mistralai/Ministral-3-14B-Instruct-2512-GGUF/resolve/74fac473c43357d7fb2671713608183cc72496d0/Ministral-3-14B-Instruct-2512-Q4_K_M.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 8239593024L,
+            source = "MistralAI",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 10, recommendedRamGB = 12),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Ministral-3 14B Instruct (Q5_K_M)",
+            description = "MistralAI's 14B instruct model. Q5_K_M quantization. 128k context. Supports Vision (Requires mmproj).",
+            url = "https://huggingface.co/mistralai/Ministral-3-14B-Instruct-2512-GGUF/resolve/74fac473c43357d7fb2671713608183cc72496d0/Ministral-3-14B-Instruct-2512-Q5_K_M.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 9621091904L,
+            source = "MistralAI",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Ministral-3 14B Instruct (Q8_0)",
+            description = "MistralAI's 14B instruct model. Q8_0 quantization. 128k context. Supports Vision (Requires mmproj).",
+            url = "https://huggingface.co/mistralai/Ministral-3-14B-Instruct-2512-GGUF/resolve/74fac473c43357d7fb2671713608183cc72496d0/Ministral-3-14B-Instruct-2512-Q8_0.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 14359836224L,
+            source = "MistralAI",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 16, recommendedRamGB = 20),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Ministral-3 14B Instruct (Vision Projector, BF16)",
+            description = "Multimodal Vision Projector for Ministral-3 14B models. Specifically the BF16 variant required for image input capabilities.",
+            url = "https://huggingface.co/mistralai/Ministral-3-14B-Instruct-2512-GGUF/resolve/74fac473c43357d7fb2671713608183cc72496d0/Ministral-3-14B-Instruct-2512-BF16-mmproj.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 879258784L,
+            source = "MistralAI",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 2),
+            contextWindowSize = 0,
+            modelFormat = "gguf"
+        ),
+
+        // Ternary Bonsai 4B Models
+        LLMModel(
+            name = "Ternary Bonsai 4B (F16)",
+            description = "Ternary Bonsai 4B at full precision F16. 8k context. (8.05GB)",
+            url = "https://huggingface.co/prism-ml/Ternary-Bonsai-4B-gguf/resolve/a3eb42bafe873f9686bc97486c43b72ef7d75ec8/Ternary-Bonsai-4B-F16.gguf?download=true",
+            category = "text",
+            sizeBytes = 8049911840L,
+            source = "Prism ML",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 10, recommendedRamGB = 12),
+            contextWindowSize = 8192,
+            modelFormat = "gguf"
+        ),
+
+        // Ternary Bonsai 8B Models
+        LLMModel(
+            name = "Ternary Bonsai 8B (F16)",
+            description = "Ternary Bonsai 8B at full precision F16. 8k context. (16.38GB)",
+            url = "https://huggingface.co/prism-ml/Ternary-Bonsai-8B-gguf/resolve/c2aefbeb4b24469cd11579c3384b990404c17a30/Ternary-Bonsai-8B-F16.gguf?download=true",
+            category = "text",
+            sizeBytes = 16383663200L,
+            source = "Prism ML",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 18, recommendedRamGB = 24),
+            contextWindowSize = 8192,
+            modelFormat = "gguf"
+        ),
         // WhisperKit ASR Models (TFLite + QNN NPU acceleration via argmaxinc/WhisperKit)
         // Each model needs 5 files: AudioEncoder.tflite, MelSpectrogram.tflite, TextDecoder.tflite,
         // tokenizer.json, config.json — all required by the WhisperKit JNI layer.
