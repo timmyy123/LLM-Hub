@@ -1141,9 +1141,8 @@ private struct IOS26TranscriberScreen: View {
                 .disabled(!canUploadAudio)
 
                 if let selectedAudioURL = transcriber.selectedAudioURL {
-                    HStack(spacing: 8) {
-                        Image(systemName: "waveform")
-                            .foregroundStyle(.white.opacity(0.85))
+                    HStack(spacing: 10) {
+                        AudioPlaybackButton(url: selectedAudioURL)
                         Text(selectedAudioURL.lastPathComponent)
                             .font(.subheadline)
                             .lineLimit(1)
@@ -1773,8 +1772,8 @@ private struct IOS26TranscriberScreen: View {
                 .disabled(audioRecorder.isRecording || whisper.isTranscribing || isAudioTranscribing)
 
                 if let url = selectedAudioURL {
-                    HStack(spacing: 8) {
-                        Image(systemName: "waveform").foregroundStyle(.white.opacity(0.85))
+                    HStack(spacing: 10) {
+                        AudioPlaybackButton(url: url)
                         Text(url.lastPathComponent)
                             .font(.subheadline)
                             .lineLimit(1)

@@ -399,6 +399,15 @@ fun TranslatorScreen(
             }
         }
     }
+
+    // Reset audio player when recording/audio data changes
+    LaunchedEffect(recordedAudioData) {
+        audioPlayer?.release()
+        audioPlayer = null
+        isAudioPlaying = false
+        audioCurrentPosition = 0
+        audioDuration = 0
+    }
     
     // Audio playback progress tracking
     LaunchedEffect(isAudioPlaying) {
@@ -1520,6 +1529,15 @@ fun TranscriberScreen(
                 }
             }
         }
+    }
+
+    // Reset audio player when recording/audio data changes
+    LaunchedEffect(recordedAudioData) {
+        audioPlayer?.release()
+        audioPlayer = null
+        isAudioPlaying = false
+        audioCurrentPosition = 0
+        audioDuration = 0
     }
 
 
