@@ -3615,8 +3615,9 @@ struct ChatScreen: View {
             },
             onRegenerateResponse: regenerateAction,
             onToggleTts: !msg.isFromUser && !msg.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? {
+                let contentToSpeak = contentHasThinkingMarkers(msg.content) ? getDisplayContentWithoutThinking(msg.content) : msg.content
                 ttsManager.toggleSpeaking(
-                    msg.content,
+                    contentToSpeak,
                     fallbackLanguage: settings.selectedLanguage,
                     key: msg.id.uuidString
                 )
@@ -3763,6 +3764,7 @@ private struct ScrollDragDetector: UIViewRepresentable {
     class Coordinator: NSObject {
         let onDragBegan: @MainActor () -> Void
         private weak var attachedScrollView: UIScrollView?
+        private var observation: NSKeyValueObservation?
 
         init(onDragBegan: @escaping @MainActor () -> Void) {
             self.onDragBegan = onDragBegan
@@ -3773,8 +3775,19 @@ private struct ScrollDragDetector: UIViewRepresentable {
         func attach(to scrollView: UIScrollView) {
             guard scrollView !== attachedScrollView else { return }
             attachedScrollView?.panGestureRecognizer.removeTarget(self, action: nil)
+            observation?.invalidate()
+            
             attachedScrollView = scrollView
             scrollView.panGestureRecognizer.addTarget(self, action: #selector(handlePan(_:)))
+            
+            observation = scrollView.observe(\.contentOffset, options: [.new]) { [weak self] sv, _ in
+                guard let self = self else { return }
+                if sv.isTracking || sv.isDragging {
+                    DispatchQueue.main.async {
+                        self.onDragBegan()
+                    }
+                }
+            }
         }
 
         func scrollToBottom() {
@@ -3791,6 +3804,10 @@ private struct ScrollDragDetector: UIViewRepresentable {
             if recognizer.state == .began {
                 onDragBegan()
             }
+        }
+        
+        deinit {
+            observation?.invalidate()
         }
     }
 }
