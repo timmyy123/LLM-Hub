@@ -11,6 +11,7 @@ import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.llmhub.llmhub.R
+import com.llmhub.llmhub.data.ModelData
 import com.google.android.play.core.assetpacks.AssetPackManager
 import com.google.android.play.core.assetpacks.AssetPackManagerFactory
 import java.io.File
@@ -246,12 +247,12 @@ class SDBackendService : Service() {
     private fun buildCommand(executable: File, modelDir: File, modelType: String): List<String> {
         val actualDir = findActualModelDir(modelDir)
 
-        // Determine --type based on model contents and path
-        val isSDXL = modelDir.absolutePath.contains("sdxl", ignoreCase = true) ||
-            actualDir.absolutePath.contains("sdxl", ignoreCase = true)
+        // Determine --type based on model contents and path using centralized check
+        val isSDXL = ModelData.isSdxlModel(modelDir.absolutePath) ||
+            ModelData.isSdxlModel(actualDir.absolutePath)
         // anima-qnn format: uses unet_part1.bin + unet_part2.bin + clip.bin (no clip_v2.mnn)
         val isAnima = modelType == "qnn" && !isSDXL &&
-            File(actualDir, "unet_part1.bin").exists() && File(actualDir, "unet_part2.bin").exists()
+            (ModelData.isAnimaModel(modelDir.absolutePath) || ModelData.isAnimaModel(actualDir.absolutePath))
 
         val type = when {
             isSDXL -> "sdxl"

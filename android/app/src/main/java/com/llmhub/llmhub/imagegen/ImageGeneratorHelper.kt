@@ -9,6 +9,7 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
 import com.llmhub.llmhub.service.SDBackendService
+import com.llmhub.llmhub.data.ModelData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -49,23 +50,12 @@ class ImageGeneratorHelper(private val context: Context) {
 
             currentModelType = modelInfo.type
             
-            // Check if SDXL based on keywords in model name or file path
-            val modelName = modelInfo.name.lowercase()
-            val modelPathLower = modelInfo.path.lowercase()
-            val sdxlKeywords = listOf(
-                "xl", "illustrious", "animagine", "ponydiffusion", "anikawa", "chenkinnoob", 
-                "counterfeit", "cyber_realistic", "dreamshaper", "epic_realism", "furrytoonmix", 
-                "gonzalomo", "illustrij", "intorealism", "juggernaut", "lemonsugarmix", 
-                "miaomiao", "noobai", "orange_rex", "novaanime", "novafurry", "perfect_deliberate", 
-                "perfection_realistic", "pppanimix", "prefect", "raehoshi", "realvis", "reed_xxx", 
-                "rin_anime", "featherfall", "flanime"
-            )
-            isSdxlModel = modelName.contains("xl") || modelPathLower.contains("xl") ||
-                    sdxlKeywords.any { modelName.contains(it) || modelPathLower.contains(it) }
+            // Check if SDXL using ModelData centralized detection
+            isSdxlModel = ModelData.isSdxlModel(modelInfo.name) || ModelData.isSdxlModel(modelInfo.path)
 
             // Anima format uses split unet (unet_part1.bin + unet_part2.bin), requires 1024x1024
             isAnimaModel = currentModelType == ModelType.QNN_NPU && !isSdxlModel &&
-                    File(modelInfo.path).walkTopDown().any { it.name == "unet_part1.bin" }
+                    (ModelData.isAnimaModel(modelInfo.name) || ModelData.isAnimaModel(modelInfo.path))
 
             Log.i(TAG, "Found model: ${modelInfo.name} (${modelInfo.type}), isSdxl=$isSdxlModel, isAnima=$isAnimaModel")
             

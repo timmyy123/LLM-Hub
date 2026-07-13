@@ -754,7 +754,7 @@ object ModelData {
        LLMModel(
            name = "Anima Base V1 Turbo (NPU)",
            description = "Anima Base V1 Turbo model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation. Requires Snapdragon 8 Gen 3 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~4.00 GB download from HuggingFace.",
-           url = "https://huggingface.co/xororz/anima-qnn/resolve/20d50881cd123fe0cc1e06dbd243bb8bb068e204/anima_base_v1_turbo_qnn2.28_8gen3.zip",
+           url = "https://huggingface.co/xororz/anima-qnn/resolve/69016e97f681a6de9aa34e55222c2ba697b7ec8e/anima_base_v1_turbo_qnn2.28_8gen3.zip",
            category = "image_generation",
            sizeBytes = 4290828128L,
            source = "Stable Diffusion (QNN SDK via xororz)",
@@ -768,7 +768,7 @@ object ModelData {
        LLMModel(
            name = "Animayume V1 Turbo (NPU)",
            description = "Animayume V1 Turbo model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation. Requires Snapdragon 8 Gen 3 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~3.99 GB download from HuggingFace.",
-           url = "https://huggingface.co/xororz/anima-qnn/resolve/20d50881cd123fe0cc1e06dbd243bb8bb068e204/animayume_v1_turbo_qnn2.28_8gen3.zip",
+           url = "https://huggingface.co/xororz/anima-qnn/resolve/69016e97f681a6de9aa34e55222c2ba697b7ec8e/animayume_v1_turbo_qnn2.28_8gen3.zip",
            category = "image_generation",
            sizeBytes = 4287096388L,
            source = "Stable Diffusion (QNN SDK via xororz)",
@@ -779,10 +779,38 @@ object ModelData {
            contextWindowSize = 0,
            modelFormat = "qnn_npu"
        ),
+        LLMModel(
+            name = "CyberRealistic V3 Turbo (NPU)",
+            description = "CyberRealistic V3 Turbo model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation. Requires Snapdragon 8 Gen 3 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~4.52 GB download from HuggingFace.",
+            url = "https://huggingface.co/xororz/anima-qnn/resolve/69016e97f681a6de9aa34e55222c2ba697b7ec8e/cyberrealistic_v3_turbo_qnn2.28_8gen3.zip",
+            category = "image_generation",
+            sizeBytes = 4853683064L,
+            source = "Stable Diffusion (QNN SDK via xororz)",
+            supportsVision = false,
+            supportsAudio = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
+            contextWindowSize = 0,
+            modelFormat = "qnn_npu"
+        ),
+        LLMModel(
+            name = "Miaomiao V1.4 Turbo (NPU)",
+            description = "Miaomiao V1.4 Turbo model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation. Requires Snapdragon 8 Gen 3 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~4.00 GB download from HuggingFace.",
+            url = "https://huggingface.co/xororz/anima-qnn/resolve/69016e97f681a6de9aa34e55222c2ba697b7ec8e/miaomiao_v1.4_turbo_qnn2.28_8gen3.zip",
+            category = "image_generation",
+            sizeBytes = 4299044507L,
+            source = "Stable Diffusion (QNN SDK via xororz)",
+            supportsVision = false,
+            supportsAudio = false,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
+            contextWindowSize = 0,
+            modelFormat = "qnn_npu"
+        ),
        LLMModel(
            name = "Nova Anime V2.5 Turbo (NPU)",
            description = "Nova Anime V2.5 Turbo model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation. Requires Snapdragon 8 Gen 3 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~4.00 GB download from HuggingFace.",
-           url = "https://huggingface.co/xororz/anima-qnn/resolve/20d50881cd123fe0cc1e06dbd243bb8bb068e204/novaanime_v2.5_turbo_qnn2.28_8gen3.zip",
+           url = "https://huggingface.co/xororz/anima-qnn/resolve/69016e97f681a6de9aa34e55222c2ba697b7ec8e/novaanime_v2.5_turbo_qnn2.28_8gen3.zip",
            category = "image_generation",
            sizeBytes = 4290744025L,
            source = "Stable Diffusion (QNN SDK via xororz)",
@@ -796,7 +824,7 @@ object ModelData {
        LLMModel(
            name = "Nova Anime V3 Turbo (NPU)",
            description = "Nova Anime V3 Turbo model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation. Requires Snapdragon 8 Gen 3 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~4.00 GB download from HuggingFace.",
-           url = "https://huggingface.co/xororz/anima-qnn/resolve/20d50881cd123fe0cc1e06dbd243bb8bb068e204/novaanime_v3_turbo_qnn2.28_8gen3.zip",
+           url = "https://huggingface.co/xororz/anima-qnn/resolve/69016e97f681a6de9aa34e55222c2ba697b7ec8e/novaanime_v3_turbo_qnn2.28_8gen3.zip",
            category = "image_generation",
            sizeBytes = 4292018537L,
            source = "Stable Diffusion (QNN SDK via xororz)",
@@ -810,7 +838,7 @@ object ModelData {
        LLMModel(
            name = "Rin Flanime V1 Turbo (NPU)",
            description = "Rin Flanime V1 Turbo model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation. Requires Snapdragon 8 Gen 3 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~4.52 GB download from HuggingFace.",
-           url = "https://huggingface.co/xororz/anima-qnn/resolve/20d50881cd123fe0cc1e06dbd243bb8bb068e204/rin_flanime_v1_turbo_qnn2.28_8gen3.zip",
+           url = "https://huggingface.co/xororz/anima-qnn/resolve/69016e97f681a6de9aa34e55222c2ba697b7ec8e/rin_flanime_v1_turbo_qnn2.28_8gen3.zip",
            category = "image_generation",
            sizeBytes = 4854654219L,
            source = "Stable Diffusion (QNN SDK via xororz)",
@@ -824,7 +852,7 @@ object ModelData {
        LLMModel(
            name = "Sam Anima Realistic V2.3 Turbo (NPU)",
            description = "Sam Anima Realistic V2.3 Turbo model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation. Requires Snapdragon 8 Gen 3 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~4.00 GB download from HuggingFace.",
-           url = "https://huggingface.co/xororz/anima-qnn/resolve/20d50881cd123fe0cc1e06dbd243bb8bb068e204/sam_anima_realistic_v2.3_turbo_qnn2.28_8gen3.zip",
+           url = "https://huggingface.co/xororz/anima-qnn/resolve/69016e97f681a6de9aa34e55222c2ba697b7ec8e/sam_anima_realistic_v2.3_turbo_qnn2.28_8gen3.zip",
            category = "image_generation",
            sizeBytes = 4290163015L,
            source = "Stable Diffusion (QNN SDK via xororz)",
@@ -838,7 +866,7 @@ object ModelData {
        LLMModel(
            name = "Wai Anima V1 Turbo (NPU)",
            description = "Wai Anima V1 Turbo model optimized for Qualcomm NPU acceleration using QNN SDK. Supports txt2img generation. Requires Snapdragon 8 Gen 3 or newer with Hexagon NPU. Device detected: ${DeviceInfo.getDeviceSoc()}. ~3.99 GB download from HuggingFace.",
-           url = "https://huggingface.co/xororz/anima-qnn/resolve/20d50881cd123fe0cc1e06dbd243bb8bb068e204/wai_anima_v1_turbo_qnn2.28_8gen3.zip",
+           url = "https://huggingface.co/xororz/anima-qnn/resolve/69016e97f681a6de9aa34e55222c2ba697b7ec8e/wai_anima_v1_turbo_qnn2.28_8gen3.zip",
            category = "image_generation",
            sizeBytes = 4281870655L,
            source = "Stable Diffusion (QNN SDK via xororz)",
@@ -3973,6 +4001,53 @@ object ModelData {
         )
         // Note: Gecko tokenizer removed - Gecko models have built-in tokenizers
     ) + upscalerModels + ttsModels + (if (DeviceInfo.getChipsetSuffix() in setOf("8gen3", "8gen4", "8gen5")) sdxlModels else emptyList())
+
+    /**
+     * Helper to detect model type based on its registry details (URL) or path keywords.
+     */
+    private fun matchesTypeKeyword(modelPathOrName: String?, keyword: String): Boolean {
+        if (modelPathOrName == null) return false
+        val pathLower = modelPathOrName.lowercase()
+        
+        // 1. Check if the path or name explicitly contains the keyword (case-insensitive)
+        if (pathLower.contains(keyword)) return true
+        
+        // 2. Try to match the folder name with predefined models in ModelData
+        val file = java.io.File(modelPathOrName)
+        val folderName = file.name.lowercase().replace("_", " ").trim()
+        
+        // Find matching predefined model (ignoring case, spaces, and NPU/CPU suffixes)
+        val matchedModel = models.find { model ->
+            val normalizedPredefined = model.name.lowercase()
+                .replace("(npu)", "")
+                .replace("(cpu)", "")
+                .replace(" ", "")
+                .trim()
+            val normalizedFolder = folderName
+                .replace("(npu)", "")
+                .replace("(cpu)", "")
+                .replace(" ", "")
+                .trim()
+            
+            normalizedPredefined == normalizedFolder || 
+            normalizedFolder.contains(normalizedPredefined) ||
+            normalizedPredefined.contains(normalizedFolder)
+        }
+        
+        if (matchedModel != null) {
+            return matchedModel.url.lowercase().contains(keyword)
+        }
+        
+        return false
+    }
+
+    fun isSdxlModel(modelPathOrName: String?): Boolean {
+        return matchesTypeKeyword(modelPathOrName, "sdxl-qnn")
+    }
+
+    fun isAnimaModel(modelPathOrName: String?): Boolean {
+        return matchesTypeKeyword(modelPathOrName, "anima-qnn")
+    }
 
     /**
      * Current Status and Next Steps

@@ -167,13 +167,13 @@ class StableDiffusionHelper(private val context: Context) {
         
         return when (modelType) {
             "QNN" -> ModelInfo(
-                name = "Absolute Reality",
+                name = foundDir?.name ?: "Absolute Reality",
                 type = ModelType.QNN_NPU,
                 path = modelPath,
                 isReady = true
             )
             "MNN" -> ModelInfo(
-                name = "Absolute Reality",
+                name = foundDir?.name ?: "Absolute Reality",
                 type = ModelType.MNN_CPU,
                 path = modelPath,
                 isReady = true
