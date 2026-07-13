@@ -2814,10 +2814,12 @@ struct ChatDrawerPanel: View {
                             .fontWeight(.semibold)
                     }
                     if !vm.chatSessions.isEmpty {
-                        Button(role: .destructive) {
+                        Button {
                             showDeleteAllAlert = true
                         } label: {
-                            Label(settings.localized("drawer_clear_all_chats"), systemImage: "trash")
+                            Label(settings.localized("drawer_clear_all_chats"), systemImage: "trash.fill")
+                                .foregroundColor(ApolloPalette.destructive)
+                                .fontWeight(.semibold)
                         }
                     }
                 }
