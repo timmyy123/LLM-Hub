@@ -2097,6 +2097,13 @@ private enum VibeVoiceState: Equatable {
     case idle, listening, responding, speaking
 }
 
+private struct ViewHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
 @available(iOS 17.0, *)
 private struct IOS17VibeVoiceScreen: View {
     @EnvironmentObject var settings: AppSettings
@@ -2116,6 +2123,8 @@ private struct IOS17VibeVoiceScreen: View {
     @StateObject private var transcriber = IOSVibeVoiceTranscriber()
     @StateObject private var audioRecorder = AudioRecorder()
     @State private var lastRecordedAudioURL: URL?
+    @State private var replyContentHeight: CGFloat = 0
+    @State private var ttsReadCursor = 0
 
     private let ttsKey = "vibevoice-reply"
 
@@ -2200,7 +2209,11 @@ private struct IOS17VibeVoiceScreen: View {
         .onChange(of: ttsManager.isSpeaking) { oldValue, newValue in
             NSLog("[LLMHub][VibeVoice] onChange(ttsManager.isSpeaking): \(oldValue) -> \(newValue), current voiceState: \(voiceState)")
             guard isChatActive else { return }
-            if oldValue && !newValue && voiceState == .speaking {
+            if !oldValue && newValue {
+                if voiceState == .responding || voiceState == .idle {
+                    voiceState = .speaking
+                }
+            } else if oldValue && !newValue && voiceState == .speaking {
                 NSLog("[LLMHub][VibeVoice] TTS finished speaking. Setting voiceState to .idle and scheduling startListeningCycle()")
                 voiceState = .idle
                 Task { @MainActor in
@@ -2358,24 +2371,41 @@ private struct IOS17VibeVoiceScreen: View {
 
             // Latest AI reply card
             if !latestReply.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(latestReply)
-                        .font(.body)
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(14)
-                        .background(.ultraThinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 18))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 18)
-                                .stroke(Color.white.opacity(0.14), lineWidth: 1)
-                        )
-
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        Text(latestReply)
+                            .font(.body)
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(
+                                GeometryReader { geo in
+                                    Color.clear
+                                        .preference(key: ViewHeightKey.self, value: geo.size.height)
+                                }
+                            )
+                            .id("bottom")
+                    }
+                    .onPreferenceChange(ViewHeightKey.self) { height in
+                        replyContentHeight = height
+                    }
+                    .onChange(of: latestReply) { _, _ in
+                        withAnimation {
+                            proxy.scrollTo("bottom", anchor: .bottom)
+                        }
+                    }
+                    .frame(height: min(replyContentHeight, 250))
+                    .padding(14)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18)
+                            .stroke(Color.white.opacity(0.14), lineWidth: 1)
+                    )
+                    .padding(.horizontal, 24)
+                    .padding(.top, 20)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+                    .animation(.spring(duration: 0.3), value: latestReply)
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 20)
-                .transition(.opacity.combined(with: .move(edge: .bottom)))
-                .animation(.spring(duration: 0.3), value: latestReply)
             }
 
             Spacer()
@@ -2389,7 +2419,7 @@ private struct IOS17VibeVoiceScreen: View {
         if !isChatActive { return "mic" }
         switch voiceState {
         case .listening: return "mic.fill"
-        case .responding: return "ellipsis.circle"
+        case .responding: return "ellipsis"
         case .speaking: return "speaker.wave.2.fill"
         case .idle: return "mic"
         }
@@ -2469,6 +2499,7 @@ private struct IOS17VibeVoiceScreen: View {
         guard isChatActive else { return }
         voiceState = .responding
         latestReply = ""
+        ttsReadCursor = 0
 
         await ensureModelLoaded(force: false)
         guard llm.isLoaded && isChatActive else {
@@ -2550,6 +2581,12 @@ private struct IOS17VibeVoiceScreen: View {
                             let sanitized = sanitizeModelOutputText(content)
                             let answerSoFar = getDisplayContentWithoutThinking(sanitized)
                             self.latestReply = answerSoFar
+                            
+                            let delta = String(answerSoFar.dropFirst(self.ttsReadCursor))
+                            if !delta.isEmpty {
+                                self.ttsReadCursor = answerSoFar.count
+                                self.ttsManager.addStreamingToken(delta, fallbackLanguage: self.settings.selectedLanguage, key: self.ttsKey)
+                            }
                         }
                     }
                 } catch {
@@ -2558,14 +2595,33 @@ private struct IOS17VibeVoiceScreen: View {
                 await MainActor.run {
                     self.generationTask = nil
                     guard self.isChatActive else { return }
+                    
+                    let displayContent = getDisplayContentWithoutThinking(self.latestReply)
+                    if displayContent.count > self.ttsReadCursor {
+                        let delta = String(displayContent.dropFirst(self.ttsReadCursor))
+                        if !delta.isEmpty {
+                            self.ttsManager.addStreamingToken(delta, fallbackLanguage: self.settings.selectedLanguage, key: self.ttsKey)
+                        }
+                    }
+                    self.ttsManager.flushStreamingBuffer(fallbackLanguage: self.settings.selectedLanguage, key: self.ttsKey)
+                    self.ttsReadCursor = 0
+                    
                     let rawReply = self.latestReply.trimmingCharacters(in: .whitespacesAndNewlines)
                     if !rawReply.isEmpty {
-                        let answerOnly = getDisplayContentWithoutThinking(rawReply)
-                        let replyForTts = answerOnly.isEmpty ? rawReply : answerOnly
+                        let replyForTts = getDisplayContentWithoutThinking(rawReply)
                         self.latestReply = replyForTts
                         self.conversationHistory.append((role: "assistant", content: replyForTts))
-                        self.voiceState = .speaking
-                        self.ttsManager.speak(replyForTts, fallbackLanguage: self.settings.selectedLanguage, key: self.ttsKey)
+                        if self.ttsManager.isSpeaking(key: self.ttsKey) {
+                            self.voiceState = .speaking
+                        } else {
+                            self.voiceState = .idle
+                            Task { @MainActor in
+                                try? await Task.sleep(nanoseconds: 350_000_000)
+                                if self.isChatActive {
+                                    await self.startListeningCycle()
+                                }
+                            }
+                        }
                     } else {
                         self.voiceState = .idle
                         Task { @MainActor in
@@ -2638,6 +2694,12 @@ private struct IOS17VibeVoiceScreen: View {
                         // in the voice UI card. While still in thinking phase the card is hidden.
                         let answerSoFar = getDisplayContentWithoutThinking(sanitized)
                         self.latestReply = answerSoFar
+                        
+                        let delta = String(answerSoFar.dropFirst(self.ttsReadCursor))
+                        if !delta.isEmpty {
+                            self.ttsReadCursor = answerSoFar.count
+                            self.ttsManager.addStreamingToken(delta, fallbackLanguage: self.settings.selectedLanguage, key: self.ttsKey)
+                        }
                     }
                 }
             } catch {
@@ -2646,17 +2708,35 @@ private struct IOS17VibeVoiceScreen: View {
             await MainActor.run {
                 self.generationTask = nil
                 guard self.isChatActive else { return }
+                
+                let displayContent = getDisplayContentWithoutThinking(self.latestReply)
+                if displayContent.count > self.ttsReadCursor {
+                    let delta = String(displayContent.dropFirst(self.ttsReadCursor))
+                    if !delta.isEmpty {
+                        self.ttsManager.addStreamingToken(delta, fallbackLanguage: self.settings.selectedLanguage, key: self.ttsKey)
+                    }
+                }
+                self.ttsManager.flushStreamingBuffer(fallbackLanguage: self.settings.selectedLanguage, key: self.ttsKey)
+                self.ttsReadCursor = 0
+                
                 let rawReply = self.latestReply.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !rawReply.isEmpty {
                     // Strip thinking tokens: store only the answer in history and speak only the answer.
-                    let answerOnly = getDisplayContentWithoutThinking(rawReply)
-                    let replyForTts = answerOnly.isEmpty ? rawReply : answerOnly
+                    let replyForTts = getDisplayContentWithoutThinking(rawReply)
                     // Update latestReply UI with stripped content so the card shows only the answer
                     self.latestReply = replyForTts
                     // Store answer (not thinking chain) in conversation history
                     self.conversationHistory.append((role: "assistant", content: replyForTts))
-                    self.voiceState = .speaking
-                    self.ttsManager.speak(replyForTts, fallbackLanguage: self.settings.selectedLanguage, key: self.ttsKey)
+                    if self.ttsManager.isSpeaking(key: self.ttsKey) {
+                        self.voiceState = .speaking
+                    } else {
+                        self.voiceState = .idle
+                        Task { @MainActor in
+                            try? await Task.sleep(nanoseconds: 300_000_000)
+                            guard self.isChatActive && self.isCurrentModelLoaded else { return }
+                            await self.startListeningCycle()
+                        }
+                    }
                 } else {
                     self.voiceState = .idle
                     Task { @MainActor in
