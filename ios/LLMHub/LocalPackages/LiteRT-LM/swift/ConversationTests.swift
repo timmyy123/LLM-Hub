@@ -183,6 +183,15 @@ class ConversationTests: XCTestCase {
     XCTAssertGreaterThan(benchmarkInfo.lastDecodeTokenCount, 0)
   }
 
+  func testConversationGetTokenCountSucceeds() async throws {
+    let conversation = try await self.engine.createConversation(with: ConversationConfig())
+    XCTAssertTrue(conversation.isAlive)
+    XCTAssertEqual(try conversation.getTokenCount(), 0)
+
+    let _ = try await conversation.sendMessage(Message("How are you"))
+    XCTAssertEqual(try conversation.getTokenCount(), 10)
+  }
+
   func testSendMessageWithExtraContextReturnsMessage() async throws {
     let conversation = try await self.engine.createConversation(with: ConversationConfig())
     XCTAssertTrue(conversation.isAlive)
@@ -280,5 +289,26 @@ class ConversationTests: XCTestCase {
 
     let conversation = try await self.engine.createConversation(with: config)
     XCTAssertTrue(conversation.isAlive)
+  }
+
+  func testRenderMessageIntoString() async throws {
+    let conversation = try await self.engine.createConversation(with: ConversationConfig())
+    XCTAssertTrue(conversation.isAlive)
+
+    let rendered = try conversation.renderMessageIntoString(Message("Hello world", role: .user))
+    XCTAssertFalse(rendered.isEmpty)
+    XCTAssertTrue(rendered.contains("Hello world"))
+  }
+
+  func testRenderPrefaceIntoString() async throws {
+    let config = ConversationConfig(
+      initialMessages: [Message("You are a helpful assistant", role: .system)]
+    )
+    let conversation = try await self.engine.createConversation(with: config)
+    XCTAssertTrue(conversation.isAlive)
+
+    let rendered = try conversation.renderPrefaceIntoString()
+    XCTAssertFalse(rendered.isEmpty)
+    XCTAssertTrue(rendered.contains("You are a helpful assistant"))
   }
 }

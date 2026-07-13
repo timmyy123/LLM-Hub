@@ -57,6 +57,10 @@ public struct EngineConfig {
   /// The directory for placing cache files. It should be a directory where the
   /// application has write access. If `nil`, it uses the directory of the `modelPath`.
   public let cacheDir: String?
+  /// The rank of the text LoRA weights. If 0 or nil, LoRA is disabled.
+  public let loraRank: Int?
+  /// The rank of the audio LoRA weights. If 0 or nil, audio LoRA is disabled.
+  public let audioLoraRank: Int?
 
   /// - Parameters:
   ///   - modelPath: The file path to the LiteRT-LM model.
@@ -70,12 +74,16 @@ public struct EngineConfig {
   ///     model or the engine.
   ///   - cacheDir: The directory for placing cache files. It should be a directory where the
   ///     application has write access. If `nil`, it uses the directory of the `modelPath`.
+  ///   - loraRank: The rank of the text LoRA weights.
+  ///   - audioLoraRank: The rank of the audio LoRA weights.
   /// - Throws: `LiteRTLMError` if `maxNumTokens` is less than or equal to 0.
   public init(
     modelPath: String, backend: Backend = .cpu(), visionBackend: Backend? = nil,
     audioBackend: Backend? = nil,
     maxNumTokens: Int? = nil,
-    cacheDir: String? = nil
+    cacheDir: String? = nil,
+    loraRank: Int? = nil,
+    audioLoraRank: Int? = nil
   ) throws {
     if let maxNumTokens, maxNumTokens <= 0 {
       throw LiteRTLMError.config(.invalidMaxNumTokens)
@@ -86,6 +94,8 @@ public struct EngineConfig {
     self.audioBackend = audioBackend
     self.maxNumTokens = maxNumTokens
     self.cacheDir = cacheDir
+    self.loraRank = loraRank
+    self.audioLoraRank = audioLoraRank
   }
 }
 
@@ -149,24 +159,43 @@ public struct ConversationConfig {
   // If `nil`, then uses the engine's default values.
   public let samplerConfig: SamplerConfig?
 
+  // The file path to the Text LoRA weights file.
+  public let loraPath: String?
+
+  // The file path to the Audio LoRA weights file.
+  public let audioLoraPath: String?
+  public let enableToolCallStreaming: Bool
+
   /// - Parameters:
   ///   - systemMessage: The system message to be used in the conversation.
   ///   - initialMessages: The initial messages to populate the conversation history.
   ///   - tools: The list of tool instances to be used in the conversation.
   ///   - samplerConfig: Configuration for the sampling process. If `nil`, then uses the engine's
   ///     default values.
+  ///   - loraPath: The file path to the Text LoRA weights file.
+  ///   - audioLoraPath: The file path to the Audio LoRA weights file.
+  ///   - enableToolCallStreaming: Whether to enable conversation tool call streaming.
   public init(
     systemMessage: Message? = nil,
     initialMessages: [Message] = [],
     tools: [Tool] = [],
-    samplerConfig: SamplerConfig? = nil
+    samplerConfig: SamplerConfig? = nil,
+    loraPath: String? = nil,
+    audioLoraPath: String? = nil,
+    enableToolCallStreaming: Bool = false
   ) {
-    self.systemMessage = systemMessage.map { msg in
-      msg.role == .system
+    self.systemMessage = systemMessage.flatMap { msg in
+      if msg.toString.isEmpty {
+        return nil
+      }
+      return msg.role == .system
         ? msg : Message(contents: msg.contents, role: .system, channels: msg.channels)
     }
     self.initialMessages = initialMessages
     self.tools = tools
     self.samplerConfig = samplerConfig
+    self.loraPath = loraPath
+    self.audioLoraPath = audioLoraPath
+    self.enableToolCallStreaming = enableToolCallStreaming
   }
 }

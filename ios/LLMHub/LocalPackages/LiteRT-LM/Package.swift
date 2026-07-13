@@ -15,14 +15,25 @@ let package = Package(
         ),
     ],
     targets: [
+        // The Prebuilt Binary Target for iOS
         .binaryTarget(
             name: "CLiteRTLM",
-            url: "https://github.com/google-ai-edge/LiteRT-LM/releases/download/v0.13.1/CLiteRTLM.xcframework.zip",
-            checksum: "7ff01c42106b754748b5dd3036a4a57161b25ebf523e705bebc1219061852362"
+            url: "https://github.com/google-ai-edge/LiteRT-LM/releases/download/v0.14.0/CLiteRTLM.xcframework.zip",
+            checksum: "dddac2f6713ed65eaf01c18e115d9fec22184adf575cc7856a21387e8ba937e1"
         ),
+        // The Prebuilt Binary Target for Mac
+        .binaryTarget(
+            name: "CLiteRTLM_mac",
+            url: "https://github.com/google-ai-edge/LiteRT-LM/releases/download/v0.14.0/CLiteRTLM_mac.xcframework.zip",
+            checksum: "450615483509aaa6d34b321fdc6862e41a224b674468ab10aff64ebe113d21b7"
+        ),
+        // The Swift Wrapper Target
         .target(
             name: "LiteRTLM",
-            dependencies: ["CLiteRTLM"],
+            dependencies: [
+                .target(name: "CLiteRTLM", condition: .when(platforms: [.iOS])),
+                .target(name: "CLiteRTLM_mac", condition: .when(platforms: [.macOS]))
+            ],
             path: "swift",
             exclude: [
                 "CapabilitiesTests.swift",

@@ -93,6 +93,37 @@ public struct ExperimentalFlags {
     }
   }
 
+  private static var _enableConversationToolCallStreaming: Bool = false
+
+  /// Whether to enable conversation tool call streaming.
+  ///
+  /// Note: This flag is read only when a new [Conversation] is created.
+  /// Changing this value will not affect any existing [Conversation] instances.
+  public static var enableConversationToolCallStreaming: Bool {
+    get { return _enableConversationToolCallStreaming }
+    set {
+      guard optedIn else {
+        logger.error("LiteRTLM: Must opt into experimental APIs before setting this flag.")
+        return
+      }
+      _enableConversationToolCallStreaming = newValue
+    }
+  }
+
+  private static var _conversationToolCallStreamingChannelName: String = "tool_call"
+
+  /// The channel name used for tool call tokens when streaming tool calls is enabled.
+  public static var conversationToolCallStreamingChannelName: String {
+    get { return _conversationToolCallStreamingChannelName }
+    set {
+      guard optedIn else {
+        logger.error("LiteRTLM: Must opt into experimental APIs before setting this flag.")
+        return
+      }
+      _conversationToolCallStreamingChannelName = newValue
+    }
+  }
+
   private static var _enableSpeculativeDecoding: Bool? = nil
 
   /// Whether to enable speculative decoding.

@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# [Google-internal load of `objc_library`]
+# [Google-internal load of `cc_library`]
+load("@build_bazel_rules_apple//apple:apple.bzl", "apple_universal_binary")
 load("@build_bazel_rules_apple//apple:apple.bzl", "apple_xcframework")
 load("@build_bazel_rules_apple//apple:ios.bzl", "ios_unit_test")
+load("@build_bazel_rules_apple//apple:macos.bzl", "macos_dylib")
+load("@build_bazel_rules_swift//swift:swift.bzl", "swift_interop_hint")
 load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
 
@@ -96,8 +99,18 @@ swift_library(
     ],
 )
 
-objc_library(
+swift_interop_hint(
+    name = "CLiteRTLM_swift_hint",
+    module_name = "CLiteRTLM",
+)
+
+cc_library(
     name = "CLiteRTLM_objc",
+    hdrs = [
+        "//c:engine.h",
+        "//schema/capabilities:capabilities_c.h",
+    ],
+    aspect_hints = [":CLiteRTLM_swift_hint"],
     deps = [
         "//c:engine",
         "//schema/capabilities:capabilities_c",
@@ -112,7 +125,6 @@ apple_xcframework(
     ios = {
         "simulator": [
             "arm64",
-            "x86_64",
         ],
         "device": [
             "arm64",
@@ -128,6 +140,58 @@ apple_xcframework(
     deps = [
         ":CLiteRTLM_objc",
     ],
+)
+
+macos_dylib(
+    name = "CLiteRTLM_dylib",
+    features = ["exported_symbols"],
+    linkopts = [
+        "-undefined dynamic_lookup",
+        "-install_name @rpath/libCLiteRTLM_mac.dylib",
+    ],
+    minimum_os_version = "12.0",
+    visibility = ["//visibility:public"],
+    deps = [":CLiteRTLM_objc"],
+)
+
+apple_universal_binary(
+    name = "CLiteRTLM_universal",
+    binary = ":CLiteRTLM_dylib",
+    forced_cpus = [
+        "arm64",
+        "x86_64",
+    ],
+    minimum_os_version = "12.0",
+    platform_type = "macos",
+)
+
+genrule(
+    name = "CLiteRTLM_mac",
+    srcs = [
+        ":CLiteRTLM_universal",
+        "//c:engine.h",
+        "//schema/capabilities:capabilities_c.h",
+    ],
+    outs = ["CLiteRTLM_mac.zip"],
+    cmd = """
+       mkdir -p CLiteRTLM_mac/Headers
+       # Copy the universal dylib
+       cp $(location :CLiteRTLM_universal) CLiteRTLM_mac/libCLiteRTLM_mac.dylib
+       # Copy the headers
+       cp $(location //c:engine.h) CLiteRTLM_mac/Headers/
+       cp $(location //schema/capabilities:capabilities_c.h) CLiteRTLM_mac/Headers/
+       # Create module map
+       cat << 'EOF' > CLiteRTLM_mac/Headers/module.modulemap
+module CLiteRTLM {
+   header "engine.h"
+   header "capabilities_c.h"
+   export *
+}
+EOF
+       # Zip it all up
+       zip -r $@ CLiteRTLM_mac
+   """,
+    visibility = ["//visibility:public"],
 )
 
 ios_unit_test(

@@ -68,22 +68,6 @@ public class Conversation {
     }
   }
 
-  /// Immediately releases the native conversation session.
-  ///
-  /// The LiteRT-LM engine only allows ONE session at a time. Waiting for Swift ARC
-  /// deinit is insufficient — the local `conversation` variable on the caller's stack
-  /// keeps the object alive past the next `createConversation()` call, causing
-  /// FAILED_PRECONDITION: A session already exists.
-  ///
-  /// Call this explicitly before creating a new Conversation. Safe to call
-  /// multiple times; deinit is also guarded against double-delete.
-  public func invalidate() {
-    if let h = handle {
-      litert_lm_conversation_delete(h)
-      handle = nil
-    }
-  }
-
   /// Sends a message to the model and returns the response. This is a synchronous call.
   ///
   /// - Parameter message: The message to send to the model.
@@ -132,11 +116,13 @@ public class Conversation {
     }
     let optionalArgs = litert_lm_conversation_optional_args_create()
     if let visualTokenBudget = ExperimentalFlags.visualTokenBudget {
-      litert_lm_conversation_optional_args_set_visual_token_budget(optionalArgs, Int32(visualTokenBudget))
+      litert_lm_conversation_optional_args_set_visual_token_budget(
+        optionalArgs, Int32(visualTokenBudget))
     }
     defer { litert_lm_conversation_optional_args_delete(optionalArgs) }
 
-    guard let responsePtr = litert_lm_conversation_send_message(
+    guard
+      let responsePtr = litert_lm_conversation_send_message(
         handle, messageString, extraContextString, optionalArgs)
     else {
       throw LiteRTLMError.conversation(.invalidResponse("Native sendMessage returned null."))
@@ -202,14 +188,15 @@ public class Conversation {
   /// - Parameter message: The message to send.
   /// - Parameter extraContext: The extra context to send to the model.
   /// - Returns: An async throwing stream of `Message` chunks.
-  public func sendMessageStream(_ message: Message, extraContext: [String: Any]? = nil)
-    -> AsyncThrowingStream<Message, Error>
-  {
+  public func sendMessageStream(
+    _ message: Message, extraContext: [String: Any]? = nil
+  ) -> AsyncThrowingStream<Message, Error> {
     return AsyncThrowingStream { continuation in
       do {
         let handle = try self.checkIsAlive()
         let messageJson: [String: Any] = message.toJson
-        let context = StreamContext(continuation: continuation, conversation: self)
+        let context = StreamContext(
+          continuation: continuation, conversation: self)
 
         try self.sendToStream(
           handle: handle, messageJson: messageJson, extraContext: extraContext, context: context)
@@ -252,7 +239,8 @@ public class Conversation {
 
     let optionalArgs = litert_lm_conversation_optional_args_create()
     if let visualTokenBudget = ExperimentalFlags.visualTokenBudget {
-      litert_lm_conversation_optional_args_set_visual_token_budget(optionalArgs, Int32(visualTokenBudget))
+      litert_lm_conversation_optional_args_set_visual_token_budget(
+        optionalArgs, Int32(visualTokenBudget))
     }
     defer { litert_lm_conversation_optional_args_delete(optionalArgs) }
 
@@ -277,6 +265,48 @@ public class Conversation {
   public func cancel() throws {
     let handle = try checkIsAlive()
     litert_lm_conversation_cancel_process(handle)
+  }
+
+  /// Renders the message into a string for testing and logging.
+  ///
+  /// This function does not need to be called for actual message sending, as the `sendMessage` and
+  /// `sendMessageStream` functions will handle rendering internally.
+  ///
+  /// - Parameter message: The message to render.
+  /// - Returns: The rendered message string.
+  /// - Throws: A `LiteRTLMError` if the conversation is not alive, serializing fails, or rendering fails.
+  public func renderMessageIntoString(_ message: Message) throws -> String {
+    let handle = try checkIsAlive()
+    let messageData = try JSONSerialization.data(withJSONObject: message.toJson)
+    guard let messageString = String(data: messageData, encoding: .utf8) else {
+      throw LiteRTLMError.conversation(.failedToSerializeMessage)
+    }
+
+    guard let cString = litert_lm_conversation_render_message_to_string(handle, messageString)
+    else {
+      throw LiteRTLMError.conversation(.invalidResponse("Failed to render message into string."))
+    }
+    return String(cString: cString)
+  }
+
+  /// Renders the preface into a string for testing and logging.
+  ///
+  /// - Returns: The rendered preface string.
+  /// - Throws: A `LiteRTLMError` if the conversation is not alive, or rendering fails.
+  public func renderPrefaceIntoString() throws -> String {
+    let handle = try checkIsAlive()
+    guard let cString = litert_lm_conversation_render_preface_to_string(handle) else {
+      throw LiteRTLMError.conversation(.invalidResponse("Failed to render preface into string."))
+    }
+    return String(cString: cString)
+  }
+
+  /// Gets the number of tokens in the conversation KV Cache (prefill + decode).
+  ///
+  /// - Throws: A `LiteRTLMError` if the conversation is not alive.
+  public func getTokenCount() throws -> Int {
+    let handle = try checkIsAlive()
+    return Int(litert_lm_conversation_get_token_count(handle))
   }
 
   /// Retrieves the benchmark information from the conversation.
@@ -376,8 +406,10 @@ public class Conversation {
     var toolCallCount: Int = 0
     var pendingToolCalls: [[String: Any]] = []
 
-    init(continuation: AsyncThrowingStream<Message, Error>.Continuation, conversation: Conversation)
-    {
+    init(
+      continuation: AsyncThrowingStream<Message, Error>.Continuation,
+      conversation: Conversation
+    ) {
       self.continuation = continuation
       self.conversation = conversation
     }

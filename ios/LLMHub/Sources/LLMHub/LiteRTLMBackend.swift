@@ -86,7 +86,7 @@ final class LiteRTLMBackend {
         if let conv = currentConversation {
             currentConversation = nil
             let task = Task.detached(priority: .userInitiated) {
-                conv.invalidate()
+                _ = conv
             }
             _ = await task.result
         }
@@ -183,8 +183,8 @@ final class LiteRTLMBackend {
         currentConversation = conversation
 
         // Always release the conversation when generation ends (success, error, or cancellation).
-        // Call invalidate() to synchronously free the C session — do NOT just nil the Swift ref,
-        // because this defer runs while the local `conversation` var is still on the stack.
+        // Setting `currentConversation` to nil and capturing the conversation in a background
+        // task allows the C session to be freed asynchronously on a background thread.
         // Also open any URL deferred by tools (Maps/Email/SMS) — they must NOT open mid-stream
         // because that sends the app to background and kills Metal GPU access.
         defer {
@@ -192,7 +192,7 @@ final class LiteRTLMBackend {
             self.currentConversation = nil
             if let conv = conv {
                 self.activeInvalidationTask = Task.detached(priority: .userInitiated) {
-                    conv.invalidate()
+                    _ = conv
                 }
             }
             print("ℹ️ [LiteRTLMBackend] conversation invalidation dispatched to background")

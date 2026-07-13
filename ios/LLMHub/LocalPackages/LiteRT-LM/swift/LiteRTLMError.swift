@@ -41,6 +41,10 @@ public enum LiteRTLMError: Error, LocalizedError, Equatable {
     case failedToCreateSessionConfig
     case failedToCreateConversationConfig
     case failedToCreateConversation
+    case failedToSetLoraPath
+    case failedToSetAudioLoraPath
+    case failedToSetSupportedLoraRanks
+    case failedToSetSupportedAudioLoraRanks
 
     public var errorDescription: String? {
       switch self {
@@ -58,6 +62,14 @@ public enum LiteRTLMError: Error, LocalizedError, Equatable {
         return "Failed to create conversation config."
       case .failedToCreateConversation:
         return "Failed to create conversation."
+      case .failedToSetLoraPath:
+        return "Failed to set LoRA path."
+      case .failedToSetAudioLoraPath:
+        return "Failed to set Audio LoRA path."
+      case .failedToSetSupportedLoraRanks:
+        return "Failed to set supported LoRA ranks."
+      case .failedToSetSupportedAudioLoraRanks:
+        return "Failed to set supported Audio LoRA ranks."
       }
     }
   }

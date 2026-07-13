@@ -369,15 +369,6 @@
       }
     },
     {
-      "identity" : "whisper.spm",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/ggerganov/whisper.spm",
-      "state" : {
-        "revision" : "a2085436c2eb796af90956b62bd64731f5e5b823",
-        "version" : "1.6.2"
-      }
-    },
-    {
       "identity" : "whisperkit",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/argmaxinc/WhisperKit.git",

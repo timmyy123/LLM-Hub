@@ -90,6 +90,26 @@ public actor Engine {
     if let cacheDir = engineConfig.cacheDir {
       litert_lm_engine_settings_set_cache_dir(settings, cacheDir)
     }
+    if let loraRank = engineConfig.loraRank {
+      litert_lm_engine_settings_set_lora_rank(settings, Int32(loraRank))
+      if loraRank > 0 {
+        var ranks = [Int32(loraRank)]
+        let status = litert_lm_engine_settings_set_supported_lora_ranks(settings, &ranks, 1)
+        guard status == 0 else {
+          throw LiteRTLMError.engine(.failedToSetSupportedLoraRanks)
+        }
+      }
+    }
+    if let audioLoraRank = engineConfig.audioLoraRank {
+      litert_lm_engine_settings_set_audio_lora_rank(settings, Int32(audioLoraRank))
+      if audioLoraRank > 0 {
+        var ranks = [Int32(audioLoraRank)]
+        let status = litert_lm_engine_settings_set_supported_audio_lora_ranks(settings, &ranks, 1)
+        guard status == 0 else {
+          throw LiteRTLMError.engine(.failedToSetSupportedAudioLoraRanks)
+        }
+      }
+    }
     if let prefill = benchmarkPrefillTokens, let decode = benchmarkDecodeTokens {
       litert_lm_engine_settings_enable_benchmark(settings)
       litert_lm_engine_settings_set_num_prefill_tokens(settings, Int32(prefill))
@@ -160,16 +180,31 @@ public actor Engine {
     defer { litert_lm_session_config_delete(cSessionConfig) }
 
     if let samplerParams = conversationConfig.samplerConfig {
-      var params = LiteRtLmSamplerParams(
-        // Based on the current engine implementation, when SamplerConfig is set, we must switch to
-        // the topP sampling type.
-        type: kLiteRtLmSamplerTypeTopP,
-        top_k: Int32(samplerParams.topK),
-        top_p: samplerParams.topP,
-        temperature: samplerParams.temperature,
-        seed: Int32(samplerParams.seed)
-      )
-      litert_lm_session_config_set_sampler_params(cSessionConfig, &params)
+      guard let cSamplerParams = litert_lm_sampler_params_create(kLiteRtLmSamplerTypeTopP) else {
+        throw LiteRTLMError.engine(.failedToCreateSessionConfig)
+      }
+      defer { litert_lm_sampler_params_delete(cSamplerParams) }
+
+      litert_lm_sampler_params_set_top_k(cSamplerParams, Int32(samplerParams.topK))
+      litert_lm_sampler_params_set_top_p(cSamplerParams, samplerParams.topP)
+      litert_lm_sampler_params_set_temperature(cSamplerParams, samplerParams.temperature)
+      litert_lm_sampler_params_set_seed(cSamplerParams, Int32(samplerParams.seed))
+
+      litert_lm_session_config_set_sampler_params(cSessionConfig, cSamplerParams)
+    }
+
+    if let loraPath = conversationConfig.loraPath {
+      let status = litert_lm_session_config_set_lora_path(cSessionConfig, loraPath)
+      guard status == 0 else {
+        throw LiteRTLMError.engine(.failedToSetLoraPath)
+      }
+    }
+
+    if let audioLoraPath = conversationConfig.audioLoraPath {
+      let status = litert_lm_session_config_set_audio_lora_path(cSessionConfig, audioLoraPath)
+      guard status == 0 else {
+        throw LiteRTLMError.engine(.failedToSetAudioLoraPath)
+      }
     }
 
     guard let cConversationConfig = litert_lm_conversation_config_create() else {
@@ -189,6 +224,11 @@ public actor Engine {
     }
     litert_lm_conversation_config_set_enable_constrained_decoding(
       cConversationConfig, ExperimentalFlags.enableConversationConstrainedDecoding)
+    litert_lm_conversation_config_set_stream_tool_calls(
+      cConversationConfig,
+      conversationConfig.enableToolCallStreaming
+        && ExperimentalFlags.enableConversationToolCallStreaming,
+      ExperimentalFlags.conversationToolCallStreamingChannelName)
 
     guard
       let conversationHandle = litert_lm_conversation_create(

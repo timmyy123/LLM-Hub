@@ -50,6 +50,9 @@ public struct BenchmarkInfo {
 ///   - prefillTokens: The number of tokens to prefill.
 ///   - decodeTokens: The number of tokens to decode.
 ///   - cacheDir: The directory for placing cache files. Set to ":nocache" to disable caching.
+///   - prompt: The custom prompt string to tokenize and run. If the tokenized prompt is shorter
+///       than `prefillTokens`, the remaining tokens are padded with zero. If it is longer, the
+///       prompt is truncated to `prefillTokens`.
 /// - Returns: The benchmark info.
 /// - Throws: A `LiteRTLMError` if the engine fails to initialize or generate benchmark info.
 public func benchmark(
@@ -57,7 +60,8 @@ public func benchmark(
   backend: Backend,
   prefillTokens: Int = 256,
   decodeTokens: Int = 256,
-  cacheDir: String? = nil
+  cacheDir: String? = nil,
+  prompt: String = "How are you"
 ) async throws -> BenchmarkInfo {
   ExperimentalFlags.optIntoExperimentalAPIs()
 
@@ -78,6 +82,6 @@ public func benchmark(
   try await engine.initializeForBenchmark(prefillTokens: prefillTokens, decodeTokens: decodeTokens)
 
   let conversation = try await engine.createConversation()
-  _ = try await conversation.sendMessage(Message("Engine ignore this message in this mode."))
+  _ = try await conversation.sendMessage(Message(prompt))
   return try conversation.getBenchmarkInfo()
 }
