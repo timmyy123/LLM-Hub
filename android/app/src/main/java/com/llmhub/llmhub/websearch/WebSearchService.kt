@@ -30,6 +30,19 @@ data class UrlReaderResult(
     val truncated: Boolean
 )
 
+/** Keeps the exact fetched URLs until the UI has finished streaming that chat response. */
+object WebSearchCitationStore {
+    private val citationsByChat = mutableMapOf<String, List<SearchResult>>()
+
+    @Synchronized
+    fun put(chatId: String, results: List<SearchResult>) {
+        citationsByChat[chatId] = results.filter { it.url.startsWith("http") }
+    }
+
+    @Synchronized
+    fun take(chatId: String): List<SearchResult> = citationsByChat.remove(chatId).orEmpty()
+}
+
 /**
  * Interface for web search services
  */

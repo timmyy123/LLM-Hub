@@ -1198,7 +1198,10 @@ class ChatViewModel: ObservableObject {
                         self.updateLastAIMessageSync(content: content, tokens: tokens, tps: tps)
                     }
                 }
-                await MainActor.run { self.finishGeneratingMessage() }
+                await MainActor.run {
+                    self.appendWebSources(searchResults)
+                    self.finishGeneratingMessage()
+                }
             } catch {
                 await updateLastAIMessage(content: "Error: \(error.localizedDescription)", isGenerating: false)
             }
@@ -1551,6 +1554,14 @@ class ChatViewModel: ObservableObject {
             progressiveTTSFinish(fullContent: finishedMessage.content, messageKey: finishedMessage.id.uuidString)
         }
         activeGeneratingMessageId = nil
+    }
+
+    private func appendWebSources(_ results: [WebSearchResult]) {
+        let unique = Dictionary(grouping: results.filter { URL(string: $0.url)?.scheme != nil }, by: \.url).compactMap { $0.value.first }
+        guard !unique.isEmpty else { return }
+        let sources = unique.map { "- [\($0.title.isEmpty ? $0.source : $0.title)](\($0.url))" }.joined(separator: "\n")
+        guard let idx = messages.indices.last, !messages[idx].isFromUser, !messages[idx].content.contains("\n### Sources\n") else { return }
+        messages[idx].content += "\n\n### Sources\n\(sources)"
     }
 
     func stopGeneration() {

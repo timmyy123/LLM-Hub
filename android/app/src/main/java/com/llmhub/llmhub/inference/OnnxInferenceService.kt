@@ -34,6 +34,7 @@ import com.google.gson.reflect.TypeToken
 import com.llmhub.llmhub.websearch.WebSearchService
 import com.llmhub.llmhub.websearch.DuckDuckGoSearchService
 import com.llmhub.llmhub.websearch.SearchIntentDetector
+import com.llmhub.llmhub.websearch.WebSearchCitationStore
 import com.llmhub.llmhub.R
 
 @Singleton
@@ -853,6 +854,7 @@ class OnnxInferenceService @Inject constructor(
                 Log.d(TAG, "Extracted search query: '$searchQuery'")
                 
                 val searchResults = webSearchService.search(searchQuery, maxResults = 5)
+                WebSearchCitationStore.put(chatId, searchResults)
                 
                 if (searchResults.isNotEmpty()) {
                     Log.d(TAG, "Found ${searchResults.size} search results")

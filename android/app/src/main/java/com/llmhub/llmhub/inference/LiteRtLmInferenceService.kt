@@ -25,6 +25,7 @@ import com.llmhub.llmhub.utils.KidModeManager
 import com.llmhub.llmhub.utils.LocaleHelper
 import com.llmhub.llmhub.websearch.DuckDuckGoSearchService
 import com.llmhub.llmhub.websearch.SearchIntentDetector
+import com.llmhub.llmhub.websearch.WebSearchCitationStore
 import com.llmhub.llmhub.websearch.WebSearchService
 import com.google.ai.edge.litertlm.Message
 import com.google.ai.edge.litertlm.MessageCallback
@@ -389,6 +390,7 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
                 try {
                     val query = SearchIntentDetector.extractSearchQuery(currentUserMessage)
                     val results = webSearchService.search(query, maxResults = 5)
+                    WebSearchCitationStore.put(chatId, results)
                     if (results.isNotEmpty()) {
                         emit(localCtx.getString(R.string.web_search_found_results, results.size))
                         val resultsText = results.joinToString("\n\n") {

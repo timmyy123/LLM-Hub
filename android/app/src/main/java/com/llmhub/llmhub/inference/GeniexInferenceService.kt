@@ -42,6 +42,7 @@ import com.llmhub.llmhub.R
 import com.llmhub.llmhub.websearch.WebSearchService
 import com.llmhub.llmhub.websearch.DuckDuckGoSearchService
 import com.llmhub.llmhub.websearch.SearchIntentDetector
+import com.llmhub.llmhub.websearch.WebSearchCitationStore
 
 /** State machine states for parsing GPT-OSS Harmony format output. */
 private enum class HarmonyState {
@@ -571,6 +572,7 @@ class GeniexInferenceService @Inject constructor(
                 Log.d(TAG, "Extracted search query: '$searchQuery'")
 
                 val searchResults = webSearchService.search(searchQuery, maxResults = 5)
+                WebSearchCitationStore.put(chatId, searchResults)
 
                 if (searchResults.isNotEmpty()) {
                     Log.d(TAG, "Found ${searchResults.size} search results")

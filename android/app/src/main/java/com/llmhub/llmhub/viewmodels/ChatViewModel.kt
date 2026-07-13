@@ -36,6 +36,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.activity.ComponentActivity
 import com.llmhub.llmhub.ui.components.TtsService
 import com.llmhub.llmhub.data.DeviceInfo
+import com.llmhub.llmhub.websearch.WebSearchCitationStore
 
 class ChatViewModel(
     private val inferenceService: InferenceService,
@@ -1773,7 +1774,7 @@ class ChatViewModel(
                                         finalizeMessage(placeholderId, fallback, streamDurationMs)
                                     }
                                 } else {
-                                    val safeFinal = finalContent
+                                    val safeFinal = appendWebSearchSources(chatId, finalContent)
                                     repository.updateMessageContent(placeholderId, safeFinal.trimEnd())
                                     val time = System.currentTimeMillis() - generationStartTime
                                     val netTime = (time - ragSearchTimeMs).coerceAtLeast(1L)
@@ -2039,7 +2040,8 @@ class ChatViewModel(
                     }
                 }
 
-                // Success - finalize the message
+                // Success - finalize the message with the exact fetched URLs.
+                totalContent = appendWebSearchSources(chatId, totalContent)
                 repository.updateMessageContent(placeholderId, totalContent.trimEnd())
                 val streamDurationMs = ((if (lastChunkAt > 0) lastChunkAt else System.currentTimeMillis()) - (if (firstChunkAt > 0) firstChunkAt else System.currentTimeMillis())).coerceAtLeast(1L)
                 finalizeMessage(placeholderId, totalContent, streamDurationMs)
@@ -2063,6 +2065,17 @@ class ChatViewModel(
                 _streamingContents.value = updatedStreaming
             }
         }
+    }
+
+    /** Appends links from the pages actually fetched; never lets the model invent source URLs. */
+    private fun appendWebSearchSources(chatId: String, content: String): String {
+        val results = WebSearchCitationStore.take(chatId)
+        if (results.isEmpty() || content.contains("\n### Sources\n")) return content
+        val references = results.distinctBy { it.url }.joinToString("\n") { result ->
+            val title = result.title.ifBlank { result.url }
+            "- [$title](${result.url})"
+        }
+        return "$content\n\n### Sources\n$references"
     }
 
     // Basic disallowed content filter (client-side heuristic; not exhaustive)
@@ -3618,7 +3631,7 @@ class ChatViewModel(
                         }
                         
                         // Success - finalize the message
-                        val finalContent = totalContent
+                        val finalContent = appendWebSearchSources(chatId, totalContent)
                         repository.updateMessageContent(placeholderId, finalContent.trimEnd())
                         val time = System.currentTimeMillis() - generationStartTime
                         val netTime = (time - ragSearchTimeMs).coerceAtLeast(1L)
@@ -3805,7 +3818,8 @@ class ChatViewModel(
                         _streamingContents.value = _streamingContents.value + (placeholderId to totalContent)
                     }
 
-                    // Finalize message
+                    // Finalize message with the exact fetched URLs.
+                    totalContent = appendWebSearchSources(chatId, totalContent)
                     repository.updateMessageContent(placeholderId, totalContent)
                     _streamingContents.value = emptyMap()
 

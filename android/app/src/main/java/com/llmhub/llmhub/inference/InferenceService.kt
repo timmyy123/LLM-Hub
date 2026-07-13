@@ -8,6 +8,7 @@ import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.websearch.WebSearchService
 import com.llmhub.llmhub.websearch.DuckDuckGoSearchService
 import com.llmhub.llmhub.websearch.SearchIntentDetector
+import com.llmhub.llmhub.websearch.WebSearchCitationStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
@@ -753,6 +754,7 @@ class MediaPipeInferenceService(private val applicationContext: Context) : Infer
                     Log.d(TAG, "Extracted search query: '$searchQuery'")
                     
                     val searchResults = webSearchService.search(searchQuery, maxResults = 5)
+                    WebSearchCitationStore.put(chatId, searchResults)
                     
                     if (searchResults.isNotEmpty()) {
                         Log.d(TAG, "Found ${searchResults.size} search results")
