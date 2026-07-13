@@ -457,7 +457,7 @@ class ModelDownloadViewModel: ObservableObject {
 
         let suffix = model.name[model.name.index(after: openIndex)..<closeIndex]
         let suffixUpper = suffix.uppercased().replacingOccurrences(of: "-", with: "_")
-        let likelyQuant = suffixUpper.contains("Q") || suffixUpper.contains("IQ") || suffixUpper.contains("F16") || suffixUpper.contains("BF16") || suffixUpper.contains("INT") || suffixUpper.contains("FP16") || suffixUpper.contains("FP8")
+        let likelyQuant = suffixUpper.contains("Q") || suffixUpper.contains("IQ") || suffixUpper.contains("F16") || suffixUpper.contains("BF16") || suffixUpper.contains("INT") || suffixUpper.contains("FP16") || suffixUpper.contains("FP8") || suffixUpper.contains("F32")
         if likelyQuant {
             return model.name[..<openIndex].trimmingCharacters(in: .whitespacesAndNewlines)
         }
