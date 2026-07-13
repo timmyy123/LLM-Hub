@@ -8,6 +8,7 @@ import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URLEncoder
+import java.net.URI
 import java.util.concurrent.TimeUnit
 
 /**
@@ -20,11 +21,21 @@ data class SearchResult(
     val source: String = ""
 )
 
+/** A locally extracted, citation-ready web document. No reader proxy or API key is used. */
+data class UrlReaderResult(
+    val title: String,
+    val url: String,
+    val text: String,
+    val source: String,
+    val truncated: Boolean
+)
+
 /**
  * Interface for web search services
  */
 interface WebSearchService {
     suspend fun search(query: String, maxResults: Int = 5): List<SearchResult>
+    suspend fun readUrl(url: String, maxChars: Int = 8_000): UrlReaderResult?
 }
 
 /**
@@ -42,6 +53,15 @@ class DuckDuckGoSearchService : WebSearchService {
         private const val TAG = "DuckDuckGoSearch"
         private const val SEARCH_URL = "https://api.duckduckgo.com/"
         private const val HTML_SEARCH_URL = "https://duckduckgo.com/html/"
+        private const val MAX_RESPONSE_BYTES = 2_000_000L
+        private const val SEARCH_CONTEXT_CHARS = 2_500
+        private const val DEFAULT_READER_CHARS = 8_000
+        private const val CACHE_TTL_MS = 10 * 60 * 1000L
+    }
+
+    private data class CachedArticle(val article: UrlReaderResult, val savedAt: Long)
+    private val articleCache = object : LinkedHashMap<String, CachedArticle>(16, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, CachedArticle>?) = size > 20
     }
     
     private suspend fun searchWithContent(query: String, maxResults: Int = 5): List<SearchResult> {
@@ -53,14 +73,14 @@ class DuckDuckGoSearchService : WebSearchService {
                 val extractedUrl = extractUrlFromQuery(query)
                 if (extractedUrl != null) {
                     Log.d(TAG, "Detected URL in query, fetching content from: $extractedUrl")
-                    val content = fetchPageContent(extractedUrl)
-                    if (content.isNotEmpty()) {
+                    val article = readUrl(extractedUrl, DEFAULT_READER_CHARS)
+                    if (article != null) {
                         return@withContext listOf(
                             SearchResult(
-                                title = "Content from ${extractDomain(extractedUrl)}",
-                                snippet = content,
-                                url = extractedUrl,
-                                source = extractDomain(extractedUrl)
+                                title = article.title,
+                                snippet = article.text,
+                                url = article.url,
+                                source = article.source
                             )
                         )
                     }
@@ -80,17 +100,17 @@ class DuckDuckGoSearchService : WebSearchService {
                 val results = mutableListOf<SearchResult>()
                 for ((index, urlData) in searchUrls.withIndex()) {
                     try {
-                        val content = fetchPageContent(urlData.url)
-                        if (content.isNotEmpty()) {
+                        val article = readUrl(urlData.url, SEARCH_CONTEXT_CHARS)
+                        if (article != null) {
                             results.add(
                                 SearchResult(
-                                    title = urlData.title,
-                                    snippet = content.take(500), // Take first 500 chars as snippet
-                                    url = urlData.url,
-                                    source = extractDomain(urlData.url)
+                                    title = if (article.title.isBlank()) urlData.title else article.title,
+                                    snippet = article.text,
+                                    url = article.url,
+                                    source = article.source
                                 )
                             )
-                            Log.d(TAG, "Successfully fetched content from ${urlData.url} (${content.length} chars)")
+                            Log.d(TAG, "Successfully fetched content from ${urlData.url} (${article.text.length} chars)")
                         }
                     } catch (e: Exception) {
                         Log.w(TAG, "Failed to fetch content from ${urlData.url}: ${e.message}")
@@ -237,34 +257,63 @@ class DuckDuckGoSearchService : WebSearchService {
                 lowerUrl.startsWith("http")
     }
     
-    private suspend fun fetchPageContent(url: String): String {
+    override suspend fun readUrl(url: String, maxChars: Int): UrlReaderResult? {
+        val normalizedUrl = normalizeReadableUrl(url) ?: return null
+        val now = System.currentTimeMillis()
+        synchronized(articleCache) {
+            articleCache[normalizedUrl]?.takeIf { now - it.savedAt < CACHE_TTL_MS }?.let { cached ->
+                return cached.article.copy(text = cached.article.text.take(maxChars), truncated = cached.article.text.length > maxChars)
+            }
+        }
+
         return try {
             val request = Request.Builder()
-                .url(url)
+                .url(normalizedUrl)
                 .addHeader("User-Agent", "Mozilla/5.0 (Android 10; Mobile; rv:91.0) Gecko/91.0 Firefox/91.0")
+                .addHeader("Accept", "text/html,application/xhtml+xml")
                 .build()
-            
-            val response = client.newCall(request).execute()
-            val html = response.body?.string() ?: return ""
-            
-            if (!response.isSuccessful) {
-                return ""
+
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful || !response.header("Content-Type").orEmpty().contains("text/html", true)) return null
+                if ((response.body?.contentLength() ?: 0L) > MAX_RESPONSE_BYTES) return null
+                val html = response.body?.string()?.take(MAX_RESPONSE_BYTES.toInt()) ?: return null
+                val text = extractTextFromHtml(html, DEFAULT_READER_CHARS)
+                if (text.isBlank()) return null
+                val finalUrl = response.request.url.toString()
+                val article = UrlReaderResult(
+                    title = extractTitle(html).ifBlank { "Content from ${extractDomain(finalUrl)}" },
+                    url = finalUrl,
+                    text = text,
+                    source = extractDomain(finalUrl),
+                    truncated = text.length >= DEFAULT_READER_CHARS
+                )
+                synchronized(articleCache) { articleCache[normalizedUrl] = CachedArticle(article, now) }
+                article.copy(text = article.text.take(maxChars), truncated = article.text.length > maxChars)
             }
-            
-            // Extract text content from HTML
-            extractTextFromHtml(html)
-            
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to fetch content from $url: ${e.message}")
-            ""
+            Log.w(TAG, "Failed to read content from $url: ${e.message}")
+            null
         }
     }
-    
-    private fun extractTextFromHtml(html: String): String {
+
+    private fun normalizeReadableUrl(value: String): String? = try {
+        val uri = URI(value.trim())
+        val host = uri.host?.lowercase() ?: return null
+        if (uri.scheme !in setOf("http", "https") || host == "localhost" || host.endsWith(".local") ||
+            host.startsWith("127.") || host == "0.0.0.0" || host == "::1") null else uri.toString()
+    } catch (_: Exception) { null }
+
+    private fun extractTitle(html: String): String {
+        val match = Regex("<title[^>]*>(.*?)</title>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)).find(html)
+        return match?.groupValues?.get(1)?.let(::cleanHtml)?.take(200).orEmpty()
+    }
+
+    private fun extractTextFromHtml(html: String, maxChars: Int): String {
         try {
             // Remove script and style tags completely
             var cleaned = html.replace(Regex("<script[^>]*>.*?</script>", RegexOption.DOT_MATCHES_ALL), "")
             cleaned = cleaned.replace(Regex("<style[^>]*>.*?</style>", RegexOption.DOT_MATCHES_ALL), "")
+            cleaned = cleaned.replace(Regex("<(nav|header|footer|aside)[^>]*>.*?</\\1>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)), "")
             
             // Remove HTML tags but keep the content
             cleaned = cleaned.replace(Regex("<[^>]*>"), " ")
@@ -291,7 +340,7 @@ class DuckDuckGoSearchService : WebSearchService {
                 s.split(" ").size > 4
             }
             
-            return sentences.take(5).joinToString(". ").take(1000)
+            return sentences.joinToString(". ").take(maxChars)
             
         } catch (e: Exception) {
             Log.w(TAG, "Failed to extract text from HTML: ${e.message}")

@@ -23,11 +23,26 @@ private struct WebSearchResult {
     let source: String
 }
 
+private struct URLReaderResult {
+    let title: String
+    let url: String
+    let text: String
+    let source: String
+    let truncated: Bool
+}
+
 private actor WebSearchService {
     static let shared = WebSearchService()
 
     // Firefox mobile UA — same as Android build, avoids DuckDuckGo bot blocks
     private static let firefoxUA = "Mozilla/5.0 (Android 10; Mobile; rv:91.0) Gecko/91.0 Firefox/91.0"
+    private static let maxResponseBytes = 2_000_000
+    private static let defaultReaderChars = 8_000
+    private static let searchContextChars = 2_500
+    private static let cacheLifetime: TimeInterval = 10 * 60
+
+    private struct CachedArticle { let article: URLReaderResult; let savedAt: Date }
+    private var articleCache: [String: CachedArticle] = [:]
 
     private let session: URLSession = {
         let config = URLSessionConfiguration.default
@@ -62,13 +77,12 @@ private actor WebSearchService {
     private func searchWithContent(query: String, maxResults: Int) async -> [WebSearchResult] {
         // If query contains a URL, fetch that page directly
         if let directURL = extractURL(from: query) {
-            let content = await fetchPageContent(urlString: directURL)
-            if !content.isEmpty {
+            if let article = await readURL(directURL, maxChars: Self.defaultReaderChars) {
                 return [WebSearchResult(
-                    title: "Content from \(domain(directURL))",
-                    snippet: content,
-                    url: directURL,
-                    source: domain(directURL)
+                    title: article.title,
+                    snippet: article.text,
+                    url: article.url,
+                    source: article.source
                 )]
             }
         }
@@ -80,13 +94,12 @@ private actor WebSearchService {
         var results: [WebSearchResult] = []
         for item in urlData {
             if results.count >= maxResults { break }
-            let content = await fetchPageContent(urlString: item.url)
-            guard !content.isEmpty else { continue }
+            guard let article = await readURL(item.url, maxChars: Self.searchContextChars) else { continue }
             results.append(WebSearchResult(
-                title: item.title,
-                snippet: String(content.prefix(500)),
-                url: item.url,
-                source: domain(item.url)
+                title: article.title.isEmpty ? item.title : article.title,
+                snippet: article.text,
+                url: article.url,
+                source: article.source
             ))
         }
         return results
@@ -149,24 +162,66 @@ private actor WebSearchService {
         return results
     }
 
-    private func fetchPageContent(urlString: String) async -> String {
-        guard let url = URL(string: urlString) else { return "" }
+    /// Reads and cleans a page on-device. This deliberately does not use Jina or any reader proxy.
+    func readURL(_ urlString: String, maxChars: Int = 8_000) async -> URLReaderResult? {
+        guard let url = safeWebURL(urlString) else { return nil }
+        let cacheKey = url.absoluteString
+        if let cached = articleCache[cacheKey], Date().timeIntervalSince(cached.savedAt) < Self.cacheLifetime {
+            return URLReaderResult(
+                title: cached.article.title, url: cached.article.url,
+                text: String(cached.article.text.prefix(maxChars)), source: cached.article.source,
+                truncated: cached.article.text.count > maxChars
+            )
+        }
+
         var req = URLRequest(url: url)
         req.setValue(Self.firefoxUA, forHTTPHeaderField: "User-Agent")
+        req.setValue("text/html,application/xhtml+xml", forHTTPHeaderField: "Accept")
         req.timeoutInterval = 8
 
         guard let (data, resp) = try? await session.data(for: req),
-              (resp as? HTTPURLResponse)?.statusCode == 200,
+              let http = resp as? HTTPURLResponse,
+              http.statusCode == 200,
+              http.mimeType?.lowercased() == "text/html",
+              data.count <= Self.maxResponseBytes,
               let html = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1)
-        else { return "" }
+        else { return nil }
 
-        return extractTextFromHTML(html)
+        let text = extractTextFromHTML(html, maxChars: Self.defaultReaderChars)
+        guard !text.isEmpty else { return nil }
+        let finalURL = http.url?.absoluteString ?? url.absoluteString
+        let article = URLReaderResult(
+            title: extractTitle(from: html).isEmpty ? "Content from \(domain(finalURL))" : extractTitle(from: html),
+            url: finalURL, text: text, source: domain(finalURL),
+            truncated: text.count >= Self.defaultReaderChars
+        )
+        articleCache[cacheKey] = CachedArticle(article: article, savedAt: Date())
+        return URLReaderResult(title: article.title, url: article.url, text: String(article.text.prefix(maxChars)), source: article.source, truncated: article.text.count > maxChars)
     }
 
-    private func extractTextFromHTML(_ html: String) -> String {
+    private func safeWebURL(_ value: String) -> URL? {
+        guard let url = URL(string: value), let scheme = url.scheme?.lowercased(),
+              ["http", "https"].contains(scheme), let host = url.host?.lowercased(),
+              host != "localhost", !host.hasSuffix(".local"), !host.hasPrefix("127."), host != "0.0.0.0", host != "::1"
+        else { return nil }
+        return url
+    }
+
+    private func extractTitle(from html: String) -> String {
+        guard let re = try? NSRegularExpression(pattern: #"<title[^>]*>(.*?)</title>"#, options: [.caseInsensitive, .dotMatchesLineSeparators]),
+              let match = re.firstMatch(in: html, range: NSRange(html.startIndex..., in: html)),
+              let range = Range(match.range(at: 1), in: html)
+        else { return "" }
+        return String(cleanHTML(String(html[range])).prefix(200))
+    }
+
+    private func extractTextFromHTML(_ html: String, maxChars: Int) -> String {
         var s = html
         // Strip scripts and styles
         if let re = try? NSRegularExpression(pattern: "<(script|style)[^>]*>.*?</(script|style)>", options: .dotMatchesLineSeparators) {
+            s = re.stringByReplacingMatches(in: s, range: NSRange(s.startIndex..., in: s), withTemplate: "")
+        }
+        if let re = try? NSRegularExpression(pattern: "<(nav|header|footer|aside)[^>]*>.*?</\\1>", options: [.caseInsensitive, .dotMatchesLineSeparators]) {
             s = re.stringByReplacingMatches(in: s, range: NSRange(s.startIndex..., in: s), withTemplate: "")
         }
         s = cleanHTML(s)
@@ -177,7 +232,7 @@ private actor WebSearchService {
                    && !$0.lowercased().contains("click")
                    && !$0.lowercased().contains("menu")
                    && !$0.lowercased().contains("navigation") }
-        return String(sentences.prefix(5).joined(separator: ". ").prefix(1000))
+        return String(sentences.joined(separator: ". ").prefix(maxChars))
     }
 
     private func isValidContentURL(_ url: String) -> Bool {
@@ -1113,7 +1168,7 @@ class ChatViewModel: ObservableObject {
                 systemPrompt = ragContextPrefix.isEmpty ? "" : ragContextPrefix
             } else {
                 let resultsText = searchResults.enumerated().map { i, r in
-                    "SOURCE: \(r.source)\nTITLE: \(r.title)\nCONTENT: \(r.snippet)\n---"
+                    "SOURCE: \(r.source)\nTITLE: \(r.title)\nURL: \(r.url)\nCONTENT: \(r.snippet)\n---"
                 }.joined(separator: "\n\n")
 
                 systemPrompt = """
@@ -1128,6 +1183,7 @@ class ChatViewModel: ObservableObject {
                 - If the search results don't contain enough information, say so clearly
                 - For dates and events, be specific based on what you find in the results
                 - Do not make up information not found in the search results
+                - Cite factual claims with the provided source URLs when possible
                 """
             }
 

@@ -577,7 +577,7 @@ class GeniexInferenceService @Inject constructor(
                     trySend(context.getString(R.string.web_search_found_results, searchResults.size))
 
                     val resultsText = searchResults.joinToString("\n\n") { result ->
-                        "SOURCE: ${result.source}\nTITLE: ${result.title}\nCONTENT: ${result.snippet}\n---"
+                        "SOURCE: ${result.source}\nTITLE: ${result.title}\nURL: ${result.url}\nCONTENT: ${result.snippet}\n---"
                     }
 
                     effectivePrompt = """
@@ -592,6 +592,7 @@ class GeniexInferenceService @Inject constructor(
                         - If the search results don't contain enough information, say so clearly
                         - For dates and events, be specific based on what you find in the results
                         - Do not make up information not found in the search results
+                        - Cite factual claims with the provided source URLs when possible
 
                         Answer the question directly and clearly:
                     """.trimIndent()

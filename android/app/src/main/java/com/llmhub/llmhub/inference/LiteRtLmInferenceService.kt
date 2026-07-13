@@ -392,11 +392,11 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
                     if (results.isNotEmpty()) {
                         emit(localCtx.getString(R.string.web_search_found_results, results.size))
                         val resultsText = results.joinToString("\n\n") {
-                            "SOURCE: ${it.source}\nTITLE: ${it.title}\nCONTENT: ${it.snippet}\n---"
+                            "SOURCE: ${it.source}\nTITLE: ${it.title}\nURL: ${it.url}\nCONTENT: ${it.snippet}\n---"
                         }
                         enhancedPrompt = "CURRENT WEB SEARCH RESULTS:\n$resultsText\n\n" +
                             "Based on the above, answer: \"$currentUserMessage\"\n\n" +
-                            "Answer directly and clearly:"
+                            "Answer directly and clearly. Cite factual claims with the provided source URLs when possible:"
                     } else {
                         emit(localCtx.getString(R.string.web_search_no_results) + "\n\n")
                     }
