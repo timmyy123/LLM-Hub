@@ -389,6 +389,9 @@ bool LlamaCppTextGeneration::load_model(const std::string& model_path,
     if (config.contains("max_context_size")) {
         max_default_context_ = config["max_context_size"].get<int>();
     }
+    if (user_context_size > max_default_context_) {
+        max_default_context_ = user_context_size;
+    }
 
     model_config_ = config;
     model_path_ = resolved_path;
@@ -491,18 +494,25 @@ bool LlamaCppTextGeneration::load_model(const std::string& model_path,
         case COMMON_PARAMS_FIT_STATUS_SUCCESS:
             RAC_LOG_INFO("LLM.LlamaCpp", "common_fit_params SUCCESS: n_gpu_layers=%d, n_ctx=%u",
                          model_params.n_gpu_layers, ctx_params.n_ctx);
+            if (user_context_size > 0 &&
+                static_cast<uint32_t>(user_context_size) > ctx_params.n_ctx) {
+                RAC_LOG_INFO("LLM.LlamaCpp",
+                             "User context_size=%d overrides fitted n_ctx=%u (risk of OOM)",
+                             user_context_size, ctx_params.n_ctx);
+                ctx_params.n_ctx = user_context_size;
+            }
             break;
         case COMMON_PARAMS_FIT_STATUS_FAILURE:
             RAC_LOG_INFO("LLM.LlamaCpp",
                          "common_fit_params FAILURE: could not fit model to device memory. "
                          "Proceeding with conservative CPU-only defaults.");
             model_params.n_gpu_layers = 0;
-            if (user_context_size > 0 && user_context_size > 2048) {
-                RAC_LOG_INFO("LLM.LlamaCpp",
-                             "Capping user-requested context_size=%d to 2048 after fit FAILURE",
-                             user_context_size);
-            }
-            if (ctx_params.n_ctx == 0 || ctx_params.n_ctx > 2048) {
+            if (user_context_size > 0) {
+                ctx_params.n_ctx = user_context_size;
+                RAC_LOG_WARNING("LLM.LlamaCpp",
+                                "Applying user context_size=%d despite fit FAILURE — risk of OOM",
+                                user_context_size);
+            } else if (ctx_params.n_ctx == 0 || ctx_params.n_ctx > 2048) {
                 ctx_params.n_ctx = 2048;
             }
             break;
@@ -512,12 +522,12 @@ bool LlamaCppTextGeneration::load_model(const std::string& model_path,
                           "Falling back to conservative CPU-only defaults.",
                           resolved_path.c_str());
             model_params.n_gpu_layers = 0;
-            if (user_context_size > 0 && user_context_size > 2048) {
-                RAC_LOG_INFO("LLM.LlamaCpp",
-                             "Capping user-requested context_size=%d to 2048 after fit ERROR",
-                             user_context_size);
-            }
-            if (ctx_params.n_ctx == 0 || ctx_params.n_ctx > 2048) {
+            if (user_context_size > 0) {
+                ctx_params.n_ctx = user_context_size;
+                RAC_LOG_WARNING("LLM.LlamaCpp",
+                                "Applying user context_size=%d despite fit ERROR — risk of OOM",
+                                user_context_size);
+            } else if (ctx_params.n_ctx == 0 || ctx_params.n_ctx > 2048) {
                 ctx_params.n_ctx = 2048;
             }
             break;

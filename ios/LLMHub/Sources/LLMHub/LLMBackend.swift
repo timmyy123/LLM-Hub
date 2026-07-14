@@ -838,6 +838,7 @@ class LLMBackend: ObservableObject {
                 url: primaryURL.absoluteString,
                 framework: framework(for: model),
                 modality: model.supportsVision ? .multimodal : .language,
+                contextLength: contextLength,
                 memoryRequirement: model.sizeBytes,
                 supportsThinking: model.supportsThinking
             )

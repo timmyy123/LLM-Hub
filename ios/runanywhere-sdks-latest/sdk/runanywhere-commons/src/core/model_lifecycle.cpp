@@ -107,7 +107,8 @@ namespace {
 
 rac_result_t create_backend_impl(const rac_engine_vtable_t* vt, rac_primitive_t primitive,
                                  const std::string& resolved_path, const std::string& mmproj_path,
-                                 void** out_impl, std::function<void()>* out_destroy) {
+                                 void** out_impl, std::function<void()>* out_destroy,
+                                 const char* config_json = nullptr) {
     if (!vt || !out_impl || !out_destroy) {
         return RAC_ERROR_NULL_POINTER;
     }
@@ -121,7 +122,7 @@ rac_result_t create_backend_impl(const rac_engine_vtable_t* vt, rac_primitive_t 
         case RAC_PRIMITIVE_GENERATE_TEXT:
             if (!vt->llm_ops || !vt->llm_ops->create)
                 return RAC_ERROR_BACKEND_NOT_FOUND;
-            rc = vt->llm_ops->create(resolved_path.c_str(), nullptr, &impl);
+            rc = vt->llm_ops->create(resolved_path.c_str(), config_json, &impl);
             if (rc == RAC_SUCCESS && impl && vt->llm_ops->initialize) {
                 rc = vt->llm_ops->initialize(impl, resolved_path.c_str());
             }
@@ -597,10 +598,41 @@ rac_result_t rac_model_lifecycle_load_proto(rac_model_registry_handle_t registry
         return detail::copy_proto(result, out_result);
     }
 
+    // Build config JSON from the model registry entry so the engine sees
+    // user-configured context_size and gpu_layers (mirrors rac_llm_service.cpp).
+    std::string config_json_owned;
+    const char* config_json_ptr = nullptr;
+    {
+        std::string json_str = "{";
+        bool has_field = false;
+        if (model.context_length() > 0) {
+            json_str += "\"context_size\":" + std::to_string(model.context_length());
+            has_field = true;
+        }
+        // gpu_layers lives on the C registry entry, not in the proto. Look it up.
+        rac_model_info_t* c_model_info = nullptr;
+        if (rac_model_registry_get(registry, request.model_id().c_str(), &c_model_info) ==
+                RAC_SUCCESS &&
+            c_model_info) {
+            if (c_model_info->gpu_layers >= 0) {
+                if (has_field) json_str += ",";
+                json_str += "\"gpu_layers\":" + std::to_string(c_model_info->gpu_layers);
+                has_field = true;
+            }
+            rac_model_info_free(c_model_info);
+        }
+        json_str += "}";
+        if (has_field) {
+            config_json_owned = json_str;
+            config_json_ptr = config_json_owned.c_str();
+            RAC_LOG_INFO("model_lifecycle", "Forwarding registry config: %s", config_json_ptr);
+        }
+    }
+
     void* impl = nullptr;
     std::function<void()> destroy;
     rc = detail::create_backend_impl(vt, primitive, resolved_path, artifact_resolution.mmproj_path,
-                                     &impl, &destroy);
+                                     &impl, &destroy, config_json_ptr);
     if (rc != RAC_SUCCESS) {
         ModelLoadResult result =
             detail::make_load_result(false, request.model_id(), category, framework, resolved_path,

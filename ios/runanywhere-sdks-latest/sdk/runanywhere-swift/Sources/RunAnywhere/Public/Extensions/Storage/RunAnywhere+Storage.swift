@@ -22,6 +22,7 @@ public extension RunAnywhere {
         url: String,
         framework: InferenceFramework,
         modality: ModelCategory = .language,
+        contextLength: Int? = nil,
         artifactType: RAModelArtifactType? = nil,
         memoryRequirement: Int64? = nil,
         supportsThinking: Bool = false,
@@ -43,7 +44,9 @@ public extension RunAnywhere {
             request.memoryRequiredBytes = memoryRequirement
             request.downloadSizeBytes = memoryRequirement
         }
-        if modality.requiresContextLength {
+        if let contextLength {
+            request.contextLength = Int32(contextLength)
+        } else if modality.requiresContextLength {
             request.contextLength = 2048
         }
         if supportsThinking {
