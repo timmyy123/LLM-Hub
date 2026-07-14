@@ -511,8 +511,8 @@ private struct FeatureModelSettingsSheet: View {
                 // Synchronize to C++ registry immediately
                 let targetValue: Int32 = (intValue == 99) ? 999 : intValue
                 CppBridge.ModelRegistry.shared.setGpuLayers(modelId: selectedModel.id, gpuLayers: targetValue)
-                if let folderURL = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: selectedModel.id, framework: selectedModel.modelFormat == .litertlm ? .litertlm : .llamacpp),
-                   let ggufFile = listGGUFFiles(in: folderURL).first(where: { !$0.lastPathComponent.lowercased().contains("mmproj") }) {
+                if let folderURL = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: selectedModel.id, framework: selectedModel.inferenceFramework),
+                   let ggufFile = LLMBackend.shared.listGGUFFiles(in: folderURL).first(where: { !$0.lastPathComponent.lowercased().contains("mmproj") }) {
                     CppBridge.ModelRegistry.shared.setGpuLayers(modelId: ggufFile.path, gpuLayers: targetValue)
                 }
             }
@@ -4979,6 +4979,28 @@ struct VibeCoderScreen: View {
         )
     }
 
+    private func scrollToLast(proxy: ScrollViewProxy) {
+        guard let last = activeMessages.last else { return }
+        withAnimation(.linear(duration: 0.08)) {
+            proxy.scrollTo(last.id, anchor: .bottom)
+        }
+    }
+
+    private func scheduleAutosave() {
+        debouncedAutosaveTask?.cancel()
+        debouncedAutosaveTask = Task {
+            try? await Task.sleep(nanoseconds: 450_000_000)
+            if Task.isCancelled { return }
+            await MainActor.run {
+                saveCurrentFile(silent: true)
+            }
+        }
+    }
+
+    private func stopPreviewServer() {
+        Task { await LocalHTMLPreviewServer.shared.stop() }
+    }
+
     var body: some View {
         Group {
             if selectedModelName.isEmpty {
@@ -5142,16 +5164,10 @@ struct VibeCoderScreen: View {
                                         }
                                         .frame(minHeight: 160)
                                         .onChange(of: activeMessages.count) { _, _ in
-                                            if let last = activeMessages.last {
-                                                withAnimation(.linear(duration: 0.08)) {
-                                                    proxy.scrollTo(last.id, anchor: .bottom)
-                                                }
-                                            }
+                                            scrollToLast(proxy: proxy)
                                         }
                                         .onChange(of: streamTick) { _, _ in
-                                            if let last = activeMessages.last {
-                                                proxy.scrollTo(last.id, anchor: .bottom)
-                                            }
+                                            scrollToLast(proxy: proxy)
                                         }
                                     }
 
@@ -5430,14 +5446,7 @@ struct VibeCoderScreen: View {
         }
         .onChange(of: generatedCode) { _, _ in
             guard hasFileSession, !isGenerating else { return }
-            debouncedAutosaveTask?.cancel()
-            debouncedAutosaveTask = Task {
-                try? await Task.sleep(nanoseconds: 450_000_000)
-                if Task.isCancelled { return }
-                await MainActor.run {
-                    saveCurrentFile(silent: true)
-                }
-            }
+            scheduleAutosave()
         }
         .fileImporter(
             isPresented: $showWorkspaceFolderPicker,
@@ -5476,7 +5485,7 @@ struct VibeCoderScreen: View {
             debouncedAutosaveTask?.cancel()
             debouncedAutosaveTask = nil
             llm.unloadModel()
-            Task { await LocalHTMLPreviewServer.shared.stop() }
+            stopPreviewServer()
         }
     }
 

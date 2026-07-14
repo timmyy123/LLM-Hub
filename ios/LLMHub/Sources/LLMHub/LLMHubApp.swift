@@ -58,11 +58,6 @@ struct LLMHubApp: App {
         MainActor.assumeIsolated {
             ONNX.register()
         }
-
-        Task {
-            await registerRunAnywhereModelCatalog()
-            await RunAnywhere.refreshModelRegistry()
-        }
     }
 
     var body: some Scene {
@@ -74,6 +69,10 @@ struct LLMHubApp: App {
                 .environment(\.locale, settings.selectedLanguage.locale)
                 .ifLet(layoutDirectionOverride) { view, dir in
                     view.environment(\.layoutDirection, dir)
+                }
+                .task {
+                    await registerRunAnywhereModelCatalog()
+                    await RunAnywhere.refreshModelRegistry()
                 }
         }
     }

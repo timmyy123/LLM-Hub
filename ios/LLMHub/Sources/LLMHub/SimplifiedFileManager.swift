@@ -1,7 +1,7 @@
 import Foundation
 import RunAnywhere
 
-final class SimplifiedFileManager {
+final class SimplifiedFileManager: @unchecked Sendable {
     static let shared = SimplifiedFileManager()
 
     private init() {}

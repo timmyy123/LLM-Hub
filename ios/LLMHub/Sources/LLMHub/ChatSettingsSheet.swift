@@ -337,8 +337,8 @@ struct ChatSettingsSheet: View {
                 // Synchronize to C++ registry immediately
                 let targetValue: Int32 = (intValue == 99) ? 999 : intValue
                 CppBridge.ModelRegistry.shared.setGpuLayers(modelId: currentModel.id, gpuLayers: targetValue)
-                if let folderURL = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: currentModel.id, framework: currentModel.modelFormat == .litertlm ? .litertlm : .llamacpp),
-                   let ggufFile = listGGUFFiles(in: folderURL).first(where: { !$0.lastPathComponent.lowercased().contains("mmproj") }) {
+                if let folderURL = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: currentModel.id, framework: currentModel.inferenceFramework),
+                   let ggufFile = LLMBackend.shared.listGGUFFiles(in: folderURL).first(where: { !$0.lastPathComponent.lowercased().contains("mmproj") }) {
                     CppBridge.ModelRegistry.shared.setGpuLayers(modelId: ggufFile.path, gpuLayers: targetValue)
                 }
             }

@@ -461,7 +461,7 @@ class LLMBackend: ObservableObject {
         isAppleFoundationAlias(model) ? Self.runAnywhereFoundationModelId : model.id
     }
 
-    private func listGGUFFiles(in directory: URL) -> [URL] {
+    func listGGUFFiles(in directory: URL) -> [URL] {
         guard let contents = try? FileManager.default.contentsOfDirectory(
             at: directory,
             includingPropertiesForKeys: [.isRegularFileKey],
