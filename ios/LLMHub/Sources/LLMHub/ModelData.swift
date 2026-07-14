@@ -9,6 +9,7 @@ public enum ModelFormat: String, Codable, Sendable {
     case onnx
     case coreml
     case drawthings
+    case platform
 }
 
 public enum DownloadState: Equatable, Sendable {
@@ -159,6 +160,7 @@ public struct AIModel: Identifiable, Codable, Sendable {
     public var inferenceFramework: InferenceFramework {
         switch modelFormat {
         case .onnx: return .onnx
+        case .platform: return .foundationModels
         case .coreml: return .llamaCpp // CoreML models manage their own directories
         default: return .llamaCpp
         }

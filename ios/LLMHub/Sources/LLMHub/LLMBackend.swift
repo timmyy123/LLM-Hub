@@ -440,7 +440,7 @@ class LLMBackend: ObservableObject {
                     supportsGpu: true,
                     requirements: ModelRequirements(minRamGB: 8, recommendedRamGB: 8),
                     contextWindowSize: 4096,
-                    modelFormat: .gguf,
+                    modelFormat: .platform,
                     additionalFiles: []
                 )
             }
@@ -951,7 +951,7 @@ class LLMBackend: ObservableObject {
             var loadRequest = RAModelLoadRequest()
             loadRequest.modelID = runAnywhereModelId
             loadRequest.category = .language
-            loadRequest.framework = framework(for: model)
+            loadRequest.framework = .foundationModels
             let loadResult = await RunAnywhere.loadModel(loadRequest)
             guard loadResult.success else {
                 throw NSError(domain: "LLMBackend", code: -101, userInfo: [NSLocalizedDescriptionKey: loadResult.errorMessage.isEmpty ? "Model load failed" : loadResult.errorMessage])

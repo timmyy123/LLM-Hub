@@ -31,7 +31,7 @@ func appleFoundationModelIfAvailable() -> AIModel? {
             supportsGpu: true,
             requirements: ModelRequirements(minRamGB: 8, recommendedRamGB: 8),
             contextWindowSize: max(1, model.contextSize),
-            modelFormat: .gguf,
+            modelFormat: .platform,
             additionalFiles: []
         )
     }

@@ -14,7 +14,7 @@ struct ChatSettingsSheet: View {
     @State private var draftTemperature: Double = 1.0
     @State private var draftSystemPrompt: String = ""
     @State private var gpuLayersTemp: Double = 99
-    @State private var isSlidingGPU = false
+    @State private var cachedModels: [AIModel] = []
     
     var body: some View {
         NavigationView {
@@ -47,7 +47,7 @@ struct ChatSettingsSheet: View {
                                         if vm.selectedModelName == settings.localized("no_model_selected") {
                                             Text(settings.localized("no_model_selected")).tag(settings.localized("no_model_selected"))
                                         }
-                                        ForEach(downloadedModels) { model in
+                                        ForEach(cachedModels) { model in
                                             Text(model.name).tag(model.name)
                                         }
                                     }
@@ -92,30 +92,12 @@ struct ChatSettingsSheet: View {
                             ConfigSlider(title: settings.localized("temperature"), value: $draftTemperature, range: 0...2, format: "%.2f", onCommit: applyDraftToViewModel)
 
                             if let model = currentModel, model.modelFormat == .gguf {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    HStack {
-                                        Text(settings.localized("gpu_layers_label").replacingOccurrences(of: "%1$d", with: isSlidingGPU ? "\(Int(gpuLayersTemp))" : (gpuLayersTemp == 99 ? settings.localized("max") : "\(Int(gpuLayersTemp))")))
-                                            .font(.subheadline)
-                                            .foregroundColor(.white)
-                                        Spacer()
-                                        Text(isSlidingGPU ? "\(Int(gpuLayersTemp))" : (gpuLayersTemp == 99 ? settings.localized("max") : "\(Int(gpuLayersTemp))"))
-                                            .font(.system(.subheadline, design: .monospaced))
-                                            .fontWeight(.bold)
-                                            .foregroundColor(.white.opacity(0.92))
-                                    }
-                                    Slider(
-                                        value: $gpuLayersTemp,
-                                        in: 0...99,
-                                        step: 1,
-                                        onEditingChanged: { editing in
-                                            isSlidingGPU = editing
-                                            if !editing {
-                                                saveGpuLayers(gpuLayersTemp)
-                                            }
-                                        }
-                                    )
-                                    .tint(ApolloPalette.accentStrong)
-                                }
+                                GPULayersSlider(
+                                    value: $gpuLayersTemp,
+                                    maxLabel: settings.localized("max"),
+                                    label: settings.localized("gpu_layers_label"),
+                                    onCommit: { saveGpuLayers(gpuLayersTemp) }
+                                )
                             }
 
                             HStack {
@@ -333,6 +315,7 @@ struct ChatSettingsSheet: View {
 
 
     private func syncDraftFromViewModel() {
+        cachedModels = downloadedModels
         draftContextWindow = min(max(1, vm.contextWindow), modelMaxContextWindow)
         draftTopK = min(max(1, vm.topK), 256)
         draftTopP = min(max(0, vm.topP), 1)
@@ -396,7 +379,7 @@ struct ChatSettingsSheet: View {
     }
 
     private var draftedModels: [AIModel] {
-        downloadedModels
+        cachedModels
     }
 
     @MainActor
@@ -420,7 +403,7 @@ struct ChatSettingsSheet: View {
                 supportsGpu: true,
                 requirements: ModelRequirements(minRamGB: 8, recommendedRamGB: 8),
                 contextWindowSize: max(1, model.contextSize),
-                modelFormat: .gguf,
+                modelFormat: .platform,
                 additionalFiles: []
             )
         }
@@ -476,6 +459,46 @@ struct ConfigSlider: View {
                     }
                 }
             }
+            .tint(ApolloPalette.accentStrong)
+        }
+    }
+}
+
+struct GPULayersSlider: View {
+    @Binding var value: Double
+    let maxLabel: String
+    let label: String
+    let onCommit: () -> Void
+
+    @State private var isSliding = false
+
+    private var displayValue: String {
+        isSliding ? "\(Int(value))" : (value == 99 ? maxLabel : "\(Int(value))")
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(label.replacingOccurrences(of: "%1$d", with: displayValue))
+                    .font(.subheadline)
+                    .foregroundColor(.white)
+                Spacer()
+                Text(displayValue)
+                    .font(.system(.subheadline, design: .monospaced))
+                    .fontWeight(.bold)
+                    .foregroundColor(.white.opacity(0.92))
+            }
+            Slider(
+                value: $value,
+                in: 0...99,
+                step: 1,
+                onEditingChanged: { editing in
+                    isSliding = editing
+                    if !editing {
+                        onCommit()
+                    }
+                }
+            )
             .tint(ApolloPalette.accentStrong)
         }
     }

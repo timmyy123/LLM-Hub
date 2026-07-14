@@ -447,7 +447,7 @@ private func chatAppleFoundationModelIfAvailable() -> AIModel? {
             supportsGpu: true,
             requirements: ModelRequirements(minRamGB: 8, recommendedRamGB: 8),
             contextWindowSize: max(4096, model.contextSize),
-            modelFormat: .gguf,
+            modelFormat: .platform,
             additionalFiles: []
         )
     }
