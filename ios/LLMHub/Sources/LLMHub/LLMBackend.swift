@@ -335,10 +335,6 @@ class LLMBackend: ObservableObject {
             return true
         }
 
-        if RunAnywhere.isModelDownloaded(model.id, framework: model.inferenceFramework) {
-            return true
-        }
-
         if let runAnywhereDir = runAnywhereModelDirectory(for: model),
            FileManager.default.fileExists(atPath: runAnywhereDir.path),
            hasAllRequiredFiles(in: runAnywhereDir, for: model) {
@@ -648,26 +644,42 @@ class LLMBackend: ObservableObject {
             )
         }
 
-        let shouldReload = !((await RunAnywhere.isVLMModelLoaded)
-            && loadedVLMModelId == model.id
-            && loadedVLMProjectorPath == mmprojPath)
+        let shouldReload = !(loadedVLMModelId == model.id && loadedVLMProjectorPath == mmprojPath)
 
         guard shouldReload else { return }
 
-        if await RunAnywhere.isModelLoaded {
-            do {
-                try await RunAnywhere.unloadModel()
-                loadedLLMModelId = nil
-                print("ℹ️ [LLMBackend] Unloaded text LLM before VLM load to avoid duplicate model residency")
-            } catch {
-                print("❌ [LLMBackend] Failed to unload text LLM before VLM load: \(error)")
-            }
+        if let loadedLLMModelId {
+            var unloadRequest = RAModelUnloadRequest()
+            unloadRequest.modelID = loadedLLMModelId
+            unloadRequest.category = .language
+            _ = await RunAnywhere.unloadModel(unloadRequest)
+            self.loadedLLMModelId = nil
+            print("ℹ️ [LLMBackend] Unloaded text LLM before VLM load to avoid duplicate model residency")
         }
 
-        await RunAnywhere.unloadVLMModel()
-        syncGpuLayersToRegistry(for: model)
+        if let loadedVLMModelId {
+            var unloadRequest = RAModelUnloadRequest()
+            unloadRequest.modelID = loadedVLMModelId
+            unloadRequest.category = .multimodal
+            _ = await RunAnywhere.unloadModel(unloadRequest)
+        }
+        self.loadedVLMModelId = nil
+        self.loadedVLMProjectorPath = nil
+
+        await syncGpuLayersToRegistry(for: model)
         do {
-            try await RunAnywhere.loadVLMModel(modelPath, mmprojPath: mmprojPath, modelId: model.id, modelName: model.name)
+            var loadRequest = RAModelLoadRequest()
+            loadRequest.modelID = model.id
+            loadRequest.category = .multimodal
+            loadRequest.framework = framework(for: model)
+            let loadResult = await RunAnywhere.loadModel(loadRequest)
+            guard loadResult.success else {
+                throw NSError(
+                    domain: "LLMBackend",
+                    code: -111,
+                    userInfo: [NSLocalizedDescriptionKey: loadResult.errorMessage.isEmpty ? "VLM load failed" : loadResult.errorMessage]
+                )
+            }
         } catch {
             let details = "main={\(modelSummary)} header={\(modelHeader)} mmproj={\(projectorSummary)} header={\(projectorHeader)}"
             throw NSError(
@@ -681,42 +693,56 @@ class LLMBackend: ObservableObject {
     }
 
     private func ensureTextModelLoaded(for model: AIModel) async throws {
-        if await RunAnywhere.isVLMModelLoaded {
-            await RunAnywhere.unloadVLMModel()
-            loadedVLMModelId = nil
-            loadedVLMProjectorPath = nil
+        if let loadedVLMModelId {
+            var unloadRequest = RAModelUnloadRequest()
+            unloadRequest.modelID = loadedVLMModelId
+            unloadRequest.category = .multimodal
+            _ = await RunAnywhere.unloadModel(unloadRequest)
+            self.loadedVLMModelId = nil
+            self.loadedVLMProjectorPath = nil
             print("ℹ️ [LLMBackend] Unloaded VLM before text generation to avoid duplicate model residency")
         }
 
-        let shouldLoad = !((await RunAnywhere.isModelLoaded) && loadedLLMModelId == model.id)
+        let shouldLoad = loadedLLMModelId != model.id
         guard shouldLoad else { return }
 
-        try await RunAnywhere.loadModel(model.id)
+        var loadRequest = RAModelLoadRequest()
+        loadRequest.modelID = model.id
+        loadRequest.category = .language
+        loadRequest.framework = framework(for: model)
+        let loadResult = await RunAnywhere.loadModel(loadRequest)
+        guard loadResult.success else {
+            throw NSError(
+                domain: "LLMBackend",
+                code: -112,
+                userInfo: [NSLocalizedDescriptionKey: loadResult.errorMessage.isEmpty ? "Text model load failed" : loadResult.errorMessage]
+            )
+        }
         loadedLLMModelId = model.id
     }
 
-    private func syncGpuLayersToRegistry(for model: AIModel) {
+    private func syncGpuLayersToRegistry(for model: AIModel) async {
         let key = "gpu_layers_\(model.id)"
         let layers = UserDefaults.standard.object(forKey: key) != nil ?
             Int32(UserDefaults.standard.integer(forKey: key)) : 99
         let targetValue: Int32 = (layers == 99) ? 999 : layers
         
         // Sync for model ID
-        CppBridge.ModelRegistry.shared.setGpuLayers(modelId: model.id, gpuLayers: targetValue)
+        await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: model.id, gpuLayers: targetValue)
         let runAnywhereModelId = activeRunAnywhereModelId(for: model)
-        CppBridge.ModelRegistry.shared.setGpuLayers(modelId: runAnywhereModelId, gpuLayers: targetValue)
+        await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: runAnywhereModelId, gpuLayers: targetValue)
         
         // Sync for model file paths if available
         if let folderURL = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: model.id, framework: framework(for: model)) {
-            CppBridge.ModelRegistry.shared.setGpuLayers(modelId: folderURL.path, gpuLayers: targetValue)
+            await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: folderURL.path, gpuLayers: targetValue)
             for ggufFile in listGGUFFiles(in: folderURL) {
-                CppBridge.ModelRegistry.shared.setGpuLayers(modelId: ggufFile.path, gpuLayers: targetValue)
+                await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: ggufFile.path, gpuLayers: targetValue)
             }
         }
         if let folderURL = runAnywhereModelDirectory(for: model) {
-            CppBridge.ModelRegistry.shared.setGpuLayers(modelId: folderURL.path, gpuLayers: targetValue)
+            await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: folderURL.path, gpuLayers: targetValue)
             for ggufFile in listGGUFFiles(in: folderURL) {
-                CppBridge.ModelRegistry.shared.setGpuLayers(modelId: ggufFile.path, gpuLayers: targetValue)
+                await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: ggufFile.path, gpuLayers: targetValue)
             }
         }
     }
@@ -774,13 +800,13 @@ class LLMBackend: ObservableObject {
     }
 #endif
 
-    private func vlmImage(from imageURL: URL) -> VLMImage {
+    private func vlmImage(from imageURL: URL) -> RAVLMImage {
         #if canImport(UIKit)
         if let uiImage = downsampledUIImage(from: imageURL) {
-            return VLMImage(image: uiImage)
+            return RAVLMImage.fromUIImage(uiImage) ?? RAVLMImage.fromFilePath(imageURL.path)
         }
         #endif
-        return VLMImage(filePath: imageURL.path)
+        return RAVLMImage.fromFilePath(imageURL.path)
     }
 
     private func modelMaxContextWindow(for model: AIModel) -> Int {
@@ -792,7 +818,7 @@ class LLMBackend: ObservableObject {
         min(max(1, requested), modelMaxContextWindow(for: model))
     }
 
-    private func registerModel(_ model: AIModel, contextLengthOverride: Int? = nil) {
+    private func registerModel(_ model: AIModel, contextLengthOverride: Int? = nil) async throws {
         // Custom models store an absolute file path in model.url — use file:// URL.
         let primaryURL: URL
         if model.source == "Custom" {
@@ -804,30 +830,31 @@ class LLMBackend: ObservableObject {
         let contextLength = contextLengthOverride ?? model.contextWindowSize
 
         if model.additionalFiles.isEmpty {
-            RunAnywhere.registerModel(
+            try await RunAnywhere.registerModel(
                 id: model.id,
                 name: model.name,
-                url: primaryURL,
+                url: primaryURL.absoluteString,
                 framework: framework(for: model),
                 modality: model.supportsVision ? .multimodal : .language,
                 memoryRequirement: model.sizeBytes,
-                contextLength: contextLength,
                 supportsThinking: model.supportsThinking
             )
             return
         }
 
         let descriptors = model.allDownloadURLs.map {
-            ModelFileDescriptor(url: $0, filename: filename(from: $0), isRequired: true)
+            RAModelFileDescriptor(url: $0, filename: filename(from: $0), isRequired: true)
         }
 
-        RunAnywhere.registerMultiFileModel(
+        try await RunAnywhere.registerModel(
+            multiFile: descriptors,
             id: model.id,
             name: model.name,
-            files: descriptors,
             framework: framework(for: model),
             modality: model.supportsVision ? .multimodal : .language,
-            memoryRequirement: model.sizeBytes
+            memoryRequirement: model.sizeBytes,
+            contextLength: contextLength,
+            supportsThinking: model.supportsThinking
         )
     }
 
@@ -840,7 +867,7 @@ class LLMBackend: ObservableObject {
 
         if !areModelsRegistered {
             for model in ModelData.allModels() {
-                registerModel(model)
+                try await registerModel(model)
             }
             areModelsRegistered = true
         }
@@ -855,9 +882,6 @@ class LLMBackend: ObservableObject {
 
         print("ℹ️ [LLMBackend] loadModel name=\(model.name) visionEnabled=\(enableVision) audioEnabled=\(enableAudio)")
 
-        // ALWAYS unload before loading.
-        do { try await RunAnywhere.unloadModel() } catch { /* no-op if nothing was loaded */ }
-        await RunAnywhere.unloadVLMModel()
         #if canImport(LiteRTLM)
         await LiteRTLMBackend.shared.unload()
         #endif
@@ -895,12 +919,31 @@ class LLMBackend: ObservableObject {
         let effectiveContext = clampedContextWindow(contextWindow, for: model)
         let runAnywhereModelId = activeRunAnywhereModelId(for: model)
 
+        if let loadedLLMModelId {
+            var unloadRequest = RAModelUnloadRequest()
+            unloadRequest.modelID = loadedLLMModelId
+            unloadRequest.category = .language
+            _ = await RunAnywhere.unloadModel(unloadRequest)
+        }
+        if let loadedVLMModelId {
+            var unloadRequest = RAModelUnloadRequest()
+            unloadRequest.modelID = loadedVLMModelId
+            unloadRequest.category = .multimodal
+            _ = await RunAnywhere.unloadModel(unloadRequest)
+        }
+
         if isAppleFoundationAlias(model) {
             // Apple Foundation model is built in; no download or registration required.
-            try await RunAnywhere.loadModel(runAnywhereModelId)
+            var loadRequest = RAModelLoadRequest()
+            loadRequest.modelID = runAnywhereModelId
+            loadRequest.category = .language
+            loadRequest.framework = framework(for: model)
+            let loadResult = await RunAnywhere.loadModel(loadRequest)
+            guard loadResult.success else {
+                throw NSError(domain: "LLMBackend", code: -101, userInfo: [NSLocalizedDescriptionKey: loadResult.errorMessage.isEmpty ? "Model load failed" : loadResult.errorMessage])
+            }
         } else {
-            registerModel(model, contextLengthOverride: effectiveContext)
-            await RunAnywhere.flushPendingRegistrations()
+            try await registerModel(model, contextLengthOverride: effectiveContext)
             _ = try? migrateCustomModelIfNeeded(model)
             _ = try? migrateLegacyModelIfNeeded(model)
 
@@ -925,7 +968,7 @@ class LLMBackend: ObservableObject {
                     framework: framework(for: model),
                     downloadURL: ggufURL,
                     localPath: folderURL,
-                    contextLength: effectiveContext,
+                    contextLength: Int32(effectiveContext),
                     supportsThinking: model.supportsThinking
                 )
                 try? await CppBridge.ModelRegistry.shared.save(registeredModelInfo)
@@ -938,7 +981,7 @@ class LLMBackend: ObservableObject {
                     framework: framework(for: model),
                     downloadURL: ggufURL,
                     localPath: folderURL,
-                    contextLength: effectiveContext,
+                    contextLength: Int32(effectiveContext),
                     supportsThinking: model.supportsThinking
                 )
                 try? await CppBridge.ModelRegistry.shared.save(pathModelInfo)
@@ -954,7 +997,7 @@ class LLMBackend: ObservableObject {
                     framework: framework(for: model),
                     downloadURL: URL(string: model.url),
                     localPath: folderURL,
-                    contextLength: effectiveContext,
+                    contextLength: Int32(effectiveContext),
                     supportsThinking: model.supportsThinking
                 )
                 try? await CppBridge.ModelRegistry.shared.save(registeredModelInfo)
@@ -967,14 +1010,21 @@ class LLMBackend: ObservableObject {
                     framework: framework(for: model),
                     downloadURL: URL(string: model.url),
                     localPath: folderURL,
-                    contextLength: effectiveContext,
+                    contextLength: Int32(effectiveContext),
                     supportsThinking: model.supportsThinking
                 )
                 try? await CppBridge.ModelRegistry.shared.save(pathModelInfo)
             }
 
-            syncGpuLayersToRegistry(for: model)
-            try await RunAnywhere.loadModel(runAnywhereModelId)
+            await syncGpuLayersToRegistry(for: model)
+            var loadRequest = RAModelLoadRequest()
+            loadRequest.modelID = runAnywhereModelId
+            loadRequest.category = model.supportsVision ? .multimodal : .language
+            loadRequest.framework = framework(for: model)
+            let loadResult = await RunAnywhere.loadModel(loadRequest)
+            guard loadResult.success else {
+                throw NSError(domain: "LLMBackend", code: -101, userInfo: [NSLocalizedDescriptionKey: loadResult.errorMessage.isEmpty ? "Model load failed" : loadResult.errorMessage])
+            }
         }
 
         isLoaded = true
@@ -1006,12 +1056,18 @@ class LLMBackend: ObservableObject {
 
     func unloadModel() {
         Task {
-            do {
-                try await RunAnywhere.unloadModel()
-            } catch {
-                print("❌ [LLMBackend] unloadModel error=\(error)")
+            if let loadedLLMModelId {
+                var unloadRequest = RAModelUnloadRequest()
+                unloadRequest.modelID = loadedLLMModelId
+                unloadRequest.category = .language
+                _ = await RunAnywhere.unloadModel(unloadRequest)
             }
-            await RunAnywhere.unloadVLMModel()
+            if let loadedVLMModelId {
+                var unloadRequest = RAModelUnloadRequest()
+                unloadRequest.modelID = loadedVLMModelId
+                unloadRequest.category = .multimodal
+                _ = await RunAnywhere.unloadModel(unloadRequest)
+            }
             #if canImport(LiteRTLM)
             await LiteRTLMBackend.shared.unload()
             #endif
@@ -1096,14 +1152,13 @@ class LLMBackend: ObservableObject {
             effectiveSystemPrompt = systemPrompt
         }
 
-        let options = LLMGenerationOptions(
-            maxTokens: effectiveMaxTokens,
-            temperature: temperature,
-            topP: topP,
-            stopSequences: stopSequences,
-            streamingEnabled: true,
-            systemPrompt: effectiveSystemPrompt
-        )
+        var options = RALLMGenerationOptions.defaults()
+        options.maxTokens = Int32(effectiveMaxTokens)
+        options.temperature = Float(temperature)
+        options.topP = Float(topP)
+        options.stopSequences = stopSequences
+        options.streamingEnabled = true
+        options.systemPrompt = effectiveSystemPrompt ?? ""
 
         do {
 
@@ -1115,43 +1170,50 @@ class LLMBackend: ObservableObject {
             try await ensureVLMLoaded(for: model)
 
             let image = vlmImage(from: imageURL)
-            let streamResult = try await RunAnywhere.processImageStream(
-                image,
-                prompt: usePrompt,
-                maxTokens: Int32(effectiveMaxTokens),
-                temperature: temperature,
-                topP: topP
-            )
+            var vlmOptions = RAVLMGenerationOptions.defaults()
+            vlmOptions.maxTokens = Int32(effectiveMaxTokens)
+            vlmOptions.temperature = Float(temperature)
+            vlmOptions.topP = Float(topP)
+            vlmOptions.systemPrompt = effectiveSystemPrompt ?? ""
+            let stream = try await RunAnywhere.processImageStream(image, prompt: usePrompt, options: vlmOptions)
 
             let isGemma4 = (loadedModelName.range(of: "gemma 4", options: .caseInsensitive) != nil ||
                             loadedModelName.range(of: "gemma-4", options: .caseInsensitive) != nil) &&
                            loadedModelName.range(of: "translate", options: .caseInsensitive) == nil
 
             var currentOutput = ""
-            for try await token in streamResult.stream {
+            var finalResult: RAVLMResult?
+            for try await event in stream {
                 try Task.checkCancellation()
-                currentOutput += token
-                let displayOutput = isGemma4 ? Self.cleanGemma4Output(currentOutput) : currentOutput
-                onUpdate(displayOutput, 0, 0)
+                if !event.token.isEmpty {
+                    currentOutput += event.token
+                    let displayOutput = isGemma4 ? Self.cleanGemma4Output(currentOutput) : currentOutput
+                    onUpdate(displayOutput, 0, 0)
+                }
+                if event.isFinal {
+                    finalResult = event.hasResult ? event.result : nil
+                    break
+                }
             }
 
-            let result = try await streamResult.metrics.value
-            let finalOutput = isGemma4 ? Self.cleanGemma4Output(currentOutput) : currentOutput
-            onUpdate(finalOutput, result.completionTokens, result.tokensPerSecond)
+            let result = finalResult ?? RAVLMResult()
+            let finalText = result.text.isEmpty ? currentOutput : result.text
+            let finalOutput = isGemma4 ? Self.cleanGemma4Output(finalText) : finalText
+            onUpdate(finalOutput, Int(result.completionTokens), Double(result.tokensPerSecond))
             return
         }
 
         if let model = loadedAIModel(), model.id == Self.appleFoundationAliasId || loadedLLMModelId == Self.runAnywhereFoundationModelId {
             // Foundation models may not stream in exact per-token order; generate non-stream and emulate incremental updates for UX.
-            let result = try await RunAnywhere.generate(usePrompt, options: options)
+            let result = try await RunAnywhere.generate(prompt: usePrompt, options: options)
             let fullText = result.text
 
             // If the SDK provides separate thinking content, wrap it in sentinels so the
             // thinking drawer shows the real reasoning and the answer streams below it —
             // matching the same overlay path used for other models.
-            let sdkThinking = result.thinkingContent?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let sdkThinking = result.thinkingContent.trimmingCharacters(in: .whitespacesAndNewlines)
             let answerText = fullText.trimmingCharacters(in: .whitespacesAndNewlines)
-            let hasSdkThinking = !sdkThinking.isEmpty || (result.thinkingTokens ?? 0) > 0
+            let hasSdkThinking = !sdkThinking.isEmpty || result.thinkingTokens > 0
 
             if hasSdkThinking {
                 // First, surface the thinking content immediately so the drawer opens.
@@ -1169,7 +1231,7 @@ class LLMBackend: ObservableObject {
                 }
 
                 let finalDisplay = currentOutput.isEmpty ? thinkingDisplay : currentOutput
-                onUpdate(finalDisplay, result.responseTokens ?? result.tokensUsed, result.tokensPerSecond)
+                onUpdate(finalDisplay, Int(result.responseTokens), result.tokensPerSecond)
             } else {
                 // No thinking content — stream the answer directly (heuristic drawer handled by UI).
                 var currentOutput = ""
@@ -1177,12 +1239,12 @@ class LLMBackend: ObservableObject {
                 for (index, token) in tokens.enumerated() {
                     if index > 0 { currentOutput += " " }
                     currentOutput += String(token)
-                    onUpdate(currentOutput, result.tokensUsed, result.tokensPerSecond)
+                    onUpdate(currentOutput, Int(result.responseTokens), result.tokensPerSecond)
                     try? await Task.sleep(nanoseconds: 10_000_000) // 10ms for smoother perception
                 }
 
                 if currentOutput.isEmpty {
-                    onUpdate(fullText, result.tokensUsed, result.tokensPerSecond)
+                    onUpdate(fullText, Int(result.responseTokens), result.tokensPerSecond)
                 }
             }
             return
@@ -1202,21 +1264,21 @@ class LLMBackend: ObservableObject {
             // Phase 1 — get thinking content (generation stops at <|end|>)
             print("🧠 [ThinkingDebug][harmony-phase1] starting")
             print("🧠 [ThinkingDebug][gate] model=\(loadedModelName) supportsThinking=\(modelSupportsThinking) enableThinking=\(enableThinking)")
-            let streamResult1 = try await RunAnywhere.generateStream(usePrompt, options: options)
+            let streamResult1 = try await RunAnywhere.generateStream(prompt: usePrompt, options: options)
             var thinkingRaw = ""
             var phase1Chunks = 0
 
-            for try await token in streamResult1.stream {
+            for try await event in streamResult1 {
                 try Task.checkCancellation()
-                thinkingRaw += token
+                thinkingRaw += event.token
                 phase1Chunks += 1
                 let pureThinking = Self.extractHarmonyThinking(thinkingRaw)
                 if phase1Chunks == 1 {
-                    print("🧠 [ThinkingDebug][harmony-phase1] firstChunk=\(String(token.prefix(80)))")
+                    print("🧠 [ThinkingDebug][harmony-phase1] firstChunk=\(String(event.token.prefix(80)))")
                 }
                 onUpdate(Self.thinkingSentinelOpen + pureThinking, 0, 0)
+                if event.isFinal { break }
             }
-            _ = try? await streamResult1.result.value
 
             let pureThinking = Self.extractHarmonyThinking(thinkingRaw)
             print("🧠 [ThinkingDebug][harmony-phase1] complete thinkingChars=\(pureThinking.count) chunks=\(phase1Chunks)")
@@ -1229,20 +1291,24 @@ class LLMBackend: ObservableObject {
             let phase2Prompt = usePrompt + "<|channel|>" + thinkingRaw + Self.harmonyEndTag + Self.harmonyFinalHeader
             print("🧠 [ThinkingDebug][harmony-phase2] starting phase2PromptLen=\(phase2Prompt.count)")
 
-            let streamResult2 = try await RunAnywhere.generateStream(phase2Prompt, options: options)
+            let streamResult2 = try await RunAnywhere.generateStream(prompt: phase2Prompt, options: options)
             var finalOutput = ""
             var phase2Chunks = 0
+            var phase2Final: RALLMStreamFinalResult?
             // The model may echo a channel prefix before the actual answer ("final<|message|>" or
             // "analysis<|message|>" variants). Strip it in-place so the answer stays clean.
             let finalChannelPrefixes = ["final<|message|>", "analysis<|message|>",
                                         "<|channel|>final<|message|>", "<|channel|>analysis<|message|>"]
 
-            for try await token in streamResult2.stream {
+            for try await event in streamResult2 {
                 try Task.checkCancellation()
-                finalOutput += token
+                finalOutput += event.token
                 phase2Chunks += 1
                 if phase2Chunks == 1 {
-                    print("🧠 [ThinkingDebug][harmony-phase2] firstChunk=\(String(token.prefix(80)))")
+                    print("🧠 [ThinkingDebug][harmony-phase2] firstChunk=\(String(event.token.prefix(80)))")
+                }
+                if event.isFinal {
+                    phase2Final = event.hasResult ? event.result : nil
                 }
                 // Strip any leading channel prefix before surfacing to UI.
                 var displayFinal = finalOutput
@@ -1258,9 +1324,9 @@ class LLMBackend: ObservableObject {
                     }
                 }
                 onUpdate(Self.thinkingSentinelOpen + pureThinking + Self.thinkingSentinelClose + displayFinal, 0, 0)
+                if event.isFinal { break }
             }
 
-            let result2 = try await streamResult2.result.value
             // Strip channel prefix from the fully accumulated answer before saving.
             var cleanFinal = finalOutput.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
             for pfx in finalChannelPrefixes {
@@ -1271,15 +1337,16 @@ class LLMBackend: ObservableObject {
                 }
             }
             print("🧠 [ThinkingDebug][harmony-phase2] complete finalChars=\(cleanFinal.count) chunks=\(phase2Chunks)")
+            let result2 = phase2Final ?? RALLMStreamFinalResult()
             onUpdate(
                 Self.thinkingSentinelOpen + pureThinking + Self.thinkingSentinelClose + cleanFinal,
-                result2.responseTokens ?? result2.tokensUsed,
-                result2.tokensPerSecond
+                Int(result2.completionTokens),
+                Double(result2.tokensPerSecond)
             )
             return
         }
 
-        let streamResult = try await RunAnywhere.generateStream(usePrompt, options: options)
+        let streamResult = try await RunAnywhere.generateStream(prompt: usePrompt, options: options)
         var currentOutput = ""
         var chunkCount = 0
         var loggedRealThinkingMarker = false
@@ -1292,13 +1359,14 @@ class LLMBackend: ObservableObject {
                         loadedModelName.range(of: "gemma-4", options: .caseInsensitive) != nil) &&
                        loadedModelName.range(of: "translate", options: .caseInsensitive) == nil
 
-        for try await token in streamResult.stream {
+        var finalStreamResult: RALLMStreamFinalResult?
+        for try await event in streamResult {
             // Respect Task cancellation — stop consuming tokens when the caller
             // cancels (e.g. user taps stop, or turn-leak auto-stop).
             try Task.checkCancellation()
 
             chunkCount += 1
-            currentOutput += token
+            currentOutput += event.token
             // Strip <unusedN> thinking tokens (Gemma 4 emits these when thinking mode activates)
             if currentOutput.contains("<unused") {
                 currentOutput = currentOutput.replacingOccurrences(
@@ -1308,7 +1376,7 @@ class LLMBackend: ObservableObject {
             let normalizedOutput = isHarmonyModel ? Self.normalizeHarmonyOutput(displayOutput) : (displayOutput, false)
 
             if chunkCount == 1 {
-                print("🧠 [ThinkingDebug][stream] firstChunk preview=\(String(token.prefix(120)))")
+                print("🧠 [ThinkingDebug][stream] firstChunk preview=\(String(event.token.prefix(120)))")
             }
 
             let hasRealThinkingMarkers = normalizedOutput.0.contains(Self.thinkingSentinelOpen)
@@ -1330,9 +1398,14 @@ class LLMBackend: ObservableObject {
             // thinking markers, the UI parser will split them. If it doesn't, the text is
             // just the answer and should remain visible while streaming.
             onUpdate(normalizedOutput.0, 0, 0)
+
+            if event.isFinal {
+                finalStreamResult = event.hasResult ? event.result : nil
+                break
+            }
         }
 
-        let result = try await streamResult.result.value
+        let result = finalStreamResult ?? RALLMStreamFinalResult()
         // Strip trailing Gemma stop tokens that leak through when generation ends on EOG
         let gemmaTrailingTokens = ["<end_of_turn>", "</s>", "<eos>"]
         for tok in gemmaTrailingTokens {
@@ -1346,8 +1419,8 @@ class LLMBackend: ObservableObject {
             currentOutput = Self.cleanGemma4Output(currentOutput)
         }
         let normalizedFinalOutput = isHarmonyModel ? Self.normalizeHarmonyOutput(currentOutput) : (currentOutput, false)
-        let sdkThinking = result.thinkingContent?.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines) ?? ""
-        let sdkHasThinking = !sdkThinking.isEmpty || (result.thinkingTokens ?? 0) > 0
+        let sdkThinking = result.hasThinkingContent ? result.thinkingContent.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines) : ""
+        let sdkHasThinking = !sdkThinking.isEmpty || !result.thinkingContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let streamHasThinkingMarkers = normalizedFinalOutput.0.contains(Self.thinkingSentinelOpen)
             || currentOutput.contains(Self.thinkingSentinelClose)
             || currentOutput.contains("<think>")
@@ -1365,15 +1438,15 @@ class LLMBackend: ObservableObject {
             }
 
             print(
-                "🧠 [ThinkingDebug][final] rawChars=\(currentOutput.count) responseChars=\(result.text.count) thinkingChars=\(result.thinkingContent?.count ?? 0) tokens=\(result.tokensUsed) thinkingTokens=\(result.thinkingTokens ?? -1) responseTokens=\(result.responseTokens ?? result.tokensUsed) sdkHasThinking=\(sdkHasThinking) rawPreview=\(String(currentOutput.prefix(120))) responsePreview=\(String(result.text.prefix(120))) thinkingPreview=\(String((result.thinkingContent ?? "").prefix(120)))"
+                "🧠 [ThinkingDebug][final] rawChars=\(currentOutput.count) responseChars=\(result.text.count) thinkingChars=\(result.thinkingContent.count) tokens=\(result.completionTokens) responseTokens=\(result.completionTokens) sdkHasThinking=\(sdkHasThinking) rawPreview=\(String(currentOutput.prefix(120))) responsePreview=\(String(result.text.prefix(120))) thinkingPreview=\(String(result.thinkingContent.prefix(120)))"
             )
 
-            onUpdate(displayText, result.responseTokens ?? result.tokensUsed, result.tokensPerSecond)
+            onUpdate(displayText, Int(result.completionTokens), Double(result.tokensPerSecond))
         } else {
             print(
-                "🧠 [ThinkingDebug][final] raw-only rawChars=\(currentOutput.count) responseChars=\(result.text.count) thinkingChars=\(result.thinkingContent?.count ?? 0) tokens=\(result.tokensUsed) responseTokens=\(result.responseTokens ?? result.tokensUsed) streamHasMarkers=\(streamHasThinkingMarkers) rawPreview=\(String(currentOutput.prefix(120)))"
+                "🧠 [ThinkingDebug][final] raw-only rawChars=\(currentOutput.count) responseChars=\(result.text.count) thinkingChars=\(result.thinkingContent.count) tokens=\(result.completionTokens) responseTokens=\(result.completionTokens) streamHasMarkers=\(streamHasThinkingMarkers) rawPreview=\(String(currentOutput.prefix(120)))"
             )
-            onUpdate(normalizedFinalOutput.0, result.responseTokens ?? result.tokensUsed, result.tokensPerSecond)
+            onUpdate(normalizedFinalOutput.0, Int(result.completionTokens), Double(result.tokensPerSecond))
         }
         } catch {
             let isRawPrompt = prompt.hasPrefix("__RAW_PROMPT__")

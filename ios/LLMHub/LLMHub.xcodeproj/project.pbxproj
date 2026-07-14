@@ -10,6 +10,7 @@
 		1AE5E42ED85BEFE5C3ED1D2A /* LocalizationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BBFF4AA65F0EF6FF1DB93D /* LocalizationManager.swift */; };
 		1D92A835955F48E1AA4AEEEF /* EmbeddingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59683F4EC0364144B429B48B /* EmbeddingService.swift */; };
 		1F3A9E5C7B2E4D6F8A1B2C3D /* ApolloTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E4B5F6A7C8D9E0F1A2B3C4D /* ApolloTheme.swift */; };
+		2A9D5B7C8E1F4A3B6C0D2E10 /* SimplifiedFileManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A9D5B7C8E1F4A3B6C0D2E11 /* SimplifiedFileManager.swift */; };
 		F1A2B3C4D5E6F708192A3B4D /* AudioTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E6F708192A3B4C /* AudioTools.swift */; };
 		E1B2C3D4E5F600001A2B3C4D /* ChatAgentSkillsTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1B2C3D4E5F600002A2B3C4D /* ChatAgentSkillsTools.swift */; };
 		F1A2B3C4D5E6F708192A3B50 /* LiteRTLMBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E6F708192A3B4F /* LiteRTLMBackend.swift */; };
@@ -86,6 +87,7 @@
 		65B931DD6FE1CD242E4A7907 /* ar */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ar; path = ar.lproj/Localizable.strings; sourceTree = "<group>"; };
 		70D3A8BE6F91CC4E2E5D0A11 /* zh */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = zh; path = zh.lproj/Localizable.strings; sourceTree = "<group>"; };
 		75BBFF4AA65F0EF6FF1DB93D /* LocalizationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizationManager.swift; sourceTree = "<group>"; };
+		2A9D5B7C8E1F4A3B6C0D2E11 /* SimplifiedFileManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimplifiedFileManager.swift; sourceTree = "<group>"; };
 		8576188C8596440A08A0B171 /* LLMHubApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMHubApp.swift; sourceTree = "<group>"; };
 		8E674F93296C177D68CCEFED /* ModelDownloadScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelDownloadScreen.swift; sourceTree = "<group>"; };
 		94722918DD9186F0D751D9C0 /* uk */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = uk; path = uk.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -168,6 +170,7 @@
 				C74D4095CAC843D4AD4F61B3 /* RagService.swift */,
 				27AC91B048B74436A4029665 /* MemoryStore.swift */,
 				B9DF631F25054004865F2A2B /* RagServiceManager.swift */,
+				2A9D5B7C8E1F4A3B6C0D2E11 /* SimplifiedFileManager.swift */,
 				D399F03307D44289BC766AD9 /* DocumentTextExtractor.swift */,
 				C54A0BA40DE3F5B7A1ED9A63 /* ChatScreen.swift */,
 				E06F261B9A91F8AA8BAA4778 /* ChatSettingsSheet.swift */,
@@ -337,6 +340,7 @@
 				7410CEC1D27C4FE7BC6C6486 /* RagService.swift in Sources */,
 				CB4333B9DD904E3DBB3184F9 /* MemoryStore.swift in Sources */,
 				2CD0F1D1F3E04E66AA24812C /* RagServiceManager.swift in Sources */,
+				2A9D5B7C8E1F4A3B6C0D2E10 /* SimplifiedFileManager.swift in Sources */,
 				ABE54570472C4132920C1447 /* DocumentTextExtractor.swift in Sources */,
 				3701462555C0F00B7A0F5B01 /* ChatScreen.swift in Sources */,
 				DF4968608455CAC5D2C20BE3 /* ChatSettingsSheet.swift in Sources */,

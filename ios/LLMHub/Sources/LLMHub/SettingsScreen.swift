@@ -81,7 +81,7 @@ struct SettingsScreen: View {
                             subtitleKey: "manage_memory_subtitle"
                         ) {
                             Task {
-                                _ = await RunAnywhere.discoverDownloadedModels()
+                                await RunAnywhere.refreshModelRegistry()
                                 await RagServiceManager.shared.initialize(modelId: settings.selectedEmbeddingModelId)
                                 await MainActor.run {
                                     showMemoryDialog = true

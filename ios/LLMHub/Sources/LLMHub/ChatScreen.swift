@@ -849,7 +849,7 @@ class ChatViewModel: ObservableObject {
         }
 
         Task {
-            _ = await RunAnywhere.discoverDownloadedModels()
+            await RunAnywhere.refreshModelRegistry()
         }
 
         settingsByModelId = Self.loadPerModelSettings(from: userDefaults)
@@ -3466,7 +3466,7 @@ struct ChatScreen: View {
             hasInitializedChatSession = true
             vm.unloadModel()
             Task {
-                _ = await RunAnywhere.discoverDownloadedModels()
+                await RunAnywhere.refreshModelRegistry()
                 await RagServiceManager.shared.initialize(modelId: AppSettings.shared.selectedEmbeddingModelId)
             }
         }

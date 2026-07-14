@@ -253,7 +253,7 @@ private func translatorHasDownloadedVisionProjector(for model: AIModel) -> Bool 
         candidate.isDependencyOnly
             && candidate.inferenceFramework == model.inferenceFramework
             && translatorVisionFamilyName(for: candidate.name) == family
-            && RunAnywhere.isModelDownloaded(candidate.id, framework: candidate.inferenceFramework)
+            && isRunAnywhereModelDownloaded(candidate)
     }
 
     guard !candidates.isEmpty else { return false }
@@ -281,7 +281,22 @@ private func hasDownloadedVisionProjector(for model: AIModel) -> Bool {
     return ModelData.allModels().contains { candidate in
         candidate.isDependencyOnly
             && candidate.inferenceFramework == model.inferenceFramework
-            && RunAnywhere.isModelDownloaded(candidate.id, framework: candidate.inferenceFramework)
+            && isRunAnywhereModelDownloaded(candidate)
+    }
+}
+
+@MainActor
+private func isRunAnywhereModelDownloaded(_ model: AIModel) -> Bool {
+    guard let folderURL = try? CppBridge.ModelPaths.getModelFolder(modelId: model.id, framework: model.inferenceFramework) else {
+        return false
+    }
+
+    guard FileManager.default.fileExists(atPath: folderURL.path) else {
+        return false
+    }
+
+    return model.requiredFileNames.allSatisfy { fileName in
+        FileManager.default.fileExists(atPath: folderURL.appendingPathComponent(fileName).path)
     }
 }
 
@@ -353,7 +368,7 @@ private func syncRunAnywhereModelDiscovery() async {
     } catch {
         // Ignore repeated initialization attempts.
     }
-    _ = await RunAnywhere.discoverDownloadedModels()
+    await RunAnywhere.refreshModelRegistry()
 }
 
 @MainActor

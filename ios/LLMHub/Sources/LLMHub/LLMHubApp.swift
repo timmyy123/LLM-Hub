@@ -59,11 +59,9 @@ struct LLMHubApp: App {
             ONNX.register()
         }
 
-        registerRunAnywhereModelCatalog()
-
         Task {
-            await RunAnywhere.flushPendingRegistrations()
-            _ = await RunAnywhere.discoverDownloadedModels()
+            await registerRunAnywhereModelCatalog()
+            await RunAnywhere.refreshModelRegistry()
         }
     }
 
@@ -97,21 +95,21 @@ struct LLMHubApp: App {
         }
     }
 
-    private func registerRunAnywhereModelCatalog() {
+    private func registerRunAnywhereModelCatalog() async {
         for model in ModelData.allModels() {
-            register(model)
+            await register(model)
         }
     }
 
-    private func register(_ model: AIModel) {
+    private func register(_ model: AIModel) async {
         guard model.modelFormat != .drawthings else { return }
         guard let primaryURL = URL(string: model.url) else { return }
 
         if model.additionalFiles.isEmpty {
-            RunAnywhere.registerModel(
+            try? await RunAnywhere.registerModel(
                 id: model.id,
                 name: model.name,
-                url: primaryURL,
+                url: primaryURL.absoluteString,
                 framework: model.inferenceFramework,
                 modality: {
                     switch model.category {
@@ -132,20 +130,19 @@ struct LLMHubApp: App {
                     }
                 }(),
                 memoryRequirement: model.sizeBytes,
-                contextLength: model.contextWindowSize,
                 supportsThinking: model.supportsThinking
             )
             return
         }
 
         let descriptors = model.allDownloadURLs.map {
-            ModelFileDescriptor(url: $0, filename: filename(from: $0), isRequired: true)
+            RAModelFileDescriptor(url: $0, filename: filename(from: $0), isRequired: true)
         }
 
-        RunAnywhere.registerMultiFileModel(
+        try? await RunAnywhere.registerModel(
+            multiFile: descriptors,
             id: model.id,
             name: model.name,
-            files: descriptors,
             framework: model.inferenceFramework,
             modality: {
                 switch model.category {
@@ -166,7 +163,8 @@ struct LLMHubApp: App {
                 }
             }(),
             memoryRequirement: model.sizeBytes,
-            contextLength: model.contextWindowSize
+            contextLength: model.contextWindowSize,
+            supportsThinking: model.supportsThinking
         )
     }
 

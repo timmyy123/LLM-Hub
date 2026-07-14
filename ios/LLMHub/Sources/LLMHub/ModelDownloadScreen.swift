@@ -217,7 +217,7 @@ class ModelDownloadViewModel: ObservableObject {
         }
 
         Task {
-            _ = await RunAnywhere.discoverDownloadedModels()
+            await RunAnywhere.refreshModelRegistry()
         }
 
         // Initialize with default states for built-in models
@@ -524,7 +524,7 @@ class ModelDownloadViewModel: ObservableObject {
                     self.refreshStatuses()
                 }
 
-                _ = await RunAnywhere.discoverDownloadedModels()
+                await RunAnywhere.refreshModelRegistry()
             } catch is CancellationError {
                 await MainActor.run {
                     self.downloadStates[model.id] = .paused
