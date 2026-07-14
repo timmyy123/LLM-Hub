@@ -726,16 +726,14 @@ class LLMBackend: ObservableObject {
 
     private func syncGpuLayersToRegistry(for model: AIModel) async {
         let key = "gpu_layers_\(model.id)"
-        let layers = UserDefaults.standard.object(forKey: key) != nil ?
-            Int32(UserDefaults.standard.integer(forKey: key)) : 99
-        let targetValue: Int32 = (layers == 99) ? 999 : layers
-        
-        // Sync for model ID
+        let stored = UserDefaults.standard.object(forKey: key) != nil ?
+            Int32(UserDefaults.standard.integer(forKey: key)) : 999
+        let targetValue: Int32 = (stored == 99) ? 999 : stored
+
         await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: model.id, gpuLayers: targetValue)
         let runAnywhereModelId = activeRunAnywhereModelId(for: model)
         await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: runAnywhereModelId, gpuLayers: targetValue)
-        
-        // Sync for model file paths if available
+
         if let folderURL = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: model.id, framework: framework(for: model)) {
             await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: folderURL.path, gpuLayers: targetValue)
             for ggufFile in listGGUFFiles(in: folderURL) {

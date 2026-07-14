@@ -13,7 +13,7 @@ struct ChatSettingsSheet: View {
     @State private var draftTopP: Double = 0.95
     @State private var draftTemperature: Double = 1.0
     @State private var draftSystemPrompt: String = ""
-    @State private var gpuLayersTemp: Double = 99
+    @State private var gpuLayersTemp: Double = 999
     @State private var cachedModels: [AIModel] = []
     
     var body: some View {
@@ -328,9 +328,10 @@ struct ChatSettingsSheet: View {
         guard let currentModel = currentModel else { return }
         let key = "gpu_layers_\(currentModel.id)"
         if UserDefaults.standard.object(forKey: key) != nil {
-            gpuLayersTemp = Double(UserDefaults.standard.integer(forKey: key))
+            let stored = UserDefaults.standard.integer(forKey: key)
+            gpuLayersTemp = Double(stored == 99 ? 999 : stored)
         } else {
-            gpuLayersTemp = 99
+            gpuLayersTemp = 999
         }
     }
 
@@ -339,13 +340,12 @@ struct ChatSettingsSheet: View {
         let key = "gpu_layers_\(currentModel.id)"
         let intValue = Int32(value)
         UserDefaults.standard.set(intValue, forKey: key)
-        
-        let targetValue: Int32 = (intValue == 99) ? 999 : intValue
+
         Task {
-            await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: currentModel.id, gpuLayers: targetValue)
+            await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: currentModel.id, gpuLayers: intValue)
             if let folderURL = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: currentModel.id, framework: currentModel.inferenceFramework),
                let ggufFile = LLMBackend.shared.listGGUFFiles(in: folderURL).first(where: { !$0.lastPathComponent.lowercased().contains("mmproj") }) {
-                await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: ggufFile.path, gpuLayers: targetValue)
+                await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: ggufFile.path, gpuLayers: intValue)
             }
         }
     }
@@ -473,7 +473,7 @@ struct GPULayersSlider: View {
     @State private var isSliding = false
 
     private var displayValue: String {
-        isSliding ? "\(Int(value))" : (value == 99 ? maxLabel : "\(Int(value))")
+        isSliding ? "\(Int(value))" : (value == 999 ? maxLabel : "\(Int(value))")
     }
 
     var body: some View {
@@ -490,7 +490,7 @@ struct GPULayersSlider: View {
             }
             Slider(
                 value: $value,
-                in: 0...99,
+                in: 0...999,
                 step: 1,
                 onEditingChanged: { editing in
                     isSliding = editing

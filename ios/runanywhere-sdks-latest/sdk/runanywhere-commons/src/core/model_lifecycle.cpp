@@ -207,10 +207,24 @@ rac_result_t create_backend_impl(const rac_engine_vtable_t* vt, rac_primitive_t 
             if (!vt->vlm_ops || !vt->vlm_ops->create)
                 return RAC_ERROR_BACKEND_NOT_FOUND;
             {
-                const std::string config_json = vlm_config_json(mmproj_path);
+                std::string vlm_json = vlm_config_json(mmproj_path);
+                if (config_json) {
+                    std::string extra(config_json);
+                    if (extra.size() > 2 && extra.front() == '{' && extra.back() == '}') {
+                        std::string inner = extra.substr(1, extra.size() - 2);
+                        if (!inner.empty()) {
+                            if (vlm_json.empty()) {
+                                vlm_json = "{" + inner + "}";
+                            } else {
+                                vlm_json.pop_back();
+                                vlm_json += "," + inner + "}";
+                            }
+                        }
+                    }
+                }
                 rc =
                     vt->vlm_ops->create(resolved_path.c_str(),
-                                        config_json.empty() ? nullptr : config_json.c_str(), &impl);
+                                        vlm_json.empty() ? nullptr : vlm_json.c_str(), &impl);
             }
             if (rc == RAC_SUCCESS && impl && vt->vlm_ops->initialize) {
                 rc = vt->vlm_ops->initialize(impl, resolved_path.c_str(),

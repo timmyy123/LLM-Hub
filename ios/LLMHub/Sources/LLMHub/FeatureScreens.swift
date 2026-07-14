@@ -471,8 +471,7 @@ private struct FeatureModelSettingsSheet: View {
     @ObservedObject private var llm = LLMBackend.shared
     @State private var models: [AIModel] = []
     @State private var isRefreshingModels = false
-    @State private var gpuLayersTemp: Double = 99
-    @State private var isSlidingGPU = false
+    @State private var gpuLayersTemp: Double = 999
 
     private var selectedModel: AIModel? {
         models.first(where: { $0.name == selectedModelName })
@@ -553,28 +552,12 @@ private struct FeatureModelSettingsSheet: View {
                                 .tint(ApolloPalette.accentStrong)
 
                                 if let model = selectedModel, model.modelFormat == .gguf {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        HStack {
-                                            Text(settings.localized("gpu_layers_label").replacingOccurrences(of: "%1$d", with: isSlidingGPU ? "\(Int(gpuLayersTemp))" : (gpuLayersTemp == 99 ? settings.localized("max") : "\(Int(gpuLayersTemp))")))
-                                                .foregroundColor(.white)
-                                            Spacer()
-                                            Text(isSlidingGPU ? "\(Int(gpuLayersTemp))" : (gpuLayersTemp == 99 ? settings.localized("max") : "\(Int(gpuLayersTemp))"))
-                                                .foregroundColor(.white.opacity(0.9))
-                                                .monospacedDigit()
-                                        }
-                                        Slider(
-                                            value: $gpuLayersTemp,
-                                            in: 0...99,
-                                            step: 1,
-                                            onEditingChanged: { editing in
-                                                isSlidingGPU = editing
-                                                if !editing {
-                                                    saveGpuLayers(gpuLayersTemp)
-                                                }
-                                            }
-                                        )
-                                        .tint(ApolloPalette.accentStrong)
-                                    }
+                                    GPULayersSlider(
+                                        value: $gpuLayersTemp,
+                                        maxLabel: settings.localized("max"),
+                                        label: settings.localized("gpu_layers_label"),
+                                        onCommit: { saveGpuLayers(gpuLayersTemp) }
+                                    )
                                     .padding(.top, 8)
                                 }
                             }
@@ -716,9 +699,10 @@ private struct FeatureModelSettingsSheet: View {
         guard let selectedModel = selectedModel else { return }
         let key = "gpu_layers_\(selectedModel.id)"
         if UserDefaults.standard.object(forKey: key) != nil {
-            gpuLayersTemp = Double(UserDefaults.standard.integer(forKey: key))
+            let stored = UserDefaults.standard.integer(forKey: key)
+            gpuLayersTemp = Double(stored == 99 ? 999 : stored)
         } else {
-            gpuLayersTemp = 99
+            gpuLayersTemp = 999
         }
     }
 
@@ -727,13 +711,12 @@ private struct FeatureModelSettingsSheet: View {
         let key = "gpu_layers_\(selectedModel.id)"
         let intValue = Int32(value)
         UserDefaults.standard.set(intValue, forKey: key)
-        
-        let targetValue: Int32 = (intValue == 99) ? 999 : intValue
+
         Task {
-            await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: selectedModel.id, gpuLayers: targetValue)
+            await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: selectedModel.id, gpuLayers: intValue)
             if let folderURL = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: selectedModel.id, framework: selectedModel.inferenceFramework),
                let ggufFile = LLMBackend.shared.listGGUFFiles(in: folderURL).first(where: { !$0.lastPathComponent.lowercased().contains("mmproj") }) {
-                await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: ggufFile.path, gpuLayers: targetValue)
+                await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: ggufFile.path, gpuLayers: intValue)
             }
         }
     }
