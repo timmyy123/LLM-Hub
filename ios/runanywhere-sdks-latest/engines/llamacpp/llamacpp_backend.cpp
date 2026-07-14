@@ -366,6 +366,11 @@ bool LlamaCppTextGeneration::load_model(const std::string& model_path,
                 while ((entry = readdir(dir)) != nullptr) {
                     std::string name(entry->d_name);
                     if (name.size() > 5 && name.compare(name.size() - 5, 5, ".gguf") == 0) {
+                        std::string lower_name = name;
+                        std::transform(lower_name.begin(), lower_name.end(), lower_name.begin(), ::tolower);
+                        if (lower_name.find("mmproj") != std::string::npos || lower_name.find("projector") != std::string::npos) {
+                            continue;
+                        }
                         resolved_path = model_path + "/" + name;
                         RAC_LOG_INFO("LLM.LlamaCpp", "Resolved GGUF file: %s",
                                      resolved_path.c_str());

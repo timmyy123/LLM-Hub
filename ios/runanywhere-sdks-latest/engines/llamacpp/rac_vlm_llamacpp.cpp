@@ -28,6 +28,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <algorithm>
 #include <dirent.h>
 #include <sys/stat.h>
 
@@ -1032,6 +1033,11 @@ rac_result_t rac_vlm_llamacpp_load_model(rac_handle_t handle, const char* model_
                 while ((entry = readdir(dir)) != nullptr) {
                     std::string name(entry->d_name);
                     if (name.size() > 5 && name.compare(name.size() - 5, 5, ".gguf") == 0) {
+                        std::string lower_name = name;
+                        std::transform(lower_name.begin(), lower_name.end(), lower_name.begin(), ::tolower);
+                        if (lower_name.find("mmproj") != std::string::npos || lower_name.find("projector") != std::string::npos) {
+                            continue;
+                        }
                         resolved_path = std::string(model_path) + "/" + name;
                         RAC_LOG_INFO(LOG_CAT, "Resolved GGUF file: %s",
                                      resolved_path.c_str());

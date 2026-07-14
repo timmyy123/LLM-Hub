@@ -831,7 +831,14 @@ class LLMBackend: ObservableObject {
         }
         let contextLength = contextLengthOverride ?? model.contextWindowSize
 
-        if model.additionalFiles.isEmpty {
+        let urls: [URL]
+        if model.source == "Custom" {
+            urls = ([model.url] + model.additionalFiles).map { URL(fileURLWithPath: $0) }
+        } else {
+            urls = model.allDownloadURLs
+        }
+
+        if urls.count <= 1 {
             try await RunAnywhere.registerModel(
                 id: model.id,
                 name: model.name,
@@ -845,7 +852,7 @@ class LLMBackend: ObservableObject {
             return
         }
 
-        let descriptors = model.allDownloadURLs.map {
+        let descriptors = urls.map {
             RAModelFileDescriptor(url: $0, filename: filename(from: $0), isRequired: true)
         }
 
@@ -971,7 +978,7 @@ class LLMBackend: ObservableObject {
                let folderURL = runAnywhereModelDirectory(for: model),
                let ggufFile = listGGUFFiles(in: folderURL).first(where: { !$0.lastPathComponent.lowercased().contains("mmproj") }) {
                 let ggufURL = ggufFile
-                let registeredModelInfo = ModelInfo(
+                var registeredModelInfo = await CppBridge.ModelRegistry.shared.get(modelId: runAnywhereModelId) ?? ModelInfo(
                     id: runAnywhereModelId,
                     name: model.name,
                     category: loadCategory,
@@ -982,25 +989,22 @@ class LLMBackend: ObservableObject {
                     contextLength: Int32(effectiveContext),
                     supportsThinking: model.supportsThinking
                 )
+                registeredModelInfo.contextLength = Int32(effectiveContext)
+                registeredModelInfo.category = loadCategory
+                registeredModelInfo.setLocalPath(folderURL)
                 try? await CppBridge.ModelRegistry.shared.save(registeredModelInfo)
 
-                let pathModelInfo = ModelInfo(
-                    id: ggufURL.path,
-                    name: model.name,
-                    category: loadCategory,
-                    format: .gguf,
-                    framework: framework(for: model),
-                    downloadURL: ggufURL,
-                    localPath: folderURL,
-                    contextLength: Int32(effectiveContext),
-                    supportsThinking: model.supportsThinking
-                )
+                var pathModelInfo = await CppBridge.ModelRegistry.shared.get(modelId: ggufURL.path) ?? registeredModelInfo
+                pathModelInfo.id = ggufURL.path
+                pathModelInfo.contextLength = Int32(effectiveContext)
+                pathModelInfo.category = loadCategory
+                pathModelInfo.setLocalPath(folderURL)
                 try? await CppBridge.ModelRegistry.shared.save(pathModelInfo)
             } else if let folderURL = try? SimplifiedFileManager.shared.getModelFolderURL(
                 modelId: runAnywhereModelId,
                 framework: framework(for: model)
             ), let ggufFile = listGGUFFiles(in: folderURL).first {
-                let registeredModelInfo = ModelInfo(
+                var registeredModelInfo = await CppBridge.ModelRegistry.shared.get(modelId: runAnywhereModelId) ?? ModelInfo(
                     id: runAnywhereModelId,
                     name: model.name,
                     category: loadCategory,
@@ -1011,19 +1015,16 @@ class LLMBackend: ObservableObject {
                     contextLength: Int32(effectiveContext),
                     supportsThinking: model.supportsThinking
                 )
+                registeredModelInfo.contextLength = Int32(effectiveContext)
+                registeredModelInfo.category = loadCategory
+                registeredModelInfo.setLocalPath(folderURL)
                 try? await CppBridge.ModelRegistry.shared.save(registeredModelInfo)
 
-                let pathModelInfo = ModelInfo(
-                    id: ggufFile.path,
-                    name: model.name,
-                    category: loadCategory,
-                    format: .gguf,
-                    framework: framework(for: model),
-                    downloadURL: URL(string: model.url),
-                    localPath: folderURL,
-                    contextLength: Int32(effectiveContext),
-                    supportsThinking: model.supportsThinking
-                )
+                var pathModelInfo = await CppBridge.ModelRegistry.shared.get(modelId: ggufFile.path) ?? registeredModelInfo
+                pathModelInfo.id = ggufFile.path
+                pathModelInfo.contextLength = Int32(effectiveContext)
+                pathModelInfo.category = loadCategory
+                pathModelInfo.setLocalPath(folderURL)
                 try? await CppBridge.ModelRegistry.shared.save(pathModelInfo)
             }
 
