@@ -13,6 +13,8 @@ struct ChatSettingsSheet: View {
     @State private var draftTopP: Double = 0.95
     @State private var draftTemperature: Double = 1.0
     @State private var draftSystemPrompt: String = ""
+    @State private var gpuLayersTemp: Double = 99
+    @State private var isSlidingGPU = false
     
     var body: some View {
         NavigationView {
@@ -92,17 +94,27 @@ struct ChatSettingsSheet: View {
                             if let model = currentModel, model.modelFormat == .gguf {
                                 VStack(alignment: .leading, spacing: 8) {
                                     HStack {
-                                        Text(settings.localized("gpu_layers_label").replacingOccurrences(of: "%1$d", with: gpuLayersBinding.wrappedValue == 99 ? settings.localized("max") : "\(Int(gpuLayersBinding.wrappedValue))"))
+                                        Text(settings.localized("gpu_layers_label").replacingOccurrences(of: "%1$d", with: isSlidingGPU ? "\(Int(gpuLayersTemp))" : (gpuLayersTemp == 99 ? settings.localized("max") : "\(Int(gpuLayersTemp))")))
                                             .font(.subheadline)
                                             .foregroundColor(.white)
                                         Spacer()
-                                        Text(gpuLayersBinding.wrappedValue == 99 ? settings.localized("max") : "\(Int(gpuLayersBinding.wrappedValue))")
+                                        Text(isSlidingGPU ? "\(Int(gpuLayersTemp))" : (gpuLayersTemp == 99 ? settings.localized("max") : "\(Int(gpuLayersTemp))"))
                                             .font(.system(.subheadline, design: .monospaced))
                                             .fontWeight(.bold)
                                             .foregroundColor(.white.opacity(0.92))
                                     }
-                                    Slider(value: gpuLayersBinding, in: 0...99, step: 1)
-                                        .tint(ApolloPalette.accentStrong)
+                                    Slider(
+                                        value: $gpuLayersTemp,
+                                        in: 0...99,
+                                        step: 1,
+                                        onEditingChanged: { editing in
+                                            isSlidingGPU = editing
+                                            if !editing {
+                                                saveGpuLayers(gpuLayersTemp)
+                                            }
+                                        }
+                                    )
+                                    .tint(ApolloPalette.accentStrong)
                                 }
                             }
 
@@ -318,32 +330,7 @@ struct ChatSettingsSheet: View {
         return Double(raw)
     }
 
-    private var gpuLayersBinding: Binding<Double> {
-        Binding<Double>(
-            get: {
-                guard let currentModel = currentModel else { return 99 }
-                let key = "gpu_layers_\(currentModel.id)"
-                if UserDefaults.standard.object(forKey: key) != nil {
-                    return Double(UserDefaults.standard.integer(forKey: key))
-                }
-                return 99 // Default to max
-            },
-            set: { newValue in
-                guard let currentModel = currentModel else { return }
-                let key = "gpu_layers_\(currentModel.id)"
-                let intValue = Int32(newValue)
-                UserDefaults.standard.set(intValue, forKey: key)
-                
-                // Synchronize to C++ registry immediately
-                let targetValue: Int32 = (intValue == 99) ? 999 : intValue
-                CppBridge.ModelRegistry.shared.setGpuLayers(modelId: currentModel.id, gpuLayers: targetValue)
-                if let folderURL = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: currentModel.id, framework: currentModel.inferenceFramework),
-                   let ggufFile = LLMBackend.shared.listGGUFFiles(in: folderURL).first(where: { !$0.lastPathComponent.lowercased().contains("mmproj") }) {
-                    CppBridge.ModelRegistry.shared.setGpuLayers(modelId: ggufFile.path, gpuLayers: targetValue)
-                }
-            }
-        )
-    }
+
 
     private func syncDraftFromViewModel() {
         draftContextWindow = min(max(1, vm.contextWindow), modelMaxContextWindow)
@@ -351,8 +338,34 @@ struct ChatSettingsSheet: View {
         draftTopP = min(max(0, vm.topP), 1)
         draftTemperature = min(max(0, vm.temperature), 2)
         draftSystemPrompt = vm.systemPrompt
+        loadInitialGpuLayers()
     }
 
+    private func loadInitialGpuLayers() {
+        guard let currentModel = currentModel else { return }
+        let key = "gpu_layers_\(currentModel.id)"
+        if UserDefaults.standard.object(forKey: key) != nil {
+            gpuLayersTemp = Double(UserDefaults.standard.integer(forKey: key))
+        } else {
+            gpuLayersTemp = 99
+        }
+    }
+
+    private func saveGpuLayers(_ value: Double) {
+        guard let currentModel = currentModel else { return }
+        let key = "gpu_layers_\(currentModel.id)"
+        let intValue = Int32(value)
+        UserDefaults.standard.set(intValue, forKey: key)
+        
+        let targetValue: Int32 = (intValue == 99) ? 999 : intValue
+        Task {
+            await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: currentModel.id, gpuLayers: targetValue)
+            if let folderURL = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: currentModel.id, framework: currentModel.inferenceFramework),
+               let ggufFile = LLMBackend.shared.listGGUFFiles(in: folderURL).first(where: { !$0.lastPathComponent.lowercased().contains("mmproj") }) {
+                await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: ggufFile.path, gpuLayers: targetValue)
+            }
+        }
+    }
     private func applyDraftToViewModel() {
         let clampedContext = min(max(1, draftContextWindow), modelMaxContextWindow)
         let clampedTopK = min(max(1, draftTopK), 256)

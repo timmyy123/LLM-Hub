@@ -471,6 +471,8 @@ private struct FeatureModelSettingsSheet: View {
     @ObservedObject private var llm = LLMBackend.shared
     @State private var models: [AIModel] = []
     @State private var isRefreshingModels = false
+    @State private var gpuLayersTemp: Double = 99
+    @State private var isSlidingGPU = false
 
     private var selectedModel: AIModel? {
         models.first(where: { $0.name == selectedModelName })
@@ -492,32 +494,7 @@ private struct FeatureModelSettingsSheet: View {
         return Double(max(1, advertised))
     }
 
-    private var gpuLayersBinding: Binding<Double> {
-        Binding<Double>(
-            get: {
-                guard let selectedModel = selectedModel else { return 99 }
-                let key = "gpu_layers_\(selectedModel.id)"
-                if UserDefaults.standard.object(forKey: key) != nil {
-                    return Double(UserDefaults.standard.integer(forKey: key))
-                }
-                return 99 // Default to max
-            },
-            set: { newValue in
-                guard let selectedModel = selectedModel else { return }
-                let key = "gpu_layers_\(selectedModel.id)"
-                let intValue = Int32(newValue)
-                UserDefaults.standard.set(intValue, forKey: key)
-                
-                // Synchronize to C++ registry immediately
-                let targetValue: Int32 = (intValue == 99) ? 999 : intValue
-                CppBridge.ModelRegistry.shared.setGpuLayers(modelId: selectedModel.id, gpuLayers: targetValue)
-                if let folderURL = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: selectedModel.id, framework: selectedModel.inferenceFramework),
-                   let ggufFile = LLMBackend.shared.listGGUFFiles(in: folderURL).first(where: { !$0.lastPathComponent.lowercased().contains("mmproj") }) {
-                    CppBridge.ModelRegistry.shared.setGpuLayers(modelId: ggufFile.path, gpuLayers: targetValue)
-                }
-            }
-        )
-    }
+
 
     @ObservedObject private var whisperBackend = WhisperBackend.shared
 
@@ -578,15 +555,25 @@ private struct FeatureModelSettingsSheet: View {
                                 if let model = selectedModel, model.modelFormat == .gguf {
                                     VStack(alignment: .leading, spacing: 4) {
                                         HStack {
-                                            Text(settings.localized("gpu_layers_label").replacingOccurrences(of: "%1$d", with: gpuLayersBinding.wrappedValue == 99 ? settings.localized("max") : "\(Int(gpuLayersBinding.wrappedValue))"))
+                                            Text(settings.localized("gpu_layers_label").replacingOccurrences(of: "%1$d", with: isSlidingGPU ? "\(Int(gpuLayersTemp))" : (gpuLayersTemp == 99 ? settings.localized("max") : "\(Int(gpuLayersTemp))")))
                                                 .foregroundColor(.white)
                                             Spacer()
-                                            Text(gpuLayersBinding.wrappedValue == 99 ? settings.localized("max") : "\(Int(gpuLayersBinding.wrappedValue))")
+                                            Text(isSlidingGPU ? "\(Int(gpuLayersTemp))" : (gpuLayersTemp == 99 ? settings.localized("max") : "\(Int(gpuLayersTemp))"))
                                                 .foregroundColor(.white.opacity(0.9))
                                                 .monospacedDigit()
                                         }
-                                        Slider(value: gpuLayersBinding, in: 0...99, step: 1)
-                                            .tint(ApolloPalette.accentStrong)
+                                        Slider(
+                                            value: $gpuLayersTemp,
+                                            in: 0...99,
+                                            step: 1,
+                                            onEditingChanged: { editing in
+                                                isSlidingGPU = editing
+                                                if !editing {
+                                                    saveGpuLayers(gpuLayersTemp)
+                                                }
+                                            }
+                                        )
+                                        .tint(ApolloPalette.accentStrong)
                                     }
                                     .padding(.top, 8)
                                 }
@@ -693,9 +680,11 @@ private struct FeatureModelSettingsSheet: View {
             .task {
                 await refreshModelsIfNeeded()
                 normalizeToggleStatesForSelectedModel()
+                loadInitialGpuLayers()
             }
             .onChange(of: selectedModelName) { _, _ in
                 normalizeToggleStatesForSelectedModel()
+                loadInitialGpuLayers()
             }
         }
     }
@@ -720,6 +709,32 @@ private struct FeatureModelSettingsSheet: View {
         enableThinking = false
         if supportsVisionToggle && !selectedModelSupportsVision {
             enableVision = false
+        }
+    }
+
+    private func loadInitialGpuLayers() {
+        guard let selectedModel = selectedModel else { return }
+        let key = "gpu_layers_\(selectedModel.id)"
+        if UserDefaults.standard.object(forKey: key) != nil {
+            gpuLayersTemp = Double(UserDefaults.standard.integer(forKey: key))
+        } else {
+            gpuLayersTemp = 99
+        }
+    }
+
+    private func saveGpuLayers(_ value: Double) {
+        guard let selectedModel = selectedModel else { return }
+        let key = "gpu_layers_\(selectedModel.id)"
+        let intValue = Int32(value)
+        UserDefaults.standard.set(intValue, forKey: key)
+        
+        let targetValue: Int32 = (intValue == 99) ? 999 : intValue
+        Task {
+            await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: selectedModel.id, gpuLayers: targetValue)
+            if let folderURL = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: selectedModel.id, framework: selectedModel.inferenceFramework),
+               let ggufFile = LLMBackend.shared.listGGUFFiles(in: folderURL).first(where: { !$0.lastPathComponent.lowercased().contains("mmproj") }) {
+                await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: ggufFile.path, gpuLayers: targetValue)
+            }
         }
     }
 }
@@ -5001,347 +5016,360 @@ struct VibeCoderScreen: View {
         Task { await LocalHTMLPreviewServer.shared.stop() }
     }
 
+    @ViewBuilder
+    private var emptyModelView: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "curlybraces.square")
+                .font(.system(size: 48, weight: .semibold))
+                .foregroundStyle(.secondary)
+            Text(settings.localized("scam_detector_load_model"))
+                .font(.title3.weight(.bold))
+            Text(settings.localized("scam_detector_load_model_desc"))
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.7))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+            Button {
+                showSettings = true
+            } label: {
+                HStack {
+                    Spacer()
+                    Text(settings.localized("feature_settings_title"))
+                    Spacer()
+                }
+                .frame(height: 50)
+                .contentShape(Rectangle())
+            }
+            .frame(maxWidth: 260)
+            .liquidGlassPrimaryButton(cornerRadius: 12)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    @ViewBuilder
+    private var noFolderView: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "folder.fill")
+                .font(.system(size: 48, weight: .semibold))
+                .foregroundStyle(.secondary)
+
+            Text(settings.localized("vibe_coder_select_folder_title"))
+                .font(.title3.weight(.bold))
+                .multilineTextAlignment(.center)
+
+            Text(settings.localized("vibe_coder_select_folder_desc"))
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.7))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+
+            Button {
+                showWorkspaceFolderPicker = true
+            } label: {
+                HStack {
+                    Spacer()
+                    Text(settings.localized("vibe_coder_open_folder"))
+                    Spacer()
+                }
+                .frame(height: 50)
+                .contentShape(Rectangle())
+            }
+            .frame(maxWidth: 260)
+            .liquidGlassPrimaryButton(cornerRadius: 12)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    @ViewBuilder
+    private var workspaceView: some View {
+        VStack(spacing: 12) {
+            GeometryReader { _ in
+                let isLandscape = UIScreen.main.bounds.width > UIScreen.main.bounds.height
+
+                let chatPanel = AnyView(
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Text(settings.localized("vibe_coder_ai_chat"))
+                                .font(.headline)
+                            Spacer()
+
+                            ZStack {
+                                Circle()
+                                    .stroke(Color.white.opacity(0.18), lineWidth: 2)
+                                Circle()
+                                    .trim(from: 0, to: contextUsageFractionDisplay)
+                                    .stroke(
+                                        contextUsageFractionRaw < 0.90 ? ApolloPalette.accentStrong : ApolloPalette.warning,
+                                        style: StrokeStyle(lineWidth: 2.5, lineCap: .round)
+                                    )
+                                    .rotationEffect(.degrees(-90))
+
+                                Text(contextUsageFractionRaw < 0.995 ? contextUsageLabel : "!")
+                                    .font(.system(size: 8, weight: .bold, design: .rounded))
+                            }
+                            .frame(width: 28, height: 28)
+                            .accessibilityLabel("Context usage \(contextUsageLabel)")
+
+                            Button {
+                                clearActiveChat()
+                            } label: {
+                                Image(systemName: "trash")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .frame(width: 36, height: 36)
+                            }
+                            .disabled(activeMessages.isEmpty || isGenerating)
+
+                            Button {
+                                createNewChatSession()
+                            } label: {
+                                Image(systemName: "plus")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .frame(width: 36, height: 36)
+                            }
+                            .disabled(isGenerating)
+                        }
+                        .padding(.horizontal)
+
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(chatSessions) { session in
+                                    VibeChatSessionChip(
+                                        title: session.title,
+                                        isSelected: session.id == activeChatSessionId,
+                                        canDelete: chatSessions.count > 1 && !isGenerating,
+                                        onSelect: { activeChatSessionId = session.id },
+                                        onDelete: { pendingDeleteChatId = session.id }
+                                    )
+                                }
+                            }
+                            .padding(.horizontal)
+                        }
+
+                        ScrollViewReader { proxy in
+                            ScrollView {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    ForEach(activeMessages) { message in
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            HStack(spacing: 8) {
+                                                Text(message.role == "user" ? settings.localized("vibe_coder_message_you") : settings.localized("vibe_coder_message_ai"))
+                                                    .font(.caption.weight(.semibold))
+                                                    .foregroundStyle(.white.opacity(0.65))
+                                                Spacer()
+
+                                            }
+                                            if message.role == "user" {
+                                                Text(message.text)
+                                                    .textSelection(.enabled)
+                                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                                    .padding(8)
+                                                    .background(.ultraThinMaterial)
+                                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                                            } else {
+                                                ThinkingAwareResultContent(
+                                                    content: message.text,
+                                                    isGenerating: isGenerating && message.id == activeMessages.last?.id,
+                                                    preferThinkingWhileStreaming: preferThinkingWhileStreaming
+                                                )
+                                                .padding(8)
+                                                .background(.ultraThinMaterial)
+                                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                                            }
+                                        }
+                                        .id(message.id)
+                                    }
+                                }
+                                .padding(.horizontal)
+                                .padding(.top, 6)
+                            }
+                            .frame(minHeight: 160)
+                            .onChange(of: activeMessages.count) { _, _ in
+                                scrollToLast(proxy: proxy)
+                            }
+                            .onChange(of: streamTick) { _, _ in
+                                scrollToLast(proxy: proxy)
+                            }
+                        }
+
+                        HStack(spacing: 10) {
+                            TextField(
+                                hasFileSession ? settings.localized("vibe_coder_ask_ai_edit") : settings.localized("vibe_coder_create_open_file_hint"),
+                                text: $chatInput,
+                                axis: .vertical
+                            )
+                            .lineLimit(1...5)
+                            .focused($focusedField, equals: .chat)
+                            .disabled(!hasFileSession || isGenerating || isLoading)
+                            .padding(.vertical, 10)
+                            .padding(.horizontal, 12)
+                            .background(Color.white.opacity(0.05))
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+                            Button {
+                                if isGenerating {
+                                    stopGeneration()
+                                } else {
+                                    sendChat()
+                                }
+                            } label: {
+                                if isLoading {
+                                    ProgressView()
+                                        .tint(.white)
+                                        .scaleEffect(0.85)
+                                        .frame(width: 44, height: 44)
+                                } else {
+                                    Image(systemName: sendButtonIconName)
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .frame(width: 44, height: 44)
+                                }
+                            }
+                            .foregroundStyle(.white)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.white.opacity(0.08))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.white.opacity(0.16), lineWidth: 1)
+                            )
+                            .disabled(isSendButtonDisabled)
+                        }
+                        .padding(.horizontal)
+                        .padding(.bottom, 8)
+                    }
+                    .padding(.vertical, 10)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.white.opacity(0.14), lineWidth: 1)
+                    )
+                    .padding(.horizontal)
+                )
+
+                let editorPanel = AnyView(
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text(currentFileName ?? settings.localized("vibe_coder_open_or_create_file"))
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.white.opacity(0.72))
+                            Spacer()
+
+                            Button {
+                                showWorkspaceFolderPicker = true
+                            } label: {
+                                Image(systemName: "folder")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .frame(width: 36, height: 36)
+                            }
+
+                            Button {
+                                showCreateFileDialog = true
+                            } label: {
+                                Image(systemName: "plus")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .frame(width: 36, height: 36)
+                            }
+
+                            Button {
+                                #if canImport(UIKit)
+                                UIPasteboard.general.string = generatedCode
+                                #endif
+                            } label: {
+                                Image(systemName: "doc.on.doc")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .frame(width: 36, height: 36)
+                            }
+                            .disabled(generatedCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+                            Button {
+                                saveCurrentFile()
+                            } label: {
+                                Image(systemName: "square.and.arrow.down")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .frame(width: 36, height: 36)
+                            }
+                            .disabled(!hasFileSession)
+
+                            if isHTMLFile {
+                                Button {
+                                    openHTMLPreviewInSafari()
+                                } label: {
+                                    Image(systemName: "safari")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .frame(width: 36, height: 36)
+                                }
+                                .disabled(generatedCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                            }
+                        }
+
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(workspaceFiles, id: \.path) { url in
+                                    VibeFileChip(
+                                        title: url.lastPathComponent,
+                                        isSelected: url == currentFileURL,
+                                        canDelete: !isGenerating,
+                                        onSelect: { openFile(url) },
+                                        onDelete: { pendingDeleteFileURL = url }
+                                    )
+                                }
+                            }
+                        }
+
+                        TextEditor(text: $generatedCode)
+                            .font(.system(.body, design: .monospaced))
+                            .focused($focusedField, equals: .editor)
+                            .frame(minHeight: 220)
+                            .padding(8)
+                            .scrollContentBackground(.hidden)
+                            .background(Color.white.opacity(0.02))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    .padding(.horizontal)
+                    .padding(.vertical, 10)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.white.opacity(0.14), lineWidth: 1)
+                    )
+                    .padding(.horizontal)
+                )
+
+                Group {
+                    if isLandscape {
+                        HStack(spacing: 12) {
+                            editorPanel
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            chatPanel
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        }
+                    } else {
+                        VStack(spacing: 12) {
+                            chatPanel
+                            editorPanel
+                        }
+                    }
+                }
+            }
+
+            if let errorMessage {
+                Text(errorMessage)
+                    .foregroundColor(.red)
+                    .font(.caption)
+                    .padding(.horizontal)
+            }
+        }
+    }
+
     var body: some View {
         Group {
             if selectedModelName.isEmpty {
-                VStack(spacing: 12) {
-                    Image(systemName: "curlybraces.square")
-                        .font(.system(size: 48, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                    Text(settings.localized("scam_detector_load_model"))
-                        .font(.title3.weight(.bold))
-                    Text(settings.localized("scam_detector_load_model_desc"))
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.7))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                    Button {
-                        showSettings = true
-                    } label: {
-                        HStack {
-                            Spacer()
-                            Text(settings.localized("feature_settings_title"))
-                            Spacer()
-                        }
-                        .frame(height: 50)
-                        .contentShape(Rectangle())
-                    }
-                    .frame(maxWidth: 260)
-                    .liquidGlassPrimaryButton(cornerRadius: 12)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                emptyModelView
+            } else if !hasWorkspaceFolder {
+                noFolderView
             } else {
-                if !hasWorkspaceFolder {
-                    VStack(spacing: 12) {
-                        Image(systemName: "folder.fill")
-                            .font(.system(size: 48, weight: .semibold))
-                            .foregroundStyle(.secondary)
-
-                        Text(settings.localized("vibe_coder_select_folder_title"))
-                            .font(.title3.weight(.bold))
-                            .multilineTextAlignment(.center)
-
-                        Text(settings.localized("vibe_coder_select_folder_desc"))
-                            .font(.subheadline)
-                            .foregroundStyle(.white.opacity(0.7))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-
-                        Button {
-                            showWorkspaceFolderPicker = true
-                        } label: {
-                            HStack {
-                                Spacer()
-                                Text(settings.localized("vibe_coder_open_folder"))
-                                Spacer()
-                            }
-                            .frame(height: 50)
-                            .contentShape(Rectangle())
-                        }
-                        .frame(maxWidth: 260)
-                        .liquidGlassPrimaryButton(cornerRadius: 12)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    VStack(spacing: 12) {
-                        GeometryReader { _ in
-                            let isLandscape = UIScreen.main.bounds.width > UIScreen.main.bounds.height
-
-                            let chatPanel = AnyView(
-                                VStack(alignment: .leading, spacing: 10) {
-                                    HStack {
-                                        Text(settings.localized("vibe_coder_ai_chat"))
-                                            .font(.headline)
-                                        Spacer()
-
-                                        ZStack {
-                                            Circle()
-                                                .stroke(Color.white.opacity(0.18), lineWidth: 2)
-                                            Circle()
-                                                .trim(from: 0, to: contextUsageFractionDisplay)
-                                                .stroke(
-                                                    contextUsageFractionRaw < 0.90 ? ApolloPalette.accentStrong : ApolloPalette.warning,
-                                                    style: StrokeStyle(lineWidth: 2.5, lineCap: .round)
-                                                )
-                                                .rotationEffect(.degrees(-90))
-
-                                            Text(contextUsageFractionRaw < 0.995 ? contextUsageLabel : "!")
-                                                .font(.system(size: 8, weight: .bold, design: .rounded))
-                                        }
-                                        .frame(width: 28, height: 28)
-                                        .accessibilityLabel("Context usage \(contextUsageLabel)")
-
-                                        Button {
-                                            clearActiveChat()
-                                        } label: {
-                                            Image(systemName: "trash")
-                                                .font(.system(size: 16, weight: .semibold))
-                                                .frame(width: 36, height: 36)
-                                        }
-                                        .disabled(activeMessages.isEmpty || isGenerating)
-
-                                        Button {
-                                            createNewChatSession()
-                                        } label: {
-                                            Image(systemName: "plus")
-                                                .font(.system(size: 16, weight: .semibold))
-                                                .frame(width: 36, height: 36)
-                                        }
-                                        .disabled(isGenerating)
-                                    }
-                                    .padding(.horizontal)
-
-                                    ScrollView(.horizontal, showsIndicators: false) {
-                                        HStack(spacing: 8) {
-                                            ForEach(chatSessions) { session in
-                                                VibeChatSessionChip(
-                                                    title: session.title,
-                                                    isSelected: session.id == activeChatSessionId,
-                                                    canDelete: chatSessions.count > 1 && !isGenerating,
-                                                    onSelect: { activeChatSessionId = session.id },
-                                                    onDelete: { pendingDeleteChatId = session.id }
-                                                )
-                                            }
-                                        }
-                                        .padding(.horizontal)
-                                    }
-
-                                    ScrollViewReader { proxy in
-                                        ScrollView {
-                                            VStack(alignment: .leading, spacing: 8) {
-                                                ForEach(activeMessages) { message in
-                                                    VStack(alignment: .leading, spacing: 4) {
-                                                        HStack(spacing: 8) {
-                                                            Text(message.role == "user" ? settings.localized("vibe_coder_message_you") : settings.localized("vibe_coder_message_ai"))
-                                                                .font(.caption.weight(.semibold))
-                                                                .foregroundStyle(.white.opacity(0.65))
-                                                            Spacer()
-
-                                                        }
-                                                        if message.role == "user" {
-                                                            Text(message.text)
-                                                                .textSelection(.enabled)
-                                                                .frame(maxWidth: .infinity, alignment: .leading)
-                                                                .padding(8)
-                                                                .background(.ultraThinMaterial)
-                                                                .clipShape(RoundedRectangle(cornerRadius: 10))
-                                                        } else {
-                                                            ThinkingAwareResultContent(
-                                                                content: message.text,
-                                                                isGenerating: isGenerating && message.id == activeMessages.last?.id,
-                                                                preferThinkingWhileStreaming: preferThinkingWhileStreaming
-                                                            )
-                                                            .padding(8)
-                                                            .background(.ultraThinMaterial)
-                                                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                                                        }
-                                                    }
-                                                    .id(message.id)
-                                                }
-                                            }
-                                            .padding(.horizontal)
-                                            .padding(.top, 6)
-                                        }
-                                        .frame(minHeight: 160)
-                                        .onChange(of: activeMessages.count) { _, _ in
-                                            scrollToLast(proxy: proxy)
-                                        }
-                                        .onChange(of: streamTick) { _, _ in
-                                            scrollToLast(proxy: proxy)
-                                        }
-                                    }
-
-                                    HStack(spacing: 10) {
-                                        TextField(
-                                            hasFileSession ? settings.localized("vibe_coder_ask_ai_edit") : settings.localized("vibe_coder_create_open_file_hint"),
-                                            text: $chatInput,
-                                            axis: .vertical
-                                        )
-                                        .lineLimit(1...5)
-                                        .focused($focusedField, equals: .chat)
-                                        .disabled(!hasFileSession || isGenerating || isLoading)
-                                        .padding(.vertical, 10)
-                                        .padding(.horizontal, 12)
-                                        .background(Color.white.opacity(0.05))
-                                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-
-                                        Button {
-                                            if isGenerating {
-                                                stopGeneration()
-                                            } else {
-                                                sendChat()
-                                            }
-                                        } label: {
-                                            if isLoading {
-                                                ProgressView()
-                                                    .tint(.white)
-                                                    .scaleEffect(0.85)
-                                                    .frame(width: 44, height: 44)
-                                            } else {
-                                                Image(systemName: sendButtonIconName)
-                                                    .font(.system(size: 16, weight: .semibold))
-                                                    .frame(width: 44, height: 44)
-                                            }
-                                        }
-                                        .foregroundStyle(.white)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .fill(Color.white.opacity(0.08))
-                                        )
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .stroke(Color.white.opacity(0.16), lineWidth: 1)
-                                        )
-                                        .disabled(isSendButtonDisabled)
-                                    }
-                                    .padding(.horizontal)
-                                    .padding(.bottom, 8)
-                                }
-                                .padding(.vertical, 10)
-                                .background(.ultraThinMaterial)
-                                .clipShape(RoundedRectangle(cornerRadius: 16))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color.white.opacity(0.14), lineWidth: 1)
-                                )
-                                .padding(.horizontal)
-                            )
-
-                            let editorPanel = AnyView(
-                                VStack(alignment: .leading, spacing: 8) {
-                                    HStack {
-                                        Text(currentFileName ?? settings.localized("vibe_coder_open_or_create_file"))
-                                            .font(.subheadline.weight(.semibold))
-                                            .foregroundStyle(.white.opacity(0.72))
-                                        Spacer()
-
-                                        Button {
-                                            showWorkspaceFolderPicker = true
-                                        } label: {
-                                            Image(systemName: "folder")
-                                                .font(.system(size: 16, weight: .semibold))
-                                                .frame(width: 36, height: 36)
-                                        }
-
-                                        Button {
-                                            showCreateFileDialog = true
-                                        } label: {
-                                            Image(systemName: "plus")
-                                                .font(.system(size: 16, weight: .semibold))
-                                                .frame(width: 36, height: 36)
-                                        }
-
-                                        Button {
-                                            #if canImport(UIKit)
-                                            UIPasteboard.general.string = generatedCode
-                                            #endif
-                                        } label: {
-                                            Image(systemName: "doc.on.doc")
-                                                .font(.system(size: 16, weight: .semibold))
-                                                .frame(width: 36, height: 36)
-                                        }
-                                        .disabled(generatedCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-
-                                        Button {
-                                            saveCurrentFile()
-                                        } label: {
-                                            Image(systemName: "square.and.arrow.down")
-                                                .font(.system(size: 16, weight: .semibold))
-                                                .frame(width: 36, height: 36)
-                                        }
-                                        .disabled(!hasFileSession)
-
-                                        if isHTMLFile {
-                                            Button {
-                                                openHTMLPreviewInSafari()
-                                            } label: {
-                                                Image(systemName: "safari")
-                                                    .font(.system(size: 16, weight: .semibold))
-                                                    .frame(width: 36, height: 36)
-                                            }
-                                            .disabled(generatedCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                                        }
-                                    }
-
-                                    ScrollView(.horizontal, showsIndicators: false) {
-                                        HStack(spacing: 8) {
-                                            ForEach(workspaceFiles, id: \.path) { url in
-                                                VibeFileChip(
-                                                    title: url.lastPathComponent,
-                                                    isSelected: url == currentFileURL,
-                                                    canDelete: !isGenerating,
-                                                    onSelect: { openFile(url) },
-                                                    onDelete: { pendingDeleteFileURL = url }
-                                                )
-                                            }
-                                        }
-                                    }
-
-                                    TextEditor(text: $generatedCode)
-                                        .font(.system(.body, design: .monospaced))
-                                        .focused($focusedField, equals: .editor)
-                                        .frame(minHeight: 220)
-                                        .padding(8)
-                                        .scrollContentBackground(.hidden)
-                                        .background(Color.white.opacity(0.02))
-                                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                                }
-                                .padding(.horizontal)
-                                .padding(.vertical, 10)
-                                .background(.ultraThinMaterial)
-                                .clipShape(RoundedRectangle(cornerRadius: 16))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color.white.opacity(0.14), lineWidth: 1)
-                                )
-                                .padding(.horizontal)
-                            )
-
-                            Group {
-                                if isLandscape {
-                                    HStack(spacing: 12) {
-                                        editorPanel
-                                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                        chatPanel
-                                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                    }
-                                } else {
-                                    VStack(spacing: 12) {
-                                        chatPanel
-                                        editorPanel
-                                    }
-                                }
-                            }
-                        }
-
-                        if let errorMessage {
-                            Text(errorMessage)
-                                .foregroundColor(.red)
-                                .font(.caption)
-                                .padding(.horizontal)
-                        }
-                    }
-                }
+                workspaceView
             }
         }
         .navigationTitle(settings.localized("vibe_coder_title"))
@@ -5485,6 +5513,8 @@ struct VibeCoderScreen: View {
             debouncedAutosaveTask?.cancel()
             debouncedAutosaveTask = nil
             llm.unloadModel()
+        }
+        .onDisappear {
             stopPreviewServer()
         }
     }

@@ -70,7 +70,8 @@ let package = Package(
                 .process("zh.lproj")
             ],
             linkerSettings: [
-                .linkedFramework("Accelerate")
+                .linkedFramework("Accelerate"),
+                .unsafeFlags(["-Xlinker", "-all_load"])
             ]
         ),
     ]

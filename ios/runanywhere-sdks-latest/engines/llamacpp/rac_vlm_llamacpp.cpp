@@ -28,6 +28,8 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <dirent.h>
+#include <sys/stat.h>
 
 // llama.cpp multimodal support (mtmd)
 #include "clip.h"
@@ -1019,9 +1021,36 @@ rac_result_t rac_vlm_llamacpp_load_model(rac_handle_t handle, const char* model_
     llama_model_params model_params = llama_model_default_params();
     model_params.n_gpu_layers = gpu_layers;
 
-    backend->model = llama_model_load_from_file(model_path, model_params);
+    std::string resolved_path = model_path;
+    {
+        struct stat st;
+        if (stat(model_path, &st) == 0 && S_ISDIR(st.st_mode)) {
+            RAC_LOG_INFO(LOG_CAT, "Path is a directory, scanning for .gguf file");
+            DIR* dir = opendir(model_path);
+            if (dir) {
+                struct dirent* entry;
+                while ((entry = readdir(dir)) != nullptr) {
+                    std::string name(entry->d_name);
+                    if (name.size() > 5 && name.compare(name.size() - 5, 5, ".gguf") == 0) {
+                        resolved_path = std::string(model_path) + "/" + name;
+                        RAC_LOG_INFO(LOG_CAT, "Resolved GGUF file: %s",
+                                     resolved_path.c_str());
+                        break;
+                    }
+                }
+                closedir(dir);
+            }
+            if (resolved_path == model_path) {
+                RAC_LOG_ERROR(LOG_CAT, "No .gguf file found in directory: %s",
+                              model_path);
+                return RAC_ERROR_MODEL_LOAD_FAILED;
+            }
+        }
+    }
+
+    backend->model = llama_model_load_from_file(resolved_path.c_str(), model_params);
     if (!backend->model) {
-        RAC_LOG_ERROR(LOG_CAT, "Failed to load model: %s", model_path);
+        RAC_LOG_ERROR(LOG_CAT, "Failed to load model: %s", resolved_path.c_str());
         return RAC_ERROR_MODEL_LOAD_FAILED;
     }
 
@@ -1052,9 +1081,9 @@ rac_result_t rac_vlm_llamacpp_load_model(rac_handle_t handle, const char* model_
         backend->model = nullptr;
 
         model_params.n_gpu_layers = 0;
-        backend->model = llama_model_load_from_file(model_path, model_params);
+        backend->model = llama_model_load_from_file(resolved_path.c_str(), model_params);
         if (!backend->model) {
-            RAC_LOG_ERROR(LOG_CAT, "Failed to reload model for CPU: %s", model_path);
+            RAC_LOG_ERROR(LOG_CAT, "Failed to reload model for CPU: %s", resolved_path.c_str());
             return RAC_ERROR_MODEL_LOAD_FAILED;
         }
         force_cpu = true;

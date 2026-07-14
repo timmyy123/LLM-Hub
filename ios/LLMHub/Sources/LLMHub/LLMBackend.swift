@@ -819,6 +819,8 @@ class LLMBackend: ObservableObject {
     }
 
     private func registerModel(_ model: AIModel, contextLengthOverride: Int? = nil) async throws {
+        guard model.modelFormat == .gguf || model.modelFormat == .onnx else { return }
+        
         // Custom models store an absolute file path in model.url — use file:// URL.
         let primaryURL: URL
         if model.source == "Custom" {
@@ -867,6 +869,7 @@ class LLMBackend: ObservableObject {
 
         if !areModelsRegistered {
             for model in ModelData.allModels() {
+                guard model.modelFormat == .gguf || model.modelFormat == .onnx else { continue }
                 try await registerModel(model)
             }
             areModelsRegistered = true
@@ -956,6 +959,13 @@ class LLMBackend: ObservableObject {
             // file path as the identifier. Re-register the model under its absolute path so
             // the C++ ID lookup succeeds and uses effectiveContext (e.g. 2048) instead of
             // auto-detecting a larger value (e.g. 4096) which causes OOM on <8 GB devices.
+            let useMultimodal = model.supportsVision && enableVision && isVisionProjectorAvailable(for: model)
+            let loadCategory: RAModelCategory = useMultimodal ? .multimodal : .language
+
+            // The C++ backend looks up context_length from the registry using the absolute
+            // file path as the identifier. Re-register the model under its absolute path so
+            // the C++ ID lookup succeeds and uses effectiveContext (e.g. 2048) instead of
+            // auto-detecting a larger value (e.g. 4096) which causes OOM on <8 GB devices.
             if model.source == "Custom",
                let folderURL = runAnywhereModelDirectory(for: model),
                let ggufFile = listGGUFFiles(in: folderURL).first(where: { !$0.lastPathComponent.lowercased().contains("mmproj") }) {
@@ -963,7 +973,7 @@ class LLMBackend: ObservableObject {
                 let registeredModelInfo = ModelInfo(
                     id: runAnywhereModelId,
                     name: model.name,
-                    category: model.supportsVision ? .multimodal : .language,
+                    category: loadCategory,
                     format: .gguf,
                     framework: framework(for: model),
                     downloadURL: ggufURL,
@@ -976,7 +986,7 @@ class LLMBackend: ObservableObject {
                 let pathModelInfo = ModelInfo(
                     id: ggufURL.path,
                     name: model.name,
-                    category: model.supportsVision ? .multimodal : .language,
+                    category: loadCategory,
                     format: .gguf,
                     framework: framework(for: model),
                     downloadURL: ggufURL,
@@ -992,7 +1002,7 @@ class LLMBackend: ObservableObject {
                 let registeredModelInfo = ModelInfo(
                     id: runAnywhereModelId,
                     name: model.name,
-                    category: model.supportsVision ? .multimodal : .language,
+                    category: loadCategory,
                     format: .gguf,
                     framework: framework(for: model),
                     downloadURL: URL(string: model.url),
@@ -1005,7 +1015,7 @@ class LLMBackend: ObservableObject {
                 let pathModelInfo = ModelInfo(
                     id: ggufFile.path,
                     name: model.name,
-                    category: model.supportsVision ? .multimodal : .language,
+                    category: loadCategory,
                     format: .gguf,
                     framework: framework(for: model),
                     downloadURL: URL(string: model.url),
@@ -1019,20 +1029,27 @@ class LLMBackend: ObservableObject {
             await syncGpuLayersToRegistry(for: model)
             var loadRequest = RAModelLoadRequest()
             loadRequest.modelID = runAnywhereModelId
-            loadRequest.category = model.supportsVision ? .multimodal : .language
+            loadRequest.category = loadCategory
             loadRequest.framework = framework(for: model)
             let loadResult = await RunAnywhere.loadModel(loadRequest)
             guard loadResult.success else {
                 throw NSError(domain: "LLMBackend", code: -101, userInfo: [NSLocalizedDescriptionKey: loadResult.errorMessage.isEmpty ? "Model load failed" : loadResult.errorMessage])
+            }
+
+            if useMultimodal {
+                loadedVLMModelId = runAnywhereModelId
+                loadedVLMProjectorPath = resolveVisionProjectorPath(for: model)
+                loadedLLMModelId = nil
+            } else {
+                loadedLLMModelId = runAnywhereModelId
+                loadedVLMModelId = nil
+                loadedVLMProjectorPath = nil
             }
         }
 
         isLoaded = true
         currentlyLoadedModel = model.name
         loadedContextWindow = effectiveContext
-        loadedLLMModelId = runAnywhereModelId
-        loadedVLMModelId = nil
-        loadedVLMProjectorPath = nil
     }
 
     // MARK: - LiteRT-LM load path
