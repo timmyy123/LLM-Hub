@@ -99,7 +99,7 @@ final class RagServiceManager: ObservableObject {
 
         do {
             print("ℹ️ [RAG] initialize — calling embeddingService.initialize at \(onnxURL.lastPathComponent)")
-            try await embeddingService.initialize(modelPath: onnxURL.path, modelName: model.name)
+            try await embeddingService.initialize(modelID: modelId, modelPath: onnxURL.path, modelName: model.name)
             initializedModelName = modelId
             isReady = true
             statusMessage = AppSettings.shared.localized("embedding_enabled")
@@ -324,4 +324,3 @@ final class RagServiceManager: ObservableObject {
         print("ℹ️ [RAG] initialize — generated vocab.txt from tokenizer.json (\(vocabLines.count) entries)")
     }
 }
-

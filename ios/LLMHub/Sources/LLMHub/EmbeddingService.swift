@@ -1,20 +1,16 @@
-import CRACommons
-import Darwin
 import Foundation
-
-@_silgen_name("rac_backend_onnx_embeddings_register")
-private func rac_backend_onnx_embeddings_register_direct() -> Int32
+import RunAnywhere
 
 // MARK: - EmbeddingService
-// Wraps the RACommons rac_embeddings_service C API to generate
-// float-vector embeddings from text using a GGUF embedding model.
+// Wraps the RunAnywhere embeddings lifecycle and keeps the app-facing API as
+// plain float vectors for the in-memory RAG service.
 
 actor EmbeddingService {
 
     // MARK: - State
 
-    private var handle: rac_handle_t? = nil
     private(set) var isInitialized: Bool = false
+    private(set) var currentModelID: String? = nil
     private(set) var currentModelName: String? = nil
     private(set) var embeddingDimension: Int = 0
 
@@ -25,89 +21,28 @@ actor EmbeddingService {
     // MARK: - Lifecycle
 
     /// Initialize the embedding service and load a GGUF embedding model.
-    func initialize(modelPath: String, modelName: String) throws {
-        // Register ONNX embeddings provider explicitly. ONNX.register() wires
-        // STT/TTS/VAD, but embeddings are exposed through a separate symbol.
-        try EmbeddingService.registerOnnxEmbeddingsProvider()
-
-        // Tear down any existing instance.
-        if handle != nil {
-            rac_embeddings_cleanup(handle)
-            rac_embeddings_destroy(handle)
-            handle = nil
-            isInitialized = false
-            embeddingDimension = 0
+    func initialize(modelID: String, modelPath _: String, modelName: String) async throws {
+        if currentModelID != modelID {
+            await cleanup()
         }
 
-        var newHandle: rac_handle_t? = nil
-        let createResult = rac_embeddings_create(modelPath, &newHandle)
-        guard createResult == RAC_SUCCESS, newHandle != nil else {
-            throw EmbeddingError.initFailed("rac_embeddings_create failed: \(createResult)")
-        }
-        handle = newHandle
-
-        // Initialize with the model path.
-        let initResult = modelPath.withCString { pathPtr in
-            rac_embeddings_initialize(handle, pathPtr)
-        }
-        guard initResult == RAC_SUCCESS else {
-            rac_embeddings_destroy(handle)
-            handle = nil
-            throw EmbeddingError.modelLoadFailed("rac_embeddings_initialize failed: \(initResult)")
-        }
-
-        // Query dimension via service info if available; fallback to test embed.
-        var info = rac_embeddings_info_t()
-        if rac_embeddings_get_info(handle, &info) == RAC_SUCCESS && info.dimension > 0 {
-            embeddingDimension = Int(info.dimension)
-        } else if let testEmb = try? embedTest() {
-            embeddingDimension = testEmb.count
+        let testResult = try await RunAnywhere.embeddings.embed("test", modelID: modelID)
+        guard let vector = testResult.vectors.first, !vector.values.isEmpty else {
+            throw EmbeddingError.modelLoadFailed("empty test embedding")
         }
 
         isInitialized = true
+        currentModelID = modelID
         currentModelName = modelName
+        embeddingDimension = testResult.dimension > 0 ? Int(testResult.dimension) : vector.values.count
     }
 
-    private func embedTest() throws -> [Float] {
-        guard let h = handle else { return [] }
-        return EmbeddingService.callEmbed(handle: h, text: "test")
-    }
-
-    private nonisolated static func registerOnnxEmbeddingsProvider() throws {
-        let result = rac_backend_onnx_embeddings_register_direct()
-        if result != RAC_SUCCESS && result != RAC_ERROR_MODULE_ALREADY_REGISTERED {
-            throw EmbeddingError.initFailed("rac_backend_onnx_embeddings_register failed: \(result)")
+    func cleanup() async {
+        if isInitialized {
+            try? await RunAnywhere.embeddings.unload()
         }
-    }
-
-    // nonisolated: no actor-isolated storage touched → no "sending" across boundaries
-    private nonisolated static func callEmbed(handle: rac_handle_t, text: String) -> [Float] {
-        var result = rac_embeddings_result_t()
-        var options = RAC_EMBEDDINGS_OPTIONS_DEFAULT
-        let status = withUnsafePointer(to: &options) { opts in
-            rac_embeddings_embed(handle, text, opts, &result)
-        }
-        guard status == RAC_SUCCESS, result.num_embeddings > 0,
-              let embeddings = result.embeddings else {
-            rac_embeddings_result_free(&result)
-            return []
-        }
-        let dim = Int(embeddings[0].dimension)
-        guard dim > 0, let data = embeddings[0].data else {
-            rac_embeddings_result_free(&result)
-            return []
-        }
-        let output = Array(UnsafeBufferPointer(start: data, count: dim))
-        rac_embeddings_result_free(&result)
-        return output
-    }
-
-    func cleanup() {
-        guard handle != nil else { return }
-        rac_embeddings_cleanup(handle)
-        rac_embeddings_destroy(handle)
-        handle = nil
         isInitialized = false
+        currentModelID = nil
         currentModelName = nil
         embeddingDimension = 0
     }
@@ -115,16 +50,16 @@ actor EmbeddingService {
     // MARK: - Embed
 
     /// Generate a dense float embedding for the given text.
-    func embed(_ text: String) throws -> [Float] {
-        guard isInitialized, let h = handle else {
+    func embed(_ text: String) async throws -> [Float] {
+        guard isInitialized, let modelID = currentModelID else {
             throw EmbeddingError.notInitialized
         }
 
         let trimmed = String(text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(1024))
         guard !trimmed.isEmpty else { return [] }
 
-        let output = EmbeddingService.callEmbed(handle: h, text: trimmed)
-        guard !output.isEmpty else {
+        let result = try await RunAnywhere.embeddings.embed(trimmed, modelID: modelID)
+        guard let output = result.vectors.first?.values, !output.isEmpty else {
             throw EmbeddingError.embeddingFailed("empty result")
         }
         return output

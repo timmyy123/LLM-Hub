@@ -62,11 +62,13 @@ public extension RAModelInfo {
             framework: framework,
             downloadURL: downloadURL,
             localPath: localPath,
-            contextLength: contextLength,
-            supportsThinking: supportsThinking,
-            checksumSha256: checksumSha256
+            contextLength: Int(contextLength),
+            supportsThinking: supportsThinking
         )
         self.supportsLora = supportsLora
+        if let checksumSha256 {
+            self.checksumSha256 = checksumSha256
+        }
     }
 }
 
@@ -369,8 +371,12 @@ public extension RAModelInfo {
         set {
             let key = "gpu_layers_\(id)"
             UserDefaults.standard.set(newValue, forKey: key)
+            let modelId = id
+            let gpuLayers = newValue
             // Synchronize to C++ registry if possible
-            CppBridge.ModelRegistry.shared.setGpuLayers(modelId: id, gpuLayers: newValue)
+            Task {
+                await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: modelId, gpuLayers: gpuLayers)
+            }
         }
     }
 }

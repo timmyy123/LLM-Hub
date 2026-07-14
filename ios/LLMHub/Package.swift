@@ -6,7 +6,7 @@ let package = Package(
     name: "LLMHub",
     defaultLocalization: "en",
     platforms: [
-        .iOS(.v17),
+        .iOS("17.5"),
         .macOS(.v14),
     ],
     products: [
