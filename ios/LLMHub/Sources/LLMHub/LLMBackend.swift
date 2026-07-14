@@ -1184,11 +1184,19 @@ class LLMBackend: ObservableObject {
         let loadedModelName = currentlyLoadedModel ?? loadedModel?.name ?? "<nil>"
         let modelSupportsThinking = loadedModel?.supportsThinking == true
         let isHarmonyModel = Self.isHarmonyModelName(loadedModelName)
-        let usePrompt: String
+        let rawPrompt: String
         if isHarmonyModel && !prompt.hasPrefix("__RAW_PROMPT__") {
-            usePrompt = Self.buildHarmonyPrompt(prompt: prompt, systemPrompt: systemPrompt, thinkingEnabled: enableThinking)
+            rawPrompt = Self.buildHarmonyPrompt(prompt: prompt, systemPrompt: systemPrompt, thinkingEnabled: enableThinking)
         } else {
-            usePrompt = prompt
+            rawPrompt = prompt
+        }
+        let usePrompt: String
+        if rawPrompt.hasPrefix("__RAW_PROMPT__\n") {
+            usePrompt = String(rawPrompt.dropFirst("__RAW_PROMPT__\n".count))
+        } else if rawPrompt.hasPrefix("__RAW_PROMPT__") {
+            usePrompt = String(rawPrompt.dropFirst("__RAW_PROMPT__".count))
+        } else {
+            usePrompt = rawPrompt
         }
 
         let effectiveSystemPrompt: String?

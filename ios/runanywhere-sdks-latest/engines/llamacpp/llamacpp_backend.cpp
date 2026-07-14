@@ -1123,11 +1123,14 @@ bool LlamaCppTextGeneration::generate_stream(const TextGenerationRequest& reques
 
     // Decode loop: sample → stop-window detection → KV-decode step, emitting
     // completed UTF-8 chunks straight through the streaming callback. The
-    // starting KV position mirrors the historical generate_stream value
-    // (batch.n_tokens after the prefill loop). Shared with
-    // generate_from_context() via run_decode_loop().
+    // starting KV position must be the total prompt token count, NOT
+    // batch.n_tokens (which is only the last chunk size when the prompt was
+    // processed in multiple chunks). Using batch.n_tokens causes a KV cache
+    // position gap: last stored position = prompt_tokens-1, but generation
+    // batch starts at batch.n_tokens (last chunk size), failing with
+    // "sequence positions must be consecutive: Y = X + 1".
     const int tokens_generated =
-        run_decode_loop(sampler_, batch, batch.n_tokens, effective_max_tokens, callback);
+        run_decode_loop(sampler_, batch, prompt_tokens, effective_max_tokens, callback);
 
     // TODO(streaming-tools): Emit tool_call_delta events during stream.
     // To support generateWithToolsStream for Web and RN, the generate_stream
