@@ -1,103 +1,287 @@
-/// RunAnywhere + Storage
-///
-/// Public API for storage and download operations.
-/// Mirrors Swift's RunAnywhere+Storage.swift.
-library runanywhere_storage;
+// SPDX-License-Identifier: Apache-2.0
+//
+// runanywhere_storage.dart — storage + download helpers.
+// Mirrors Swift `RunAnywhere+Storage.swift`.
 
-import 'dart:io';
-
-import 'package:path_provider/path_provider.dart';
-import 'package:runanywhere/infrastructure/download/download_service.dart';
+import 'package:fixnum/fixnum.dart';
+import 'package:runanywhere/foundation/errors/sdk_exception.dart';
+import 'package:runanywhere/generated/model_types.pb.dart';
+import 'package:runanywhere/generated/storage_types.pb.dart';
+import 'package:runanywhere/native/dart_bridge.dart';
+import 'package:runanywhere/native/dart_bridge_file_manager.dart';
+import 'package:runanywhere/native/dart_bridge_model_registry.dart';
 import 'package:runanywhere/native/dart_bridge_storage.dart';
-import 'package:runanywhere/public/events/event_bus.dart';
-import 'package:runanywhere/public/events/sdk_event.dart';
-import 'package:runanywhere/public/runanywhere.dart';
+import 'package:runanywhere/public/extensions/model_category_extensions.dart';
 
-// =============================================================================
-// RunAnywhere Storage Extensions
-// =============================================================================
+/// Static helpers for storage + low-level download + model registration.
+///
+/// Mirrors Swift `RunAnywhere+Storage.swift` — every public method in the
+/// Swift extension has a corresponding entry point here.
+class RunAnywhereStorage {
+  RunAnywhereStorage._();
 
-/// Extension methods for storage operations
-extension RunAnywhereStorage on RunAnywhere {
-  /// Check if storage is available for a model download
+  // ===========================================================================
+  // Model registration (Swift-parity URL / archive / multi-file overloads)
+  // ===========================================================================
+
+  /// Register a remote model with the in-memory model registry from a
+  /// download URL. Delegates the full build-and-save flow to the commons
+  /// single-call factory `rac_register_model_from_url_proto`, which derives
+  /// the canonical id from the URL (`rac_model_generate_id`), defaults
+  /// format/framework/category/context-length, infers the artifact type from
+  /// the URL extension (archive vs single-file), overlays the caller-supplied
+  /// capability fields, and persists through the registry save path.
   ///
-  /// Returns true if sufficient storage is available for the given model size.
-  static Future<bool> checkStorageAvailable({
-    required int modelSize,
-    double safetyMargin = 0.1,
+  /// Mirrors Swift `RunAnywhere.registerModel(id:name:url:framework:modality:
+  /// artifactType:memoryRequirement:supportsThinking:supportsLora:)`, which
+  /// routes through the same commons factory (`rac_model_info_make_proto`).
+  static Future<ModelInfo> registerModel({
+    String? id,
+    required String name,
+    required String url,
+    required InferenceFramework framework,
+    ModelCategory modality = ModelCategory.MODEL_CATEGORY_LANGUAGE,
+    ModelArtifactType? artifactType,
+    int? memoryRequirement,
+    bool supportsThinking = false,
+    bool supportsLora = false,
   }) async {
-    try {
-      final directory = await getApplicationDocumentsDirectory();
-      final requiredWithMargin = (modelSize * (1 + safetyMargin)).toInt();
-
-      // Get directory size as a proxy for available space check
-      final dirSize = await _getDirectorySize(directory);
-
-      // If the SDK directory is larger than the model size,
-      // we assume storage is available (simplified check)
-      return dirSize > requiredWithMargin;
-    } catch (_) {
-      // Default to available if check fails
-      return true;
+    if (!DartBridge.isInitialized) {
+      throw SDKException.notInitialized();
     }
+
+    final request = RegisterModelFromUrlRequest(
+      url: url,
+      name: name,
+      framework: framework,
+      category: modality,
+      source: ModelSource.MODEL_SOURCE_REMOTE,
+      supportsThinking: supportsThinking,
+      supportsLora: supportsLora,
+    );
+    // Caller-supplied id always wins; otherwise commons derives it from the
+    // URL (matching Swift's `generatedModelID(from:name:)`).
+    if (id != null) {
+      request.id = id;
+    }
+    // Explicit artifact-type override wins over commons' URL inference.
+    if (artifactType != null) {
+      request.artifactType = artifactType;
+    }
+    if (memoryRequirement != null) {
+      request.memoryRequiredBytes = Int64(memoryRequirement);
+    }
+    // Intentionally NOT setting downloadSizeBytes from memoryRequirement: that
+    // value gates the post-finalize download-size check, and the RAM estimate
+    // is usually a round placeholder (e.g. 500 MB for a real 397 MB file),
+    // which leaves is_downloaded=false forever. Leaving it unset lets commons
+    // validate against the actual transfer — matches Kotlin's catalog.
+
+    final model = await DartBridgeModelRegistry.instance.registerModelFromUrl(
+      request,
+    );
+    if (model == null) {
+      throw SDKException.internalError(
+        'rac_register_model_from_url_proto failed for model "$name"',
+      );
+    }
+    return model;
   }
 
-  /// Get value from storage
-  static Future<String?> getStorageValue(String key) async {
-    return DartBridgeStorage.instance.get(key);
-  }
-
-  /// Set value in storage
-  static Future<bool> setStorageValue(String key, String value) async {
-    return DartBridgeStorage.instance.set(key, value);
-  }
-
-  /// Delete value from storage
-  static Future<bool> deleteStorageValue(String key) async {
-    return DartBridgeStorage.instance.delete(key);
-  }
-
-  /// Check if key exists in storage
-  static Future<bool> storageKeyExists(String key) async {
-    return DartBridgeStorage.instance.exists(key);
-  }
-
-  /// Clear all storage
-  static Future<void> clearStorage() async {
-    await DartBridgeStorage.instance.clear();
-    EventBus.shared.publish(SDKStorageEvent.cacheCleared());
-  }
-
-  /// Get base directory URL for SDK files
-  static Future<String> getBaseDirectoryPath() async {
-    final directory = await getApplicationDocumentsDirectory();
-    return '${directory.path}/runanywhere';
-  }
-
-  /// Download a model by ID with progress tracking
+  /// Register an archive-packaged model (tar.gz / tar.bz2 / tar.xz / zip)
+  /// where the caller needs to specify the on-disk layout
+  /// ([ArchiveStructure.ARCHIVE_STRUCTURE_DIRECTORY_BASED],
+  /// [ArchiveStructure.ARCHIVE_STRUCTURE_NESTED_DIRECTORY], etc.) the
+  /// URL-form [registerModel] cannot infer.
   ///
-  /// ```dart
-  /// final stream = RunAnywhereStorage.downloadModel('my-model-id');
-  /// await for (final progress in stream) {
-  ///   print('Progress: ${(progress.overallProgress * 100).toStringAsFixed(0)}%');
-  /// }
-  /// ```
-  static Stream<ModelDownloadProgress> downloadModel(String modelId) {
-    return ModelDownloadService.shared.downloadModel(modelId);
+  /// Composes [registerModel] and then patches the resolved
+  /// [ArchiveArtifact.structure] before re-saving through the registry.
+  ///
+  /// Mirrors Swift `RunAnywhere.registerModel(archive:structure:...)`.
+  static Future<ModelInfo> registerArchiveModel({
+    required String archiveUrl,
+    required ArchiveStructure structure,
+    String? id,
+    required String name,
+    required InferenceFramework framework,
+    ModelCategory modality = ModelCategory.MODEL_CATEGORY_LANGUAGE,
+    ArchiveType? archiveType,
+    int? memoryRequirement,
+    bool supportsThinking = false,
+    bool supportsLora = false,
+  }) async {
+    // Map an explicit caller archive type to its artifact-type override.
+    // When the caller passes none, leave the override unset so commons
+    // infers the archive type from the URL extension (mirroring Swift's
+    // `ArchiveType.from(url:)`, which lives behind
+    // `rac_model_info_make_proto`).
+    final ModelArtifactType? resolvedArtifactType;
+    if (archiveType == null) {
+      resolvedArtifactType = null;
+    } else {
+      switch (archiveType) {
+        case ArchiveType.ARCHIVE_TYPE_ZIP:
+          resolvedArtifactType =
+              ModelArtifactType.MODEL_ARTIFACT_TYPE_ZIP_ARCHIVE;
+          break;
+        case ArchiveType.ARCHIVE_TYPE_TAR_GZ:
+          resolvedArtifactType =
+              ModelArtifactType.MODEL_ARTIFACT_TYPE_TAR_GZ_ARCHIVE;
+          break;
+        case ArchiveType.ARCHIVE_TYPE_TAR_BZ2:
+          resolvedArtifactType =
+              ModelArtifactType.MODEL_ARTIFACT_TYPE_TAR_BZ2_ARCHIVE;
+          break;
+        case ArchiveType.ARCHIVE_TYPE_TAR_XZ:
+          resolvedArtifactType =
+              ModelArtifactType.MODEL_ARTIFACT_TYPE_TAR_XZ_ARCHIVE;
+          break;
+        default:
+          resolvedArtifactType = ModelArtifactType.MODEL_ARTIFACT_TYPE_ARCHIVE;
+      }
+    }
+
+    var model = await registerModel(
+      id: id,
+      name: name,
+      url: archiveUrl,
+      framework: framework,
+      modality: modality,
+      artifactType: resolvedArtifactType,
+      memoryRequirement: memoryRequirement,
+      supportsThinking: supportsThinking,
+      supportsLora: supportsLora,
+    );
+
+    // Preserve the caller-specified layout on the archive artifact. Commons
+    // infers the archive type from the URL; the nested/directory layout can
+    // only come from the caller — patch and re-persist (mirroring Swift's
+    // archive overload, which always carries an archive artifact with the
+    // caller's structure).
+    final patchedArchive =
+        (model.hasArchive() ? model.archive.deepCopy() : ArchiveArtifact())
+          ..structure = structure;
+    if (archiveType != null) {
+      patchedArchive.type = archiveType;
+    }
+    model = model.deepCopy()
+      ..archive = patchedArchive
+      ..updatedAtUnixMs = Int64(DateTime.now().millisecondsSinceEpoch);
+    await DartBridgeModelRegistry.instance.saveProtoModel(model);
+    return model;
   }
 
-  /// Helper to get directory size
-  static Future<int> _getDirectorySize(Directory directory) async {
-    int size = 0;
-    try {
-      await for (final entity in directory.list(recursive: true)) {
-        if (entity is File) {
-          size += await entity.length();
-        }
-      }
-    } catch (_) {
-      // Ignore errors
+  /// Register a multi-file model (e.g., VLMs with a separate `mmproj`,
+  /// MiniLM embedding with `vocab.txt`) through the canonical commons
+  /// factory (`rac_register_multi_file_model_proto`) — no URL is involved at
+  /// the model level because each [ModelFileDescriptor] carries its own URL.
+  ///
+  /// Mirrors Swift `RunAnywhere.registerModel(multiFile:id:name:framework:
+  /// modality:memoryRequirement:contextLength:supportsThinking:source:)`.
+  static Future<ModelInfo> registerMultiFileModel({
+    required List<ModelFileDescriptor> files,
+    required String id,
+    required String name,
+    required InferenceFramework framework,
+    ModelCategory modality = ModelCategory.MODEL_CATEGORY_LANGUAGE,
+    int? memoryRequirement,
+    int? contextLength,
+    bool supportsThinking = false,
+    ModelSource source = ModelSource.MODEL_SOURCE_REMOTE,
+  }) async {
+    if (!DartBridge.isInitialized) {
+      throw SDKException.notInitialized();
     }
-    return size;
+
+    // Canonical commons factory: rac_register_multi_file_model_proto builds
+    // the MultiFileArtifact ModelInfo (descriptors carry url/filename/size/
+    // checksum/role) and persists it with merge-on-reseed semantics.
+    final request = RegisterMultiFileModelRequest(
+      id: id,
+      name: name,
+      framework: framework,
+      category: modality,
+      supportsThinking: supportsThinking,
+      source: source,
+      files: files,
+    );
+    if (memoryRequirement != null) {
+      request.memoryRequiredBytes = Int64(memoryRequirement);
+    }
+    // See registerModel: downloadSizeBytes is intentionally left unset so the
+    // post-finalize size guard validates against the actual transfer rather
+    // than the RAM-estimate placeholder.
+    final resolvedContextLength =
+        contextLength ?? (modality.requiresContextLength ? 2048 : null);
+    if (resolvedContextLength != null) {
+      request.contextLength = resolvedContextLength;
+    }
+
+    final model =
+        await DartBridgeModelRegistry.instance.registerMultiFileModel(request);
+    if (model == null) {
+      throw SDKException.internalError(
+        'rac_register_multi_file_model_proto failed for model "$name"',
+      );
+    }
+    return model;
+  }
+
+  /// Import a stable, platform-normalized local model path into the
+  /// generated registry. Also the public local-import entry point for
+  /// file-picker / bookmark flows after the platform has handled sandbox
+  /// access.
+  ///
+  /// Mirrors Swift `RunAnywhere.importModel(_:)`. Backed by
+  /// `rac_model_registry_import_proto`.
+  static Future<ModelImportResult> importModel(
+    ModelImportRequest request,
+  ) async {
+    if (!DartBridge.isInitialized) {
+      throw SDKException.notInitialized();
+    }
+    return DartBridgeModelRegistry.instance.importModel(request);
+  }
+
+  // ===========================================================================
+  // Storage availability (existing Flutter-specific helpers)
+  // ===========================================================================
+
+  /// Clear the SDK's Temp directory. Mirrors Swift's `cleanTempFiles()`.
+  static Future<void> cleanTempFiles() async {
+    if (!DartBridgeFileManager.clearTemp()) {
+      throw SDKException.storageError('Failed to clean temp files');
+    }
+  }
+
+  /// Execute a generated-proto storage delete request.
+  ///
+  /// Mirrors Swift `RunAnywhere.deleteStorage(_:)`; callers choose the typed
+  /// policy flags (`deleteFiles`, `clearRegistryPaths`, `unloadIfLoaded`,
+  /// `allowPlatformDelete`) while commons owns the actual plan/execution.
+  static Future<StorageDeleteResult> deleteStorage(
+    StorageDeleteRequest request,
+  ) async {
+    if (!DartBridge.isInitialized) {
+      throw SDKException.notInitialized();
+    }
+    return DartBridgeStorage.instance.deleteProto(request);
+  }
+
+  /// Delete one downloaded model end-to-end: unload it if loaded, remove its
+  /// files through the platform adapter, and clear its registry path so the
+  /// entry returns to registered-not-downloaded (re-downloadable).
+  /// Convenience over [deleteStorage] with the canonical flag set — mirrors
+  /// Swift `RunAnywhere.deleteModel(_:)`.
+  static Future<StorageDeleteResult> deleteModel(String modelId) {
+    return deleteStorage(
+      StorageDeleteRequest(
+        modelIds: [modelId],
+        deleteFiles: true,
+        clearRegistryPaths: true,
+        unloadIfLoaded: true,
+        allowPlatformDelete: true,
+      ),
+    );
   }
 }

@@ -11,9 +11,9 @@ Privacy-first, on-device AI SDK for Flutter. Run LLMs, Speech-to-Text, Text-to-S
 
 ```yaml
 dependencies:
-  runanywhere: ^0.15.9
-  runanywhere_onnx: ^0.15.9      # STT, TTS, VAD
-  runanywhere_llamacpp: ^0.15.9  # LLM text generation
+  runanywhere: ^0.20.9
+  runanywhere_onnx: ^0.20.9      # STT, TTS, VAD
+  runanywhere_llamacpp: ^0.20.9  # LLM text generation
 ```
 
 **Step 2:** Configure platforms (see below).
@@ -29,8 +29,8 @@ After adding the packages, you **must** update your iOS Podfile for the SDK to w
 Make these **two critical changes**:
 
 ```ruby
-# Change 1: Set minimum iOS version to 14.0
-platform :ios, '14.0'
+# Change 1: Set minimum iOS version to 17.5
+platform :ios, '17.5'
 
 # ... (keep existing flutter_root function and setup) ...
 
@@ -45,7 +45,7 @@ post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
     target.build_configurations.each do |config|
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '17.5'
       # Required for microphone permission (STT/Voice features)
       config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
         '$(inherited)',
@@ -57,6 +57,10 @@ end
 ```
 
 > **Important:** Without `use_frameworks! :linkage => :static`, you will see "symbol not found" errors at runtime.
+
+For a pub.dev dependency, CocoaPods downloads the version-matched RACommons
+XCFramework and verifies its immutable SHA-256 checksum automatically. Source
+checkouts use a locally staged framework when present.
 
 ### 2. Update `ios/Runner/Info.plist`
 
@@ -107,16 +111,18 @@ void main() async {
 ### Text Generation (LLM)
 
 ```dart
-final stream = RunAnywhere.generateStream('Tell me a joke');
-await for (final token in stream) {
-  print(token);
+final stream = RunAnywhere.llm
+    .generateStream('Tell me a joke', LLMGenerationOptions(maxTokens: 128));
+await for (final event in stream) {
+  if (event.isFinal) break;
+  if (event.token.isNotEmpty) print(event.token);
 }
 ```
 
 ### Speech-to-Text
 
 ```dart
-final result = await RunAnywhere.transcribe(audioData);
+final result = await RunAnywhere.stt.transcribe(audioData);
 print(result.text);
 ```
 
@@ -126,7 +132,7 @@ print(result.text);
 
 | Platform | Minimum Version |
 |----------|-----------------|
-| iOS      | 14.0+           |
+| iOS      | 17.5+           |
 | Android  | API 24+         |
 
 ## Documentation
@@ -142,6 +148,6 @@ print(result.text);
 
 ## License
 
-RunAnywhere License (Apache 2.0 based). See [LICENSE](https://github.com/RunanywhereAI/runanywhere-sdks/blob/main/LICENSE).
+RunAnywhere License (Apache 2.0 based, with additional commercial-use terms). See [LICENSE](https://github.com/RunanywhereAI/runanywhere-sdks/blob/main/LICENSE).
 
 Commercial licensing: san@runanywhere.ai

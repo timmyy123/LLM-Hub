@@ -27,7 +27,7 @@ set(USEARCH_USE_SIMSIMD OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
     usearch
     GIT_REPOSITORY https://github.com/unum-cloud/usearch.git
-    GIT_TAG        v2.15.2
+    GIT_TAG        ${RAC_USEARCH_VERSION}
     GIT_SHALLOW    TRUE
 )
 set(USEARCH_BUILD_TEST_C OFF CACHE BOOL "" FORCE)
@@ -42,7 +42,7 @@ if(NOT TARGET nlohmann_json::nlohmann_json)
     FetchContent_Declare(
         nlohmann_json
         GIT_REPOSITORY https://github.com/nlohmann/json.git
-        GIT_TAG        v3.11.3
+        GIT_TAG        v${RAC_NLOHMANN_JSON_VERSION}
         GIT_SHALLOW    TRUE
     )
     set(JSON_BuildTests OFF CACHE BOOL "" FORCE)
@@ -58,20 +58,26 @@ endif()
 
 set(RAG_PIPELINE_SOURCES
     rag_backend.cpp
+    rag_pipeline_graph.cpp
+    rag_rerank.cpp
+    rag_fusion.cpp
     vector_store_usearch.cpp
     rag_chunker.cpp
     bm25_index.cpp
     rac_rag_register.cpp
-    rac_rag_pipeline.cpp
+    rac_rag_proto_abi.cpp
 )
 
-# ONNX embedding provider (onnx_embedding_provider.cpp, rac_onnx_embeddings_register.cpp)
-# is compiled into rac_backend_onnx instead of this OBJECT library to avoid a
-# shared-library cycle: rac_commons -> rac_backend_rag -> rac_backend_onnx -> rac_commons.
-# See src/backends/onnx/CMakeLists.txt for where these sources are compiled.
+# ONNX embedding provider is owned by the ONNX engine plugin
+# (engines/onnx/onnx_embedding_provider.{h,cpp} +
+# engines/onnx/rac_onnx_embeddings_register.cpp). It compiles into
+# rac_backend_onnx so the engine fully owns its embedding primitive.
+# The RAG pipeline routes through rac_embeddings_service at runtime.
 
 set(RAG_PIPELINE_HEADERS
     rag_backend.h
+    rag_pipeline_graph.h
+    rag_rerank.h
     vector_store_usearch.h
     rag_chunker.h
     bm25_index.h
@@ -81,10 +87,35 @@ add_library(rac_backend_rag OBJECT ${RAG_PIPELINE_SOURCES} ${RAG_PIPELINE_HEADER
 
 target_include_directories(rac_backend_rag PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/include/rac/backends
+    # Walk up from src/features/rag/ to commons/, then into include/. Uses
+    # CMAKE_CURRENT_SOURCE_DIR (not CMAKE_SOURCE_DIR) so the path is correct
+    # whether commons is the top-level CMake project or pulled in via
+    # add_subdirectory() from another project (e.g., the Web/WASM build).
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../include/rac/backends
     ${usearch_SOURCE_DIR}/include
 )
+
+if(Protobuf_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../../src/generated/proto/rag.pb.h")
+    target_compile_definitions(rac_backend_rag PRIVATE RAC_HAVE_PROTOBUF=1)
+    target_include_directories(rac_backend_rag PRIVATE
+        # commons src/ root — rac_backend_rag is folded into rac_commons via
+        # $<TARGET_OBJECTS>, so it shares commons-internal headers (e.g.
+        # foundation/rac_proto_marshal_internal.h). Mirrors rac_commons' own src/ path.
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../../src
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../../src/generated/proto
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../../src/generated
+        ${Protobuf_INCLUDE_DIRS}
+    )
+    if(TARGET protobuf::libprotobuf)
+        target_link_libraries(rac_backend_rag PRIVATE protobuf::libprotobuf)
+    elseif(Protobuf_LIBRARIES)
+        target_link_libraries(rac_backend_rag PRIVATE ${Protobuf_LIBRARIES})
+    endif()
+    if(RAC_ABSL_LIBS)
+        target_link_libraries(rac_backend_rag PRIVATE ${RAC_ABSL_LIBS})
+    endif()
+endif()
 
 # nlohmann_json is used by RAG for config parsing.
 # It's header-only (INTERFACE lib) so no link-time cost.
@@ -95,7 +126,7 @@ target_link_libraries(rac_backend_rag PUBLIC
 target_compile_definitions(rac_backend_rag PRIVATE RAC_RAG_BUILDING)
 
 set_target_properties(rac_backend_rag PROPERTIES
-    CXX_STANDARD 17
+    CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
     CXX_EXTENSIONS OFF
 )
@@ -103,6 +134,7 @@ set_target_properties(rac_backend_rag PROPERTIES
 target_compile_options(rac_backend_rag PRIVATE
     $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wno-unused-parameter>
     $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wno-missing-field-initializers>
+    $<$<CXX_COMPILER_ID:MSVC>:/wd4244;/wd4267;/wd4996>
 )
 
 target_compile_definitions(rac_backend_rag PRIVATE
@@ -139,34 +171,6 @@ endif()
 # =============================================================================
 
 message(STATUS "RAG Pipeline Configuration:")
-message(STATUS "  USearch: v2.15.2 (HNSW vector search)")
+message(STATUS "  USearch: ${RAC_USEARCH_VERSION} (HNSW vector search)")
 message(STATUS "  Architecture: Pipeline (calls LLM + Embeddings via vtables)")
 message(STATUS "  Platform: ${RAC_PLATFORM_NAME}")
-
-# =============================================================================
-# JNI Bridge for Android
-# =============================================================================
-
-if(RAC_PLATFORM_ANDROID AND RAC_BUILD_SHARED)
-    if(ANDROID)
-        message(STATUS "Building RAG JNI bridge for Android")
-
-        get_filename_component(RAC_COMMONS_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../.." ABSOLUTE)
-
-        add_library(rac_backend_rag_jni SHARED jni/rac_rag_jni.cpp)
-
-        target_include_directories(rac_backend_rag_jni PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}
-            ${RAC_COMMONS_ROOT_DIR}/include
-        )
-
-        # RAG symbols live in rac_commons (the OBJECT lib was folded in)
-        target_link_libraries(rac_backend_rag_jni PRIVATE
-            rac_commons
-            log
-        )
-
-        target_compile_options(rac_backend_rag_jni PRIVATE -O3 -fvisibility=hidden -ffunction-sections -fdata-sections)
-        target_link_options(rac_backend_rag_jni PRIVATE -Wl,--gc-sections -Wl,-z,max-page-size=16384)
-    endif()
-endif()

@@ -2,64 +2,33 @@
  * @file HTTPBridge.hpp
  * @brief HTTP bridge documentation
  *
- * NOTE: HTTP is handled entirely by the JavaScript/platform layer.
+ * NOTE: React Native HTTP transport is now owned by native C++.
  *
- * In Swift, HTTPService.swift handles all HTTP requests.
- * In React Native, the JS layer (HTTPService.ts) handles HTTP.
- *
- * C++ does NOT make HTTP requests directly. Instead:
- * 1. C++ provides JSON building functions (rac_auth_request_to_json, etc.)
- * 2. JS layer makes the HTTP request
- * 3. C++ parses the response (rac_auth_response_from_json, etc.)
- * 4. C++ stores state (rac_state_set_auth, etc.)
+ * Public Nitro methods use rac_http_client_* directly for auth and ad-hoc
+ * requests. This bridge remains as shared configuration storage for C++
+ * components that need base URL / API key state.
  *
  * This bridge provides:
  * - Configuration storage (base URL, API key)
  * - Authorization header management
- * - HTTP executor registration (for C++ components that need to make requests)
  *
  * Reference: sdk/runanywhere-swift/Sources/RunAnywhere/Foundation/Bridge/Extensions/CppBridge+HTTP.swift
  */
 
 #pragma once
 
-#include <string>
-#include <functional>
+#include <mutex>
 #include <optional>
-
-#include "rac_types.h"
-#include "rac_http_client.h"
+#include <string>
 
 namespace runanywhere {
 namespace bridges {
 
 /**
- * HTTP response
- */
-struct HTTPResponse {
-    int32_t statusCode = 0;
-    std::string body;
-    std::string error;
-    bool success = false;
-};
-
-/**
- * HTTP executor callback type
- * Platform provides this to handle HTTP requests
- */
-using HTTPExecutor = std::function<HTTPResponse(
-    const std::string& method,
-    const std::string& url,
-    const std::string& body,
-    bool requiresAuth
-)>;
-
-/**
- * HTTPBridge - HTTP configuration and executor registration
+ * HTTPBridge - shared HTTP configuration
  *
- * NOTE: Actual HTTP requests are made by the JS layer, not C++.
- * This bridge handles configuration and provides an executor for
- * C++ components that need HTTP access.
+ * NOTE: Public RN HTTP requests use rac_http_client_* directly. This bridge
+ * only stores configuration needed by native bootstrap callbacks.
  */
 class HTTPBridge {
 public:
@@ -76,17 +45,17 @@ public:
     /**
      * Check if configured
      */
-    bool isConfigured() const { return configured_; }
+    bool isConfigured() const;
 
     /**
      * Get base URL
      */
-    const std::string& getBaseURL() const { return baseURL_; }
+    std::string getBaseURL() const;
 
     /**
      * Get API key
      */
-    const std::string& getAPIKey() const { return apiKey_; }
+    std::string getAPIKey() const;
 
     /**
      * Set authorization token
@@ -103,24 +72,8 @@ public:
      */
     void clearAuthorizationToken();
 
-    /**
-     * Register HTTP executor (called by platform)
-     *
-     * This allows C++ components to make HTTP requests through the platform.
-     * The platform handles the actual network operations.
-     */
-    void setHTTPExecutor(HTTPExecutor executor);
-
-    /**
-     * Execute HTTP request via registered executor
-     * Returns nullopt if no executor registered
-     */
-    std::optional<HTTPResponse> execute(
-        const std::string& method,
-        const std::string& endpoint,
-        const std::string& body,
-        bool requiresAuth
-    );
+    /** Clear process-local endpoint and credential state. */
+    void reset();
 
     /**
      * Build full URL from endpoint
@@ -134,10 +87,10 @@ private:
     HTTPBridge& operator=(const HTTPBridge&) = delete;
 
     bool configured_ = false;
+    mutable std::mutex mutex_;
     std::string baseURL_;
     std::string apiKey_;
     std::optional<std::string> authToken_;
-    HTTPExecutor executor_;
 };
 
 } // namespace bridges

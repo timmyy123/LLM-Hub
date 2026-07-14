@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:runanywhere_ai/core/design_system/app_colors.dart';
 import 'package:runanywhere_ai/core/design_system/app_spacing.dart';
@@ -47,10 +49,10 @@ class ToolCallIndicator extends StatelessWidget {
           vertical: 6,
         ),
         decoration: BoxDecoration(
-          color: accentColor.withOpacity(0.1),
+          color: accentColor.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: accentColor.withOpacity(0.3),
+            color: accentColor.withValues(alpha: 0.3),
             width: 0.5,
           ),
         ),
@@ -63,16 +65,47 @@ class ToolCallIndicator extends StatelessWidget {
               color: accentColor,
             ),
             const SizedBox(width: 6),
-            Text(
-              toolCallInfo.toolName,
-              style: AppTypography.caption2(context).copyWith(
-                color: AppColors.textSecondary(context),
+            // B-FL-6-002: render `name(args) = result` so the chip is
+            // self-explanatory without requiring the user to tap into
+            // the detail sheet for typical short responses.
+            Flexible(
+              child: Text(
+                _composeChipLabel(toolCallInfo),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.caption2(context).copyWith(
+                  color: AppColors.textSecondary(context),
+                ),
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  /// Build a one-line summary like `get_weather(location=Tokyo) = 18°C`.
+  /// Falls back to just the tool name for long arg/result blobs so the
+  /// chip stays compact.
+  String _composeChipLabel(ToolCallInfo info) {
+    const argsLimit = 40;
+    const resultLimit = 40;
+
+    String compactArgs = info.arguments.replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (compactArgs.length > argsLimit) {
+      compactArgs = '${compactArgs.substring(0, argsLimit)}…';
+    }
+
+    final result = info.result?.replaceAll(RegExp(r'\s+'), ' ').trim();
+    String? compactResult = result;
+    if (compactResult != null && compactResult.length > resultLimit) {
+      compactResult = '${compactResult.substring(0, resultLimit)}…';
+    }
+
+    final base = '${info.toolName}($compactArgs)';
+    return compactResult != null && compactResult.isNotEmpty
+        ? '$base = $compactResult'
+        : base;
   }
 }
 
@@ -197,7 +230,7 @@ class ToolCallDetailSheet extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.large),
       decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.1),
+        color: statusColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -296,7 +329,8 @@ class _ToolCallingActiveIndicatorState extends State<ToolCallingActiveIndicator>
     _controller = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
-    )..repeat();
+    );
+    unawaited(_controller.repeat());
   }
 
   @override
@@ -313,7 +347,7 @@ class _ToolCallingActiveIndicatorState extends State<ToolCallingActiveIndicator>
         vertical: 6,
       ),
       decoration: BoxDecoration(
-        color: AppColors.primaryAccent.withOpacity(0.1),
+        color: AppColors.primaryAccent.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -359,7 +393,7 @@ class ToolCallingBadge extends StatelessWidget {
         vertical: 4,
       ),
       decoration: BoxDecoration(
-        color: AppColors.primaryAccent.withOpacity(0.1),
+        color: AppColors.primaryAccent.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(

@@ -14,8 +14,9 @@
  * Architecture:
  * - Uses ConversationStore for state management (matches iOS)
  * - Separates UI from business logic (View + ViewModel pattern)
- * - Model loading via RunAnywhere.loadModel()
- * - Text generation via RunAnywhere.generate()
+ * - Model loading via RunAnywhere.loadModel(ModelLoadRequest)
+ * - Text generation via RunAnywhere.generate(prompt, options?)
+ *   and RunAnywhere.generateStream(prompt, options?) (proto-canonical signatures)
  *
  * Reference: iOS examples/ios/RunAnywhereAI/RunAnywhereAI/Features/Chat/Views/ChatInterfaceView.swift
  */
@@ -26,177 +27,89 @@ import {
   Text,
   FlatList,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   Alert,
   Modal,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/Ionicons';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
 import { Typography } from '../theme/typography';
 import { Spacing, Padding, IconSize } from '../theme/spacing';
-import { ModelStatusBanner, ModelRequiredOverlay } from '../components/common';
-import { MessageBubble, TypingIndicator, ChatInput, ToolCallingBadge } from '../components/chat';
+import { ModelRequiredOverlay } from '../components/common';
+import { ChatHeader } from '../features/chat/components/ChatHeader';
+import { PromptSuggestions } from '../features/chat/components/PromptSuggestions';
+import {
+  MessageBubble,
+  ChatInput,
+  ToolCallingBadge,
+  LoRASheet,
+} from '../components/chat';
 import { ChatAnalyticsScreen } from './ChatAnalyticsScreen';
 import { ConversationListScreen } from './ConversationListScreen';
-import type { Message, Conversation, ToolCallInfo } from '../types/chat';
+import type { Message, Conversation } from '../types/chat';
 import { MessageRole } from '../types/chat';
-import type { ModelInfo } from '../types/model';
-import { ModelModality, LLMFramework, ModelCategory } from '../types/model';
 import { useConversationStore } from '../stores/conversationStore';
 import {
   ModelSelectionSheet,
   ModelSelectionContext,
 } from '../components/model';
-import { GENERATION_SETTINGS_KEYS } from '../types/settings';
+import { APP_STORAGE_KEYS, GENERATION_SETTINGS_KEYS } from '../types/settings';
+import { getPrimaryFramework } from '../utils/modelDisplay';
 
 // Import RunAnywhere SDK (Multi-Package Architecture)
-import { RunAnywhere, type ModelInfo as SDKModelInfo, type GenerationOptions } from '@runanywhere/core';
-import { safeEvaluateExpression } from '../utils/mathParser';
+import { RunAnywhere } from '@runanywhere/core';
+import { LLMGenerationOptions } from '@runanywhere/proto-ts/llm_options';
+import {
+  ToolCallFormatName,
+  ToolCallingOptions,
+} from '@runanywhere/proto-ts/tool_calling';
+import {
+  ModelCategory,
+  ModelLoadRequest,
+  type ModelInfo as SDKModelInfo,
+} from '@runanywhere/proto-ts/model_types';
+import { logDiagnostic } from '../utils/diagnostics';
+import { isModelLoadedForCategory } from '../utils/runAnywhereLifecycle';
+import { listVisibleCatalogModels } from '../services/ModelRegistryQueries';
+
+// Canonical SDK methods (Swift parity).
+const loadModelWithRequest = RunAnywhere.loadModel;
 
 // Generate unique ID
 const generateId = () => Math.random().toString(36).substring(2, 15);
 
-// =============================================================================
-// TOOL CALLING SETUP - Weather API Example
-// =============================================================================
+interface GenerationSettings {
+  temperature: number;
+  maxTokens: number;
+  systemPrompt?: string;
+  thinkingModeEnabled: boolean;
+}
 
-/**
- * Register tools for the chat. This enables the LLM to call external APIs.
- * Users just chat normally - tool calls happen transparently.
- */
-const registerChatTools = () => {
-  // Clear any existing tools
-  RunAnywhere.clearTools();
+function makeToolCallInfo(
+  result: Awaited<ReturnType<typeof RunAnywhere.generateWithTools>>
+) {
+  const firstCall = result.toolCalls[0];
+  if (!firstCall) return undefined;
+  const matchingResult =
+    result.toolResults.find(
+      (toolResult) =>
+        toolResult.toolCallId === firstCall.id ||
+        toolResult.name === firstCall.name
+    ) ?? result.toolResults[0];
 
-  // Weather tool - Real API (wttr.in - no key needed)
-  RunAnywhere.registerTool(
-    {
-      name: 'get_weather',
-      description: 'Gets the current weather for a city or location',
-      parameters: [
-        {
-          name: 'location',
-          type: 'string',
-          description: 'City name or location (e.g., "Tokyo", "New York", "London")',
-          required: true,
-        },
-      ],
-    },
-    async (args) => {
-      // Handle both 'location' and 'city' parameter names (models vary)
-      const location = (args.location || args.city) as string;
-      console.log('[Tool] get_weather called for:', location);
-
-      try {
-        const url = `https://wttr.in/${encodeURIComponent(location)}?format=j1`;
-        const response = await fetch(url);
-
-        if (!response.ok) {
-          return { error: `Weather API error: ${response.status}` };
-        }
-
-        const data = await response.json();
-        const current = data.current_condition[0];
-        const area = data.nearest_area?.[0];
-
-        return {
-          location: area?.areaName?.[0]?.value || location,
-          country: area?.country?.[0]?.value || '',
-          temperature_f: parseInt(current.temp_F, 10),
-          temperature_c: parseInt(current.temp_C, 10),
-          condition: current.weatherDesc[0].value,
-          humidity: `${current.humidity}%`,
-          wind_mph: `${current.windspeedMiles} mph`,
-          feels_like_f: parseInt(current.FeelsLikeF, 10),
-        };
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        console.error('[Tool] Weather fetch failed:', msg);
-        return { error: msg };
-      }
-    }
-  );
-
-  // Current time tool
-  RunAnywhere.registerTool(
-    {
-      name: 'get_current_time',
-      description: 'Gets the current date and time',
-      parameters: [],
-    },
-    async () => {
-      console.log('[Tool] get_current_time called');
-      const now = new Date();
-      return {
-        date: now.toLocaleDateString(),
-        time: now.toLocaleTimeString(),
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      };
-    }
-  );
-
-  // Calculator tool - Math evaluation
-  RunAnywhere.registerTool(
-    {
-      name: 'calculate',
-      description: 'Performs math calculations. Supports +, -, *, /, and parentheses',
-      parameters: [
-        {
-          name: 'expression',
-          type: 'string',
-          description: 'Math expression (e.g., "2 + 2 * 3", "(10 + 5) / 3")',
-          required: true,
-        },
-      ],
-    },
-    async (args) => {
-      const expression = (args.expression || args.input) as string;
-      console.log('[Tool] calculate called for:', expression);
-      try {
-        // Safe math evaluation using recursive descent parser
-        const result = safeEvaluateExpression(expression);
-        return {
-          expression: expression,
-          result: result,
-        };
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        return { error: `Failed to calculate: ${msg}` };
-      }
-    }
-  );
-
-  console.log('[ChatScreen] Tools registered: get_weather, get_current_time, calculate');
-};
-
-/**
- * Detect tool call format based on model ID and name
- * LFM2-Tool models use Pythonic format, others use JSON format
- * * Matches iOS: LLMViewModel+ToolCalling.swift detectToolCallFormat()
- * Checks both ID and name since model might be identified by either
- */
-const detectToolCallFormat = (modelId: string | undefined, modelName: string | undefined): string => {
-  // Check model ID first (more reliable - e.g., "lfm2-1.2b-tool-q4_k_m")
-  if (modelId) {
-    const id = modelId.toLowerCase();
-    if (id.includes('lfm2') && id.includes('tool')) {
-      return 'lfm2';
-    }
-  }
-
-  // Also check model name (e.g., "LiquidAI LFM2 1.2B Tool Q4_K_M")
-  if (modelName) {
-    const name = modelName.toLowerCase();
-    if (name.includes('lfm2') && name.includes('tool')) {
-      return 'lfm2';
-    }
-  }
-
-  // Default JSON format for general-purpose models
-  return 'default';
-};
+  return {
+    toolName: firstCall.name,
+    arguments: firstCall.argumentsJson || '{}',
+    result: matchingResult?.resultJson,
+    success: matchingResult?.success ?? !matchingResult?.error,
+    error: matchingResult?.error,
+  };
+}
 
 export const ChatScreen: React.FC = () => {
   // Conversation store
@@ -208,22 +121,31 @@ export const ChatScreen: React.FC = () => {
     setCurrentConversation,
     addMessage,
     updateMessage,
+    updateConversation,
   } = useConversationStore();
 
   // Local state
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isModelLoading, setIsModelLoading] = useState(false);
-  const [currentModel, setCurrentModel] = useState<ModelInfo | null>(null);
+  const [currentModel, setCurrentModel] = useState<SDKModelInfo | null>(null);
   const [_availableModels, setAvailableModels] = useState<SDKModelInfo[]>([]);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showConversationList, setShowConversationList] = useState(false);
   const [showModelSelection, setShowModelSelection] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [registeredToolCount, setRegisteredToolCount] = useState(0);
+  const [toolsEnabled, setToolsEnabled] = useState(false);
+  // LoRA adapter management (mirrors iOS LLMViewModel.loraAdapters).
+  const [showLoRASheet, setShowLoRASheet] = useState(false);
+  const [loraAdapterCount, setLoraAdapterCount] = useState(0);
 
   // Refs
   const flatListRef = useRef<FlatList>(null);
+  const generationAbortRef = useRef<AbortController | null>(null);
+
+  // Safe area insets for header status bar handling
+  const insets = useSafeAreaInsets();
 
   // Initialize conversation store and create first conversation
   useEffect(() => {
@@ -258,6 +180,10 @@ export const ChatScreen: React.FC = () => {
   useEffect(() => {
     checkModelStatus();
     loadAvailableModels();
+    // Reflect whatever tools Settings has already registered (badge only).
+    RunAnywhere.getRegisteredTools().then((tools) =>
+      setRegisteredToolCount(tools.length)
+    );
   }, []);
 
   // Messages from current conversation
@@ -267,18 +193,34 @@ export const ChatScreen: React.FC = () => {
    * Get generation options from AsyncStorage
    * Reads user-configured temperature, maxTokens, and systemPrompt
    */
-  const getGenerationOptions = async (): Promise<GenerationOptions> => {
-    const tempStr = await AsyncStorage.getItem(GENERATION_SETTINGS_KEYS.TEMPERATURE);
-    const maxStr = await AsyncStorage.getItem(GENERATION_SETTINGS_KEYS.MAX_TOKENS);
-    const sysStr = await AsyncStorage.getItem(GENERATION_SETTINGS_KEYS.SYSTEM_PROMPT);
+  const getGenerationOptions = async (): Promise<GenerationSettings> => {
+    const tempStr = await AsyncStorage.getItem(
+      GENERATION_SETTINGS_KEYS.TEMPERATURE
+    );
+    const maxStr = await AsyncStorage.getItem(
+      GENERATION_SETTINGS_KEYS.MAX_TOKENS
+    );
+    const sysStr = await AsyncStorage.getItem(
+      GENERATION_SETTINGS_KEYS.SYSTEM_PROMPT
+    );
+    const thinkingStr = await AsyncStorage.getItem(
+      GENERATION_SETTINGS_KEYS.THINKING_MODE_ENABLED
+    );
 
-    const temperature = tempStr !== null && !Number.isNaN(parseFloat(tempStr)) ? parseFloat(tempStr) : 0.7;
+    const temperature =
+      tempStr !== null && !Number.isNaN(parseFloat(tempStr))
+        ? parseFloat(tempStr)
+        : 0.7;
     const maxTokens = maxStr ? parseInt(maxStr, 10) : 1000;
     const systemPrompt = sysStr && sysStr.trim() !== '' ? sysStr : undefined;
+    const thinkingModeEnabled = thinkingStr === 'true';
 
-    console.log(`[PARAMS] App getGenerationOptions: temperature=${temperature}, maxTokens=${maxTokens}, systemPrompt=${systemPrompt ? `set(${systemPrompt.length} chars)` : 'nil'}`);
+    // eslint-disable-next-line no-console -- demo settings diagnostic
+    console.log(
+      `[PARAMS] App getGenerationOptions: temperature=${temperature}, maxTokens=${maxTokens}, systemPrompt=${systemPrompt ? `set(${systemPrompt.length} chars)` : 'nil'}, thinkingMode=${thinkingModeEnabled}`
+    );
 
-    return { temperature, maxTokens, systemPrompt };
+    return { temperature, maxTokens, systemPrompt, thinkingModeEnabled };
   };
 
   /**
@@ -286,16 +228,17 @@ export const ChatScreen: React.FC = () => {
    */
   const loadAvailableModels = async () => {
     try {
-      const allModels = await RunAnywhere.getAvailableModels();
+      const allModels = await listVisibleCatalogModels();
       const llmModels = allModels.filter(
-        (m: SDKModelInfo) => m.category === ModelCategory.Language
+        (m: SDKModelInfo) =>
+          m.category === ModelCategory.MODEL_CATEGORY_LANGUAGE
       );
       setAvailableModels(llmModels);
-      console.warn(
+      logDiagnostic(
         '[ChatScreen] Available LLM models:',
         llmModels.map(
           (m: SDKModelInfo) =>
-            `${m.id} (${m.isDownloaded ? 'downloaded' : 'not downloaded'})`
+            `${m.id} (${m.isDownloaded || m.localPath ? 'downloaded' : 'not downloaded'})`
         )
       );
     } catch (error) {
@@ -304,33 +247,19 @@ export const ChatScreen: React.FC = () => {
   };
 
   /**
-   * Check if a model is loaded
-   * Note: If a model is already loaded from a previous session, we set a placeholder.
-   * For proper tool calling format detection, the user should select a model through the UI.
+   * Check if a model is loaded from a previous session.
+   *
+   * The SDK can confirm a model is loaded but doesn't expose which one, so we
+   * intentionally leave `currentModel` as null and let the model-required empty
+   * state prompt the user to pick one (required anyway for tool-call format
+   * detection). No stand-in model entry is inserted.
    */
   const checkModelStatus = async () => {
     try {
-      const isLoaded = await RunAnywhere.isModelLoaded();
-      console.warn('[ChatScreen] Text model loaded:', isLoaded);
-      if (isLoaded) {
-        // Model is loaded but we don't know which one - set placeholder
-        // User should select a model through UI for proper format detection
-        setCurrentModel({
-          id: 'loaded-model',
-          name: 'Loaded Model (select model for tool calling)',
-          category: ModelCategory.Language,
-          compatibleFrameworks: [LLMFramework.LlamaCpp],
-          preferredFramework: LLMFramework.LlamaCpp,
-          isDownloaded: true,
-          isAvailable: true,
-          supportsThinking: false,
-        });
-        // Register tools if model already loaded
-        registerChatTools();
-        const tools = RunAnywhere.getRegisteredTools();
-        setRegisteredToolCount(tools.length);
-        console.warn('[ChatScreen] Model loaded from previous session. For LFM2 tool calling, please select the model again.');
-      }
+      const isLoaded = await isModelLoadedForCategory(
+        ModelCategory.MODEL_CATEGORY_LANGUAGE
+      );
+      logDiagnostic('[ChatScreen] Text model loaded:', isLoaded);
     } catch (error) {
       console.warn('[ChatScreen] Error checking model status:', error);
     }
@@ -347,57 +276,63 @@ export const ChatScreen: React.FC = () => {
    * Handle model selected from the sheet
    */
   const handleModelSelected = useCallback(async (model: SDKModelInfo) => {
-    // Close the modal first to prevent UI issues
-    setShowModelSelection(false);
-    // Then load the model
+    // The sheet shows its own Loading spinner during the await; once the model
+    // is loaded we close it so the user lands directly in the chat.
     await loadModel(model);
+    setShowModelSelection(false);
   }, []);
 
   /**
    * Load a model using the SDK
+   *
+   * Path-first loading was removed in V2 — model ID is the canonical handle
+   * and the native registry resolves the artifact path internally.
    */
   const loadModel = async (model: SDKModelInfo) => {
     try {
       setIsModelLoading(true);
-      console.warn(
-        `[ChatScreen] Loading model: ${model.id} from ${model.localPath}`
+      logDiagnostic(
+        `[ChatScreen] Loading model: ${model.id} (registry will resolve path)`
       );
 
-      if (!model.localPath) {
+      if (!model.isDownloaded && !model.localPath) {
         Alert.alert(
           'Error',
-          'Model path not found. Please re-download the model.'
+          'Model has not been downloaded. Open the model picker to download it first.'
         );
         return;
       }
 
-      const success = await RunAnywhere.loadModel(model.localPath);
+      const result = await loadModelWithRequest(
+        ModelLoadRequest.fromPartial({
+          modelId: model.id,
+          category: ModelCategory.MODEL_CATEGORY_LANGUAGE,
+          forceReload: false,
+          validateAvailability: true,
+        })
+      );
 
-      if (success) {
-        // Set the model info with actual ID and name for format detection
-        const modelInfo = {
-          id: model.id,
-          name: model.name,
-          category: ModelCategory.Language,
-          compatibleFrameworks: [LLMFramework.LlamaCpp],
-          preferredFramework: LLMFramework.LlamaCpp,
+      if (result.success) {
+        // Set the model info preserving the actual framework from the SDK model
+        const fw = getPrimaryFramework(model);
+        const modelInfo: SDKModelInfo = {
+          ...model,
+          category: ModelCategory.MODEL_CATEGORY_LANGUAGE,
+          framework: model.framework || fw,
+          preferredFramework: fw,
           isDownloaded: true,
           isAvailable: true,
-          supportsThinking: false,
+          supportsThinking: model.supportsThinking ?? false,
         };
         setCurrentModel(modelInfo);
-        
-        // Log model info for format detection debugging
-        const format = detectToolCallFormat(model.id, model.name);
-        console.warn(`[ChatScreen] Model loaded: id="${model.id}", name="${model.name}", detected format="${format}"`);
-        
-        // Register tools when model loads
-        registerChatTools();
-        const tools = RunAnywhere.getRegisteredTools();
+
+        // Reflect the tool count that Settings has registered (read-only here).
+        const tools = await RunAnywhere.getRegisteredTools();
         setRegisteredToolCount(tools.length);
-        console.warn('[ChatScreen] Tools registered:', tools.length, 'tools');
       } else {
-        const lastError = await RunAnywhere.getLastError();
+        const lastError =
+          result.errorMessage ||
+          'Native model lifecycle returned an unsuccessful load result';
         Alert.alert(
           'Error',
           `Failed to load model: ${lastError || 'Unknown error'}`
@@ -411,139 +346,320 @@ export const ChatScreen: React.FC = () => {
     }
   };
 
+  // Tool-calling toggle (mirrors Android viewModel.toolsEnabled). Persisted so
+  // it survives navigation; the input bar's tool button flips it.
+  useEffect(() => {
+    AsyncStorage.getItem(APP_STORAGE_KEYS.TOOL_CALLING_ENABLED).then((v) =>
+      setToolsEnabled(v === 'true')
+    );
+  }, []);
+
+  const handleToggleTools = useCallback(() => {
+    setToolsEnabled((prev) => {
+      const next = !prev;
+      void AsyncStorage.setItem(
+        APP_STORAGE_KEYS.TOOL_CALLING_ENABLED,
+        next ? 'true' : 'false'
+      );
+      return next;
+    });
+  }, []);
+
   /**
-   * Send a message using the real SDK with tool calling support
-   * Uses RunAnywhere.generateWithTools() for AI that can take actions
+   * Send a message and stream the response token-by-token.
+   * Uses RunAnywhere.generateStream() for real-time streaming UI.
    *
-   * Example: "What's the weather in Tokyo?"
-   * → LLM calls get_weather tool → Real API call → Final response
+   * generateWithTools() is still available on RunAnywhere for callers
+   * that genuinely need the batch tool-calling form. An optional prompt
+   * override lets prompt-suggestion pills send their text directly.
    */
-  const handleSend = useCallback(async () => {
-    if (!inputText.trim() || !currentConversation) return;
+  const handleSend = useCallback(
+    async (promptOverride?: string) => {
+      const text = (
+        typeof promptOverride === 'string' ? promptOverride : inputText
+      ).trim();
+      if (isLoading || !text || !currentConversation) return;
 
-    const userMessage: Message = {
-      id: generateId(),
-      role: MessageRole.User,
-      content: inputText.trim(),
-      timestamp: new Date(),
-    };
-
-    // Add user message to conversation
-    await addMessage(userMessage, currentConversation.id);
-    const prompt = inputText.trim();
-    setInputText('');
-    setIsLoading(true);
-
-    // Create placeholder assistant message
-    const assistantMessageId = generateId();
-    const assistantMessage: Message = {
-      id: assistantMessageId,
-      role: MessageRole.Assistant,
-      content: 'Thinking...',
-      timestamp: new Date(),
-    };
-    await addMessage(assistantMessage, currentConversation.id);
-
-    // Scroll to bottom
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-
-    try {
-      // Detect tool call format based on loaded model (matches iOS LLMViewModel+ToolCalling.swift)
-      const format = detectToolCallFormat(currentModel?.id, currentModel?.name);
-      console.log('[ChatScreen] Starting generation with tools for:', prompt, 'model:', currentModel?.id, 'format:', format);
-
-      // Get user-configured generation options
-      const options = await getGenerationOptions();
-
-      // Use tool-enabled generation
-      // If the LLM needs to call a tool (like weather API), it happens automatically
-      const result = await RunAnywhere.generateWithTools(prompt, {
-        autoExecute: true,
-        maxToolCalls: 3,
-        maxTokens: options.maxTokens,
-        temperature: options.temperature,
-        systemPrompt: options.systemPrompt,
-        format: format,
-      });
-
-      // Log tool usage for debugging
-      if (result.toolCalls.length > 0) {
-        console.log('[ChatScreen] Tools used:', result.toolCalls.map(t => t.toolName));
-        console.log('[ChatScreen] Tool results:', result.toolResults);
-      }
-
-      // Build final message content
-      let finalContent = result.text || '(No response generated)';
-
-      // Extract tool call info from result (matching iOS implementation)
-      let toolCallInfo: ToolCallInfo | undefined;
-      if (result.toolCalls.length > 0) {
-        const lastToolCall = result.toolCalls[result.toolCalls.length - 1];
-        const lastToolResult = result.toolResults[result.toolResults.length - 1];
-        
-        toolCallInfo = {
-          toolName: lastToolCall.toolName,
-          arguments: JSON.stringify(lastToolCall.arguments, null, 2),
-          result: lastToolResult?.success 
-            ? JSON.stringify(lastToolResult.result, null, 2)
-            : undefined,
-          success: lastToolResult?.success ?? false,
-          error: lastToolResult?.error,
-        };
-        
-        console.log('[ChatScreen] Created toolCallInfo:', toolCallInfo.toolName, 'success:', toolCallInfo.success);
-      }
-
-      // Update with final message
-      const finalMessage: Message = {
-        id: assistantMessageId,
-        role: MessageRole.Assistant,
-        content: finalContent,
+      const userMessage: Message = {
+        id: generateId(),
+        role: MessageRole.User,
+        content: text,
         timestamp: new Date(),
-        toolCallInfo, // Attach tool call info to message
-        modelInfo: {
-          modelId: currentModel?.id || 'unknown',
-          modelName: currentModel?.name || 'Unknown Model',
-          framework: 'llama.cpp',
-          frameworkDisplayName: 'llama.cpp',
-        },
-        analytics: {
-          totalGenerationTime: 0,
-          inputTokens: Math.ceil(prompt.length / 4),
-          outputTokens: Math.ceil(finalContent.length / 4),
-          averageTokensPerSecond: 0,
-          completionStatus: 'completed',
-          wasThinkingMode: false,
-          wasInterrupted: false,
-          retryCount: 0,
-        },
       };
 
-      updateMessage(finalMessage, currentConversation.id);
+      // Add user message to conversation
+      await addMessage(userMessage, currentConversation.id);
+      const prompt = text;
+      setInputText('');
+      setIsLoading(true);
 
-      // Final scroll to bottom
+      const assistantMessageId = generateId();
+      let assistantMessageInserted = false;
+
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
-    } catch (error) {
-      console.error('[ChatScreen] Generation error:', error);
 
-      // Update the placeholder message with error
-      updateMessage(
-        {
+      try {
+        // Get user-configured generation options
+        const options = await getGenerationOptions();
+
+        // eslint-disable-next-line no-console -- demo generation diagnostic
+        console.log(
+          '[ChatScreen] Starting streaming generation for:',
+          prompt,
+          'model:',
+          currentModel?.id
+        );
+
+        const registeredTools = await RunAnywhere.getRegisteredTools();
+        const shouldUseTools = toolsEnabled && registeredTools.length > 0;
+        const supportsThinking = currentModel?.supportsThinking ?? false;
+        const wasThinkingMode = supportsThinking && options.thinkingModeEnabled;
+        const disableThinking =
+          supportsThinking && !options.thinkingModeEnabled;
+        const generationStartMs = Date.now();
+        const abortController = new AbortController();
+        generationAbortRef.current = abortController;
+
+        const genOptions = LLMGenerationOptions.fromPartial({
+          maxTokens: options.maxTokens ?? 512,
+          temperature: options.temperature ?? 0.7,
+          topP: 1.0,
+          topK: 0,
+          repetitionPenalty: 1.0,
+          stopSequences: [],
+          streamingEnabled: true,
+          systemPrompt: options.systemPrompt,
+          enableRealTimeTracking: false,
+          seed: 0,
+          frequencyPenalty: 0,
+          presencePenalty: 0,
+          repeatLastN: 0,
+          minP: 0,
+          echoPrompt: false,
+          nThreads: 0,
+          disableThinking,
+        });
+
+        const frameworkName = RunAnywhere.formatFramework(
+          currentModel?.preferredFramework ?? currentModel?.framework
+        );
+
+        // Insert the initial empty assistant message once (matches iOS two-phase pattern).
+        const initialAssistantMessage: Message = {
           id: assistantMessageId,
           role: MessageRole.Assistant,
-          content: `Error: ${error}\n\nThis likely means no LLM model is loaded. Load a model first.`,
+          content: '',
           timestamp: new Date(),
-        },
-        currentConversation.id
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, [inputText, currentConversation, currentModel, addMessage, updateMessage]);
+          isStreaming: true,
+          modelInfo: {
+            modelId: currentModel?.id || 'unknown',
+            modelName: currentModel?.name || 'Unknown Model',
+            framework: frameworkName,
+            frameworkDisplayName: frameworkName,
+          },
+        };
+        await addMessage(initialAssistantMessage, currentConversation.id);
+        assistantMessageInserted = true;
+
+        let finalMessage: Message;
+        if (shouldUseTools) {
+          const toolOptions = ToolCallingOptions.fromPartial({
+            tools: registeredTools,
+            autoExecute: true,
+            maxToolCalls: 5,
+            keepToolsAvailable: false,
+            format: ToolCallFormatName.TOOL_CALL_FORMAT_NAME_UNSPECIFIED,
+            maxTokens: options.maxTokens,
+            temperature: options.temperature,
+            systemPrompt: options.systemPrompt,
+            disableThinking,
+          });
+          const result = await RunAnywhere.generateWithTools(
+            prompt,
+            toolOptions,
+            {
+              signal: abortController.signal,
+              llmOptions: {
+                maxTokens: options.maxTokens,
+                temperature: options.temperature,
+                topP: 1.0,
+                systemPrompt: options.systemPrompt,
+              },
+            }
+          );
+          const finalContent =
+            result.text || result.rawText || '(No response generated)';
+          const elapsedMs = Date.now() - generationStartMs;
+          const estimatedTokens = Math.max(
+            1,
+            Math.floor(finalContent.length / 4)
+          );
+
+          finalMessage = {
+            id: assistantMessageId,
+            role: MessageRole.Assistant,
+            content: finalContent,
+            thinkingContent: result.thinkingContent,
+            timestamp: new Date(),
+            modelInfo: {
+              modelId: currentModel?.id || 'unknown',
+              modelName: currentModel?.name || 'Unknown Model',
+              framework: frameworkName,
+              frameworkDisplayName: frameworkName,
+            },
+            toolCallInfo: makeToolCallInfo(result),
+            analytics: {
+              performance: {
+                latencyMs: elapsedMs,
+                memoryBytes: 0,
+                throughputTokensPerSec:
+                  elapsedMs > 0 ? estimatedTokens / (elapsedMs / 1000) : 0,
+                promptTokens: Math.max(1, Math.floor(prompt.length / 4)),
+                completionTokens: estimatedTokens,
+              },
+              completionStatus: result.errorMessage ? 'error' : 'completed',
+              wasThinkingMode,
+              wasInterrupted: false,
+              retryCount: 0,
+            },
+          };
+        } else {
+          let accumulatedText = '';
+
+          // Stream tokens as they arrive — canonical cross-SDK path. We drive
+          // the SDK's `aggregateStream(prompt, events, onToken)` helper exactly
+          // like iOS LLMViewModel+Generation.swift.
+          const eventStream = RunAnywhere.generateStream(prompt, genOptions);
+          const result = await RunAnywhere.aggregateStream(
+            prompt,
+            eventStream,
+            async (transcript) => {
+              accumulatedText = transcript;
+              updateMessage(
+                {
+                  id: assistantMessageId,
+                  role: MessageRole.Assistant,
+                  content: accumulatedText,
+                  timestamp: new Date(),
+                  isStreaming: true,
+                  modelInfo: {
+                    modelId: currentModel?.id || 'unknown',
+                    modelName: currentModel?.name || 'Unknown Model',
+                    framework: frameworkName,
+                    frameworkDisplayName: frameworkName,
+                  },
+                },
+                currentConversation.id
+              );
+              flatListRef.current?.scrollToEnd({ animated: false });
+              await new Promise<void>((resolve) => setTimeout(resolve, 0));
+            }
+          );
+
+          const finalContent =
+            result.text || accumulatedText || '(No response generated)';
+
+          // Build the final message with analytics and persist to disk once
+          // (mirrors iOS finalizeGeneration / updateConversation).
+          finalMessage = {
+            id: assistantMessageId,
+            role: MessageRole.Assistant,
+            content: finalContent,
+            thinkingContent: result.thinkingContent,
+            timestamp: new Date(),
+            modelInfo: {
+              modelId: currentModel?.id || 'unknown',
+              modelName: currentModel?.name || 'Unknown Model',
+              framework: frameworkName,
+              frameworkDisplayName: frameworkName,
+            },
+            analytics: {
+              performance: {
+                latencyMs: result.generationTimeMs,
+                memoryBytes: 0,
+                throughputTokensPerSec: result.tokensPerSecond,
+                promptTokens: result.inputTokens,
+                completionTokens: result.tokensGenerated,
+              },
+              timeToFirstToken: result.ttftMs,
+              thinkingTokens: result.thinkingTokens,
+              responseTokens: result.responseTokens,
+              completionStatus: result.errorMessage ? 'error' : 'completed',
+              wasThinkingMode,
+              wasInterrupted: false,
+              retryCount: 0,
+            },
+          };
+        }
+
+        // Apply analytics fields in-memory first, then persist once.
+        updateMessage(finalMessage, currentConversation.id);
+        const latestConversation = useConversationStore
+          .getState()
+          .conversations.find((c) => c.id === currentConversation.id);
+        if (latestConversation) {
+          await updateConversation(latestConversation);
+        }
+
+        // Final scroll to bottom
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+      } catch (error) {
+        console.error('[ChatScreen] Generation error:', error);
+
+        const wasStopped = generationAbortRef.current?.signal.aborted ?? false;
+        const errorContent = wasStopped
+          ? 'Generation stopped.'
+          : `Error: ${error}\n\nThis likely means no LLM model is loaded. Load a model first.`;
+        const errorMessage: Message = {
+          id: assistantMessageId,
+          role: MessageRole.Assistant,
+          content: errorContent,
+          timestamp: new Date(),
+          analytics: {
+            performance: {
+              latencyMs: 0,
+              memoryBytes: 0,
+              throughputTokensPerSec: 0,
+              promptTokens: 0,
+              completionTokens: 0,
+            },
+            completionStatus: wasStopped ? 'interrupted' : 'error',
+            wasThinkingMode: false,
+            wasInterrupted: wasStopped,
+            retryCount: 0,
+          },
+        };
+        if (assistantMessageInserted) {
+          updateMessage(errorMessage, currentConversation.id);
+        } else {
+          await addMessage(errorMessage, currentConversation.id);
+        }
+      } finally {
+        generationAbortRef.current = null;
+        setIsLoading(false);
+      }
+    },
+    [
+      isLoading,
+      inputText,
+      currentConversation,
+      currentModel,
+      toolsEnabled,
+      addMessage,
+      updateMessage,
+      updateConversation,
+    ]
+  );
+
+  const handleStopGeneration = useCallback(() => {
+    generationAbortRef.current?.abort();
+    void RunAnywhere.cancelGeneration();
+    setIsLoading(false);
+  }, []);
 
   /**
    * Create a new conversation (clears current chat)
@@ -551,6 +667,16 @@ export const ChatScreen: React.FC = () => {
   const handleNewChat = useCallback(async () => {
     await createConversation();
   }, [createConversation]);
+
+  // Expose test helpers for E2E automation via Hermes debugger
+  useEffect(() => {
+    if (__DEV__) {
+      const g = globalThis as unknown as Record<string, unknown>;
+      g.__testNewChat = handleNewChat;
+      g.__testSend = handleSend;
+      g.__testSetInput = setInputText;
+    }
+  }, [handleNewChat, handleSend]);
 
   /**
    * Handle selecting a conversation from the list
@@ -599,133 +725,111 @@ export const ChatScreen: React.FC = () => {
    * Render header with actions
    */
   const renderHeader = () => (
-    <View style={styles.header}>
-      {/* Conversations list button */}
-      <TouchableOpacity
-        style={styles.headerButton}
-        onPress={() => setShowConversationList(true)}
-      >
-        <Icon name="list" size={22} color={Colors.primaryBlue} />
-      </TouchableOpacity>
-
-      {/* Title with conversation count */}
-      <View style={styles.titleContainer}>
-        <Text style={styles.title}>Chat</Text>
-        {conversations.length > 1 && (
-          <Text style={styles.conversationCount}>
-            {conversations.length} conversations
-          </Text>
-        )}
-      </View>
-
-      <View style={styles.headerActions}>
-        {/* New chat button */}
-        <TouchableOpacity style={styles.headerButton} onPress={handleNewChat}>
-          <Icon name="add" size={24} color={Colors.primaryBlue} />
-        </TouchableOpacity>
-
-        {/* Info button for chat analytics */}
-        <TouchableOpacity
-          style={[
-            styles.headerButton,
-            messages.length === 0 && styles.headerButtonDisabled,
-          ]}
-          onPress={handleShowAnalytics}
-          disabled={messages.length === 0}
-        >
-          <Icon
-            name="information-circle-outline"
-            size={22}
-            color={
-              messages.length > 0 ? Colors.primaryBlue : Colors.textTertiary
-            }
-          />
-        </TouchableOpacity>
-      </View>
-    </View>
+    <ChatHeader
+      modelName={currentModel?.name}
+      ready={!!currentModel}
+      generating={isLoading}
+      hasMessages={messages.length > 0}
+      onModelPress={handleSelectModel}
+      onAnalytics={handleShowAnalytics}
+      onHistory={() => setShowConversationList(true)}
+      onNewChat={handleNewChat}
+    />
   );
 
-  // Show model required overlay if no model
-  if (!currentModel && !isModelLoading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        {renderHeader()}
-        <ModelRequiredOverlay
-          modality={ModelModality.LLM}
-          onSelectModel={handleSelectModel}
-        />
-
-        {/* Conversation List Modal */}
-        <Modal
-          visible={showConversationList}
-          animationType="slide"
-          presentationStyle="pageSheet"
-          onRequestClose={() => setShowConversationList(false)}
-        >
-          <ConversationListScreen
-            onClose={() => setShowConversationList(false)}
-            onSelectConversation={handleSelectConversation}
-          />
-        </Modal>
-
-        {/* Model Selection Sheet */}
-        <ModelSelectionSheet
-          visible={showModelSelection}
-          context={ModelSelectionContext.LLM}
-          onClose={() => setShowModelSelection(false)}
-          onModelSelected={handleModelSelected}
-        />
-      </SafeAreaView>
-    );
-  }
+  const showOverlay = !currentModel && !isModelLoading;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['left', 'right']}>
       {renderHeader()}
 
-      {/* Model Status Banner */}
-      <ModelStatusBanner
-        modelName={currentModel?.name}
-        framework={currentModel?.preferredFramework}
-        isLoading={isModelLoading}
-        onSelectModel={handleSelectModel}
-      />
+      {showOverlay ? (
+        <ModelRequiredOverlay
+          modality="llm"
+          onSelectModel={handleSelectModel}
+        />
+      ) : (
+        <>
+          {/* Messages List */}
+          <FlatList
+            ref={flatListRef}
+            style={styles.list}
+            data={messages}
+            renderItem={renderMessage}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={[
+              styles.messagesList,
+              messages.length === 0 && styles.emptyList,
+            ]}
+            ListEmptyComponent={renderEmptyState}
+            showsVerticalScrollIndicator={false}
+          />
 
-      {/* Messages List */}
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        renderItem={renderMessage}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={[
-          styles.messagesList,
-          messages.length === 0 && styles.emptyList,
-        ]}
-        ListEmptyComponent={renderEmptyState}
-        showsVerticalScrollIndicator={false}
-      />
+          {/* Tool Calling Badge (shows when tools are enabled) */}
+          {currentModel && registeredToolCount > 0 && (
+            <ToolCallingBadge toolCount={registeredToolCount} />
+          )}
 
-      {/* Typing Indicator */}
-      {isLoading && <TypingIndicator />}
+          {/* LoRA pill (mirrors iOS ChatMessageListView's LoRA row above input) */}
+          {currentModel && (
+            <View style={styles.loraRow}>
+              <TouchableOpacity
+                style={[
+                  styles.loraPill,
+                  loraAdapterCount > 0 && styles.loraPillActive,
+                ]}
+                onPress={() => setShowLoRASheet(true)}
+              >
+                <Icon
+                  name="sparkles"
+                  size={14}
+                  color={
+                    loraAdapterCount > 0
+                      ? Colors.textWhite
+                      : Colors.primaryPurple
+                  }
+                />
+                <Text
+                  style={[
+                    styles.loraPillText,
+                    loraAdapterCount > 0 && styles.loraPillTextActive,
+                  ]}
+                >
+                  {loraAdapterCount > 0
+                    ? `LoRA x${loraAdapterCount}`
+                    : '+ LoRA'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
-      {/* Tool Calling Badge (shows when tools are enabled) */}
-      {currentModel && registeredToolCount > 0 && (
-        <ToolCallingBadge toolCount={registeredToolCount} />
+          {/* Example prompts (mode follows tool/LoRA state), shown on an empty chat */}
+          {currentModel && messages.length === 0 && (
+            <PromptSuggestions
+              toolsEnabled={toolsEnabled}
+              loraActive={loraAdapterCount > 0}
+              onSelect={(p) => void handleSend(p)}
+            />
+          )}
+
+          {/* Input Area */}
+          <ChatInput
+            value={inputText}
+            onChangeText={setInputText}
+            onSend={handleSend}
+            onStop={handleStopGeneration}
+            disabled={!currentModel || !currentConversation}
+            isLoading={isLoading}
+            toolsEnabled={toolsEnabled}
+            onToggleTools={currentModel ? handleToggleTools : undefined}
+            placeholder={
+              currentModel
+                ? 'Type a message...'
+                : 'Select a model to start chatting'
+            }
+          />
+        </>
       )}
-
-      {/* Input Area */}
-      <ChatInput
-        value={inputText}
-        onChangeText={setInputText}
-        onSend={handleSend}
-        disabled={!currentModel || !currentConversation}
-        isLoading={isLoading}
-        placeholder={
-          currentModel
-            ? 'Type a message...'
-            : 'Select a model to start chatting'
-        }
-      />
 
       {/* Analytics Modal */}
       <Modal
@@ -740,23 +844,26 @@ export const ChatScreen: React.FC = () => {
         />
       </Modal>
 
-      {/* Conversation List Modal */}
-      <Modal
+      {/* LoRA Adapter Management Sheet */}
+      <LoRASheet
+        visible={showLoRASheet}
+        modelId={currentModel?.id ?? null}
+        onClose={() => setShowLoRASheet(false)}
+        onAdaptersChanged={(adapters) => setLoraAdapterCount(adapters.length)}
+      />
+
+      {/* Conversation history sheet */}
+      <ConversationListScreen
         visible={showConversationList}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowConversationList(false)}
-      >
-        <ConversationListScreen
-          onClose={() => setShowConversationList(false)}
-          onSelectConversation={handleSelectConversation}
-        />
-      </Modal>
+        onClose={() => setShowConversationList(false)}
+        onSelectConversation={handleSelectConversation}
+      />
 
       {/* Model Selection Sheet */}
       <ModelSelectionSheet
         visible={showModelSelection}
         context={ModelSelectionContext.LLM}
+        activeModelId={currentModel?.id ?? null}
         onClose={() => setShowModelSelection(false)}
         onModelSelected={handleModelSelected}
       />
@@ -774,7 +881,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Padding.padding16,
-    paddingVertical: Padding.padding12,
+    paddingTop: 0,
+    paddingBottom: Padding.padding12,
     borderBottomWidth: 1,
     borderBottomColor: Colors.borderLight,
   },
@@ -801,11 +909,14 @@ const styles = StyleSheet.create({
   headerButtonDisabled: {
     opacity: 0.5,
   },
+  list: {
+    flex: 1,
+  },
   messagesList: {
     paddingVertical: Spacing.medium,
   },
   emptyList: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
   },
   emptyState: {
@@ -831,6 +942,32 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: 'center',
     maxWidth: 280,
+  },
+  loraRow: {
+    flexDirection: 'row',
+    paddingHorizontal: Padding.padding16,
+    paddingTop: 2,
+    paddingBottom: 6,
+  },
+  loraPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderColor: Colors.primaryPurple,
+    borderRadius: 14,
+    paddingHorizontal: Padding.padding12,
+    paddingVertical: 4,
+  },
+  loraPillActive: {
+    backgroundColor: Colors.primaryPurple,
+  },
+  loraPillText: {
+    ...Typography.caption2,
+    color: Colors.primaryPurple,
+  },
+  loraPillTextActive: {
+    color: Colors.textWhite,
   },
 });
 

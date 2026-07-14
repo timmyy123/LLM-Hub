@@ -12,10 +12,10 @@ class KeychainService {
 
   KeychainService._();
 
+  // flutter_secure_storage 10.3 uses its supported custom Android ciphers;
+  // the deprecated Jetpack Security option is intentionally absent.
   final FlutterSecureStorage _storage = const FlutterSecureStorage(
-    aOptions: AndroidOptions(
-      encryptedSharedPreferences: true,
-    ),
+    aOptions: AndroidOptions(),
     iOptions: IOSOptions(
       accessibility: KeychainAccessibility.first_unlock_this_device,
     ),
@@ -67,16 +67,6 @@ class KeychainService {
     } catch (e) {
       throw KeychainError.deleteFailed;
     }
-  }
-
-  /// Check if a key exists in keychain
-  Future<bool> containsKey(String key) {
-    return _storage.containsKey(key: key);
-  }
-
-  /// Delete all data from keychain
-  Future<void> deleteAll() async {
-    await _storage.deleteAll();
   }
 }
 

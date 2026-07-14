@@ -5,12 +5,14 @@ import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
 
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:ffi/ffi.dart';
-import 'package:http/http.dart' as http;
 
+import 'package:runanywhere/adapters/http_client_adapter.dart';
+import 'package:runanywhere/core/native/rac_native.dart';
+import 'package:runanywhere/foundation/constants/sdk_constants.dart';
 import 'package:runanywhere/foundation/logging/sdk_logger.dart';
-import 'package:runanywhere/native/ffi_types.dart';
+import 'package:runanywhere/native/dart_bridge_device.dart';
+import 'package:runanywhere/native/dart_bridge_environment.dart';
 import 'package:runanywhere/native/platform_loader.dart';
 import 'package:runanywhere/public/configuration/sdk_environment.dart';
 
@@ -40,11 +42,10 @@ class DartBridgeTelemetry {
   static bool _isInitialized = false;
   // ignore: unused_field
   static SDKEnvironment? _environment;
-  static String? _baseURL;
-  static String? _accessToken;
   static Pointer<Void>? _managerPtr;
-  static Pointer<NativeFunction<RacTelemetryHttpCallbackNative>>?
-      _httpCallbackPtr;
+  static NativeCallable<Void Function(Pointer<Void>)>? _httpWakeup;
+  static final Set<Future<void>> _inFlightHttpRequests = {};
+  static bool _acceptingHttpRequests = false;
 
   // ============================================================================
   // Lifecycle
@@ -65,439 +66,257 @@ class DartBridgeTelemetry {
     if (_isInitialized && _managerPtr != null) {
       try {
         final lib = PlatformLoader.loadCommons();
-        final flushFn = lib.lookupFunction<Int32 Function(Pointer<Void>),
-            int Function(Pointer<Void>)>('rac_telemetry_manager_flush');
+        final flushFn = lib
+            .lookupFunction<
+              Int32 Function(Pointer<Void>),
+              int Function(Pointer<Void>)
+            >('rac_telemetry_manager_flush');
         flushFn(_managerPtr!);
         _logger.debug('Telemetry flushed');
-      } catch (e) {
-        _logger.debug('flush error: $e');
+      } catch (_) {
+        _logger.debug('Telemetry flush failed');
       }
     }
   }
 
-  /// Initialize telemetry manager with device info (full async init)
+  /// Create the telemetry manager and attach it as the C++ event router's
+  /// telemetry sink, in Phase 1 — BEFORE commons emits the
+  /// INITIALIZATION_STAGE_STARTED/COMPLETED events from rac_sdk_init_phase1_proto.
+  /// Without this the "system" modality never lands: those init events fire
+  /// during Phase-1 core init, and if the sink is only attached in Phase 2 they
+  /// hit a null sink and are dropped. The manager queues events immediately;
+  /// the actual flush still waits for Phase 2 (HTTP layer configured). Device
+  /// info (async model lookup) is filled in later by [initialize].
+  static void attachSinkPhase1({
+    required SDKEnvironment environment,
+    required String deviceId,
+  }) {
+    if (_managerPtr != null) return;
+    _environment = environment;
+    try {
+      _createManagerAndAttach(
+        PlatformLoader.loadCommons(),
+        environment,
+        deviceId,
+      );
+      _logger.debug('Telemetry sink attached in Phase 1');
+    } catch (_) {
+      _logger.debug('Phase-1 telemetry attach failed');
+    }
+  }
+
+  /// Create the manager (env/device/platform/sdk), register the HTTP wake-up,
+  /// and attach the telemetry sink. Shared by [attachSinkPhase1] (Phase 1) and
+  /// the [initialize] fallback (when Phase-1 attach didn't run). Does NOT set
+  /// device info or mark initialized.
+  static void _createManagerAndAttach(
+    DynamicLibrary lib,
+    SDKEnvironment environment,
+    String deviceId,
+  ) {
+    final sdkVersion = SDKConstants.version;
+    // platform is the OS family (matches iOS "ios"/"macos", Kotlin "android",
+    // and the backend telemetry_events.platform contract), NOT the binding.
+    final platform = Platform.isAndroid
+        ? 'android'
+        : Platform.isIOS
+        ? 'ios'
+        : Platform.isMacOS
+        ? 'macos'
+        : 'flutter';
+
+    final createManager = lib
+        .lookupFunction<
+          Pointer<Void> Function(
+            Int32,
+            Pointer<Utf8>,
+            Pointer<Utf8>,
+            Pointer<Utf8>,
+          ),
+          Pointer<Void> Function(
+            int,
+            Pointer<Utf8>,
+            Pointer<Utf8>,
+            Pointer<Utf8>,
+          )
+        >('rac_telemetry_manager_create');
+
+    final deviceIdPtr = deviceId.toNativeUtf8();
+    final platformPtr = platform.toNativeUtf8();
+    final sdkVersionPtr = sdkVersion.toNativeUtf8();
+    try {
+      final ptr = createManager(
+        _environmentToInt(environment),
+        deviceIdPtr,
+        platformPtr,
+        sdkVersionPtr,
+      );
+      if (ptr == nullptr) {
+        _logger.warning('Failed to create telemetry manager');
+        return;
+      }
+      _managerPtr = ptr;
+      _acceptingHttpRequests = true;
+      // Register the HTTP wake-up + attach the sink so the router feeds events
+      // into the manager (queued until Phase-2 flush).
+      _registerHttpCallback();
+      _setTelemetrySink(ptr);
+    } finally {
+      calloc.free(deviceIdPtr);
+      calloc.free(platformPtr);
+      calloc.free(sdkVersionPtr);
+    }
+  }
+
+  /// Complete telemetry init (Phase 2): fill in device info. Reuses the manager
+  /// created in Phase 1 via [attachSinkPhase1]; only creates one here as a
+  /// fallback (gated on a real baseURL) if Phase-1 attach never ran.
   static Future<void> initialize({
     required SDKEnvironment environment,
     required String deviceId,
     String? baseURL,
-    String? accessToken,
   }) async {
     if (_isInitialized) {
       _logger.debug('Telemetry already initialized');
       return;
     }
-
     _environment = environment;
-    _baseURL = baseURL;
-    _accessToken = accessToken;
 
     try {
       final lib = PlatformLoader.loadCommons();
 
-      // Get device info
-      final deviceModel = await _getDeviceModel();
-      final osVersion = Platform.operatingSystemVersion;
-      const sdkVersion = '0.1.4';
-      const platform = 'flutter';
-
-      // Create telemetry manager
-      final createManager = lib.lookupFunction<
-          Pointer<Void> Function(
-              Int32, Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>),
-          Pointer<Void> Function(int, Pointer<Utf8>, Pointer<Utf8>,
-              Pointer<Utf8>)>('rac_telemetry_manager_create');
-
-      final envValue = _environmentToInt(environment);
-      final deviceIdPtr = deviceId.toNativeUtf8();
-      final platformPtr = platform.toNativeUtf8();
-      final sdkVersionPtr = sdkVersion.toNativeUtf8();
-
-      try {
-        _managerPtr =
-            createManager(envValue, deviceIdPtr, platformPtr, sdkVersionPtr);
-
-        if (_managerPtr == nullptr ||
-            _managerPtr == Pointer<Void>.fromAddress(0)) {
-          _logger.warning('Failed to create telemetry manager');
+      if (_managerPtr == null) {
+        // Fallback: Phase-1 attach didn't run. The auth token isn't available
+        // yet (applied at send time — Kotlin parity); only the baseURL must be
+        // real, else creating a manager that can never flush is wasteful.
+        if (!DartBridgeDevConfig.isUsableCredential(baseURL)) {
+          _logger.warning(
+            'Telemetry skipped — baseURL looks like a placeholder. '
+            'Set a real base URL via dart-define or runtime config.',
+          );
+          _isInitialized = true; // Suppress retry.
           return;
         }
-
-        // Set device info
-        final setDeviceInfo = lib.lookupFunction<
-            Void Function(Pointer<Void>, Pointer<Utf8>, Pointer<Utf8>),
-            void Function(Pointer<Void>, Pointer<Utf8>,
-                Pointer<Utf8>)>('rac_telemetry_manager_set_device_info');
-
-        final deviceModelPtr = deviceModel.toNativeUtf8();
-        final osVersionPtr = osVersion.toNativeUtf8();
-
-        setDeviceInfo(_managerPtr!, deviceModelPtr, osVersionPtr);
-
-        calloc.free(deviceModelPtr);
-        calloc.free(osVersionPtr);
-
-        // Register HTTP callback
-        _registerHttpCallback();
-
-        _isInitialized = true;
-        _logger.debug('Telemetry manager initialized');
-      } finally {
-        calloc.free(deviceIdPtr);
-        calloc.free(platformPtr);
-        calloc.free(sdkVersionPtr);
+        _createManagerAndAttach(lib, environment, deviceId);
       }
-    } catch (e, stack) {
-      _logger.debug('Telemetry initialization error: $e', metadata: {
-        'stack': stack.toString(),
-      });
+
+      if (_managerPtr == null || _managerPtr == nullptr) {
+        _isInitialized = true;
+        return;
+      }
+
+      // Device info — the model lookup is async, so it only happens here in
+      // Phase 2 (the Phase-1 attach creates the manager without it).
+      final deviceModel = await _getDeviceModel();
+      final osVersion = Platform.operatingSystemVersion;
+      final setDeviceInfo = lib
+          .lookupFunction<
+            Void Function(Pointer<Void>, Pointer<Utf8>, Pointer<Utf8>),
+            void Function(Pointer<Void>, Pointer<Utf8>, Pointer<Utf8>)
+          >('rac_telemetry_manager_set_device_info');
+      final deviceModelPtr = deviceModel.toNativeUtf8();
+      final osVersionPtr = osVersion.toNativeUtf8();
+      setDeviceInfo(_managerPtr!, deviceModelPtr, osVersionPtr);
+      calloc.free(deviceModelPtr);
+      calloc.free(osVersionPtr);
+
+      _isInitialized = true;
+      _logger.debug('Telemetry manager initialized');
+    } catch (_) {
+      _logger.debug('Telemetry initialization failed');
       _isInitialized = true; // Avoid retry loops
     }
   }
 
   /// Shutdown telemetry manager
-  static void shutdown() {
-    if (!_isInitialized || _managerPtr == null) return;
-
-    try {
-      final lib = PlatformLoader.loadCommons();
-      final destroy = lib.lookupFunction<Void Function(Pointer<Void>),
-          void Function(Pointer<Void>)>('rac_telemetry_manager_destroy');
-
-      destroy(_managerPtr!);
-      _managerPtr = null;
+  static Future<void> shutdown() async {
+    final managerPtr = _managerPtr;
+    if (managerPtr == null) {
       _isInitialized = false;
+      _environment = null;
+      _acceptingHttpRequests = false;
+      return;
+    }
+    var managerDestroyed = false;
+    try {
+      final lib = PlatformLoader.loadCommons();
+
+      // Detach the telemetry sink first so the C++ router stops feeding events
+      // into a manager we are about to destroy. This is a strict ownership
+      // boundary: on failure the pointer and wake-up callable stay alive so a
+      // fail-closed reset retry can quiesce them safely.
+      _setTelemetrySink(nullptr, requireSuccess: true);
+
+      try {
+        // Flush synchronously, then drain the manager-owned queue directly.
+        // NativeCallable.listener wake-ups are asynchronous, so closing the
+        // callable immediately after flush would otherwise drop the terminal
+        // shutdown batch.
+        final flush = lib
+            .lookupFunction<
+              Int32 Function(Pointer<Void>),
+              int Function(Pointer<Void>)
+            >('rac_telemetry_manager_flush');
+        flush(managerPtr);
+      } catch (_) {
+        _logger.debug('Telemetry flush failed during shutdown');
+      }
+      drainHttpQueue();
+      _acceptingHttpRequests = false;
+
+      // No later SDK lifetime may reuse HTTP credentials while an older
+      // telemetry request is still running. Requests swallow their own
+      // transport errors, so this join is deterministic.
+      while (_inFlightHttpRequests.isNotEmpty) {
+        await Future.wait(List<Future<void>>.of(_inFlightHttpRequests));
+      }
+
+      final destroy = lib
+          .lookupFunction<
+            Void Function(Pointer<Void>),
+            void Function(Pointer<Void>)
+          >('rac_telemetry_manager_destroy');
+      destroy(managerPtr);
+      managerDestroyed = true;
       _logger.debug('Telemetry manager shutdown');
-    } catch (e) {
-      _logger.debug('Telemetry shutdown error: $e');
+    } catch (_) {
+      _logger.error('Telemetry shutdown failed');
+      rethrow;
+    } finally {
+      if (managerDestroyed) {
+        if (_managerPtr == managerPtr) _managerPtr = null;
+        _isInitialized = false;
+        _environment = null;
+        _acceptingHttpRequests = false;
+        _httpWakeup?.close();
+        _httpWakeup = null;
+      }
     }
   }
 
-  /// Update access token
-  static void setAccessToken(String? token) {
-    _accessToken = token;
-  }
-
-  // ============================================================================
-  // Event Tracking
-  // ============================================================================
-
-  /// Track a telemetry event (via analytics event type)
-  Future<void> trackEvent({
-    required int eventType,
-    Map<String, dynamic>? data,
-  }) async {
-    if (!_isInitialized || _managerPtr == null) return;
-
+  /// Attach (or detach with [nullptr]) the telemetry manager as the C++ event
+  /// router's telemetry sink. Matches how the other one-shot C functions are
+  /// looked up in this file. The C signature is
+  /// `void rac_events_set_telemetry_sink(void* telemetry_manager)`.
+  static void _setTelemetrySink(
+    Pointer<Void> manager, {
+    bool requireSuccess = false,
+  }) {
     try {
       final lib = PlatformLoader.loadCommons();
-      final trackAnalytics = lib.lookupFunction<
-              Int32 Function(
-                  Pointer<Void>, Int32, Pointer<RacAnalyticsEventDataStruct>),
-              int Function(
-                  Pointer<Void>, int, Pointer<RacAnalyticsEventDataStruct>)>(
-          'rac_telemetry_manager_track_analytics');
-
-      // Build event data struct
-      final eventData = calloc<RacAnalyticsEventDataStruct>();
-      _populateEventData(eventData, data);
-
-      try {
-        final result = trackAnalytics(_managerPtr!, eventType, eventData);
-        if (result != RacResultCode.success) {
-          _logger.debug('Track event failed', metadata: {'code': result});
-        }
-      } finally {
-        _freeEventData(eventData);
-        calloc.free(eventData);
-      }
-    } catch (e) {
-      _logger.debug('trackEvent error: $e');
+      final setSink = lib
+          .lookupFunction<
+            Void Function(Pointer<Void>),
+            void Function(Pointer<Void>)
+          >('rac_events_set_telemetry_sink');
+      setSink(manager);
+      _logger.debug(
+        'Telemetry sink ${manager == nullptr ? "detached" : "attached"}',
+      );
+    } catch (_) {
+      _logger.debug('Failed to update telemetry sink');
+      if (requireSuccess) rethrow;
     }
-  }
-
-  /// Track a raw telemetry payload
-  Future<void> trackPayload(Map<String, dynamic> payload) async {
-    if (!_isInitialized || _managerPtr == null) return;
-
-    try {
-      final lib = PlatformLoader.loadCommons();
-      final trackFn = lib.lookupFunction<
-          Int32 Function(Pointer<Void>, Pointer<Utf8>),
-          int Function(Pointer<Void>,
-              Pointer<Utf8>)>('rac_telemetry_manager_track_json');
-
-      final jsonStr = jsonEncode(payload);
-      final jsonPtr = jsonStr.toNativeUtf8();
-
-      try {
-        trackFn(_managerPtr!, jsonPtr);
-      } finally {
-        calloc.free(jsonPtr);
-      }
-    } catch (e) {
-      _logger.debug('trackPayload error: $e');
-    }
-  }
-
-  /// Flush pending telemetry (instance method, delegates to static)
-  Future<void> flushAsync() async {
-    flush();
-  }
-
-  // ============================================================================
-  // Event Helpers (like Swift's emitDownloadStarted, etc.)
-  // ============================================================================
-
-  /// Emit download started event
-  Future<void> emitDownloadStarted({
-    required String modelId,
-    required String modelName,
-    required int modelSize,
-    required String framework,
-  }) async {
-    await trackEvent(
-      eventType: RacEventType.downloadStarted,
-      data: {
-        'modelId': modelId,
-        'modelName': modelName,
-        'modelSize': modelSize,
-        'framework': framework,
-      },
-    );
-  }
-
-  /// Emit download completed event
-  Future<void> emitDownloadCompleted({
-    required String modelId,
-    required String modelName,
-    required int modelSize,
-    required String framework,
-    required int durationMs,
-  }) async {
-    await trackEvent(
-      eventType: RacEventType.downloadCompleted,
-      data: {
-        'modelId': modelId,
-        'modelName': modelName,
-        'modelSize': modelSize,
-        'framework': framework,
-        'durationMs': durationMs,
-      },
-    );
-  }
-
-  /// Emit download failed event
-  Future<void> emitDownloadFailed({
-    required String modelId,
-    required String modelName,
-    required String error,
-    required String framework,
-  }) async {
-    await trackEvent(
-      eventType: RacEventType.downloadFailed,
-      data: {
-        'modelId': modelId,
-        'modelName': modelName,
-        'error': error,
-        'framework': framework,
-      },
-    );
-  }
-
-  /// Emit extraction started event
-  Future<void> emitExtractionStarted({
-    required String modelId,
-    required String modelName,
-    required String framework,
-  }) async {
-    await trackEvent(
-      eventType: RacEventType.extractionStarted,
-      data: {
-        'modelId': modelId,
-        'modelName': modelName,
-        'framework': framework,
-      },
-    );
-  }
-
-  /// Emit extraction completed event
-  Future<void> emitExtractionCompleted({
-    required String modelId,
-    required String modelName,
-    required String framework,
-    required int durationMs,
-  }) async {
-    await trackEvent(
-      eventType: RacEventType.extractionCompleted,
-      data: {
-        'modelId': modelId,
-        'modelName': modelName,
-        'framework': framework,
-        'durationMs': durationMs,
-      },
-    );
-  }
-
-  /// Emit SDK initialized event
-  Future<void> emitSDKInitialized({
-    required int durationMs,
-    required String environment,
-  }) async {
-    await trackEvent(
-      eventType: RacEventType.sdkInitialized,
-      data: {
-        'durationMs': durationMs,
-        'environment': environment,
-      },
-    );
-  }
-
-  /// Emit model loaded event
-  Future<void> emitModelLoaded({
-    required String modelId,
-    required String modelName,
-    required String framework,
-    required int durationMs,
-  }) async {
-    await trackEvent(
-      eventType: RacEventType.modelLoaded,
-      data: {
-        'modelId': modelId,
-        'modelName': modelName,
-        'framework': framework,
-        'durationMs': durationMs,
-      },
-    );
-  }
-
-  /// Emit inference completed event
-  Future<void> emitInferenceCompleted({
-    required String modelId,
-    required String modelName,
-    required String modality,
-    required int durationMs,
-    int? tokensGenerated,
-    double? tokensPerSecond,
-  }) async {
-    await trackEvent(
-      eventType: RacEventType.inferenceCompleted,
-      data: {
-        'modelId': modelId,
-        'modelName': modelName,
-        'modality': modality,
-        'durationMs': durationMs,
-        if (tokensGenerated != null) 'tokensGenerated': tokensGenerated,
-        if (tokensPerSecond != null) 'tokensPerSecond': tokensPerSecond,
-      },
-    );
-  }
-
-  // ============================================================================
-  // Storage Events (matches Swift CppBridge.Events)
-  // ============================================================================
-
-  /// Emit storage cache cleared event
-  Future<void> emitStorageCacheCleared({required int freedBytes}) async {
-    await trackEvent(
-      eventType: RacEventType.storageCacheCleared,
-      data: {'freedBytes': freedBytes},
-    );
-  }
-
-  /// Emit storage cache clear failed event
-  Future<void> emitStorageCacheClearFailed({required String error}) async {
-    await trackEvent(
-      eventType: RacEventType.storageCacheClearFailed,
-      data: {'error': error},
-    );
-  }
-
-  /// Emit storage temp cleaned event
-  Future<void> emitStorageTempCleaned({required int freedBytes}) async {
-    await trackEvent(
-      eventType: RacEventType.storageTempCleaned,
-      data: {'freedBytes': freedBytes},
-    );
-  }
-
-  // ============================================================================
-  // Voice Agent Events (matches Swift CppBridge.Events)
-  // ============================================================================
-
-  /// Emit voice agent turn started event
-  Future<void> emitVoiceAgentTurnStarted() async {
-    await trackEvent(
-      eventType: RacEventType.voiceAgentTurnStarted,
-      data: {},
-    );
-  }
-
-  /// Emit voice agent turn completed event
-  Future<void> emitVoiceAgentTurnCompleted({required int durationMs}) async {
-    await trackEvent(
-      eventType: RacEventType.voiceAgentTurnCompleted,
-      data: {'durationMs': durationMs},
-    );
-  }
-
-  /// Emit voice agent turn failed event
-  Future<void> emitVoiceAgentTurnFailed({required String error}) async {
-    await trackEvent(
-      eventType: RacEventType.voiceAgentTurnFailed,
-      data: {'error': error},
-    );
-  }
-
-  /// Emit voice agent STT state changed event
-  Future<void> emitVoiceAgentSttStateChanged({required String state}) async {
-    await trackEvent(
-      eventType: RacEventType.voiceAgentSttStateChanged,
-      data: {'state': state},
-    );
-  }
-
-  /// Emit voice agent LLM state changed event
-  Future<void> emitVoiceAgentLlmStateChanged({required String state}) async {
-    await trackEvent(
-      eventType: RacEventType.voiceAgentLlmStateChanged,
-      data: {'state': state},
-    );
-  }
-
-  /// Emit voice agent TTS state changed event
-  Future<void> emitVoiceAgentTtsStateChanged({required String state}) async {
-    await trackEvent(
-      eventType: RacEventType.voiceAgentTtsStateChanged,
-      data: {'state': state},
-    );
-  }
-
-  /// Emit voice agent all ready event
-  Future<void> emitVoiceAgentAllReady() async {
-    await trackEvent(
-      eventType: RacEventType.voiceAgentAllReady,
-      data: {},
-    );
-  }
-
-  // ============================================================================
-  // Device Events (matches Swift CppBridge.Events)
-  // ============================================================================
-
-  /// Emit device registered event
-  Future<void> emitDeviceRegistered({required String deviceId}) async {
-    await trackEvent(
-      eventType: RacEventType.deviceRegistered,
-      data: {'deviceId': deviceId},
-    );
-  }
-
-  /// Emit device registration failed event
-  Future<void> emitDeviceRegistrationFailed({required String error}) async {
-    await trackEvent(
-      eventType: RacEventType.deviceRegistrationFailed,
-      data: {'error': error},
-    );
   }
 
   // ============================================================================
@@ -509,23 +328,86 @@ class DartBridgeTelemetry {
 
     try {
       final lib = PlatformLoader.loadCommons();
-      final setCallback = lib.lookupFunction<
-          Void Function(
+      final setWakeup = lib
+          .lookupFunction<
+            Void Function(
               Pointer<Void>,
-              Pointer<NativeFunction<RacTelemetryHttpCallbackNative>>,
-              Pointer<Void>),
-          void Function(
+              Pointer<NativeFunction<Void Function(Pointer<Void>)>>,
               Pointer<Void>,
-              Pointer<NativeFunction<RacTelemetryHttpCallbackNative>>,
-              Pointer<Void>)>('rac_telemetry_manager_set_http_callback');
+            ),
+            void Function(
+              Pointer<Void>,
+              Pointer<NativeFunction<Void Function(Pointer<Void>)>>,
+              Pointer<Void>,
+            )
+          >('rac_telemetry_manager_set_http_wakeup');
 
-      _httpCallbackPtr = Pointer.fromFunction<RacTelemetryHttpCallbackNative>(
-          _telemetryHttpCallback);
+      // NativeCallable.listener is cross-isolate-safe: commons may signal this
+      // from the LLM worker isolate during a generation-completion flush, and
+      // Dart dispatches it back to this (main) isolate. The wake-up carries no
+      // request data, so it avoids the "native callback from a different
+      // isolate" abort a data-carrying Pointer.fromFunction hit. On wake-up we
+      // drain commons' owned request queue via rac_telemetry_manager_poll_*.
+      final wakeup = NativeCallable<Void Function(Pointer<Void>)>.listener(
+        _telemetryHttpWakeup,
+      );
+      _httpWakeup = wakeup;
+      setWakeup(_managerPtr!, wakeup.nativeFunction, nullptr);
+      _logger.debug('Telemetry HTTP wake-up registered');
+    } catch (_) {
+      _logger.debug('Failed to register telemetry HTTP wake-up');
+    }
+  }
 
-      setCallback(_managerPtr!, _httpCallbackPtr!, nullptr);
-      _logger.debug('Telemetry HTTP callback registered');
-    } catch (e) {
-      _logger.debug('Failed to register HTTP callback: $e');
+  /// Drain commons' queued telemetry HTTP requests (signalled by the wake-up).
+  /// Each request is an owned buffer framed as
+  /// [u8 requiresAuth][u32 LE endpointLen][endpoint][json].
+  static void drainHttpQueue() {
+    final managerPtr = _managerPtr;
+    if (managerPtr == null || !_acceptingHttpRequests) return;
+
+    try {
+      final lib = PlatformLoader.loadCommons();
+      final pollFn = lib
+          .lookupFunction<
+            Int32 Function(Pointer<Void>, Pointer<RacProtoBuffer>),
+            int Function(Pointer<Void>, Pointer<RacProtoBuffer>)
+          >('rac_telemetry_manager_poll_http_request');
+      final bindings = RacNative.bindings;
+
+      // Bounded so a misbehaving producer can't spin forever; the loop also
+      // exits as soon as poll reports an empty queue (rc != 0).
+      for (var i = 0; i < 256; i++) {
+        final out = calloc<RacProtoBuffer>();
+        try {
+          bindings.rac_proto_buffer_init(out);
+          final code = pollFn(managerPtr, out);
+          // RAC_SUCCESS == 0; anything else (e.g. RAC_ERROR_NOT_FOUND) = drained.
+          if (code != 0 || out.ref.data == nullptr || out.ref.size < 5) {
+            return;
+          }
+          final bytes = out.ref.data
+              .asTypedList(out.ref.size)
+              .toList(growable: false);
+          final requiresAuth = bytes[0] != 0;
+          final endpointLen =
+              bytes[1] | (bytes[2] << 8) | (bytes[3] << 16) | (bytes[4] << 24);
+          final endpoint = utf8.decode(bytes.sublist(5, 5 + endpointLen));
+          final body = utf8.decode(bytes.sublist(5 + endpointLen));
+          late final Future<void> request;
+          request = _sendTelemetryHttp(
+            endpoint,
+            body,
+            requiresAuth,
+          ).whenComplete(() => _inFlightHttpRequests.remove(request));
+          _inFlightHttpRequests.add(request);
+        } finally {
+          bindings.rac_proto_buffer_free(out);
+          calloc.free(out);
+        }
+      }
+    } catch (_) {
+      _logger.debug('Telemetry HTTP queue drain failed');
     }
   }
 
@@ -534,129 +416,75 @@ class DartBridgeTelemetry {
   // ============================================================================
 
   static Future<String> _getDeviceModel() async {
-    try {
-      final deviceInfo = DeviceInfoPlugin();
-
-      if (Platform.isIOS) {
-        final iosInfo = await deviceInfo.iosInfo;
-        return iosInfo.model;
-      } else if (Platform.isAndroid) {
-        final androidInfo = await deviceInfo.androidInfo;
-        return '${androidInfo.brand} ${androidInfo.model}';
-      } else if (Platform.isMacOS) {
-        final macInfo = await deviceInfo.macOsInfo;
-        return macInfo.model;
-      }
-      return 'unknown';
-    } catch (e) {
-      return 'unknown';
-    }
+    final deviceModel = DartBridgeDevice.cachedDeviceModel.trim();
+    return deviceModel.isEmpty ? 'unknown' : deviceModel;
   }
 
   static int _environmentToInt(SDKEnvironment env) {
     switch (env) {
-      case SDKEnvironment.development:
+      case SDKEnvironment.SDK_ENVIRONMENT_DEVELOPMENT:
         return 0;
-      case SDKEnvironment.staging:
+      case SDKEnvironment.SDK_ENVIRONMENT_STAGING:
         return 1;
-      case SDKEnvironment.production:
+      case SDKEnvironment.SDK_ENVIRONMENT_PRODUCTION:
         return 2;
+      default:
+        return 0;
     }
-  }
-
-  static void _populateEventData(
-      Pointer<RacAnalyticsEventDataStruct> data, Map<String, dynamic>? params) {
-    // Initialize with zeros/nulls
-    data.ref.modelId = nullptr;
-    data.ref.modelName = nullptr;
-    data.ref.modelSize = 0;
-    data.ref.framework = nullptr;
-    data.ref.durationMs = 0;
-    data.ref.error = nullptr;
-
-    if (params == null) return;
-
-    if (params['modelId'] != null) {
-      data.ref.modelId = (params['modelId'] as String).toNativeUtf8();
-    }
-    if (params['modelName'] != null) {
-      data.ref.modelName = (params['modelName'] as String).toNativeUtf8();
-    }
-    if (params['modelSize'] != null) {
-      data.ref.modelSize = params['modelSize'] as int;
-    }
-    if (params['framework'] != null) {
-      data.ref.framework = (params['framework'] as String).toNativeUtf8();
-    }
-    if (params['durationMs'] != null) {
-      data.ref.durationMs = params['durationMs'] as int;
-    }
-    if (params['error'] != null) {
-      data.ref.error = (params['error'] as String).toNativeUtf8();
-    }
-  }
-
-  static void _freeEventData(Pointer<RacAnalyticsEventDataStruct> data) {
-    if (data.ref.modelId != nullptr) calloc.free(data.ref.modelId);
-    if (data.ref.modelName != nullptr) calloc.free(data.ref.modelName);
-    if (data.ref.framework != nullptr) calloc.free(data.ref.framework);
-    if (data.ref.error != nullptr) calloc.free(data.ref.error);
   }
 }
 
 // =============================================================================
-// HTTP Callback Function
+// HTTP Wake-up Function
 // =============================================================================
 
-/// HTTP callback invoked by C++ when telemetry needs to be sent
-void _telemetryHttpCallback(
-  Pointer<Void> userData,
-  Pointer<Utf8> endpoint,
-  Pointer<Utf8> jsonBody,
-  int jsonLength,
-  int requiresAuth,
-) {
-  if (endpoint == nullptr || jsonBody == nullptr) return;
-
-  try {
-    final endpointStr = endpoint.toDartString();
-    final bodyStr = jsonBody.toDartString();
-    final needsAuth = requiresAuth != 0;
-
-    // Fire and forget HTTP call
-    unawaited(_sendTelemetryHttp(endpointStr, bodyStr, needsAuth));
-  } catch (e) {
-    SDKLogger('DartBridge.Telemetry').error('HTTP callback error: $e');
-  }
+/// Wake-up from commons (may be signalled from any isolate, e.g. the LLM
+/// streaming worker isolate). Registered as a `NativeCallable.listener` so the
+/// drain runs on this (main) isolate regardless of the caller. No request data
+/// is passed here — it is pulled from commons' owned queue in [drainHttpQueue].
+void _telemetryHttpWakeup(Pointer<Void> userData) {
+  DartBridgeTelemetry.drainHttpQueue();
 }
 
-/// Send telemetry via HTTP
+/// Send telemetry via HTTP.
+///
+/// Routes through the adapter's authenticated [HTTPClientAdapter.send] so the
+/// request carries the resolved SDK access token (with 401-refresh) and the
+/// canonical SDK headers. The backend telemetry endpoints require a valid
+/// bearer token (`validate_sdk_bearer_token`); the previous `rawRequest` path
+/// only attached `_accessToken`, which is never populated here, so every
+/// telemetry POST was unauthenticated. Kotlin parity: telemetry goes through
+/// the token-managed adapter, not a hand-built request.
 Future<void> _sendTelemetryHttp(
-    String endpoint, String body, bool requiresAuth) async {
+  String endpoint,
+  String body,
+  bool requiresAuth,
+) async {
   try {
-    final baseURL =
-        DartBridgeTelemetry._baseURL ?? 'https://api.runanywhere.ai';
-    final url = Uri.parse('$baseURL$endpoint');
+    final response = await HTTPClientAdapter.shared.send(
+      method: 'POST',
+      path: endpoint,
+      body: body,
+      requiresAuth: requiresAuth,
+    );
 
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    };
-
-    if (requiresAuth && DartBridgeTelemetry._accessToken != null) {
-      headers['Authorization'] = 'Bearer ${DartBridgeTelemetry._accessToken}';
+    if (response.isSuccess) {
+      DartBridgeTelemetry._logger.info(
+        'Telemetry POST succeeded with status ${response.statusCode}',
+      );
+    } else {
+      DartBridgeTelemetry._logger.warning(
+        'Telemetry POST failed with status ${response.statusCode}',
+      );
     }
 
-    final response = await http.post(url, headers: headers, body: body);
-
-    // Notify C++ of completion (optional - for retry logic)
     _notifyHttpComplete(
-      response.statusCode >= 200 && response.statusCode < 300,
+      response.isSuccess,
       response.body,
-      null,
+      response.isSuccess ? null : 'HTTP ${response.statusCode}',
     );
-  } catch (e) {
-    _notifyHttpComplete(false, null, e.toString());
+  } catch (_) {
+    _notifyHttpComplete(false, null, 'Telemetry transport failed');
   }
 }
 
@@ -666,10 +494,11 @@ void _notifyHttpComplete(bool success, String? responseJson, String? error) {
 
   try {
     final lib = PlatformLoader.loadCommons();
-    final httpComplete = lib.lookupFunction<
-        Void Function(Pointer<Void>, Int32, Pointer<Utf8>, Pointer<Utf8>),
-        void Function(Pointer<Void>, int, Pointer<Utf8>,
-            Pointer<Utf8>)>('rac_telemetry_manager_http_complete');
+    final httpComplete = lib
+        .lookupFunction<
+          Void Function(Pointer<Void>, Int32, Pointer<Utf8>, Pointer<Utf8>),
+          void Function(Pointer<Void>, int, Pointer<Utf8>, Pointer<Utf8>)
+        >('rac_telemetry_manager_http_complete');
 
     final responsePtr = responseJson?.toNativeUtf8() ?? nullptr;
     final errorPtr = error?.toNativeUtf8() ?? nullptr;
@@ -688,77 +517,4 @@ void _notifyHttpComplete(bool success, String? responseJson, String? error) {
   } catch (e) {
     // Ignore - best effort notification
   }
-}
-
-// =============================================================================
-// FFI Types
-// =============================================================================
-
-/// HTTP callback type: void (*callback)(void*, const char*, const char*, size_t, rac_bool_t)
-typedef RacTelemetryHttpCallbackNative = Void Function(
-    Pointer<Void>, Pointer<Utf8>, Pointer<Utf8>, IntPtr, Int32);
-
-/// Analytics event data struct
-base class RacAnalyticsEventDataStruct extends Struct {
-  external Pointer<Utf8> modelId;
-  external Pointer<Utf8> modelName;
-
-  @Int64()
-  external int modelSize;
-
-  external Pointer<Utf8> framework;
-
-  @Int64()
-  external int durationMs;
-
-  external Pointer<Utf8> error;
-}
-
-/// Event type constants (match rac_event_type_t from rac_analytics_events.h)
-abstract class RacEventType {
-  // SDK lifecycle (1-9)
-  static const int sdkInitialized = 1;
-  static const int sdkShutdown = 2;
-
-  // Download events (10-19)
-  static const int downloadStarted = 10;
-  static const int downloadProgress = 11;
-  static const int downloadCompleted = 12;
-  static const int downloadFailed = 13;
-  static const int downloadCancelled = 14;
-
-  // Extraction events (20-29)
-  static const int extractionStarted = 20;
-  static const int extractionProgress = 21;
-  static const int extractionCompleted = 22;
-  static const int extractionFailed = 23;
-
-  // Model events (30-39)
-  static const int modelLoaded = 30;
-  static const int modelUnloaded = 31;
-  static const int modelLoadFailed = 32;
-
-  // Inference events (40-49)
-  static const int inferenceStarted = 40;
-  static const int inferenceCompleted = 41;
-  static const int inferenceFailed = 42;
-  static const int inferenceCancelled = 43;
-
-  // Voice Agent events (500-519)
-  static const int voiceAgentTurnStarted = 500;
-  static const int voiceAgentTurnCompleted = 501;
-  static const int voiceAgentTurnFailed = 502;
-  static const int voiceAgentSttStateChanged = 510;
-  static const int voiceAgentLlmStateChanged = 511;
-  static const int voiceAgentTtsStateChanged = 512;
-  static const int voiceAgentAllReady = 513;
-
-  // Storage events (800-809)
-  static const int storageCacheCleared = 800;
-  static const int storageCacheClearFailed = 801;
-  static const int storageTempCleaned = 802;
-
-  // Device events (900-909)
-  static const int deviceRegistered = 900;
-  static const int deviceRegistrationFailed = 901;
 }

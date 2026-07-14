@@ -65,3 +65,9 @@ android/settings.gradle.kts
 
 # Generated plugin registrant files
 **/GeneratedPluginRegistrant.*
+
+# FVM Version Cache
+.fvm/
+
+# Local --dart-define secrets (API key / base URL)
+dart_defines.json

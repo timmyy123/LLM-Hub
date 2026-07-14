@@ -1,130 +1,30 @@
-// Model Types (mirroring iOS model types)
-//
-// Contains model-related enums and data classes.
+import 'package:flutter/material.dart';
+import 'package:runanywhere/runanywhere.dart' as sdk;
+import 'package:runanywhere/runanywhere.dart' show formatFramework;
+import 'package:runanywhere_ai/core/design_system/app_colors.dart';
+import 'package:runanywhere_qhexrt/runanywhere_qhexrt.dart';
 
-/// LLM Framework enumeration
-enum LLMFramework {
-  llamaCpp,
-  foundationModels,
-  mediaPipe,
-  onnxRuntime,
-  systemTTS,
-  whisperKit,
-  unknown;
+typedef ModelInfo = sdk.ModelInfo;
+typedef ModelCategory = sdk.ModelCategory;
+typedef ModelFormat = sdk.ModelFormat;
+typedef LLMFramework = sdk.InferenceFramework;
 
-  String get displayName {
-    switch (this) {
-      case LLMFramework.llamaCpp:
-        return 'LLaMA.cpp';
-      case LLMFramework.foundationModels:
-        return 'Foundation Models';
-      case LLMFramework.mediaPipe:
-        return 'MediaPipe';
-      case LLMFramework.onnxRuntime:
-        return 'ONNX Runtime';
-      case LLMFramework.systemTTS:
-        return 'System TTS';
-      case LLMFramework.whisperKit:
-        return 'WhisperKit';
-      case LLMFramework.unknown:
-        return 'Unknown';
-    }
-  }
+const Set<String> _privateHfTags = {
+  'private',
+  'requires-hf-auth',
+  'hf-auth',
+  'huggingface-auth',
+  'hugging-face-auth',
+};
 
-  String get rawValue {
-    switch (this) {
-      case LLMFramework.llamaCpp:
-        return 'llama.cpp';
-      case LLMFramework.foundationModels:
-        return 'foundation_models';
-      case LLMFramework.mediaPipe:
-        return 'mediapipe';
-      case LLMFramework.onnxRuntime:
-        return 'onnx_runtime';
-      case LLMFramework.systemTTS:
-        return 'system_tts';
-      case LLMFramework.whisperKit:
-        return 'whisperkit';
-      case LLMFramework.unknown:
-        return 'unknown';
-    }
-  }
-}
-
-/// Model category enumeration
-/// Matches SDK ModelCategory for proper conversion
-enum ModelCategory {
-  language,
-  multimodal,
-  speechRecognition,
-  speechSynthesis,
-  vision,
-  imageGeneration,
-  audio,
-  embedding,
-  unknown;
-
-  String get displayName {
-    switch (this) {
-      case ModelCategory.language:
-        return 'Language';
-      case ModelCategory.multimodal:
-        return 'Multimodal';
-      case ModelCategory.speechRecognition:
-        return 'Speech Recognition';
-      case ModelCategory.speechSynthesis:
-        return 'Speech Synthesis';
-      case ModelCategory.vision:
-        return 'Vision';
-      case ModelCategory.imageGeneration:
-        return 'Image Generation';
-      case ModelCategory.audio:
-        return 'Audio';
-      case ModelCategory.embedding:
-        return 'Embedding';
-      case ModelCategory.unknown:
-        return 'Unknown';
-    }
-  }
-}
-
-/// Model format enumeration
-enum ModelFormat {
-  gguf,
-  ggml,
-  coreml,
-  onnx,
-  tflite,
-  bin,
-  unknown;
-
-  String get rawValue {
-    switch (this) {
-      case ModelFormat.gguf:
-        return 'gguf';
-      case ModelFormat.ggml:
-        return 'ggml';
-      case ModelFormat.coreml:
-        return 'coreml';
-      case ModelFormat.onnx:
-        return 'onnx';
-      case ModelFormat.tflite:
-        return 'tflite';
-      case ModelFormat.bin:
-        return 'bin';
-      case ModelFormat.unknown:
-        return 'unknown';
-    }
-  }
-}
-
-/// Model selection context
+/// Model selection context is app UI state, not an SDK data contract.
 enum ModelSelectionContext {
   llm,
   stt,
   tts,
   voice,
   vlm,
+  vad,
   ragEmbedding,
   ragLLM;
 
@@ -140,6 +40,8 @@ enum ModelSelectionContext {
         return 'Select Model';
       case ModelSelectionContext.vlm:
         return 'Select VLM Model';
+      case ModelSelectionContext.vad:
+        return 'Select VAD Model';
       case ModelSelectionContext.ragEmbedding:
         return 'Select Embedding Model';
       case ModelSelectionContext.ragLLM:
@@ -147,103 +49,297 @@ enum ModelSelectionContext {
     }
   }
 
+  /// Mirrors iOS `ModelSelectionSheet.swift` `relevantCategories`: the LLM
+  /// picker is language-only (multimodal models load through the VLM
+  /// lifecycle), and the voice picker covers exactly the assistant pipeline
+  /// components (language + STT + TTS).
   Set<ModelCategory> get relevantCategories {
     switch (this) {
       case ModelSelectionContext.llm:
-        return {ModelCategory.language, ModelCategory.multimodal};
+        return {sdk.ModelCategory.MODEL_CATEGORY_LANGUAGE};
       case ModelSelectionContext.stt:
-        return {ModelCategory.speechRecognition};
+        return {sdk.ModelCategory.MODEL_CATEGORY_SPEECH_RECOGNITION};
       case ModelSelectionContext.tts:
-        return {ModelCategory.speechSynthesis};
+        return {sdk.ModelCategory.MODEL_CATEGORY_SPEECH_SYNTHESIS};
       case ModelSelectionContext.voice:
         return {
-          ModelCategory.language,
-          ModelCategory.multimodal,
-          ModelCategory.speechRecognition,
-          ModelCategory.speechSynthesis,
+          sdk.ModelCategory.MODEL_CATEGORY_LANGUAGE,
+          sdk.ModelCategory.MODEL_CATEGORY_SPEECH_RECOGNITION,
+          sdk.ModelCategory.MODEL_CATEGORY_SPEECH_SYNTHESIS,
         };
       case ModelSelectionContext.vlm:
-        return {ModelCategory.vision, ModelCategory.multimodal};
+        return {
+          sdk.ModelCategory.MODEL_CATEGORY_VISION,
+          sdk.ModelCategory.MODEL_CATEGORY_MULTIMODAL,
+        };
+      case ModelSelectionContext.vad:
+        return {sdk.ModelCategory.MODEL_CATEGORY_VOICE_ACTIVITY_DETECTION};
       case ModelSelectionContext.ragEmbedding:
-        return {ModelCategory.embedding};
+        return {sdk.ModelCategory.MODEL_CATEGORY_EMBEDDING};
       case ModelSelectionContext.ragLLM:
-        return {ModelCategory.language};
+        return {sdk.ModelCategory.MODEL_CATEGORY_LANGUAGE};
+    }
+  }
+
+  /// Frameworks to include. `null` means all frameworks that have matching
+  /// models. Android RAG can use either the portable CPU backend or QHexRT's
+  /// native device-accepted embedding/generator rows.
+  Set<LLMFramework>? get allowedFrameworks {
+    switch (this) {
+      case ModelSelectionContext.ragEmbedding:
+        return {
+          sdk.InferenceFramework.INFERENCE_FRAMEWORK_ONNX,
+          sdk.InferenceFramework.INFERENCE_FRAMEWORK_QHEXRT,
+        };
+      case ModelSelectionContext.ragLLM:
+        return {
+          sdk.InferenceFramework.INFERENCE_FRAMEWORK_LLAMA_CPP,
+          sdk.InferenceFramework.INFERENCE_FRAMEWORK_QHEXRT,
+        };
+      default:
+        return null;
+    }
+  }
+
+  /// Single shared picker predicate: category match, framework allow-list,
+  /// and (RAG embedding only) supporting-file/reranker exclusion. The suffix
+  /// checks mirror iOS; the reranker guard mirrors the Android QHexRT picker.
+  bool includes(ModelInfo model) {
+    if (!relevantCategories.contains(model.category)) return false;
+    final frameworks = allowedFrameworks;
+    if (frameworks != null && !frameworks.contains(model.backendFramework)) {
+      return false;
+    }
+    if (this == ModelSelectionContext.ragEmbedding &&
+        (model.id.endsWith('-vocab') ||
+            model.id.endsWith('-tokenizer') ||
+            model.id.toLowerCase().contains('rerank'))) {
+      return false;
+    }
+    return true;
+  }
+}
+
+extension ModelCategoryDisplay on ModelCategory {
+  String get displayName {
+    switch (this) {
+      case sdk.ModelCategory.MODEL_CATEGORY_LANGUAGE:
+        return 'Language';
+      case sdk.ModelCategory.MODEL_CATEGORY_MULTIMODAL:
+        return 'Multimodal';
+      case sdk.ModelCategory.MODEL_CATEGORY_SPEECH_RECOGNITION:
+        return 'Speech Recognition';
+      case sdk.ModelCategory.MODEL_CATEGORY_SPEECH_SYNTHESIS:
+        return 'Speech Synthesis';
+      case sdk.ModelCategory.MODEL_CATEGORY_VISION:
+        return 'Vision';
+      case sdk.ModelCategory.MODEL_CATEGORY_IMAGE_GENERATION:
+        return 'Image Generation';
+      case sdk.ModelCategory.MODEL_CATEGORY_AUDIO:
+        return 'Audio';
+      case sdk.ModelCategory.MODEL_CATEGORY_EMBEDDING:
+        return 'Embedding';
+      case sdk.ModelCategory.MODEL_CATEGORY_VOICE_ACTIVITY_DETECTION:
+        return 'Voice Activity Detection';
+      default:
+        return 'Unknown';
     }
   }
 }
 
-/// Model info class
-class ModelInfo {
-  final String id;
-  final String name;
-  final ModelCategory category;
-  final ModelFormat format;
-  final String? downloadURL;
-  final String? localPath;
-  final int? memoryRequired;
-  final List<LLMFramework> compatibleFrameworks;
-  final LLMFramework? preferredFramework;
-  final bool supportsThinking;
+extension InferenceFrameworkDisplay on LLMFramework {
+  String get displayName => formatFramework(this);
 
-  const ModelInfo({
-    required this.id,
-    required this.name,
-    this.category = ModelCategory.language,
-    this.format = ModelFormat.unknown,
-    this.downloadURL,
-    this.localPath,
-    this.memoryRequired,
-    this.compatibleFrameworks = const [],
-    this.preferredFramework,
-    this.supportsThinking = false,
-  });
+  String get backendShortLabel {
+    switch (this) {
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_LLAMA_CPP:
+        return 'llama.cpp';
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_ONNX:
+        return 'ONNX';
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_SHERPA:
+        return 'Sherpa';
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_FOUNDATION_MODELS:
+        return 'Apple';
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_SYSTEM_TTS:
+        return 'System';
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_QHEXRT:
+        return 'QHexRT';
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_COREML:
+        return 'Core ML';
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_MLX:
+        return 'MLX';
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_PIPER_TTS:
+        return 'Piper';
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_FLUID_AUDIO:
+        return 'Fluid';
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_TFLITE:
+        return 'TFLite';
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_EXECUTORCH:
+        return 'ExecuTorch';
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_MEDIAPIPE:
+        return 'MediaPipe';
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_MLC:
+        return 'MLC';
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_PICO_LLM:
+        return 'Pico';
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_SWIFT_TRANSFORMERS:
+        return 'Swift';
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_BUILT_IN:
+        return 'Built-in';
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_NONE:
+        return 'None';
+      default:
+        return displayName;
+    }
+  }
 
-  bool get isDownloaded => localPath != null;
+  IconData get backendIcon {
+    switch (this) {
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_LLAMA_CPP:
+        return Icons.storage;
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_ONNX:
+        return Icons.developer_board;
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_SHERPA:
+        return Icons.graphic_eq;
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_FOUNDATION_MODELS:
+        return Icons.apple;
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_SYSTEM_TTS:
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_PIPER_TTS:
+        return Icons.volume_up;
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_QHEXRT:
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_COREML:
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_MLX:
+        return Icons.memory;
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_FLUID_AUDIO:
+        return Icons.graphic_eq;
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_TFLITE:
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_EXECUTORCH:
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_MEDIAPIPE:
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_MLC:
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_PICO_LLM:
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_SWIFT_TRANSFORMERS:
+        return Icons.view_in_ar;
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_BUILT_IN:
+        return Icons.check_circle;
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_NONE:
+        return Icons.block;
+      default:
+        return Icons.info_outline;
+    }
+  }
 
-  ModelInfo copyWith({
-    String? id,
-    String? name,
-    ModelCategory? category,
-    ModelFormat? format,
-    String? downloadURL,
-    String? localPath,
-    int? memoryRequired,
-    List<LLMFramework>? compatibleFrameworks,
-    LLMFramework? preferredFramework,
-    bool? supportsThinking,
-  }) {
-    return ModelInfo(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      category: category ?? this.category,
-      format: format ?? this.format,
-      downloadURL: downloadURL ?? this.downloadURL,
-      localPath: localPath ?? this.localPath,
-      memoryRequired: memoryRequired ?? this.memoryRequired,
-      compatibleFrameworks: compatibleFrameworks ?? this.compatibleFrameworks,
-      preferredFramework: preferredFramework ?? this.preferredFramework,
-      supportsThinking: supportsThinking ?? this.supportsThinking,
-    );
+  Color get backendColor {
+    switch (this) {
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_LLAMA_CPP:
+        return AppColors.primaryBlue;
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_ONNX:
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_COREML:
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_MLX:
+        return AppColors.primaryPurple;
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_SHERPA:
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_SYSTEM_TTS:
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_PIPER_TTS:
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_FLUID_AUDIO:
+        return AppColors.primaryOrange;
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_QHEXRT:
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_BUILT_IN:
+        return AppColors.primaryGreen;
+      case sdk.InferenceFramework.INFERENCE_FRAMEWORK_FOUNDATION_MODELS:
+        return AppColors.statusGray;
+      default:
+        return AppColors.statusGray;
+    }
   }
 }
 
-/// Download progress state
-enum DownloadState {
-  notStarted,
-  downloading,
-  completed,
-  failed,
+extension ModelFormatDisplay on ModelFormat {
+  String get rawValue {
+    switch (this) {
+      case sdk.ModelFormat.MODEL_FORMAT_GGUF:
+        return 'gguf';
+      case sdk.ModelFormat.MODEL_FORMAT_GGML:
+        return 'ggml';
+      case sdk.ModelFormat.MODEL_FORMAT_ONNX:
+        return 'onnx';
+      case sdk.ModelFormat.MODEL_FORMAT_ORT:
+        return 'ort';
+      case sdk.ModelFormat.MODEL_FORMAT_BIN:
+        return 'bin';
+      case sdk.ModelFormat.MODEL_FORMAT_COREML:
+        return 'coreml';
+      case sdk.ModelFormat.MODEL_FORMAT_MLMODEL:
+        return 'mlmodel';
+      case sdk.ModelFormat.MODEL_FORMAT_MLPACKAGE:
+        return 'mlpackage';
+      case sdk.ModelFormat.MODEL_FORMAT_TFLITE:
+        return 'tflite';
+      case sdk.ModelFormat.MODEL_FORMAT_SAFETENSORS:
+        return 'safetensors';
+      case sdk.ModelFormat.MODEL_FORMAT_QNN_CONTEXT:
+        return 'qnn_context';
+      case sdk.ModelFormat.MODEL_FORMAT_ZIP:
+        return 'zip';
+      case sdk.ModelFormat.MODEL_FORMAT_FOLDER:
+        return 'folder';
+      case sdk.ModelFormat.MODEL_FORMAT_PROPRIETARY:
+        return 'proprietary';
+      default:
+        return 'unknown';
+    }
+  }
 }
 
-/// Download progress info
-class DownloadProgress {
-  final double percentage;
-  final DownloadState state;
-  final String? error;
+extension ExampleModelInfoView on ModelInfo {
+  bool get requiresHfAuth {
+    final tags = hasMetadata()
+        ? metadata.tags.map((tag) => tag.toLowerCase()).toSet()
+        : const <String>{};
+    return tags.any(_privateHfTags.contains) ||
+        (framework == sdk.InferenceFramework.INFERENCE_FRAMEWORK_QHEXRT &&
+            QHexRT.modelRequiresHfAuth(id));
+  }
 
-  const DownloadProgress({
-    this.percentage = 0.0,
-    this.state = DownloadState.notStarted,
-    this.error,
-  });
+  int? get memoryRequired {
+    final downloadBytes =
+        hasDownloadSizeBytes() && downloadSizeBytes.toInt() > 0
+        ? downloadSizeBytes.toInt()
+        : null;
+    if (downloadBytes != null) return downloadBytes;
+    return hasMemoryRequiredBytes() && memoryRequiredBytes.toInt() > 0
+        ? memoryRequiredBytes.toInt()
+        : null;
+  }
+
+  LLMFramework get backendFramework {
+    final preferred = preferredFramework;
+    if (hasPreferredFramework() &&
+        preferred != sdk.InferenceFramework.INFERENCE_FRAMEWORK_UNSPECIFIED &&
+        preferred != sdk.InferenceFramework.INFERENCE_FRAMEWORK_UNKNOWN) {
+      return preferred;
+    }
+    if (framework != sdk.InferenceFramework.INFERENCE_FRAMEWORK_UNSPECIFIED) {
+      return framework;
+    }
+    return sdk.InferenceFramework.INFERENCE_FRAMEWORK_UNKNOWN;
+  }
+
+  List<LLMFramework> get compatibleFrameworks => [backendFramework];
+
+  /// Readiness check for the example UI.
+  ///
+  /// NOTE: this is deliberately NOT named `isDownloaded`. The generated
+  /// `ModelInfo` proto already exposes a `bool isDownloaded` instance member,
+  /// and a Dart extension getter of the same name is silently shadowed by that
+  /// instance member. The C++ registry populates `localPath` on download but
+  /// does not flip the proto `isDownloaded` flag, so gating load on
+  /// `model.isDownloaded` resolved to the always-false proto field and made the
+  /// "Use" action a no-op. Gate on the same on-disk/built-in signal the row UI
+  /// uses instead (mirrors Swift `isDownloaded` / Kotlin `isDownloadedOnDisk`).
+  bool get isReadyOnDevice =>
+      localPath.isNotEmpty ||
+      backendFramework ==
+          sdk.InferenceFramework.INFERENCE_FRAMEWORK_FOUNDATION_MODELS ||
+      backendFramework ==
+          sdk.InferenceFramework.INFERENCE_FRAMEWORK_SYSTEM_TTS ||
+      builtIn;
 }

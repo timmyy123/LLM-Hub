@@ -3,23 +3,26 @@
 import 'dart:async';
 import 'dart:ffi';
 
-import 'package:ffi/ffi.dart';
-import 'package:runanywhere/foundation/configuration/sdk_constants.dart';
+import 'package:runanywhere/adapters/http_client_adapter.dart';
+import 'package:runanywhere/foundation/constants/sdk_constants.dart';
 import 'package:runanywhere/foundation/logging/sdk_logger.dart';
-import 'package:runanywhere/native/dart_bridge_auth.dart'
-    hide RacSdkConfigStruct;
+import 'package:runanywhere/generated/sdk_init.pb.dart';
+import 'package:runanywhere/native/dart_bridge_auth.dart';
 import 'package:runanywhere/native/dart_bridge_device.dart';
 import 'package:runanywhere/native/dart_bridge_download.dart';
-import 'package:runanywhere/native/dart_bridge_environment.dart'
-    show RacSdkConfigStruct;
+import 'package:runanywhere/native/dart_bridge_embeddings.dart';
+import 'package:runanywhere/native/dart_bridge_environment.dart';
 import 'package:runanywhere/native/dart_bridge_events.dart';
+import 'package:runanywhere/native/dart_bridge_file_manager.dart';
 import 'package:runanywhere/native/dart_bridge_http.dart';
 import 'package:runanywhere/native/dart_bridge_llm.dart';
-import 'package:runanywhere/native/dart_bridge_model_assignment.dart';
+import 'package:runanywhere/native/dart_bridge_lora.dart';
+import 'package:runanywhere/native/dart_bridge_model_lifecycle.dart';
 import 'package:runanywhere/native/dart_bridge_model_paths.dart';
 import 'package:runanywhere/native/dart_bridge_model_registry.dart';
 import 'package:runanywhere/native/dart_bridge_platform.dart';
-import 'package:runanywhere/native/dart_bridge_platform_services.dart';
+import 'package:runanywhere/native/dart_bridge_rag.dart';
+import 'package:runanywhere/native/dart_bridge_sdk_init.dart';
 import 'package:runanywhere/native/dart_bridge_state.dart';
 import 'package:runanywhere/native/dart_bridge_storage.dart';
 import 'package:runanywhere/native/dart_bridge_stt.dart';
@@ -28,8 +31,8 @@ import 'package:runanywhere/native/dart_bridge_tts.dart';
 import 'package:runanywhere/native/dart_bridge_vad.dart';
 import 'package:runanywhere/native/dart_bridge_vlm.dart';
 import 'package:runanywhere/native/dart_bridge_voice_agent.dart';
-import 'package:runanywhere/native/dart_bridge_rag.dart';
 import 'package:runanywhere/native/platform_loader.dart';
+import 'package:runanywhere/native/types/basic_types.dart';
 import 'package:runanywhere/public/configuration/sdk_environment.dart';
 
 /// Central coordinator for all C++ bridges.
@@ -43,7 +46,7 @@ import 'package:runanywhere/public/configuration/sdk_environment.dart';
 /// Usage:
 /// ```dart
 /// // Phase 1: Core init (sync, ~1-5ms)
-/// DartBridge.initialize(SDKEnvironment.production);
+/// DartBridge.initialize(SDKEnvironment.SDK_ENVIRONMENT_PRODUCTION);
 ///
 /// // Phase 2: Services init (async, ~100-500ms)
 /// await DartBridge.initializeServices();
@@ -57,23 +60,58 @@ class DartBridge {
   // State
   // -------------------------------------------------------------------------
 
-  static SDKEnvironment _environment = SDKEnvironment.development;
+  static SDKEnvironment _environment =
+      SDKEnvironment.SDK_ENVIRONMENT_DEVELOPMENT;
   static bool _isInitialized = false;
+  static bool _isShuttingDown = false;
   static bool _servicesInitialized = false;
   static DynamicLibrary? _lib;
+
+  // Wired by RunAnywhere.initializeWithParams so capability files can call
+  // ensureServicesReady() without importing runanywhere.dart (which imports
+  // all capability files — a circular dependency). Null before Phase 1.
+  static Future<void> Function()? _ensureServicesReadyHook;
 
   /// Current environment
   static SDKEnvironment get environment => _environment;
 
   /// Whether Phase 1 (core) initialization is complete
-  static bool get isInitialized => _isInitialized;
+  static bool get isInitialized => _isInitialized && !_isShuttingDown;
 
   /// Whether Phase 2 (services) initialization is complete
   static bool get servicesInitialized => _servicesInitialized;
 
+  /// Close the public facade immediately while an asynchronous reset drains
+  /// Phase 1/2 work. Native owners remain alive until [shutdown] runs.
+  static void beginShutdown() {
+    _isShuttingDown = true;
+  }
+
+  /// Register the Phase-2 readiness hook. Called once by
+  /// RunAnywhere.initializeWithParams so capability files can invoke
+  /// [ensureServicesReady] without importing runanywhere.dart.
+  static void registerEnsureServicesReadyHook(Future<void> Function() hook) {
+    _ensureServicesReadyHook = hook;
+  }
+
+  /// Await Phase-2 completion before any work that requires services (HTTP,
+  /// auth, model-assignment, model-discovery). Mirrors Swift's
+  /// `try? await ensureServicesReady()` guard in RunAnywhere+ModelLifecycle.swift
+  /// and RunAnywhere+Storage.swift. If Phase 1 has not run, throws
+  /// [SDKException.notInitialized]; if the hook is not yet wired (very early
+  /// call before initializeWithParams), returns immediately.
+  static Future<void> ensureServicesReady() {
+    if (!isInitialized) {
+      throw StateError('SDK not initialized');
+    }
+    final hook = _ensureServicesReadyHook;
+    if (hook == null) return Future<void>.value();
+    return hook();
+  }
+
   /// Native library reference
   static DynamicLibrary get lib {
-    _lib ??= PlatformLoader.load();
+    _lib ??= PlatformLoader.loadCommons();
     return _lib!;
   }
 
@@ -87,7 +125,8 @@ class DartBridge {
   /// 1. Load native library
   /// 2. Register platform adapter FIRST (file ops, logging, keychain)
   /// 3. Configure C++ logging level (rac_configure_logging)
-  /// 4. Initialize SDK config (rac_sdk_init) - sets platform, version
+  /// 4. Drive Phase 1 of SDK init through `rac_sdk_init_phase1_proto`
+  ///    (validates inputs + runs `rac_state_initialize` inside commons)
   /// 5. Register events callback (analytics routing)
   /// 6. Initialize telemetry manager
   /// 7. Register device callbacks
@@ -95,20 +134,42 @@ class DartBridge {
   /// Call this FIRST during SDK init. Must complete before Phase 2.
   ///
   /// [environment] The SDK environment (development/staging/production)
-  static void initialize(SDKEnvironment environment) {
+  /// [apiKey] Resolved API key for production/staging, or empty in development.
+  /// [baseURL] Resolved backend URL for production/staging/development.
+  /// [deviceId] Platform-persisted device identifier resolved by the public
+  /// init path before Phase 1.
+  static void initialize(
+    SDKEnvironment environment, {
+    String apiKey = '',
+    String baseURL = '',
+    String deviceId = '',
+  }) {
+    if (_isShuttingDown) {
+      throw StateError('SDK shutdown is in progress');
+    }
     if (_isInitialized) {
       _logger.debug('Already initialized, skipping');
       return;
     }
 
     _environment = environment;
-    _logger.debug('Starting Phase 1 initialization', metadata: {
-      'environment': environment.name,
-    });
+
+    // Set environment first so Dart-side logging boots with the correct
+    // per-environment config (min level + console gating). Mirrors Swift
+    // RunAnywhere.performCoreInitSerial which calls
+    // Logging.shared.applyEnvironmentConfiguration(params.environment)
+    // before any bridge work.
+    SDKLoggerConfig.shared.applyEnvironmentConfiguration(environment);
+
+    _logger.debug(
+      'Starting Phase 1 initialization',
+      metadata: {'environment': environment.name},
+    );
 
     // Step 1: Load native library
-    _lib = PlatformLoader.load();
+    _lib = PlatformLoader.loadCommons();
     _logger.debug('Native library loaded');
+    PlatformLoader.tryLoadFlutterNativePortHelpers();
 
     // Step 2: Register platform adapter FIRST (file ops, logging, keychain)
     // C++ needs these callbacks before any other operations
@@ -121,11 +182,26 @@ class DartBridge {
     _configureLogging(environment);
     _logger.debug('C++ logging configured');
 
-    // Step 4: Initialize SDK with configuration
-    // Matches Swift: rac_sdk_init(&sdkConfig) in CppBridge.State.initialize()
-    // This is CRITICAL - the LlamaCPP backend needs this to be set
-    _initializeSdkConfig(environment);
-    _logger.debug('SDK config initialized');
+    // Step 4: Initialize SDK with configuration (Phase 1 proto-based path)
+    // Matches Swift: CppBridge.SdkInit.phase1(...) in
+    // sdk/runanywhere-swift/Sources/RunAnywhere/Foundation/Bridge/Extensions/CppBridge+SdkInit.swift
+    // Routes through rac_sdk_init_phase1_proto in commons.
+    try {
+      DartBridgeSdkInit.phase1(
+        SdkInitPhase1Request(
+          environment: _toSdkInitEnvironment(environment),
+          apiKey: apiKey,
+          baseUrl: baseURL,
+          deviceId: deviceId,
+          platform: SDKConstants.platform,
+          sdkVersion: SDKConstants.version,
+        ),
+      );
+      _logger.debug('SDK Phase 1 (proto) initialized');
+    } catch (_) {
+      _logger.error('SDK Phase 1 proto init failed');
+      rethrow;
+    }
 
     // Step 5: Register events callback (analytics routing)
     // Matches Swift: Events.register()
@@ -143,6 +219,17 @@ class DartBridge {
     DartBridgeDevice.registerCallbacks();
     _logger.debug('Device callbacks registered');
 
+    // Step 8: Register file manager I/O callbacks
+    DartBridgeFileManager.register();
+    _logger.debug('File manager callbacks registered');
+
+    // Step 9: Wire global model registry before any registerModel() calls.
+    // Swift's CppBridge.ModelRegistry.shared resolves rac_get_model_registry()
+    // lazily; Flutter apps register catalog models immediately after
+    // initialize() returns (Phase 1 only).
+    DartBridgeModelRegistry.instance.ensureInitialized();
+    _logger.debug('Model registry handle wired (Phase 1)');
+
     _isInitialized = true;
     _logger.info('Phase 1 initialization complete');
   }
@@ -153,23 +240,26 @@ class DartBridge {
 
   /// Initialize service bridges.
   ///
-  /// This is Phase 2 of 2-phase initialization (matches Swift completeServicesInitialization):
-  /// 1. Setup HTTP transport (if needed)
-  /// 2. Initialize C++ state (rac_state_initialize with apiKey, baseURL, deviceId)
-  /// 3. Initialize service bridges (ModelAssignment, Platform)
-  /// 4. Model paths base directory (done in RunAnywhere.initializeWithParams)
-  /// 5. Device registration (if needed)
-  /// 6. Flush telemetry
+  /// This is Phase 2 of 2-phase initialization:
+  /// 1. Setup HTTP transport/native config (if needed)
+  /// 2. Register platform-owned async callbacks and secure-storage caches
+  /// 3. Initialize C++ state/auth secure storage with resolved credentials
+  /// 4. Drive commons-owned deterministic Phase 2 orchestration
   ///
   /// Call this AFTER Phase 1. Can be called in background.
   ///
   /// [apiKey] API key for production/staging
   /// [baseURL] Backend URL for production/staging
   /// [deviceId] Device identifier
-  static Future<void> initializeServices({
+  static Future<SdkInitResult?> initializeServices({
     String? apiKey,
     String? baseURL,
     String? deviceId,
+    String? buildToken,
+    bool forceRefreshAssignments = false,
+    bool flushTelemetry = true,
+    bool discoverDownloadedModels = true,
+    bool rescanLocalModels = true,
   }) async {
     if (!_isInitialized) {
       throw StateError('Must call initialize() before initializeServices()');
@@ -177,49 +267,95 @@ class DartBridge {
 
     if (_servicesInitialized) {
       _logger.debug('Services already initialized, skipping');
-      return;
+      return null;
     }
 
     _logger.debug('Starting Phase 2 services initialization');
 
-    // Step 1: Get device ID if not provided
-    final effectiveDeviceId =
-        deviceId ?? DartBridgeDevice.cachedDeviceId ?? 'unknown-device';
+    // Step 1: HTTP transport — configure C++ HTTP layer BEFORE phase2 so that
+    // rac_sdk_init_phase2_proto's device-registration POST has a live transport.
+    // Mirrors Swift Step 1 in _performServicesInitialization(): setupHTTP runs
+    // before CppBridge.SdkInit.phase2() (RunAnywhere.swift:266-279 → :287).
+    if (!DartBridgeHTTP.instance.isConfigured) {
+      try {
+        await DartBridgeHTTP.instance.configure(
+          environment: _environment,
+          apiKey: apiKey,
+          baseURL: baseURL,
+        );
+        _logger.debug('HTTP transport configured');
+      } catch (_) {
+        _logger.warning('HTTP setup failed; SDK remains offline');
+      }
+    }
 
-    // Step 2: Initialize C++ state with credentials
-    // Matches Swift: CppBridge.State.initialize(environment:apiKey:baseURL:deviceId:)
-    await DartBridgeState.instance.initialize(
+    // Step 2: Register platform-owned async callbacks before commons Phase 2.
+    // Device registration itself is owned by rac_sdk_init_phase2_proto; this
+    // call only installs callbacks, SharedPreferences, and the cached device id.
+    await DartBridgeDevice.register(
       environment: _environment,
-      apiKey: apiKey,
       baseURL: baseURL,
-      deviceId: effectiveDeviceId,
     );
-    _logger.debug('C++ state initialized');
+    _logger.debug('Device callbacks wired for Phase 2');
 
-    // Step 3: Initialize service bridges
-    // Matches Swift: CppBridge.initializeServices()
-
-    // Step 3a: Model assignment callbacks
-    // Only auto-fetch in staging/production, not development
-    final shouldAutoFetch = _environment != SDKEnvironment.development;
-    await DartBridgeModelAssignment.register(
-      environment: _environment,
-      autoFetch: shouldAutoFetch,
-    );
-    _logger.debug(
-        'Model assignment callbacks registered (autoFetch: $shouldAutoFetch)');
-
-    // Step 3b: Platform services (Foundation Models, System TTS)
-    await DartBridgePlatformServices.register();
+    // Platform services registration also drains the async secure-storage cache
+    // used by commons device/model discovery callbacks.
+    await DartBridgePlatform.registerServices();
     _logger.debug('Platform services registered');
 
-    // Step 4: Flush telemetry (if any queued events)
-    // Matches Swift: CppBridge.Telemetry.flush()
-    DartBridgeTelemetry.flush();
-    _logger.debug('Telemetry flushed');
+    // Step 3: Install auth secure storage now that platform async caches are
+    // ready. Commons Phase 1 already owns rac_state_initialize with the
+    // resolved credentials/device ID.
+    await DartBridgeState.instance.initialize(
+      environment: _environment,
+      baseURL: baseURL,
+    );
+    _logger.debug('Auth secure storage initialized');
+
+    // Step 4: Drive the canonical Phase 2 step-list inside commons. HTTP and
+    // platform callbacks are configured, and model paths are set by
+    // RunAnywhere._runPhase2 before this call so commons can discover local
+    // downloads through the global registry.
+    // Soft failures (offline mode, missing creds) come back as
+    // success=true + warning; hard failures throw.
+    SdkInitResult? phase2Result;
+    try {
+      final result = DartBridgeSdkInit.phase2(
+        SdkInitPhase2Request(
+          buildToken: buildToken ?? DartBridgeDevConfig.buildToken ?? '',
+          forceRefreshAssignments: forceRefreshAssignments,
+          flushTelemetry: flushTelemetry,
+          discoverDownloadedModels: discoverDownloadedModels,
+          rescanLocalModels: rescanLocalModels,
+        ),
+      );
+      phase2Result = result;
+      _logger.debug(
+        'SDK Phase 2 (proto) complete',
+        metadata: {
+          'httpConfigured': result.httpConfigured,
+          'deviceRegistered': result.deviceRegistered,
+          'linkedModelsCount': result.linkedModelsCount,
+          'discoveredOrphans': result.discoveredOrphans,
+          'hasCompletedHttpSetup': result.hasCompletedHttpSetup,
+          'durationMs': result.durationMs.toInt(),
+          'hasWarning': result.hasWarning(),
+        },
+      );
+    } catch (_) {
+      // Non-fatal: services init may still succeed via the per-bridge
+      // registrations below even when the C++ step-list reports an error.
+      _logger.warning('SDK Phase 2 proto failed');
+    }
+
+    // Flutter-only async bridge: commons Phase 2 owns device registration,
+    // but the Dart FFI device http_post callback can only capture the request.
+    // Drain the captured POST after the C ABI returns.
+    await DartBridgeDevice.flushPendingRegistrationPost();
 
     _servicesInitialized = true;
     _logger.info('Phase 2 services initialization complete');
+    return phase2Result;
   }
 
   // -------------------------------------------------------------------------
@@ -227,22 +363,118 @@ class DartBridge {
   // -------------------------------------------------------------------------
 
   /// Shutdown all bridges and release resources.
-  static void shutdown() {
-    if (!_isInitialized) {
-      _logger.debug('Not initialized, nothing to shutdown');
-      return;
+  ///
+  /// Async because per-modality component destroy() paths must complete
+  /// before Telemetry/Events teardown so commons-side handles created via
+  /// the lifecycle ABIs and current component-handle paths like
+  /// TTS `listVoicesProto`, `synthesizeProto`, `synthesizeStreamProto`)
+  /// do not leak across `RunAnywhere.reset()` -> `initialize()` cycles.
+  ///
+  /// Mirrors Swift `CppBridge.shutdown()`
+  /// (`sdk/runanywhere-swift/Sources/RunAnywhere/Foundation/Bridge/CppBridge.swift:176`):
+  /// destroys AI components (LLM -> STT -> TTS -> VAD -> VoiceAgent -> VLM)
+  /// sequentially BEFORE Telemetry + Events teardown.
+  static Future<void> shutdown() async {
+    final wasInitialized = _isInitialized;
+    final nativeTeardownRequired =
+        wasInitialized || _isShuttingDown || _lib != null;
+    _isShuttingDown = true;
+    _logger.debug(
+      wasInitialized
+          ? 'Shutting down DartBridge'
+          : 'Rolling back partial DartBridge state',
+    );
+
+    Object? firstError;
+    StackTrace? firstStackTrace;
+    var nativeShutdownComplete = false;
+    var telemetryShutdownComplete = false;
+    void recordError(Object error, StackTrace stackTrace) {
+      firstError ??= error;
+      firstStackTrace ??= stackTrace;
     }
 
-    _logger.debug('Shutting down DartBridge');
+    void runCleanup(void Function() cleanup) {
+      try {
+        cleanup();
+      } catch (error, stackTrace) {
+        recordError(error, stackTrace);
+      }
+    }
+
+    Future<void> runAsyncCleanup(Future<void> Function() cleanup) async {
+      try {
+        await cleanup();
+      } catch (error, stackTrace) {
+        recordError(error, stackTrace);
+      }
+    }
+
+    // Destroy per-modality component handles FIRST so commons-side state
+    // is released while Telemetry/Events are still wired (mirrors Swift's
+    // CppBridge.shutdown() order at CppBridge.swift:181-186). Each destroy()
+    // is best-effort and swallows its own errors internally.
+    if (wasInitialized) {
+      runCleanup(DartBridgeLLM.shared.destroy);
+      runCleanup(DartBridgeSTT.shared.destroy);
+      runCleanup(DartBridgeTTS.shared.destroy);
+      runCleanup(DartBridgeVAD.shared.destroy);
+      runCleanup(DartBridgeVoiceAgent.shared.destroy);
+      runCleanup(DartBridgeVLM.shared.destroy);
+    }
 
     // Shutdown in reverse order of initialization
-    DartBridgeTelemetry.shutdown();
-    DartBridgeEvents.unregister();
+    runCleanup(DartBridgeModelRegistry.instance.shutdown);
+    runCleanup(DartBridgeFileManager.unregister);
+    runCleanup(DartBridgeDevice.shutdown);
+
+    // Commons owns the canonical native teardown. Keep the event subscription
+    // plus telemetry, HTTP, and platform adapters alive until rac_shutdown has
+    // published its terminal lifecycle event and released every borrowed
+    // callback pointer.
+    runCleanup(() {
+      final invokedNativeShutdown = DartBridgeState.instance.shutdown(
+        requireNative: nativeTeardownRequired,
+      );
+      nativeShutdownComplete = invokedNativeShutdown || !nativeTeardownRequired;
+    });
+
+    // Every remaining owner depends on canonical native teardown. Telemetry in
+    // turn owns the final HTTP drain, so retain events, credentials, auth, and
+    // the platform adapter when either boundary fails; a later reset retries
+    // with the complete dependency chain still alive.
+    if (nativeShutdownComplete) {
+      await runAsyncCleanup(() async {
+        await DartBridgeTelemetry.shutdown();
+        telemetryShutdownComplete = true;
+      });
+    }
+    if (telemetryShutdownComplete) {
+      runCleanup(DartBridgeEvents.unregister);
+      runCleanup(DartBridgeHTTP.instance.shutdown);
+      runCleanup(HTTPClientAdapter.shared.shutdown);
+      runCleanup(DartBridgePlatform.unregister);
+      runCleanup(DartBridgeAuth.reset);
+    }
+
+    _servicesInitialized = false;
+    _ensureServicesReadyHook = null;
+
+    if (firstError != null) {
+      _logger.error('DartBridge shutdown failed');
+      Error.throwWithStackTrace(firstError!, firstStackTrace!);
+    }
 
     _isInitialized = false;
-    _servicesInitialized = false;
+    _isShuttingDown = false;
+    _environment = SDKEnvironment.SDK_ENVIRONMENT_DEVELOPMENT;
+    _lib = null;
 
-    _logger.info('DartBridge shutdown complete');
+    _logger.info(
+      wasInitialized
+          ? 'DartBridge shutdown complete'
+          : 'Partial DartBridge rollback complete',
+    );
   }
 
   // -------------------------------------------------------------------------
@@ -264,13 +496,13 @@ class DartBridge {
   /// HTTP bridge
   static DartBridgeHTTP get http => DartBridgeHTTP.instance;
 
+  /// Embeddings bridge
+  static DartBridgeEmbeddings get embeddings => DartBridgeEmbeddings.shared;
+
   /// LLM bridge
   static DartBridgeLLM get llm => DartBridgeLLM.shared;
 
   /// Model assignment bridge
-  static DartBridgeModelAssignment get modelAssignment =>
-      DartBridgeModelAssignment.instance;
-
   /// Model paths bridge
   static DartBridgeModelPaths get modelPaths => DartBridgeModelPaths.instance;
 
@@ -278,12 +510,13 @@ class DartBridge {
   static DartBridgeModelRegistry get modelRegistry =>
       DartBridgeModelRegistry.instance;
 
-  /// Platform bridge
-  static DartBridgePlatform get platform => DartBridgePlatform.instance;
+  /// Model lifecycle bridge
+  static DartBridgeModelLifecycle get modelLifecycle =>
+      DartBridgeModelLifecycle.instance;
 
-  /// Platform services bridge
-  static DartBridgePlatformServices get platformServices =>
-      DartBridgePlatformServices.instance;
+  /// Platform bridge (also exposes Foundation Models / System TTS/STT
+  /// availability callbacks via `DartBridgePlatform.registerServices()`).
+  static DartBridgePlatform get platform => DartBridgePlatform.instance;
 
   /// State bridge
   static DartBridgeState get state => DartBridgeState.instance;
@@ -312,87 +545,60 @@ class DartBridge {
   /// RAG pipeline bridge
   static DartBridgeRAG get rag => DartBridgeRAG.shared;
 
+  /// LoRA adapter bridge
+  static DartBridgeLora get lora => DartBridgeLora.shared;
+
+  /// LoRA registry bridge
+  static DartBridgeLoraRegistry get loraRegistry =>
+      DartBridgeLoraRegistry.shared;
+
   // -------------------------------------------------------------------------
   // Private Helpers
   // -------------------------------------------------------------------------
 
-  /// Configure C++ logging based on environment
+  /// Configure C++ logging based on environment.
+  ///
+  /// Uses canonical `RacLogLevel` values from `basic_types.dart` matching
+  /// `rac_log_level_t` in commons (`include/rac/core/rac_types.h`):
+  /// `trace=0, debug=1, info=2, warning=3, error=4, fatal=5`.
   static void _configureLogging(SDKEnvironment environment) {
     int logLevel;
     switch (environment) {
-      case SDKEnvironment.development:
-        logLevel = RacLogLevel.debug;
-        break;
-      case SDKEnvironment.staging:
+      case SDKEnvironment.SDK_ENVIRONMENT_STAGING:
         logLevel = RacLogLevel.info;
         break;
-      case SDKEnvironment.production:
+      case SDKEnvironment.SDK_ENVIRONMENT_PRODUCTION:
         logLevel = RacLogLevel.warning;
+        break;
+      case SDKEnvironment.SDK_ENVIRONMENT_DEVELOPMENT:
+      default:
+        logLevel = RacLogLevel.debug;
         break;
     }
 
     try {
-      final configureLogging =
-          lib.lookupFunction<Void Function(Int32), void Function(int)>(
-              'rac_configure_logging');
+      final configureLogging = lib
+          .lookupFunction<Void Function(Int32), void Function(int)>(
+            'rac_configure_logging',
+          );
       configureLogging(logLevel);
-    } catch (e) {
-      _logger.warning('Failed to configure C++ logging: $e');
+    } catch (_) {
+      _logger.warning('Failed to configure C++ logging');
     }
   }
 
-  /// Initialize SDK configuration in C++ (matches Swift's rac_sdk_init call)
-  /// This is critical for the LlamaCPP backend to function correctly.
-  static void _initializeSdkConfig(SDKEnvironment environment) {
-    try {
-      final sdkInit = lib.lookupFunction<
-          Int32 Function(Pointer<RacSdkConfigStruct>),
-          int Function(Pointer<RacSdkConfigStruct>)>('rac_sdk_init');
-
-      final config = calloc<RacSdkConfigStruct>();
-      final platformPtr = 'flutter'.toNativeUtf8();
-      final sdkVersionPtr = SDKConstants.version.toNativeUtf8();
-
-      try {
-        config.ref.environment = _environmentToInt(environment);
-        config.ref.apiKey = nullptr; // Set later if available
-        config.ref.baseURL = nullptr; // Set later if available
-        config.ref.deviceId = nullptr; // Set later if available
-        config.ref.platform = platformPtr;
-        config.ref.sdkVersion = sdkVersionPtr;
-
-        final result = sdkInit(config);
-        if (result != 0) {
-          _logger.warning('rac_sdk_init returned: $result');
-        }
-      } finally {
-        calloc.free(platformPtr);
-        calloc.free(sdkVersionPtr);
-        calloc.free(config);
-      }
-    } catch (e) {
-      _logger.debug('rac_sdk_init not available: $e');
-    }
-  }
-
-  /// Convert environment to C int value
-  static int _environmentToInt(SDKEnvironment env) {
+  /// Map the public Dart [SDKEnvironment] to the proto-generated
+  /// [SdkInitEnvironment] consumed by `rac_sdk_init_phase1_proto`. Mirrors
+  /// Swift's `CppBridge.SdkInit.mapEnvironment`.
+  static SdkInitEnvironment _toSdkInitEnvironment(SDKEnvironment env) {
     switch (env) {
-      case SDKEnvironment.development:
-        return 0;
-      case SDKEnvironment.staging:
-        return 1;
-      case SDKEnvironment.production:
-        return 2;
+      case SDKEnvironment.SDK_ENVIRONMENT_STAGING:
+        return SdkInitEnvironment.SDK_INIT_ENVIRONMENT_STAGING;
+      case SDKEnvironment.SDK_ENVIRONMENT_PRODUCTION:
+        return SdkInitEnvironment.SDK_INIT_ENVIRONMENT_PRODUCTION;
+      case SDKEnvironment.SDK_ENVIRONMENT_DEVELOPMENT:
+      default:
+        return SdkInitEnvironment.SDK_INIT_ENVIRONMENT_DEVELOPMENT;
     }
   }
-}
-
-/// Log level constants matching rac_log_level_t
-abstract class RacLogLevel {
-  static const int error = 0;
-  static const int warning = 1;
-  static const int info = 2;
-  static const int debug = 3;
-  static const int trace = 4;
 }

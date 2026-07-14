@@ -12,10 +12,14 @@ import Combine
 
 @MainActor
 class StorageViewModel: ObservableObject {
+    /// Single owner of storage state + SDK storage calls. The Storage screen
+    /// and the Settings storage section both consume this instance.
+    static let shared = StorageViewModel()
+
     @Published var totalStorageSize: Int64 = 0
     @Published var availableSpace: Int64 = 0
     @Published var modelStorageSize: Int64 = 0
-    @Published var storedModels: [StoredModel] = []
+    @Published var storedModels: [RAModelStorageMetrics] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
 
@@ -26,15 +30,31 @@ class StorageViewModel: ObservableObject {
         errorMessage = nil
 
         // Use public API to get storage info
-        let storageInfo = await RunAnywhere.getStorageInfo()
+        var request = RAStorageInfoRequest()
+        request.includeDevice = true
+        request.includeApp = true
+        request.includeModels = true
+        request.includeCache = true
+
+        let storageResult = await RunAnywhere.getStorageInfo(request)
+        guard storageResult.success else {
+            errorMessage = storageResult.errorMessage.isEmpty
+                ? "Failed to load storage data"
+                : storageResult.errorMessage
+            isLoading = false
+            return
+        }
+
+        let storageInfo = storageResult.info
 
         // Update storage sizes from the public API
-        totalStorageSize = storageInfo.appStorage.totalSize
-        availableSpace = storageInfo.deviceStorage.freeSpace
+        totalStorageSize = storageInfo.appStorage.totalBytes
+        availableSpace = storageInfo.deviceStorage.freeBytes
         modelStorageSize = storageInfo.totalModelsSize
 
-        // Use StoredModel directly from SDK
-        storedModels = storageInfo.storedModels
+        // Filter out registry-only / pseudo-model entries that have no on-disk
+        // artifact (Apple system models, built-in pseudo-models, etc.).
+        storedModels = storageInfo.models.filter { $0.sizeOnDiskBytes > 0 }
 
         isLoading = false
     }
@@ -61,16 +81,15 @@ class StorageViewModel: ObservableObject {
         }
     }
 
-    func deleteModel(_ model: StoredModel) async {
-        guard let framework = model.framework else {
-            errorMessage = "Cannot delete model: unknown framework"
+    func deleteModel(_ model: RAModelStorageMetrics) async {
+        let result = await RunAnywhere.deleteModel(model.modelID)
+        guard result.success else {
+            errorMessage = result.errorMessage.isEmpty
+                ? "Failed to delete model"
+                : result.errorMessage
             return
         }
-        do {
-            try await RunAnywhere.deleteStoredModel(model.id, framework: framework)
-            await refreshData()
-        } catch {
-            errorMessage = "Failed to delete model: \(error.localizedDescription)"
-        }
+
+        await refreshData()
     }
 }

@@ -10,7 +10,10 @@ DerivedData/
 # Local XCFrameworks (excluded from git - use remote distribution by default)
 # Default mode (testLocal = false): SDK downloads XCFrameworks from runanywhere-binaries releases
 # Local mode (testLocal = true): Place XCFrameworks in Binaries/ for local development/testing
-Binaries/*.xcframework/
+# Binaries/*.xcframework/ (unignored for LLM-Hub distribution)
+!Binaries/
+!Binaries/**
+Binaries/RunAnywhereMLXRuntimeResources/
 XCFrameworks/
 
 # SPM build artifacts (recreated during swift build)

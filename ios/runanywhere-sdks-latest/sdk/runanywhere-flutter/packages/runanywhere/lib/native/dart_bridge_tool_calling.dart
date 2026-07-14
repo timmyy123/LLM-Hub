@@ -1,437 +1,391 @@
-/// DartBridge+ToolCalling
-///
-/// Tool calling bridge - wraps C++ tool calling functions.
-///
-/// *** SINGLE SOURCE OF TRUTH FOR TOOL CALLING LOGIC IS IN COMMONS C++ ***
-///
-/// This is a THIN WRAPPER around rac_tool_calling.h functions.
-/// NO LOCAL PARSING LOGIC - everything calls through to C++.
-///
-/// Platform SDKs handle ONLY:
-/// - Tool registry (Dart closures)
-/// - Tool execution (Dart async calls)
-library dart_bridge_tool_calling;
+// SPDX-License-Identifier: Apache-2.0
+//
+// dart_bridge_tool_calling.dart — thin proto-byte bridge over the commons
+// tool-calling C ABI. All parsing, validation, prompt formatting, and
+// session orchestration live in C++ (`rac_tool_call_*_proto` +
+// `rac_tool_calling_session_*_proto`). This file only carries bytes.
+//
+// Mirrors Swift's `CppBridge+ToolCalling.swift`.
+library;
 
-import 'dart:convert';
-import 'dart:ffi';
+import 'dart:async';
+import 'dart:ffi' as ffi;
+import 'dart:isolate';
+import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
+import 'package:fixnum/fixnum.dart' show Int64;
 
+import 'package:runanywhere/core/native/rac_native.dart';
 import 'package:runanywhere/foundation/logging/sdk_logger.dart';
-import 'package:runanywhere/native/ffi_types.dart';
-import 'package:runanywhere/native/platform_loader.dart';
+import 'package:runanywhere/generated/tool_calling.pb.dart'
+    show
+        ToolCallValidationRequest,
+        ToolCallValidationResult,
+        ToolCallingSessionCreateRequest,
+        ToolCallingSessionEvent,
+        ToolCallingSessionStepWithResultRequest,
+        ToolParseRequest,
+        ToolParseResult,
+        ToolPromptFormatRequest,
+        ToolPromptFormatResult,
+        ToolValue,
+        ToolValueJSON;
+import 'package:runanywhere/native/dart_bridge_proto_utils.dart';
 
-/// Tool call parse result from C++
-class ToolCallParseResult {
-  final bool hasToolCall;
-  final String cleanText;
-  final String? toolName;
-  final Map<String, dynamic>? arguments;
-  final int callId;
-
-  ToolCallParseResult({
-    required this.hasToolCall,
-    required this.cleanText,
-    this.toolName,
-    this.arguments,
-    required this.callId,
-  });
-}
-
-/// Tool calling bridge for C++ interop.
-///
-/// *** ALL PARSING LOGIC IS IN C++ - NO DART FALLBACKS ***
-///
-/// Provides access to C++ tool calling functions:
-/// - Parse <tool_call> tags from LLM output
-/// - Format tools for system prompt
-/// - Build initial and follow-up prompts
-/// - Normalize JSON (fix unquoted keys)
+/// Thin C ABI bridge for tool-calling parse / format / validate and the
+/// session state machine.
 class DartBridgeToolCalling {
-  // MARK: - Singleton
-
-  /// Shared instance
-  static final DartBridgeToolCalling shared = DartBridgeToolCalling._();
-
   DartBridgeToolCalling._();
 
-  // MARK: - State
+  static final DartBridgeToolCalling shared = DartBridgeToolCalling._();
 
   final _logger = SDKLogger('DartBridge.ToolCalling');
-  DynamicLibrary? _lib;
 
-  DynamicLibrary get lib {
-    _lib ??= PlatformLoader.loadCommons();
-    return _lib!;
+  /// Parse LLM output bytes via commons.
+  ToolParseResult parse(ToolParseRequest request) {
+    final fn = RacNative.bindings.rac_tool_call_parse_proto;
+    return DartBridgeProtoUtils.callRequest<ToolParseResult>(
+      request: request,
+      invoke: fn,
+      decode: ToolParseResult.fromBuffer,
+      symbol: 'rac_tool_call_parse_proto',
+    );
   }
 
-  // MARK: - Parse Tool Call (NO FALLBACK)
+  /// Format a tools-aware prompt via commons.
+  ToolPromptFormatResult formatPrompt(ToolPromptFormatRequest request) {
+    final fn = RacNative.bindings.rac_tool_call_format_prompt_proto;
+    return DartBridgeProtoUtils.callRequest<ToolPromptFormatResult>(
+      request: request,
+      invoke: fn,
+      decode: ToolPromptFormatResult.fromBuffer,
+      symbol: 'rac_tool_call_format_prompt_proto',
+    );
+  }
 
-  /// Parse LLM output for tool calls using C++ implementation.
-  ///
-  /// *** THIS IS THE ONLY PARSING IMPLEMENTATION - NO DART FALLBACK ***
-  ///
-  /// Handles all edge cases:
-  /// - Missing closing tags (brace-matching)
-  /// - Unquoted JSON keys ({tool: "name"} → {"tool": "name"})
-  /// - Multiple key naming conventions
-  /// - Tool name as key pattern
-  ///
-  /// [llmOutput] Raw LLM output text
-  /// Returns parsed result with tool call info
-  ToolCallParseResult parseToolCall(String llmOutput) {
-    try {
-      final parseFn = lib.lookupFunction<
-          Int32 Function(Pointer<Utf8>, Pointer<RacToolCallStruct>),
-          int Function(Pointer<Utf8>, Pointer<RacToolCallStruct>)>(
-        'rac_tool_call_parse',
-      );
+  /// Validate a parsed tool call via commons.
+  ToolCallValidationResult validate(ToolCallValidationRequest request) {
+    final fn = RacNative.bindings.rac_tool_call_validate_proto;
+    return DartBridgeProtoUtils.callRequest<ToolCallValidationResult>(
+      request: request,
+      invoke: fn,
+      decode: ToolCallValidationResult.fromBuffer,
+      symbol: 'rac_tool_call_validate_proto',
+    );
+  }
 
-      final freeFn = lib.lookupFunction<
-          Void Function(Pointer<RacToolCallStruct>),
-          void Function(Pointer<RacToolCallStruct>)>(
-        'rac_tool_call_free',
-      );
+  /// Serialize a [ToolValue] to its canonical JSON string. Recursive walk
+  /// lives in commons (`rac_tool_value_to_json_proto`); Dart only marshals
+  /// bytes.
+  String toolValueToJson(ToolValue value) {
+    final fn = RacNative.bindings.rac_tool_value_to_json_proto;
+    final wrapper = DartBridgeProtoUtils.callRequest<ToolValueJSON>(
+      request: value,
+      invoke: fn,
+      decode: ToolValueJSON.fromBuffer,
+      symbol: 'rac_tool_value_to_json_proto',
+    );
+    return wrapper.json;
+  }
 
-      final outputPtr = llmOutput.toNativeUtf8();
-      final resultPtr = calloc<RacToolCallStruct>();
+  /// Parse a JSON string back into a [ToolValue]. Recursive walk lives in
+  /// commons (`rac_tool_value_from_json_proto`); Dart only marshals bytes.
+  ToolValue toolValueFromJson(String json) {
+    final fn = RacNative.bindings.rac_tool_value_from_json_proto;
+    final wrapper = ToolValueJSON(json: json);
+    return DartBridgeProtoUtils.callRequest<ToolValue>(
+      request: wrapper,
+      invoke: fn,
+      decode: ToolValue.fromBuffer,
+      symbol: 'rac_tool_value_from_json_proto',
+    );
+  }
 
-      try {
-        final rc = parseFn(outputPtr, resultPtr);
+  /// Create a tool-calling session that runs entirely in a dedicated worker
+  /// isolate, so the inline llama.cpp generation loop (create + every step)
+  /// never blocks the calling isolate. Events are copied SYNCHRONOUSLY inside a
+  /// worker-owned `NativeCallable.isolateLocal` (commons' dispatcher hands out a
+  /// stack-local buffer valid only for the call — see tool_calling_session.cpp
+  /// `dispatch_pending`) and forwarded to this isolate over a port, where they
+  /// are decoded onto the returned broadcast stream. Tool results are sent back
+  /// to the worker via [ToolCallingSessionHandle.stepWithResult]; cancellation
+  /// uses the thread-safe `rac_tool_calling_session_cancel_proto` directly.
+  ToolCallingSessionHandle createSession(
+    ToolCallingSessionCreateRequest request,
+  ) {
+    // Ownership transfers to ToolCallingSessionHandle, whose close() method
+    // closes the controller after the worker port is quiesced.
+    // ignore: close_sinks
+    final controller = StreamController<ToolCallingSessionEvent>.broadcast();
+    final fromWorker = ReceivePort();
+    final idCompleter = Completer<int>();
+    final handle = ToolCallingSessionHandle._(
+      sessionId: idCompleter.future,
+      events: controller,
+      fromWorker: fromWorker,
+    );
 
-        if (rc != RAC_SUCCESS) {
-          return ToolCallParseResult(
-            hasToolCall: false,
-            cleanText: llmOutput,
-            callId: 0,
-          );
+    fromWorker.listen((Object? message) {
+      if (message is SendPort) {
+        handle._toWorker = message;
+      } else if (message is Uint8List) {
+        if (controller.isClosed) return;
+        try {
+          controller.add(ToolCallingSessionEvent.fromBuffer(message));
+        } catch (e, st) {
+          controller.addError(e, st);
         }
-
-        final result = resultPtr.ref;
-        final hasToolCall = result.hasToolCall == RAC_TRUE;
-
-        String cleanText = llmOutput;
-        if (result.cleanText != nullptr) {
-          cleanText = result.cleanText.toDartString();
-        }
-
-        String? toolName;
-        Map<String, dynamic>? arguments;
-        int callId = 0;
-
-        if (hasToolCall) {
-          if (result.toolName != nullptr) {
-            toolName = result.toolName.toDartString();
-          }
-
-          if (result.argumentsJson != nullptr) {
-            final argsJson = result.argumentsJson.toDartString();
-            try {
-              arguments = jsonDecode(argsJson) as Map<String, dynamic>;
-            } catch (e) {
-              arguments = {};
-            }
-          }
-
-          callId = result.callId;
-        }
-
-        freeFn(resultPtr);
-
-        return ToolCallParseResult(
-          hasToolCall: hasToolCall,
-          cleanText: cleanText,
-          toolName: toolName,
-          arguments: arguments,
-          callId: callId,
+      } else if (message is int) {
+        _logger.debug('Tool calling session created: handle=$message');
+        if (!idCompleter.isCompleted) idCompleter.complete(message);
+      } else if (message is List && message.isNotEmpty && message[0] == 'err') {
+        final err = StateError(
+          message.length > 1 ? '${message[1]}' : 'tool-calling worker error',
         );
-      } finally {
-        calloc.free(outputPtr);
-        calloc.free(resultPtr);
+        if (!controller.isClosed) controller.addError(err);
+        if (!idCompleter.isCompleted) idCompleter.completeError(err);
       }
-    } catch (e) {
-      _logger.error('parseToolCall failed: $e');
-      return ToolCallParseResult(
-        hasToolCall: false,
-        cleanText: llmOutput,
-        callId: 0,
-      );
-    }
-  }
+    });
 
-  // =============================================================================
-  // MARK: - Format Tools for Prompt (NO FALLBACK)
-
-  /// Format tool definitions into a system prompt using C++ implementation
-  /// with a specific format.
-  ///
-  /// [toolsJson] JSON array of tool definitions
-  /// [formatName] Format name ("default", "lfm2")
-  /// Returns formatted system prompt string
-  String formatToolsPromptWithFormat(String toolsJson, String formatName) {
-    if (toolsJson.isEmpty || toolsJson == '[]') {
-      return '';
-    }
-
-    try {
-      final formatFn = lib.lookupFunction<
-          Int32 Function(Pointer<Utf8>, Pointer<Utf8>, Pointer<Pointer<Utf8>>),
-          int Function(Pointer<Utf8>, Pointer<Utf8>, Pointer<Pointer<Utf8>>)>(
-        'rac_tool_call_format_prompt_json_with_format_name',
-      );
-
-      final racFreeFn = lib.lookupFunction<Void Function(Pointer<Void>),
-          void Function(Pointer<Void>)>('rac_free');
-
-      final toolsPtr = toolsJson.toNativeUtf8();
-      final formatPtr = formatName.toNativeUtf8();
-      final promptPtrPtr = calloc<Pointer<Utf8>>();
-
+    final bytes = request.writeToBuffer();
+    unawaited(() async {
       try {
-        final rc = formatFn(toolsPtr, formatPtr, promptPtrPtr);
-
-        if (rc != RAC_SUCCESS || promptPtrPtr.value == nullptr) {
-          _logger.error('formatToolsPromptWithFormat C++ returned error: $rc');
-          return formatToolsPrompt(toolsJson); // Fallback to default
-        }
-
-        final result = promptPtrPtr.value.toDartString();
-        racFreeFn(promptPtrPtr.value.cast());
-        return result;
-      } finally {
-        calloc.free(toolsPtr);
-        calloc.free(formatPtr);
-        calloc.free(promptPtrPtr);
+        final iso = await Isolate.spawn(_toolSessionWorkerEntry, <dynamic>[
+          fromWorker.sendPort,
+          bytes,
+        ]);
+        handle._isolate = iso;
+        if (handle._closed) iso.kill(priority: Isolate.immediate);
+      } catch (e, st) {
+        if (!controller.isClosed) controller.addError(e, st);
+        if (!idCompleter.isCompleted) idCompleter.completeError(e, st);
       }
-    } catch (e) {
-      _logger.error('formatToolsPromptWithFormat failed: $e');
-      return formatToolsPrompt(toolsJson); // Fallback to default
-    }
+    }());
+
+    return handle;
   }
 
-  /// Format tool definitions into a system prompt using C++ implementation
-  /// (uses default format).
-  ///
-  /// [toolsJson] JSON array of tool definitions
-  /// Returns formatted system prompt string
-  String formatToolsPrompt(String toolsJson) {
-    if (toolsJson.isEmpty || toolsJson == '[]') {
-      return '';
-    }
-
+  /// Teardown a session handle (called by the session worker, not directly).
+  void destroySession(int sessionHandle) {
+    final fn = RacNative.bindings.rac_tool_calling_session_destroy_proto;
     try {
-      final formatFn = lib.lookupFunction<
-          Int32 Function(Pointer<Utf8>, Pointer<Pointer<Utf8>>),
-          int Function(Pointer<Utf8>, Pointer<Pointer<Utf8>>)>(
-        'rac_tool_call_format_prompt_json',
-      );
-
-      final racFreeFn = lib.lookupFunction<Void Function(Pointer<Void>),
-          void Function(Pointer<Void>)>('rac_free');
-
-      final toolsPtr = toolsJson.toNativeUtf8();
-      final promptPtrPtr = calloc<Pointer<Utf8>>();
-
-      try {
-        final rc = formatFn(toolsPtr, promptPtrPtr);
-
-        if (rc != RAC_SUCCESS || promptPtrPtr.value == nullptr) {
-          return '';
-        }
-
-        final result = promptPtrPtr.value.toDartString();
-        racFreeFn(promptPtrPtr.value.cast());
-        return result;
-      } finally {
-        calloc.free(toolsPtr);
-        calloc.free(promptPtrPtr);
-      }
+      fn(sessionHandle);
     } catch (e) {
-      _logger.error('formatToolsPrompt failed: $e');
-      return '';
+      _logger.warning('session destroy failed: $e');
     }
   }
 
-  // MARK: - Build Initial Prompt (NO FALLBACK)
+  /// Cancel an in-flight session. Safe to call from any
+  /// isolate; the native side latches the cancel and asks the in-flight
+  /// LifecycleLlmRef to abort. Idempotent for unknown handles. Returns
+  /// false when the native cancellation call fails.
+  bool cancelSession(int sessionHandle) {
+    final fn = RacNative.bindings.rac_tool_calling_session_cancel_proto;
+    try {
+      fn(sessionHandle);
+      return true;
+    } catch (e) {
+      _logger.warning('session cancel failed: $e');
+      return false;
+    }
+  }
+}
 
-  /// Build initial prompt with tools and user query using C++ implementation.
-  ///
-  /// [userPrompt] The user's question/request
-  /// [toolsJson] JSON array of tool definitions
-  /// [optionsJson] Options as JSON (can be empty)
-  /// Returns complete formatted prompt
-  String buildInitialPrompt(
-    String userPrompt,
-    String toolsJson, {
-    String? optionsJson,
+/// Owned handle for a tool-calling session — combines the C side session id,
+/// the Dart broadcast stream of decoded events, and the native callable that
+/// must be closed when the session ends.
+class ToolCallingSessionHandle {
+  ToolCallingSessionHandle._({
+    required this._sessionId,
+    required this._events,
+    required this._fromWorker,
   }) {
-    try {
-      final buildFn = lib.lookupFunction<
-          Int32 Function(
-            Pointer<Utf8>,
-            Pointer<Utf8>,
-            Pointer<RacToolCallingOptionsStruct>,
-            Pointer<Pointer<Utf8>>,
-          ),
-          int Function(
-            Pointer<Utf8>,
-            Pointer<Utf8>,
-            Pointer<RacToolCallingOptionsStruct>,
-            Pointer<Pointer<Utf8>>,
-          )>('rac_tool_call_build_initial_prompt');
-
-      final racFreeFn = lib.lookupFunction<Void Function(Pointer<Void>),
-          void Function(Pointer<Void>)>('rac_free');
-
-      final userPtr = userPrompt.toNativeUtf8();
-      final toolsPtr = toolsJson.toNativeUtf8();
-      final optionsPtr = calloc<RacToolCallingOptionsStruct>();
-      final promptPtrPtr = calloc<Pointer<Utf8>>();
-
-      // Set default options
-      optionsPtr.ref.maxToolCalls = 5;
-      optionsPtr.ref.autoExecute = RAC_TRUE;
-      optionsPtr.ref.temperature = 0.7;
-      optionsPtr.ref.maxTokens = 1024;
-      optionsPtr.ref.systemPrompt = nullptr;
-      optionsPtr.ref.replaceSystemPrompt = RAC_FALSE;
-      optionsPtr.ref.keepToolsAvailable = RAC_FALSE;
-
-      try {
-        final rc = buildFn(userPtr, toolsPtr, optionsPtr, promptPtrPtr);
-
-        if (rc != RAC_SUCCESS || promptPtrPtr.value == nullptr) {
-          return userPrompt;
-        }
-
-        final result = promptPtrPtr.value.toDartString();
-        racFreeFn(promptPtrPtr.value.cast());
-        return result;
-      } finally {
-        calloc.free(userPtr);
-        calloc.free(toolsPtr);
-        calloc.free(optionsPtr);
-        calloc.free(promptPtrPtr);
-      }
-    } catch (e) {
-      _logger.error('buildInitialPrompt failed: $e');
-      return userPrompt;
-    }
+    // Cache the resolved id for synchronous cancel. Errors are swallowed here —
+    // a failed create surfaces through the events stream and to [sessionId].
+    unawaited(
+      _sessionId.then((id) => _resolvedId = id).catchError((Object _) => 0),
+    );
   }
 
-  // MARK: - Build Follow-up Prompt (NO FALLBACK)
+  final Future<int> _sessionId;
+  int _resolvedId = 0;
+  final StreamController<ToolCallingSessionEvent> _events;
+  final ReceivePort _fromWorker;
+  SendPort? _toWorker;
+  Isolate? _isolate;
+  bool _closed = false;
 
-  /// Build follow-up prompt after tool execution using C++ implementation.
-  ///
-  /// [originalPrompt] The original user prompt
-  /// [toolsPrompt] Formatted tools prompt (can be empty)
-  /// [toolName] Name of executed tool
-  /// [toolResultJson] Tool result as JSON
-  /// [keepToolsAvailable] Whether to keep tools in follow-up
-  /// Returns follow-up prompt string
-  String buildFollowupPrompt({
-    required String originalPrompt,
-    String? toolsPrompt,
-    required String toolName,
-    required String toolResultJson,
-    bool keepToolsAvailable = false,
+  /// Future of the C-side session id, resolved when the worker reports it back
+  /// (a turn after the first event). Only needed for [cancel].
+  Future<int> get sessionId => _sessionId;
+
+  /// Resolved C-side session id, or 0 if the worker has not reported it yet.
+  int get resolvedSessionId => _resolvedId;
+
+  /// Stream of `ToolCallingSessionEvent`s emitted by commons (forwarded from
+  /// the session worker over a port).
+  Stream<ToolCallingSessionEvent> get events => _events.stream;
+
+  /// Forward a tool result so commons continues the loop. Runs the next
+  /// generation turn IN THE SESSION WORKER — never blocks the calling isolate.
+  /// The worker fills in its own session id, so callers need not await it.
+  void stepWithResult({
+    required String toolCallId,
+    required String resultJson,
+    required String error,
   }) {
-    try {
-      final buildFn = lib.lookupFunction<
-          Int32 Function(
-            Pointer<Utf8>,
-            Pointer<Utf8>,
-            Pointer<Utf8>,
-            Pointer<Utf8>,
-            Int32,
-            Pointer<Pointer<Utf8>>,
-          ),
-          int Function(
-            Pointer<Utf8>,
-            Pointer<Utf8>,
-            Pointer<Utf8>,
-            Pointer<Utf8>,
-            int,
-            Pointer<Pointer<Utf8>>,
-          )>('rac_tool_call_build_followup_prompt');
-
-      final racFreeFn = lib.lookupFunction<Void Function(Pointer<Void>),
-          void Function(Pointer<Void>)>('rac_free');
-
-      final originalPtr = originalPrompt.toNativeUtf8();
-      final toolsPromptPtr =
-          toolsPrompt != null ? toolsPrompt.toNativeUtf8() : nullptr;
-      final toolNamePtr = toolName.toNativeUtf8();
-      final resultPtr = toolResultJson.toNativeUtf8();
-      final promptPtrPtr = calloc<Pointer<Utf8>>();
-
-      try {
-        final rc = buildFn(
-          originalPtr,
-          toolsPromptPtr,
-          toolNamePtr,
-          resultPtr,
-          keepToolsAvailable ? RAC_TRUE : RAC_FALSE,
-          promptPtrPtr,
-        );
-
-        if (rc != RAC_SUCCESS || promptPtrPtr.value == nullptr) {
-          return '';
-        }
-
-        final result = promptPtrPtr.value.toDartString();
-        racFreeFn(promptPtrPtr.value.cast());
-        return result;
-      } finally {
-        calloc.free(originalPtr);
-        if (toolsPromptPtr != nullptr) calloc.free(toolsPromptPtr);
-        calloc.free(toolNamePtr);
-        calloc.free(resultPtr);
-        calloc.free(promptPtrPtr);
-      }
-    } catch (e) {
-      _logger.error('buildFollowupPrompt failed: $e');
-      return '';
-    }
+    _toWorker?.send(<dynamic>['step', toolCallId, resultJson, error]);
   }
 
-  // MARK: - JSON Normalization (NO FALLBACK)
-
-  /// Normalize JSON by adding quotes around unquoted keys using C++ implementation.
-  ///
-  /// [jsonStr] Raw JSON possibly with unquoted keys
-  /// Returns normalized JSON string
-  String normalizeJson(String jsonStr) {
-    try {
-      final normalizeFn = lib.lookupFunction<
-          Int32 Function(Pointer<Utf8>, Pointer<Pointer<Utf8>>),
-          int Function(Pointer<Utf8>, Pointer<Pointer<Utf8>>)>(
-        'rac_tool_call_normalize_json',
-      );
-
-      final racFreeFn = lib.lookupFunction<Void Function(Pointer<Void>),
-          void Function(Pointer<Void>)>('rac_free');
-
-      final inputPtr = jsonStr.toNativeUtf8();
-      final outputPtrPtr = calloc<Pointer<Utf8>>();
-
-      try {
-        final rc = normalizeFn(inputPtr, outputPtrPtr);
-
-        if (rc != RAC_SUCCESS || outputPtrPtr.value == nullptr) {
-          return jsonStr;
-        }
-
-        final result = outputPtrPtr.value.toDartString();
-        racFreeFn(outputPtrPtr.value.cast());
-        return result;
-      } finally {
-        calloc.free(inputPtr);
-        calloc.free(outputPtrPtr);
-      }
-    } catch (e) {
-      _logger.error('normalizeJson failed: $e');
-      return jsonStr;
+  /// Tear the session down: ask the worker to destroy the native session,
+  /// quiesce, and close its callback (the worker owns the teardown ordering so
+  /// commons never invokes a freed trampoline), then drop our port. When the
+  /// worker is idle (the usual case — close runs after the final event) it
+  /// processes this immediately and exits on its own.
+  Future<void> close() async {
+    if (_closed) return;
+    _closed = true;
+    final worker = _toWorker;
+    if (worker != null) {
+      worker.send('close');
+    } else {
+      // Worker not live yet — kill it once it spawns so it cannot leak.
+      _isolate?.kill(priority: Isolate.immediate);
     }
+    _toWorker = null;
+    _fromWorker.close();
+    await _events.close();
+  }
+
+  /// Cancel the in-flight native loop. `rac_tool_calling_session_cancel_proto`
+  /// is thread-safe and idempotent, so it is invoked directly from this isolate
+  /// (it latches a cancel the worker's in-flight generate checks) rather than
+  /// queued behind the worker's blocking turn.
+  bool cancel() {
+    if (_closed || _resolvedId == 0) return false;
+    return DartBridgeToolCalling.shared.cancelSession(_resolvedId);
+  }
+}
+
+// MARK: - Session worker isolate
+//
+// `Isolate.spawn` entry (top-level; the spawn message is a sendable
+// `[SendPort, Uint8List]` list — no closure capture). The whole session lives
+// here: create + every step run the blocking llama.cpp generation loop inline
+// without touching the UI isolate, and the event callback is a WORKER-owned
+// `NativeCallable.isolateLocal` that fires SYNCHRONOUSLY on this worker thread
+// during create/step. That synchronous timing is mandatory: commons'
+// `dispatch_pending` hands the callback a pointer into a stack-local buffer
+// that is freed the moment the call returns (tool_calling_session.cpp), so the
+// bytes must be copied here-and-now — a deferred `.listener` read on another
+// isolate is a use-after-free. The copy is what crosses back to the main
+// isolate over `mainPort`. `RacNative.bindings` re-resolves the dylib symbols
+// on first access (idempotent `PlatformLoader.loadCommons()`).
+//
+// Protocol — worker → main: the control `SendPort` (first), then the `int`
+// session id published synchronously before initial generation, followed by
+// serialized `ToolCallingSessionEvent` bytes per emission; `['err', msg]` on a
+// hard create/step failure. main → worker:
+// `['step', toolCallId, resultJson, error]` to continue the loop; `'close'` to
+// destroy + close the callback and exit. Cancellation is NOT routed
+// here — the thread-safe cancel ABI is called directly from the main isolate.
+void _toolSessionWorkerEntry(List<dynamic> args) {
+  final mainPort = args[0] as SendPort;
+  final createRequestBytes = args[1] as Uint8List;
+
+  final bindings = RacNative.bindings;
+  final createFn = bindings.rac_tool_calling_session_create_proto;
+  final stepFn = bindings.rac_tool_calling_session_step_with_result_proto;
+  final destroyFn = bindings.rac_tool_calling_session_destroy_proto;
+
+  final control = ReceivePort();
+  var sessionId = 0;
+  var closed = false;
+
+  final nativeCb =
+      ffi.NativeCallable<
+        RacToolCallingSessionEventCallbackNative
+      >.isolateLocal((
+        ffi.Pointer<ffi.Uint8> bytesPtr,
+        int bytesLen,
+        ffi.Pointer<ffi.Void> _,
+      ) {
+        if (bytesLen <= 0 || bytesPtr == ffi.nullptr) return;
+        // Copy synchronously — commons frees this buffer when the call returns.
+        mainPort.send(Uint8List.fromList(bytesPtr.asTypedList(bytesLen)));
+      });
+  final nativeHandleCb =
+      ffi.NativeCallable<
+        RacToolCallingHandlePublishedCallbackNative
+      >.isolateLocal((int handle, ffi.Pointer<ffi.Void> _) {
+        // Commons invokes this synchronously before initial generation. Publish
+        // the handle immediately so cancellation cannot race the blocking turn.
+        sessionId = handle;
+        mainPort.send(handle);
+      });
+
+  void cleanup() {
+    if (closed) return;
+    closed = true;
+    if (sessionId != 0) destroyFn(sessionId);
+    nativeCb.close();
+    control.close();
+  }
+
+  // Hand the control port back before generating so main can send steps/close.
+  mainPort.send(control.sendPort);
+
+  control.listen((Object? message) {
+    if (closed) return;
+    if (message is List && message.isNotEmpty && message[0] == 'step') {
+      final req = ToolCallingSessionStepWithResultRequest(
+        sessionHandle: Int64(sessionId),
+        toolCallId: message[1] as String,
+        resultJson: message[2] as String,
+        error: message[3] as String,
+      );
+      final bytes = req.writeToBuffer();
+      final ptr = DartBridgeProtoUtils.copyBytes(bytes);
+      try {
+        final code = stepFn(ptr, bytes.length);
+        if (code != 0) {
+          mainPort.send(<dynamic>['err', 'step failed: code=$code']);
+        }
+      } finally {
+        calloc.free(ptr);
+      }
+    } else if (message == 'close') {
+      cleanup();
+    }
+  });
+
+  // First turn — blocks here; events fire via nativeCb → mainPort. Commons
+  // returns once it needs a tool result (or on the final answer).
+  final reqPtr = DartBridgeProtoUtils.copyBytes(createRequestBytes);
+  try {
+    final code = createFn(
+      reqPtr,
+      createRequestBytes.length,
+      nativeCb.nativeFunction,
+      ffi.nullptr,
+      nativeHandleCb.nativeFunction,
+      ffi.nullptr,
+    );
+    if (code != 0) {
+      mainPort.send(<dynamic>['err', 'create failed: code=$code']);
+      cleanup();
+      return;
+    }
+    if (sessionId == 0) {
+      mainPort.send(<dynamic>[
+        'err',
+        'create returned without a session handle',
+      ]);
+      cleanup();
+    }
+  } finally {
+    calloc.free(reqPtr);
+    nativeHandleCb.close();
   }
 }

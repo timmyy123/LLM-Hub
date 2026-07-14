@@ -14,6 +14,11 @@ ios/build/
 **/ios/xcframeworks/
 *.xcframework.zip
 
+# MLX release staging. npm's explicit package `files` list still includes
+# these generated resources in the packed artifact after validation.
+packages/mlx/ios/Resources/
+packages/mlx/ios/ThirdPartyNotices/
+
 # NOTE: iOS xcframeworks are now bundled in npm package - DO NOT gitignore them
 # The following are bundled for npm publish:
 # - packages/core/ios/Frameworks/RACommons.xcframework
@@ -77,7 +82,20 @@ tmp/
 # Yarn PnP
 .pnp.cjs
 .pnp.loader.mjs
-.yarn/
+
+# Yarn Berry — follow standard conventions:
+# Commit: plugins, releases, patches, sdks, versions (needed for reproducible CI builds)
+# Ignore: cache, unplugged, build-state, install-state
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+.yarn/berry/
+# !.yarn/plugins/    — explicitly NOT ignored, needed by CI
+# !.yarn/releases/   — explicitly NOT ignored, for reproducible builds
+# !.yarn/patches/
+# !.yarn/sdks/
+# !.yarn/versions/
 
 # Package artifacts
 package.tgz

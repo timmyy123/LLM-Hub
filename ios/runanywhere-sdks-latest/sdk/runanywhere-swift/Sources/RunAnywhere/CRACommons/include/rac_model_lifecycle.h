@@ -1,0 +1,6 @@
+#ifndef RAC_SWIFT_MODEL_LIFECYCLE_FORWARDER_H
+#define RAC_SWIFT_MODEL_LIFECYCLE_FORWARDER_H
+
+#include "rac/core/rac_model_lifecycle.h"
+
+#endif  // RAC_SWIFT_MODEL_LIFECYCLE_FORWARDER_H

@@ -1,88 +1,45 @@
 /**
- * ModelRequiredOverlay Component
+ * ModelRequiredOverlay — empty state shown when a modality has no model loaded.
  *
- * Full-screen overlay shown when a model is required but not selected.
- *
- * Reference: iOS ModelRequiredOverlay
+ * Themed on the design system: a soft icon medallion, title + description, and a
+ * filled primary "Select a model" button that opens the model picker. Touches in
+ * empty regions pass through (box-none) so the chat header beneath stays tappable.
  */
-
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
-import { Colors } from '../../theme/colors';
-import { Typography } from '../../theme/typography';
-import {
-  Spacing,
-  BorderRadius,
-  Padding,
-  IconSize,
-  ButtonHeight,
-} from '../../theme/spacing';
-import { ModelModality } from '../../types/model';
+import { Icon, useTheme, type IconName } from '../../theme/system';
+
+export type RequiredModelKind = 'llm' | 'stt' | 'tts' | 'vad' | 'vlm';
 
 interface ModelRequiredOverlayProps {
-  /** Modality context for icon and text */
-  modality: ModelModality;
-  /** Title text */
+  modality: RequiredModelKind;
   title?: string;
-  /** Description text */
   description?: string;
-  /** Callback when select model button pressed */
   onSelectModel: () => void;
 }
 
-/**
- * Get icon name based on modality
- */
-const getModalityIcon = (modality: ModelModality): string => {
-  switch (modality) {
-    case ModelModality.LLM:
-      return 'chatbubble-ellipses-outline';
-    case ModelModality.STT:
-      return 'mic-outline';
-    case ModelModality.TTS:
-      return 'volume-high-outline';
-    case ModelModality.VLM:
-      return 'eye-outline';
-    default:
-      return 'cube-outline';
-  }
+const MODALITY_ICON: Record<RequiredModelKind, IconName> = {
+  llm: 'chat',
+  stt: 'transcribe',
+  tts: 'speak',
+  vad: 'vad',
+  vlm: 'vision',
 };
 
-/**
- * Get default title based on modality
- */
-const getDefaultTitle = (modality: ModelModality): string => {
-  switch (modality) {
-    case ModelModality.LLM:
-      return 'No Language Model Selected';
-    case ModelModality.STT:
-      return 'No Speech Model Selected';
-    case ModelModality.TTS:
-      return 'No Voice Model Selected';
-    case ModelModality.VLM:
-      return 'No Vision Model Selected';
-    default:
-      return 'No Model Selected';
-  }
+const DEFAULT_TITLE: Record<RequiredModelKind, string> = {
+  llm: 'No language model selected',
+  stt: 'No speech model selected',
+  tts: 'No voice model selected',
+  vad: 'No VAD model selected',
+  vlm: 'No vision model selected',
 };
 
-/**
- * Get default description based on modality
- */
-const getDefaultDescription = (modality: ModelModality): string => {
-  switch (modality) {
-    case ModelModality.LLM:
-      return 'Select a language model to start chatting with AI on your device.';
-    case ModelModality.STT:
-      return 'Select a speech recognition model to transcribe audio.';
-    case ModelModality.TTS:
-      return 'Select a text-to-speech model to generate audio.';
-    case ModelModality.VLM:
-      return 'Select a vision model to analyze images.';
-    default:
-      return 'Select a model to get started.';
-  }
+const DEFAULT_DESCRIPTION: Record<RequiredModelKind, string> = {
+  llm: 'Select a language model to start chatting with AI on your device.',
+  stt: 'Select a speech recognition model to transcribe audio.',
+  tts: 'Select a text-to-speech model to generate audio.',
+  vad: 'Select a voice activity model to detect speech in microphone audio.',
+  vlm: 'Select a vision model to analyze images.',
 };
 
 export const ModelRequiredOverlay: React.FC<ModelRequiredOverlayProps> = ({
@@ -91,36 +48,55 @@ export const ModelRequiredOverlay: React.FC<ModelRequiredOverlayProps> = ({
   description,
   onSelectModel,
 }) => {
-  const iconName = getModalityIcon(modality);
-  const displayTitle = title || getDefaultTitle(modality);
-  const displayDescription = description || getDefaultDescription(modality);
+  const { colors, typography } = useTheme();
+  const displayTitle = title ?? DEFAULT_TITLE[modality];
+  const displayDescription = description ?? DEFAULT_DESCRIPTION[modality];
 
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
-        {/* Icon */}
-        <View style={styles.iconContainer}>
+    <View
+      style={[styles.container, { backgroundColor: colors.background }]}
+      pointerEvents="box-none"
+    >
+      <View style={styles.content} pointerEvents="auto">
+        <View
+          style={[styles.medallion, { backgroundColor: colors.surfaceVariant }]}
+        >
           <Icon
-            name={iconName}
-            size={IconSize.xLarge}
-            color={Colors.textSecondary}
+            name={MODALITY_ICON[modality]}
+            size={36}
+            color={colors.onSurfaceVariant}
           />
         </View>
 
-        {/* Title */}
-        <Text style={styles.title}>{displayTitle}</Text>
-
-        {/* Description */}
-        <Text style={styles.description}>{displayDescription}</Text>
-
-        {/* Select Model Button */}
-        <TouchableOpacity
-          style={styles.button}
-          onPress={onSelectModel}
-          activeOpacity={0.8}
+        <Text
+          style={[typography.titleLarge, styles.title, { color: colors.onSurface }]}
         >
-          <Icon name="add-circle" size={20} color={Colors.textWhite} />
-          <Text style={styles.buttonText}>Select a Model</Text>
+          {displayTitle}
+        </Text>
+
+        <Text
+          style={[
+            typography.bodyMedium,
+            styles.description,
+            { color: colors.onSurfaceVariant },
+          ]}
+        >
+          {displayDescription}
+        </Text>
+
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: colors.primary }]}
+          onPress={onSelectModel}
+          activeOpacity={0.85}
+          accessibilityLabel="Select a model"
+          accessibilityRole="button"
+        >
+          <Icon name="plus" size={20} color={colors.onPrimary} />
+          <Text
+            style={[typography.titleSmall, styles.buttonText, { color: colors.onPrimary }]}
+          >
+            Select a model
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -129,52 +105,45 @@ export const ModelRequiredOverlay: React.FC<ModelRequiredOverlayProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: Colors.backgroundPrimary,
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: Padding.padding40,
+    padding: 40,
   },
   content: {
     alignItems: 'center',
-    maxWidth: 300,
+    maxWidth: 320,
   },
-  iconContainer: {
-    width: IconSize.huge,
-    height: IconSize.huge,
-    borderRadius: IconSize.huge / 2,
-    backgroundColor: Colors.backgroundSecondary,
+  medallion: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: Spacing.xLarge,
+    marginBottom: 24,
   },
   title: {
-    ...Typography.title3,
-    color: Colors.textPrimary,
     textAlign: 'center',
-    marginBottom: Spacing.medium,
+    fontWeight: '700',
+    marginBottom: 10,
   },
   description: {
-    ...Typography.body,
-    color: Colors.textSecondary,
     textAlign: 'center',
-    marginBottom: Spacing.xxLarge,
-    lineHeight: 24,
+    lineHeight: 22,
+    marginBottom: 28,
   },
   button: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.smallMedium,
-    backgroundColor: Colors.primaryBlue,
-    paddingHorizontal: Padding.padding24,
-    height: ButtonHeight.regular,
-    borderRadius: BorderRadius.large,
+    gap: 8,
+    paddingHorizontal: 24,
+    height: 52,
+    borderRadius: 16,
     minWidth: 200,
   },
   buttonText: {
-    ...Typography.headline,
-    color: Colors.textWhite,
+    fontWeight: '700',
   },
 });
 

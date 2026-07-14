@@ -2,7 +2,9 @@ import Foundation
 import Security
 
 /// Keychain manager for secure storage of sensitive data
-public final class KeychainManager {
+/// This wrapper has no mutable Swift state; Security.framework serializes the
+/// keychain operations addressed by the immutable service/access-group keys.
+public final class KeychainManager: @unchecked Sendable {
 
     // MARK: - Singleton
 
@@ -17,11 +19,6 @@ public final class KeychainManager {
     // MARK: - Keychain Keys
 
     private enum KeychainKey: String {
-        // SDK Core
-        case apiKey = "com.runanywhere.sdk.apiKey"
-        case baseURL = "com.runanywhere.sdk.baseURL"
-        case environment = "com.runanywhere.sdk.environment"
-
         // Device Identity
         case deviceUUID = "com.runanywhere.sdk.device.uuid"
     }
@@ -29,48 +26,6 @@ public final class KeychainManager {
     // MARK: - Initialization
 
     private init() {}
-
-    // MARK: - Public Methods - SDK Credentials
-
-    /// Store SDK initialization parameters securely
-    /// - Parameter params: SDK initialization parameters
-    /// - Throws: KeychainError if storage fails
-    public func storeSDKParams(_ params: SDKInitParams) throws {
-        // Store API key
-        try store(params.apiKey, for: KeychainKey.apiKey.rawValue)
-
-        // Store base URL
-        try store(params.baseURL.absoluteString, for: KeychainKey.baseURL.rawValue)
-
-        // Store environment
-        try store(params.environment.rawValue, for: KeychainKey.environment.rawValue)
-
-        logger.info("SDK parameters stored securely in keychain")
-    }
-
-    /// Retrieve stored SDK parameters
-    /// - Returns: Stored SDK parameters if available
-    public func retrieveSDKParams() -> SDKInitParams? {
-        guard let apiKey = try? retrieve(for: KeychainKey.apiKey.rawValue),
-              let urlString = try? retrieve(for: KeychainKey.baseURL.rawValue),
-              let url = URL(string: urlString),
-              let envString = try? retrieve(for: KeychainKey.environment.rawValue),
-              let environment = SDKEnvironment(rawValue: envString) else {
-            logger.debug("No stored SDK parameters found in keychain")
-            return nil
-        }
-
-        logger.debug("Retrieved SDK parameters from keychain")
-        return try? SDKInitParams(apiKey: apiKey, baseURL: url, environment: environment)
-    }
-
-    /// Clear stored SDK parameters
-    public func clearSDKParams() throws {
-        try delete(for: KeychainKey.apiKey.rawValue)
-        try delete(for: KeychainKey.baseURL.rawValue)
-        try delete(for: KeychainKey.environment.rawValue)
-        logger.info("SDK parameters cleared from keychain")
-    }
 
     // MARK: - Device Identity Methods
 
@@ -93,10 +48,10 @@ public final class KeychainManager {
     /// - Parameters:
     ///   - value: String value to store
     ///   - key: Unique key for the value
-    /// - Throws: SDKError if storage fails
+    /// - Throws: SDKException if storage fails
     public func store(_ value: String, for key: String) throws {
         guard let data = value.data(using: .utf8) else {
-            throw SDKError.security(.encodingError, "Failed to encode string data for keychain storage")
+            throw SDKException(code: .encodingError, message: "Failed to encode string data for keychain storage", category: .auth)
         }
 
         try store(data, for: key)
@@ -106,7 +61,7 @@ public final class KeychainManager {
     /// - Parameters:
     ///   - data: Data to store
     ///   - key: Unique key for the data
-    /// - Throws: SDKError if storage fails
+    /// - Throws: SDKException if storage fails
     public func store(_ data: Data, for key: String) throws {
         var query = baseQuery(for: key)
         query[kSecValueData as String] = data
@@ -120,19 +75,19 @@ public final class KeychainManager {
         }
 
         guard status == errSecSuccess else {
-            throw SDKError.security(.keychainError, "Failed to store item in keychain: OSStatus \(status)")
+            throw SDKException(code: .keychainError, message: "Failed to store item in keychain: OSStatus \(status)", category: .auth)
         }
     }
 
     /// Retrieve a string value from the keychain
     /// - Parameter key: Key for the value
     /// - Returns: Stored string value
-    /// - Throws: SDKError if retrieval fails
+    /// - Throws: SDKException if retrieval fails
     public func retrieve(for key: String) throws -> String {
         let data = try retrieveData(for: key)
 
         guard let string = String(data: data, encoding: .utf8) else {
-            throw SDKError.security(.decodingError, "Failed to decode string data from keychain")
+            throw SDKException(code: .decodingError, message: "Failed to decode string data from keychain", category: .auth)
         }
 
         return string
@@ -141,7 +96,7 @@ public final class KeychainManager {
     /// Retrieve data from the keychain
     /// - Parameter key: Key for the data
     /// - Returns: Stored data
-    /// - Throws: SDKError if retrieval fails (but not for missing items - use retrieveDataIfExists for that)
+    /// - Throws: SDKException if retrieval fails (but not for missing items - use retrieveDataIfExists for that)
     public func retrieveData(for key: String) throws -> Data {
         var query = baseQuery(for: key)
         query[kSecReturnData as String] = true
@@ -154,9 +109,9 @@ public final class KeychainManager {
         guard status == errSecSuccess,
               let data = result as? Data else {
             if status == errSecItemNotFound {
-                throw SDKError.security(.keychainError, "Item not found in keychain")
+                throw SDKException(code: .keychainError, message: "Item not found in keychain", category: .auth)
             }
-            throw SDKError.security(.keychainError, "Failed to retrieve item from keychain: OSStatus \(status)")
+            throw SDKException(code: .keychainError, message: "Failed to retrieve item from keychain: OSStatus \(status)", category: .auth)
         }
 
         return data
@@ -165,7 +120,7 @@ public final class KeychainManager {
     /// Retrieve data from the keychain if it exists (returns nil for missing items, no error thrown)
     /// - Parameter key: Key for the data
     /// - Returns: Stored data if found, nil if not found
-    /// - Throws: SDKError only for actual keychain errors (not for missing items)
+    /// - Throws: SDKException only for actual keychain errors (not for missing items)
     public func retrieveDataIfExists(for key: String) throws -> Data? {
         var query = baseQuery(for: key)
         query[kSecReturnData as String] = true
@@ -183,7 +138,7 @@ public final class KeychainManager {
         // Other errors are actual problems
         guard status == errSecSuccess,
               let data = result as? Data else {
-            throw SDKError.security(.keychainError, "Failed to retrieve item from keychain: OSStatus \(status)")
+            throw SDKException(code: .keychainError, message: "Failed to retrieve item from keychain: OSStatus \(status)", category: .auth)
         }
 
         return data
@@ -192,14 +147,14 @@ public final class KeychainManager {
     /// Retrieve a string value from the keychain if it exists (returns nil for missing items, no error thrown)
     /// - Parameter key: Key for the value
     /// - Returns: Stored string value if found, nil if not found
-    /// - Throws: SDKError only for actual keychain errors (not for missing items)
+    /// - Throws: SDKException only for actual keychain errors (not for missing items)
     public func retrieveIfExists(for key: String) throws -> String? {
         guard let data = try retrieveDataIfExists(for: key) else {
             return nil
         }
 
         guard let string = String(data: data, encoding: .utf8) else {
-            throw SDKError.security(.decodingError, "Failed to decode string data from keychain")
+            throw SDKException(code: .decodingError, message: "Failed to decode string data from keychain", category: .auth)
         }
 
         return string
@@ -207,13 +162,13 @@ public final class KeychainManager {
 
     /// Delete an item from the keychain
     /// - Parameter key: Key for the item to delete
-    /// - Throws: SDKError if deletion fails
+    /// - Throws: SDKException if deletion fails
     public func delete(for key: String) throws {
         let query = baseQuery(for: key)
         let status = SecItemDelete(query as CFDictionary)
 
         guard status == errSecSuccess || status == errSecItemNotFound else {
-            throw SDKError.security(.keychainError, "Failed to delete item from keychain: OSStatus \(status)")
+            throw SDKException(code: .keychainError, message: "Failed to delete item from keychain: OSStatus \(status)", category: .auth)
         }
     }
 

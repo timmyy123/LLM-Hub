@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:runanywhere/runanywhere.dart' as sdk;
 
 import 'package:runanywhere_ai/core/design_system/app_colors.dart';
 import 'package:runanywhere_ai/core/design_system/app_spacing.dart';
 import 'package:runanywhere_ai/core/design_system/typography.dart';
 import 'package:runanywhere_ai/core/models/app_types.dart';
 import 'package:runanywhere_ai/core/services/device_info_service.dart';
+import 'package:runanywhere_ai/core/services/hf_token_store.dart';
 import 'package:runanywhere_ai/features/models/model_list_view_model.dart';
 import 'package:runanywhere_ai/features/models/model_types.dart';
 
@@ -38,20 +38,31 @@ class _ModelSelectionSheetState extends State<ModelSelectionSheet> {
   bool _isLoadingModel = false;
   String _loadingProgress = '';
 
-  /// Get all models relevant to this context, sorted by availability
+  /// Get all models relevant to this context, sorted by availability.
+  /// Filtering (category + framework allow-list + supporting-file
+  /// exclusion) is the shared `ModelSelectionContext.includes` predicate,
+  /// mirroring iOS `ModelSelectionSheet.availableModels`.
   List<ModelInfo> get _availableModels {
-    final models = _viewModel.availableModels.where((model) {
-      return widget.context.relevantCategories.contains(model.category);
-    }).toList();
+    final models = _viewModel.availableModels
+        .where(widget.context.includes)
+        .toList();
 
-    // Sort: Foundation Models first (built-in), then downloaded, then not downloaded
+    // Sort: built-in models first (Foundation Models / System TTS), then
+    // downloaded, then not downloaded. On-disk readiness is `localPath`; the
+    // built-in cases are handled explicitly below (see
+    // ExampleModelInfoView.isReadyOnDevice in model_types.dart).
+    int priorityFor(ModelInfo m) {
+      if (m.backendFramework ==
+              LLMFramework.INFERENCE_FRAMEWORK_FOUNDATION_MODELS ||
+          m.backendFramework == LLMFramework.INFERENCE_FRAMEWORK_SYSTEM_TTS) {
+        return 0;
+      }
+      return m.localPath.isNotEmpty ? 1 : 2;
+    }
+
     models.sort((a, b) {
-      final aPriority = a.preferredFramework == LLMFramework.foundationModels
-          ? 0
-          : (a.localPath != null ? 1 : 2);
-      final bPriority = b.preferredFramework == LLMFramework.foundationModels
-          ? 0
-          : (b.localPath != null ? 1 : 2);
+      final aPriority = priorityFor(a);
+      final bPriority = priorityFor(b);
       if (aPriority != bPriority) {
         return aPriority.compareTo(bPriority);
       }
@@ -68,7 +79,8 @@ class _ModelSelectionSheetState extends State<ModelSelectionSheet> {
   }
 
   Future<void> _loadInitialData() async {
-    await _viewModel.loadModels();
+    await _viewModel.loadModelsFromRegistry();
+    await _viewModel.loadAvailableFrameworks();
   }
 
   @override
@@ -116,11 +128,7 @@ class _ModelSelectionSheetState extends State<ModelSelectionSheet> {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.large),
       decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: AppColors.separator(context),
-          ),
-        ),
+        border: Border(bottom: BorderSide(color: AppColors.separator(context))),
       ),
       child: Row(
         children: [
@@ -168,12 +176,13 @@ class _ModelSelectionSheetState extends State<ModelSelectionSheet> {
                   icon: Icons.memory,
                   value: device.chipName,
                 ),
-                _buildDeviceInfoRow(
-                  context,
-                  label: 'Memory',
-                  icon: Icons.storage,
-                  value: device.totalMemory.formattedFileSize,
-                ),
+                if (device.totalMemory > 0)
+                  _buildDeviceInfoRow(
+                    context,
+                    label: 'Memory',
+                    icon: Icons.storage,
+                    value: device.totalMemory.formattedFileSize,
+                  ),
                 if (device.neuralEngineAvailable)
                   _buildDeviceInfoRow(
                     context,
@@ -218,9 +227,9 @@ class _ModelSelectionSheetState extends State<ModelSelectionSheet> {
           else
             Text(
               value,
-              style: AppTypography.body(context).copyWith(
-                color: AppColors.textSecondary(context),
-              ),
+              style: AppTypography.body(
+                context,
+              ).copyWith(color: AppColors.textSecondary(context)),
             ),
         ],
       ),
@@ -237,24 +246,18 @@ class _ModelSelectionSheetState extends State<ModelSelectionSheet> {
         if (_availableModels.isEmpty)
           _buildEmptyModelsMessage(context)
         else ...[
-          // System TTS option for TTS context
-          if (widget.context == ModelSelectionContext.tts)
-            _buildSystemTTSRow(context),
-
-          // All models in a flat list
+          // System TTS is registered in runanywhere_ai_app.dart on Apple
+          // platforms with framework=INFERENCE_FRAMEWORK_SYSTEM_TTS, so it
+          // flows through the regular _FlatModelRow path below (treated as
+          // built-in alongside Foundation Models). A second manual row would
+          // produce duplicate entries on iOS/macOS.
           ..._availableModels.map((model) {
             return _FlatModelRow(
               model: model,
               isSelected: _selectedModel?.id == model.id,
               isLoading: _isLoadingModel,
-              onDownloadCompleted: () async {
-                await _viewModel.loadModels();
-              },
               onSelectModel: () async {
                 await _selectAndLoadModel(model);
-              },
-              onModelUpdated: () async {
-                await _viewModel.loadModels();
               },
             );
           }),
@@ -266,90 +269,12 @@ class _ModelSelectionSheetState extends State<ModelSelectionSheet> {
           child: Text(
             'All models run privately on your device. Larger models may '
             'provide better quality but use more memory.',
-            style: AppTypography.caption(context).copyWith(
-              color: AppColors.textSecondary(context),
-            ),
+            style: AppTypography.caption(
+              context,
+            ).copyWith(color: AppColors.textSecondary(context)),
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildSystemTTSRow(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.large,
-        vertical: AppSpacing.smallMedium,
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Name with badge
-                Row(
-                  children: [
-                    Text(
-                      'System Voice',
-                      style: AppTypography.subheadline(context).copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.smallMedium),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.small,
-                        vertical: AppSpacing.xxSmall,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.textPrimary(context)
-                            .withValues(alpha: 0.1),
-                        borderRadius:
-                            BorderRadius.circular(AppSpacing.cornerRadiusSmall),
-                      ),
-                      child: Text(
-                        'System',
-                        style: AppTypography.caption2(context).copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.xSmall),
-                // Status
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.check_circle,
-                      size: 12,
-                      color: AppColors.statusGreen,
-                    ),
-                    const SizedBox(width: AppSpacing.xxSmall),
-                    Text(
-                      'Built-in • Always available',
-                      style: AppTypography.caption2(context).copyWith(
-                        color: AppColors.statusGreen,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          ElevatedButton(
-            onPressed: _isLoadingModel ? null : _selectSystemTTS,
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.mediumLarge,
-                vertical: AppSpacing.small,
-              ),
-            ),
-            child: const Text('Use'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -374,16 +299,13 @@ class _ModelSelectionSheetState extends State<ModelSelectionSheet> {
             children: [
               const CircularProgressIndicator(),
               const SizedBox(height: AppSpacing.xLarge),
-              Text(
-                'Loading Model',
-                style: AppTypography.headline(context),
-              ),
+              Text('Loading Model', style: AppTypography.headline(context)),
               const SizedBox(height: AppSpacing.smallMedium),
               Text(
                 _loadingProgress,
-                style: AppTypography.subheadline(context).copyWith(
-                  color: AppColors.textSecondary(context),
-                ),
+                style: AppTypography.subheadline(
+                  context,
+                ).copyWith(color: AppColors.textSecondary(context)),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -424,9 +346,9 @@ class _ModelSelectionSheetState extends State<ModelSelectionSheet> {
           const SizedBox(width: AppSpacing.mediumLarge),
           Text(
             message,
-            style: AppTypography.body(context).copyWith(
-              color: AppColors.textSecondary(context),
-            ),
+            style: AppTypography.body(
+              context,
+            ).copyWith(color: AppColors.textSecondary(context)),
           ),
         ],
       ),
@@ -443,9 +365,9 @@ class _ModelSelectionSheetState extends State<ModelSelectionSheet> {
             const SizedBox(height: AppSpacing.mediumLarge),
             Text(
               'Loading available models...',
-              style: AppTypography.subheadline(context).copyWith(
-                color: AppColors.textSecondary(context),
-              ),
+              style: AppTypography.subheadline(
+                context,
+              ).copyWith(color: AppColors.textSecondary(context)),
             ),
           ],
         ),
@@ -453,51 +375,19 @@ class _ModelSelectionSheetState extends State<ModelSelectionSheet> {
     );
   }
 
-  Future<void> _selectSystemTTS() async {
-    setState(() {
-      _isLoadingModel = true;
-      _loadingProgress = 'Configuring System TTS...';
-    });
-
-    // Create pseudo ModelInfo for System TTS
-    const systemTTSModel = ModelInfo(
-      id: 'system-tts',
-      name: 'System TTS',
-      category: ModelCategory.speechSynthesis,
-      format: ModelFormat.unknown,
-      compatibleFrameworks: [LLMFramework.systemTTS],
-      preferredFramework: LLMFramework.systemTTS,
-    );
-
-    await Future<void>.delayed(const Duration(milliseconds: 300));
-
-    setState(() {
-      _loadingProgress = 'System TTS ready!';
-    });
-
-    await Future<void>.delayed(const Duration(milliseconds: 200));
-
-    await widget.onModelSelected(systemTTSModel);
-
-    if (mounted) {
-      setState(() {
-        _isLoadingModel = false;
-      });
-      // Defer Navigator.pop until after the current frame completes
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          Navigator.pop(context);
-        }
-      });
-    }
-  }
-
   Future<void> _selectAndLoadModel(ModelInfo model) async {
-    // Foundation Models don't need local path check
-    if (model.preferredFramework != LLMFramework.foundationModels) {
-      if (model.localPath == null) {
-        return; // Model not downloaded yet
-      }
+    // Built-in models (Foundation Models, System TTS) have no local file and
+    // must skip the localPath readiness gate; both flow through the regular
+    // category-aware load path (e.g. SYSTEM_TTS -> RunAnywhere.tts.loadVoice
+    // in ModelListViewModel.loadModel). Other frameworks still require a
+    // downloaded artifact before we attempt to load them.
+    //
+    // Gate on `isReadyOnDevice` (localPath + built-in), NOT the proto
+    // `isDownloaded` field — the C++ registry sets localPath on download but
+    // leaves the proto flag false, so `model.isDownloaded` would always be
+    // false here and silently no-op the load.
+    if (!model.isReadyOnDevice) {
+      return; // Model not downloaded yet
     }
 
     setState(() {
@@ -507,19 +397,26 @@ class _ModelSelectionSheetState extends State<ModelSelectionSheet> {
     });
 
     try {
-      // RAG contexts record the selection only — do NOT pre-load into memory.
-      // The RAG pipeline loads models on demand when the document is ingested.
-      final isRagContext = widget.context == ModelSelectionContext.ragEmbedding ||
-          widget.context == ModelSelectionContext.ragLLM;
+      // Contexts where the generic ModelListViewModel preload must be skipped:
+      //  - RAG contexts record the selection only; the RAG pipeline loads
+      //    models on demand when documents are ingested.
+      //  - VLM context: ModelListViewModel.loadModel only knows about LLM /
+      //    STT / TTS, so multimodal entries fall through to RunAnywhere.llm.load.
+      //    The VLM `onModelSelected` callback (VLMViewModel) loads via
+      //    RunAnywhere.vlm.load, which is the only correct lifecycle here.
+      final skipPreload =
+          widget.context == ModelSelectionContext.ragEmbedding ||
+          widget.context == ModelSelectionContext.ragLLM ||
+          widget.context == ModelSelectionContext.vlm;
 
-      if (!isRagContext) {
+      if (!skipPreload) {
         // Update view model selection state (loads the model into memory)
         await _viewModel.selectModel(model);
       }
 
       // Call the callback - this is where the actual model loading happens
       // The callback knows the correct context and how to load the model
-      debugPrint('🎯 Model selected: ${model.id}, calling callback to load');
+      debugPrint('Model selected: ${model.id}, calling callback to load');
       await widget.onModelSelected(model);
 
       if (mounted) {
@@ -533,7 +430,7 @@ class _ModelSelectionSheetState extends State<ModelSelectionSheet> {
         });
       }
     } catch (e) {
-      debugPrint('❌ Failed to load model: $e');
+      debugPrint('Failed to load model: $e');
       setState(() {
         _isLoadingModel = false;
         _loadingProgress = '';
@@ -542,97 +439,122 @@ class _ModelSelectionSheetState extends State<ModelSelectionSheet> {
 
       // Show error to user
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load model: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to load model: $e')));
       }
     }
   }
 }
 
 /// Flat model row for the selection sheet (matches iOS FlatModelRow)
-class _FlatModelRow extends StatefulWidget {
+class _FlatModelRow extends StatelessWidget {
   final ModelInfo model;
   final bool isSelected;
   final bool isLoading;
-  final VoidCallback onDownloadCompleted;
   final VoidCallback onSelectModel;
-  final VoidCallback? onModelUpdated;
 
   const _FlatModelRow({
     required this.model,
     required this.isSelected,
     required this.isLoading,
-    required this.onDownloadCompleted,
     required this.onSelectModel,
-    this.onModelUpdated,
   });
 
   @override
-  State<_FlatModelRow> createState() => _FlatModelRowState();
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: ModelListViewModel.shared,
+      builder: (context, _) {
+        final vm = ModelListViewModel.shared;
+        final isDownloading = vm.isDownloading(model.id);
+        final downloadProgress = vm.downloadProgress[model.id] ?? 0.0;
+        return _FlatModelRowContent(
+          model: model,
+          isSelected: isSelected,
+          isLoading: isLoading,
+          isDownloading: isDownloading,
+          downloadProgress: downloadProgress,
+          onSelectModel: onSelectModel,
+          onDownload: () {
+            unawaited(_downloadOrPrompt(context, model));
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _downloadOrPrompt(BuildContext context, ModelInfo model) async {
+    if (model.requiresHfAuth) {
+      final token = await HfTokenStore.load();
+      if (token.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Add a Hugging Face token in Settings to download private HNPU/QHexRT models.',
+              ),
+            ),
+          );
+        }
+        return;
+      }
+    }
+
+    await ModelListViewModel.shared.downloadModel(model, (_) {});
+  }
 }
 
-class _FlatModelRowState extends State<_FlatModelRow> {
-  bool _isDownloading = false;
-  double _downloadProgress = 0.0;
+class _FlatModelRowContent extends StatelessWidget {
+  final ModelInfo model;
+  final bool isSelected;
+  final bool isLoading;
+  final bool isDownloading;
+  final double downloadProgress;
+  final VoidCallback onSelectModel;
+  final VoidCallback onDownload;
+
+  const _FlatModelRowContent({
+    required this.model,
+    required this.isSelected,
+    required this.isLoading,
+    required this.isDownloading,
+    required this.downloadProgress,
+    required this.onSelectModel,
+    required this.onDownload,
+  });
 
   Color get _frameworkColor {
-    final framework = widget.model.preferredFramework;
-    if (framework == null) return Colors.grey;
-    switch (framework) {
-      case LLMFramework.llamaCpp:
-        return AppColors.primaryBlue;
-      case LLMFramework.onnxRuntime:
-        return Colors.purple;
-      case LLMFramework.foundationModels:
-        return Colors.grey;
-      case LLMFramework.whisperKit:
-        return Colors.green;
-      default:
-        return Colors.grey;
-    }
+    return model.backendFramework.backendColor;
   }
 
   String get _frameworkName {
-    final framework = widget.model.preferredFramework;
-    if (framework == null) return 'Unknown';
-    switch (framework) {
-      case LLMFramework.llamaCpp:
-        return 'Fast';
-      case LLMFramework.onnxRuntime:
-        return 'ONNX';
-      case LLMFramework.foundationModels:
-        return 'Apple';
-      case LLMFramework.whisperKit:
-        return 'Whisper';
-      default:
-        return framework.displayName;
-    }
+    return model.backendFramework.displayName;
   }
 
+  bool get _isBuiltIn =>
+      model.backendFramework ==
+          LLMFramework.INFERENCE_FRAMEWORK_FOUNDATION_MODELS ||
+      model.backendFramework == LLMFramework.INFERENCE_FRAMEWORK_SYSTEM_TTS;
+
   IconData get _statusIcon {
-    if (widget.model.preferredFramework == LLMFramework.foundationModels) {
+    if (_isBuiltIn || model.localPath.isNotEmpty) {
       return Icons.check_circle;
-    } else if (widget.model.localPath != null) {
-      return Icons.check_circle;
-    } else {
-      return Icons.download;
     }
+    return Icons.download;
   }
 
   Color get _statusColor {
-    if (widget.model.preferredFramework == LLMFramework.foundationModels ||
-        widget.model.localPath != null) {
+    if (_isBuiltIn || model.localPath.isNotEmpty) {
       return AppColors.statusGreen;
-    } else {
-      return AppColors.primaryBlue;
     }
+    return AppColors.primaryBlue;
   }
 
   String get _statusText {
-    if (widget.model.preferredFramework == LLMFramework.foundationModels) {
+    if (_isBuiltIn) {
       return 'Built-in';
-    } else if (widget.model.localPath != null) {
+    } else if (model.localPath.isNotEmpty) {
       return 'Ready';
     } else {
       return 'Download';
@@ -642,7 +564,7 @@ class _FlatModelRowState extends State<_FlatModelRow> {
   @override
   Widget build(BuildContext context) {
     return Opacity(
-      opacity: widget.isLoading && !widget.isSelected ? 0.6 : 1.0,
+      opacity: isLoading && !isSelected ? 0.6 : 1.0,
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.large,
@@ -659,10 +581,10 @@ class _FlatModelRowState extends State<_FlatModelRow> {
                     children: [
                       Flexible(
                         child: Text(
-                          widget.model.name,
-                          style: AppTypography.subheadline(context).copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
+                          model.name,
+                          style: AppTypography.subheadline(
+                            context,
+                          ).copyWith(fontWeight: FontWeight.w500),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -675,14 +597,26 @@ class _FlatModelRowState extends State<_FlatModelRow> {
                         decoration: BoxDecoration(
                           color: _frameworkColor.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(
-                              AppSpacing.cornerRadiusSmall),
-                        ),
-                        child: Text(
-                          _frameworkName,
-                          style: AppTypography.caption2(context).copyWith(
-                            fontWeight: FontWeight.w500,
-                            color: _frameworkColor,
+                            AppSpacing.cornerRadiusSmall,
                           ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              model.backendFramework.backendIcon,
+                              size: 10,
+                              color: _frameworkColor,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              _frameworkName,
+                              style: AppTypography.caption2(context).copyWith(
+                                fontWeight: FontWeight.w500,
+                                color: _frameworkColor,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -692,8 +626,8 @@ class _FlatModelRowState extends State<_FlatModelRow> {
                   Row(
                     children: [
                       // Size badge
-                      if (widget.model.memoryRequired != null &&
-                          widget.model.memoryRequired! > 0) ...[
+                      if (model.memoryRequired != null &&
+                          model.memoryRequired! > 0) ...[
                         Icon(
                           Icons.memory,
                           size: 12,
@@ -701,48 +635,44 @@ class _FlatModelRowState extends State<_FlatModelRow> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          widget.model.memoryRequired!.formattedFileSize,
-                          style: AppTypography.caption2(context).copyWith(
-                            color: AppColors.textSecondary(context),
-                          ),
+                          model.memoryRequired!.formattedFileSize,
+                          style: AppTypography.caption2(
+                            context,
+                          ).copyWith(color: AppColors.textSecondary(context)),
                         ),
                         const SizedBox(width: AppSpacing.smallMedium),
                       ],
                       // Status indicator
-                      if (_isDownloading) ...[
+                      if (isDownloading) ...[
                         SizedBox(
                           width: 12,
                           height: 12,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            value: _downloadProgress > 0
-                                ? _downloadProgress
+                            value: downloadProgress > 0
+                                ? downloadProgress
                                 : null,
                           ),
                         ),
                         const SizedBox(width: AppSpacing.xSmall),
                         Text(
-                          '${(_downloadProgress * 100).toInt()}%',
-                          style: AppTypography.caption2(context).copyWith(
-                            color: AppColors.textSecondary(context),
-                          ),
+                          '${(downloadProgress * 100).toInt()}%',
+                          style: AppTypography.caption2(
+                            context,
+                          ).copyWith(color: AppColors.textSecondary(context)),
                         ),
                       ] else ...[
-                        Icon(
-                          _statusIcon,
-                          size: 12,
-                          color: _statusColor,
-                        ),
+                        Icon(_statusIcon, size: 12, color: _statusColor),
                         const SizedBox(width: AppSpacing.xxSmall),
                         Text(
                           _statusText,
-                          style: AppTypography.caption2(context).copyWith(
-                            color: _statusColor,
-                          ),
+                          style: AppTypography.caption2(
+                            context,
+                          ).copyWith(color: _statusColor),
                         ),
                       ],
                       // Thinking support indicator
-                      if (widget.model.supportsThinking) ...[
+                      if (model.supportsThinking) ...[
                         const SizedBox(width: AppSpacing.smallMedium),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -752,7 +682,8 @@ class _FlatModelRowState extends State<_FlatModelRow> {
                           decoration: BoxDecoration(
                             color: AppColors.badgePurple,
                             borderRadius: BorderRadius.circular(
-                                AppSpacing.cornerRadiusSmall),
+                              AppSpacing.cornerRadiusSmall,
+                            ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -765,9 +696,9 @@ class _FlatModelRowState extends State<_FlatModelRow> {
                               const SizedBox(width: 2),
                               Text(
                                 'Smart',
-                                style: AppTypography.caption2(context).copyWith(
-                                  color: AppColors.primaryPurple,
-                                ),
+                                style: AppTypography.caption2(
+                                  context,
+                                ).copyWith(color: AppColors.primaryPurple),
                               ),
                             ],
                           ),
@@ -787,11 +718,13 @@ class _FlatModelRowState extends State<_FlatModelRow> {
   }
 
   Widget _buildActionButton(BuildContext context) {
-    if (widget.model.preferredFramework == LLMFramework.foundationModels) {
-      // Foundation Models are built-in
+    // Built-in models (Foundation Models, System TTS) are always loadable —
+    // they have no downloadable artifact, so show a Use button instead of a
+    // Get/download action. Mirrors Swift's FlatModelRow which treats both
+    // .foundationModels and .systemTts as `isBuiltIn`.
+    if (_isBuiltIn) {
       return ElevatedButton(
-        onPressed:
-            widget.isLoading || widget.isSelected ? null : widget.onSelectModel,
+        onPressed: isLoading || isSelected ? null : onSelectModel,
         style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.mediumLarge,
@@ -802,9 +735,9 @@ class _FlatModelRowState extends State<_FlatModelRow> {
       );
     }
 
-    if (widget.model.localPath == null) {
+    if (model.localPath.isEmpty) {
       // Model needs to be downloaded
-      if (_isDownloading) {
+      if (isDownloading) {
         return const SizedBox(
           width: 24,
           height: 24,
@@ -812,7 +745,7 @@ class _FlatModelRowState extends State<_FlatModelRow> {
         );
       }
       return OutlinedButton.icon(
-        onPressed: widget.isLoading ? null : _downloadModel,
+        onPressed: isLoading ? null : onDownload,
         icon: const Icon(Icons.download, size: 16),
         label: const Text('Get'),
         style: OutlinedButton.styleFrom(
@@ -826,8 +759,7 @@ class _FlatModelRowState extends State<_FlatModelRow> {
 
     // Model is downloaded - ready to use
     return ElevatedButton(
-      onPressed:
-          widget.isLoading || widget.isSelected ? null : widget.onSelectModel,
+      onPressed: isLoading || isSelected ? null : onSelectModel,
       style: ElevatedButton.styleFrom(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.mediumLarge,
@@ -836,68 +768,6 @@ class _FlatModelRowState extends State<_FlatModelRow> {
       ),
       child: const Text('Use'),
     );
-  }
-
-  Future<void> _downloadModel() async {
-    setState(() {
-      _isDownloading = true;
-      _downloadProgress = 0.0;
-    });
-
-    try {
-      debugPrint('📥 Starting download for model: ${widget.model.name}');
-
-      // Get the SDK model by ID
-      final sdkModels = await sdk.RunAnywhere.availableModels();
-      final sdkModel = sdkModels.firstWhere(
-        (m) => m.id == widget.model.id,
-        orElse: () =>
-            throw Exception('Model not found in registry: ${widget.model.id}'),
-      );
-
-      // Start the actual download using SDK's downloadModel
-      final downloadProgress = sdk.RunAnywhere.downloadModel(sdkModel.id);
-
-      // Listen to real download progress
-      await for (final progress in downloadProgress) {
-        if (!mounted) return;
-
-        final progressValue = progress.totalBytes > 0
-            ? progress.bytesDownloaded / progress.totalBytes
-            : 0.0;
-
-        setState(() {
-          _downloadProgress = progressValue;
-        });
-
-        // Check if completed or failed
-        if (progress.state == sdk.DownloadProgressState.completed) {
-          debugPrint('✅ Download completed for model: ${widget.model.name}');
-          break;
-        } else if (progress.state == sdk.DownloadProgressState.failed) {
-          debugPrint('❌ Download failed for model: ${widget.model.name}');
-          throw Exception('Download failed');
-        }
-      }
-
-      if (!mounted) return;
-      setState(() {
-        _isDownloading = false;
-      });
-      widget.onDownloadCompleted();
-    } catch (e) {
-      debugPrint('❌ Download error: $e');
-      if (!mounted) return;
-      setState(() {
-        _isDownloading = false;
-        _downloadProgress = 0.0;
-      });
-
-      // Show error to user
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Download failed: $e')),
-      );
-    }
   }
 }
 

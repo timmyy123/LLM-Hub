@@ -1,6 +1,6 @@
 name: runanywhere_llamacpp
 description: LlamaCpp backend for RunAnywhere Flutter SDK. High-performance on-device LLM text generation with GGUF model support.
-version: 0.16.0
+version: 0.20.9
 homepage: https://runanywhere.ai
 repository: https://github.com/RunanywhereAI/runanywhere-sdks
 issue_tracker: https://github.com/RunanywhereAI/runanywhere-sdks/issues
@@ -12,24 +12,30 @@ topics:
   - on-device
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
-  flutter: '>=3.10.0'
+  sdk: '>=3.12.0 <4.0.0'
+  flutter: '>=3.44.0'
+
+resolution: workspace
 
 dependencies:
   flutter:
     sdk: flutter
-  # Core SDK dependency (provides RACommons)
-  runanywhere: ^0.16.0
-  ffi: ^2.1.0
+  # Core SDK dependency (provides RACommons).
+  # Backend packages must lockstep with the core/native ABI: the published
+  # Each backend ships against same-version native binaries, so the version
+  # range floor MUST match this release. The caret range still lets consumers
+  # upgrade core within the compatible published minor suite.
+  runanywhere: ^0.20.9
+  # Keep this bounded for pub.dev publish validation, matching the core
+  # package's major-version range.
+  ffi: '>=2.2.0 <3.0.0'
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_lints: any
 
 flutter:
-  uses-material-design: true
-
   # Native plugin configuration
   # RABackendLlamaCPP binaries are bundled in ios/ and android/ directories
   plugin:

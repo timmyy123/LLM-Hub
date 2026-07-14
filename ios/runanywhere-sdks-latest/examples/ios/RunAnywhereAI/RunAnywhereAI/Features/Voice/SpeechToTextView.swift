@@ -16,7 +16,7 @@ struct SpeechToTextView: View {
     }
 
     private var statusMessage: String {
-            return ""
+        ""
     }
 
     private var waveHeights: [CGFloat] {
@@ -33,83 +33,19 @@ struct SpeechToTextView: View {
                         // Mode selection - Modern pill button style
                         if hasModelSelected {
                         HStack(spacing: 8) {
-                            // Batch mode button
-                            Button {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                    viewModel.selectedMode = .batch
-                                }
-                            } label: {
-                                VStack(spacing: 4) {
-                                    Text("Batch")
-                                        .font(.system(size: 13, weight: .medium))
-                                    Text("Record then transcribe")
-                                        .font(.system(size: 10))
-                                        .opacity(0.7)
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(
-                                    viewModel.selectedMode == .batch
-                                        ? AppColors.primaryAccent.opacity(0.15)
-                                        : Color.clear
-                                )
-                                .foregroundColor(
-                                    viewModel.selectedMode == .batch
-                                        ? AppColors.primaryAccent
-                                        : .secondary
-                                )
-                                .cornerRadius(12)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(
-                                            viewModel.selectedMode == .batch
-                                                ? AppColors.primaryAccent.opacity(0.3)
-                                                : Color.gray.opacity(0.2),
-                                            lineWidth: 1
-                                        )
-                                )
-                            }
-
-                            // Live mode button
-                            Button {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                    viewModel.selectedMode = .live
-                                }
-                            } label: {
-                                VStack(spacing: 4) {
-                                    Text("Live")
-                                        .font(.system(size: 13, weight: .medium))
-                                    Text("Real-time transcription")
-                                        .font(.system(size: 10))
-                                        .opacity(0.7)
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(
-                                    viewModel.selectedMode == .live
-                                        ? AppColors.primaryAccent.opacity(0.15)
-                                        : Color.clear
-                                )
-                                .foregroundColor(
-                                    viewModel.selectedMode == .live
-                                        ? AppColors.primaryAccent
-                                        : .secondary
-                                )
-                                .cornerRadius(12)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(
-                                            viewModel.selectedMode == .live
-                                                ? AppColors.primaryAccent.opacity(0.3)
-                                                : Color.gray.opacity(0.2),
-                                            lineWidth: 1
-                                        )
-                                )
-                            }
+                            modeButton(.batch, title: "Batch", subtitle: "Record")
+                            modeButton(.live, title: "Live", subtitle: "Stream")
+                            modeButton(.hybrid, title: "Hybrid", subtitle: "Cloud")
                         }
                         .padding(.horizontal, 16)
                         .padding(.top, 12)
                         .padding(.bottom, 8)
+
+                        if viewModel.selectedMode == .hybrid {
+                            hybridConfigurationSection
+                                .padding(.horizontal, 16)
+                                .padding(.bottom, 8)
+                        }
                         }
 
                         // Main content - only enabled when model is selected
@@ -150,9 +86,7 @@ struct SpeechToTextView: View {
                                             .font(.system(size: 24, weight: .semibold, design: .rounded))
                                             .foregroundColor(.primary)
 
-                                        Text(viewModel.selectedMode == .batch
-                                             ? "Record first, then transcribe"
-                                             : "Real-time transcription")
+                                        Text(readyModeDescription)
                                             .font(.system(size: 15, weight: .regular))
                                             .foregroundColor(.secondary)
                                     }
@@ -202,7 +136,7 @@ struct SpeechToTextView: View {
                                                 .padding(.horizontal, 8)
                                                 .padding(.vertical, 4)
                                                 .background(AppColors.statusRed.opacity(0.1))
-                                                .cornerRadius(4)
+                                                .cornerRadius(AppSpacing.cornerRadiusSmall)
                                             } else if viewModel.isTranscribing {
                                                 HStack(spacing: 6) {
                                                     ProgressView()
@@ -215,7 +149,7 @@ struct SpeechToTextView: View {
                                                 .padding(.horizontal, 8)
                                                 .padding(.vertical, 4)
                                                 .background(AppColors.statusOrange.opacity(0.1))
-                                                .cornerRadius(4)
+                                                .cornerRadius(AppSpacing.cornerRadiusSmall)
                                             }
                                         }
 
@@ -229,7 +163,11 @@ struct SpeechToTextView: View {
                                             #else
                                             .background(Color(NSColor.controlBackgroundColor))
                                             #endif
-                                            .cornerRadius(12)
+                                            .cornerRadius(AppSpacing.cornerRadiusXLarge)
+
+                                        if let routing = viewModel.hybridRouting {
+                                            hybridRoutingSummary(routing)
+                                        }
                                 }
                                 .padding()
                             }
@@ -257,7 +195,9 @@ struct SpeechToTextView: View {
                                 isPulsing: false,
                                 isLoading: viewModel.isProcessing || viewModel.isTranscribing,
                                 activeColor: AppColors.statusRed,
-                                inactiveColor: viewModel.isTranscribing ? AppColors.statusOrange : AppColors.primaryAccent,
+                                inactiveColor: viewModel.isTranscribing
+                                    ? AppColors.statusOrange
+                                    : AppColors.primaryAccent,
                                 icon: viewModel.isRecording ? "stop.fill" : "mic.fill"
                             ) {
                                 Task {
@@ -299,10 +239,10 @@ struct SpeechToTextView: View {
                         modality: .stt
                     ) { showModelPicker = true }
                 }
-            }
+                }
             .navigationTitle(hasModelSelected ? "Speech to Text" : "")
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayModeCompat(.inline)
             .navigationBarHidden(!hasModelSelected)
             #endif
             .toolbar {
@@ -318,7 +258,7 @@ struct SpeechToTextView: View {
                     #endif
                 }
             }
-        }
+            }
         #if os(iOS)
         .navigationViewStyle(.stack)
         #endif
@@ -337,10 +277,110 @@ struct SpeechToTextView: View {
         .onDisappear {
             viewModel.cleanup()
         }
-    }
+        }
     }
 
     // MARK: - View Components
+
+    private var readyModeDescription: String {
+        switch viewModel.selectedMode {
+        case .batch:
+            return "Record first, then transcribe"
+        case .live:
+            return "Real-time transcription"
+        case .hybrid:
+            return "On-device first with cloud fallback"
+        }
+    }
+
+    private func modeButton(_ mode: STTMode, title: String, subtitle: String) -> some View {
+        Button {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                viewModel.selectedMode = mode
+            }
+        } label: {
+            VStack(spacing: 4) {
+                Text(title)
+                    .font(.system(size: 13, weight: .medium))
+                Text(subtitle)
+                    .font(AppTypography.system10)
+                    .opacity(0.7)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(
+                viewModel.selectedMode == mode
+                    ? AppColors.primaryAccent.opacity(0.15)
+                    : Color.clear
+            )
+            .foregroundColor(
+                viewModel.selectedMode == mode
+                    ? AppColors.primaryAccent
+                    : .secondary
+            )
+            .cornerRadius(AppSpacing.cornerRadiusXLarge)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(
+                        viewModel.selectedMode == mode
+                            ? AppColors.primaryAccent.opacity(0.3)
+                            : AppColors.statusGray.opacity(0.2),
+                        lineWidth: 1
+                    )
+            )
+        }
+    }
+
+    private var hybridConfigurationSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                TextField("provider", text: $viewModel.cloudProvider)
+                TextField("model", text: $viewModel.cloudModel)
+            }
+            TextField("cloud registry id", text: $viewModel.cloudProviderId)
+            SecureField("cloud API key", text: $viewModel.cloudAPIKey)
+            TextField("language", text: $viewModel.cloudLanguageCode)
+            Toggle("Prefer online", isOn: $viewModel.hybridPreferOnline)
+            Toggle("Require network", isOn: $viewModel.hybridRequireNetwork)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Fallback threshold \(viewModel.hybridConfidenceThreshold, specifier: "%.2f")")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Slider(value: $viewModel.hybridConfidenceThreshold, in: 0.0...1.0, step: 0.05)
+            }
+        }
+        .textFieldStyle(.roundedBorder)
+        .font(.caption)
+        .padding(12)
+        #if os(iOS)
+        .background(Color(.secondarySystemBackground))
+        #else
+        .background(Color(NSColor.controlBackgroundColor))
+        #endif
+        .cornerRadius(AppSpacing.cornerRadiusXLarge)
+    }
+
+    private func hybridRoutingSummary(_ routing: HybridRoutedMetadata) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Routing")
+                .font(.subheadline)
+                .fontWeight(.semibold)
+            Text("Chosen: \(routing.chosenModelID.isEmpty ? "unknown" : routing.chosenModelID)")
+            Text("Fallback: \(routing.wasFallback ? "yes" : "no")")
+            if !routing.primaryErrorMessage.isEmpty {
+                Text("Primary: \(routing.primaryErrorMessage)")
+            }
+        }
+        .font(.caption)
+        .foregroundColor(.secondary)
+        .padding(12)
+        #if os(iOS)
+        .background(Color(.tertiarySystemBackground))
+        #else
+        .background(Color(NSColor.controlBackgroundColor).opacity(0.8))
+        #endif
+        .cornerRadius(AppSpacing.cornerRadiusLarge)
+    }
 
     private var modelButton: some View {
         Button {
@@ -353,10 +393,10 @@ struct SpeechToTextView: View {
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 36, height: 36)
-                        .cornerRadius(4)
+                        .cornerRadius(AppSpacing.cornerRadiusSmall)
                 } else {
                     Image(systemName: "cube")
-                        .font(.system(size: 14))
+                        .font(AppTypography.system14)
                 }
 
                 if let modelName = viewModel.selectedModelName {
@@ -396,9 +436,9 @@ struct SpeechToTextView: View {
 
     private func frameworkColor(for framework: InferenceFramework) -> Color {
         switch framework {
-        case .onnx: return .purple
+        case .onnx: return AppColors.primaryPurple
         case .foundationModels: return .primary
-        default: return .gray
+        default: return AppColors.statusGray
         }
     }
 }

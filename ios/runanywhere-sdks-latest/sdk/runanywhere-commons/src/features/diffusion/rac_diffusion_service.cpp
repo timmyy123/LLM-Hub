@@ -14,12 +14,21 @@
 #include <cstring>
 #include <filesystem>
 
+#include "../common/rac_service_factory_internal.h"
 #include "rac/core/rac_core.h"
 #include "rac/core/rac_logger.h"
-#include "rac/infrastructure/model_management/rac_model_registry.h"
+#include "rac/plugin/rac_model_format_ids.h"
 
 static const char* LOG_CAT = "Diffusion.Service";
 namespace fs = std::filesystem;
+
+namespace {
+
+const rac_diffusion_service_ops_t* diffusion_ops(const rac_engine_vtable_t* vt) {
+    return vt ? vt->diffusion_ops : nullptr;
+}
+
+}  // namespace
 
 // =============================================================================
 // INTERNAL HELPERS
@@ -49,8 +58,11 @@ static rac_inference_framework_t detect_model_format_from_path(const char* path)
                 return RAC_FRAMEWORK_COREML;
             }
         }
-    } catch (const fs::filesystem_error&) {
-        // Ignore
+    } catch (const fs::filesystem_error&) {  // NOLINT(bugprone-empty-catch)
+        // Best-effort detection: a missing/inaccessible directory or
+        // permission error is not actionable here — fall through to
+        // RAC_FRAMEWORK_UNKNOWN so callers can probe other framework
+        // backends.
     }
     return RAC_FRAMEWORK_UNKNOWN;
 }
@@ -66,30 +78,25 @@ static rac_result_t diffusion_create_service_internal(const char* model_id,
 
     RAC_LOG_INFO(LOG_CAT, "Creating diffusion service for: %s", model_id);
 
-    // Query model registry to get framework
-    rac_model_info_t* model_info = nullptr;
-    rac_result_t result = rac_get_model(model_id, &model_info);
-
-    // If not found by model_id, try looking up by path (model_id might be a path)
+    rac::features::ResolvedModelReference model_ref;
+    rac_result_t result =
+        rac::features::resolve_model_reference(model_id,
+                                               {.log_cat = LOG_CAT,
+                                                .default_framework = RAC_FRAMEWORK_UNKNOWN,
+                                                .allow_null_model_id = false,
+                                                .lookup_last_path_component = true,
+                                                .prefer_input_path_when_contains = nullptr},
+                                               &model_ref);
     if (result != RAC_SUCCESS) {
-        RAC_LOG_DEBUG(LOG_CAT, "Model not found by ID, trying path lookup: %s", model_id);
-        result = rac_get_model_by_path(model_id, &model_info);
+        return result;
     }
 
-    // Start with UNKNOWN framework - will be determined by file detection or registry
-    rac_inference_framework_t framework = RAC_FRAMEWORK_UNKNOWN;
-    const char* model_path = model_id;
+    rac_inference_framework_t framework = model_ref.framework;
+    std::string model_path_owned = model_ref.path;
 
-    if (result == RAC_SUCCESS && model_info) {
-        framework = model_info->framework;
-        model_path = model_info->local_path ? model_info->local_path : model_id;
-        RAC_LOG_INFO(LOG_CAT, "Found model in registry: id=%s, framework=%d, local_path=%s",
-                     model_info->id ? model_info->id : "NULL",
-                     static_cast<int>(framework), model_path ? model_path : "NULL");
-    } else {
-        RAC_LOG_WARNING(LOG_CAT,
-                        "Model NOT found in registry (result=%d), will detect from path",
-                        result);
+    if (!model_ref.found) {
+        RAC_LOG_WARNING(LOG_CAT, "Model NOT found in registry (result=%d), will detect from path",
+                        model_ref.registry_result);
 
         // Try to detect framework from the model path/id
         framework = detect_model_format_from_path(model_id);
@@ -98,7 +105,8 @@ static rac_result_t diffusion_create_service_internal(const char* model_id,
             framework = RAC_FRAMEWORK_COREML;
             RAC_LOG_INFO(LOG_CAT, "Could not detect format, defaulting to CoreML (Apple only)");
         } else if (framework == RAC_FRAMEWORK_ONNX) {
-            RAC_LOG_WARNING(LOG_CAT, "ONNX diffusion is not supported; only Apple CoreML. Ignoring ONNX.");
+            RAC_LOG_WARNING(LOG_CAT,
+                            "ONNX diffusion is not supported; only Apple CoreML. Ignoring ONNX.");
             framework = RAC_FRAMEWORK_COREML;
         } else {
             RAC_LOG_INFO(LOG_CAT, "Detected framework=%d from path inspection",
@@ -106,40 +114,28 @@ static rac_result_t diffusion_create_service_internal(const char* model_id,
         }
     }
 
-    if (config &&
-        static_cast<rac_inference_framework_t>(config->preferred_framework) !=
-            RAC_FRAMEWORK_UNKNOWN) {
+    if (config && static_cast<rac_inference_framework_t>(config->preferred_framework) !=
+                      RAC_FRAMEWORK_UNKNOWN) {
         framework = static_cast<rac_inference_framework_t>(config->preferred_framework);
         RAC_LOG_INFO(LOG_CAT, "Using preferred framework override: %d",
                      static_cast<int>(framework));
     }
 
-    // Build service request
-    rac_service_request_t request = {};
-    request.identifier = model_id;
-    request.capability = RAC_CAPABILITY_DIFFUSION;
-    request.framework = framework;
-    request.model_path = model_path;
-
-    RAC_LOG_INFO(LOG_CAT, "Diffusion service request: framework=%d (%s), model_path=%s",
-                 static_cast<int>(request.framework),
-                 framework == RAC_FRAMEWORK_COREML ? "CoreML" :
-                 framework == RAC_FRAMEWORK_ONNX ? "ONNX" :
-                 framework == RAC_FRAMEWORK_UNKNOWN ? "Unknown" : "Other",
-                 request.model_path ? request.model_path : "NULL");
-
-    // Service registry returns an rac_diffusion_service_t* with vtable already set
-    RAC_LOG_INFO(LOG_CAT, "Calling rac_service_create for DIFFUSION capability...");
-    result = rac_service_create(RAC_CAPABILITY_DIFFUSION, &request, out_handle);
-
-    if (model_info) {
-        rac_model_info_free(model_info);
-    }
-
+    rac_diffusion_service_t* service = nullptr;
+    result =
+        rac::features::create_plugin_service<rac_diffusion_service_t, rac_diffusion_service_ops_t>(
+            {.log_cat = LOG_CAT,
+             .primitive = RAC_PRIMITIVE_DIFFUSION,
+             .select_ops = diffusion_ops,
+             .model_create_id = model_path_owned.c_str(),
+             .model_id_for_service = model_id,
+             .config_json = nullptr,
+             .framework = framework},
+            &service);
     if (result != RAC_SUCCESS) {
-        RAC_LOG_ERROR(LOG_CAT, "Failed to create service via registry: %d", result);
         return result;
     }
+    *out_handle = service;
 
     RAC_LOG_INFO(LOG_CAT, "Diffusion service created");
     return RAC_SUCCESS;
@@ -191,11 +187,10 @@ rac_result_t rac_diffusion_generate(rac_handle_t handle, const rac_diffusion_opt
     return service->ops->generate(service->impl, options, out_result);
 }
 
-rac_result_t rac_diffusion_generate_with_progress(rac_handle_t handle,
-                                                  const rac_diffusion_options_t* options,
-                                                  rac_diffusion_progress_callback_fn progress_callback,
-                                                  void* user_data,
-                                                  rac_diffusion_result_t* out_result) {
+rac_result_t
+rac_diffusion_generate_with_progress(rac_handle_t handle, const rac_diffusion_options_t* options,
+                                     rac_diffusion_progress_callback_fn progress_callback,
+                                     void* user_data, rac_diffusion_result_t* out_result) {
     if (!handle || !options || !out_result)
         return RAC_ERROR_NULL_POINTER;
 
@@ -208,8 +203,8 @@ rac_result_t rac_diffusion_generate_with_progress(rac_handle_t handle,
         return RAC_ERROR_NOT_SUPPORTED;
     }
 
-    return service->ops->generate_with_progress(service->impl, options, progress_callback, user_data,
-                                                out_result);
+    return service->ops->generate_with_progress(service->impl, options, progress_callback,
+                                                user_data, out_result);
 }
 
 rac_result_t rac_diffusion_get_info(rac_handle_t handle, rac_diffusion_info_t* out_info) {

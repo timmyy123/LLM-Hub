@@ -13,6 +13,7 @@
 #include <cstring>
 #include <map>
 #include <mutex>
+#include <new>
 #include <string>
 
 #include "rac/core/rac_logger.h"
@@ -105,7 +106,11 @@ rac_result_t rac_streaming_metrics_create(const char* model_id, const char* gene
         return RAC_ERROR_INVALID_ARGUMENT;
     }
 
-    rac_streaming_metrics_collector* collector = new rac_streaming_metrics_collector();
+    rac_streaming_metrics_collector* collector =
+        new (std::nothrow) rac_streaming_metrics_collector();
+    if (!collector) {
+        return RAC_ERROR_OUT_OF_MEMORY;
+    }
     collector->model_id = model_id;
     collector->generation_id = generation_id;
     collector->prompt_length = prompt_length;
@@ -215,10 +220,13 @@ rac_result_t rac_streaming_metrics_get_result(rac_streaming_metrics_handle_t han
             output_tokens = 1;
     }
 
-    // Tokens per second
+    // Tokens/sec over decode time only — subtracting TTFT keeps the figure a
+    // generation-speed metric instead of a prefill-diluted average.
     double tokens_per_second = 0.0;
-    if (latency_ms > 0) {
-        tokens_per_second = static_cast<double>(output_tokens) / (latency_ms / 1000.0);
+    const double decode_ms =
+        (ttft_ms > 0.0 && ttft_ms < latency_ms) ? latency_ms - ttft_ms : latency_ms;
+    if (decode_ms > 0) {
+        tokens_per_second = static_cast<double>(output_tokens) / (decode_ms / 1000.0);
     }
 
     // Populate result
@@ -296,7 +304,10 @@ rac_result_t rac_generation_analytics_create(rac_generation_analytics_handle_t* 
         return RAC_ERROR_INVALID_ARGUMENT;
     }
 
-    rac_generation_analytics* service = new rac_generation_analytics();
+    rac_generation_analytics* service = new (std::nothrow) rac_generation_analytics();
+    if (!service) {
+        return RAC_ERROR_OUT_OF_MEMORY;
+    }
 
     RAC_LOG_INFO("GenerationAnalytics", "Service created");
 

@@ -477,6 +477,33 @@ private struct FeatureModelSettingsSheet: View {
         return Double(max(1, advertised))
     }
 
+    private var gpuLayersBinding: Binding<Double> {
+        Binding<Double>(
+            get: {
+                guard let selectedModel = selectedModel else { return 99 }
+                let key = "gpu_layers_\(selectedModel.id)"
+                if UserDefaults.standard.object(forKey: key) != nil {
+                    return Double(UserDefaults.standard.integer(forKey: key))
+                }
+                return 99 // Default to max
+            },
+            set: { newValue in
+                guard let selectedModel = selectedModel else { return }
+                let key = "gpu_layers_\(selectedModel.id)"
+                let intValue = Int32(newValue)
+                UserDefaults.standard.set(intValue, forKey: key)
+                
+                // Synchronize to C++ registry immediately
+                let targetValue: Int32 = (intValue == 99) ? 999 : intValue
+                CppBridge.ModelRegistry.shared.setGpuLayers(modelId: selectedModel.id, gpuLayers: targetValue)
+                if let folderURL = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: selectedModel.id, framework: selectedModel.modelFormat == .litertlm ? .litertlm : .llamacpp),
+                   let ggufFile = listGGUFFiles(in: folderURL).first(where: { !$0.lastPathComponent.lowercased().contains("mmproj") }) {
+                    CppBridge.ModelRegistry.shared.setGpuLayers(modelId: ggufFile.path, gpuLayers: targetValue)
+                }
+            }
+        )
+    }
+
     @ObservedObject private var whisperBackend = WhisperBackend.shared
 
     private var isSelectedModelLoaded: Bool {
@@ -532,6 +559,22 @@ private struct FeatureModelSettingsSheet: View {
                                     }
                                 }
                                 .tint(ApolloPalette.accentStrong)
+
+                                if let model = selectedModel, model.modelFormat == .gguf {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        HStack {
+                                            Text(settings.localized("gpu_layers_label").replacingOccurrences(of: "%1$d", with: gpuLayersBinding.wrappedValue == 99 ? settings.localized("max") : "\(Int(gpuLayersBinding.wrappedValue))"))
+                                                .foregroundColor(.white)
+                                            Spacer()
+                                            Text(gpuLayersBinding.wrappedValue == 99 ? settings.localized("max") : "\(Int(gpuLayersBinding.wrappedValue))")
+                                                .foregroundColor(.white.opacity(0.9))
+                                                .monospacedDigit()
+                                        }
+                                        Slider(value: gpuLayersBinding, in: 0...99, step: 1)
+                                            .tint(ApolloPalette.accentStrong)
+                                    }
+                                    .padding(.top, 8)
+                                }
                             }
 
                             if selectedModelSupportsVision {

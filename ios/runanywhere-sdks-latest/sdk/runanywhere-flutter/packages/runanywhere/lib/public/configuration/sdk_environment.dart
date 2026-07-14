@@ -1,65 +1,89 @@
+import 'package:runanywhere/core/native/rac_native.dart' show RacNative;
+import 'package:runanywhere/foundation/errors/sdk_exception.dart';
 import 'package:runanywhere/foundation/logging/sdk_logger.dart';
-import 'package:runanywhere/native/dart_bridge_dev_config.dart';
+import 'package:runanywhere/generated/model_types.pbenum.dart'
+    show SDKEnvironment;
+import 'package:runanywhere/native/dart_bridge_environment.dart';
 
-/// SDK Environment mode - determines how data is handled
-enum SDKEnvironment {
-  /// Development/testing mode - may use local data, verbose logging
-  development,
-
-  /// Staging mode - testing with real services
-  staging,
-
-  /// Production mode - live environment
-  production,
-}
+export 'package:runanywhere/generated/model_types.pbenum.dart'
+    show SDKEnvironment;
 
 extension SDKEnvironmentExtension on SDKEnvironment {
-  /// Human-readable description
-  String get description {
+  /// C `rac_environment_t` value (RAC_ENV_DEVELOPMENT/STAGING/PRODUCTION).
+  /// Mirrors Swift `cEnvironment` (SDKEnvironment.swift:52-59): unknown
+  /// values map to RAC_ENV_DEVELOPMENT.
+  int get _cEnvironment {
     switch (this) {
-      case SDKEnvironment.development:
-        return 'Development Environment';
-      case SDKEnvironment.staging:
-        return 'Staging Environment';
-      case SDKEnvironment.production:
-        return 'Production Environment';
+      case SDKEnvironment.SDK_ENVIRONMENT_DEVELOPMENT:
+        return 0; // RAC_ENV_DEVELOPMENT
+      case SDKEnvironment.SDK_ENVIRONMENT_STAGING:
+        return 1; // RAC_ENV_STAGING
+      case SDKEnvironment.SDK_ENVIRONMENT_PRODUCTION:
+        return 2; // RAC_ENV_PRODUCTION
+      default:
+        return 0; // RAC_ENV_DEVELOPMENT
     }
   }
 
-  /// Check if this is a production environment
-  bool get isProduction => this == SDKEnvironment.production;
+  /// Invoke a required `rac_env_*` predicate from commons.
+  bool _envPredicate(bool Function(int)? fn, {required String symbol}) {
+    if (fn == null) {
+      throw UnsupportedError('$symbol is unavailable');
+    }
+    return fn(_cEnvironment);
+  }
 
-  /// Check if this is a testing environment
-  bool get isTesting =>
-      this == SDKEnvironment.development || this == SDKEnvironment.staging;
+  String get description {
+    switch (this) {
+      case SDKEnvironment.SDK_ENVIRONMENT_DEVELOPMENT:
+        return 'Development Environment';
+      case SDKEnvironment.SDK_ENVIRONMENT_STAGING:
+        return 'Staging Environment';
+      case SDKEnvironment.SDK_ENVIRONMENT_PRODUCTION:
+        return 'Production Environment';
+      default:
+        return 'Unspecified Environment';
+    }
+  }
 
-  /// Check if this environment requires a valid backend URL
-  bool get requiresBackendURL => this != SDKEnvironment.development;
+  /// Check if this is a production environment (uses C++). Mirrors Swift
+  /// `isProduction` (SDKEnvironment.swift:73).
+  bool get isProduction => _envPredicate(
+    RacNative.bindings.rac_env_is_production,
+    symbol: 'rac_env_is_production',
+  );
 
-  // MARK: - Build Configuration Validation
+  /// Check if this is a testing environment (uses C++).
+  bool get isTesting => _envPredicate(
+    RacNative.bindings.rac_env_is_testing,
+    symbol: 'rac_env_is_testing',
+  );
 
-  /// Check if the current build configuration is compatible with this environment
-  /// Production environment is only allowed in Release builds
+  /// Check if this environment requires a valid backend URL (uses C++).
+  bool get requiresBackendURL => _envPredicate(
+    RacNative.bindings.rac_env_requires_backend_url,
+    symbol: 'rac_env_requires_backend_url',
+  );
+
   bool get isCompatibleWithCurrentBuild {
     switch (this) {
-      case SDKEnvironment.development:
-      case SDKEnvironment.staging:
+      case SDKEnvironment.SDK_ENVIRONMENT_DEVELOPMENT:
+      case SDKEnvironment.SDK_ENVIRONMENT_STAGING:
         return true;
-      case SDKEnvironment.production:
-        // In Dart/Flutter, we use kDebugMode or assert() to check debug mode
-        // Since there's no #if DEBUG in Dart, we check via assert
-        bool isDebug = false;
+      case SDKEnvironment.SDK_ENVIRONMENT_PRODUCTION:
+        var isDebug = false;
         assert(() {
           isDebug = true;
           return true;
         }());
         return !isDebug;
+      default:
+        return false;
     }
   }
 
-  /// Returns true if we're running in a DEBUG build
   static bool get isDebugBuild {
-    bool isDebug = false;
+    var isDebug = false;
     assert(() {
       isDebug = true;
       return true;
@@ -67,98 +91,112 @@ extension SDKEnvironmentExtension on SDKEnvironment {
     return isDebug;
   }
 
-  // MARK: - Environment-Specific Settings
-
-  /// Determine logging verbosity based on environment
   LogLevel get defaultLogLevel {
     switch (this) {
-      case SDKEnvironment.development:
-        return LogLevel.debug;
-      case SDKEnvironment.staging:
-        return LogLevel.info;
-      case SDKEnvironment.production:
-        return LogLevel.warning;
+      case SDKEnvironment.SDK_ENVIRONMENT_DEVELOPMENT:
+        return LogLevel.LOG_LEVEL_DEBUG;
+      case SDKEnvironment.SDK_ENVIRONMENT_STAGING:
+        return LogLevel.LOG_LEVEL_INFO;
+      case SDKEnvironment.SDK_ENVIRONMENT_PRODUCTION:
+        return LogLevel.LOG_LEVEL_WARNING;
+      default:
+        return LogLevel.LOG_LEVEL_INFO;
     }
   }
 
-  /// Should send telemetry data (production only)
-  bool get shouldSendTelemetry => this == SDKEnvironment.production;
+  /// Should send telemetry data (production only) — uses C++. Mirrors Swift
+  /// `shouldSendTelemetry` (SDKEnvironment.swift:121).
+  bool get shouldSendTelemetry => _envPredicate(
+    RacNative.bindings.rac_env_should_send_telemetry,
+    symbol: 'rac_env_should_send_telemetry',
+  );
 
-  /// Should use mock data sources (development only)
-  bool get useMockData => this == SDKEnvironment.development;
+  /// Should sync with backend (non-development) — uses C++.
+  bool get shouldSyncWithBackend => _envPredicate(
+    RacNative.bindings.rac_env_should_sync_with_backend,
+    symbol: 'rac_env_should_sync_with_backend',
+  );
 
-  /// Should sync with backend (non-development)
-  bool get shouldSyncWithBackend => this != SDKEnvironment.development;
-
-  /// Requires API authentication (non-development)
-  bool get requiresAuthentication => this != SDKEnvironment.development;
+  /// Requires API authentication (non-development) — uses C++.
+  bool get requiresAuthentication => _envPredicate(
+    RacNative.bindings.rac_env_requires_auth,
+    symbol: 'rac_env_requires_auth',
+  );
 }
 
-/// Supabase configuration
 class SupabaseConfig {
   final Uri projectURL;
   final String anonKey;
 
-  SupabaseConfig({
-    required this.projectURL,
-    required this.anonKey,
-  });
+  SupabaseConfig({required this.projectURL, required this.anonKey});
 
-  /// Get configuration for environment
-  /// 
-  /// For development mode, reads from C++ dev config (development_config.cpp).
-  /// This ensures credentials are stored in a single git-ignored location.
   static SupabaseConfig? configuration(SDKEnvironment environment) {
     switch (environment) {
-      case SDKEnvironment.development:
-        // Read from C++ dev config - credentials stored in development_config.cpp (git-ignored)
+      case SDKEnvironment.SDK_ENVIRONMENT_DEVELOPMENT:
         final supabaseUrl = DartBridgeDevConfig.supabaseURL;
         final supabaseKey = DartBridgeDevConfig.supabaseKey;
-        
-        if (supabaseUrl == null || supabaseUrl.isEmpty ||
-            supabaseKey == null || supabaseKey.isEmpty) {
-          // Dev config not available - this is expected if development_config.cpp 
-          // hasn't been filled in. Telemetry will be disabled in dev mode.
+
+        // Delegate the placeholder + URL-shape checks to the canonical commons
+        // rule (via DartBridge) so every SDK agrees instead of each carrying its
+        // own regex.
+        if (supabaseUrl == null ||
+            supabaseKey == null ||
+            !DartBridgeDevConfig.isUsableHttpUrl(supabaseUrl) ||
+            !DartBridgeDevConfig.isUsableCredential(supabaseKey)) {
           return null;
         }
-        
-        return SupabaseConfig(
-          projectURL: Uri.parse(supabaseUrl),
-          anonKey: supabaseKey,
-        );
-      case SDKEnvironment.staging:
-      case SDKEnvironment.production:
+
+        final uri = Uri.tryParse(supabaseUrl);
+        if (uri == null) {
+          return null;
+        }
+
+        return SupabaseConfig(projectURL: uri, anonKey: supabaseKey);
+      default:
         return null;
     }
   }
 }
 
-/// SDK initialization parameters
 class SDKInitParams {
-  /// API key for authentication
   final String apiKey;
-
-  /// Base URL for API requests
   final Uri baseURL;
-
-  /// Environment mode
   final SDKEnvironment environment;
 
-  /// Supabase configuration (for analytics in dev mode)
   SupabaseConfig? get supabaseConfig =>
       SupabaseConfig.configuration(environment);
 
   SDKInitParams({
     required this.apiKey,
     required this.baseURL,
-    this.environment = SDKEnvironment.production,
-  });
+    this.environment = SDKEnvironment.SDK_ENVIRONMENT_PRODUCTION,
+  }) {
+    // Fail-closed on UNSPECIFIED / UNRECOGNIZED: refuse to silently coerce
+    // an unknown wire-decoded enum value into DEVELOPMENT (which would
+    // disable auth and backend sync).
+    if (environment == SDKEnvironment.SDK_ENVIRONMENT_UNSPECIFIED ||
+        !SDKEnvironment.values.contains(environment)) {
+      throw SDKException.invalidConfiguration(
+        'Unknown SDKEnvironment value; refusing to default to DEVELOPMENT',
+      );
+    }
+    final result = DartBridgeEnvironment.instance.validateConfig(
+      environment: environment,
+      apiKey: apiKey,
+      baseURL: baseURL.toString(),
+    );
+    if (!result.isValid) {
+      throw SDKException.validationFailed(
+        DartBridgeEnvironment.instance.getValidationErrorMessage(result),
+        fieldPath: 'SDKInitParams',
+      );
+    }
+  }
 
-  /// Create from string URL
   factory SDKInitParams.fromString({
     required String apiKey,
     required String baseURL,
-    SDKEnvironment environment = SDKEnvironment.production,
+    SDKEnvironment environment = SDKEnvironment.SDK_ENVIRONMENT_PRODUCTION,
   }) {
     final uri = Uri.tryParse(baseURL);
     if (uri == null) {
@@ -171,16 +209,16 @@ class SDKInitParams {
     );
   }
 
-  /// Create development mode parameters
-  /// Uses Supabase for analytics, no authentication required
-  /// Matches iOS SDKInitParams(forDevelopmentWithAPIKey:)
   factory SDKInitParams.forDevelopment({String apiKey = ''}) {
-    final supabaseConfig =
-        SupabaseConfig.configuration(SDKEnvironment.development);
+    final supabaseConfig = SupabaseConfig.configuration(
+      SDKEnvironment.SDK_ENVIRONMENT_DEVELOPMENT,
+    );
     return SDKInitParams(
       apiKey: apiKey,
-      baseURL: supabaseConfig?.projectURL ?? Uri.parse('http://localhost'),
-      environment: SDKEnvironment.development,
+      baseURL:
+          supabaseConfig?.projectURL ??
+          Uri.parse('https://dev.runanywhere.local'),
+      environment: SDKEnvironment.SDK_ENVIRONMENT_DEVELOPMENT,
     );
   }
 }

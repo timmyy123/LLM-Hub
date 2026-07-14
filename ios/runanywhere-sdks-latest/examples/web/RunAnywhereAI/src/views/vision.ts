@@ -1,489 +1,501 @@
 /**
- * Vision Tab - Live Camera + VLM Description
+ * Vision Tab — VLM camera description over the canonical streaming facade.
  *
- * Mirrors iOS VLMCameraView / VLMViewModel:
- *   - Live webcam preview via getUserMedia()
- *   - Single-tap capture + describe (bulb button)
- *   - Auto-streaming "Live" mode (describe every 2.5s)
- *   - Description panel with streaming text
- *   - Model selection for multimodal models
+ * Mirrors iOS VLMViewModel (Features/Vision/VLMViewModel.swift):
+ *
+ *   1. User downloads + loads any multimodal model via the shared model
+ *      selection sheet (`RunAnywhere.downloadModel` + `loadModel`). Loading a
+ *      multimodal model syncs the Web vision-language provider inside the
+ *      SDK — no app-side bridging.
+ *   2. User starts the camera — `VideoCapture` attaches its `<video>` to
+ *      the preview container.
+ *   3. User clicks "Capture & analyze" — the latest frame streams through
+ *      `RunAnywhere.processImageStream(image, options)`, rendering TOKEN
+ *      events as they arrive (iOS parity: VLMViewModel.swift:148-194
+ *      consumeVLMStream/describeCurrentFrame), with cancel support.
  */
 
 import type { TabLifecycle } from '../app';
-import { ModelManager, ModelCategory, type ModelInfo } from '../services/model-manager';
-import { showModelSelectionSheet } from '../components/model-selection';
-import { VideoCapture, type CapturedFrame } from '../../../../../sdk/runanywhere-web/packages/core/src/index';
-import { VLMWorkerBridge } from '../../../../../sdk/runanywhere-web/packages/llamacpp/src/index';
+import {
+  ModelCategory,
+  RunAnywhere,
+  VLMModelFamily,
+  VLMStreamEventKind,
+  vlmImageFromRawRGB,
+  type VLMGenerationOptions,
+} from '@runanywhere/web';
+import { VideoCapture } from '@runanywhere/web/browser';
+import {
+  onModelStateChange,
+  openSheet,
+} from '../components/model-selection';
+import { escapeHtml } from '../services/escape-html';
+import { formatError } from '../services/format-error';
 
-// ---------------------------------------------------------------------------
-// Constants (matching iOS VLMViewModel defaults)
-// ---------------------------------------------------------------------------
+const VLM_PICKER_FILTER: readonly ModelCategory[] = [
+  ModelCategory.MODEL_CATEGORY_MULTIMODAL,
+  ModelCategory.MODEL_CATEGORY_VISION,
+];
 
-const AUTO_STREAM_INTERVAL_MS = 2500;
-const SINGLE_SHOT_MAX_TOKENS = 60;
-/** Keep tokens low for live mode — each token costs ~1-2s in WASM */
-const AUTO_STREAM_MAX_TOKENS = 30;
-const SINGLE_SHOT_PROMPT = 'Describe what you see briefly.';
-const AUTO_STREAM_PROMPT = 'What is in this image? Answer in one short sentence.';
-
-/**
- * Max dimension for captured frames sent to VLM.
- * Both modes use 256px to keep CLIP encoding fast (the main bottleneck in WASM).
- * The CLIP encoder internally resizes to its fixed input size anyway, so larger
- * captures mostly waste time on canvas downscaling + pixel transfer.
- */
-const MAX_CAPTURE_DIM_SINGLE = 256;
-const MAX_CAPTURE_DIM_LIVE = 256;
-
-// ---------------------------------------------------------------------------
-// State
-// ---------------------------------------------------------------------------
+const DEFAULT_PROMPT = 'Describe what you see in this image.';
+const CAPTURE_DIMENSION = 384;
 
 let container: HTMLElement;
-let overlayEl: HTMLElement;
-let toolbarModelEl: HTMLElement;
-let descriptionEl: HTMLElement;
-let captureBtn: HTMLElement;
-let liveToggleBtn: HTMLElement;
-let liveBadge: HTMLElement;
-let processingOverlay: HTMLElement;
-let metricsEl: HTMLElement;
-let copyBtn: HTMLElement;
-
-/** SDK VideoCapture manages camera lifecycle + frame extraction. */
-const camera = new VideoCapture({ facingMode: 'environment' });
-
-let isProcessing = false;
-let isLiveMode = false;
-let liveIntervalId: ReturnType<typeof setTimeout> | null = null;
-let currentDescription = '';
-
-// ---------------------------------------------------------------------------
-// Init
-// ---------------------------------------------------------------------------
+let camera: VideoCapture | null = null;
+let latestFrame: { rgbPixels: Uint8Array; width: number; height: number } | null = null;
+// Data URL preview for an image loaded from disk (null when the source is the
+// live camera). Lets the preview survive innerHTML re-renders without a camera.
+let loadedPreviewUrl: string | null = null;
+let lastResult: string | null = null;
+let status = '';
+let isBusy = false;
+let cancelAnalyze: (() => void) | null = null;
+let unsubscribeState: (() => void) | null = null;
+let cameraStartGeneration = 0;
+let cameraStartPending = false;
 
 export function initVisionTab(el: HTMLElement): TabLifecycle {
   container = el;
-  container.innerHTML = `
-    <!-- Toolbar -->
-    <div class="toolbar">
-      <div class="toolbar-actions"></div>
-      <div class="toolbar-model-btn" id="vision-toolbar-model" title="Tap to change model">
-        <svg class="model-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-        <span id="vision-toolbar-model-text">Select Vision Model</span>
-        <svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-      <div class="toolbar-actions"></div>
-    </div>
 
-    <!-- Main Content -->
-    <div class="vision-main hidden" id="vision-main">
-      <!-- Camera Preview -->
-      <div class="vision-camera-container" id="vision-camera-container">
-        <!-- Processing overlay -->
-        <div class="vision-processing-overlay hidden" id="vision-processing-overlay">
-          <div class="typing-dots vision-typing-dots-sm">
-            <div class="typing-dot"></div>
-            <div class="typing-dot"></div>
-            <div class="typing-dot"></div>
-          </div>
-          <span class="vision-analyzing-label">Analyzing...</span>
-        </div>
-      </div>
+  renderView();
 
-      <!-- Description Panel -->
-      <div class="vision-description-panel" id="vision-description-panel">
-        <div class="vision-description-header">
-          <div class="flex items-center gap-sm">
-            <span class="text-sm font-semibold">Description</span>
-            <span class="vision-live-badge hidden" id="vision-live-badge">LIVE</span>
-          </div>
-          <button class="btn-ghost hidden" id="vision-copy-btn" title="Copy">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          </button>
-        </div>
-        <div class="vision-description-text" id="vision-description-text">
-          <span class="text-tertiary">Tap the capture button to describe what the camera sees.</span>
-        </div>
-        <div class="vision-metrics hidden" id="vision-metrics"></div>
-      </div>
+  // Re-render when the shared model state changes so the "Load model"
+  // button reflects real state without manual refresh.
+  unsubscribeState = onModelStateChange(() => renderView());
 
-      <!-- Control Bar -->
-      <div class="vision-control-bar">
-        <button class="vision-capture-btn" id="vision-capture-btn" title="Capture and Describe">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="28" height="28"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z" opacity="0"/><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 1 1 7.072 0l-.548.547A3.374 3.374 0 0 0 12 18.469V19" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        </button>
-        <button class="vision-control-btn" id="vision-live-btn" title="Toggle Live Mode">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="22" height="22"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15"/><circle cx="12" cy="12" r="10"/></svg>
-          <span>Live</span>
-        </button>
-        <button class="vision-control-btn" id="vision-model-btn" title="Select Model">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="22" height="22"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-          <span>Model</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Camera Permission / Model Required Overlay -->
-    <div class="model-overlay" id="vision-model-overlay">
-      <div class="model-overlay-bg" id="vision-floating-bg"></div>
-      <div class="model-overlay-content">
-        <div class="sparkle-icon">&#128065;</div>
-        <h2>Vision AI</h2>
-        <p>See the world through AI. Point your camera at anything and get instant descriptions.</p>
-        <button class="btn btn-primary btn-lg" id="vision-get-started-btn">Get Started</button>
-        <div class="privacy-note">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          <span>100% Private &mdash; Runs on your device</span>
-        </div>
-      </div>
-    </div>
-  `;
-
-  // Build floating circles for overlay
-  buildFloatingCircles();
-
-  // Cache references
-  overlayEl = container.querySelector('#vision-model-overlay')!;
-  toolbarModelEl = container.querySelector('#vision-toolbar-model')!;
-  descriptionEl = container.querySelector('#vision-description-text')!;
-  captureBtn = container.querySelector('#vision-capture-btn')!;
-  liveToggleBtn = container.querySelector('#vision-live-btn')!;
-  liveBadge = container.querySelector('#vision-live-badge')!;
-  processingOverlay = container.querySelector('#vision-processing-overlay')!;
-  metricsEl = container.querySelector('#vision-metrics')!;
-  copyBtn = container.querySelector('#vision-copy-btn')!;
-
-  // Event listeners
-  captureBtn.addEventListener('click', onCaptureClick);
-  liveToggleBtn.addEventListener('click', toggleLiveMode);
-  container.querySelector('#vision-model-btn')!.addEventListener('click', openModelSheet);
-  container.querySelector('#vision-get-started-btn')!.addEventListener('click', onGetStarted);
-  toolbarModelEl.addEventListener('click', openModelSheet);
-  copyBtn.addEventListener('click', copyDescription);
-
-  // Subscribe to model changes
-  ModelManager.onChange(onModelsChanged);
-  onModelsChanged(ModelManager.getModels());
-
-  // Return lifecycle callbacks for tab-switching cleanup
-  return {
-    onDeactivate(): void {
-      // Stop live mode interval (fires VLM inference every 2.5s)
-      stopLiveMode();
-      // Release the camera hardware to free resources
-      camera.stop();
-      console.log('[Vision] Tab deactivated — camera & live mode stopped');
-    },
-    onActivate(): void {
-      // Re-open the camera if a model is loaded (user had it running before)
-      const loaded = ModelManager.getLoadedModel(ModelCategory.Multimodal);
-      if (loaded && !camera.isCapturing) {
-        startCamera();
-        console.log('[Vision] Tab activated — camera restarted');
+  // Tear down the model-state subscription if the panel element ever
+  // detaches (e.g. a full app-shell re-render).
+  const rootParent = container.parentElement;
+  if (typeof MutationObserver !== 'undefined' && rootParent) {
+    const disposeObserver = new MutationObserver(() => {
+      if (!container.isConnected) {
+        disposeObserver.disconnect();
+        unsubscribeState?.();
+        unsubscribeState = null;
       }
+    });
+    disposeObserver.observe(rootParent, { childList: true });
+  }
+
+  return {
+    onActivate: () => {
+      renderView();
+    },
+    onDeactivate: () => {
+      cancelAnalyze?.();
+      stopCamera();
     },
   };
 }
 
 // ---------------------------------------------------------------------------
-// Floating circles background
+// Rendering
 // ---------------------------------------------------------------------------
 
-function buildFloatingCircles(): void {
-  const bg = container.querySelector('#vision-floating-bg')!;
-  const colors = ['#8B5CF6', '#3B82F6', '#EC4899', '#10B981', '#F59E0B'];
-  for (let i = 0; i < 8; i++) {
-    const circle = document.createElement('div');
-    circle.className = 'floating-circle';
-    const size = 60 + Math.random() * 120;
-    circle.style.cssText = `
-      width:${size}px; height:${size}px;
-      background:${colors[i % colors.length]};
-      left:${Math.random() * 100}%;
-      top:${Math.random() * 100}%;
-      animation-delay:${Math.random() * 4}s;
-      animation-duration:${6 + Math.random() * 6}s;
-    `;
-    bg.appendChild(circle);
+function renderView(): void {
+  const modelLoaded = isVLMModelLoaded();
+  const captureReady = camera?.isCapturing ?? false;
+  const canAnalyze = modelLoaded && (captureReady || latestFrame !== null) && !isBusy;
+
+  container.innerHTML = `
+    <div class="toolbar">
+      <div class="toolbar-title">Vision</div>
+      <div class="toolbar-actions">
+        <button class="btn btn-secondary" id="vision-model-btn">
+          ${modelLoaded ? 'Change Model' : 'Load Vision Model'}
+        </button>
+      </div>
+    </div>
+    <div class="scroll-area">
+      <div class="docs-section">
+        <h3>Status</h3>
+        <ul class="feature-unavailable__list">
+          <li><code>VLM model loaded</code>: <strong>${modelLoaded ? 'yes' : 'no'}</strong></li>
+          <li><code>camera.isCapturing</code>: <strong>${captureReady ? 'yes' : 'no'}</strong></li>
+        </ul>
+      </div>
+
+      <div class="docs-section">
+        <h3>Camera</h3>
+        <p class="text-secondary">Attach your webcam and capture frames as RGB pixels for VLM inference.</p>
+        <div class="toolbar-actions">
+          <button class="btn btn-primary" id="vision-camera-btn" ${isBusy ? 'disabled' : ''}>
+            ${captureReady ? 'Stop camera' : 'Start camera'}
+          </button>
+          <button class="btn btn-secondary" id="vision-capture-btn" ${captureReady && !isBusy ? '' : 'disabled'}>
+            Capture frame
+          </button>
+          <button class="btn btn-secondary" id="vision-load-image-btn" ${isBusy ? 'disabled' : ''}>
+            Load image…
+          </button>
+          <input type="file" id="vision-image-input" accept="image/*" hidden />
+        </div>
+        <div id="vision-preview" class="vision-preview"></div>
+        <div id="vision-frame-meta" class="docs-status">${frameMetaLabel()}</div>
+      </div>
+
+      <div class="docs-section">
+        <h3>Analyze</h3>
+        <p class="text-secondary">
+          Streams <code>RunAnywhere.processImageStream(image, options)</code>
+          on the last captured frame, rendering tokens as they arrive.
+        </p>
+        <label class="form-label" for="vision-prompt">Prompt</label>
+        <textarea id="vision-prompt" class="chat-input" rows="2"
+          ${isBusy ? 'disabled' : ''}
+          placeholder="What's in this image?">${escapeHtml(DEFAULT_PROMPT)}</textarea>
+        <div class="toolbar-actions">
+          <button class="btn btn-primary" id="vision-analyze-btn" ${canAnalyze ? '' : 'disabled'}>
+            ${isBusy ? 'Analyzing…' : 'Capture & analyze'}
+          </button>
+          <button class="btn btn-secondary" id="vision-cancel-btn" ${isBusy ? '' : 'disabled'}>
+            Cancel
+          </button>
+        </div>
+        <div id="vision-status" class="docs-status">${escapeHtml(status)}</div>
+        <pre id="vision-output" class="docs-pre">${escapeHtml(lastResult ?? '(no response yet)')}</pre>
+      </div>
+    </div>
+  `;
+
+  reattachCameraPreview();
+
+  container
+    .querySelector('#vision-model-btn')!
+    .addEventListener('click', () =>
+      openSheet({
+        title: 'Select Vision Model',
+        filterCategories: VLM_PICKER_FILTER,
+      }),
+    );
+  container
+    .querySelector('#vision-camera-btn')!
+    .addEventListener('click', () => void toggleCamera());
+  container
+    .querySelector('#vision-capture-btn')!
+    .addEventListener('click', () => captureFrame());
+  const imageInput = container.querySelector<HTMLInputElement>('#vision-image-input')!;
+  container
+    .querySelector('#vision-load-image-btn')!
+    .addEventListener('click', () => imageInput.click());
+  imageInput.addEventListener('change', () => void onImageFileSelected(imageInput));
+  container
+    .querySelector('#vision-analyze-btn')!
+    .addEventListener('click', () => void onAnalyze());
+  container
+    .querySelector('#vision-cancel-btn')!
+    .addEventListener('click', () => cancelAnalyze?.());
+}
+
+function reattachCameraPreview(): void {
+  const host = container.querySelector<HTMLElement>('#vision-preview');
+  if (!host) return;
+  host.innerHTML = '';
+  if (camera?.isCapturing) {
+    host.appendChild(camera.videoElement);
+    return;
+  }
+  if (loadedPreviewUrl) {
+    const img = document.createElement('img');
+    img.src = loadedPreviewUrl;
+    img.alt = 'Loaded image';
+    img.style.maxWidth = '100%';
+    img.style.borderRadius = '8px';
+    host.appendChild(img);
   }
 }
 
-// ---------------------------------------------------------------------------
-// Model Sheet + Overlay
-// ---------------------------------------------------------------------------
-
-function openModelSheet(): void {
-  showModelSelectionSheet(ModelCategory.Multimodal);
+function frameMetaLabel(): string {
+  if (!latestFrame) return 'No frame captured yet.';
+  return `Last frame: ${latestFrame.width}×${latestFrame.height} RGB (${latestFrame.rgbPixels.byteLength.toLocaleString()} bytes)`;
 }
 
-function onModelsChanged(_models: ModelInfo[]): void {
-  const loaded = ModelManager.getLoadedModel(ModelCategory.Multimodal);
-  const textSpan = toolbarModelEl.querySelector('#vision-toolbar-model-text');
-  if (loaded) {
-    if (textSpan) textSpan.textContent = loaded.name;
-    // Model is loaded — show the main camera UI (camera may or may not be active)
-    overlayEl.classList.add('hidden');
-    (container.querySelector('#vision-main') as HTMLElement).classList.remove('hidden');
-    // Auto-start camera if not already running
-    if (!camera.isCapturing) {
-      startCamera();
-    }
-  } else {
-    overlayEl.classList.remove('hidden');
-    if (textSpan) textSpan.textContent = 'Select Vision Model';
-    (container.querySelector('#vision-main') as HTMLElement).classList.add('hidden');
-    stopLiveMode();
-    camera.stop();
-  }
-}
+// ---------------------------------------------------------------------------
+// Camera
+// ---------------------------------------------------------------------------
 
-async function onGetStarted(): Promise<void> {
-  // First ensure a model is selected
-  const loaded = ModelManager.getLoadedModel(ModelCategory.Multimodal);
-  if (!loaded) {
-    openModelSheet();
-    // Wait for model to load, then start camera
-    const unsub = ModelManager.onChange(() => {
-      const m = ModelManager.getLoadedModel(ModelCategory.Multimodal);
-      if (m) {
-        unsub();
-        startCamera();
-      }
-    });
+async function toggleCamera(): Promise<void> {
+  if (camera?.isCapturing) {
+    stopCamera();
+    renderView();
     return;
   }
   await startCamera();
 }
 
-// ---------------------------------------------------------------------------
-// Camera (managed by SDK VideoCapture)
-// ---------------------------------------------------------------------------
-
 async function startCamera(): Promise<void> {
+  const generation = ++cameraStartGeneration;
+  const candidate = new VideoCapture({
+    facingMode: 'environment',
+    idealWidth: 640,
+    idealHeight: 480,
+  });
+  cameraStartPending = true;
+  isBusy = true;
+  setStatus('Requesting camera access…');
+  renderView();
   try {
-    await camera.start();
-
-    // Attach the VideoCapture's video element to the DOM for live preview
-    const cameraContainer = container.querySelector('#vision-camera-container');
-    if (cameraContainer && !cameraContainer.contains(camera.videoElement)) {
-      // Re-insert the processing overlay after the video element
-      const overlay = container.querySelector('#vision-processing-overlay');
-      camera.videoElement.id = 'vision-video';
-      cameraContainer.insertBefore(camera.videoElement, overlay);
+    await candidate.start();
+    if (generation !== cameraStartGeneration) {
+      candidate.stop();
+      return;
     }
-
-    overlayEl.classList.add('hidden');
-    (container.querySelector('#vision-main') as HTMLElement).classList.remove('hidden');
-
-    console.log('[Vision] Camera started');
+    camera = candidate;
+    setStatus('Camera ready.');
   } catch (err) {
-    console.error('[Vision] Camera access denied:', err);
-    descriptionEl.innerHTML = `<span class="text-red">Camera access denied. Please allow camera access in your browser settings.</span>`;
-    // Still show the main UI so the user can retry
-    overlayEl.classList.add('hidden');
-    (container.querySelector('#vision-main') as HTMLElement).classList.remove('hidden');
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Capture Button
-// ---------------------------------------------------------------------------
-
-function onCaptureClick(): void {
-  if (isLiveMode) {
-    // Tapping capture during live mode stops it
-    stopLiveMode();
-    return;
-  }
-  describeCurrent(SINGLE_SHOT_PROMPT, SINGLE_SHOT_MAX_TOKENS);
-}
-
-// ---------------------------------------------------------------------------
-// Live Mode (auto-streaming every 2.5s)
-// ---------------------------------------------------------------------------
-
-function toggleLiveMode(): void {
-  if (isLiveMode) {
-    stopLiveMode();
-  } else {
-    startLiveMode();
-  }
-}
-
-function startLiveMode(): void {
-  isLiveMode = true;
-  liveToggleBtn.classList.add('active');
-  liveBadge.classList.remove('hidden');
-  captureBtn.classList.add('live');
-  captureBtn.innerHTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="28" height="28"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
-  `;
-
-  console.log('[Vision] Live mode started');
-
-  // Immediately describe the first frame
-  describeCurrent(AUTO_STREAM_PROMPT, AUTO_STREAM_MAX_TOKENS);
-
-  // Then repeat every 2.5s
-  liveIntervalId = setInterval(() => {
-    if (!isProcessing && isLiveMode) {
-      describeCurrent(AUTO_STREAM_PROMPT, AUTO_STREAM_MAX_TOKENS);
+    candidate.stop();
+    if (generation !== cameraStartGeneration) return;
+    setStatus(`Camera error: ${formatError(err)}`);
+    camera = null;
+  } finally {
+    if (generation === cameraStartGeneration) {
+      cameraStartPending = false;
+      isBusy = false;
+      renderView();
     }
-  }, AUTO_STREAM_INTERVAL_MS);
+  }
 }
 
-function stopLiveMode(): void {
-  // Guard: avoid doing work (and logging) when live mode is already off.
-  // onModelsChanged() fires on every download-progress tick, which would
-  // otherwise spam this log thousands of times during a model download.
-  if (!isLiveMode && !liveIntervalId) return;
-
-  isLiveMode = false;
-  if (liveIntervalId) {
-    clearInterval(liveIntervalId);
-    liveIntervalId = null;
+function stopCamera(): void {
+  cameraStartGeneration += 1;
+  camera?.stop();
+  camera = null;
+  latestFrame = null;
+  if (cameraStartPending) {
+    cameraStartPending = false;
+    isBusy = false;
   }
-  liveToggleBtn.classList.remove('active');
-  liveBadge.classList.add('hidden');
-  captureBtn.classList.remove('live');
-  captureBtn.innerHTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="28" height="28"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 1 1 7.072 0l-.548.547A3.374 3.374 0 0 0 12 18.469V19" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-  `;
-
-  console.log('[Vision] Live mode stopped');
 }
 
-// ---------------------------------------------------------------------------
-// Describe Current Frame
-// ---------------------------------------------------------------------------
-
-async function describeCurrent(prompt: string, maxTokens: number): Promise<void> {
-  if (isProcessing) return;
-
-  const loaded = ModelManager.getLoadedModel(ModelCategory.Multimodal);
-  if (!loaded) {
-    openModelSheet();
-    return;
-  }
-
-  // Live mode uses a smaller capture (256px) for faster CLIP encoding
-  const captureDim = isLiveMode ? MAX_CAPTURE_DIM_LIVE : MAX_CAPTURE_DIM_SINGLE;
-  const frame = camera.captureFrame(captureDim);
+function captureFrame(): void {
+  if (!camera?.isCapturing) return;
+  const frame = camera.captureFrame(CAPTURE_DIMENSION);
   if (!frame) {
-    descriptionEl.innerHTML = `<span class="text-tertiary">No camera frame available. Make sure the camera is active.</span>`;
+    setStatus('Failed to capture frame.');
+    renderView();
     return;
   }
+  latestFrame = frame;
+  loadedPreviewUrl = null;
+  setStatus(`Captured ${frame.width}×${frame.height} frame.`);
+  renderView();
+}
 
-  console.log(`[Vision] Captured frame: ${frame.width}x${frame.height} (${(frame.rgbPixels.length / 1024).toFixed(0)} KB RGB, ${isLiveMode ? 'live' : 'single'})`);
-  await processFrame(frame, prompt, maxTokens);
+// ---------------------------------------------------------------------------
+// Image from disk
+// ---------------------------------------------------------------------------
+
+async function onImageFileSelected(input: HTMLInputElement): Promise<void> {
+  const file = input.files?.[0];
+  // Reset so re-selecting the same file fires `change` again.
+  input.value = '';
+  if (!file) return;
+
+  isBusy = true;
+  setStatus('Loading image…');
+  renderView();
+  try {
+    const decoded = await decodeImageToRgbFrame(file, CAPTURE_DIMENSION);
+    // A loaded image is an alternative frame source — drop the live camera so
+    // the preview and analysis operate on the picked image.
+    stopCamera();
+    latestFrame = {
+      rgbPixels: decoded.rgbPixels,
+      width: decoded.width,
+      height: decoded.height,
+    };
+    loadedPreviewUrl = decoded.previewUrl;
+    setStatus(`Loaded ${decoded.width}×${decoded.height} image from ${file.name}.`);
+  } catch (err) {
+    setStatus(`Failed to load image: ${formatError(err)}`);
+  } finally {
+    isBusy = false;
+    renderView();
+  }
 }
 
 /**
- * Process raw RGB pixel data with the VLM via Web Worker.
- *
- * Runs inference OFF the main thread so the camera feed, UI animations,
- * and event loop stay fully responsive during the 30–100s processing.
+ * Decode an image file into the same raw-RGB frame shape the camera produces:
+ * aspect-preserving downscale so the longest side is `maxDim`, alpha stripped.
  */
-async function processFrame(frame: CapturedFrame, prompt: string, maxTokens: number): Promise<void> {
-  isProcessing = true;
-  processingOverlay.classList.remove('hidden');
-
-  const t0 = performance.now();
-
-  // Live elapsed-time ticker (updates every 500ms while processing)
-  let tickerId: ReturnType<typeof setInterval> | null = null;
-  const timerSpan = processingOverlay.querySelector('span');
-  if (timerSpan) {
-    tickerId = setInterval(() => {
-      const sec = ((performance.now() - t0) / 1000).toFixed(0);
-      timerSpan.textContent = `Analyzing... ${sec}s`;
-    }, 500);
-  }
-
+async function decodeImageToRgbFrame(
+  file: File,
+  maxDim: number,
+): Promise<{ rgbPixels: Uint8Array; width: number; height: number; previewUrl: string }> {
+  const objectUrl = URL.createObjectURL(file);
   try {
-    const workerBridge = VLMWorkerBridge.shared;
+    const img = await loadImageElement(objectUrl);
+    const longest = Math.max(img.naturalWidth, img.naturalHeight) || 1;
+    const scale = Math.min(1, maxDim / longest);
+    const width = Math.max(1, Math.round(img.naturalWidth * scale));
+    const height = Math.max(1, Math.round(img.naturalHeight * scale));
 
-    if (!workerBridge.isModelLoaded) {
-      throw new Error('VLM model not loaded in Worker');
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) throw new Error('2D canvas context unavailable');
+    ctx.drawImage(img, 0, 0, width, height);
+
+    const { data } = ctx.getImageData(0, 0, width, height); // RGBA
+    const rgbPixels = new Uint8Array(width * height * 3);
+    for (let src = 0, dst = 0; src < data.length; src += 4, dst += 3) {
+      rgbPixels[dst] = data[src];
+      rgbPixels[dst + 1] = data[src + 1];
+      rgbPixels[dst + 2] = data[src + 2];
     }
-
-    const result = await workerBridge.process(
-      frame.rgbPixels,
-      frame.width,
-      frame.height,
-      prompt,
-      { maxTokens, temperature: 0.7, systemPrompt: 'You are a helpful assistant.' },
-    );
-
-    // Compute metrics from JS wall clock
-    const elapsedMs = performance.now() - t0;
-    const elapsedSec = elapsedMs / 1000;
-    const tokPerSec = elapsedSec > 0 ? result.totalTokens / elapsedSec : 0;
-
-    // Update description
-    currentDescription = result.text;
-    descriptionEl.textContent = currentDescription;
-    copyBtn.classList.toggle('hidden', !currentDescription);
-
-    // Show metrics
-    metricsEl.classList.remove('hidden');
-    metricsEl.innerHTML = `
-      <span class="metric"><span class="metric-value">${tokPerSec.toFixed(1)}</span> tok/s</span>
-      <span class="metric-separator">&middot;</span>
-      <span class="metric"><span class="metric-value">${result.totalTokens}</span> tokens</span>
-      <span class="metric-separator">&middot;</span>
-      <span class="metric"><span class="metric-value">${elapsedSec.toFixed(1)}s</span></span>
-    `;
-
-    console.log(
-      `[Vision] VLM: ${result.totalTokens} tokens, ${tokPerSec.toFixed(1)} tok/s, ${elapsedSec.toFixed(1)}s wall`,
-    );
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error('[Vision] VLM failed:', msg);
-
-    // WASM runtime crashes (OOB, etc.) trigger auto-recovery in the bridge.
-    // Show a brief "recovering" message and let the next live frame retry.
-    const isWasmCrash = msg.includes('memory access out of bounds') ||
-                        msg.includes('unreachable') ||
-                        msg.includes('RuntimeError');
-
-    if (isWasmCrash) {
-      descriptionEl.innerHTML = `<span class="text-secondary">Recovering from memory error... Next frame will retry.</span>`;
-      // Don't stop live mode — the bridge will auto-recover on next process() call
-    } else {
-      descriptionEl.innerHTML = `<span class="text-red">Error: ${escapeHtml(msg)}</span>`;
-      if (isLiveMode) {
-        stopLiveMode();
-      }
-    }
+    return { rgbPixels, width, height, previewUrl: canvas.toDataURL('image/png') };
+  } finally {
+    URL.revokeObjectURL(objectUrl);
   }
+}
 
-  if (tickerId) clearInterval(tickerId);
-  isProcessing = false;
-  processingOverlay.classList.add('hidden');
-
-  // Reset overlay text for next use
-  const timerSpanReset = processingOverlay.querySelector('span');
-  if (timerSpanReset) timerSpanReset.textContent = 'Analyzing...';
+function loadImageElement(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('Could not decode the selected image'));
+    img.src = src;
+  });
 }
 
 // ---------------------------------------------------------------------------
-// Copy Description
+// Analyze
 // ---------------------------------------------------------------------------
 
-function copyDescription(): void {
-  if (!currentDescription) return;
-  navigator.clipboard.writeText(currentDescription).then(() => {
-    console.log('[Vision] Description copied to clipboard');
-  });
+async function onAnalyze(): Promise<void> {
+  // Gate on the lifecycle's loaded multimodal model — iOS parity:
+  // VLMViewModel.swift:58-62 checkModelStatus() (currentModel(.multimodal)).
+  if (!isVLMModelLoaded()) {
+    setStatus(
+      'No VLM model is loaded. Load a vision model from the model picker, then re-run Analyze.',
+    );
+    renderView();
+    return;
+  }
+
+  // Frame source: an already-captured/loaded frame, or a fresh camera grab.
+  const frame =
+    latestFrame ?? (camera?.isCapturing ? camera.captureFrame(CAPTURE_DIMENSION) : null);
+  if (!frame) {
+    setStatus('Capture a camera frame or load an image first.');
+    renderView();
+    return;
+  }
+  latestFrame = frame;
+
+  const promptEl = container.querySelector<HTMLTextAreaElement>('#vision-prompt');
+  const prompt = (promptEl?.value ?? DEFAULT_PROMPT).trim() || DEFAULT_PROMPT;
+
+  const image = vlmImageFromRawRGB(frame.rgbPixels, frame.width, frame.height);
+
+  const options: VLMGenerationOptions = {
+    prompt,
+    maxTokens: 200,
+    temperature: 0.7,
+    topP: 0.9,
+    topK: 40,
+    stopSequences: [],
+    streamingEnabled: true,
+    systemPrompt: undefined,
+    maxImageSize: CAPTURE_DIMENSION,
+    nThreads: 0,
+    useGpu: false,
+    modelFamily: VLMModelFamily.VLM_MODEL_FAMILY_UNSPECIFIED,
+    customChatTemplate: undefined,
+    imageMarkerOverride: undefined,
+    seed: 0,
+    repetitionPenalty: 1.1,
+    minP: 0.05,
+    emitImageEmbeddings: false,
+  };
+
+  // Cancel maps to the SDK's native cancel verb — iOS parity:
+  // VLMViewModel.swift:244-246 (`RunAnywhere.cancelVLMGeneration()`).
+  let cancellationRequested = false;
+  cancelAnalyze = () => {
+    cancellationRequested = true;
+    void RunAnywhere.visionLanguage.cancelVLMGeneration();
+  };
+
+  isBusy = true;
+  setStatus('Running VLM inference…');
+  lastResult = '';
+  renderView();
+
+  try {
+    // Typed stream: STARTED → TOKEN* → terminal COMPLETED/ERROR — iOS parity:
+    // VLMViewModel.swift:148-169 consumeVLMStream.
+    const stream = await RunAnywhere.visionLanguage.processImageStream(image, options);
+    for await (const event of stream) {
+      switch (event.kind) {
+        case VLMStreamEventKind.VLM_STREAM_EVENT_KIND_TOKEN:
+          if (event.token) {
+            lastResult = (lastResult ?? '') + event.token;
+            updateOutput(lastResult);
+          }
+          break;
+        case VLMStreamEventKind.VLM_STREAM_EVENT_KIND_COMPLETED: {
+          const result = event.result;
+          const tokLine = result && result.tokensPerSecond > 0
+            ? ` — ${result.completionTokens} tokens in ${Math.round(result.processingTimeMs)}ms (${result.tokensPerSecond.toFixed(1)} tok/s)`
+            : '';
+          setStatus(`Done${tokLine}.`);
+          break;
+        }
+        case VLMStreamEventKind.VLM_STREAM_EVENT_KIND_ERROR:
+          throw new Error(event.errorMessage || 'VLM stream failed');
+        default:
+          break;
+      }
+    }
+    if (cancellationRequested) {
+      setStatus('Cancelled.');
+    } else if (!lastResult) {
+      lastResult = '(empty response)';
+    }
+  } catch (err) {
+    setStatus(cancellationRequested
+      ? 'Cancelled.'
+      : `VLM inference failed: ${formatError(err)}`);
+  } finally {
+    cancelAnalyze = null;
+    isBusy = false;
+    renderView();
+  }
 }
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function escapeHtml(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+/**
+ * True when the C++ lifecycle reports a loaded MULTIMODAL (or VISION) model —
+ * iOS parity: VLMViewModel.swift:58-62 (currentModel with category filter).
+ * No model-id allowlist: any loaded vision-capable model enables Analyze.
+ */
+function isVLMModelLoaded(): boolean {
+  try {
+    for (const category of VLM_PICKER_FILTER) {
+      const current = RunAnywhere.currentModel({
+        category,
+        includeModelMetadata: false,
+      });
+      if (current?.found || current?.modelId) return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+function setStatus(text: string): void {
+  status = text;
+  const banner = container.querySelector<HTMLDivElement>('#vision-status');
+  if (banner) banner.textContent = text;
+}
+
+function updateOutput(text: string): void {
+  const output = container.querySelector<HTMLPreElement>('#vision-output');
+  if (output) output.textContent = text;
 }

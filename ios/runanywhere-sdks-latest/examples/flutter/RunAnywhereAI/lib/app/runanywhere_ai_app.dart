@@ -1,19 +1,21 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:runanywhere/runanywhere.dart';
 import 'package:runanywhere_ai/app/content_view.dart';
 import 'package:runanywhere_ai/core/design_system/app_colors.dart';
 import 'package:runanywhere_ai/core/design_system/app_spacing.dart';
-import 'package:runanywhere_ai/core/services/model_manager.dart';
+import 'package:runanywhere_ai/core/services/hf_token_store.dart';
+import 'package:runanywhere_ai/core/services/model_catalog_bootstrap.dart';
 import 'package:runanywhere_ai/core/utilities/constants.dart';
 import 'package:runanywhere_ai/core/utilities/keychain_helper.dart';
-import 'package:runanywhere/public/extensions/rag_module.dart';
+import 'package:runanywhere_ai/core/utilities/url_utils.dart';
 import 'package:runanywhere_llamacpp/runanywhere_llamacpp.dart';
+import 'package:runanywhere_mlx/runanywhere_mlx.dart';
+import 'package:runanywhere_onnx/runanywhere_onnx.dart';
+import 'package:runanywhere_qhexrt/runanywhere_qhexrt.dart';
 
-/// RunAnywhereAIApp (mirroring iOS RunAnywhereAIApp.swift)
+/// RunAnywhereAIApp
 ///
 /// Main application entry point with SDK initialization.
 class RunAnywhereAIApp extends StatefulWidget {
@@ -24,399 +26,247 @@ class RunAnywhereAIApp extends StatefulWidget {
 }
 
 class _RunAnywhereAIAppState extends State<RunAnywhereAIApp> {
+  final GlobalKey<ScaffoldMessengerState> _messengerKey =
+      GlobalKey<ScaffoldMessengerState>();
   bool _isSDKInitialized = false;
-  Object? _initializationError;
-  String _initializationStatus = 'Initializing...';
+  bool _isInitializing = true;
+  String? _initializationError;
 
   @override
   void initState() {
     super.initState();
-    // Defer SDK initialization until after the first frame renders
-    // This prevents blocking the main thread during app startup
-    // and allows the loading screen to display smoothly
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_initializeSDK());
     });
   }
 
-  /// Normalize base URL by adding https:// if no scheme is present
-  String _normalizeBaseURL(String url) {
-    final trimmed = url.trim();
-    if (trimmed.isEmpty) return trimmed;
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-      return trimmed;
-    }
-    return 'https://$trimmed';
-  }
-
   Future<void> _initializeSDK() async {
     final stopwatch = Stopwatch()..start();
 
-    try {
+    if (mounted) {
       setState(() {
-        _initializationStatus = 'Initializing SDK...';
+        _isInitializing = true;
+        _initializationError = null;
       });
+    }
 
+    try {
       debugPrint('🎯 Initializing SDK...');
 
-      // Yield to allow UI to render before heavy work
-      await Future<void>.delayed(Duration.zero);
+      await _registerBackends();
 
-      // Check for custom API configuration (stored via Settings screen)
-      final customApiKey = await KeychainHelper.loadString(KeychainKeys.apiKey);
+      final customApiKey =
+          await KeychainHelper.loadString(KeychainKeys.apiKey) ??
+          DefaultConfig.runanywhereApiKey;
       final customBaseURL =
-          await KeychainHelper.loadString(KeychainKeys.baseURL);
-      final hasCustomConfig = customApiKey != null &&
+          await KeychainHelper.loadString(KeychainKeys.baseURL) ??
+          DefaultConfig.runanywhereBaseUrl;
+      final hasCustomConfig =
           customApiKey.isNotEmpty &&
-          customBaseURL != null &&
-          customBaseURL.isNotEmpty;
+          customBaseURL.isNotEmpty &&
+          !_looksLikePlaceholder(customApiKey) &&
+          !_looksLikePlaceholder(customBaseURL);
 
       if (hasCustomConfig) {
-        final normalizedURL = _normalizeBaseURL(customBaseURL);
+        final normalizedURL = normalizeBaseURL(customBaseURL);
         debugPrint('🔧 Found custom API configuration');
         debugPrint('   Base URL: $normalizedURL');
 
-        // Custom configuration mode - use stored API key and base URL
         await RunAnywhere.initialize(
           apiKey: customApiKey,
           baseURL: normalizedURL,
-          environment: SDKEnvironment.production,
+          // Staging (not Production) so the custom base URL is honored AND
+          // local logging stays on — Production sets enableLocalLogging:false,
+          // hiding all SDK/telemetry logs. Development would ignore baseURL.
+          environment: SDKEnvironment.SDK_ENVIRONMENT_STAGING,
         );
-        debugPrint('✅ SDK initialized with CUSTOM configuration (production)');
+        debugPrint('✅ SDK initialized with CUSTOM configuration (staging)');
       } else {
-        // Initialize SDK in development mode (default)
         await RunAnywhere.initialize();
         debugPrint('✅ SDK initialized in DEVELOPMENT mode');
       }
 
-      // Yield to allow UI to update between heavy operations
-      await Future<void>.delayed(Duration.zero);
+      // Re-apply the persisted HuggingFace token (Settings screen) so private
+      // HF model repos stay downloadable across app restarts.
+      final hfToken = await HfTokenStore.load();
+      if (hfToken.isNotEmpty) {
+        RunAnywhere.setHfToken(hfToken);
+        debugPrint('🔑 Applied persisted HuggingFace token');
+      }
 
-      setState(() {
-        _initializationStatus = 'Registering modules...';
-      });
-
-      // Register modules and models (matching iOS pattern)
-      await _registerModulesAndModels();
-
-      // Yield before model discovery
-      await Future<void>.delayed(Duration.zero);
-
-      setState(() {
-        _initializationStatus = 'Discovering models...';
-      });
+      // Model paths + registry must be ready before catalog registration.
+      await RunAnywhere.completeServicesInitialization();
+      await ModelCatalogBootstrap.registerAll(mlxRegistered: _mlxRegistered);
+      await _registerRagBackend();
+      await RunAnywhere.refreshModelRegistry();
 
       stopwatch.stop();
       debugPrint(
-          '⚡ SDK initialization completed in ${stopwatch.elapsedMilliseconds}ms');
+        '⚡ SDK initialization completed in ${stopwatch.elapsedMilliseconds}ms',
+      );
       debugPrint(
-          '🎯 SDK Status: ${RunAnywhere.isActive ? "Active" : "Inactive"}');
+        '🎯 SDK Status: ${RunAnywhere.isActive ? "Active" : "Inactive"}',
+      );
       debugPrint(
-          '🔧 Environment: ${RunAnywhere.getCurrentEnvironment()?.description ?? "Unknown"}');
-      debugPrint('📱 Services will initialize on first API call');
-
-      // Refresh model manager state (runs model discovery)
-      await ModelManager.shared.refresh();
-
-      setState(() {
-        _isSDKInitialized = true;
-      });
+        '🔧 Environment: ${RunAnywhere.environment?.description ?? "Unknown"}',
+      );
 
       debugPrint(
-          '💡 Models registered, user can now download and select models');
+        '💡 Models registered, user can now download and select models',
+      );
+      debugPrint('App is ready to use');
+      debugPrint('__RUNANYWHERE_AI_READY__');
+      debugPrint('Services initialized for catalog refresh');
+      if (mounted) {
+        setState(() {
+          _isSDKInitialized = true;
+          _isInitializing = false;
+          _initializationError = null;
+        });
+      }
     } catch (e) {
       stopwatch.stop();
       debugPrint(
-          '❌ SDK initialization failed after ${stopwatch.elapsedMilliseconds}ms: $e');
-      setState(() {
-        _initializationError = e;
-      });
+        '❌ SDK initialization failed after ${stopwatch.elapsedMilliseconds}ms: $e',
+      );
+      if (mounted) {
+        setState(() {
+          _isSDKInitialized = false;
+          _isInitializing = false;
+          _initializationError = e.toString();
+        });
+      }
+      _messengerKey.currentState?.showSnackBar(
+        SnackBar(
+          content: Text('SDK init error: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 10),
+        ),
+      );
     }
   }
 
-  /// Register modules with their associated models
-  /// Each module explicitly owns its models - the framework is determined by the module
-  /// Matches iOS registerModulesAndModels pattern exactly
-  Future<void> _registerModulesAndModels() async {
-    debugPrint('📦 Registering modules with their models...');
+  bool _looksLikePlaceholder(String value) {
+    return RegExp(
+      r'YOUR_|<your|REPLACE_ME|PLACEHOLDER',
+      caseSensitive: false,
+    ).hasMatch(value);
+  }
 
-    // --- LLAMACPP MODULE ---
-    await LlamaCpp.register();
-    await Future<void>.delayed(Duration.zero);
+  static bool _backendsRegistered = false;
+  static bool _mlxRegistered = false;
 
-    LlamaCpp.addModel(
-      id: 'smollm2-360m-q8_0',
-      name: 'SmolLM2 360M Q8_0',
-      url:
-          'https://huggingface.co/prithivMLmods/SmolLM2-360M-GGUF/resolve/main/SmolLM2-360M.Q8_0.gguf',
-      memoryRequirement: 500000000,
-    );
-    LlamaCpp.addModel(
-      id: 'llama-2-7b-chat-q4_k_m',
-      name: 'Llama 2 7B Chat Q4_K_M',
-      url:
-          'https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF/resolve/main/llama-2-7b-chat.Q4_K_M.gguf',
-      memoryRequirement: 4000000000,
-    );
-    LlamaCpp.addModel(
-      id: 'mistral-7b-instruct-q4_k_m',
-      name: 'Mistral 7B Instruct Q4_K_M',
-      url:
-          'https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.1-GGUF/resolve/main/mistral-7b-instruct-v0.1.Q4_K_M.gguf',
-      memoryRequirement: 4000000000,
-    );
-    LlamaCpp.addModel(
-      id: 'qwen2.5-0.5b-instruct-q6_k',
-      name: 'Qwen 2.5 0.5B Instruct Q6_K',
-      url:
-          'https://huggingface.co/Triangle104/Qwen2.5-0.5B-Instruct-Q6_K-GGUF/resolve/main/qwen2.5-0.5b-instruct-q6_k.gguf',
-      memoryRequirement: 600000000,
-    );
-    LlamaCpp.addModel(
-      id: 'lfm2-350m-q4_k_m',
-      name: 'LiquidAI LFM2 350M Q4_K_M',
-      url:
-          'https://huggingface.co/LiquidAI/LFM2-350M-GGUF/resolve/main/LFM2-350M-Q4_K_M.gguf',
-      memoryRequirement: 250000000,
-    );
-    LlamaCpp.addModel(
-      id: 'lfm2-350m-q8_0',
-      name: 'LiquidAI LFM2 350M Q8_0',
-      url:
-          'https://huggingface.co/LiquidAI/LFM2-350M-GGUF/resolve/main/LFM2-350M-Q8_0.gguf',
-      memoryRequirement: 400000000,
+  Future<void> _registerBackends() async {
+    if (_backendsRegistered) {
+      debugPrint('📦 Backends already registered — skipping');
+      return;
+    }
+
+    LlamaCpp.register();
+
+    _mlxRegistered = await MLX.register();
+    debugPrint(
+      _mlxRegistered
+          ? '✅ Apple MLX backend registered (LLM + VLM + Embeddings + STT + TTS)'
+          : 'ℹ️ Apple MLX backend unavailable on this target',
     );
 
-    LlamaCpp.addModel(
-      id: 'lfm2-1.2b-tool-q4_k_m',
-      name: 'LiquidAI LFM2 1.2B Tool Q4_K_M',
-      url:
-          'https://huggingface.co/LiquidAI/LFM2-1.2B-Tool-GGUF/resolve/main/LFM2-1.2B-Tool-Q4_K_M.gguf',
-      memoryRequirement: 800000000,
-    );
-    LlamaCpp.addModel(
-      id: 'lfm2-1.2b-tool-q8_0',
-      name: 'LiquidAI LFM2 1.2B Tool Q8_0',
-      url:
-          'https://huggingface.co/LiquidAI/LFM2-1.2B-Tool-GGUF/resolve/main/LFM2-1.2B-Tool-Q8_0.gguf',
-      memoryRequirement: 1400000000,
-    );
-    debugPrint('✅ LlamaCPP module registered');
-    await Future<void>.delayed(Duration.zero);
+    try {
+      await Onnx.register();
+      debugPrint('✅ ONNX backend registered (STT + TTS + VAD + Embeddings)');
+    } catch (e) {
+      debugPrint('⚠️ ONNX backend not available: $e');
+    }
 
-    // --- VLM MODULE ---
-    RunAnywhere.registerModel(
-      id: 'smolvlm-500m-instruct-q8_0',
-      name: 'SmolVLM 500M Instruct',
-      url: Uri.parse(
-          'https://github.com/RunanywhereAI/sherpa-onnx/releases/download/runanywhere-vlm-models-v1/smolvlm-500m-instruct-q8_0.tar.gz'),
-      framework: InferenceFramework.llamaCpp,
-      modality: ModelCategory.multimodal,
-      artifactType: ModelArtifactType.tarGzArchive(
-        structure: ArchiveStructure.directoryBased,
-      ),
-      memoryRequirement: 600000000,
-    );
-    debugPrint('✅ VLM models registered');
-    await Future<void>.delayed(Duration.zero);
+    // QHexRT (Qualcomm Hexagon NPU). Safe no-op on non-Snapdragon / non-Android;
+    // register() rejects internally on unsupported parts.
+    if (QHexRT.isAvailable) {
+      try {
+        final registered = await QHexRT.register();
+        debugPrint(
+          registered
+              ? '✅ QHexRT NPU backend registered (LLM + VLM + STT + TTS)'
+              : 'ℹ️ QHexRT NPU backend registration was rejected',
+        );
+      } catch (e) {
+        debugPrint('⚠️ QHexRT backend not available: $e');
+      }
+    } else {
+      debugPrint('ℹ️ QHexRT NPU not available (non-Snapdragon device)');
+    }
 
-    // --- ONNX MODULE (STT/TTS via Core SDK) ---
-    // STT Models (Sherpa-ONNX Whisper)
-    RunAnywhere.registerModel(
-      id: 'sherpa-onnx-whisper-tiny.en',
-      name: 'Sherpa Whisper Tiny (ONNX)',
-      url: Uri.parse('https://github.com/RunanywhereAI/sherpa-onnx/releases/download/runanywhere-models-v1/sherpa-onnx-whisper-tiny.en.tar.gz'),
-      framework: InferenceFramework.onnx,
-      modality: ModelCategory.speechRecognition,
-      memoryRequirement: 75000000,
-    );
+    _backendsRegistered = true;
+  }
 
-    RunAnywhere.registerModel(
-      id: 'sherpa-onnx-whisper-small.en',
-      name: 'Sherpa Whisper Small (ONNX)',
-      url: Uri.parse('https://github.com/RunanywhereAI/sherpa-onnx/releases/download/runanywhere-models-v1/sherpa-onnx-whisper-small.en.tar.gz'),
-      framework: InferenceFramework.onnx,
-      modality: ModelCategory.speechRecognition,
-      memoryRequirement: 250000000,
-    );
-
-    // TTS Models (Piper VITS)
-    RunAnywhere.registerModel(
-      id: 'vits-piper-en_US-lessac-medium',
-      name: 'Piper TTS (US English - Medium)',
-      url: Uri.parse('https://github.com/RunanywhereAI/sherpa-onnx/releases/download/runanywhere-models-v1/vits-piper-en_US-lessac-medium.tar.gz'),
-      framework: InferenceFramework.onnx,
-      modality: ModelCategory.speechSynthesis,
-      memoryRequirement: 65000000,
-    );
-
-    RunAnywhere.registerModel(
-      id: 'vits-piper-en_GB-alba-medium',
-      name: 'Piper TTS (British English)',
-      url: Uri.parse('https://github.com/RunanywhereAI/sherpa-onnx/releases/download/runanywhere-models-v1/vits-piper-en_GB-alba-medium.tar.gz'),
-      framework: InferenceFramework.onnx,
-      modality: ModelCategory.speechSynthesis,
-      memoryRequirement: 65000000,
-    );
-    debugPrint('✅ STT/TTS models registered via Core SDK');
-    await Future<void>.delayed(Duration.zero);
-
-    // --- RAG EMBEDDINGS ---
-    RunAnywhere.registerMultiFileModel(
-      id: 'all-minilm-l6-v2',
-      name: 'All MiniLM L6 v2 (Embedding)',
-      files: [
-        ModelFileDescriptor(
-          relativePath: 'model.onnx',
-          destinationPath: 'model.onnx',
-          url: Uri.parse(
-              'https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx'),
-        ),
-        ModelFileDescriptor(
-          relativePath: 'vocab.txt',
-          destinationPath: 'vocab.txt',
-          url: Uri.parse(
-              'https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/vocab.txt'),
-        ),
-      ],
-      framework: InferenceFramework.onnx,
-      modality: ModelCategory.embedding,
-      memoryRequirement: 25500000,
-    );
-    debugPrint('✅ ONNX Embedding models registered');
-    await Future<void>.delayed(Duration.zero);
-
-    // --- RAG BACKEND ---
+  /// RAG backend registration stays in the app next to `_registerBackends`
+  /// (it is backend wiring, not catalog seeding — mirrors iOS keeping
+  /// backends out of `ModelCatalogBootstrap`).
+  Future<void> _registerRagBackend() async {
     try {
       await RAGModule.register();
       debugPrint('✅ RAG backend registered');
     } catch (e) {
       debugPrint('⚠️ RAG backend not available (RAG features disabled): $e');
     }
-
-    debugPrint('🎉 All modules and models registered');
   }
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider.value(value: ModelManager.shared),
-      ],
-      child: MaterialApp(
-        title: 'RunAnywhere AI',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: AppColors.primaryBlue,
-            brightness: Brightness.light,
-          ),
-          useMaterial3: true,
-          appBarTheme: const AppBarTheme(
-            centerTitle: true,
-            elevation: 0,
-          ),
-          navigationBarTheme: NavigationBarThemeData(
-            indicatorColor: AppColors.primaryBlue.withValues(alpha: 0.2),
-          ),
+    return MaterialApp(
+      scaffoldMessengerKey: _messengerKey,
+      title: 'RunAnywhere AI',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: AppColors.primaryBlue,
+          brightness: Brightness.light,
         ),
-        darkTheme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: AppColors.primaryBlue,
-            brightness: Brightness.dark,
-          ),
-          useMaterial3: true,
-          appBarTheme: const AppBarTheme(
-            centerTitle: true,
-            elevation: 0,
-          ),
+        useMaterial3: true,
+        appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
+        navigationBarTheme: NavigationBarThemeData(
+          indicatorColor: AppColors.primaryBlue.withValues(alpha: 0.2),
         ),
-        themeMode: ThemeMode.system,
-        home: _buildHome(),
       ),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: AppColors.primaryBlue,
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
+        appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
+      ),
+      themeMode: ThemeMode.system,
+      home: _buildHome(),
     );
   }
 
   Widget _buildHome() {
     if (_isSDKInitialized) {
       return const ContentView();
-    } else if (_initializationError != null) {
-      return _InitializationErrorView(
-        error: _initializationError!,
-        onRetry: () => unawaited(_initializeSDK()),
-      );
-    } else {
-      return _InitializationLoadingView(status: _initializationStatus);
     }
+    if (_isInitializing) {
+      return const _InitializationLoadingView();
+    }
+    return _InitializationErrorView(
+      message: _initializationError ?? 'SDK initialization failed',
+      onRetry: () => unawaited(_initializeSDK()),
+    );
   }
 }
 
-/// Loading view shown during SDK initialization
-class _InitializationLoadingView extends StatefulWidget {
-  final String status;
-
-  const _InitializationLoadingView({required this.status});
-
-  @override
-  State<_InitializationLoadingView> createState() =>
-      _InitializationLoadingViewState();
-}
-
-class _InitializationLoadingViewState extends State<_InitializationLoadingView>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(seconds: 2),
-      vsync: this,
-    );
-    unawaited(_controller.repeat(reverse: true));
-
-    _scaleAnimation = Tween<double>(begin: 0.9, end: 1.1).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+class _InitializationLoadingView extends StatelessWidget {
+  const _InitializationLoadingView();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       body: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Animated brain icon (matching iOS)
-            ScaleTransition(
-              scale: _scaleAnimation,
-              child: const Icon(
-                Icons.psychology,
-                size: AppSpacing.iconHuge,
-                color: AppColors.primaryPurple,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xLarge),
-            const CircularProgressIndicator(),
-            const SizedBox(height: AppSpacing.large),
-            Text(
-              widget.status,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: AppSpacing.smallMedium),
-            Text(
-              'RunAnywhere AI',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary(context),
-                  ),
-            ),
+            CircularProgressIndicator(),
+            SizedBox(height: AppSpacing.large),
+            Text('Initializing SDK...'),
           ],
         ),
       ),
@@ -424,44 +274,37 @@ class _InitializationLoadingViewState extends State<_InitializationLoadingView>
   }
 }
 
-/// Error view shown when SDK initialization fails
 class _InitializationErrorView extends StatelessWidget {
-  final Object error;
-  final VoidCallback onRetry;
-
   const _InitializationErrorView({
-    required this.error,
+    required this.message,
     required this.onRetry,
   });
+
+  final String message;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xLarge),
+          padding: const EdgeInsets.all(AppSpacing.large),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(
                 Icons.error_outline,
-                size: AppSpacing.iconXLarge,
                 color: AppColors.primaryRed,
+                size: AppSpacing.iconLarge,
               ),
               const SizedBox(height: AppSpacing.large),
               Text(
-                'Initialization Failed',
+                'SDK Initialization Failed',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: AppSpacing.smallMedium),
-              Text(
-                error.toString(),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary(context),
-                    ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSpacing.xLarge),
+              Text(message, textAlign: TextAlign.center),
+              const SizedBox(height: AppSpacing.large),
               FilledButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh),

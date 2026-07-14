@@ -12,10 +12,10 @@
 #include <mutex>
 #include <string>
 
-#include "rac/core/rac_analytics_events.h"
 #include "rac/core/rac_logger.h"
 #include "rac/core/rac_platform_adapter.h"
 #include "rac/core/rac_types.h"
+#include "rac/infrastructure/events/rac_sdk_event_stream.h"
 #include "rac/infrastructure/network/rac_endpoints.h"
 #include "rac/infrastructure/telemetry/rac_telemetry_manager.h"
 
@@ -40,25 +40,15 @@ DeviceManagerState& get_state() {
 // Logging category
 static const char* LOG_CAT = "DeviceManager";
 
-// Helper to emit device registered event
+// Helper to emit device registered event (canonical proto stream; the
+// destination router forwards it to telemetry).
 void emit_device_registered(const char* device_id) {
-    rac_analytics_event_data_t event = {};
-    event.type = RAC_EVENT_DEVICE_REGISTERED;
-    event.data.device = RAC_ANALYTICS_DEVICE_DEFAULT;
-    event.data.device.device_id = device_id;
-
-    rac_analytics_event_emit(RAC_EVENT_DEVICE_REGISTERED, &event);
+    rac::events::publish_device_registered(device_id);
 }
 
-// Helper to emit device registration failed event
+// Helper to emit device registration failed event.
 void emit_device_registration_failed(rac_result_t error_code, const char* error_message) {
-    rac_analytics_event_data_t event = {};
-    event.type = RAC_EVENT_DEVICE_REGISTRATION_FAILED;
-    event.data.device = RAC_ANALYTICS_DEVICE_DEFAULT;
-    event.data.device.error_code = error_code;
-    event.data.device.error_message = error_message;
-
-    rac_analytics_event_emit(RAC_EVENT_DEVICE_REGISTRATION_FAILED, &event);
+    rac::events::publish_device_registration_failed(error_code, error_message);
 }
 
 }  // namespace
@@ -91,22 +81,40 @@ rac_result_t rac_device_manager_set_callbacks(const rac_device_callbacks_t* call
     return RAC_SUCCESS;
 }
 
+void rac_device_manager_clear_callbacks(void) {
+    auto& state = get_state();
+    std::lock_guard<std::mutex> lock(state.mutex);
+    state.callbacks = {};
+    state.callbacks_set = false;
+    RAC_LOG_INFO(LOG_CAT, "Device manager callbacks cleared");
+}
+
 rac_result_t rac_device_manager_register_if_needed(rac_environment_t env, const char* build_token) {
     auto& state = get_state();
     std::lock_guard<std::mutex> lock(state.mutex);
 
     if (!state.callbacks_set) {
-        RAC_LOG_ERROR(LOG_CAT, "Device manager callbacks not set");
+        // Benign during early init: the platform adapter may bind callbacks
+        // after the first register-attempt (Web SDK ordering). Caller surfaces
+        // a typed RAC_ERROR_NOT_INITIALIZED for retry logic.
+        RAC_LOG_DEBUG(LOG_CAT, "Device manager callbacks not set yet — deferring registration");
         return RAC_ERROR_NOT_INITIALIZED;
     }
 
     // Step 1: Check if already registered
     // Production behavior: Skip if already registered (performance, network efficiency)
     // Development behavior: Always update via UPSERT (track active devices, update last_seen_at)
-    rac_bool_t was_registered =
+    const bool was_registered =
         state.callbacks.is_registered(state.callbacks.user_data) == RAC_TRUE;
     if (was_registered && env != RAC_ENV_DEVELOPMENT) {
         RAC_LOG_DEBUG(LOG_CAT, "Device already registered, skipping (production mode)");
+        // Skip the network round-trip, but still emit the device.registered
+        // telemetry so the dashboard reflects the active device on every launch
+        // (not only the first-ever registration).
+        const char* registered_device_id = state.callbacks.get_device_id(state.callbacks.user_data);
+        if (registered_device_id != nullptr && registered_device_id[0] != '\0') {
+            emit_device_registered(registered_device_id);
+        }
         return RAC_SUCCESS;
     }
 
@@ -127,7 +135,7 @@ rac_result_t rac_device_manager_register_if_needed(rac_environment_t env, const 
         emit_device_registration_failed(RAC_ERROR_INVALID_STATE, "Failed to get device ID");
         return RAC_ERROR_INVALID_STATE;
     }
-    RAC_LOG_INFO(LOG_CAT, "Device ID for registration: %s", device_id);
+    RAC_LOG_DEBUG(LOG_CAT, "Device identifier resolved for registration");
 
     // Step 3: Get device info
     rac_device_registration_info_t device_info = {};
@@ -143,6 +151,7 @@ rac_result_t rac_device_manager_register_if_needed(rac_environment_t env, const 
     // Get SDK version from SDK config if available
     const rac_sdk_config_t* sdk_config = rac_sdk_get_config();
     request.sdk_version = sdk_config ? sdk_config->sdk_version : "unknown";
+    request.client_info = sdk_config ? sdk_config->client_info : *rac_sdk_get_client_info();
     request.build_token = (env == RAC_ENV_DEVELOPMENT) ? build_token : nullptr;
     request.last_seen_at_ms = rac_get_current_time_ms();
 
@@ -166,8 +175,7 @@ rac_result_t rac_device_manager_register_if_needed(rac_environment_t env, const 
         return RAC_ERROR_INVALID_STATE;
     }
     RAC_LOG_DEBUG(LOG_CAT, "Registration endpoint: %s", endpoint);
-    RAC_LOG_DEBUG(LOG_CAT, "Registration JSON payload (first 200 chars): %.200s",
-                  json_ptr ? json_ptr : "(null)");
+    RAC_LOG_DEBUG(LOG_CAT, "Registration payload prepared (%zu bytes)", json_len);
 
     // Step 7: Determine if auth is required (staging/production require auth)
     rac_bool_t requires_auth = (env != RAC_ENV_DEVELOPMENT) ? RAC_TRUE : RAC_FALSE;
@@ -182,6 +190,15 @@ rac_result_t rac_device_manager_register_if_needed(rac_environment_t env, const 
 
     // Step 9: Handle response
     if (result != RAC_SUCCESS || response.result != RAC_SUCCESS) {
+        const rac_result_t response_result = result != RAC_SUCCESS ? result : response.result;
+        if (response_result == RAC_ERROR_NOT_INITIALIZED) {
+            // Browser callbacks start a bounded fetch on the event loop and
+            // return this sentinel. The Web facade awaits it and invokes this
+            // operation once more with the prepared response; do not emit a
+            // false registration-failed event while that request is pending.
+            RAC_LOG_DEBUG(LOG_CAT, "Device registration request pending platform completion");
+            return response_result;
+        }
         std::string error_msg = "Device registration failed";
         if (response.error_message) {
             error_msg = error_msg + ": " + response.error_message;
@@ -190,7 +207,7 @@ rac_result_t rac_device_manager_register_if_needed(rac_environment_t env, const 
         emit_device_registration_failed(result != RAC_SUCCESS ? result : response.result,
                                         response.error_message ? response.error_message
                                                                : "HTTP request failed");
-        return result != RAC_SUCCESS ? result : response.result;
+        return response_result;
     }
 
     // Step 10: Mark as registered
@@ -227,14 +244,27 @@ void rac_device_manager_clear_registration(void) {
 }
 
 const char* rac_device_manager_get_device_id(void) {
+    static thread_local std::string device_id_snapshot;
+
     auto& state = get_state();
     std::lock_guard<std::mutex> lock(state.mutex);
 
     if (!state.callbacks_set) {
+        device_id_snapshot.clear();
         return nullptr;
     }
 
-    return state.callbacks.get_device_id(state.callbacks.user_data);
+    const char* device_id = state.callbacks.get_device_id(state.callbacks.user_data);
+    if (device_id == nullptr) {
+        device_id_snapshot.clear();
+        return nullptr;
+    }
+
+    // The callback owns its returned buffer and platform teardown may release
+    // that storage as soon as this critical section ends. Snapshot it before
+    // unlocking so callers never observe callback-owned memory after return.
+    device_id_snapshot = device_id;
+    return device_id_snapshot.c_str();
 }
 
 }  // extern "C"

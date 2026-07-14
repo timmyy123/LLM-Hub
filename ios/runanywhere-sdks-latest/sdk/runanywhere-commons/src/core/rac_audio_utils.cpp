@@ -8,6 +8,7 @@
 #include "rac/core/rac_audio_utils.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -122,10 +123,15 @@ rac_result_t rac_audio_float32_to_wav(const void* pcm_data, size_t pcm_size, int
         return RAC_ERROR_INVALID_ARGUMENT;
     }
 
-    const size_t num_samples = pcm_size / 4;
+    const size_t num_samples = pcm_size / sizeof(float);
+
+    // Guard against WAV header overflow: data_size field is uint32_t (max ~4GB)
+    if (num_samples > UINT32_MAX / sizeof(int16_t)) {
+        return RAC_ERROR_INVALID_ARGUMENT;
+    }
 
     // Int16 data size (2 bytes per sample)
-    const uint32_t int16_data_size = static_cast<uint32_t>(num_samples * 2);
+    const uint32_t int16_data_size = static_cast<uint32_t>(num_samples * sizeof(int16_t));
 
     // Total WAV file size
     const size_t wav_size = WAV_HEADER_SIZE + int16_data_size;
@@ -140,14 +146,18 @@ rac_result_t rac_audio_float32_to_wav(const void* pcm_data, size_t pcm_size, int
     build_wav_header(wav_data, sample_rate, int16_data_size);
 
     // Convert Float32 to Int16
-    const float* float_samples = static_cast<const float*>(pcm_data);
-    int16_t* int16_samples = reinterpret_cast<int16_t*>(wav_data + WAV_HEADER_SIZE);
+    // Use __restrict to guarantee no aliasing, enabling auto-vectorization.
+    // The loop body is kept simple (multiply + clamp) so compilers can emit
+    // NEON (ARM) or SSE/AVX (x86) vector instructions with -O2.
+    const float* __restrict float_samples = static_cast<const float*>(pcm_data);
+    int16_t* __restrict int16_samples = reinterpret_cast<int16_t*>(wav_data + WAV_HEADER_SIZE);
 
     for (size_t i = 0; i < num_samples; ++i) {
-        // Clamp to [-1.0, 1.0] range
-        float sample = std::max(-1.0f, std::min(1.0f, float_samples[i]));
-        // Scale to Int16 range [-32768, 32767]
-        int16_samples[i] = static_cast<int16_t>(sample * 32767.0f);
+        // Multiply first, then clamp to Int16 range in one step.
+        // Avoids two separate clamp operations and is auto-vectorizable.
+        // std::clamp produces branchless vmin/vmax on ARM NEON, minps/maxps on SSE.
+        const float scaled = std::clamp(float_samples[i] * 32767.0f, -32768.0f, 32767.0f);
+        int16_samples[i] = static_cast<int16_t>(scaled);
     }
 
     *out_wav_data = wav_data;
@@ -169,6 +179,12 @@ rac_result_t rac_audio_int16_to_wav(const void* pcm_data, size_t pcm_size, int32
     }
 
     if (sample_rate <= 0) {
+        return RAC_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Guard against WAV header overflow: the RIFF chunk-size field (data_size + 36)
+    // is uint32_t, so data_size must leave room for the 36-byte header overhead.
+    if (pcm_size > static_cast<size_t>(UINT32_MAX) - (WAV_HEADER_SIZE - 8)) {
         return RAC_ERROR_INVALID_ARGUMENT;
     }
 
@@ -197,4 +213,24 @@ rac_result_t rac_audio_int16_to_wav(const void* pcm_data, size_t pcm_size, int32
 
 size_t rac_audio_wav_header_size(void) {
     return WAV_HEADER_SIZE;
+}
+
+rac_result_t rac_audio_compute_level_db(const float* samples, size_t count, float* out_db) {
+    if (!samples || count == 0 || !out_db) {
+        return RAC_ERROR_NULL_POINTER;
+    }
+
+    // Accumulate squared samples in double precision to avoid loss-of-significance
+    // on long buffers (e.g. 4096-sample taps at 16 kHz).
+    double sum_sq = 0.0;
+    for (size_t i = 0; i < count; ++i) {
+        sum_sq += static_cast<double>(samples[i]) * static_cast<double>(samples[i]);
+    }
+
+    const double rms = std::sqrt(sum_sq / static_cast<double>(count));
+
+    // Silence floor: clamp -inf to -100 dB (well below the -60 dB normalisation
+    // bottom used by audio meters in the platform SDKs).
+    *out_db = (rms <= 1e-10) ? -100.0f : static_cast<float>(20.0 * std::log10(rms));
+    return RAC_SUCCESS;
 }

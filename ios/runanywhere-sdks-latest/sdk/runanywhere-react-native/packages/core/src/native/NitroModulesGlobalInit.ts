@@ -2,31 +2,35 @@
  * NitroModulesGlobalInit.ts
  *
  * Global singleton for NitroModules initialization.
- * Ensures NitroModules.install() is called exactly ONCE globally,
- * preventing "global.__nitroDispatcher already exists" errors.
+ * Caches the NitroModules proxy installed by react-native-nitro-modules,
+ * preventing duplicate native install() calls for the same JS runtime.
  *
  * All packages should import and use this for safe NitroModules access.
  */
 
 import { NitroModules as NitroModulesNamed } from 'react-native-nitro-modules';
-import { NativeModules } from 'react-native';
-
-/** Global promise that tracks NitroModules installation */
-let _nitroInstallationPromise: Promise<any> | null = null;
-
-/** Cached NitroModules proxy after successful installation */
-let _nitroModulesProxy: any = null;
-
-/** Track whether native install() has been invoked */
-let _nitroInstallCalled = false;
+import type { NitroModulesProxy } from 'react-native-nitro-modules/lib/typescript/NitroModulesProxy';
+import { SDKLogger } from '../Foundation/Logging';
 
 /**
- * Initialize NitroModules globally, ensuring install() is called exactly once.
+ * The NitroModules proxy used by the SDK. Typed as a structural subset of
+ * `NitroModulesProxy` to avoid depending on non-exported implementation types.
+ */
+export type NitroProxy = Pick<NitroModulesProxy, 'createHybridObject'>;
+
+/** Global promise that tracks NitroModules installation */
+let _nitroInstallationPromise: Promise<NitroProxy> | null = null;
+
+/** Cached NitroModules proxy after successful installation */
+let _nitroModulesProxy: NitroProxy | null = null;
+
+/**
+ * Initialize NitroModules globally, ensuring the SDK caches one proxy instance.
  * This MUST be called before any other modules try to access NitroModules.
  *
  * @returns Promise resolving to NitroModules proxy
  */
-export async function initializeNitroModulesGlobally(): Promise<any> {
+export async function initializeNitroModulesGlobally(): Promise<NitroProxy> {
   // If already initialized, return cached proxy
   if (_nitroModulesProxy !== null) {
     return _nitroModulesProxy;
@@ -40,28 +44,12 @@ export async function initializeNitroModulesGlobally(): Promise<any> {
   // Create the initialization promise
   _nitroInstallationPromise = (async () => {
     try {
-      console.debug('[NitroModulesGlobalInit] Starting global initialization...');
+      SDKLogger.core.debug('[NitroModulesGlobalInit] Starting global initialization...');
 
-      // Try to get the proxy from the named import first (most reliable in Bridgeless)
-      _nitroModulesProxy = NitroModulesNamed;
-
-      // Always attempt native install() once to ensure JSI bindings are ready
-      const nativeNitro = NativeModules?.NitroModules;
-      if (!_nitroInstallCalled && nativeNitro && typeof nativeNitro.install === 'function') {
-        try {
-          console.debug('[NitroModulesGlobalInit] Calling native NitroModules.install()...');
-          nativeNitro.install();
-          _nitroInstallCalled = true;
-          console.debug('[NitroModulesGlobalInit] Native install() completed');
-        } catch (installError) {
-          console.warn('[NitroModulesGlobalInit] Native install() failed:', installError);
-        }
-      }
-
-      // Try getting proxy again after install (if needed)
-      if (!_nitroModulesProxy) {
-        _nitroModulesProxy = NitroModulesNamed;
-      }
+      // Importing react-native-nitro-modules installs Nitro into the current
+      // runtime. Calling NativeModules.NitroModules.install() again for the same
+      // Hermes runtime logs a false duplicate __nitroDispatcher failure.
+      _nitroModulesProxy = NitroModulesNamed as unknown as NitroProxy;
 
       if (!_nitroModulesProxy) {
         throw new Error(
@@ -70,10 +58,10 @@ export async function initializeNitroModulesGlobally(): Promise<any> {
         );
       }
 
-      console.debug('[NitroModulesGlobalInit] Global initialization successful');
+      SDKLogger.core.debug('[NitroModulesGlobalInit] Global initialization successful');
       return _nitroModulesProxy;
     } catch (error) {
-      console.error('[NitroModulesGlobalInit] Failed to initialize NitroModules:', error);
+      SDKLogger.core.error('[NitroModulesGlobalInit] Failed to initialize NitroModules', { error });
       _nitroInstallationPromise = null; // Reset on error to allow retry
       throw error;
     }
@@ -83,12 +71,21 @@ export async function initializeNitroModulesGlobally(): Promise<any> {
 }
 
 /**
- * Get the NitroModules proxy synchronously (only after initialization).
- * For guaranteed initialization, use initializeNitroModulesGlobally() first.
+ * Get the NitroModules proxy synchronously.
  *
- * @returns NitroModules proxy or null if not yet initialized
+ * Falls back to the static `react-native-nitro-modules` import (and caches it)
+ * when `initializeNitroModulesGlobally()` has not run yet. The proxy is the
+ * synchronous import object — the same value the async initializer assigns — so
+ * this fallback is equivalent and idempotent. Without it, callers that run
+ * before `RunAnywhere.initialize()` (e.g. backend `register()` during app
+ * bootstrap) incorrectly see "native module not available".
+ *
+ * @returns NitroModules proxy, or null only if the import itself is unavailable
  */
-export function getNitroModulesProxySync(): any {
+export function getNitroModulesProxySync(): NitroProxy | null {
+  if (_nitroModulesProxy === null && NitroModulesNamed) {
+    _nitroModulesProxy = NitroModulesNamed as unknown as NitroProxy;
+  }
   return _nitroModulesProxy;
 }
 

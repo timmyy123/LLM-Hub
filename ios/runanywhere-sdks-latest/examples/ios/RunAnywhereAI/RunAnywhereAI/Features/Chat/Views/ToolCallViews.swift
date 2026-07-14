@@ -57,7 +57,8 @@ struct ToolCallIndicator: View {
 
 struct ToolCallDetailSheet: View {
     let toolCallInfo: ToolCallInfo
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.dismiss)
+    private var dismiss
 
     var body: some View {
         NavigationStack {
@@ -89,7 +90,7 @@ struct ToolCallDetailSheet: View {
             .background(AppColors.backgroundPrimary)
             .navigationTitle("Tool Call")
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayModeCompat(.inline)
             #endif
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -189,8 +190,8 @@ struct ToolCallingActiveIndicator: View {
         ToolCallIndicator(
             toolCallInfo: ToolCallInfo(
                 toolName: "get_weather",
-                arguments: ["location": .string("San Francisco")],
-                result: ["temp": .number(72), "condition": .string("Sunny")],
+                arguments: ["location": RAToolValue("San Francisco")],
+                result: ["temp": RAToolValue(72), "condition": RAToolValue("Sunny")],
                 success: true
             )
         ) {}
@@ -198,7 +199,7 @@ struct ToolCallingActiveIndicator: View {
         ToolCallIndicator(
             toolCallInfo: ToolCallInfo(
                 toolName: "search_web",
-                arguments: ["query": .string("Swift concurrency")],
+                arguments: ["query": RAToolValue("Swift concurrency")],
                 success: false,
                 error: "Network timeout"
             )

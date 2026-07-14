@@ -1,6 +1,8 @@
 package ai.runanywhere.sdk
 
 import android.os.Build
+import android.util.Log
+import com.runanywhere.sdk.httptransport.OkHttpHttpTransport
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -17,22 +19,52 @@ class RunAnywherePlugin : FlutterPlugin, MethodCallHandler {
     private lateinit var channel: MethodChannel
 
     companion object {
+        private const val TAG = "RunAnywherePlugin"
         private const val CHANNEL_NAME = "runanywhere"
-        private const val SDK_VERSION = "0.15.8"
-        private const val COMMONS_VERSION = "0.1.4"
+        private const val SDK_VERSION = "0.20.9"
+        private const val COMMONS_VERSION = "0.20.9"
 
         init {
-            // Load RACommons native libraries
+            // Load the Flutter-owned helper through the JVM so JNI_OnLoad can
+            // cache the synchronous secure-storage bridge before Dart FFI
+            // resolves its exported symbols.
             try {
-                System.loadLibrary("rac_commons")
-            } catch (e: UnsatisfiedLinkError) {
-                // Library may not be available in all configurations
-                android.util.Log.w("RunAnywhere", "Failed to load rac_commons: ${e.message}")
+                System.loadLibrary("runanywhere_flutter_helpers")
+            } catch (_: Throwable) {
+                Log.e(TAG, "Flutter native helpers unavailable")
+            }
+
+            // Install the OkHttp transport via the canonical Kotlin-SDK-aligned
+            // adapter at `com.runanywhere.sdk.httptransport.OkHttpHttpTransport`.
+            // The JNI shim (sdk/runanywhere-commons/src/jni/okhttp_transport_adapter.cpp:557)
+            // does FindClass against that exact FQN — if this fails with
+            // ClassNotFound, every rac_http_request_* call returns -801.
+            //
+            // `OkHttpHttpTransport.register()` is idempotent and matches the
+            // Swift `URLSessionHttpTransport.register()` contract.
+            //
+            // `RunAnywhereBridge`'s static initializer also runs
+            // `System.loadLibrary("runanywhere_jni")`, which pulls in
+            // `librac_commons.so` transitively.
+            try {
+                val ok = OkHttpHttpTransport.register()
+                if (!ok) {
+                    Log.w(TAG, "OkHttp HTTP transport registration failed; HTTP will error out")
+                }
+            } catch (_: Throwable) {
+                Log.e(TAG, "OkHttp HTTP transport unavailable")
             }
         }
     }
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+        try {
+            FlutterSecureStorageBridge.initialize(flutterPluginBinding.applicationContext)
+        } catch (_: Throwable) {
+            // Keep plugin registration alive so the Dart bridge can surface a
+            // canonical secure-storage failure from initialization.
+            Log.e(TAG, "Secure storage initialization failed")
+        }
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, CHANNEL_NAME)
         channel.setMethodCallHandler(this)
     }
@@ -48,6 +80,9 @@ class RunAnywherePlugin : FlutterPlugin, MethodCallHandler {
             "getCommonsVersion" -> {
                 result.success(COMMONS_VERSION)
             }
+            "getSocModel" -> {
+                result.success(getSocModel())
+            }
             else -> {
                 result.notImplemented()
             }
@@ -56,5 +91,19 @@ class RunAnywherePlugin : FlutterPlugin, MethodCallHandler {
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
+    }
+
+    /**
+     * Get the SoC model string for NPU chip detection.
+     * Uses Build.SOC_MODEL (API 31+) with Build.HARDWARE fallback.
+     */
+    private fun getSocModel(): String {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val socModel = Build.SOC_MODEL
+            if (!socModel.isNullOrEmpty() && socModel != "unknown") {
+                return socModel
+            }
+        }
+        return Build.HARDWARE ?: ""
     }
 }

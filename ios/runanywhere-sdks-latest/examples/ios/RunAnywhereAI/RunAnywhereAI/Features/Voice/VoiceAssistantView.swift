@@ -17,7 +17,8 @@ struct VoiceAssistantView: View {
     @State private var morphProgress: Float = 0.0
     @State private var scatterAmount: Float = 0.0
     @State private var touchPoint: SIMD2<Float> = .zero
-    @Environment(\.colorScheme) var colorScheme
+    @Environment(\.colorScheme)
+    var colorScheme
 
     private let animationTimer = Timer.publish(every: 0.016, on: .main, in: .common).autoconnect()
 
@@ -34,17 +35,17 @@ struct VoiceAssistantView: View {
         }
         .adaptiveSheet(isPresented: $showSTTModelSelection) {
             ModelSelectionSheet(context: .stt) { model in
-                viewModel.setSTTModel(model)
+                await viewModel.setSTTModel(model)
             }
         }
         .adaptiveSheet(isPresented: $showLLMModelSelection) {
             ModelSelectionSheet(context: .llm) { model in
-                viewModel.setLLMModel(model)
+                await viewModel.setLLMModel(model)
             }
         }
         .adaptiveSheet(isPresented: $showTTSModelSelection) {
             ModelSelectionSheet(context: .tts) { model in
-                viewModel.setTTSModel(model)
+                await viewModel.setTTSModel(model)
             }
         }
         .onAppear {
@@ -69,12 +70,21 @@ extension VoiceAssistantView {
         VStack(spacing: 0) {
             macOSToolbar
             Divider()
-            if showModelInfo {
-                modelInfoSection
+            if !viewModel.allModelsLoaded {
+                VoiceAISetupCard(
+                    viewModel: viewModel,
+                    onChangeSTT: { showSTTModelSelection = true },
+                    onChangeLLM: { showLLMModelSelection = true },
+                    onChangeTTS: { showTTSModelSelection = true }
+                )
+            } else {
+                if showModelInfo {
+                    modelInfoSection
+                }
+                macOSConversationArea
+                Spacer()
+                controlArea
             }
-            macOSConversationArea
-            Spacer()
-            controlArea
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(NSColor.windowBackgroundColor))
@@ -151,7 +161,7 @@ extension VoiceAssistantView {
                 .padding(.vertical, 20)
                 .adaptiveConversationWidth()
             }
-            .onChange(of: viewModel.assistantResponse) { _ in
+            .onChange(of: viewModel.assistantResponse) { _, _ in
                 withAnimation {
                     proxy.scrollTo("assistant", anchor: .bottom)
                 }
@@ -175,28 +185,11 @@ extension VoiceAssistantView {
     }
 
     private var setupView: some View {
-        VoicePipelineSetupView(
-            sttModel: Binding(
-                get: { viewModel.sttModel },
-                set: { viewModel.sttModel = $0 }
-            ),
-            llmModel: Binding(
-                get: { viewModel.llmModel },
-                set: { viewModel.llmModel = $0 }
-            ),
-            ttsModel: Binding(
-                get: { viewModel.ttsModel },
-                set: { viewModel.ttsModel = $0 }
-            ),
-            sttLoadState: viewModel.sttModelState,
-            llmLoadState: viewModel.llmModelState,
-            ttsLoadState: viewModel.ttsModelState,
-            onSelectSTT: { showSTTModelSelection = true },
-            onSelectLLM: { showLLMModelSelection = true },
-            onSelectTTS: { showTTSModelSelection = true },
-            onStartVoice: {
-                // All models loaded, nothing to do here
-            }
+        VoiceAISetupCard(
+            viewModel: viewModel,
+            onChangeSTT: { showSTTModelSelection = true },
+            onChangeLLM: { showLLMModelSelection = true },
+            onChangeTTS: { showTTSModelSelection = true }
         )
     }
 
@@ -240,7 +233,7 @@ extension VoiceAssistantView {
                 showModelSelection = true
             }, label: {
                 Image(systemName: "cube")
-                    .font(.system(size: 18))
+                    .font(AppTypography.system18)
                     .foregroundColor(.secondary)
                     .padding(10)
                     .background(Color(.tertiarySystemBackground))
@@ -255,7 +248,7 @@ extension VoiceAssistantView {
                 }
             }, label: {
                 Image(systemName: showModelInfo ? "info.circle.fill" : "info.circle")
-                    .font(.system(size: 18))
+                    .font(AppTypography.system18)
                     .foregroundColor(.secondary)
                     .padding(10)
                     .background(Color(.tertiarySystemBackground))
@@ -296,7 +289,7 @@ extension VoiceAssistantView {
                             .id("responseEnd")
                         }
                         .padding(.horizontal, 30)
-                        .onChange(of: viewModel.assistantResponse) { _ in
+                        .onChange(of: viewModel.assistantResponse) { _, _ in
                             withAnimation {
                                 proxy.scrollTo("responseEnd", anchor: .bottom)
                             }
@@ -331,7 +324,7 @@ extension VoiceAssistantView {
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(AppColors.statusRed.opacity(0.1))
-            .cornerRadius(4)
+            .cornerRadius(AppSpacing.cornerRadiusSmall)
 
             AdaptiveAudioLevelIndicator(level: viewModel.audioLevel)
         }
@@ -375,7 +368,7 @@ extension VoiceAssistantView {
     private func emptyStatePlaceholder(text: String) -> some View {
         VStack(spacing: 12) {
             Image(systemName: "mic.circle")
-                .font(.system(size: 48))
+                .font(AppTypography.system48)
                 .foregroundColor(.secondary.opacity(0.3))
             Text(text)
                 .font(.subheadline)
@@ -418,16 +411,26 @@ extension VoiceAssistantView {
                 isLoading: isLoading,
                 activeColor: viewModel.micButtonColor.swiftUIColor,
                 inactiveColor: viewModel.micButtonColor.swiftUIColor,
-                icon: viewModel.micButtonIcon
-            ) {
-                Task {
-                    if viewModel.isActive {
-                        await viewModel.stopConversation()
-                    } else {
-                        await viewModel.startConversation()
-                    }
+                icon: viewModel.micButtonIcon,
+                action: {
+                    // Snapshot state synchronously so the decision can't race with
+                    // state updates that happen between the tap and the Task firing.
+                    // Tap is only meaningful from an idle state (.disconnected /
+                    // .error) — barge-in / force-commit / resume are driven by
+                    // the C voice agent itself today, so taps in the speaking /
+                    // listening / connected states are intentionally inert.
+                    let isActive = viewModel.isActive
+                    let isConnected = viewModel.sessionState == .connected
+                    guard !isActive && !isConnected else { return }
+                    Task { await viewModel.startConversation() }
+                },
+                onLongPress: {
+                    // Snapshot state synchronously before spawning the Task.
+                    let shouldStop = viewModel.isActive || viewModel.sessionState == .connected
+                    guard shouldStop else { return }
+                    Task { await viewModel.stopConversation() }
                 }
-            }
+            )
 
             Spacer()
         }
@@ -439,47 +442,30 @@ extension VoiceAssistantView {
 extension VoiceAssistantView {
     private var modelSelectionSheet: some View {
         NavigationView {
-            VoicePipelineSetupView(
-                sttModel: Binding(
-                    get: { viewModel.sttModel },
-                    set: { viewModel.sttModel = $0 }
-                ),
-                llmModel: Binding(
-                    get: { viewModel.llmModel },
-                    set: { viewModel.llmModel = $0 }
-                ),
-                ttsModel: Binding(
-                    get: { viewModel.ttsModel },
-                    set: { viewModel.ttsModel = $0 }
-                ),
-                sttLoadState: viewModel.sttModelState,
-                llmLoadState: viewModel.llmModelState,
-                ttsLoadState: viewModel.ttsModelState,
-                onSelectSTT: {
+            VoiceAISetupCard(
+                viewModel: viewModel,
+                onChangeSTT: {
                     showModelSelection = false
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                         showSTTModelSelection = true
                     }
                 },
-                onSelectLLM: {
+                onChangeLLM: {
                     showModelSelection = false
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                         showLLMModelSelection = true
                     }
                 },
-                onSelectTTS: {
+                onChangeTTS: {
                     showModelSelection = false
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                         showTTSModelSelection = true
                     }
-                },
-                onStartVoice: {
-                    showModelSelection = false
                 }
             )
             .navigationTitle("Voice Models")
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayModeCompat(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
@@ -547,7 +533,7 @@ extension VoiceAssistantView {
             amplitude = max(0.0, min(1.0, amplitude))
         } else {
             // Gentle decay when not active
-            amplitude = amplitude * 0.95
+            amplitude *= 0.95
         }
     }
 }

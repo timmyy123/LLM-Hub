@@ -19,6 +19,11 @@ extension CppBridge {
         private static let logger = SDKLogger(category: "CppBridge.ModelPaths")
         private static let pathBufferSize = 1024
 
+        private static func decodeCStringBuffer(_ buffer: [CChar]) -> String {
+            let bytes = buffer.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }
+            return String(bytes: bytes, encoding: .utf8) ?? ""
+        }
+
         // MARK: - Configuration
 
         /// Set the base directory for model storage
@@ -29,10 +34,14 @@ extension CppBridge {
             }
 
             guard result == RAC_SUCCESS else {
-                throw SDKError.general(.initializationFailed, "Failed to set base directory")
+                throw SDKException(code: .initializationFailed, message: "Failed to set base directory", category: .internal)
             }
 
-            logger.debug("Base directory set to: \(baseDir.lastPathComponent)")
+            // Log the full absolute path (not lastPathComponent) so we can verify
+            // the C++ side actually received "/var/mobile/.../Documents" and not
+            // just the literal "Documents" — the latter was the red flag in the
+            // 2nd-launch persistence regression.
+            logger.debug("Base directory set to: \(baseDir.path)")
         }
 
         /// Get the configured base directory
@@ -50,10 +59,10 @@ extension CppBridge {
             let result = rac_model_paths_get_models_directory(&buffer, buffer.count)
 
             guard result == RAC_SUCCESS else {
-                throw SDKError.general(.initializationFailed, "Base directory not configured")
+                throw SDKException(code: .initializationFailed, message: "Base directory not configured", category: .internal)
             }
 
-            return URL(fileURLWithPath: String(cString: buffer))
+            return URL(fileURLWithPath: decodeCStringBuffer(buffer))
         }
 
         /// Get the framework directory
@@ -63,10 +72,10 @@ extension CppBridge {
             let result = rac_model_paths_get_framework_directory(framework.toCFramework(), &buffer, buffer.count)
 
             guard result == RAC_SUCCESS else {
-                throw SDKError.general(.initializationFailed, "Base directory not configured")
+                throw SDKException(code: .initializationFailed, message: "Base directory not configured", category: .internal)
             }
 
-            return URL(fileURLWithPath: String(cString: buffer))
+            return URL(fileURLWithPath: decodeCStringBuffer(buffer))
         }
 
         /// Get the model folder
@@ -78,10 +87,10 @@ extension CppBridge {
             }
 
             guard result == RAC_SUCCESS else {
-                throw SDKError.general(.initializationFailed, "Base directory not configured")
+                throw SDKException(code: .initializationFailed, message: "Base directory not configured", category: .internal)
             }
 
-            return URL(fileURLWithPath: String(cString: buffer))
+            return URL(fileURLWithPath: decodeCStringBuffer(buffer))
         }
 
         /// Get the expected model path (folder for directory-based, file for single-file)
@@ -102,10 +111,10 @@ extension CppBridge {
             }
 
             guard result == RAC_SUCCESS else {
-                throw SDKError.general(.initializationFailed, "Base directory not configured")
+                throw SDKException(code: .initializationFailed, message: "Base directory not configured", category: .internal)
             }
 
-            return URL(fileURLWithPath: String(cString: buffer))
+            return URL(fileURLWithPath: decodeCStringBuffer(buffer))
         }
 
         /// Get the cache directory
@@ -114,10 +123,10 @@ extension CppBridge {
             let result = rac_model_paths_get_cache_directory(&buffer, buffer.count)
 
             guard result == RAC_SUCCESS else {
-                throw SDKError.general(.initializationFailed, "Base directory not configured")
+                throw SDKException(code: .initializationFailed, message: "Base directory not configured", category: .internal)
             }
 
-            return URL(fileURLWithPath: String(cString: buffer))
+            return URL(fileURLWithPath: decodeCStringBuffer(buffer))
         }
 
         /// Get the downloads directory
@@ -126,10 +135,10 @@ extension CppBridge {
             let result = rac_model_paths_get_downloads_directory(&buffer, buffer.count)
 
             guard result == RAC_SUCCESS else {
-                throw SDKError.general(.initializationFailed, "Base directory not configured")
+                throw SDKException(code: .initializationFailed, message: "Base directory not configured", category: .internal)
             }
 
-            return URL(fileURLWithPath: String(cString: buffer))
+            return URL(fileURLWithPath: decodeCStringBuffer(buffer))
         }
 
         /// Get the temp directory
@@ -138,10 +147,10 @@ extension CppBridge {
             let result = rac_model_paths_get_temp_directory(&buffer, buffer.count)
 
             guard result == RAC_SUCCESS else {
-                throw SDKError.general(.initializationFailed, "Base directory not configured")
+                throw SDKException(code: .initializationFailed, message: "Base directory not configured", category: .internal)
             }
 
-            return URL(fileURLWithPath: String(cString: buffer))
+            return URL(fileURLWithPath: decodeCStringBuffer(buffer))
         }
 
         // MARK: - Path Analysis
@@ -154,7 +163,7 @@ extension CppBridge {
             }
 
             guard result == RAC_SUCCESS else { return nil }
-            return String(cString: buffer)
+            return decodeCStringBuffer(buffer)
         }
 
         /// Extract framework from a file path
@@ -165,7 +174,7 @@ extension CppBridge {
             }
 
             guard result == RAC_SUCCESS else { return nil }
-            return InferenceFramework(from: framework)
+            return InferenceFramework.fromCFramework(framework)
         }
 
         /// Check if a path is within the models directory
@@ -173,6 +182,19 @@ extension CppBridge {
             return path.path.withCString { pathPtr in
                 rac_model_paths_is_model_path(pathPtr) == RAC_TRUE
             }
+        }
+
+        // MARK: - File Role Inference
+
+        /// Infer the canonical `RAModelFileRole` for a single sidecar filename.
+        /// Delegates to commons `rac_infer_model_file_role` so the classification
+        /// stays byte-identical with the C++ resolver and every other SDK.
+        public static func inferFileRole(filename: String, modality: ModelCategory) -> RAModelFileRole {
+            var roleProto = Int32(RAModelFileRole.primaryModel.rawValue)
+            _ = filename.withCString { name in
+                rac_infer_model_file_role(name, Int32(modality.rawValue), &roleProto)
+            }
+            return RAModelFileRole(rawValue: Int(roleProto)) ?? .primaryModel
         }
     }
 }

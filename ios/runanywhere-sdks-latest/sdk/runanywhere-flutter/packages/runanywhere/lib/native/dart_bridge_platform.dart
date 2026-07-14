@@ -1,15 +1,18 @@
 // ignore_for_file: avoid_classes_with_only_static_members
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
 import 'dart:isolate';
 
 import 'package:ffi/ffi.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:runanywhere/foundation/errors/sdk_exception.dart';
 import 'package:runanywhere/foundation/logging/sdk_logger.dart';
-import 'package:runanywhere/native/ffi_types.dart';
+import 'package:runanywhere/native/dart_bridge_secure_storage.dart';
 import 'package:runanywhere/native/platform_loader.dart';
+import 'package:runanywhere/native/types/basic_types.dart';
+import 'package:runanywhere/native/types/memory_platform_types.dart';
 
 // =============================================================================
 // Exception Return Constants (must be compile-time constants for FFI)
@@ -18,11 +21,31 @@ import 'package:runanywhere/native/platform_loader.dart';
 /// Exceptional return value for file operations that return Int32
 const int _exceptionalReturnInt32 = -183; // RAC_ERROR_FILE_NOT_FOUND
 
+/// A Dart exception is a real storage failure, never a clean cache miss.
+const int _exceptionalReturnSecureStorage = -333;
+
 /// Exceptional return value for bool operations
 const int _exceptionalReturnFalse = 0;
 
-/// Exceptional return value for int64 operations
-const int _exceptionalReturnInt64 = 0;
+typedef _SysctlByNameNative =
+    Int32 Function(
+      Pointer<Utf8>,
+      Pointer<Void>,
+      Pointer<Uint64>,
+      Pointer<Void>,
+      Uint64,
+    );
+typedef _SysctlByNameDart =
+    int Function(
+      Pointer<Utf8>,
+      Pointer<Void>,
+      Pointer<Uint64>,
+      Pointer<Void>,
+      int,
+    );
+
+typedef _PlatformServiceAvailabilityCallbackNative =
+    Int32 Function(Int32 service, Pointer<Void> userData);
 
 // =============================================================================
 // Platform Adapter Bridge
@@ -59,12 +82,20 @@ class DartBridgePlatform {
   /// CRITICAL: Must be kept alive to prevent garbage collection
   static NativeCallable<RacLogCallbackNative>? _loggerCallable;
 
-  /// Secure storage for keychain operations
-  // ignore: unused_field
-  static const _secureStorage = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
-    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
-  );
+  // ---------------------------------------------------------------------------
+  // Platform Services (Foundation Models + System TTS/STT) state
+  // ---------------------------------------------------------------------------
+
+  /// Whether platform services availability callback has been registered.
+  static bool _servicesRegistered = false;
+
+  /// Persistent pointer for the platform services availability callback.
+  static Pointer<NativeFunction<_PlatformServiceAvailabilityCallbackNative>>?
+  _servicesAvailabilityCallback;
+
+  static const int _serviceFoundationModels = 1;
+  static const int _serviceSystemTts = 2;
+  static const int _serviceSystemStt = 3;
 
   /// Register platform adapter with C++.
   /// Must be called FIRST during SDK init (before any C++ operations).
@@ -76,10 +107,19 @@ class DartBridgePlatform {
 
     try {
       final lib = PlatformLoader.loadCommons();
+      // Resolve the platform helper before giving commons any secure-storage
+      // callback pointers. Missing helper symbols are an initialization error.
+      DartBridgeSecureStorage.instance;
 
       // Allocate the platform adapter struct
       _adapterPtr = calloc<RacPlatformAdapterStruct>();
       final adapter = _adapterPtr!;
+
+      // ABI guard (MUST be the first two fields). rac_init rejects the adapter
+      // with RAC_ERROR_ABI_VERSION_MISMATCH unless these match the commons
+      // build. 1 == RAC_PLATFORM_ADAPTER_ABI_VERSION.
+      adapter.ref.abiVersion = 1;
+      adapter.ref.structSize = sizeOf<RacPlatformAdapterStruct>();
 
       // Logging callback - MUST use NativeCallable.listener for thread safety
       // This allows C++ to call the logger from any thread (including background
@@ -93,9 +133,9 @@ class DartBridgePlatform {
       // File operations
       adapter.ref.fileExists =
           Pointer.fromFunction<RacFileExistsCallbackNative>(
-        _platformFileExistsCallback,
-        _exceptionalReturnFalse,
-      );
+            _platformFileExistsCallback,
+            _exceptionalReturnFalse,
+          );
       adapter.ref.fileRead = Pointer.fromFunction<RacFileReadCallbackNative>(
         _platformFileReadCallback,
         _exceptionalReturnInt32,
@@ -106,72 +146,104 @@ class DartBridgePlatform {
       );
       adapter.ref.fileDelete =
           Pointer.fromFunction<RacFileDeleteCallbackNative>(
-        _platformFileDeleteCallback,
-        _exceptionalReturnInt32,
-      );
+            _platformFileDeleteCallback,
+            _exceptionalReturnInt32,
+          );
 
-      // Secure storage (async operations - need special handling)
+      // Synchronous platform-native secure storage.
       adapter.ref.secureGet = Pointer.fromFunction<RacSecureGetCallbackNative>(
         _platformSecureGetCallback,
-        _exceptionalReturnInt32,
+        _exceptionalReturnSecureStorage,
       );
       adapter.ref.secureSet = Pointer.fromFunction<RacSecureSetCallbackNative>(
         _platformSecureSetCallback,
-        _exceptionalReturnInt32,
+        _exceptionalReturnSecureStorage,
       );
       adapter.ref.secureDelete =
           Pointer.fromFunction<RacSecureDeleteCallbackNative>(
-        _platformSecureDeleteCallback,
-        _exceptionalReturnInt32,
-      );
+            _platformSecureDeleteCallback,
+            _exceptionalReturnSecureStorage,
+          );
 
-      // Clock - returns int64, use 0 as exceptional return
-      adapter.ref.nowMs = Pointer.fromFunction<RacNowMsCallbackNative>(
-        _platformNowMsCallback,
-        _exceptionalReturnInt64,
-      );
+      // Clock — intentionally null. C++ falls back to std::chrono::system_clock
+      // in rac_time.cpp. This is the correct design for Dart FFI, not a
+      // workaround:
+      //   - Pointer.fromFunction trampolines are tied to the registering
+      //     isolate and crash (SIGABRT) when invoked from non-Dart threads.
+      //   - NativeCallable.listener is one-way/async and cannot return an
+      //     Int64 synchronously.
+      //   - rac_get_current_time_ms is called from C++ worker threads
+      //     (download orchestrator std::thread, OkHttp transport pool) with
+      //     no isolate affinity.
+      // std::chrono::system_clock yields equivalent ms timestamps to Swift's
+      // Foundation Date() callback, so no platform override is needed.
+      adapter.ref.nowMs = nullptr;
 
-      // Memory info callback - returns errorNotImplemented (platform-specific)
+      // Memory info callback
       adapter.ref.getMemoryInfo =
           Pointer.fromFunction<RacGetMemoryInfoCallbackNative>(
-        _platformGetMemoryInfoCallback,
-        _exceptionalReturnInt32,
-      );
+            _platformGetMemoryInfoCallback,
+            _exceptionalReturnInt32,
+          );
 
-      // Error tracking (Sentry)
-      adapter.ref.trackError =
-          Pointer.fromFunction<RacTrackErrorCallbackNative>(
-        _platformTrackErrorCallback,
-      );
-
-      // Optional callbacks (handled by Dart directly)
-      adapter.ref.httpDownload =
-          Pointer.fromFunction<RacHttpDownloadCallbackNative>(
-        _platformHttpDownloadCallback,
-        _exceptionalReturnInt32,
-      ).cast<Void>();
-      adapter.ref.httpDownloadCancel =
-          Pointer.fromFunction<RacHttpDownloadCancelCallbackNative>(
-        _platformHttpDownloadCancelCallback,
-        _exceptionalReturnInt32,
-      ).cast<Void>();
+      // HTTP download callbacks — disabled because OkHttp transport vtable
+      // handles all HTTP. Pointer.fromFunction trampolines are not safe to
+      // call from the C++ worker thread spawned by the download orchestrator.
+      adapter.ref.httpDownload = nullptr;
+      adapter.ref.httpDownloadCancel = nullptr;
       adapter.ref.extractArchive = nullptr;
+
+      // Directory enumeration — commons uses these from the model-registry
+      // refresh path (rescan_local) and the canonical RAModelInfo factory
+      // (is_downloaded gating for multi-file artifacts). Both are invoked
+      // from the Dart-owned isolate that initiates the corresponding SDK
+      // public API call, so Pointer.fromFunction trampolines are safe here
+      // (same constraint as file_exists / file_read above). See
+      // rac_platform_adapter.h doc-block for cross-SDK status.
+      adapter.ref.fileListDirectory =
+          Pointer.fromFunction<RacFileListDirectoryCallbackNative>(
+            _platformFileListDirectoryCallback,
+            _exceptionalReturnInt32,
+          );
+      adapter.ref.isNonEmptyDirectory =
+          Pointer.fromFunction<RacIsNonEmptyDirectoryCallbackNative>(
+            _platformIsNonEmptyDirectoryCallback,
+            _exceptionalReturnFalse,
+          );
+
+      // Vendor ID — intentionally null. Apple-only slot per
+      // rac_platform_adapter.h:get_vendor_id; commons calls it from
+      // rac_device_get_or_create_persistent_id() only after secure_get
+      // misses. Flutter pre-populates the device-id cache in
+      // dart_bridge_device.dart::_getOrCreateDeviceId() using
+      // device_info_plus (identifierForVendor on iOS, generated UUID on
+      // Android) and writes it through secure_set, so the commons chain
+      // resolves on the secure_get branch before reaching this slot. A
+      // direct FFI trampoline cannot bridge UIDevice.identifierForVendor
+      // anyway because Flutter exposes it only via the async
+      // device_info_plus MethodChannel, which FFI's synchronous return
+      // contract cannot await.
+      adapter.ref.getVendorId = nullptr;
+
       adapter.ref.userData = nullptr;
 
       // Register with C++
-      final setAdapter = lib.lookupFunction<
-          Int32 Function(Pointer<RacPlatformAdapterStruct>),
-          int Function(
-              Pointer<RacPlatformAdapterStruct>)>('rac_set_platform_adapter');
+      final setAdapter = lib
+          .lookupFunction<
+            Int32 Function(Pointer<RacPlatformAdapterStruct>),
+            int Function(Pointer<RacPlatformAdapterStruct>)
+          >('rac_set_platform_adapter');
 
       final result = setAdapter(adapter);
       if (result != RacResultCode.success) {
-        _logger.error('Failed to register platform adapter', metadata: {
-          'error_code': result,
-        });
+        _logger.error(
+          'Failed to register platform adapter',
+          metadata: {'error_code': result},
+        );
         calloc.free(adapter);
         _adapterPtr = null;
-        return;
+        SDKException.throwIfError(result);
+        throw StateError('Platform adapter registration failed (rc=$result)');
       }
 
       _isRegistered = true;
@@ -179,46 +251,163 @@ class DartBridgePlatform {
 
       // Note: We don't free the adapter here as C++ holds a reference to it
       // It will be valid for the lifetime of the application
-    } catch (e, stack) {
-      _logger.error('Exception registering platform adapter', metadata: {
-        'error': e.toString(),
-        'stack': stack.toString(),
-      });
+    } catch (_) {
+      _logger.error('Platform adapter registration failed');
+      rethrow;
     }
   }
 
   /// Unregister platform adapter (called during shutdown).
   static void unregister() {
-    if (!_isRegistered) return;
+    // DartBridge invokes this only after canonical rac_shutdown returned and
+    // Commons released its borrowed adapter pointer.
+    _loggerCallable?.close();
+    _loggerCallable = null;
 
-    // Note: We can't actually unregister from C++ since it holds a pointer
-    // Just mark as unregistered
+    final adapter = _adapterPtr;
+    if (adapter != null) {
+      calloc.free(adapter);
+      _adapterPtr = null;
+    }
+
     _isRegistered = false;
-
-    // Close the logger callable to release resources
-    // Note: Only do this during true shutdown - C++ may still try to log
-    // We keep it alive during normal operation
-    // _loggerCallable?.close();
-    // _loggerCallable = null;
-
-    // Don't free _adapterPtr - C++ may still reference it
-    // It will be cleaned up on process exit
+    _servicesRegistered = false;
   }
 
   /// Check if the adapter is registered.
   static bool get isRegistered => _isRegistered;
+
+  // ---------------------------------------------------------------------------
+  // Platform Services Registration (Foundation Models + System TTS/STT)
+  // ---------------------------------------------------------------------------
+
+  /// Whether platform services availability callback has been registered.
+  static bool get servicesRegistered => _servicesRegistered;
+
+  /// Register the platform services availability callback with C++.
+  /// Matches Swift's `CppBridge.Platform.register()` callback wiring for
+  /// Foundation Models / System TTS / System STT availability checks.
+  static Future<void> registerServices() async {
+    if (_servicesRegistered) return;
+
+    try {
+      final lib = PlatformLoader.loadCommons();
+
+      final registerCallback = lib
+          .lookupFunction<
+            Int32 Function(
+              Pointer<NativeFunction<Int32 Function(Int32, Pointer<Void>)>>,
+            ),
+            int Function(
+              Pointer<NativeFunction<Int32 Function(Int32, Pointer<Void>)>>,
+            )
+          >('rac_platform_services_register_availability_callback');
+
+      _servicesAvailabilityCallback ??=
+          Pointer.fromFunction<_PlatformServiceAvailabilityCallbackNative>(
+            _platformServiceAvailabilityCallback,
+            _exceptionalReturnFalse,
+          );
+
+      final result = registerCallback(_servicesAvailabilityCallback!);
+      if (result != RacResultCode.success) {
+        _logger.warning(
+          'Failed to register platform services availability callback',
+          metadata: {'error_code': result},
+        );
+        return;
+      }
+
+      _servicesRegistered = true;
+      _logger.debug('Platform services registered');
+    } catch (_) {
+      // librac_commons.so may not export
+      // rac_platform_services_register_availability_callback in some
+      // configurations (B-FL-1-002). Log at warning so it's visible in
+      // non-debug builds, then mark as registered to avoid retry.
+      _logger.warning('Platform services registration not available');
+      _servicesRegistered = true;
+    }
+  }
+}
+
+/// Platform service availability callback (Foundation Models / System TTS/STT).
+/// Matches Swift's `CppBridge.Platform.register()` availability replies.
+int _platformServiceAvailabilityCallback(int service, Pointer<Void> userData) {
+  switch (service) {
+    case DartBridgePlatform._serviceFoundationModels:
+      return 0;
+    case DartBridgePlatform._serviceSystemTts:
+    case DartBridgePlatform._serviceSystemStt:
+      return 1;
+    default:
+      return 0;
+  }
 }
 
 // =============================================================================
 // C Callback Functions (must be static top-level functions)
 // =============================================================================
 
-/// Logging callback - routes C++ logs to Dart logger
-/// 
-/// NOTE: This callback is registered with NativeCallable.listener for thread safety.
-/// It runs asynchronously on the main isolate's event loop, which means by the time
-/// it executes, the C++ log message memory may have been freed. We handle this by
-/// catching any UTF-8 decoding errors gracefully.
+/// Maximum byte length to read from a C-owned log buffer.
+/// Matches `thread_local char formatted[2048]` in commons/src/core/rac_logger.cpp.
+/// Bounding the read prevents `toDartString()` from walking off the end of a
+/// freed/unmapped buffer (SIGSEGV) if commons ever stops using the thread_local
+/// buffer or if a non-rac_logger_log call site passes a temporary string.
+const int _maxLogStringBytes = 2048;
+
+/// Running count of log lines that could not be decoded — typically the
+/// signature of a buffer-lifetime race between commons and the async Dart
+/// listener trampoline (commons-067). Surfaced through a periodic warning so
+/// operators can detect log loss instead of silently dropping it.
+int _droppedLogCount = 0;
+
+/// Emit a visibility warning every Nth drop to keep noise bounded.
+const int _droppedLogWarnEvery = 32;
+
+/// Read up to [_maxLogStringBytes] bytes from a NUL-terminated C string into a
+/// Dart String, returning null on any decoding failure. Bounded so that a
+/// freed buffer cannot trigger an arbitrarily long memory walk.
+String? _safeReadCString(Pointer<Utf8> ptr) {
+  if (ptr == nullptr) return null;
+  try {
+    final bytes = ptr.cast<Uint8>().asTypedList(_maxLogStringBytes);
+    var len = 0;
+    while (len < _maxLogStringBytes && bytes[len] != 0) {
+      len++;
+    }
+    if (len == 0) return '';
+    // `length:` avoids re-walking the buffer (strlen) inside toDartString.
+    return ptr.toDartString(length: len);
+  } catch (_) {
+    return null;
+  }
+}
+
+/// Logging callback - routes C++ logs to Dart logger.
+///
+/// Registered as a `NativeCallable.listener` so commons may invoke it from any
+/// C++ worker thread (download orchestrator, plugin loader, engine workers)
+/// without violating Dart's isolate affinity contract (`Pointer.fromFunction`
+/// and `NativeCallable.isolateLocal` both SIGABRT when invoked from a
+/// non-Dart-owned thread, see comments on `nowMs` / `httpDownload` above).
+///
+/// Lifetime contract (commons-067 mitigation):
+///   - `message` is normally backed by `thread_local char formatted[2048]` in
+///     `rac_logger.cpp::rac_logger_log`, so the pointer stays valid across the
+///     listener's async hop on the same C thread.
+///   - `category` is passed as a string literal at every commons call site
+///     (`RAC_LOG_INFO("LLM", ...)`), so it lives for the binary's lifetime.
+///   - The narrow remaining race is the same C thread logging twice before
+///     the Dart isolate drains the queued listener invocation; the second log
+///     overwrites the thread_local buffer. We bound the read to
+///     `_maxLogStringBytes` so we never walk off a freed/unmapped page, and
+///     when decode fails we surface a periodic synthetic warning so log loss
+///     is observable instead of silent.
+///
+/// A full ABI-level fix (e.g. requiring commons to copy strings before
+/// invoking `adapter->log`, or shipping owned `rac_proto_buffer_t`-style
+/// log payloads) is tracked separately — that change touches every SDK.
 void _platformLogCallback(
   int level,
   Pointer<Utf8> category,
@@ -227,42 +416,45 @@ void _platformLogCallback(
 ) {
   if (message == nullptr) return;
 
-  try {
-    // Try to decode the message - may fail if memory was freed
-    final msgString = message.toDartString();
-    if (msgString.isEmpty) return;
-    
-    final categoryString = category != nullptr ? category.toDartString() : 'RAC';
-
-    final logger = SDKLogger(categoryString);
-
-    switch (level) {
-      case RacLogLevel.error:
-      case RacLogLevel.fatal:
-        logger.error(msgString);
-      case RacLogLevel.warning:
-        logger.warning(msgString);
-      case RacLogLevel.info:
-        logger.info(msgString);
-      case RacLogLevel.debug:
-        logger.debug(msgString);
-      case RacLogLevel.trace:
-        logger.debug('[TRACE] $msgString');
-      default:
-        logger.info(msgString);
+  final msgString = _safeReadCString(message);
+  if (msgString == null) {
+    _droppedLogCount++;
+    if (_droppedLogCount % _droppedLogWarnEvery == 1) {
+      // Surface via a sentinel logger so operators can grep for it. Using
+      // SDKLogger here is safe because we are already on the isolate's
+      // event loop (listener callbacks run there) and SDKLogger never re-
+      // enters the C platform-adapter log slot.
+      SDKLogger('DartBridge.Platform').warning(
+        'Dropped C++ log line: buffer-lifetime race with NativeCallable '
+        '(total dropped: $_droppedLogCount). See commons-067.',
+      );
     }
-  } catch (e) {
-    // Silently ignore invalid UTF-8 or freed memory errors
-    // This can happen because NativeCallable.listener runs asynchronously
-    // and the C++ log message buffer may have been freed by then
+    return;
+  }
+  if (msgString.isEmpty) return;
+
+  final categoryString = _safeReadCString(category) ?? 'RAC';
+  final logger = SDKLogger(categoryString.isEmpty ? 'RAC' : categoryString);
+
+  switch (level) {
+    case RacLogLevel.error:
+    case RacLogLevel.fatal:
+      logger.error(msgString);
+    case RacLogLevel.warning:
+      logger.warning(msgString);
+    case RacLogLevel.info:
+      logger.info(msgString);
+    case RacLogLevel.debug:
+      logger.debug(msgString);
+    case RacLogLevel.trace:
+      logger.debug('[TRACE] $msgString');
+    default:
+      logger.info(msgString);
   }
 }
 
 /// File exists callback
-int _platformFileExistsCallback(
-  Pointer<Utf8> path,
-  Pointer<Void> userData,
-) {
+int _platformFileExistsCallback(Pointer<Utf8> path, Pointer<Void> userData) {
   if (path == nullptr) return RAC_FALSE;
 
   try {
@@ -277,7 +469,7 @@ int _platformFileExistsCallback(
 int _platformFileReadCallback(
   Pointer<Utf8> path,
   Pointer<Pointer<Void>> outData,
-  Pointer<IntPtr> outSize,
+  Pointer<Size> outSize,
   Pointer<Void> userData,
 ) {
   if (path == nullptr || outData == nullptr || outSize == nullptr) {
@@ -334,10 +526,7 @@ int _platformFileWriteCallback(
 }
 
 /// File delete callback
-int _platformFileDeleteCallback(
-  Pointer<Utf8> path,
-  Pointer<Void> userData,
-) {
+int _platformFileDeleteCallback(Pointer<Utf8> path, Pointer<Void> userData) {
   if (path == nullptr) {
     return RacResultCode.errorInvalidParameter;
   }
@@ -356,28 +545,6 @@ int _platformFileDeleteCallback(
   }
 }
 
-/// Secure storage cache for synchronous access
-/// Note: flutter_secure_storage is async, so we cache values
-final Map<String, String> _secureStorageCache = {};
-bool _secureStorageCacheLoaded = false;
-
-/// Load secure storage cache (called during init)
-Future<void> loadSecureStorageCache() async {
-  if (_secureStorageCacheLoaded) return;
-
-  try {
-    const storage = FlutterSecureStorage(
-      aOptions: AndroidOptions(encryptedSharedPreferences: true),
-      iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
-    );
-    final all = await storage.readAll();
-    _secureStorageCache.addAll(all);
-    _secureStorageCacheLoaded = true;
-  } catch (_) {
-    // Ignore errors - cache will be empty
-  }
-}
-
 /// Secure get callback
 int _platformSecureGetCallback(
   Pointer<Utf8> key,
@@ -390,11 +557,10 @@ int _platformSecureGetCallback(
 
   try {
     final keyString = key.toDartString();
-    final value = _secureStorageCache[keyString];
-
-    if (value == null) {
-      return RacResultCode.errorFileNotFound; // Not found
-    }
+    final result = DartBridgeSecureStorage.instance.retrieve(keyString);
+    if (result.status <= 0) return result.status;
+    final value = result.value;
+    if (value == null || value.isEmpty) return RacResultCode.errorFileNotFound;
 
     // Allocate and copy string
     final cString = value.toNativeUtf8();
@@ -402,7 +568,8 @@ int _platformSecureGetCallback(
 
     return RacResultCode.success;
   } catch (_) {
-    return RacResultCode.errorStorageError;
+    // Contract: real failures MUST NOT collide with the not-found code.
+    return RacResultCode.errorSecureStorageFailed;
   }
 }
 
@@ -417,104 +584,270 @@ int _platformSecureSetCallback(
   }
 
   try {
-    final keyString = key.toDartString();
-    final valueString = value.toDartString();
-
-    // Update cache immediately for sync access
-    _secureStorageCache[keyString] = valueString;
-
-    // Schedule async write (fire and forget)
-    unawaited(_writeSecureStorage(keyString, valueString));
-
-    return RacResultCode.success;
+    return DartBridgeSecureStorage.instance.storePointers(key, value);
   } catch (_) {
-    return RacResultCode.errorStorageError;
-  }
-}
-
-/// Async write to secure storage
-Future<void> _writeSecureStorage(String key, String value) async {
-  try {
-    const storage = FlutterSecureStorage(
-      aOptions: AndroidOptions(encryptedSharedPreferences: true),
-      iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
-    );
-    await storage.write(key: key, value: value);
-  } catch (_) {
-    // Ignore errors - cache is authoritative
+    return RacResultCode.errorSecureStorageFailed;
   }
 }
 
 /// Secure delete callback
-int _platformSecureDeleteCallback(
-  Pointer<Utf8> key,
-  Pointer<Void> userData,
-) {
+int _platformSecureDeleteCallback(Pointer<Utf8> key, Pointer<Void> userData) {
   if (key == nullptr) {
     return RacResultCode.errorInvalidParameter;
   }
 
   try {
-    final keyString = key.toDartString();
-
-    // Remove from cache
-    _secureStorageCache.remove(keyString);
-
-    // Schedule async delete (fire and forget)
-    unawaited(_deleteSecureStorage(keyString));
-
-    return RacResultCode.success;
+    return DartBridgeSecureStorage.instance.deletePointer(key);
   } catch (_) {
-    return RacResultCode.errorStorageError;
+    return RacResultCode.errorSecureStorageFailed;
   }
 }
 
-/// Async delete from secure storage
-Future<void> _deleteSecureStorage(String key) async {
+Map<String, int>? _readProcMemInfo() {
   try {
-    const storage = FlutterSecureStorage(
-      aOptions: AndroidOptions(encryptedSharedPreferences: true),
-      iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
-    );
-    await storage.delete(key: key);
+    final memInfo = <String, int>{};
+    final contents = File('/proc/meminfo').readAsLinesSync();
+
+    for (final line in contents) {
+      final match = RegExp(r'^([A-Za-z_]+):\s+(\d+)\s+kB$').firstMatch(line);
+      if (match == null) {
+        continue;
+      }
+
+      memInfo[match.group(1)!] = int.parse(match.group(2)!) * 1024;
+    }
+
+    return memInfo;
   } catch (_) {
-    // Ignore errors
+    return null;
   }
 }
 
-/// Clock callback - returns current time in milliseconds
-int _platformNowMsCallback(Pointer<Void> userData) {
-  return DateTime.now().millisecondsSinceEpoch;
+int _getDarwinPhysicalMemoryBytes() {
+  Pointer<Utf8>? namePtr;
+  Pointer<Uint64>? outPtr;
+  Pointer<Uint64>? sizePtr;
+
+  try {
+    final sysctlByName = DynamicLibrary.process()
+        .lookupFunction<_SysctlByNameNative, _SysctlByNameDart>('sysctlbyname');
+
+    namePtr = 'hw.memsize'.toNativeUtf8();
+    outPtr = calloc<Uint64>();
+    sizePtr = calloc<Uint64>()..value = sizeOf<Uint64>();
+
+    final result = sysctlByName(
+      namePtr,
+      outPtr.cast<Void>(),
+      sizePtr,
+      nullptr,
+      0,
+    );
+    if (result == 0 && sizePtr.value >= sizeOf<Uint64>()) {
+      return outPtr.value;
+    }
+  } catch (_) {
+    // Fall through to the generic RSS-based estimate below.
+  } finally {
+    if (namePtr != null) {
+      calloc.free(namePtr);
+    }
+    if (outPtr != null) {
+      calloc.free(outPtr);
+    }
+    if (sizePtr != null) {
+      calloc.free(sizePtr);
+    }
+  }
+
+  return 0;
 }
 
-/// Memory info callback - returns errorNotImplemented.
-/// Memory info requires platform-specific APIs (iOS: mach_task_info, Android: ActivityManager).
+int _getTotalMemoryBytes(int usedBytes) {
+  if (Platform.isAndroid) {
+    final memInfo = _readProcMemInfo();
+    final totalBytes = memInfo?['MemTotal'] ?? 0;
+    if (totalBytes > 0) {
+      return totalBytes;
+    }
+  }
+
+  if (Platform.isIOS || Platform.isMacOS) {
+    final totalBytes = _getDarwinPhysicalMemoryBytes();
+    if (totalBytes > 0) {
+      return totalBytes;
+    }
+  }
+
+  final peakBytes = ProcessInfo.maxRss;
+  return peakBytes > usedBytes ? peakBytes : usedBytes;
+}
+
+int _getAvailableMemoryBytes(int totalBytes, int usedBytes) {
+  if (Platform.isAndroid) {
+    final memInfo = _readProcMemInfo();
+    final availableBytes = memInfo?['MemAvailable'] ?? 0;
+    if (availableBytes > 0) {
+      return availableBytes > totalBytes ? totalBytes : availableBytes;
+    }
+  }
+
+  if (totalBytes <= usedBytes) {
+    return 0;
+  }
+
+  return totalBytes - usedBytes;
+}
+
+/// Memory info callback - returns best-effort process and device RAM metrics.
 int _platformGetMemoryInfoCallback(
   Pointer<Void> outInfo,
   Pointer<Void> userData,
 ) {
-  return RacResultCode.errorNotImplemented;
+  if (outInfo == nullptr) {
+    return RacResultCode.errorInvalidParameter;
+  }
+
+  final usedBytes = ProcessInfo.currentRss;
+  final totalBytes = _getTotalMemoryBytes(usedBytes);
+  final availableBytes = _getAvailableMemoryBytes(totalBytes, usedBytes);
+  final memoryInfo = outInfo.cast<RacMemoryInfoStruct>().ref;
+
+  memoryInfo.totalBytes = totalBytes;
+  memoryInfo.availableBytes = availableBytes;
+  memoryInfo.usedBytes = usedBytes;
+
+  return RacResultCode.success;
 }
 
-/// Error tracking callback - sends to Sentry
-void _platformTrackErrorCallback(
-  Pointer<Utf8> errorJson,
+// =============================================================================
+// DIRECTORY ENUMERATION (Platform Adapter)
+// =============================================================================
+
+/// `rac_file_list_directory_fn` — enumerate directory entries into the
+/// caller-provided array. Implements the two-call semantics documented on
+/// the C typedef: pass `outEntries == NULL` to query capacity, then call
+/// again with an allocated array.
+///
+/// Truncation contract (per `rac_directory_entry_t::name`): entries whose
+/// UTF-8 byte length (+ NUL) exceeds [RAC_DIRECTORY_ENTRY_NAME_MAX] MUST be
+/// skipped, not truncated, to avoid producing half-names that alias other
+/// artifacts. We emit a RAC_LOG_WARN-equivalent log line via SDKLogger so
+/// operators can detect skips.
+int _platformFileListDirectoryCallback(
+  Pointer<Utf8> dirPath,
+  Pointer<Void> outEntries,
+  Pointer<Size> inOutCount,
   Pointer<Void> userData,
 ) {
-  if (errorJson == nullptr) return;
+  if (dirPath == nullptr || inOutCount == nullptr) {
+    return RacResultCode.errorInvalidParameter;
+  }
 
   try {
-    final jsonString = errorJson.toDartString();
+    final pathString = dirPath.toDartString();
+    final dir = Directory(pathString);
+    if (!dir.existsSync()) {
+      return RacResultCode.errorFileNotFound;
+    }
 
-    // Log the error from C++ layer
-    // Note: For production, integrate with crash reporting (e.g., Sentry, Firebase Crashlytics)
-    SDKLogger('DartBridge.ErrorTracking').error(
-      'C++ error received',
-      metadata: {'error_json': jsonString},
-    );
+    // Collect entries up front so capacity and fill calls observe the same
+    // snapshot. `listSync` is synchronous, hidden entries (.* / .. / .) are
+    // already filtered by dart:io for FileSystemEntity.
+    final entries = dir.listSync(followLinks: false);
+
+    // Filter out oversized names per the truncation contract; track skips.
+    final retained = <_DartDirectoryEntry>[];
+    var skipped = 0;
+    for (final entity in entries) {
+      final basename = entity.path.split(Platform.pathSeparator).last;
+      final encoded = utf8.encode(basename);
+      // +1 for NUL terminator must fit in the inline name buffer.
+      if (encoded.length + 1 > RAC_DIRECTORY_ENTRY_NAME_MAX) {
+        skipped++;
+        continue;
+      }
+      final isDir = entity is Directory;
+      var sizeBytes = 0;
+      if (entity is File) {
+        try {
+          sizeBytes = entity.lengthSync();
+        } catch (_) {
+          sizeBytes = 0;
+        }
+      }
+      retained.add(_DartDirectoryEntry(encoded, isDir, sizeBytes));
+    }
+
+    if (skipped > 0) {
+      SDKLogger('PlatformAdapter').warning(
+        'Skipped $skipped directory entries: name longer '
+        'than $RAC_DIRECTORY_ENTRY_NAME_MAX bytes (truncation contract).',
+      );
+    }
+
+    if (outEntries == nullptr) {
+      // Capacity query: write total entry count, do not touch entries array.
+      inOutCount.value = retained.length;
+      return RacResultCode.success;
+    }
+
+    final capacity = inOutCount.value;
+    final count = capacity < retained.length ? capacity : retained.length;
+    final entriesPtr = outEntries.cast<RacDirectoryEntryStruct>();
+    for (var i = 0; i < count; i++) {
+      final entry = retained[i];
+      final slot = (entriesPtr + i).ref;
+      // Copy NUL-terminated UTF-8 into the inline name buffer; remaining
+      // bytes were zero-initialized by the caller's `calloc` / `memset`,
+      // but we still write the NUL explicitly to be defensive.
+      for (var j = 0; j < entry.utf8Name.length; j++) {
+        slot.name[j] = entry.utf8Name[j];
+      }
+      slot.name[entry.utf8Name.length] = 0;
+      slot.isDir = entry.isDir ? RAC_TRUE : RAC_FALSE;
+      slot.sizeBytes = entry.sizeBytes;
+    }
+    inOutCount.value = count;
+    return RacResultCode.success;
   } catch (_) {
-    // Ignore errors in error handling
+    SDKLogger('PlatformAdapter').warning('file_list_directory failed');
+    return RacResultCode.errorFileReadFailed;
   }
+}
+
+/// `is_non_empty_directory` — RAC_TRUE iff `path` is a directory containing
+/// at least one entry. Used by `rac_model_info_make_proto` to compute the
+/// `is_downloaded` field for directory-based (multi-file) artifacts without
+/// forcing the SDK to enumerate the directory itself.
+int _platformIsNonEmptyDirectoryCallback(
+  Pointer<Utf8> path,
+  Pointer<Void> userData,
+) {
+  if (path == nullptr) {
+    return RAC_FALSE;
+  }
+  try {
+    final pathString = path.toDartString();
+    final dir = Directory(pathString);
+    if (!dir.existsSync()) {
+      return RAC_FALSE;
+    }
+    // Cheap probe: `listSync` returns an empty list for empty directories
+    // and dart:io filters `.` / `..`. We short-circuit on the first entry
+    // by using an iterator-style listing.
+    final iterator = dir.listSync(followLinks: false).iterator;
+    return iterator.moveNext() ? RAC_TRUE : RAC_FALSE;
+  } catch (_) {
+    return RAC_FALSE;
+  }
+}
+
+class _DartDirectoryEntry {
+  _DartDirectoryEntry(this.utf8Name, this.isDir, this.sizeBytes);
+  final List<int> utf8Name;
+  final bool isDir;
+  final int sizeBytes;
 }
 
 // =============================================================================
@@ -523,6 +856,7 @@ void _platformTrackErrorCallback(
 
 int _httpDownloadCounter = 0;
 
+// ignore: unused_element
 int _platformHttpDownloadCallback(
   Pointer<Utf8> url,
   Pointer<Utf8> destinationPath,
@@ -546,21 +880,22 @@ int _platformHttpDownloadCallback(
     final taskId = 'http_${_httpDownloadCounter++}';
     outTaskId.value = taskId.toNativeUtf8();
 
-    final progressAddress = progressCallback == nullptr ? 0 : progressCallback.address;
-    final completeAddress = completeCallback == nullptr ? 0 : completeCallback.address;
+    final progressAddress = progressCallback == nullptr
+        ? 0
+        : progressCallback.address;
+    final completeAddress = completeCallback == nullptr
+        ? 0
+        : completeCallback.address;
     final userDataAddress = callbackUserData.address;
 
     unawaited(
-      Isolate.spawn(
-        _httpDownloadIsolateEntry,
-        <dynamic>[
-          urlString,
-          destinationString,
-          progressAddress,
-          completeAddress,
-          userDataAddress,
-        ],
-      ),
+      Isolate.spawn(_httpDownloadIsolateEntry, <dynamic>[
+        urlString,
+        destinationString,
+        progressAddress,
+        completeAddress,
+        userDataAddress,
+      ]),
     );
     return RacResultCode.success;
   } catch (_) {
@@ -568,9 +903,10 @@ int _platformHttpDownloadCallback(
   }
 }
 
+// ignore: unused_element
 int _platformHttpDownloadCancelCallback(
-  Pointer<Utf8> _taskId,
-  Pointer<Void> _userData,
+  Pointer<Utf8> taskId,
+  Pointer<Void> userData,
 ) {
   return RacResultCode.errorNotSupported;
 }
@@ -624,11 +960,7 @@ Future<void> _performHttpDownloadIsolate(
         downloaded += chunk.length;
         if (progressCallback != null &&
             downloaded - lastReported >= reportThreshold) {
-          progressCallback(
-            downloaded,
-            totalBytes,
-            callbackUserData,
-          );
+          progressCallback(downloaded, totalBytes, callbackUserData);
           lastReported = downloaded;
         }
       }
@@ -650,11 +982,7 @@ Future<void> _performHttpDownloadIsolate(
     }
 
     if (progressCallback != null) {
-      progressCallback(
-        downloaded,
-        totalBytes,
-        callbackUserData,
-      );
+      progressCallback(downloaded, totalBytes, callbackUserData);
     }
 
     finalPath = destFile.path;
@@ -666,8 +994,8 @@ Future<void> _performHttpDownloadIsolate(
 
     if (result != RacResultCode.success && tempFile != null) {
       try {
-        if (await tempFile!.exists()) {
-          await tempFile!.delete();
+        if (await tempFile.exists()) {
+          await tempFile.delete();
         }
       } catch (_) {
         // Ignore cleanup errors
@@ -676,24 +1004,17 @@ Future<void> _performHttpDownloadIsolate(
 
     if (completeCallback != null) {
       if (finalPath != null) {
-        final pathPtr = finalPath!.toNativeUtf8();
-        completeCallback(
-          result,
-          pathPtr,
-          callbackUserData,
-        );
+        final pathPtr = finalPath.toNativeUtf8();
+        completeCallback(result, pathPtr, callbackUserData);
         calloc.free(pathPtr);
       } else {
-        completeCallback(
-          result,
-          nullptr,
-          callbackUserData,
-        );
+        completeCallback(result, nullptr, callbackUserData);
       }
     }
   }
 }
 
+// ignore: avoid_void_async - required signature for Isolate.spawn entry point
 void _httpDownloadIsolateEntry(List<dynamic> args) async {
   final url = args[0] as String;
   final destinationPath = args[1] as String;
@@ -704,13 +1025,13 @@ void _httpDownloadIsolateEntry(List<dynamic> args) async {
   final progressCallback = progressAddress == 0
       ? null
       : Pointer<NativeFunction<RacHttpProgressCallbackNative>>.fromAddress(
-              progressAddress)
-          .asFunction<void Function(int, int, Pointer<Void>)>();
+          progressAddress,
+        ).asFunction<void Function(int, int, Pointer<Void>)>();
   final completeCallback = completeAddress == 0
       ? null
       : Pointer<NativeFunction<RacHttpCompleteCallbackNative>>.fromAddress(
-              completeAddress)
-          .asFunction<void Function(int, Pointer<Utf8>, Pointer<Void>)>();
+          completeAddress,
+        ).asFunction<void Function(int, Pointer<Utf8>, Pointer<Void>)>();
   final userDataPtr = Pointer<Void>.fromAddress(userDataAddress);
 
   await _performHttpDownloadIsolate(

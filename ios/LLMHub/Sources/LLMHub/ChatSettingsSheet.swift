@@ -89,6 +89,23 @@ struct ChatSettingsSheet: View {
                             ConfigSlider(title: settings.localized("top_p"), value: $draftTopP, range: 0...1, format: "%.2f", onCommit: applyDraftToViewModel)
                             ConfigSlider(title: settings.localized("temperature"), value: $draftTemperature, range: 0...2, format: "%.2f", onCommit: applyDraftToViewModel)
 
+                            if let model = currentModel, model.modelFormat == .gguf {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack {
+                                        Text(settings.localized("gpu_layers_label").replacingOccurrences(of: "%1$d", with: gpuLayersBinding.wrappedValue == 99 ? settings.localized("max") : "\(Int(gpuLayersBinding.wrappedValue))"))
+                                            .font(.subheadline)
+                                            .foregroundColor(.white)
+                                        Spacer()
+                                        Text(gpuLayersBinding.wrappedValue == 99 ? settings.localized("max") : "\(Int(gpuLayersBinding.wrappedValue))")
+                                            .font(.system(.subheadline, design: .monospaced))
+                                            .fontWeight(.bold)
+                                            .foregroundColor(.white.opacity(0.92))
+                                    }
+                                    Slider(value: gpuLayersBinding, in: 0...99, step: 1)
+                                        .tint(ApolloPalette.accentStrong)
+                                }
+                            }
+
                             HStack {
                                 Spacer()
                                 Button(settings.localized("reset_to_defaults")) {
@@ -299,6 +316,33 @@ struct ChatSettingsSheet: View {
         let maxWindow = max(1, Int(modelMaxContextWindow))
         let raw = max(1, maxWindow / 1024)
         return Double(raw)
+    }
+
+    private var gpuLayersBinding: Binding<Double> {
+        Binding<Double>(
+            get: {
+                guard let currentModel = currentModel else { return 99 }
+                let key = "gpu_layers_\(currentModel.id)"
+                if UserDefaults.standard.object(forKey: key) != nil {
+                    return Double(UserDefaults.standard.integer(forKey: key))
+                }
+                return 99 // Default to max
+            },
+            set: { newValue in
+                guard let currentModel = currentModel else { return }
+                let key = "gpu_layers_\(currentModel.id)"
+                let intValue = Int32(newValue)
+                UserDefaults.standard.set(intValue, forKey: key)
+                
+                // Synchronize to C++ registry immediately
+                let targetValue: Int32 = (intValue == 99) ? 999 : intValue
+                CppBridge.ModelRegistry.shared.setGpuLayers(modelId: currentModel.id, gpuLayers: targetValue)
+                if let folderURL = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: currentModel.id, framework: currentModel.modelFormat == .litertlm ? .litertlm : .llamacpp),
+                   let ggufFile = listGGUFFiles(in: folderURL).first(where: { !$0.lastPathComponent.lowercased().contains("mmproj") }) {
+                    CppBridge.ModelRegistry.shared.setGpuLayers(modelId: ggufFile.path, gpuLayers: targetValue)
+                }
+            }
+        )
     }
 
     private func syncDraftFromViewModel() {

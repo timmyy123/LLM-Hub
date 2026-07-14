@@ -2,14 +2,14 @@
  * NativeRunAnywhereLlama.ts
  *
  * Exports the native RunAnywhereLlama Hybrid Object from Nitro Modules.
- * This module provides Llama-based text generation capabilities.
+ * This module provides LlamaCPP backend registration hooks.
  */
 
 import type { RunAnywhereLlama } from '../specs/RunAnywhereLlama.nitro';
-import { getNitroModulesProxySync } from '@runanywhere/core';
+import { getNitroModulesProxySync, type NitroProxy } from '@runanywhere/core/internal';
 
 // Use the global NitroModules initialization
-function getNitroModulesProxy(): any {
+function getNitroModulesProxy(): NitroProxy | null {
   return getNitroModulesProxySync();
 }
 
@@ -29,7 +29,7 @@ export function requireNativeLlamaModule(): NativeRunAnywhereLlamaModule {
       'react-native-nitro-modules is not properly linked.'
     );
   }
-  return NitroProxy.createHybridObject<RunAnywhereLlama>('RunAnywhereLlama');
+  return NitroProxy.createHybridObject('RunAnywhereLlama') as RunAnywhereLlama;
 }
 
 /**

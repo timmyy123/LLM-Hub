@@ -1,29 +1,68 @@
 /**
- * Storage Tab - Manage downloaded models and disk usage.
- * Mirrors iOS StorageView with enhanced quota bar, LRU timestamps,
- * delete confirmations, and toast notifications.
+ * Storage Tab — storage info header + maintenance actions + a model catalog
+ * view that surfaces registry state via proto-byte adapters.
+ *
+ * Mirrors iOS `StorageViewModel` (StorageViewModel.swift:28-103):
+ *   - `RunAnywhere.getStorageInfo(request)` drives the used/free header.
+ *   - Clear Cache / Clean Temp delegate to the SDK verbs.
+ *   - Per-model Delete goes through `RunAnywhere.deleteModel(modelId)`.
+ *
+ * The storage-location switcher (OPFS vs local folder) is justified web
+ * platform code — browsers expose two storage backends, iOS has one.
+ * Downloading + loading lives in `components/model-selection.ts`.
  */
 
 import type { TabLifecycle } from '../app';
-import { ModelManager } from '../services/model-manager';
-import { showToast, showConfirmDialog } from '../components/dialogs';
-import { RunAnywhere } from '../../../../../sdk/runanywhere-web/packages/core/src/index';
+import { showToast } from '../components/dialogs';
+import {
+  RunAnywhere,
+  deviceStorageUsagePercentage,
+  storageInfoAppStorage,
+  storageInfoDeviceStorage,
+  storageInfoTotalModelsSize,
+} from '@runanywhere/web';
+import type { ModelInfo, StorageInfo } from '@runanywhere/web';
+import {
+  StorageInfoRequest,
+} from '@runanywhere/proto-ts/storage_types';
+import {
+  onModelStateChange,
+  openSheet as openModelSheet,
+  refreshModelSelectionState,
+} from '../components/model-selection';
+import { getCatalog } from '../services/model-catalog';
+import { escapeHtml } from '../services/escape-html';
+import { formatError } from '../services/format-error';
+import {
+  formatBytes,
+  formatFramework,
+  modelDisplaySizeBytes,
+  modalityEmoji,
+} from '../services/model-display';
 
 let container: HTMLElement;
-
-// ---------------------------------------------------------------------------
-// Init
-// ---------------------------------------------------------------------------
+let unsubscribeState: (() => void) | null = null;
+let lastStorageInfo: StorageInfo | null = null;
+let storageInfoError: string | null = null;
 
 export function initStorageTab(el: HTMLElement): TabLifecycle {
   container = el;
   container.innerHTML = `
     <div class="toolbar">
       <div class="toolbar-title">Storage</div>
-      <div class="toolbar-actions"></div>
+      <div class="toolbar-actions">
+        <button class="btn btn-secondary" id="storage-clear-cache-btn" style="font-size: 0.8rem;">Clear Cache</button>
+        <button class="btn btn-secondary" id="storage-clean-temp-btn" style="font-size: 0.8rem;">Clean Temp</button>
+      </div>
     </div>
-    <div class="scroll-area">
-      <div class="storage-location" id="storage-location" style="padding: 12px 16px; margin-bottom: 8px; border-radius: 8px; background: var(--surface-secondary, #1a1a2e); display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+    <div class="scroll-area" id="storage-scroll">
+      <div id="storage-info-header" style="padding: 12px 16px; margin-bottom: 12px; border-radius: 8px; background: var(--bg-secondary);"></div>
+
+      <div
+        class="storage-location"
+        id="storage-location"
+        style="padding: 12px 16px; margin-bottom: 12px; border-radius: 8px; background: var(--bg-secondary); display: flex; align-items: center; gap: 12px; flex-wrap: wrap;"
+      >
         <div style="flex: 1; min-width: 200px;">
           <div style="font-size: 0.75rem; opacity: 0.6; margin-bottom: 2px;">Storage Location</div>
           <div id="storage-location-label" style="font-size: 0.9rem; font-weight: 500;">Browser Storage (OPFS)</div>
@@ -35,147 +74,156 @@ export function initStorageTab(el: HTMLElement): TabLifecycle {
           Re-authorize Access
         </button>
       </div>
-      <div class="storage-overview" id="storage-overview">
-        <div class="storage-stat"><div class="value" id="storage-count">0</div><div class="label">Models</div></div>
-        <div class="storage-stat"><div class="value" id="storage-size">0 MB</div><div class="label">Total Size</div></div>
-        <div class="storage-stat"><div class="value" id="storage-available">-- GB</div><div class="label">Available</div></div>
+
+      <div style="margin: 16px 0 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+        <h3 style="font-size: 0.95rem; font-weight: 600; margin: 0;">Registered Models</h3>
+        <button class="btn btn-primary btn-sm" id="storage-open-selection-btn">Manage Models</button>
       </div>
-      <div class="quota-bar-container" id="quota-bar-container">
-        <div class="quota-bar">
-          <div class="quota-bar-fill" id="quota-bar-fill"></div>
-        </div>
-        <div class="quota-bar-label">
-          <span id="quota-bar-used">0 MB used</span>
-          <span id="quota-bar-total">-- quota</span>
-        </div>
-      </div>
-      <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
-        <button class="btn btn-secondary" id="storage-import-btn" style="flex: 1; min-width: 140px; font-size: 0.85rem; padding: 10px 16px;">
-          Import Model File
-        </button>
-      </div>
-      <div id="storage-drop-zone" style="display: none; border: 2px dashed var(--color-primary, #ff6b35); border-radius: 12px; padding: 32px 16px; text-align: center; margin-bottom: 12px; opacity: 0.8; transition: opacity 0.2s;">
-        <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 4px;">Drop model file here</div>
-        <div style="font-size: 0.8rem; opacity: 0.6;">Supports .gguf, .onnx, .bin files</div>
-      </div>
-      <div id="storage-models" class="storage-models-list"></div>
-      <div class="storage-actions">
-        <button class="btn btn-danger" id="storage-clear-btn">Clear All Models</button>
-      </div>
+      <div id="storage-model-list" class="storage-model-list"></div>
     </div>
   `;
 
-  // Local storage folder picker
-  const chooseDirBtn = container.querySelector('#storage-choose-dir-btn') as HTMLButtonElement;
-  const reauthBtn = container.querySelector('#storage-reauth-btn') as HTMLButtonElement;
-
-  if (!RunAnywhere.isLocalStorageSupported) {
-    chooseDirBtn.disabled = true;
-    chooseDirBtn.title = 'Requires Chrome or Edge browser';
-    chooseDirBtn.style.opacity = '0.5';
-  }
-
-  chooseDirBtn.addEventListener('click', async () => {
-    const success = await RunAnywhere.chooseLocalStorageDirectory();
-    if (success) {
-      showToast(`Local storage: ${RunAnywhere.localStorageDirectoryName}`, 'info');
-      updateStorageLocationUI();
+  container.querySelector('#storage-clear-cache-btn')!.addEventListener('click', () => {
+    void (async () => {
+    // iOS parity: StorageViewModel.swift:68-75 `clearCache()`.
+    try {
+      await RunAnywhere.clearCache();
+      showToast('Cache cleared', 'success');
+    } catch (err) {
+      showToast(`Failed to clear cache: ${formatError(err)}`, 'warning');
     }
+      refreshStorageInfo();
+    })();
   });
 
-  reauthBtn.addEventListener('click', async () => {
-    const success = await RunAnywhere.requestLocalStorageAccess();
-    if (success) {
-      showToast(`Storage access restored: ${RunAnywhere.localStorageDirectoryName}`, 'info');
-      updateStorageLocationUI();
-    } else {
-      showToast('Access denied — try choosing a new folder', 'warning');
+  container.querySelector('#storage-clean-temp-btn')!.addEventListener('click', () => {
+    void (async () => {
+    // iOS parity: StorageViewModel.swift:77-84 `cleanTempFiles()`.
+    try {
+      await RunAnywhere.cleanTempFiles();
+      showToast('Temporary files cleaned', 'success');
+    } catch (err) {
+      showToast(`Failed to clean temporary files: ${formatError(err)}`, 'warning');
     }
+      refreshStorageInfo();
+    })();
   });
 
+  container.querySelector('#storage-choose-dir-btn')!.addEventListener('click', () => {
+    void (async () => {
+    try {
+      const ok = await RunAnywhere.storage.chooseLocalStorageDirectory();
+      if (ok) {
+        refreshModelSelectionState();
+        showToast(`Using folder: ${RunAnywhere.storage.localStorageDirectoryName ?? 'selected'}`, 'success');
+      } else {
+        showToast('Folder selection cancelled or unsupported', 'info');
+      }
+    } catch (err) {
+      showToast(formatError(err), 'warning');
+    }
+      updateStorageLocationUI();
+    })();
+  });
+
+  container.querySelector('#storage-reauth-btn')!.addEventListener('click', () => {
+    void (async () => {
+      const ok = await RunAnywhere.storage.requestLocalStorageAccess();
+      if (ok) refreshModelSelectionState();
+      showToast(ok ? 'Access re-authorized' : 'Access not granted', ok ? 'success' : 'warning');
+      updateStorageLocationUI();
+    })();
+  });
+
+  container.querySelector('#storage-open-selection-btn')!.addEventListener('click', () => {
+    openModelSheet();
+  });
+  refreshStorageInfo();
   updateStorageLocationUI();
+  renderModelList();
 
-  // --- Import Model button (works on ALL browsers via SDK progressive enhancement) ---
-  container.querySelector('#storage-import-btn')!.addEventListener('click', async () => {
-    const modelId = await RunAnywhere.importModelFromPicker();
-    if (modelId) {
-      showToast(`Model imported: ${modelId}`, 'info');
-      refreshStorage();
-    }
+  unsubscribeState = onModelStateChange(() => {
+    refreshStorageInfo();
+    renderModelList();
   });
-
-  // --- Drag-and-drop zone (desktop only — mobile doesn't support file drag) ---
-  const dropZone = container.querySelector('#storage-drop-zone') as HTMLElement;
-  const scrollArea = container.querySelector('.scroll-area') as HTMLElement;
-
-  if (window.matchMedia('(hover: hover)').matches) {
-    // Desktop: show drop zone when dragging files over the storage tab
-    let dragCounter = 0;
-
-    scrollArea.addEventListener('dragenter', (e) => {
-      e.preventDefault();
-      dragCounter++;
-      dropZone.style.display = 'block';
-    });
-
-    scrollArea.addEventListener('dragleave', () => {
-      dragCounter--;
-      if (dragCounter <= 0) {
-        dragCounter = 0;
-        dropZone.style.display = 'none';
-      }
-    });
-
-    scrollArea.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      dropZone.style.opacity = '1';
-    });
-
-    scrollArea.addEventListener('drop', async (e) => {
-      e.preventDefault();
-      dragCounter = 0;
-      dropZone.style.display = 'none';
-
-      const file = e.dataTransfer?.files[0];
-      if (!file) return;
-
-      try {
-        const modelId = await RunAnywhere.importModelFromFile(file);
-        showToast(`Model imported: ${modelId}`, 'info');
-        refreshStorage();
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        showToast(`Import failed: ${msg}`, 'warning');
-      }
-    });
-  }
-
-  container.querySelector('#storage-clear-btn')!.addEventListener('click', async () => {
-    const confirmed = await showConfirmDialog(
-      'Clear All Models',
-      'This will remove all downloaded models from storage. You will need to re-download them to use again.',
-      'Clear All',
-      'Cancel',
-      true,
-    );
-    if (!confirmed) return;
-
-    await ModelManager.clearAll();
-    showToast('All models cleared', 'info');
-    refreshStorage();
-  });
-
-  refreshStorage();
 
   return {
     onActivate(): void {
-      refreshStorage();
+      refreshStorageInfo();
+      updateStorageLocationUI();
+      renderModelList();
+    },
+    onDeactivate(): void {
+      // Keep the subscription live across tab activation toggles; clean up
+      // only if the panel itself gets torn down.
+      if (!container.isConnected && unsubscribeState) {
+        unsubscribeState();
+        unsubscribeState = null;
+      }
     },
   };
 }
 
 // ---------------------------------------------------------------------------
-// Storage Location UI
+// Storage info header (iOS parity: StorageViewModel.swift:28-62 loadData)
+// ---------------------------------------------------------------------------
+
+function refreshStorageInfo(): void {
+  storageInfoError = null;
+  lastStorageInfo = null;
+  try {
+    const result = RunAnywhere.getStorageInfo(StorageInfoRequest.fromPartial({
+      includeDevice: true,
+      includeApp: true,
+      includeModels: true,
+      includeCache: true,
+    }));
+    if (!result.success) {
+      storageInfoError = result.errorMessage || 'Failed to load storage data';
+    } else {
+      lastStorageInfo = result.info ?? null;
+    }
+  } catch (err) {
+    storageInfoError = formatError(err);
+  }
+  renderStorageInfoHeader();
+}
+
+function renderStorageInfoHeader(): void {
+  const host = container.querySelector<HTMLElement>('#storage-info-header');
+  if (!host) return;
+
+  if (storageInfoError) {
+    host.innerHTML = `<div class="docs-status">Storage info unavailable: ${escapeHtml(storageInfoError)}</div>`;
+    return;
+  }
+  if (!lastStorageInfo) {
+    host.innerHTML = '<div class="docs-status">Loading storage info...</div>';
+    return;
+  }
+
+  const app = storageInfoAppStorage(lastStorageInfo);
+  const device = storageInfoDeviceStorage(lastStorageInfo);
+  const modelsSize = storageInfoTotalModelsSize(lastStorageInfo);
+  const usedPct = deviceStorageUsagePercentage(device);
+
+  host.innerHTML = `
+    <div style="font-size: 0.75rem; opacity: 0.6; margin-bottom: 6px;">Storage</div>
+    <div style="display: flex; gap: 24px; flex-wrap: wrap; font-size: 0.85rem;">
+      <div><strong>App used:</strong> ${formatBytes(app.totalBytes)}</div>
+      <div><strong>Models:</strong> ${formatBytes(modelsSize)}</div>
+      <div><strong>Device free:</strong> ${formatBytes(device.freeBytes)}</div>
+    </div>
+    ${device.totalBytes > 0
+      ? `<div class="progress-bar" style="margin-top: 8px;">
+          <div class="progress-fill" style="width:${Math.min(100, Math.round(usedPct))}%"></div>
+        </div>`
+      : ''}
+  `;
+}
+
+// ---------------------------------------------------------------------------
+// Storage location switcher (web platform code)
 // ---------------------------------------------------------------------------
 
 function updateStorageLocationUI(): void {
@@ -183,145 +231,127 @@ function updateStorageLocationUI(): void {
   const chooseDirBtn = container.querySelector('#storage-choose-dir-btn') as HTMLElement;
   const reauthBtn = container.querySelector('#storage-reauth-btn') as HTMLElement;
 
-  if (RunAnywhere.isLocalStorageReady) {
-    const safeName = escapeHtml(RunAnywhere.localStorageDirectoryName ?? 'Unknown');
+  if (RunAnywhere.storage.isLocalStorageReady) {
+    const safeName = escapeHtml(RunAnywhere.storage.localStorageDirectoryName ?? 'Unknown');
     label.innerHTML = `<strong>Local Folder:</strong> ~/${safeName}/`
-      + `<br><span style="font-size:0.75rem;opacity:0.5">Models saved as real files — visible in Finder, persists forever</span>`;
+      + `<br><span style="font-size:0.75rem;opacity:0.5">Models saved as real files &mdash; visible in Finder, persists forever</span>`;
     label.style.color = 'var(--color-success, #4caf50)';
     chooseDirBtn.textContent = 'Change Folder';
+    chooseDirBtn.style.display = '';
     reauthBtn.style.display = 'none';
-  } else if (RunAnywhere.hasLocalStorageHandle) {
-    label.innerHTML = 'Local folder configured — needs re-authorization'
+  } else if (RunAnywhere.storage.hasLocalStorageHandle) {
+    label.innerHTML = 'Local folder configured &mdash; needs re-authorization'
       + `<br><span style="font-size:0.75rem;opacity:0.5">Click "Re-authorize" to reconnect</span>`;
     label.style.color = 'var(--color-warning, #ff9800)';
+    chooseDirBtn.style.display = '';
     reauthBtn.style.display = '';
+  } else if (RunAnywhere.storage.backend === 'memory') {
+    label.innerHTML = '<strong>Persistent model storage unavailable</strong>'
+      + '<br><span style="font-size:0.75rem;opacity:0.5">Model downloads require OPFS or an approved local folder in the split-WASM SDK.</span>';
+    label.style.color = 'var(--color-warning, #ff9800)';
+    chooseDirBtn.style.display = RunAnywhere.storage.isLocalStorageSupported ? '' : 'none';
+    reauthBtn.style.display = 'none';
   } else {
     label.innerHTML = '<strong>Browser Storage (OPFS)</strong>'
-      + `<br><span style="font-size:0.75rem;opacity:0.5">Sandboxed browser storage — not visible in Finder. Use "Choose Storage Folder" for a real path.</span>`;
+      + `<br><span style="font-size:0.75rem;opacity:0.5">Sandboxed browser storage &mdash; not visible in Finder. Use "Choose Storage Folder" for a real path.</span>`;
     label.style.color = '';
+    chooseDirBtn.style.display = '';
     reauthBtn.style.display = 'none';
   }
 }
 
 // ---------------------------------------------------------------------------
-// Refresh Storage Info
+// Model list (read-only registry view + per-model Delete)
 // ---------------------------------------------------------------------------
 
-async function refreshStorage(): Promise<void> {
-  const info = await ModelManager.getStorageInfo();
-  container.querySelector('#storage-count')!.textContent = String(info.modelCount);
-  container.querySelector('#storage-size')!.textContent = formatBytes(info.totalSize);
-  container.querySelector('#storage-available')!.textContent = formatBytes(info.available);
+function renderModelList(): void {
+  const host = container.querySelector('#storage-model-list') as HTMLElement | null;
+  if (!host) return;
 
-  // Quota bar
-  const totalQuota = info.totalSize + info.available;
-  const usedPercent = totalQuota > 0 ? (info.totalSize / totalQuota) * 100 : 0;
-  const fillEl = container.querySelector('#quota-bar-fill') as HTMLElement;
-  fillEl.style.width = `${Math.min(usedPercent, 100)}%`;
-
-  // Color coding: green < 70%, orange 70-90%, red > 90%
-  fillEl.classList.remove('quota-bar-fill--warning', 'quota-bar-fill--critical');
-  if (usedPercent > 90) {
-    fillEl.classList.add('quota-bar-fill--critical');
-  } else if (usedPercent > 70) {
-    fillEl.classList.add('quota-bar-fill--warning');
+  const catalog = getCatalog();
+  if (!catalog.length) {
+    host.innerHTML = '<p class="text-secondary" style="padding: 12px 0;">Catalog not registered yet.</p>';
+    return;
   }
 
-  container.querySelector('#quota-bar-used')!.textContent = `${formatBytes(info.totalSize)} used`;
-  container.querySelector('#quota-bar-total')!.textContent = `${formatBytes(totalQuota)} quota`;
+  const downloadedIds = new Set<string>();
+  try {
+    const downloaded = RunAnywhere.downloadedModels();
+    for (const m of downloaded?.models ?? []) downloadedIds.add(m.id);
+  } catch {
+    // tolerate — adapter may not be installed
+  }
 
-  // Model list
-  const modelsEl = container.querySelector('#storage-models')!;
-  const downloaded = ModelManager.getModels().filter(
-    (m) => m.status === 'downloaded' || m.status === 'loaded',
-  );
-
-  if (downloaded.length === 0) {
-    modelsEl.innerHTML = '<p class="muted-text">No downloaded models</p>';
-  } else {
-    // Sort by last used (most recent first)
-    const sorted = [...downloaded].sort((a, b) => {
-      const aTime = ModelManager.getModelLastUsedAt(a.id);
-      const bTime = ModelManager.getModelLastUsedAt(b.id);
-      return bTime - aTime;
-    });
-
-    modelsEl.innerHTML = sorted
-      .map((m) => {
-        const lastUsedAt = ModelManager.getModelLastUsedAt(m.id);
-        const lastUsedText = lastUsedAt > 0 ? timeAgo(lastUsedAt) : 'Never used';
-
-        return `
-        <div class="model-row">
-          <div class="model-logo">&#129302;</div>
-          <div class="model-info">
-            <div class="model-name">${m.name}</div>
-            <div class="model-meta">
-              <span class="model-framework-badge">${m.framework}</span>
-              ${m.sizeBytes ? `<span class="model-size">${formatBytes(m.sizeBytes)}</span>` : ''}
-            </div>
-            <div class="model-last-used">Last used: ${lastUsedText}</div>
-          </div>
-          <button class="btn btn-sm text-red" data-delete="${m.id}" data-name="${m.name}" data-size="${m.sizeBytes ?? 0}">Delete</button>
-        </div>
-      `;
-      })
-      .join('');
-
-    modelsEl.querySelectorAll('[data-delete]').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        const el = btn as HTMLElement;
-        const modelId = el.dataset.delete!;
-        const modelName = el.dataset.name ?? modelId;
-        const modelSize = Number(el.dataset.size ?? 0);
-
-        const confirmed = await showConfirmDialog(
-          'Delete Model',
-          `Remove <strong>${modelName}</strong> (${formatBytes(modelSize)}) from storage? You will need to re-download it to use again.`,
-          'Delete',
-          'Cancel',
-          true,
-        );
-        if (!confirmed) return;
-
-        await ModelManager.deleteModel(modelId);
-        showToast(`${modelName} removed (freed ${formatBytes(modelSize)})`, 'info');
-        refreshStorage();
+  const loadedIds = new Set<string>();
+  const categories = new Set(catalog.map((entry) => entry.category));
+  for (const category of categories) {
+    try {
+      const current = RunAnywhere.currentModel({
+        category,
+        includeModelMetadata: false,
       });
-    });
+      if (current?.modelId) loadedIds.add(current.modelId);
+    } catch {
+      // A backend may not support every category; keep checking the others.
+    }
   }
+
+  host.innerHTML = catalog.map((entry) => {
+    const registryInfo = lookupModelInfo(entry.id);
+    const isDownloaded = downloadedIds.has(entry.id) || Boolean(registryInfo?.isDownloaded);
+    const isLoaded = loadedIds.has(entry.id);
+    const statusLabel = isLoaded
+      ? '<span class="badge badge-green">Loaded</span>'
+      : isDownloaded
+        ? '<span class="badge badge-blue">Downloaded</span>'
+        : '<span class="badge badge-grey">Not downloaded</span>';
+    return `
+      <div class="model-row" style="cursor: default;">
+        <div class="model-logo">${modalityEmoji(entry.category)}</div>
+        <div class="model-info">
+          <div class="model-name">${escapeHtml(entry.name)}</div>
+          <div class="model-meta">
+            <span class="model-framework-badge">${formatFramework(entry.framework)}</span>
+            <span class="model-size">${formatBytes(modelDisplaySizeBytes(entry))}</span>
+            ${statusLabel}
+          </div>
+        </div>
+        ${isDownloaded
+          ? `<button class="btn btn-secondary btn-sm storage-delete-btn" data-model-id="${escapeHtml(entry.id)}" style="font-size: 0.75rem;">Delete</button>`
+          : ''}
+      </div>
+    `;
+  }).join('');
+
+  host.querySelectorAll<HTMLButtonElement>('.storage-delete-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const modelId = btn.dataset.modelId;
+      if (modelId) void deleteModel(modelId);
+    });
+  });
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function escapeHtml(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+/** iOS parity: StorageViewModel.swift:86-103 `deleteModel(_:)`. */
+async function deleteModel(modelId: string): Promise<void> {
+  try {
+    const result = await RunAnywhere.deleteModel(modelId);
+    if (!result.success) {
+      showToast(result.errorMessage || 'Failed to delete model', 'warning');
+      return;
+    }
+    refreshModelSelectionState();
+    showToast(`Deleted ${modelId}`, 'success');
+  } catch (err) {
+    showToast(`Failed to delete model: ${formatError(err)}`, 'warning');
+  }
+  refreshStorageInfo();
+  renderModelList();
 }
 
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
-  const units = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + units[Math.min(i, units.length - 1)];
-}
-
-/**
- * Convert a timestamp to a human-readable "time ago" string.
- */
-function timeAgo(timestamp: number): string {
-  const seconds = Math.floor((Date.now() - timestamp) / 1000);
-  if (seconds < 60) return 'Just now';
-
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-
-  return new Date(timestamp).toLocaleDateString();
+function lookupModelInfo(modelId: string): ModelInfo | null {
+  try {
+    return RunAnywhere.getModel(modelId);
+  } catch {
+    return null;
+  }
 }

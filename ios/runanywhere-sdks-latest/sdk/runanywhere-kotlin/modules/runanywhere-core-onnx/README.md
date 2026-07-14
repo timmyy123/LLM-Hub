@@ -3,7 +3,7 @@
 **Speech & Audio inference backend for the RunAnywhere Kotlin SDK** — powered by [ONNX Runtime](https://onnxruntime.ai) and [Sherpa-ONNX](https://github.com/k2-fsa/sherpa-onnx) for on-device STT, TTS, and VAD.
 
 [![Maven Central](https://img.shields.io/maven-central/v/com.runanywhere.sdk/runanywhere-core-onnx?label=Maven%20Central)](https://search.maven.org/artifact/com.runanywhere.sdk/runanywhere-core-onnx)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![License: RunAnywhere](https://img.shields.io/badge/License-RunAnywhere-blue.svg)](../../../../LICENSE)
 [![Platform: Android](https://img.shields.io/badge/Platform-Android%207.0%2B-green)](https://developer.android.com)
 
 ---
@@ -89,9 +89,11 @@ output.wordTimestamps?.forEach { word ->
 ### Streaming STT
 
 ```kotlin
-RunAnywhere.transcribeStream(audioData) { partial ->
-    // Update UI with partial results
-    println("Partial: ${partial.transcript}")
+RunAnywhere.transcribeStream(audioData).collect { event ->
+    val text = event.final_output?.text ?: event.partial?.text.orEmpty()
+    if (text.isNotBlank()) {
+        println("STT event: $text")
+    }
 }
 ```
 
@@ -240,20 +242,25 @@ VAD uses Silero VAD which is bundled with Sherpa-ONNX (~5MB).
 
 ## Native Libraries
 
-This module bundles the following native libraries (~25MB total for ARM64):
+This module bundles the following native libraries for each supported ABI:
 
 | Library | Size | Description |
 |---------|------|-------------|
-| `librac_backend_onnx_jni.so` | ~1MB | JNI bridge |
-| `librunanywhere_onnx.so` | ~2MB | RunAnywhere ONNX wrapper |
-| `libonnxruntime.so` | ~15MB | ONNX Runtime |
-| `libsherpa-onnx-c-api.so` | ~2MB | Sherpa-ONNX C API |
-| `libsherpa-onnx-cxx-api.so` | ~3MB | Sherpa-ONNX C++ API |
-| `libsherpa-onnx-jni.so` | ~2MB | Sherpa-ONNX JNI bridge |
+| `libc++_shared.so` | — | Android C++ runtime |
+| `libonnxruntime.so` | — | ONNX Runtime |
+| `librac_backend_onnx.so` | — | ONNX engine plugin |
+| `librac_backend_onnx_jni.so` | — | ONNX registration JNI bridge |
+| `librac_backend_sherpa.so` | — | Sherpa speech engine plugin |
+| `librunanywhere_onnx.so` | — | RunAnywhere ONNX JNI wrapper |
+| `librunanywhere_sherpa.so` | — | RunAnywhere Sherpa JNI wrapper |
+| `libsherpa-onnx-c-api.so` | — | Sherpa-ONNX C API |
+| `libsherpa-onnx-jni.so` | — | Sherpa-ONNX JNI bridge |
 
 ### Supported ABIs
 
-- `arm64-v8a` — Primary target (modern Android devices)
+- `arm64-v8a`
+- `armeabi-v7a`
+- `x86_64`
 
 ---
 
@@ -265,7 +272,7 @@ Native libraries are automatically downloaded from GitHub releases:
 
 ```kotlin
 // gradle.properties
-runanywhere.testLocal=false  // Downloads from releases
+runanywhere.useLocalNatives=false  // Downloads from releases
 runanywhere.coreVersion=0.1.4
 ```
 
@@ -275,7 +282,7 @@ For developing with local C++ builds:
 
 ```kotlin
 // gradle.properties
-runanywhere.testLocal=true   // Uses local jniLibs/
+runanywhere.useLocalNatives=true   // Uses local jniLibs/
 ```
 
 Then build the native libraries:
@@ -390,7 +397,8 @@ val output = RunAnywhere.synthesize(text, TTSOptions(
 
 ## License
 
-Apache 2.0. See [LICENSE](../../../../LICENSE).
+RunAnywhere License (Apache 2.0 based, with additional commercial-use terms).
+See [LICENSE](../../../../LICENSE).
 
 This module includes:
 - **ONNX Runtime** — MIT License

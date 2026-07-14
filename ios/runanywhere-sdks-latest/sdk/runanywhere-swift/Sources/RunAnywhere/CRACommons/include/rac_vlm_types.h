@@ -19,6 +19,66 @@ extern "C" {
 #endif
 
 // =============================================================================
+// CHAT TEMPLATE - Abstraction for VLM prompt formatting
+// =============================================================================
+
+/**
+ * @brief Known VLM model families for chat template selection
+ *
+ * Use RAC_VLM_MODEL_FAMILY_AUTO (default) to auto-detect from model metadata.
+ * Use RAC_VLM_MODEL_FAMILY_CUSTOM with a custom template string for new models.
+ *
+ * Verified templates (from official HuggingFace repos):
+ * - QWEN2_VL: <|im_start|>system\nYou are a helpful assistant.<|im_end|>\n
+ *             <|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|>{prompt}<|im_end|>\n
+ *             <|im_start|>assistant\n
+ * - SMOLVLM:  <|im_start|>User: {image}{prompt} \nAssistant:
+ * - LLAVA:    USER: <image>\n{prompt}\nASSISTANT:
+ */
+typedef enum rac_vlm_model_family {
+    RAC_VLM_MODEL_FAMILY_AUTO = 0,     /**< Auto-detect from model metadata (default) */
+    RAC_VLM_MODEL_FAMILY_QWEN2_VL = 1, /**< Qwen2-VL: chatml with <|vision_start|> markers */
+    RAC_VLM_MODEL_FAMILY_SMOLVLM = 2,  /**< SmolVLM: <|im_start|>User: format */
+    RAC_VLM_MODEL_FAMILY_LLAVA = 3,    /**< LLaVA/Vicuna: USER:/ASSISTANT: format */
+    RAC_VLM_MODEL_FAMILY_CUSTOM = 99,  /**< Use custom_chat_template string */
+} rac_vlm_model_family_t;
+
+/**
+ * @brief Custom chat template for VLM prompt formatting
+ *
+ * A simple template string with placeholders:
+ *   {system}  - System prompt (optional, can be empty)
+ *   {image}   - Image marker/placeholder
+ *   {prompt}  - User's text prompt
+ *
+ * Example template string:
+ *   "<|im_start|>user\n{image}{prompt}<|im_end|>\n<|im_start|>assistant\n"
+ *
+ * The SDK will replace placeholders at runtime. If {system} is in the template
+ * but no system prompt is provided, it uses a default or leaves empty.
+ */
+typedef struct rac_vlm_chat_template {
+    /**
+     * Full template string with {system}, {image}, {prompt} placeholders.
+     * Example: "<|im_start|>user\n{image}{prompt}<|im_end|>\n<|im_start|>assistant\n"
+     */
+    const char* template_str;
+
+    /**
+     * Image marker to insert at {image} placeholder.
+     * Examples: "<image>", "<|vision_start|><|image_pad|><|vision_end|>"
+     * If NULL, uses the backend's default marker.
+     */
+    const char* image_marker;
+
+    /**
+     * Default system prompt if {system} is in template but none provided.
+     * Can be NULL for no default.
+     */
+    const char* default_system_prompt;
+} rac_vlm_chat_template_t;
+
+// =============================================================================
 // IMAGE INPUT - Supports multiple input formats
 // =============================================================================
 
@@ -26,9 +86,9 @@ extern "C" {
  * @brief VLM image input format enumeration
  */
 typedef enum rac_vlm_image_format {
-    RAC_VLM_IMAGE_FORMAT_FILE_PATH = 0,   /**< Path to image file (JPEG, PNG, etc.) */
-    RAC_VLM_IMAGE_FORMAT_RGB_PIXELS = 1,  /**< Raw RGB pixel buffer (RGBRGBRGB...) */
-    RAC_VLM_IMAGE_FORMAT_BASE64 = 2,      /**< Base64-encoded image data */
+    RAC_VLM_IMAGE_FORMAT_FILE_PATH = 0,  /**< Path to image file (JPEG, PNG, etc.) */
+    RAC_VLM_IMAGE_FORMAT_RGB_PIXELS = 1, /**< Raw RGB pixel buffer (RGBRGBRGB...) */
+    RAC_VLM_IMAGE_FORMAT_BASE64 = 2,     /**< Base64-encoded image data */
 } rac_vlm_image_format_t;
 
 /**
@@ -92,7 +152,7 @@ typedef struct rac_vlm_options {
     /** Enable streaming mode (default: true) */
     rac_bool_t streaming_enabled;
 
-    /** System prompt (can be NULL) */
+    /** System prompt (can be NULL, uses template default if available) */
     const char* system_prompt;
 
     // ── VLM-Specific Parameters ──
@@ -104,17 +164,93 @@ typedef struct rac_vlm_options {
 
     /** Use GPU for vision encoding */
     rac_bool_t use_gpu;
+
+    // ── Chat Template Configuration ──
+    /**
+     * Model family for automatic chat template selection.
+     * Set to RAC_VLM_MODEL_FAMILY_AUTO (default) to auto-detect from model metadata.
+     * Set to RAC_VLM_MODEL_FAMILY_CUSTOM and provide custom_chat_template for custom templates.
+     */
+    rac_vlm_model_family_t model_family;
+
+    /**
+     * Custom chat template (only used when model_family == RAC_VLM_MODEL_FAMILY_CUSTOM).
+     * If NULL and model_family is CUSTOM, falls back to GENERIC template.
+     */
+    const rac_vlm_chat_template_t* custom_chat_template;
+
+    /**
+     * Override image marker (can be NULL to use template default).
+     * Useful when the default marker doesn't match your model's expectations.
+     */
+    const char* image_marker_override;
+
+    // ── Extended Sampling Parameters (mirrors VLMGenerationOptions proto) ──
+    //
+    // Appended at the END of the struct so existing callers that only set the
+    // historical fields continue to compile and run unchanged. Defaults are
+    // chosen so a zero-initialized struct behaves like the previous engine
+    // built-ins (no behavioral regression).
+
+    /**
+     * Top-k sampling: keep only the k highest-probability tokens at each step.
+     * 0 = engine default (no top-k filter). 40 is llama.cpp's typical default.
+     */
+    int32_t top_k;
+
+    /**
+     * Seed for the sampler RNG distribution.
+     * 0 = engine default (LLAMA_DEFAULT_SEED).
+     * Negative = pick a fresh random seed per call.
+     */
+    int64_t seed;
+
+    /**
+     * Token-level repetition penalty applied to the recent context window.
+     * 1.0 = disabled (no penalty). 1.1 is llama.cpp's typical default; larger
+     * values penalize repeats more aggressively. Pre-IDL the VLM engine
+     * hard-coded 1.3 — callers may now override.
+     */
+    float repetition_penalty;
+
+    /**
+     * Min-p sampling cutoff: discard tokens whose probability is below
+     * `min_p * top_token_probability`.
+     * 0.0 = disabled. 0.05 is llama.cpp's typical default; pre-IDL the VLM
+     * engine hard-coded 0.1.
+     */
+    float min_p;
+
+    /**
+     * When RAC_TRUE, the backend may surface image-embedding tensors on the
+     * streaming event channel (currently a contract toggle for future
+     * proto-event surfaces; no llama.cpp mtmd hook produces them today).
+     */
+    rac_bool_t emit_image_embeddings;
 } rac_vlm_options_t;
 
 /**
  * @brief Default VLM generation options
  */
-#define RAC_VLM_OPTIONS_DEFAULT                                                                    \
-    {                                                                                              \
-        .max_tokens = 2048, .temperature = 0.7f, .top_p = 0.9f, .stop_sequences = RAC_NULL,        \
-        .num_stop_sequences = 0, .streaming_enabled = RAC_TRUE, .system_prompt = RAC_NULL,         \
-        .max_image_size = 0, .n_threads = 0, .use_gpu = RAC_TRUE                                   \
-    }
+#define RAC_VLM_OPTIONS_DEFAULT                 \
+    {.max_tokens = 2048,                        \
+     .temperature = 0.7f,                       \
+     .top_p = 0.9f,                             \
+     .stop_sequences = RAC_NULL,                \
+     .num_stop_sequences = 0,                   \
+     .streaming_enabled = RAC_TRUE,             \
+     .system_prompt = RAC_NULL,                 \
+     .max_image_size = 0,                       \
+     .n_threads = 0,                            \
+     .use_gpu = RAC_TRUE,                       \
+     .model_family = RAC_VLM_MODEL_FAMILY_AUTO, \
+     .custom_chat_template = RAC_NULL,          \
+     .image_marker_override = RAC_NULL,         \
+     .top_k = 0,                                \
+     .seed = 0,                                 \
+     .repetition_penalty = 1.1f,                \
+     .min_p = 0.0f,                             \
+     .emit_image_embeddings = RAC_FALSE}
 
 // =============================================================================
 // CONFIGURATION - VLM Component Configuration

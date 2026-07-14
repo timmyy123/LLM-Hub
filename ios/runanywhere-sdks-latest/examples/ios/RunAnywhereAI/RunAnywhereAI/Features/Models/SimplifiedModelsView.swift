@@ -2,7 +2,11 @@
 //  SimplifiedModelsView.swift
 //  RunAnywhereAI
 //
-//  A simplified models view for managing AI models
+//  Consumer-facing Models screen: hardware-aware recommendations up top, then a
+//  clean, family-first catalog. Backend/quantization details are hidden — users
+//  pick by friendly family + feel, and choose a specific variant in the family
+//  detail. All recommendation/family/tag logic lives in the example app; the SDK
+//  is consumed only via its public facade + RAModelInfo.
 //
 
 import SwiftUI
@@ -10,44 +14,71 @@ import RunAnywhere
 
 struct SimplifiedModelsView: View {
     @StateObject private var viewModel = ModelListViewModel.shared
+    @StateObject private var storageViewModel = StorageViewModel.shared
     @StateObject private var deviceInfo = DeviceInfoService.shared
 
-    @State private var selectedModel: ModelInfo?
-    @State private var expandedFramework: InferenceFramework?
-    @State private var availableFrameworks: [InferenceFramework] = []
-    @State private var showingAddModelSheet = false
+    @State private var selectedModel: RAModelInfo?
+    @State private var searchText = ""
+    @State private var selectedModality: ModelModalityFilter = .all
 
-    /// All available models sorted by availability (downloaded first)
-    private var sortedModels: [ModelInfo] {
-        viewModel.availableModels.sorted { model1, model2 in
-            let m1BuiltIn = model1.framework == .foundationModels
-                || model1.framework == .systemTTS
-                || model1.artifactType == .builtIn
-            let m2BuiltIn = model2.framework == .foundationModels
-                || model2.framework == .systemTTS
-                || model2.artifactType == .builtIn
-            let m1Priority = m1BuiltIn ? 0 : (model1.localPath != nil ? 1 : 2)
-            let m2Priority = m2BuiltIn ? 0 : (model2.localPath != nil ? 1 : 2)
-            if m1Priority != m2Priority {
-                return m1Priority < m2Priority
-            }
-            return model1.name < model2.name
+    private let recommendationEngine = ModelRecommendationEngine()
+    private let tierResolver = HardwareTierResolver()
+
+    /// Detected hardware tier for the current device.
+    private var hardwareTier: HardwareTier {
+        tierResolver.resolve(from: deviceInfo.deviceInfo)
+    }
+
+    /// Hardware-aware recommendations computed from the live catalog.
+    private var recommendation: RecommendedSelection {
+        recommendationEngine.recommend(
+            tier: hardwareTier,
+            appleFoundationAvailable: tierResolver.appleFoundationAvailable,
+            from: viewModel.availableModels
+        )
+    }
+
+    /// Models not already surfaced in the recommended hero, grouped into families.
+    private var browseFamilies: [ModelFamily] {
+        let surfaced = recommendation.surfacedModelIDs
+        let remaining = viewModel.availableModels.filter { model in
+            !surfaced.contains(model.id)
+                && selectedModality.matches(model)
+                && searchMatches(model)
         }
+        return ModelFamilyCatalog.families(from: remaining)
+    }
+
+    private var hasActiveFilters: Bool {
+        !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || selectedModality != .all
+    }
+
+    private var handlers: ModelActionHandlers {
+        ModelActionHandlers(
+            onSelect: { model in Task { await selectModel(model) } },
+            onChanged: { Task { await refreshAfterChange() } },
+            onDelete: { model in Task { await deleteModel(model) } }
+        )
     }
 
     var body: some View {
+        #if os(macOS)
+        mainContentView
+        #else
         NavigationView {
             mainContentView
         }
-        #if os(iOS)
         .navigationViewStyle(.stack)
         #endif
     }
 
     private var mainContentView: some View {
         List {
-            deviceStatusSection
-            modelsListSection
+            DeviceSummarySection(tier: hardwareTier, device: deviceInfo.deviceInfo)
+            recommendedSection
+            browseSection
+            ModelStorageSection(storageViewModel: storageViewModel)
         }
         .navigationTitle("Models")
         .task {
@@ -55,341 +86,222 @@ struct SimplifiedModelsView: View {
         }
     }
 
+    // MARK: - Data
+
     private func loadInitialData() async {
-        await viewModel.loadModels()
-        await loadAvailableFrameworks()
+        await viewModel.loadModelsFromRegistry()
+        await storageViewModel.loadData()
     }
 
-    private func loadAvailableFrameworks() async {
-        // Get available frameworks from SDK - derived from registered models
-        let frameworks = await RunAnywhere.getRegisteredFrameworks()
-        await MainActor.run {
-            self.availableFrameworks = frameworks
-        }
+    /// Clean search: matches friendly family/variant names + tags only — never
+    /// quantization or backend names.
+    private func searchMatches(_ model: RAModelInfo) -> Bool {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !query.isEmpty else { return true }
+        let tagText = model.consumerTags.map(\.label).joined(separator: " ")
+        return [model.name, model.category.consumerCapabilityLabel, tagText]
+            .joined(separator: " ")
+            .lowercased()
+            .contains(query)
     }
 
-    private var deviceStatusSection: some View {
-        Section("Device Status") {
-            if let device = deviceInfo.deviceInfo {
-                deviceInfoRows(device)
-            } else {
-                loadingDeviceRow
-            }
-        }
-    }
-
-    private func deviceInfoRows(_ device: SystemDeviceInfo) -> some View {
-        Group {
-            deviceInfoRow(label: "Model", systemImage: "iphone", value: device.modelName)
-            deviceInfoRow(label: "Chip", systemImage: "cpu", value: device.chipName)
-            deviceInfoRow(
-                label: "Memory",
-                systemImage: "memorychip",
-                value: ByteCountFormatter.string(fromByteCount: device.totalMemory, countStyle: .memory)
-            )
-
-            if device.neuralEngineAvailable {
-                neuralEngineRow
-            }
-        }
-    }
-
-    private func deviceInfoRow(label: String, systemImage: String, value: String) -> some View {
-        HStack {
-            Label(label, systemImage: systemImage)
-            Spacer()
-            Text(value)
-                .foregroundColor(AppColors.textSecondary)
-        }
-    }
-
-    private var neuralEngineRow: some View {
-        HStack {
-            Label("Neural Engine", systemImage: "brain")
-            Spacer()
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundColor(AppColors.statusGreen)
-        }
-    }
-
-    private var loadingDeviceRow: some View {
-        HStack {
-            ProgressView()
-            Text("Loading device info...")
-                .foregroundColor(AppColors.textSecondary)
-        }
-    }
-
-    /// Flat list of all models with framework badges
-    private var modelsListSection: some View {
-        Section {
-            if sortedModels.isEmpty {
-                VStack(alignment: .center, spacing: AppSpacing.mediumLarge) {
-                    ProgressView()
-                    Text("Loading models...")
-                        .font(AppTypography.subheadline)
-                        .foregroundColor(AppColors.textSecondary)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, AppSpacing.xLarge)
-            } else {
-                ForEach(sortedModels, id: \.id) { model in
-                    SimplifiedModelRow(
-                        model: model,
-                        isSelected: selectedModel?.id == model.id,
-                        onDownloadCompleted: {
-                            Task {
-                                await viewModel.loadModels()
-                            }
-                        },
-                        onSelectModel: {
-                            Task {
-                                await selectModel(model)
-                            }
-                        },
-                        onModelUpdated: {
-                            Task {
-                                await viewModel.loadModels()
-                            }
-                        }
-                    )
-                }
-            }
-        } header: {
-            Text("Available Models")
-        } footer: {
-            Text("All models run privately on your device. Downloaded models are ready to use.")
-                .font(AppTypography.caption)
-                .foregroundColor(AppColors.textSecondary)
-        }
-    }
-
-    private func selectModel(_ model: ModelInfo) async {
+    private func selectModel(_ model: RAModelInfo) async {
         selectedModel = model
-
-        // Update the view model state
         await viewModel.selectModel(model)
+    }
+
+    private func deleteModel(_ model: RAModelInfo) async {
+        do {
+            try await viewModel.deleteModel(model)
+            await storageViewModel.refreshData()
+        } catch {
+            viewModel.errorMessage = error.localizedDescription
+        }
+    }
+
+    private func refreshAfterChange() async {
+        await viewModel.loadModelsFromRegistry()
+        await storageViewModel.refreshData()
+    }
+
+    private func unavailableReason(for model: RAModelInfo) -> String? {
+        guard model.framework == .foundationModels else { return nil }
+        return SystemFoundationModels.unavailableReason
+    }
+
+    // MARK: - Recommended (hardware-aware hero)
+
+    private var recommendedSection: some View {
+        Group {
+            if hasRecommendations {
+                Section {
+                    if let defaultModel = recommendation.defaultChatModel {
+                        defaultModelCard(defaultModel)
+                    }
+
+                    ForEach(recommendedLLMCards, id: \.id) { model in
+                        RecommendedModelCard(
+                            model: model,
+                            subtitle: model.tagline,
+                            availabilityReason: unavailableReason(for: model),
+                            isSelected: selectedModel?.id == model.id,
+                            isLoadingModel: viewModel.isLoadingModel,
+                            handlers: handlers
+                        )
+                    }
+
+                    if !recommendation.companions.isEmpty {
+                        companionsRow
+                    }
+                } header: {
+                    Text("Recommended for \(recommendedHeaderDeviceName)")
+                } footer: {
+                    Text("Picked to fit your device. Apple's built-in model is used first when available.")
+                        .font(AppTypography.caption)
+                }
+            }
+        }
+    }
+
+    private var hasRecommendations: Bool {
+        recommendation.defaultChatModel != nil || !recommendation.recommendedLLMs.isEmpty
+    }
+
+    /// Recommended LLMs excluding the one already shown as the prominent default.
+    private var recommendedLLMCards: [RAModelInfo] {
+        let defaultID = recommendation.defaultChatModel?.id
+        return recommendation.recommendedLLMs.filter { $0.id != defaultID }
+    }
+
+    /// Friendly phrase for the section header — never a raw identifier.
+    private var recommendedHeaderDeviceName: String {
+        guard let modelName = deviceInfo.deviceInfo?.modelName.lowercased() else {
+            return "your device"
+        }
+        if modelName.contains("iphone") { return "this iPhone" }
+        if modelName.contains("ipad") { return "this iPad" }
+        if modelName.contains("mac") { return "this Mac" }
+        return "your device"
+    }
+
+    private func defaultModelCard(_ model: RAModelInfo) -> some View {
+        RecommendedModelCard(
+            model: model,
+            subtitle: model.tagline,
+            availabilityReason: unavailableReason(for: model),
+            isSelected: selectedModel?.id == model.id,
+            isLoadingModel: viewModel.isLoadingModel,
+            highlight: model.isBuiltIn ? "Best for this device" : "Default",
+            handlers: handlers
+        )
+    }
+
+    private var companionsRow: some View {
+        VStack(alignment: .leading, spacing: AppSpacing.smallMedium) {
+            Text("Also recommended")
+                .font(AppTypography.captionMedium)
+                .foregroundColor(AppColors.textSecondary)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: AppSpacing.smallMedium) {
+                    ForEach(recommendation.companions, id: \.id) { model in
+                        CompanionModelChip(
+                            model: model,
+                            isSelected: selectedModel?.id == model.id,
+                            isLoadingModel: viewModel.isLoadingModel,
+                            handlers: handlers
+                        )
+                    }
+                }
+                .padding(.vertical, AppSpacing.xxSmall)
+            }
+        }
+        .padding(.vertical, AppSpacing.xSmall)
+    }
+
+    // MARK: - Browse by family
+
+    private var browseSection: some View {
+        Group {
+            searchSection
+
+            if browseFamilies.isEmpty && !showsImageGenPlaceholder {
+                Section {
+                    emptyBrowseState
+                } header: {
+                    Text("Browse Models")
+                }
+            } else {
+                Section {
+                    ForEach(browseFamilies) { family in
+                        NavigationLink {
+                            ModelFamilyDetailView(
+                                family: family,
+                                tier: hardwareTier,
+                                selectedModelID: selectedModel?.id,
+                                isLoadingModel: viewModel.isLoadingModel,
+                                availabilityReason: unavailableReason(for:),
+                                handlers: handlers
+                            )
+                        } label: {
+                            ModelFamilyRow(family: family)
+                        }
+                    }
+
+                    if showsImageGenPlaceholder {
+                        ComingSoonFamilyRow(
+                            title: "Image Generation",
+                            tagline: "Apple on-device image generation",
+                            systemImage: "photo.artframe"
+                        )
+                    }
+                } header: {
+                    Text("Browse Models")
+                } footer: {
+                    Text("Pick a family, then choose the size that fits. We preselect the best one for you.")
+                        .font(AppTypography.caption)
+                }
+            }
+        }
+    }
+
+    /// Show the CoreML image-generation placeholder when its modality is in
+    /// view, no real image-generation family is registered yet, and the search
+    /// query is empty or plausibly matches it.
+    private var showsImageGenPlaceholder: Bool {
+        guard selectedModality.showsImageGenerationPlaceholder else { return false }
+        guard !browseFamilies.contains(where: { $0.category == .imageGeneration }) else { return false }
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !query.isEmpty else { return true }
+        return "image generation apple coreml photo art".contains(query)
+    }
+
+    private var searchSection: some View {
+        Section {
+            ModelSearchBar(searchText: $searchText, selectedModality: $selectedModality)
+        }
+    }
+
+    private var emptyBrowseState: some View {
+        VStack(alignment: .center, spacing: AppSpacing.mediumLarge) {
+            Image(systemName: hasActiveFilters ? "magnifyingglass" : "cube")
+                .font(.system(size: 32, weight: .semibold))
+                .foregroundColor(AppColors.textSecondary.opacity(0.6))
+            Text(hasActiveFilters ? "No models match your search" : "No models available")
+                .font(AppTypography.subheadline)
+                .foregroundColor(AppColors.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, AppSpacing.xLarge)
     }
 }
 
-// MARK: - Supporting Views
+// MARK: - Recommended card subtitle
 
-/// Simplified model row with framework badge for flat list display
-private struct SimplifiedModelRow: View {
-    let model: ModelInfo
-    let isSelected: Bool
-    let onDownloadCompleted: () -> Void
-    let onSelectModel: () -> Void
-    let onModelUpdated: () -> Void
-
-    @State private var isDownloading = false
-    @State private var downloadProgress: Double = 0.0
-    @State private var downloadStage: DownloadStage = .downloading
-
-    private var frameworkColor: Color {
-        switch model.framework {
-        case .llamaCpp: return AppColors.primaryAccent
-        case .onnx: return .purple
-        case .foundationModels: return .primary
-        case .systemTTS: return .primary
-        default: return .gray
-        }
-    }
-
-    private var frameworkName: String {
-        switch model.framework {
-        case .llamaCpp: return "Fast"
-        case .onnx: return "ONNX"
-        case .foundationModels: return "Apple"
-        case .systemTTS: return "System"
-        default: return model.framework.displayName
-        }
-    }
-
-    /// Check if this is a built-in model that doesn't require download
-    private var isBuiltIn: Bool {
-        model.framework == .foundationModels ||
-        model.framework == .systemTTS ||
-        model.artifactType == .builtIn
-    }
-
-    private var isReady: Bool {
-        isBuiltIn || model.localPath != nil
-    }
-
-    var body: some View {
-        HStack(spacing: AppSpacing.mediumLarge) {
-            // Model info with framework badge
-            VStack(alignment: .leading, spacing: AppSpacing.xSmall) {
-                // Name with framework badge
-                HStack(spacing: AppSpacing.smallMedium) {
-                    Text(model.name)
-                        .font(AppTypography.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundColor(AppColors.textPrimary)
-
-                    Text(frameworkName)
-                        .font(AppTypography.caption2)
-                        .fontWeight(.medium)
-                        .padding(.horizontal, AppSpacing.small)
-                        .padding(.vertical, AppSpacing.xxSmall)
-                        .background(frameworkColor.opacity(0.15))
-                        .foregroundColor(frameworkColor)
-                        .cornerRadius(AppSpacing.cornerRadiusSmall)
-                }
-
-                // Size and status
-                HStack(spacing: AppSpacing.smallMedium) {
-                    if let size = model.downloadSize, size > 0 {
-                        Label(
-                            ByteCountFormatter.string(fromByteCount: size, countStyle: .memory),
-                            systemImage: "memorychip"
-                        )
-                        .font(AppTypography.caption2)
-                        .foregroundColor(AppColors.textSecondary)
-                    }
-
-                    if isDownloading {
-                        HStack(spacing: AppSpacing.xSmall) {
-                            ProgressView()
-                                .scaleEffect(0.6)
-                            Text("\(downloadStage.displayName)… \(Int(downloadProgress * 100))%")
-                                .font(AppTypography.caption2)
-                                .foregroundColor(AppColors.textSecondary)
-                        }
-                    } else {
-                        HStack(spacing: AppSpacing.xxSmall) {
-                            Image(systemName: isReady ? "checkmark.circle.fill" : "arrow.down.circle")
-                                .foregroundColor(isReady ? AppColors.statusGreen : AppColors.primaryAccent)
-                                .font(AppTypography.caption2)
-                            let statusText = isBuiltIn
-                                ? "Built-in"
-                                : (model.localPath != nil ? "Ready" : "Download")
-                            Text(statusText)
-                                .font(AppTypography.caption2)
-                                .foregroundColor(isReady ? AppColors.statusGreen : AppColors.primaryAccent)
-                        }
-                    }
-
-                    if model.supportsThinking {
-                        HStack(spacing: AppSpacing.xxSmall) {
-                            Image(systemName: "brain")
-                            Text("Smart")
-                        }
-                        .font(AppTypography.caption2)
-                        .padding(.horizontal, AppSpacing.small)
-                        .padding(.vertical, AppSpacing.xxSmall)
-                        .background(AppColors.badgePurple)
-                        .foregroundColor(AppColors.primaryPurple)
-                        .cornerRadius(AppSpacing.cornerRadiusSmall)
-                    }
-                }
-            }
-
-            Spacer()
-
-            // Action button
-            if isBuiltIn {
-                // Built-in models (Foundation Models, System TTS) - always ready
-                Button("Use") {
-                    onSelectModel()
-                }
-                .font(AppTypography.caption)
-                .fontWeight(.semibold)
-                .buttonStyle(.borderedProminent)
-                .tint(AppColors.primaryAccent)
-                .controlSize(.small)
-                .disabled(isSelected)
-            } else if model.localPath == nil {
-                if isDownloading {
-                    ProgressView()
-                        .scaleEffect(0.8)
-                } else {
-                    Button {
-                        Task {
-                            await downloadModel()
-                        }
-                    } label: {
-                        HStack(spacing: AppSpacing.xxSmall) {
-                            Image(systemName: "arrow.down.circle.fill")
-                            Text("Get")
-                        }
-                    }
-                    .font(AppTypography.caption)
-                    .fontWeight(.semibold)
-                    .buttonStyle(.bordered)
-                    .tint(AppColors.primaryAccent)
-                    .controlSize(.small)
-                }
-            } else {
-                if isSelected {
-                    HStack(spacing: AppSpacing.xxSmall) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(AppColors.statusGreen)
-                        Text("Active")
-                            .font(AppTypography.caption2)
-                            .foregroundColor(AppColors.statusGreen)
-                    }
-                } else {
-                    Button("Use") {
-                        onSelectModel()
-                    }
-                    .font(AppTypography.caption)
-                    .fontWeight(.semibold)
-                    .buttonStyle(.borderedProminent)
-                    .tint(AppColors.primaryAccent)
-                    .controlSize(.small)
-                }
-            }
-        }
-        .padding(.vertical, AppSpacing.smallMedium)
-    }
-
-    private func downloadModel() async {
-        await MainActor.run {
-            isDownloading = true
-            downloadProgress = 0.0
-            downloadStage = .downloading
-        }
-
-        do {
-            // Use the new convenience download API
-            let progressStream = try await RunAnywhere.downloadModel(model.id)
-
-            for await progress in progressStream {
-                switch progress.state {
-                case .completed:
-                    await MainActor.run {
-                        self.downloadProgress = 1.0
-                        self.isDownloading = false
-                        self.downloadStage = .downloading
-                        onDownloadCompleted()
-                    }
-                    return
-
-                case .failed:
-                    await MainActor.run {
-                        self.downloadProgress = 0.0
-                        self.isDownloading = false
-                        self.downloadStage = .downloading
-                    }
-                    return
-
-                default:
-                    await MainActor.run {
-                        self.downloadProgress = progress.overallProgress
-                        self.downloadStage = progress.stage
-                    }
-                    continue
-                }
-            }
-        } catch {
-            await MainActor.run {
-                downloadProgress = 0.0
-                isDownloading = false
-                downloadStage = .downloading
-            }
-        }
+private extension RAModelInfo {
+    /// One friendly line for a recommended card — size only, no technical terms.
+    var tagline: String {
+        isBuiltIn ? "Built in · no download" : consumerSizeLabel
     }
 }
 

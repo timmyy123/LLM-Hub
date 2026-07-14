@@ -9,15 +9,53 @@
 
 #include "rac/features/vlm/rac_vlm_service.h"
 
-#include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 
+#include "../common/rac_service_factory_internal.h"
 #include "rac/core/rac_core.h"
 #include "rac/core/rac_logger.h"
-#include "rac/infrastructure/model_management/rac_model_registry.h"
+#include "rac/infrastructure/model_management/rac_model_paths.h"
 
 static const char* LOG_CAT = "VLM.Service";
+
+namespace {
+
+const rac_vlm_service_ops_t* vlm_ops(const rac_engine_vtable_t* vt) {
+    return vt ? vt->vlm_ops : nullptr;
+}
+
+}  // namespace
+
+static std::string json_escape(const char* value) {
+    std::string out;
+    if (!value)
+        return out;
+    for (const char* p = value; *p != '\0'; ++p) {
+        switch (*p) {
+            case '\\':
+                out += "\\\\";
+                break;
+            case '"':
+                out += "\\\"";
+                break;
+            case '\n':
+                out += "\\n";
+                break;
+            case '\r':
+                out += "\\r";
+                break;
+            case '\t':
+                out += "\\t";
+                break;
+            default:
+                out.push_back(*p);
+                break;
+        }
+    }
+    return out;
+}
 
 // =============================================================================
 // SERVICE CREATION - Routes through Service Registry
@@ -34,54 +72,72 @@ rac_result_t rac_vlm_create(const char* model_id, rac_handle_t* out_handle) {
 
     RAC_LOG_INFO(LOG_CAT, "Creating VLM service for: %s", model_id);
 
-    // Query model registry to get framework
-    rac_model_info_t* model_info = nullptr;
-    rac_result_t result = rac_get_model(model_id, &model_info);
-
-    // If not found by model_id, try looking up by path (model_id might be a path)
+    rac::features::ResolvedModelReference model_ref;
+    rac_result_t result =
+        rac::features::resolve_model_reference(model_id,
+                                               {.log_cat = LOG_CAT,
+                                                .default_framework = RAC_FRAMEWORK_LLAMACPP,
+                                                .allow_null_model_id = false,
+                                                .lookup_last_path_component = true,
+                                                .prefer_input_path_when_contains = nullptr},
+                                               &model_ref);
     if (result != RAC_SUCCESS) {
-        RAC_LOG_DEBUG(LOG_CAT, "Model not found by ID, trying path lookup: %s", model_id);
-        result = rac_get_model_by_path(model_id, &model_info);
-    }
-
-    // Default to llama.cpp for VLM (has broad VLM support via mtmd)
-    rac_inference_framework_t framework = RAC_FRAMEWORK_LLAMACPP;
-    const char* model_path = model_id;
-
-    if (result == RAC_SUCCESS && model_info) {
-        framework = model_info->framework;
-        model_path = model_info->local_path ? model_info->local_path : model_id;
-        RAC_LOG_INFO(LOG_CAT, "Found model in registry: id=%s, framework=%d, local_path=%s",
-                     model_info->id ? model_info->id : "NULL",
-                     static_cast<int>(framework), model_path ? model_path : "NULL");
-    } else {
-        RAC_LOG_WARNING(LOG_CAT,
-                        "Model NOT found in registry (result=%d), using default framework=%d",
-                        result, static_cast<int>(framework));
-    }
-
-    // Build service request
-    rac_service_request_t request = {};
-    request.identifier = model_id;
-    request.capability = RAC_CAPABILITY_VISION_LANGUAGE;
-    request.framework = framework;
-    request.model_path = model_path;
-
-    RAC_LOG_INFO(LOG_CAT, "Service request: framework=%d, model_path=%s",
-                 static_cast<int>(request.framework),
-                 request.model_path ? request.model_path : "NULL");
-
-    // Service registry returns an rac_vlm_service_t* with vtable already set
-    result = rac_service_create(RAC_CAPABILITY_VISION_LANGUAGE, &request, out_handle);
-
-    if (model_info) {
-        rac_model_info_free(model_info);
-    }
-
-    if (result != RAC_SUCCESS) {
-        RAC_LOG_ERROR(LOG_CAT, "Failed to create service via registry: %d", result);
         return result;
     }
+
+    std::string model_path_owned = model_ref.path;
+    std::string config_json_owned;
+    const char* config_json_ptr = nullptr;
+
+    if (model_ref.found && model_ref.model_info) {
+        rac_model_path_resolution_t resolution = {};
+        rac_result_t path_rc =
+            rac_model_paths_resolve_artifact(model_ref.model_info.get(), model_path_owned.c_str(),
+                                             /*expected_primary_sha256=*/nullptr, &resolution);
+        if (path_rc == RAC_SUCCESS) {
+            if (resolution.primary_model_path) {
+                model_path_owned = resolution.primary_model_path;
+            }
+            std::string json_str = "{";
+            bool has_first = false;
+            if (resolution.mmproj_path) {
+                json_str += R"("mmproj_path":")" + json_escape(resolution.mmproj_path) + R"(")";
+                has_first = true;
+            }
+            if (model_ref.model_info->context_length > 0) {
+                if (has_first) json_str += ",";
+                json_str += "\"context_size\":" + std::to_string(model_ref.model_info->context_length);
+                has_first = true;
+            }
+            if (model_ref.model_info->gpu_layers >= 0) {
+                if (has_first) json_str += ",";
+                json_str += "\"gpu_layers\":" + std::to_string(model_ref.model_info->gpu_layers);
+                has_first = true;
+            }
+            json_str += "}";
+            if (has_first) {
+                config_json_owned = json_str;
+                config_json_ptr = config_json_owned.c_str();
+                RAC_LOG_INFO(LOG_CAT, "Forwarding VLM registry config: %s", config_json_ptr);
+            }
+        }
+        rac_model_path_resolution_free(&resolution);
+    }
+
+    rac_vlm_service_t* service = nullptr;
+    result = rac::features::create_plugin_service<rac_vlm_service_t, rac_vlm_service_ops_t>(
+        {.log_cat = LOG_CAT,
+         .primitive = RAC_PRIMITIVE_VLM,
+         .select_ops = vlm_ops,
+         .model_create_id = model_path_owned.c_str(),
+         .model_id_for_service = model_id,
+         .config_json = config_json_ptr,
+         .framework = model_ref.framework},
+        &service);
+    if (result != RAC_SUCCESS) {
+        return result;
+    }
+    *out_handle = service;
 
     RAC_LOG_INFO(LOG_CAT, "VLM service created");
     return RAC_SUCCESS;
@@ -170,6 +226,11 @@ rac_result_t rac_vlm_cleanup(rac_handle_t handle) {
 void rac_vlm_destroy(rac_handle_t handle) {
     if (!handle)
         return;
+
+    // quiesce any in-flight rac_vlm_*_proto
+    // entry points before tearing down the backend impl. Defensive
+    // mirror of voice_agent.cpp:594.
+    rac_vlm_proto_quiesce();
 
     auto* service = static_cast<rac_vlm_service_t*>(handle);
 

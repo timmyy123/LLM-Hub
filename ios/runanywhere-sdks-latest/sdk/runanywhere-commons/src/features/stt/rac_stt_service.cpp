@@ -8,14 +8,34 @@
 
 #include "rac/features/stt/rac_stt_service.h"
 
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <mutex>
+#include <string>
 
+#include "../common/rac_service_factory_internal.h"
 #include "rac/core/rac_core.h"
 #include "rac/core/rac_logger.h"
-#include "rac/infrastructure/model_management/rac_model_registry.h"
 
 static const char* LOG_CAT = "STT.Service";
+
+namespace {
+
+// STT engine instances are process-wide lifecycle resources and backends such
+// as Whisper/QHexRT mutate a shared session during inference. Serialize all
+// service dispatch so Talk, Live Transcription, and batch transcription can
+// hand off the same loaded model safely during navigation.
+std::mutex& stt_operation_mutex() {
+    static std::mutex mutex;
+    return mutex;
+}
+
+const rac_stt_service_ops_t* stt_ops(const rac_engine_vtable_t* vt) {
+    return vt ? vt->stt_ops : nullptr;
+}
+
+}  // namespace
 
 // =============================================================================
 // SERVICE CREATION - Routes through Service Registry
@@ -30,22 +50,38 @@ rac_result_t rac_stt_create(const char* model_path, rac_handle_t* out_handle) {
 
     *out_handle = nullptr;
 
-    RAC_LOG_INFO(LOG_CAT, "Creating STT service");
+    RAC_LOG_INFO(LOG_CAT, "Creating STT service for: %s", model_path ? model_path : "NULL");
 
-    // Build service request
-    rac_service_request_t request = {};
-    request.identifier = model_path;
-    request.capability = RAC_CAPABILITY_STT;
-    request.framework = RAC_FRAMEWORK_UNKNOWN;  // Let service registry dispatch via can_handle
-    request.model_path = model_path;
-
-    // Service registry returns an rac_stt_service_t* with vtable already set
-    rac_result_t result = rac_service_create(RAC_CAPABILITY_STT, &request, out_handle);
-
+    rac::features::ResolvedModelReference model_ref;
+    rac_result_t result = rac::features::resolve_model_reference(
+        model_path,
+        {.log_cat = LOG_CAT,
+         .default_framework = RAC_FRAMEWORK_SHERPA,
+         .allow_null_model_id = true,
+         .lookup_last_path_component = true,
+         .prefer_input_path_when_contains = "/"},  // explicit caller paths win over
+        // the registry row (LLM uses ".gguf" for the same rule) — required for
+        // archive models whose registry local_path is the outer extract folder
+        // while loaders need the resolved inner artifact dir
+        &model_ref);
     if (result != RAC_SUCCESS) {
-        RAC_LOG_ERROR(LOG_CAT, "Failed to create service via registry");
         return result;
     }
+
+    rac_stt_service_t* service = nullptr;
+    result = rac::features::create_plugin_service<rac_stt_service_t, rac_stt_service_ops_t>(
+        {.log_cat = LOG_CAT,
+         .primitive = RAC_PRIMITIVE_TRANSCRIBE,
+         .select_ops = stt_ops,
+         .model_create_id = model_ref.path.c_str(),
+         .model_id_for_service = model_path,
+         .config_json = nullptr,
+         .framework = model_ref.framework},
+        &service);
+    if (result != RAC_SUCCESS) {
+        return result;
+    }
+    *out_handle = service;
 
     RAC_LOG_INFO(LOG_CAT, "STT service created");
     return RAC_SUCCESS;
@@ -64,6 +100,7 @@ rac_result_t rac_stt_initialize(rac_handle_t handle, const char* model_path) {
         return RAC_ERROR_NOT_SUPPORTED;
     }
 
+    std::lock_guard<std::mutex> operation_lock(stt_operation_mutex());
     return service->ops->initialize(service->impl, model_path);
 }
 
@@ -77,6 +114,7 @@ rac_result_t rac_stt_transcribe(rac_handle_t handle, const void* audio_data, siz
         return RAC_ERROR_NOT_SUPPORTED;
     }
 
+    std::lock_guard<std::mutex> operation_lock(stt_operation_mutex());
     return service->ops->transcribe(service->impl, audio_data, audio_size, options, out_result);
 }
 
@@ -91,6 +129,7 @@ rac_result_t rac_stt_transcribe_stream(rac_handle_t handle, const void* audio_da
         return RAC_ERROR_NOT_SUPPORTED;
     }
 
+    std::lock_guard<std::mutex> operation_lock(stt_operation_mutex());
     return service->ops->transcribe_stream(service->impl, audio_data, audio_size, options, callback,
                                            user_data);
 }
@@ -116,6 +155,7 @@ rac_result_t rac_stt_cleanup(rac_handle_t handle) {
         return RAC_SUCCESS;  // No-op if not supported
     }
 
+    std::lock_guard<std::mutex> operation_lock(stt_operation_mutex());
     return service->ops->cleanup(service->impl);
 }
 
@@ -137,6 +177,36 @@ void rac_stt_destroy(rac_handle_t handle) {
 
     // Free service struct
     free(service);
+}
+
+rac_result_t rac_stt_get_languages(rac_handle_t handle, char** out_json) {
+    if (!handle || !out_json)
+        return RAC_ERROR_NULL_POINTER;
+
+    *out_json = nullptr;
+    auto* service = static_cast<rac_stt_service_t*>(handle);
+    if (!service->ops || !service->ops->get_languages) {
+        return RAC_ERROR_NOT_SUPPORTED;
+    }
+
+    std::lock_guard<std::mutex> operation_lock(stt_operation_mutex());
+    return service->ops->get_languages(service->impl, out_json);
+}
+
+rac_result_t rac_stt_detect_language(rac_handle_t handle, const void* audio_data, size_t audio_size,
+                                     const rac_stt_options_t* options, char** out_language) {
+    if (!handle || !audio_data || !out_language)
+        return RAC_ERROR_NULL_POINTER;
+
+    *out_language = nullptr;
+    auto* service = static_cast<rac_stt_service_t*>(handle);
+    if (!service->ops || !service->ops->detect_language) {
+        return RAC_ERROR_NOT_SUPPORTED;
+    }
+
+    std::lock_guard<std::mutex> operation_lock(stt_operation_mutex());
+    return service->ops->detect_language(service->impl, audio_data, audio_size, options,
+                                         out_language);
 }
 
 void rac_stt_result_free(rac_stt_result_t* result) {

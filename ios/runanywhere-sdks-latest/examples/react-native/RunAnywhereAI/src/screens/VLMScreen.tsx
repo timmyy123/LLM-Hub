@@ -19,12 +19,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   ActivityIndicator,
   useWindowDimensions,
   Linking,
-  Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Camera, useCameraDevice } from 'react-native-vision-camera';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Clipboard from '@react-native-clipboard/clipboard';
@@ -33,7 +32,7 @@ import {
   ModelSelectionSheet,
   ModelSelectionContext,
 } from '../components/model/ModelSelectionSheet';
-import { FileSystem } from '@runanywhere/core';
+import { type ModelInfo as SDKModelInfo } from '@runanywhere/proto-ts/model_types';
 import { Colors } from '../theme/colors';
 import { Typography } from '../theme/typography';
 import { Spacing, Padding, BorderRadius } from '../theme/spacing';
@@ -61,21 +60,16 @@ const VLMScreen: React.FC = () => {
 
   // Handle model selection
   const handleModelSelected = useCallback(
-  async (model: any) => {
-    // 1. Find the projector path
-    const mmprojPath = model.localPath
-      ? await FileSystem.findMmprojForModel(model.localPath)
-      : undefined;
+    async (model: SDKModelInfo) => {
+      // 1. Load the model FIRST
+      await vlm.loadModel(model.id, model.name);
+      await vlm.checkModelStatus();
 
-    // 2. Load the model FIRST
-    await vlm.loadModel(model.localPath, model.name, mmprojPath);
-    await vlm.checkModelStatus();
-    
-    // 3. Close the modal AFTER the model is safely loaded and state is stable
-    setShowingModelSelection(false); 
-  },
-  [vlm]
-);
+      // 2. Close the modal AFTER the model is safely loaded and state is stable
+      setShowingModelSelection(false);
+    },
+    [vlm]
+  );
 
   // Copy description to clipboard
   const handleCopyDescription = useCallback(() => {
@@ -98,18 +92,16 @@ const VLMScreen: React.FC = () => {
     }
   }, [vlm]);
 
-  // Dismiss error
   const handleDismissError = useCallback(() => {
-    // Reset error in next render to prevent flicker
-    // Since hook doesn't expose setError, we'll just let user retry
-  }, []);
+    vlm.clearError();
+  }, [vlm]);
 
   // Main action button color
   const mainButtonColor = vlm.isAutoStreaming
     ? Colors.primaryRed
     : vlm.isProcessing
-    ? Colors.textTertiary
-    : Colors.primaryOrange;
+      ? Colors.textTertiary
+      : Colors.primaryOrange;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -218,9 +210,20 @@ const VLMScreen: React.FC = () => {
 
             {/* Error Banner */}
             {vlm.error && (
-              <View style={styles.errorBanner}>
+              <TouchableOpacity
+                style={styles.errorBanner}
+                onPress={handleDismissError}
+                accessibilityRole="button"
+                accessibilityLabel="Dismiss error"
+              >
                 <Text style={styles.errorText}>{vlm.error}</Text>
-              </View>
+                <Icon
+                  name="close"
+                  size={18}
+                  color={Colors.primaryRed}
+                  style={styles.errorDismissIcon}
+                />
+              </TouchableOpacity>
             )}
 
             {/* Description Content */}
@@ -253,13 +256,18 @@ const VLMScreen: React.FC = () => {
               <Icon
                 name="images-outline"
                 size={24}
-                color={vlm.isProcessing ? Colors.textTertiary : Colors.primaryBlue}
+                color={
+                  vlm.isProcessing ? Colors.textTertiary : Colors.primaryBlue
+                }
               />
             </TouchableOpacity>
 
             {/* Main Action Button */}
             <TouchableOpacity
-              style={[styles.mainActionButton, { backgroundColor: mainButtonColor }]}
+              style={[
+                styles.mainActionButton,
+                { backgroundColor: mainButtonColor },
+              ]}
               onPress={handleMainAction}
               disabled={vlm.isProcessing && !vlm.isAutoStreaming}
               activeOpacity={0.8}
@@ -285,8 +293,8 @@ const VLMScreen: React.FC = () => {
                   vlm.isAutoStreaming
                     ? Colors.statusGreen
                     : vlm.isProcessing
-                    ? Colors.textTertiary
-                    : Colors.primaryBlue
+                      ? Colors.textTertiary
+                      : Colors.primaryBlue
                 }
               />
             </TouchableOpacity>
@@ -329,7 +337,7 @@ const styles = StyleSheet.create({
 
   // Model Required Overlay
   modelRequiredOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: Colors.overlayMedium,
     justifyContent: 'center',
     alignItems: 'center',
@@ -463,10 +471,17 @@ const styles = StyleSheet.create({
     padding: Spacing.smallMedium,
     borderRadius: BorderRadius.regular,
     marginBottom: Spacing.medium,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   errorText: {
     ...Typography.caption,
     color: Colors.primaryRed,
+    flex: 1,
+  },
+  errorDismissIcon: {
+    marginLeft: Spacing.small,
   },
   descriptionScroll: {
     flex: 1,

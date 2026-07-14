@@ -2,46 +2,35 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Permissions for STT and LLM functionality -->
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Vision screen Live mode (in-app CameraX preview). NOTE: because CAMERA is
+         declared, the system-camera intent (TakePicturePreview) also requires the
+         runtime grant — VisionScreen requests it before either capture path. -->
+    <uses-permission android:name="android.permission.CAMERA" />
 
-    <uses-feature android:name="android.hardware.camera" android:required="false" />
-    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
-    <!-- Use new storage permissions for Android 13+ -->
-    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
-    <uses-permission
-        android:name="android.permission.READ_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32" />
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
 
     <application
         android:name=".RunAnywhereApplication"
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:largeHeap="true"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.RunAnywhereAI"
-        android:largeHeap="true"
         android:usesCleartextTraffic="false"
         tools:targetApi="35">
 
-        <!-- 16KB page size support for Android 15+
-             Our native libraries are built with 16KB ELF alignment, so we properly
-             support 16KB page sizes. This property is informational only - the real
-             support comes from the native library linker flags. -->
-        <property
-            android:name="android.content.PROPERTY_SUPPORTS_16KB_PAGE_SIZE"
-            android:value="true" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:windowSoftInputMode="adjustNothing"
-            android:theme="@style/Theme.RunAnywhereAI">
+            android:theme="@style/Theme.RunAnywhereAI"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

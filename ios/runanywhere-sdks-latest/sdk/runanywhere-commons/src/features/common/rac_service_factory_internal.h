@@ -1,0 +1,261 @@
+/**
+ * @file rac_service_factory_internal.h
+ * @brief Shared internal helpers for feature service construction.
+ *
+ * Private commons-only utilities for the repeated feature-service path:
+ * resolve model reference, select the primitive plugin, create backend impl,
+ * wrap it in the feature service struct, and unwind consistently on failure.
+ */
+
+#ifndef RAC_FEATURES_COMMON_RAC_SERVICE_FACTORY_INTERNAL_H
+#define RAC_FEATURES_COMMON_RAC_SERVICE_FACTORY_INTERNAL_H
+
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <memory>
+#include <string>
+
+#include "rac/core/rac_core.h"
+#include "rac/core/rac_error.h"
+#include "rac/core/rac_logger.h"
+#include "rac/infrastructure/model_management/rac_model_paths.h"
+#include "rac/infrastructure/model_management/rac_model_registry.h"
+#include "rac/plugin/rac_engine_ids.h"
+#include "rac/plugin/rac_engine_vtable.h"
+#include "rac/plugin/rac_plugin_entry.h"
+#include "rac/plugin/rac_primitive.h"
+
+namespace rac::features {
+
+struct ModelReferenceOptions {
+    const char* log_cat;
+    rac_inference_framework_t default_framework;
+    bool allow_null_model_id;
+    bool lookup_last_path_component;
+    const char* prefer_input_path_when_contains;
+};
+
+struct ModelInfoDeleter {
+    void operator()(rac_model_info_t* info) const {
+        if (info) {
+            rac_model_info_free(info);
+        }
+    }
+};
+
+using ModelInfoPtr = std::unique_ptr<rac_model_info_t, ModelInfoDeleter>;
+
+struct ResolvedModelReference {
+    std::string path;
+    rac_inference_framework_t framework = RAC_FRAMEWORK_UNKNOWN;
+    rac_result_t registry_result = RAC_ERROR_NOT_FOUND;
+    bool found = false;
+    ModelInfoPtr model_info;
+};
+
+inline rac_result_t resolve_model_reference(const char* model_id,
+                                            const ModelReferenceOptions& options,
+                                            ResolvedModelReference* out_reference) {
+    if (!out_reference) {
+        return RAC_ERROR_NULL_POINTER;
+    }
+
+    out_reference->path = model_id ? model_id : "";
+    out_reference->framework = options.default_framework;
+    out_reference->registry_result = RAC_ERROR_NOT_FOUND;
+    out_reference->found = false;
+    out_reference->model_info.reset();
+
+    if (!model_id) {
+        return options.allow_null_model_id ? RAC_SUCCESS : RAC_ERROR_NULL_POINTER;
+    }
+
+    rac_model_info_t* raw_info = nullptr;
+    rac_result_t result = rac_get_model(model_id, &raw_info);
+
+    if (result != RAC_SUCCESS) {
+        RAC_LOG_DEBUG(options.log_cat, "Model not found by ID, trying path lookup: %s", model_id);
+        result = rac_get_model_by_path(model_id, &raw_info);
+    }
+
+    if (result != RAC_SUCCESS && options.lookup_last_path_component) {
+        const char* last_slash = strrchr(model_id, '/');
+        if (last_slash && last_slash[1] != '\0') {
+            const char* extracted_id = last_slash + 1;
+            RAC_LOG_DEBUG(options.log_cat, "Trying extracted model ID from path: %s", extracted_id);
+            result = rac_get_model(extracted_id, &raw_info);
+        }
+    }
+
+    out_reference->registry_result = result;
+    if (result == RAC_SUCCESS && raw_info) {
+        out_reference->found = true;
+        out_reference->model_info.reset(raw_info);
+        out_reference->framework = raw_info->framework;
+
+        // Empty local_path falls through to the literal model ID, which is
+        // not a filesystem path — engines stat() it and fail. Before
+        // accepting that, try the canonical on-disk folder for this
+        // model/framework and let the artifact resolver recover the primary
+        // file (mirrors the lifecycle load path's lazy resolution). Read-only
+        // here: the registry self-heal lives once, on the lifecycle path.
+        std::string registry_path = (raw_info->local_path && raw_info->local_path[0] != '\0')
+                                        ? raw_info->local_path
+                                        : model_id;
+        if (!raw_info->local_path || raw_info->local_path[0] == '\0') {
+            char canonical_folder[1024] = {0};
+            if (rac_model_paths_get_model_folder(model_id, raw_info->framework, canonical_folder,
+                                                 sizeof(canonical_folder)) == RAC_SUCCESS &&
+                canonical_folder[0] != '\0') {
+                rac_model_path_resolution_t resolution = {};
+                const rac_result_t resolve_rc = rac_model_paths_resolve_artifact(
+                    raw_info, canonical_folder, nullptr, &resolution);
+                if ((resolve_rc == RAC_SUCCESS || resolution.primary_model_path) &&
+                    resolution.primary_model_path && resolution.primary_model_path[0] != '\0') {
+                    registry_path = resolution.primary_model_path;
+                    RAC_LOG_INFO(options.log_cat,
+                                 "Resolved empty local_path for %s via canonical folder: %s",
+                                 model_id, registry_path.c_str());
+                }
+                rac_model_path_resolution_free(&resolution);
+            }
+        }
+        if (options.prefer_input_path_when_contains &&
+            strstr(model_id, options.prefer_input_path_when_contains) != nullptr) {
+            out_reference->path = model_id;
+        } else {
+            out_reference->path = registry_path;
+        }
+
+        RAC_LOG_INFO(options.log_cat, "Found model in registry: id=%s, framework=%d, local_path=%s",
+                     raw_info->id ? raw_info->id : "NULL",
+                     static_cast<int>(out_reference->framework), out_reference->path.c_str());
+        return RAC_SUCCESS;
+    }
+
+    if (raw_info) {
+        rac_model_info_free(raw_info);
+    }
+    RAC_LOG_WARNING(options.log_cat,
+                    "Model NOT found in registry (result=%d), using default framework=%d", result,
+                    static_cast<int>(out_reference->framework));
+    return RAC_SUCCESS;
+}
+
+template <typename OpsT>
+using OpsSelector = const OpsT* (*)(const rac_engine_vtable_t* vt);
+
+template <typename ServiceT, typename OpsT>
+struct PluginServiceCreateSpec {
+    const char* log_cat;
+    rac_primitive_t primitive;
+    OpsSelector<OpsT> select_ops;
+    const char* model_create_id;
+    const char* model_id_for_service;
+    const char* config_json;
+    rac_inference_framework_t framework = RAC_FRAMEWORK_UNKNOWN;
+};
+
+inline const char* plugin_hint_for_framework(rac_inference_framework_t framework,
+                                             rac_primitive_t primitive) {
+    switch (framework) {
+        case RAC_FRAMEWORK_LLAMACPP:
+            return RAC_ENGINE_ID_LLAMACPP;
+        case RAC_FRAMEWORK_MLX:
+            return RAC_ENGINE_ID_MLX;
+        case RAC_FRAMEWORK_SHERPA:
+            return RAC_ENGINE_ID_SHERPA;
+        case RAC_FRAMEWORK_ONNX:
+            if (primitive == RAC_PRIMITIVE_EMBED) {
+                return RAC_ENGINE_ID_ONNX;
+            }
+            if (primitive == RAC_PRIMITIVE_TRANSCRIBE || primitive == RAC_PRIMITIVE_SYNTHESIZE ||
+                primitive == RAC_PRIMITIVE_DETECT_VOICE) {
+                return RAC_ENGINE_ID_SHERPA;
+            }
+            return nullptr;
+        case RAC_FRAMEWORK_FOUNDATION_MODELS:
+        case RAC_FRAMEWORK_SYSTEM_TTS:
+            return RAC_ENGINE_ID_PLATFORM;
+        case RAC_FRAMEWORK_COREML:
+            return primitive == RAC_PRIMITIVE_DIFFUSION ? RAC_ENGINE_ID_COREML
+                                                        : RAC_ENGINE_ID_PLATFORM;
+        case RAC_FRAMEWORK_QHEXRT:
+            return RAC_ENGINE_ID_QHEXRT;
+        case RAC_FRAMEWORK_FLUID_AUDIO:
+        case RAC_FRAMEWORK_BUILTIN:
+        case RAC_FRAMEWORK_NONE:
+        case RAC_FRAMEWORK_UNKNOWN:
+        default:
+            return nullptr;
+    }
+}
+
+template <typename ServiceT, typename OpsT>
+rac_result_t create_plugin_service(const PluginServiceCreateSpec<ServiceT, OpsT>& spec,
+                                   ServiceT** out_service) {
+    if (!out_service) {
+        return RAC_ERROR_NULL_POINTER;
+    }
+    *out_service = nullptr;
+
+    const char* engine_hint = plugin_hint_for_framework(spec.framework, spec.primitive);
+    const rac_engine_vtable_t* vt = nullptr;
+    if (engine_hint != nullptr) {
+        vt = rac_plugin_find_for_engine(spec.primitive, engine_hint);
+        if (vt == nullptr) {
+            RAC_LOG_WARNING(spec.log_cat, "plugin '%s' does not serve %s; falling back to priority",
+                            engine_hint, rac_primitive_name(spec.primitive));
+        }
+    }
+    if (vt == nullptr) {
+        vt = rac_plugin_find(spec.primitive);
+    }
+    const OpsT* ops = (vt && spec.select_ops) ? spec.select_ops(vt) : nullptr;
+    if (!vt || !ops || !ops->create) {
+        if (engine_hint != nullptr) {
+            RAC_LOG_ERROR(spec.log_cat, "no registered plugin '%s' serves %s", engine_hint,
+                          rac_primitive_name(spec.primitive));
+        } else {
+            RAC_LOG_ERROR(spec.log_cat, "no registered plugin serves %s",
+                          rac_primitive_name(spec.primitive));
+        }
+        return RAC_ERROR_BACKEND_NOT_FOUND;
+    }
+    RAC_LOG_INFO(spec.log_cat, "Routed to plugin: %s", vt->metadata.name);
+
+    void* impl = nullptr;
+    rac_result_t result = ops->create(spec.model_create_id, spec.config_json, &impl);
+    if (result != RAC_SUCCESS || !impl) {
+        RAC_LOG_ERROR(spec.log_cat, "Plugin create failed: %d", result);
+        return (result != RAC_SUCCESS) ? result : RAC_ERROR_BACKEND_NOT_READY;
+    }
+
+    auto* service = static_cast<ServiceT*>(malloc(sizeof(ServiceT)));
+    if (!service) {
+        if (ops->destroy) {
+            ops->destroy(impl);
+        }
+        return RAC_ERROR_OUT_OF_MEMORY;
+    }
+
+    service->ops = ops;
+    service->impl = impl;
+    service->model_id = spec.model_id_for_service ? strdup(spec.model_id_for_service) : nullptr;
+    if (spec.model_id_for_service && !service->model_id) {
+        if (ops->destroy) {
+            ops->destroy(impl);
+        }
+        free(service);
+        return RAC_ERROR_OUT_OF_MEMORY;
+    }
+
+    *out_service = service;
+
+    return RAC_SUCCESS;
+}
+
+}  // namespace rac::features
+
+#endif  // RAC_FEATURES_COMMON_RAC_SERVICE_FACTORY_INTERNAL_H

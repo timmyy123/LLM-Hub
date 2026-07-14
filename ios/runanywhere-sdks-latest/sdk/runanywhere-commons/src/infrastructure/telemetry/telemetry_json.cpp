@@ -99,11 +99,18 @@ class JsonBuilder {
         ss_ << "\"" << key << "\":" << value;
     }
 
+    // Emit even when 0 — for fields where 0 is a meaningful measurement
+    // (e.g. temperature=0.0 greedy decode) rather than "unset".
+    void add_double_always(const char* key, double value) {
+        comma();
+        ss_ << "\"" << key << "\":" << value;
+    }
+
     void add_bool(const char* key, rac_bool_t value, rac_bool_t has_value) {
-        if (!has_value)
+        if (has_value == RAC_FALSE)
             return;
         comma();
-        ss_ << "\"" << key << "\":" << (value ? "true" : "false");
+        ss_ << "\"" << key << "\":" << (value != RAC_FALSE ? "true" : "false");
     }
 
     // Always outputs a boolean value
@@ -123,13 +130,26 @@ class JsonBuilder {
         // Format as ISO8601 string
         time_t secs = ms / 1000;
         int millis = ms % 1000;
-        struct tm tm_info;
-        gmtime_r(&secs, &tm_info);
+        struct tm tm_info{};
+        bool gmtime_ok = false;
+#ifdef _WIN32
+        // gmtime_s returns errno_t (0 == success).
+        gmtime_ok = (gmtime_s(&tm_info, &secs) == 0);
+#else
+        // gmtime_r returns a pointer to the result, or NULL on error.
+        gmtime_ok = (gmtime_r(&secs, &tm_info) != nullptr);
+#endif
+        comma();
+        if (!gmtime_ok) {
+            // Emit the raw millisecond epoch if the conversion failed — don't
+            // fabricate a timestamp string from uninitialized struct tm data.
+            ss_ << "\"" << key << "\":" << ms;
+            return;
+        }
 
         char buf[32];
         strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S", &tm_info);
 
-        comma();
         ss_ << "\"" << key << "\":\"" << buf << "." << std::setfill('0') << std::setw(3) << millis
             << "Z\"";
     }
@@ -150,7 +170,7 @@ class JsonBuilder {
 
     std::string escape_string(const char* s) {
         std::string result;
-        while (*s) {
+        while (*s != '\0') {
             switch (*s) {
                 case '"':
                     result += "\\\"";
@@ -179,6 +199,35 @@ class JsonBuilder {
     bool first_ = true;
 };
 
+bool has_string(const char* value) {
+    return value != nullptr && value[0] != '\0';
+}
+
+bool has_client_info(const rac_client_info_t& info) {
+    return has_string(info.sdk_binding) || has_string(info.app_identifier) ||
+           has_string(info.app_name) || has_string(info.app_version) ||
+           has_string(info.app_build) || has_string(info.locale) || has_string(info.timezone);
+}
+
+void add_client_info_fields(JsonBuilder& json, const rac_client_info_t& info) {
+    json.add_string("sdk_binding", info.sdk_binding);
+    json.add_string("app_identifier", info.app_identifier);
+    json.add_string("app_name", info.app_name);
+    json.add_string("app_version", info.app_version);
+    json.add_string("app_build", info.app_build);
+    json.add_string("locale", info.locale);
+    json.add_string("timezone", info.timezone);
+}
+
+void add_client_info_object(JsonBuilder& json, const char* key, const rac_client_info_t& info) {
+    if (!has_client_info(info)) {
+        return;
+    }
+    json.start_nested(key);
+    add_client_info_fields(json, info);
+    json.end_object();
+}
+
 }  // namespace
 
 // =============================================================================
@@ -192,94 +241,143 @@ rac_result_t rac_telemetry_manager_payload_to_json(const rac_telemetry_payload_t
         return RAC_ERROR_INVALID_ARGUMENT;
     }
 
-    bool is_production = (env != RAC_ENV_DEVELOPMENT);
+    (void)env;  // V2 ingest shape is environment-independent.
+
     JsonBuilder json;
     json.start_object();
 
-    // Required fields - different key names based on environment
-    if (is_production) {
-        // Production: FastAPI expects "id" and "timestamp"
-        json.add_string("id", payload->id);
-        json.add_timestamp("timestamp", payload->timestamp_ms);
-    } else {
-        // Development: Supabase expects "sdk_event_id" and "event_timestamp"
-        json.add_string("sdk_event_id", payload->id);
-        json.add_timestamp("event_timestamp", payload->timestamp_ms);
-    }
-
+    // ---- Base fields: every modality (backend _V2IngestEventBase) ----------
+    // modality and device_id are intentionally omitted — modality is encoded in
+    // the endpoint path and device_id lives at the batch level. The batch schema
+    // is extra="forbid", so only this modality's fields may appear below.
+    json.add_string("id", payload->id);
     json.add_string("event_type", payload->event_type);
+    json.add_timestamp("timestamp", payload->timestamp_ms);
     json.add_timestamp("created_at", payload->created_at_ms);
 
-    // Conditional fields - skip for production (FastAPI has them at batch level)
-    if (!is_production) {
-        json.add_string("modality", payload->modality);
-        json.add_string("device_id", payload->device_id);
-    }
-
-    // Session tracking
     json.add_string("session_id", payload->session_id);
-
-    // Model info
     json.add_string("model_id", payload->model_id);
     json.add_string("model_name", payload->model_name);
     json.add_string("framework", payload->framework);
 
-    // Device info
     json.add_string("device", payload->device);
     json.add_string("os_version", payload->os_version);
     json.add_string("platform", payload->platform);
     json.add_string("sdk_version", payload->sdk_version);
 
-    // Common metrics
     json.add_double("processing_time_ms", payload->processing_time_ms);
     json.add_bool("success", payload->success, payload->has_success);
     json.add_string("error_message", payload->error_message);
     json.add_string("error_code", payload->error_code);
-
-    // LLM fields
-    json.add_int("input_tokens", payload->input_tokens);
-    json.add_int("output_tokens", payload->output_tokens);
-    json.add_int("total_tokens", payload->total_tokens);
-    json.add_double("tokens_per_second", payload->tokens_per_second);
-    json.add_double("time_to_first_token_ms", payload->time_to_first_token_ms);
-    json.add_double("prompt_eval_time_ms", payload->prompt_eval_time_ms);
-    json.add_double("generation_time_ms", payload->generation_time_ms);
-    json.add_int("context_length", payload->context_length);
-    json.add_double("temperature", payload->temperature);
-    json.add_int("max_tokens", payload->max_tokens);
-
-    // STT fields
-    json.add_double("audio_duration_ms", payload->audio_duration_ms);
-    json.add_double("real_time_factor", payload->real_time_factor);
-    json.add_int("word_count", payload->word_count);
-    json.add_double("confidence", payload->confidence);
-    json.add_string("language", payload->language);
     json.add_bool("is_streaming", payload->is_streaming, payload->has_is_streaming);
-    json.add_int("segment_index", payload->segment_index);
 
-    // TTS fields
-    json.add_int("character_count", payload->character_count);
-    json.add_double("characters_per_second", payload->characters_per_second);
-    json.add_int("audio_size_bytes", payload->audio_size_bytes);
-    json.add_int("sample_rate", payload->sample_rate);
-    json.add_string("voice", payload->voice);
-    json.add_double("output_duration_ms", payload->output_duration_ms);
-
-    // Model lifecycle
-    json.add_int("model_size_bytes", payload->model_size_bytes);
-    json.add_string("archive_type", payload->archive_type);
-
-    // VAD
-    json.add_double("speech_duration_ms", payload->speech_duration_ms);
-
-    // SDK lifecycle
-    json.add_int("count", payload->count);
-
-    // Storage
-    json.add_int("freed_bytes", payload->freed_bytes);
-
-    // Network
-    json.add_bool("is_online", payload->is_online, payload->has_is_online);
+    // ---- Modality-specific fields ------------------------------------------
+    const char* modality = payload->modality ? payload->modality : "system";
+    if (strcmp(modality, "llm") == 0) {
+        json.add_int("input_tokens", payload->input_tokens);
+        json.add_int("output_tokens", payload->output_tokens);
+        json.add_int("total_tokens", payload->total_tokens);
+        json.add_double("tokens_per_second", payload->tokens_per_second);
+        json.add_double("time_to_first_token_ms", payload->time_to_first_token_ms);
+        json.add_double("prompt_eval_time_ms", payload->prompt_eval_time_ms);
+        json.add_double("generation_time_ms", payload->generation_time_ms);
+        json.add_int("context_length", payload->context_length);
+        json.add_double_always("temperature", payload->temperature);
+        json.add_int("max_tokens", payload->max_tokens);
+    } else if (strcmp(modality, "stt") == 0) {
+        json.add_double("audio_duration_ms", payload->audio_duration_ms);
+        json.add_double("real_time_factor", payload->real_time_factor);
+        json.add_int("word_count", payload->word_count);
+        json.add_double("confidence", payload->confidence);
+        json.add_string("language", payload->language);
+        json.add_int("segment_index", payload->segment_index);
+    } else if (strcmp(modality, "tts") == 0) {
+        json.add_int("character_count", payload->character_count);
+        json.add_double("characters_per_second", payload->characters_per_second);
+        json.add_int("audio_size_bytes", payload->audio_size_bytes);
+        json.add_int("sample_rate", payload->sample_rate);
+        json.add_string("voice", payload->voice);
+        json.add_double("output_duration_ms", payload->output_duration_ms);
+    } else if (strcmp(modality, "vlm") == 0) {
+        // VLM = LLM token fields PLUS vision fields. The token fields are now
+        // populated via the properties carrier (input/total tokens, tps, ttft,
+        // generation_time). The vision-specific fields (vision_tokens,
+        // vision_encode_time_ms, image_resolution) still need carriers.
+        json.add_int("input_tokens", payload->input_tokens);
+        json.add_int("output_tokens", payload->output_tokens);
+        json.add_int("total_tokens", payload->total_tokens);
+        json.add_double("tokens_per_second", payload->tokens_per_second);
+        json.add_double("time_to_first_token_ms", payload->time_to_first_token_ms);
+        json.add_double("prompt_eval_time_ms", payload->prompt_eval_time_ms);
+        json.add_double("generation_time_ms", payload->generation_time_ms);
+        json.add_int("context_length", payload->context_length);
+        json.add_double_always("temperature", payload->temperature);
+        json.add_int("max_tokens", payload->max_tokens);
+        json.add_int("image_count", payload->image_count);
+        json.add_int("vision_tokens", payload->vision_tokens);
+        json.add_double("vision_encode_time_ms", payload->vision_encode_time_ms);
+        json.add_string("image_resolution", payload->image_resolution);
+    } else if (strcmp(modality, "rag") == 0) {
+        // retrieved_docs_count / top_k / retrieval_time_ms / embedding_model have
+        // sources today (via the properties carrier). query_token_count /
+        // reranker_used / context_tokens still need carriers.
+        json.add_int("retrieved_docs_count", payload->retrieved_docs_count);
+        json.add_int("top_k", payload->top_k);
+        json.add_double("retrieval_time_ms", payload->retrieval_time_ms);
+        json.add_string("embedding_model", payload->embedding_model);
+    } else if (strcmp(modality, "embeddings") == 0) {
+        // input_count / vectors_produced / embedding_model / embedding_dimension
+        // have sources today (dimension via the properties carrier).
+        // total_tokens / batch_size still need a carrier.
+        json.add_int("input_count", payload->input_count);
+        json.add_int("vectors_produced", payload->vectors_produced);
+        json.add_int("embedding_dimension", payload->embedding_dimension);
+        json.add_string("embedding_model", payload->model_id);
+    } else if (strcmp(modality, "voice") == 0) {
+        // Per-turn voice-agent pipeline summary (from MetricsEvent).
+        json.add_double("stt_ms", payload->voice_stt_ms);
+        json.add_double("llm_ms", payload->voice_llm_ms);
+        json.add_double("tts_ms", payload->voice_tts_ms);
+        json.add_double("total_ms", payload->voice_total_ms);
+        json.add_int("transcript_chars", payload->transcript_chars);
+        json.add_int("response_chars", payload->response_chars);
+    } else if (strcmp(modality, "vad") == 0) {
+        json.add_double("speech_duration_ms", payload->speech_duration_ms);
+        json.add_double("silence_duration_ms", payload->silence_duration_ms);
+        json.add_int("segment_count", payload->segment_count);
+        json.add_int("sample_rate", payload->sample_rate);
+    } else if (strcmp(modality, "lora") == 0) {
+        // base model rides on model_id; adapter_id + operation via the carrier.
+        // adapter_size_bytes still needs a source (would require stat-ing the file).
+        json.add_string("operation", payload->operation);
+        json.add_string("base_model_id", payload->model_id);
+        json.add_string("adapter_id", payload->adapter_id);
+        json.add_int("adapter_size_bytes", payload->adapter_size_bytes);
+    } else if (strcmp(modality, "imagegen") == 0) {
+        // Diffusion detail fields ride the properties carrier (extracted in the
+        // kCapability SDK_COMPONENT_DIFFUSION branch). seed=0 / steps=0 are
+        // meaningful, so those use add_int_always.
+        json.add_int("prompt_length", payload->imagegen_prompt_length);
+        json.add_int("negative_prompt_length", payload->imagegen_negative_prompt_length);
+        json.add_int("image_width", payload->image_width);
+        json.add_int("image_height", payload->image_height);
+        json.add_int("num_images", payload->num_images);
+        json.add_int("num_inference_steps", payload->num_inference_steps);
+        json.add_double("guidance_scale", payload->guidance_scale);
+        json.add_int_always("seed", payload->seed);
+        json.add_int("output_size_bytes", payload->output_size_bytes);
+        json.add_string("scheduler", payload->scheduler);
+        json.add_string("output_format", payload->output_format);
+    } else if (strcmp(modality, "model") == 0) {
+        json.add_int("model_size_bytes", payload->model_size_bytes);
+        json.add_string("archive_type", payload->archive_type);
+        json.add_double("progress", payload->progress);
+    } else {
+        // "system": SDK lifecycle / storage / network.
+        json.add_int_always("count", payload->count);
+        json.add_int_always("freed_bytes", payload->freed_bytes);
+        json.add_bool("is_online", payload->is_online, payload->has_is_online);
+    }
 
     json.end_object();
 
@@ -305,74 +403,42 @@ rac_result_t rac_telemetry_manager_batch_to_json(const rac_telemetry_batch_reque
         return RAC_ERROR_INVALID_ARGUMENT;
     }
 
-    bool is_development = (env == RAC_ENV_DEVELOPMENT);
+    // V2 batch envelope: {"device_id", "timestamp", "events":[...]}.
+    // The per-modality endpoint (.../telemetry/llm, /stt, ...) selects the
+    // table; modality is NOT part of the wire schema (backend extra="forbid").
+    JsonBuilder json;
+    json.start_object();
 
-    if (is_development) {
-        // Supabase: Send array directly [{...}, {...}]
-        JsonBuilder json;
-        json.start_array();
+    std::stringstream events_ss;
+    events_ss << "\"events\":[";
+    for (size_t i = 0; i < request->events_count; i++) {
+        if (i > 0)
+            events_ss << ",";
 
-        for (size_t i = 0; i < request->events_count; i++) {
-            char* event_json = nullptr;
-            size_t event_len = 0;
-            rac_result_t result = rac_telemetry_manager_payload_to_json(&request->events[i], env,
-                                                                        &event_json, &event_len);
-            if (result == RAC_SUCCESS && event_json) {
-                if (i > 0) {
-                    // Need to add comma manually since we're adding raw JSON
-                }
-                json.add_raw(event_json);
-                free(event_json);
-            }
+        char* event_json = nullptr;
+        size_t event_len = 0;
+        rac_result_t result = rac_telemetry_manager_payload_to_json(&request->events[i], env,
+                                                                    &event_json, &event_len);
+        if (result == RAC_SUCCESS && event_json) {
+            events_ss << event_json;
+            free(event_json);
         }
-
-        json.end_array();
-
-        std::string result = json.str();
-        *out_length = result.size();
-        *out_json = (char*)malloc(*out_length + 1);
-        if (!*out_json) {
-            return RAC_ERROR_OUT_OF_MEMORY;
-        }
-        memcpy(*out_json, result.c_str(), *out_length + 1);
-    } else {
-        // Production: Batch wrapper {"events": [...], "device_id": "...", ...}
-        JsonBuilder json;
-        json.start_object();
-
-        // Events array
-        std::stringstream events_ss;
-        events_ss << "\"events\":[";
-        for (size_t i = 0; i < request->events_count; i++) {
-            if (i > 0)
-                events_ss << ",";
-
-            char* event_json = nullptr;
-            size_t event_len = 0;
-            rac_result_t result = rac_telemetry_manager_payload_to_json(&request->events[i], env,
-                                                                        &event_json, &event_len);
-            if (result == RAC_SUCCESS && event_json) {
-                events_ss << event_json;
-                free(event_json);
-            }
-        }
-        events_ss << "]";
-        json.add_raw(events_ss.str().c_str());
-
-        json.add_string("device_id", request->device_id);
-        json.add_timestamp("timestamp", request->timestamp_ms);
-        json.add_string("modality", request->modality);
-
-        json.end_object();
-
-        std::string result = json.str();
-        *out_length = result.size();
-        *out_json = (char*)malloc(*out_length + 1);
-        if (!*out_json) {
-            return RAC_ERROR_OUT_OF_MEMORY;
-        }
-        memcpy(*out_json, result.c_str(), *out_length + 1);
     }
+    events_ss << "]";
+    json.add_raw(events_ss.str().c_str());
+
+    json.add_string("device_id", request->device_id);
+    json.add_timestamp("timestamp", request->timestamp_ms);
+
+    json.end_object();
+
+    std::string result = json.str();
+    *out_length = result.size();
+    *out_json = (char*)malloc(*out_length + 1);
+    if (!*out_json) {
+        return RAC_ERROR_OUT_OF_MEMORY;
+    }
+    memcpy(*out_json, result.c_str(), *out_length + 1);
 
     return RAC_SUCCESS;
 }
@@ -413,6 +479,9 @@ rac_result_t rac_device_registration_to_json(const rac_device_registration_reque
         if (request->sdk_version) {
             json.add_string("sdk_version", request->sdk_version);
         }
+        if (has_client_info(request->client_info)) {
+            add_client_info_fields(json, request->client_info);
+        }
 
         // Optional fields
         if (request->build_token) {
@@ -441,6 +510,8 @@ rac_result_t rac_device_registration_to_json(const rac_device_registration_reque
         // Matches backend schemas/device.py DeviceInfo schema
         const rac_device_registration_info_t* info = &request->device_info;
 
+        json.add_string("device_id", info->device_id);
+
         // Build device_info as nested object with proper escaping
         json.start_nested("device_info");
 
@@ -449,7 +520,11 @@ rac_result_t rac_device_registration_to_json(const rac_device_registration_reque
         json.add_string_always("device_name", info->device_name);
         json.add_string_always("platform", info->platform);
         json.add_string_always("os_version", info->os_version);
-        json.add_string_always("form_factor", info->form_factor ? info->form_factor : "phone");
+        // Unset stays null — the old fabricated defaults ("phone"/"unknown")
+        // made every desktop and web device register as a phone. Requires the
+        // backend DeviceInfo schema to accept nullable form_factor/gpu_family
+        // (deploy the backend schema change before shipping this).
+        json.add_string_or_null("form_factor", info->form_factor);
         json.add_string_always("architecture", info->architecture);
         json.add_string_always("chip_name", info->chip_name);
 
@@ -458,11 +533,10 @@ rac_result_t rac_device_registration_to_json(const rac_device_registration_reque
         json.add_int_always("available_memory", info->available_memory);
 
         // Boolean fields
-        json.add_bool_always("has_neural_engine", info->has_neural_engine);
+        json.add_bool_always("has_neural_engine", info->has_neural_engine != RAC_FALSE);
         json.add_int_always("neural_engine_cores", info->neural_engine_cores);
 
-        // GPU family with default
-        json.add_string_always("gpu_family", info->gpu_family ? info->gpu_family : "unknown");
+        json.add_string_or_null("gpu_family", info->gpu_family);
 
         // Battery info (may be unavailable - use nullable methods)
         // battery_level is a double (0.0-1.0), negative if unavailable
@@ -470,7 +544,7 @@ rac_result_t rac_device_registration_to_json(const rac_device_registration_reque
         json.add_string_or_null("battery_state", info->battery_state);
 
         // More boolean and integer fields
-        json.add_bool_always("is_low_power_mode", info->is_low_power_mode);
+        json.add_bool_always("is_low_power_mode", info->is_low_power_mode != RAC_FALSE);
         json.add_int_always("core_count", info->core_count);
         json.add_int_always("performance_cores", info->performance_cores);
         json.add_int_always("efficiency_cores", info->efficiency_cores);
@@ -484,6 +558,7 @@ rac_result_t rac_device_registration_to_json(const rac_device_registration_reque
         json.end_object();  // Close device_info
 
         json.add_string("sdk_version", request->sdk_version);
+        add_client_info_object(json, "client_info", request->client_info);
 
         // Add last_seen_at timestamp for UPSERT to update existing records
         if (request->last_seen_at_ms > 0) {

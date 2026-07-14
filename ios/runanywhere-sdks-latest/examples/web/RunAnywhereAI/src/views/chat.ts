@@ -1,825 +1,1475 @@
 /**
- * Chat Tab - Full chat interface matching iOS ChatInterfaceView
+ * Chat Tab — LLM chat over the V2 proto-byte LLM adapter.
  *
- * Features: model overlay, model selection sheet, message bubbles,
- * streaming, thinking mode, typing indicator, input area, toolbar,
- * tool calling toggle with demo tools (matching iOS ToolSettingsView).
+ * Mirrors the iOS chat experience (LLMViewModel + ChatMessageComponents):
+ *   - Generation options come from the Settings tab (temperature, maxTokens,
+ *     systemPrompt, thinking mode) — iOS parity: LLMViewModel.swift:579-619
+ *     getGenerationOptions().
+ *   - Thinking content renders as a collapsible section per assistant
+ *     message — iOS parity: ChatMessageComponents.swift:87-179.
+ *   - Optional tool calling with the same three demo tools as iOS
+ *     (get_weather / get_current_time / calculate) — iOS parity:
+ *     ToolSettingsView.swift:32-139 + LLMViewModel+ToolCalling.swift.
+ *   - IndexedDB conversation history mirrors the iOS ConversationStore:
+ *     save on update, restore on mount, and switch between prior chats.
+ *
+ * The toolbar model pill + "Get Started" overlay are built by
+ * `components/model-selection.ts`. They expose the DOM ids the readiness
+ * probe in `main.ts` looks for (`#chat-toolbar-model`, `#chat-model-overlay`,
+ * `#chat-get-started-btn`).
  */
 
 import type { TabLifecycle } from '../app';
-import { ModelManager, ModelCategory, type ModelInfo } from '../services/model-manager';
-import { showModelSelectionSheet } from '../components/model-selection';
-import type { ToolValue } from '../../../../../sdk/runanywhere-web/packages/llamacpp/src/Extensions/RunAnywhere+ToolCalling';
+import {
+  ChatMessageStatus,
+  MessageRole,
+  ModelCategory,
+  RunAnywhere,
+  ToolChoiceMode,
+  ToolParameterType,
+  type ChatMessage as SDKChatMessage,
+  type ToolDefinition,
+  type ToolValue,
+} from '@runanywhere/web';
+import {
+  buildGetStartedOverlay,
+  onModelStateChange,
+  openSheet,
+  refreshModelSelectionState,
+  type OpenSheetOptions,
+} from '../components/model-selection';
+import { showToast } from '../components/dialogs';
+import { getGenerationSettings } from './settings';
+import {
+  answerDocumentAttachment,
+  answerImageAttachment,
+  canAnswerImageAttachment,
+  cancelActiveDocumentAttachmentAnswer,
+  cancelActiveImageAttachmentAnswer,
+  validateChatAttachmentFile,
+} from '../services/chat-attachments';
+import { escapeHtml } from '../services/escape-html';
+import { formatError } from '../services/format-error';
+import {
+  ConversationsStore,
+  type StoredConversation,
+} from '../services/conversations-store';
+import { appLogger } from '../services/app-logger';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-interface ToolCallInfo {
-  toolName: string;
-  arguments: string;  // JSON string for display
-  result?: string;    // JSON string for display
-  success: boolean;
+interface ChatToolCallInfo {
+  name: string;
+  argumentsJson: string;
+  resultJson?: string;
   error?: string;
 }
 
-interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  thinking?: string;
-  timestamp: number;
-  modelId?: string;
-  toolCalls?: ToolCallInfo[];
+interface ChatAttachmentInfo {
+  kind: 'image' | 'document';
+  name: string;
+  detail?: string;
 }
 
-// ---------------------------------------------------------------------------
-// State
-// ---------------------------------------------------------------------------
+interface ChatSourceInfo {
+  document: string;
+  text: string;
+}
 
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  attachment?: ChatAttachmentInfo;
+  /** Reasoning content shown in the collapsible "Thinking" section. */
+  thinking?: string;
+  /** Tool calls + results when the message came from generateWithTools. */
+  toolCalls?: ChatToolCallInfo[];
+  /** RAG citations for document attachments. */
+  sources?: ChatSourceInfo[];
+}
+
+interface ConversationGenerationContext {
+  history: SDKChatMessage[];
+  conversationId?: string;
+}
+
+interface PendingAttachment {
+  kind: 'image' | 'document';
+  file: File;
+  name: string;
+  description: string;
+}
+
+type JsonObject = Readonly<Record<string, unknown>>;
+
+function isJsonObject(value: unknown): value is JsonObject {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function hasOptionalString(value: JsonObject, key: string): boolean {
+  return value[key] === undefined || typeof value[key] === 'string';
+}
+
+function isChatToolCallInfo(value: unknown): value is ChatToolCallInfo {
+  return isJsonObject(value)
+    && typeof value.name === 'string'
+    && typeof value.argumentsJson === 'string'
+    && hasOptionalString(value, 'resultJson')
+    && hasOptionalString(value, 'error');
+}
+
+function isChatAttachmentInfo(value: unknown): value is ChatAttachmentInfo {
+  return isJsonObject(value)
+    && (value.kind === 'image' || value.kind === 'document')
+    && typeof value.name === 'string'
+    && hasOptionalString(value, 'detail');
+}
+
+function isChatSourceInfo(value: unknown): value is ChatSourceInfo {
+  return isJsonObject(value)
+    && typeof value.document === 'string'
+    && typeof value.text === 'string';
+}
+
+function isChatMessage(value: unknown): value is ChatMessage {
+  return isJsonObject(value)
+    && (value.role === 'user' || value.role === 'assistant')
+    && typeof value.content === 'string'
+    && (value.attachment === undefined || isChatAttachmentInfo(value.attachment))
+    && hasOptionalString(value, 'thinking')
+    && (value.toolCalls === undefined
+      || (Array.isArray(value.toolCalls) && value.toolCalls.every(isChatToolCallInfo)))
+    && (value.sources === undefined
+      || (Array.isArray(value.sources) && value.sources.every(isChatSourceInfo)));
+}
+
+// Chat's picker is scoped to LLMs — iOS parity:
+// ModelSelectionSheet(context: .llm) used by the chat screen.
+const CHAT_SHEET_OPTIONS: OpenSheetOptions = {
+  title: 'Select Model',
+  filterCategories: [ModelCategory.MODEL_CATEGORY_LANGUAGE],
+};
+
+const VLM_SHEET_OPTIONS: OpenSheetOptions = {
+  title: 'Choose Image Model',
+  filterCategories: [
+    ModelCategory.MODEL_CATEGORY_MULTIMODAL,
+    ModelCategory.MODEL_CATEGORY_VISION,
+  ],
+};
+
+const CHAT_CAPABLE_MODEL_CATEGORIES: readonly ModelCategory[] = [
+  ModelCategory.MODEL_CATEGORY_LANGUAGE,
+  ModelCategory.MODEL_CATEGORY_MULTIMODAL,
+  ModelCategory.MODEL_CATEGORY_VISION,
+];
+
+// iOS parity: ToolSettingsView.swift:23 persists "toolCallingEnabled".
+const TOOLS_ENABLED_STORAGE_KEY = 'runanywhere-tool-calling-enabled';
+
+let container: HTMLElement;
 let messages: ChatMessage[] = [];
 let isGenerating = false;
-let toolsEnabled = false;
-let toolsRegistered = false;
-/** Cancel callback for the current streaming generation (stored so we can abort on tab switch). */
 let cancelGeneration: (() => void) | null = null;
-let container: HTMLElement;
-let messagesEl: HTMLElement;
-let inputEl: HTMLTextAreaElement;
-let sendBtn: HTMLButtonElement;
-let overlayEl: HTMLElement;
-let toolbarModelEl: HTMLElement;
-let toolsToggleBtn: HTMLElement;
-
-// ---------------------------------------------------------------------------
-// Init
-// ---------------------------------------------------------------------------
+let toolsEnabled = false;
+let pendingAttachment: PendingAttachment | null = null;
+let conversationStorageWarningShown = false;
 
 export function initChatTab(el: HTMLElement): TabLifecycle {
   container = el;
-  container.innerHTML = `
-    <!-- Toolbar -->
-    <div class="toolbar">
-      <div class="toolbar-actions">
-        <button class="btn btn-icon" id="chat-new-btn" title="New Chat">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-        </button>
-      </div>
-      <div class="toolbar-model-btn" id="chat-toolbar-model" title="Tap to change model">
-        <svg class="model-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-        <span id="chat-toolbar-model-text">Select Model</span>
-        <svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-      <div class="toolbar-actions">
-        <!-- intentionally empty to keep model btn centered -->
-      </div>
-    </div>
 
-    <!-- Messages -->
-    <div class="scroll-area py-md" id="chat-messages">
-      <!-- Empty state (shown when no messages) -->
-      <div class="chat-empty-state" id="chat-empty-state">
-        <div class="empty-logo">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        </div>
-        <h3>Start a conversation</h3>
-        <p>Type a message below to get started</p>
-        <div class="suggestion-chips" id="chat-suggestions"></div>
-      </div>
-    </div>
-
-    <!-- Tools toggle + badge (above input) -->
-    <div id="chat-tools-row" class="chat-tools-row">
-      <button class="tools-toggle-pill" id="chat-tools-toggle" title="Toggle Tool Calling">
-        <span class="tools-toggle-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-        </span>
-        <span class="tools-toggle-label">Tools</span>
-        <span class="tools-toggle-switch" id="chat-tools-switch">
-          <span class="tools-toggle-knob"></span>
-        </span>
-      </button>
-      <div class="tools-badge-text hidden" id="chat-tools-badge"></div>
-    </div>
-
-    <!-- Input -->
-    <div class="chat-input-area">
-      <textarea class="chat-input" id="chat-input" placeholder="Message..." rows="1"></textarea>
-      <button class="send-btn" id="chat-send-btn" disabled>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-      </button>
-    </div>
-
-    <!-- Model Required Overlay -->
-    <div class="model-overlay" id="chat-model-overlay">
-      <div class="model-overlay-bg" id="chat-floating-bg"></div>
-      <div class="model-overlay-content">
-        <div class="sparkle-icon">&#10024;</div>
-        <h2>Welcome!</h2>
-        <p>Start chatting with on-device AI. Everything runs privately in your browser.</p>
-        <button class="btn btn-primary btn-lg" id="chat-get-started-btn">Get Started</button>
-        <div class="privacy-note">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          <span>100% Private &mdash; Runs on your device</span>
-        </div>
-      </div>
-    </div>
-  `;
-
-  // Build floating circles for overlay
-  buildFloatingCircles();
-
-  // Cache references
-  messagesEl = container.querySelector('#chat-messages')!;
-  inputEl = container.querySelector('#chat-input')!;
-  sendBtn = container.querySelector('#chat-send-btn')!;
-  overlayEl = container.querySelector('#chat-model-overlay')!;
-  toolbarModelEl = container.querySelector('#chat-toolbar-model')!;
-  toolsToggleBtn = container.querySelector('#chat-tools-toggle')!;
-
-  // Event listeners
-  sendBtn.addEventListener('click', sendMessage);
-  inputEl.addEventListener('input', onInputChange);
-  inputEl.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  });
-
-  container.querySelector('#chat-get-started-btn')!.addEventListener('click', openModelSheet);
-  toolbarModelEl.addEventListener('click', openModelSheet);
-  toolsToggleBtn.addEventListener('click', toggleTools);
-  container.querySelector('#chat-new-btn')!.addEventListener('click', clearChat);
-
-  // Populate initial suggestion chips
-  renderSuggestions();
-
-  // Subscribe to model changes
-  ModelManager.onChange(onModelsChanged);
-  onModelsChanged(ModelManager.getModels());
-
-  // Return lifecycle callbacks for tab-switching cleanup
-  return {
-    onDeactivate(): void {
-      // Cancel any in-flight LLM generation to free the WASM main thread
-      if (cancelGeneration) {
-        cancelGeneration();
-        cancelGeneration = null;
-        console.log('[Chat] Tab deactivated — cancelled in-flight generation');
-      }
-    },
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Floating circles background
-// ---------------------------------------------------------------------------
-
-function buildFloatingCircles(): void {
-  const bg = container.querySelector('#chat-floating-bg')!;
-  const colors = ['#FF5500', '#3B82F6', '#8B5CF6', '#10B981', '#EAB308'];
-  for (let i = 0; i < 8; i++) {
-    const circle = document.createElement('div');
-    circle.className = 'floating-circle';
-    const size = 60 + Math.random() * 120;
-    circle.style.cssText = `
-      width:${size}px; height:${size}px;
-      background:${colors[i % colors.length]};
-      left:${Math.random() * 100}%;
-      top:${Math.random() * 100}%;
-      animation-delay:${Math.random() * 4}s;
-      animation-duration:${6 + Math.random() * 6}s;
-    `;
-    bg.appendChild(circle);
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Model Sheet
-// ---------------------------------------------------------------------------
-
-function openModelSheet(): void {
-  showModelSelectionSheet(ModelCategory.Language);
-}
-
-function onModelsChanged(_models: ModelInfo[]): void {
-  const loaded = ModelManager.getLoadedModel(ModelCategory.Language);
-  const textSpan = toolbarModelEl.querySelector('#chat-toolbar-model-text');
-  if (loaded) {
-    overlayEl.style.display = 'none';
-    if (textSpan) textSpan.textContent = loaded.name;
-  } else {
-    overlayEl.style.display = '';
-    if (textSpan) textSpan.textContent = 'Select Model';
-  }
-  updateEmptyState();
-}
-
-// ---------------------------------------------------------------------------
-// Tool Calling Toggle
-// ---------------------------------------------------------------------------
-
-async function toggleTools(): Promise<void> {
-  toolsEnabled = !toolsEnabled;
-  toolsToggleBtn.classList.toggle('active', toolsEnabled);
-
-  if (toolsEnabled && !toolsRegistered) {
-    await registerDemoTools();
-    toolsRegistered = true;
-  }
-
-  // Show/hide tools badge text below the toggle
-  const badgeEl = container.querySelector('#chat-tools-badge') as HTMLElement;
-  if (badgeEl) {
-    badgeEl.classList.toggle('hidden', !toolsEnabled);
-    badgeEl.textContent = toolsEnabled ? 'weather \u00b7 time \u00b7 calculator' : '';
-  }
-
-  // Update suggestion chips to reflect tool-specific prompts
-  renderSuggestions();
-
-  console.log(`[Chat] Tools ${toolsEnabled ? 'enabled' : 'disabled'}`);
-}
-
-/**
- * Register demo tools matching iOS ToolSettingsView:
- * get_weather, get_current_time, calculate
- */
-async function registerDemoTools(): Promise<void> {
-  const { ToolCalling, toToolValue } = await import(
-    '../../../../../sdk/runanywhere-web/packages/llamacpp/src/index'
-  );
-
-  // 1. get_weather - uses Open-Meteo API (free, no API key)
-  ToolCalling.registerTool(
-    {
-      name: 'get_weather',
-      description: 'Gets the current weather for a given location. Returns temperature, condition, humidity, and wind speed.',
-      parameters: [
-        { name: 'location', type: 'string', description: 'The city name to get weather for (e.g., "San Francisco")', required: true },
-      ],
-      category: 'Utility',
-    },
-    async (args): Promise<Record<string, ToolValue>> => {
-      const location = args.location?.type === 'string' ? args.location.value : 'San Francisco';
-      try {
-        // Geocode the location
-        const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1`);
-        const geoData = await geoRes.json();
-        if (!geoData.results?.length) {
-          return { error: toToolValue(`Location not found: ${location}`) };
-        }
-        const { latitude, longitude, name } = geoData.results[0];
-
-        // Get weather
-        const wxRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code`);
-        const wxData = await wxRes.json();
-        const current = wxData.current;
-
-        const conditionMap: Record<number, string> = {
-          0: 'Clear sky', 1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast',
-          45: 'Foggy', 48: 'Icy fog', 51: 'Light drizzle', 53: 'Drizzle', 55: 'Heavy drizzle',
-          61: 'Light rain', 63: 'Rain', 65: 'Heavy rain', 71: 'Light snow', 73: 'Snow', 75: 'Heavy snow',
-          80: 'Rain showers', 81: 'Rain showers', 82: 'Heavy showers', 95: 'Thunderstorm',
-        };
-
-        return {
-          location: toToolValue(name),
-          temperature_celsius: toToolValue(current.temperature_2m),
-          temperature_fahrenheit: toToolValue(current.temperature_2m * 9 / 5 + 32),
-          condition: toToolValue(conditionMap[current.weather_code] ?? 'Unknown'),
-          humidity_percent: toToolValue(current.relative_humidity_2m),
-          wind_speed_kmh: toToolValue(current.wind_speed_10m),
-        };
-      } catch (err) {
-        return { error: toToolValue(err instanceof Error ? err.message : 'Failed to fetch weather') };
-      }
-    },
-  );
-
-  // 2. get_current_time - returns system time
-  ToolCalling.registerTool(
-    {
-      name: 'get_current_time',
-      description: 'Gets the current date and time with timezone information.',
-      parameters: [
-        { name: 'timezone', type: 'string', description: 'IANA timezone (e.g., "America/New_York"). Defaults to local timezone.', required: false },
-      ],
-      category: 'Utility',
-    },
-    async (args) => {
-      const tz = args.timezone?.type === 'string' ? args.timezone.value : undefined;
-      const now = new Date();
-      const options: Intl.DateTimeFormatOptions = {
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-        hour: '2-digit', minute: '2-digit', second: '2-digit',
-        ...(tz ? { timeZone: tz } : {}),
-      };
-      return {
-        formatted: toToolValue(now.toLocaleDateString('en-US', options)),
-        iso: toToolValue(now.toISOString()),
-        timezone: toToolValue(tz ?? Intl.DateTimeFormat().resolvedOptions().timeZone),
-        unix_timestamp: toToolValue(Math.floor(now.getTime() / 1000)),
-      };
-    },
-  );
-
-  // 3. calculate - evaluate math expressions
-  ToolCalling.registerTool(
-    {
-      name: 'calculate',
-      description: 'Evaluates a mathematical expression and returns the result. Supports basic arithmetic (+, -, *, /, ^), parentheses, and common functions.',
-      parameters: [
-        { name: 'expression', type: 'string', description: 'The math expression to evaluate (e.g., "2 + 3 * 4", "sqrt(16)", "(10 + 5) / 3")', required: true },
-      ],
-      category: 'Utility',
-    },
-    async (args): Promise<Record<string, ToolValue>> => {
-      const expr = args.expression?.type === 'string' ? args.expression.value : '';
-      try {
-        // Safe evaluation using Function constructor with restricted scope
-        const sanitized = expr
-          .replace(/\^/g, '**')
-          .replace(/sqrt\(/g, 'Math.sqrt(')
-          .replace(/abs\(/g, 'Math.abs(')
-          .replace(/sin\(/g, 'Math.sin(')
-          .replace(/cos\(/g, 'Math.cos(')
-          .replace(/tan\(/g, 'Math.tan(')
-          .replace(/log\(/g, 'Math.log(')
-          .replace(/pi/gi, 'Math.PI')
-          .replace(/\be\b/g, 'Math.E');
-
-        // Only allow safe characters
-        if (!/^[0-9+\-*/().%\s,MathsqrtabsincotaglogPIE]+$/.test(sanitized)) {
-          return { error: toToolValue('Invalid expression: contains unsafe characters') };
-        }
-
-        // eslint-disable-next-line no-new-func
-        const result = new Function(`return (${sanitized})`)();
-        return {
-          expression: toToolValue(expr),
-          result: toToolValue(Number(result)),
-        };
-      } catch (err) {
-        return { error: toToolValue(err instanceof Error ? err.message : 'Evaluation failed') };
-      }
-    },
-  );
-
-  console.log('[Chat] Demo tools registered: get_weather, get_current_time, calculate');
-}
-
-// ---------------------------------------------------------------------------
-// Empty State & Suggestions
-// ---------------------------------------------------------------------------
-
-const GENERAL_SUGGESTIONS = [
-  'Tell me a fun fact',
-  'Explain quantum computing simply',
-  'Write a short poem about coding',
-  'What are the benefits of meditation?',
-];
-
-const TOOL_SUGGESTIONS = [
-  "What's the weather in Tokyo?",
-  'What time is it in London?',
-  'Calculate 2^10 + 15',
-  "What's the weather in San Francisco?",
-];
-
-/** Show/hide the empty state based on whether there are messages. */
-function updateEmptyState(): void {
-  const emptyState = container.querySelector('#chat-empty-state') as HTMLElement | null;
-  if (!emptyState) return;
-  emptyState.style.display = messages.length === 0 ? '' : 'none';
-}
-
-/** Populate suggestion chips (general or tool-specific depending on toggle). */
-function renderSuggestions(): void {
-  const chipsEl = container.querySelector('#chat-suggestions');
-  if (!chipsEl) return;
-
-  const suggestions = toolsEnabled ? TOOL_SUGGESTIONS : GENERAL_SUGGESTIONS;
-  chipsEl.innerHTML = suggestions.map(s =>
-    `<button class="suggestion-chip">${escapeHtml(s)}</button>`,
-  ).join('');
-
-  // Wire up click handlers: fill input and send
-  chipsEl.querySelectorAll('.suggestion-chip').forEach((chip, i) => {
-    chip.addEventListener('click', () => {
-      inputEl.value = suggestions[i];
-      onInputChange();
-      inputEl.focus();
-    });
-  });
-}
-
-/** Clear all messages and reset to empty state. */
-function clearChat(): void {
-  if (isGenerating && cancelGeneration) {
-    cancelGeneration();
-    cancelGeneration = null;
-  }
-  isGenerating = false;
   messages = [];
-  messagesEl.innerHTML = `
-    <div class="chat-empty-state" id="chat-empty-state">
-      <div class="empty-logo">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+  toolsEnabled = loadToolsEnabled();
+
+  // Register the demo tools once at chat setup — iOS parity:
+  // ToolSettingsViewModel.registerDemoTools (ToolSettingsView.swift:153-159).
+  registerDemoTools();
+
+  container.classList.add('chat-panel-consumer');
+  container.innerHTML = `
+    <div class="scroll-area chat-scroll" id="chat-messages"></div>
+    <div class="chat-composer-shell">
+      <div class="composer-status-pill hidden" id="chat-attachment-pill"></div>
+      <div class="composer-status-pill composer-status-pill--tools hidden" id="chat-tools-status">
+        ${svgIcon('<path d="M12 2a10 10 0 0 0 0 20 10 10 0 0 0 0-20z"/><path d="M2 12h20"/><path d="M12 2c3 3.2 3 16.8 0 20"/><path d="M12 2c-3 3.2-3 16.8 0 20"/>')}
+        <span><strong>Web & tools on</strong><small>Trace appears in replies</small></span>
       </div>
-      <h3>Start a conversation</h3>
-      <p>Type a message below to get started</p>
-      <div class="suggestion-chips" id="chat-suggestions"></div>
+      <div class="chat-input-area">
+        <div class="composer-menu-wrap">
+          <button class="composer-icon-btn" id="chat-attach-btn" type="button" aria-label="Attach or open mode" title="Attach or open mode">
+            ${svgIcon('<path d="M12 5v14"/><path d="M5 12h14"/>')}
+          </button>
+          <div class="composer-menu hidden" id="chat-attach-menu">
+            <button type="button" data-action="document">
+              ${svgIcon('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8"/><path d="M8 17h5"/>')}
+              <span><strong>Document</strong><small>Ask questions with sources</small></span>
+            </button>
+            <button type="button" data-action="image">
+              ${svgIcon('<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10.5" r="1.5"/><path d="M21 15l-4.5-4.5L9 18"/>')}
+              <span><strong>Image</strong><small>Ask about a photo</small></span>
+            </button>
+            <button type="button" data-action="live">
+              ${svgIcon('<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/><path d="M8 6h8v9H8z"/>')}
+              <span><strong>Live camera</strong><small>Look around with vision</small></span>
+            </button>
+          </div>
+        </div>
+        <button class="composer-icon-btn" id="chat-tools-btn" type="button" aria-label="Enable web and tools" title="Enable web and tools">
+          ${svgIcon('<path d="M12 2a10 10 0 0 0 0 20 10 10 0 0 0 0-20z"/><path d="M2 12h20"/><path d="M12 2c3 3.2 3 16.8 0 20"/><path d="M12 2c-3 3.2-3 16.8 0 20"/>')}
+        </button>
+        <textarea class="chat-input" id="chat-input" placeholder="Ask anything..." rows="1"></textarea>
+        <button class="composer-icon-btn" id="chat-talk-btn" type="button" aria-label="Talk mode" title="Talk mode">
+          ${svgIcon('<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/><path d="M8 22h8"/>')}
+        </button>
+        <button class="send-btn" id="chat-send-btn" disabled aria-label="Send message"></button>
+      </div>
+      <input type="file" id="chat-image-input" accept="image/*" hidden />
+      <input type="file" id="chat-document-input" accept=".txt,.md,.json,text/plain,text/markdown,application/json" hidden />
     </div>
   `;
-  renderSuggestions();
-  inputEl.value = '';
-  onInputChange();
-  hideTypingIndicator();
-  console.log('[Chat] Conversation cleared');
-}
 
-// ---------------------------------------------------------------------------
-// Input Handling
-// ---------------------------------------------------------------------------
+  // Mount the "Get Started" overlay directly inside the panel host so the
+  // readiness probe's overlay visibility check works. The overlay is shown
+  // whenever no model is loaded and hidden once a model enters the loaded
+  // state.
+  const getStartedOverlay = buildGetStartedOverlay(
+    CHAT_SHEET_OPTIONS,
+    CHAT_CAPABLE_MODEL_CATEGORIES,
+  );
+  container.appendChild(getStartedOverlay);
 
-function onInputChange(): void {
-  const hasText = inputEl.value.trim().length > 0;
-  sendBtn.disabled = !hasText || isGenerating;
-  // Auto-resize
-  inputEl.style.height = 'auto';
-  inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
-}
+  const messagesEl = container.querySelector('#chat-messages') as HTMLElement;
+  const inputEl = container.querySelector('#chat-input') as HTMLTextAreaElement;
+  const sendBtn = container.querySelector('#chat-send-btn') as HTMLButtonElement;
+  const toolsBtn = container.querySelector('#chat-tools-btn') as HTMLButtonElement;
+  const toolsStatus = container.querySelector('#chat-tools-status') as HTMLElement;
+  const attachBtn = container.querySelector('#chat-attach-btn') as HTMLButtonElement;
+  const attachMenu = container.querySelector('#chat-attach-menu') as HTMLElement;
+  const attachmentPill = container.querySelector('#chat-attachment-pill') as HTMLElement;
+  const imageInput = container.querySelector('#chat-image-input') as HTMLInputElement;
+  const documentInput = container.querySelector('#chat-document-input') as HTMLInputElement;
+  const talkBtn = container.querySelector('#chat-talk-btn') as HTMLButtonElement;
+  const listenerScope = new AbortController();
+  const listenerOptions: AddEventListenerOptions = { signal: listenerScope.signal };
+  let pendingConversationAction: (() => Promise<void>) | null = null;
+  let conversationActionVersion = 0;
+  let conversationHydrated = false;
+  let conversationHydration: Promise<void> = Promise.resolve();
 
-// ---------------------------------------------------------------------------
-// Send Message
-// ---------------------------------------------------------------------------
-
-async function sendMessage(): Promise<void> {
-  const text = inputEl.value.trim();
-  if (!text || isGenerating) return;
-
-  const loaded = ModelManager.getLoadedModel(ModelCategory.Language);
-  if (!loaded) {
-    openModelSheet();
-    return;
-  }
-
-  // Hide empty state on first message
-  updateEmptyState();
-
-  // Add user message
-  const userMsg: ChatMessage = {
-    id: crypto.randomUUID(),
-    role: 'user',
-    content: text,
-    timestamp: Date.now(),
+  const refreshToolsButton = () => {
+    toolsBtn.classList.toggle('active', toolsEnabled);
+    toolsStatus.classList.toggle('hidden', !toolsEnabled);
+    inputEl.placeholder = toolsEnabled ? 'Ask with web and tools...' : 'Ask anything...';
+    toolsBtn.setAttribute('aria-label', toolsEnabled ? 'Disable web and tools' : 'Enable web and tools');
+    toolsBtn.title = toolsEnabled
+      ? 'Web and tool calling enabled (weather, time, calculator)'
+      : 'Enable web and tools (weather, time, calculator)';
   };
-  messages.push(userMsg);
-  updateEmptyState();
-  renderMessage(userMsg);
-  inputEl.value = '';
-  onInputChange();
 
-  // Show typing indicator
-  isGenerating = true;
-  sendBtn.disabled = true;
-  showTypingIndicator();
+  const refreshAttachmentPill = () => {
+    if (!pendingAttachment) {
+      attachmentPill.classList.add('hidden');
+      attachmentPill.innerHTML = '';
+      return;
+    }
+    attachmentPill.classList.remove('hidden');
+    attachmentPill.innerHTML = `
+      ${svgIcon(pendingAttachment.kind === 'image'
+        ? '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10.5" r="1.5"/><path d="M21 15l-4.5-4.5L9 18"/>'
+        : '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8"/><path d="M8 17h5"/>')}
+      <span><strong>${escapeHtml(pendingAttachment.name)}</strong><small>${escapeHtml(pendingAttachment.description)}</small></span>
+      <button type="button" id="chat-clear-attachment" aria-label="Remove attachment">
+        ${svgIcon('<path d="M18 6 6 18"/><path d="M6 6l12 12"/>')}
+      </button>
+    `;
+    attachmentPill
+      .querySelector('#chat-clear-attachment')
+      ?.addEventListener('click', () => {
+        pendingAttachment = null;
+        refreshAttachmentPill();
+        refreshSendButton();
+      }, listenerOptions);
+  };
+  refreshToolsButton();
+  refreshAttachmentPill();
 
-  try {
-    if (toolsEnabled) {
-      await sendWithToolCalling(text, loaded);
+  const refreshSendButton = () => {
+    const hasInput = inputEl.value.trim().length > 0;
+    const modelLoaded = isModelLoaded();
+    const hasAttachment = pendingAttachment !== null;
+    sendBtn.disabled = !conversationHydrated
+      || (!isGenerating && ((!hasInput && !hasAttachment) || (!modelLoaded && !hasAttachment)));
+    sendBtn.innerHTML = isGenerating
+      ? svgIcon('<rect x="6" y="6" width="12" height="12" rx="2"/>')
+      : svgIcon('<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/>');
+    // Tooltip clarifies why the button is disabled. The textbox stays
+    // enabled so users may compose while a model is loading.
+    if (!conversationHydrated) {
+      sendBtn.title = 'Loading saved chats';
+    } else if (isGenerating) {
+      sendBtn.title = 'Stop';
+    } else if (!modelLoaded && !hasAttachment) {
+      sendBtn.title = 'Load a model first';
+    } else if (!hasInput && !hasAttachment) {
+      sendBtn.title = 'Type a message to send';
     } else {
-      await sendStreaming(text, loaded);
+      sendBtn.title = 'Send';
     }
-  } catch (err) {
-    hideTypingIndicator();
-
-    const errorMessage = err instanceof Error ? err.message : String(err);
-    console.error('[Chat] Generation failed:', errorMessage);
-
-    const errorMsg: ChatMessage = {
-      id: crypto.randomUUID(),
-      role: 'assistant',
-      content: `**Error:** ${errorMessage}\n\nPlease make sure a model is downloaded and loaded.`,
-      timestamp: Date.now(),
-      modelId: loaded.id,
-    };
-    messages.push(errorMsg);
-    renderMessage(errorMsg);
-  }
-
-  isGenerating = false;
-  sendBtn.disabled = inputEl.value.trim().length === 0;
-}
-
-/**
- * Standard streaming generation (no tools).
- */
-async function sendStreaming(text: string, loaded: ModelInfo): Promise<void> {
-  const { TextGeneration } = await import(
-    '../../../../../sdk/runanywhere-web/packages/llamacpp/src/index'
-  );
-
-  if (!TextGeneration.isModelLoaded) {
-    throw new Error('Model not loaded in WASM backend');
-  }
-
-  const { stream, result: resultPromise, cancel } = await TextGeneration.generateStream(text, {
-    maxTokens: 512,
-    temperature: 0.7,
-  });
-  cancelGeneration = cancel;
-
-  hideTypingIndicator();
-
-  const assistantMsg: ChatMessage = {
-    id: crypto.randomUUID(),
-    role: 'assistant',
-    content: '',
-    timestamp: Date.now(),
-    modelId: loaded.id,
+    sendBtn.setAttribute('aria-label', isGenerating ? 'Stop generation' : 'Send message');
   };
-  messages.push(assistantMsg);
-  const { bubbleEl, rowEl } = renderStreamingBubble(assistantMsg);
 
-  for await (const token of stream) {
-    assistantMsg.content += token;
-    bubbleEl.innerHTML = renderMarkdown(assistantMsg.content);
-    scrollToBottom();
-    await new Promise(r => setTimeout(r, 12));
-  }
-  cancelGeneration = null;
-
-  const finalResult = await resultPromise;
-  console.log(
-    `[Chat] Generation complete: ${finalResult.tokensUsed} tokens in ` +
-    `${finalResult.latencyMs.toFixed(0)}ms (${finalResult.tokensPerSecond.toFixed(1)} tok/s)`,
-  );
-
-  appendMetrics(rowEl, {
-    tokens: finalResult.tokensUsed,
-    latencyMs: finalResult.latencyMs,
-    tokensPerSecond: finalResult.tokensPerSecond,
+  const autoGrowInput = () => {
+    inputEl.style.height = 'auto';
+    inputEl.style.height = `${inputEl.scrollHeight}px`;
+  };
+  inputEl.addEventListener('input', () => {
+    refreshSendButton();
+    autoGrowInput();
+  }, listenerOptions);
+  // Copy action on assistant replies (delegated — the list re-renders often).
+  messagesEl.addEventListener('click', (event) => {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-copy-idx]');
+    if (!button) return;
+    const message = messages[Number(button.dataset.copyIdx)];
+    if (!message?.content) return;
+    void navigator.clipboard.writeText(message.content).then(() => {
+      const label = button.querySelector('span');
+      if (label) {
+        label.textContent = 'Copied';
+        setTimeout(() => { label.textContent = 'Copy'; }, 1500);
+      }
+    }).catch(() => showToast('Could not copy to clipboard', 'warning', 2600));
+  }, listenerOptions);
+  inputEl.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      void onSend();
+    }
+  }, listenerOptions);
+  sendBtn.addEventListener('click', () => {
+    if (isGenerating) {
+      cancelGeneration?.();
+      return;
+    }
+    void onSend();
+  }, listenerOptions);
+  toolsBtn.addEventListener('click', () => {
+    toolsEnabled = !toolsEnabled;
+    saveToolsEnabled(toolsEnabled);
+    refreshToolsButton();
+  }, listenerOptions);
+  attachBtn.addEventListener('click', (event) => {
+    event.stopPropagation();
+    attachMenu.classList.toggle('hidden');
+  }, listenerOptions);
+  attachMenu.querySelectorAll<HTMLButtonElement>('[data-action]').forEach((button) => {
+    button.addEventListener('click', () => {
+      attachMenu.classList.add('hidden');
+      const action = button.dataset.action;
+      if (action === 'document') documentInput.click();
+      if (action === 'image') imageInput.click();
+      if (action === 'live') navigateTo('vision');
+      if (action === 'advanced') navigateTo('advanced');
+    }, listenerOptions);
   });
-  scrollToBottom();
+  const closeAttachMenu = () => attachMenu.classList.add('hidden');
+  document.addEventListener('click', closeAttachMenu, listenerOptions);
+  imageInput.addEventListener('change', () => {
+    const file = imageInput.files?.[0] ?? null;
+    imageInput.value = '';
+    if (!file) return;
+    const error = validateChatAttachmentFile('image', file);
+    if (error) {
+      showToast(error, 'warning', 4200);
+      return;
+    }
+    pendingAttachment = {
+      kind: 'image',
+      file,
+      name: file.name || 'Selected image',
+      description: 'Ask about this image',
+    };
+    refreshAttachmentPill();
+    refreshSendButton();
+  }, listenerOptions);
+  documentInput.addEventListener('change', () => {
+    const file = documentInput.files?.[0] ?? null;
+    documentInput.value = '';
+    if (!file) return;
+    const error = validateChatAttachmentFile('document', file);
+    if (error) {
+      showToast(error, 'warning', 4200);
+      return;
+    }
+    pendingAttachment = {
+      kind: 'document',
+      file,
+      name: file.name || 'Selected document',
+      description: 'Ask with sources from this document',
+    };
+    refreshAttachmentPill();
+    refreshSendButton();
+  }, listenerOptions);
+  talkBtn.addEventListener('click', () => navigateTo('voice'), listenerOptions);
+  const showConversation = (nextMessages: ChatMessage[]) => {
+    messages = nextMessages;
+    getStartedOverlay.classList.toggle(
+      'chat-model-overlay--conversation-visible',
+      conversationSuppressesModelOverlay(nextMessages),
+    );
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+    pendingAttachment = null;
+    renderMessages(messagesEl);
+    refreshAttachmentPill();
+    refreshSendButton();
+  };
+  const reportConversationStorageError = (error: unknown) => {
+    if (!conversationStorageWarningShown) {
+      conversationStorageWarningShown = true;
+      showToast('Saved chats are unavailable in this browser session.', 'warning', 4200);
+    }
+    appLogger.warning('[Chat] Conversation storage operation failed:', error);
+  };
+  const runConversationAction = (action: () => Promise<void>) => {
+    conversationActionVersion += 1;
+    if (isGenerating) {
+      pendingConversationAction = action;
+      cancelGeneration?.();
+      return;
+    }
+    void action().catch(reportConversationStorageError);
+  };
+  const runPendingConversationAction = () => {
+    const action = pendingConversationAction;
+    pendingConversationAction = null;
+    if (action) void action().catch(reportConversationStorageError);
+  };
+  const resetChat = () => runConversationAction(async () => {
+    await ConversationsStore.startNew();
+    showConversation([]);
+  });
+  const restoreSavedChat = (event: Event) => {
+    const conversationId = (event as CustomEvent<{ conversationId?: string }>).detail?.conversationId;
+    if (!conversationId) return;
+    runConversationAction(async () => {
+      const conversation = await ConversationsStore.setCurrent(conversationId);
+      if (!conversation) {
+        showToast('That saved chat is no longer available.', 'warning', 3200);
+        return;
+      }
+      showConversation(conversation.messages.filter(isChatMessage));
+    });
+  };
+  const deleteSavedChat = (event: Event) => {
+    const conversationId = (event as CustomEvent<{ conversationId?: string }>).detail?.conversationId;
+    if (!conversationId) return;
+    void ConversationsStore.getCurrent().then((current) => {
+      if (current?.id !== conversationId) {
+        return ConversationsStore.delete(conversationId).then(() => undefined);
+      }
+      runConversationAction(async () => {
+        await ConversationsStore.delete(conversationId);
+        showConversation([]);
+      });
+      return undefined;
+    }).catch(reportConversationStorageError);
+  };
+  window.addEventListener('runanywhere:new-chat', resetChat, listenerOptions);
+  window.addEventListener('runanywhere:load-chat', restoreSavedChat, listenerOptions);
+  window.addEventListener('runanywhere:delete-chat', deleteSavedChat, listenerOptions);
+
+  renderMessages(messagesEl);
+  const initialConversationVersion = conversationActionVersion;
+  conversationHydration = loadConversation().then((savedMessages) => {
+    if (conversationActionVersion === initialConversationVersion) {
+      showConversation(savedMessages);
+    }
+  }).catch(reportConversationStorageError).finally(() => {
+    conversationHydrated = true;
+    refreshSendButton();
+  });
+
+  // Apply the initial disabled / tooltip state so the Send button reflects
+  // "Load a model first" before any user interaction.
+  refreshSendButton();
+
+  // Re-render when the model state changes so disabled/enabled states stay
+  // consistent with what the toolbar reports.
+  const unsubscribeState = onModelStateChange(() => refreshSendButton());
+
+  async function onSend(): Promise<void> {
+    await conversationHydration;
+    const prompt = inputEl.value.trim();
+    const attachment = pendingAttachment;
+    if ((!prompt && !attachment) || isGenerating) return;
+
+    if (attachment) {
+      await sendAttachment(attachment, prompt, messagesEl);
+      refreshAttachmentPill();
+      refreshSendButton();
+      return;
+    }
+
+    if (!isLLMBackendAvailable()) {
+      messages.push({
+        role: 'assistant',
+        content: 'No LLM backend available. Check the console for backend load errors.',
+      });
+      renderMessages(messagesEl);
+      return;
+    }
+
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+    refreshSendButton();
+
+    const history = conversationHistoryForGeneration(messages);
+    messages.push({ role: 'user', content: prompt });
+    const assistantMsg: ChatMessage = { role: 'assistant', content: '' };
+    messages.push(assistantMsg);
+    isGenerating = true;
+    refreshSendButton();
+    const conversation = await saveConversation();
+    const generationContext: ConversationGenerationContext = {
+      history,
+      ...(conversation ? { conversationId: conversation.id } : {}),
+    };
+    renderMessages(messagesEl);
+    if (pendingConversationAction) {
+      assistantMsg.content = 'Cancelled.';
+      await saveConversation();
+      isGenerating = false;
+      refreshSendButton();
+      renderMessages(messagesEl);
+      runPendingConversationAction();
+      return;
+    }
+
+    try {
+      if (toolsEnabled) {
+        await generateWithToolCalling(prompt, assistantMsg, messagesEl);
+      } else {
+        await generateStreaming(prompt, assistantMsg, messagesEl, generationContext);
+      }
+    } catch (error) {
+      assistantMsg.content = formatChatError(error);
+      renderLastMessage(messagesEl, assistantMsg);
+    } finally {
+      cancelGeneration = null;
+      isGenerating = false;
+      await saveConversation();
+      refreshSendButton();
+      // Full re-render drops the streaming cursor and adds hover actions.
+      renderMessages(messagesEl);
+      runPendingConversationAction();
+    }
+  }
+
+  async function sendAttachment(
+    attachment: PendingAttachment,
+    prompt: string,
+    host: HTMLElement,
+  ): Promise<void> {
+    if (attachment.kind === 'image' && !canAnswerImageAttachment()) {
+      openSheet(VLM_SHEET_OPTIONS);
+      showToast('Load an image model first, then send the attached image.', 'info', 4200);
+      return;
+    }
+
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+    pendingAttachment = null;
+    refreshAttachmentPill();
+    refreshSendButton();
+
+    const fallbackPrompt = attachment.kind === 'image'
+      ? 'Describe this image.'
+      : 'What should I know from this document?';
+    const question = prompt || fallbackPrompt;
+    const userMessage: ChatMessage = {
+      role: 'user',
+      content: question,
+      attachment: {
+        kind: attachment.kind,
+        name: attachment.name,
+        detail: attachment.description,
+      },
+    };
+    const assistantMsg: ChatMessage = { role: 'assistant', content: '' };
+    messages.push(userMessage, assistantMsg);
+    isGenerating = true;
+    refreshSendButton();
+    await saveConversation();
+    renderMessages(host);
+    if (pendingConversationAction) {
+      assistantMsg.content = 'Cancelled.';
+      await saveConversation();
+      isGenerating = false;
+      refreshSendButton();
+      renderMessages(host);
+      runPendingConversationAction();
+      return;
+    }
+    try {
+      const settings = getGenerationSettings();
+      const onProgress = ({ content }: { content: string }) => {
+        assistantMsg.content = content;
+        renderLastMessage(host, assistantMsg);
+      };
+      if (attachment.kind === 'image') {
+        cancelGeneration = cancelActiveImageAttachmentAnswer;
+        const answer = await answerImageAttachment(attachment.file, question, settings, onProgress);
+        assistantMsg.content = answer.content;
+        assistantMsg.thinking = answer.thinking;
+        assistantMsg.sources = answer.sources;
+      } else {
+        cancelGeneration = cancelActiveDocumentAttachmentAnswer;
+        const answer = await answerDocumentAttachment(attachment.file, question, settings, onProgress);
+        assistantMsg.content = answer.content;
+        assistantMsg.thinking = answer.thinking;
+        assistantMsg.sources = answer.sources;
+      }
+      renderLastMessage(host, assistantMsg);
+    } catch (error) {
+      assistantMsg.content = isAbortError(error) ? 'Cancelled.' : formatChatError(error);
+      renderLastMessage(host, assistantMsg);
+    } finally {
+      cancelGeneration = null;
+      isGenerating = false;
+      await saveConversation();
+      refreshSendButton();
+      renderMessages(host);
+      runPendingConversationAction();
+    }
+  }
+
+  // Tear down the model-state subscription if the panel element ever
+  // detaches (e.g. a full app-shell re-render). Kept minimal since the
+  // tab framework does not call a dispose hook today.
+  const disposeObserver = new MutationObserver(() => {
+    if (!container.isConnected) {
+      disposeObserver.disconnect();
+      listenerScope.abort();
+      unsubscribeState();
+    }
+  });
+  const rootParent = container.parentElement;
+  if (rootParent) disposeObserver.observe(rootParent, { childList: true });
+
+  return {
+    onActivate: () => {
+      refreshModelSelectionState();
+      refreshSendButton();
+    },
+    onDeactivate: () => {
+      if (cancelGeneration) cancelGeneration();
+    },
+  };
+}
+
+/** Saved content stays readable even when no inference model is loaded. */
+export function conversationSuppressesModelOverlay(
+  conversationMessages: readonly unknown[],
+): boolean {
+  return conversationMessages.length > 0;
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === 'AbortError';
+}
+
+// ---------------------------------------------------------------------------
+// Generation
+// ---------------------------------------------------------------------------
+
+/**
+ * Build generation options from the Settings tab — iOS parity:
+ * LLMViewModel.swift:579-619 getGenerationOptions(). `disableThinking` is the
+ * same structured gate as iOS (LLMViewModel.swift:618): suppress the thinking
+ * phase only when the loaded model supports thinking AND the user toggle is
+ * off — commons applies the model's no-think directive; the app never injects
+ * control tokens into prompts.
+ */
+function buildGenerationOptions(): {
+  maxTokens: number;
+  temperature: number;
+  systemPrompt?: string;
+  disableThinking: boolean;
+} {
+  const settings = getGenerationSettings();
+  const systemPrompt = settings.systemPrompt.trim();
+  return {
+    maxTokens: settings.maxTokens,
+    temperature: settings.temperature,
+    ...(systemPrompt.length > 0 ? { systemPrompt } : {}),
+    disableThinking: loadedModelSupportsThinking() && !settings.thinkingModeEnabled,
+  };
+}
+
+async function generateStreaming(
+  prompt: string,
+  assistantMsg: ChatMessage,
+  messagesEl: HTMLElement,
+  context: ConversationGenerationContext,
+): Promise<void> {
+  const options = buildGenerationOptions();
+  const stream = await RunAnywhere.generateStream({
+    prompt,
+    ...options,
+    ...context,
+  });
+  cancelGeneration = stream.cancel;
+
+  let raw = '';
+  for await (const token of stream.stream) {
+    raw += token;
+    // Thinking-capable models can stream thinking tags inline; split them
+    // into the collapsible section live (iOS receives the split from
+    // commons; the Web stream carries raw tokens).
+    const split = splitThinking(raw);
+    assistantMsg.content = split.content;
+    assistantMsg.thinking = split.thinking || undefined;
+    renderLastMessage(messagesEl, assistantMsg);
+  }
+
+  const result = await stream.result;
+  // Reconcile the terminal snapshot even when the model never leaves its
+  // reasoning phase. Keep hidden reasoning separate from the answer and make
+  // an exhausted/empty terminal state explicit instead of leaving the live
+  // "Thinking…" placeholder on screen indefinitely.
+  const terminal = splitThinking(result.text || raw);
+  assistantMsg.thinking = result.thinkingContent?.trim()
+    || terminal.thinking
+    || assistantMsg.thinking;
+  assistantMsg.content = terminal.content;
+  if (!assistantMsg.content) {
+    assistantMsg.content = result.finishReason === 'cancelled'
+      ? 'Cancelled.'
+      : result.finishReason === 'length'
+        ? 'The response limit was reached before a final answer. Increase Max tokens in Settings or turn off thinking, then try again.'
+        : 'The model finished without producing a final answer. Try again or turn off thinking.';
+  }
+  renderLastMessage(messagesEl, assistantMsg);
 }
 
 /**
- * Generation with tool calling enabled.
+ * Tool-calling send path — iOS parity: LLMViewModel+ToolCalling.swift:14-35.
+ * The SDK (commons) orchestrates the tool call → execute → respond loop;
+ * the app only renders the result.
  */
-async function sendWithToolCalling(text: string, loaded: ModelInfo): Promise<void> {
-  const { ToolCalling } = await import(
-    '../../../../../sdk/runanywhere-web/packages/llamacpp/src/index'
-  );
+async function generateWithToolCalling(
+  prompt: string,
+  assistantMsg: ChatMessage,
+  messagesEl: HTMLElement,
+): Promise<void> {
+  const options = buildGenerationOptions();
+  const controller = new AbortController();
+  cancelGeneration = () => controller.abort();
+  const forcedToolName = explicitlyRequestedDemoTool(prompt);
 
-  // Show "calling tools" indicator
-  const typingEl = document.getElementById('typing-indicator');
-  if (typingEl) {
-    typingEl.querySelector('.typing-text')!.textContent = 'Thinking with tools...';
-  }
-
-  const result = await ToolCalling.generateWithTools(text, {
-    maxToolCalls: 3,
-    autoExecute: true,
-    temperature: 0.3,
-    maxTokens: 1024,
+  const result = await RunAnywhere.generateWithTools(prompt, forcedToolName ? {
+    toolChoice: ToolChoiceMode.TOOL_CHOICE_MODE_SPECIFIC,
+    forcedToolName,
+  } : {}, {
+    signal: controller.signal,
+    llmOptions: options,
   });
 
-  hideTypingIndicator();
+  const split = splitThinking(result.text);
+  assistantMsg.content = split.content || (result.toolCalls.length > 0
+    ? 'The tool completed, but the model did not provide a final answer.'
+    : 'The model did not produce a tool call or answer. Please try again.');
+  assistantMsg.thinking = result.thinkingContent || split.thinking || undefined;
+  if (result.toolCalls.length > 0) {
+    assistantMsg.toolCalls = result.toolCalls.map((call) => {
+      const toolResult = result.toolResults.find(
+        (r) => r.name === call.name
+          && (!r.toolCallId || !call.id || r.toolCallId === call.id),
+      );
+      return {
+        name: call.name,
+        argumentsJson: call.argumentsJson,
+        resultJson: toolResult?.resultJson,
+        error: toolResult && !toolResult.success ? (toolResult.error || 'failed') : undefined,
+      };
+    });
+  }
+  renderLastMessage(messagesEl, assistantMsg);
+}
 
-  // Build tool call info for display
-  const toolCallInfos: ToolCallInfo[] = result.toolCalls.map((tc, i) => {
-    const tr = result.toolResults[i];
-    const argsPlain: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(tc.arguments)) {
-      argsPlain[k] = toolValueToPlain(v);
-    }
-    const resultPlain: Record<string, unknown> = {};
-    if (tr?.result) {
-      for (const [k, v] of Object.entries(tr.result)) {
-        resultPlain[k] = toolValueToPlain(v);
+const DEMO_TOOL_NAMES = ['calculate', 'get_current_time', 'get_weather'] as const;
+type DemoToolName = (typeof DEMO_TOOL_NAMES)[number];
+
+/** Honor an unambiguous, explicit tool-name request through the SDK's forced
+ * choice contract. Ordinary user language remains on automatic selection. */
+function explicitlyRequestedDemoTool(prompt: string): DemoToolName | null {
+  const requested = DEMO_TOOL_NAMES.filter((name) =>
+    new RegExp(`\\b${name}\\b`, 'i').test(prompt));
+  return requested.length === 1 ? requested[0]! : null;
+}
+
+// ---------------------------------------------------------------------------
+// Demo tools — iOS parity: ToolSettingsView.swift:32-139 (weather via
+// Open-Meteo, system time, safe calculator). Executors receive PARSED args
+// (Record<string, ToolValue>) and return Record<string, ToolValue>.
+// ---------------------------------------------------------------------------
+
+let demoToolsRegistered = false;
+
+function registerDemoTools(): void {
+  if (demoToolsRegistered) return;
+  demoToolsRegistered = true;
+
+  RunAnywhere.toolCalling.registerTool(
+    toolDefinition(
+      'get_weather',
+      'Gets the current weather for a given location using Open-Meteo API',
+      [stringParameter('location', "City name (e.g., 'San Francisco', 'London', 'Tokyo')")],
+    ),
+    async (args) => fetchWeather(toolValueString(args.location) ?? 'San Francisco'),
+  );
+
+  RunAnywhere.toolCalling.registerTool(
+    toolDefinition(
+      'get_current_time',
+      'Gets the current date, time, and timezone information',
+      [],
+    ),
+    () => {
+      const now = new Date();
+      return {
+        datetime: tv(now.toLocaleString(undefined, { dateStyle: 'full', timeStyle: 'medium' })),
+        time: tv(now.toLocaleTimeString(undefined, { hour12: false })),
+        timestamp: tv(now.toISOString()),
+        timezone: tv(Intl.DateTimeFormat().resolvedOptions().timeZone),
+        utc_offset: tv(`UTC${now.getTimezoneOffset() <= 0 ? '+' : '-'}${Math.abs(now.getTimezoneOffset() / 60)}`),
+      };
+    },
+  );
+
+  RunAnywhere.toolCalling.registerTool(
+    toolDefinition(
+      'calculate',
+      'Performs math calculations. Supports +, -, *, /, and parentheses',
+      [stringParameter('expression', "Math expression (e.g., '2 + 2 * 3', '(10 + 5) / 3')")],
+    ),
+    (args): Record<string, ToolValue> => {
+      // iOS parity (ToolSettingsView.swift:93-137): accept the expression
+      // from common alternative keys, clean unicode operators, evaluate
+      // deterministically (no eval()).
+      const expression = toolValueString(args.expression)
+        ?? toolValueString(args.input)
+        ?? toolValueString(args.expr)
+        ?? '';
+      if (!expression) {
+        return { error: tv('Missing expression argument') };
       }
+      const cleaned = expression
+        .replace(/=/g, '')
+        .replace(/x/gi, '*')
+        .replace(/×/g, '*')
+        .replace(/÷/g, '/')
+        .trim();
+      const value = safeMathEvaluate(cleaned);
+      if (value !== null) {
+        return { result: tv(value), expression: tv(expression) };
+      }
+      return {
+        error: tv(`Could not evaluate expression: ${expression}`),
+        expression: tv(expression),
+      };
+    },
+  );
+}
+
+function toolDefinition(
+  name: string,
+  description: string,
+  parameters: ToolDefinition['parameters'],
+): ToolDefinition {
+  return {
+    name,
+    description,
+    parameters,
+    category: 'Utility',
+    metadata: {},
+  };
+}
+
+function stringParameter(name: string, description: string): ToolDefinition['parameters'][number] {
+  return {
+    name,
+    type: ToolParameterType.TOOL_PARAMETER_TYPE_STRING,
+    description,
+    required: true,
+    enumValues: [],
+  };
+}
+
+function tv(value: string | number | boolean): ToolValue {
+  if (typeof value === 'string') return { stringValue: value };
+  if (typeof value === 'number') return { numberValue: value };
+  return { boolValue: value };
+}
+
+function toolValueString(value: ToolValue | undefined): string | null {
+  if (!value) return null;
+  if (value.stringValue !== undefined) return value.stringValue;
+  if (value.numberValue !== undefined) return String(value.numberValue);
+  return null;
+}
+
+/**
+ * Real weather lookup via Open-Meteo (free, no API key) — iOS parity:
+ * WeatherService (ToolSettingsView.swift:333-443). External demo call, not
+ * SDK auth/download traffic.
+ */
+async function fetchWeather(location: string): Promise<Record<string, ToolValue>> {
+  const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&language=en&format=json`;
+  const geoResponse = await fetch(geoUrl);
+  if (!geoResponse.ok) {
+    return { error: tv(`Weather location lookup failed (${geoResponse.status})`) };
+  }
+  const geoPayload: unknown = await geoResponse.json();
+  const first = parseOpenMeteoLocation(geoPayload);
+  if (!first) {
+    return {
+      error: tv(`Could not find location: ${location}`),
+      location: tv(location),
+    };
+  }
+
+  const weatherUrl = 'https://api.open-meteo.com/v1/forecast'
+    + `?latitude=${first.latitude}&longitude=${first.longitude}`
+    + '&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m'
+    + '&temperature_unit=fahrenheit&wind_speed_unit=mph';
+  const weatherResponse = await fetch(weatherUrl);
+  if (!weatherResponse.ok) {
+    return { error: tv(`Weather forecast lookup failed (${weatherResponse.status})`) };
+  }
+  const weatherPayload: unknown = await weatherResponse.json();
+  const current = parseOpenMeteoCurrentWeather(weatherPayload);
+  if (!current) {
+    return { error: tv('Could not parse weather data') };
+  }
+
+  return {
+    location: tv(first.name ?? location),
+    temperature: tv(current.temperature),
+    unit: tv('fahrenheit'),
+    humidity: tv(current.relativeHumidity),
+    wind_speed_mph: tv(current.windSpeed),
+    condition: tv(weatherCodeToCondition(current.weatherCode)),
+  };
+}
+
+interface OpenMeteoLocation {
+  latitude: number;
+  longitude: number;
+  name?: string;
+}
+
+interface OpenMeteoCurrentWeather {
+  temperature: number;
+  relativeHumidity: number;
+  weatherCode: number;
+  windSpeed: number;
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function parseOpenMeteoLocation(payload: unknown): OpenMeteoLocation | null {
+  if (!isJsonObject(payload) || !Array.isArray(payload.results)) return null;
+
+  for (const candidate of payload.results) {
+    if (
+      !isJsonObject(candidate)
+      || !isFiniteNumber(candidate.latitude)
+      || candidate.latitude < -90
+      || candidate.latitude > 90
+      || !isFiniteNumber(candidate.longitude)
+      || candidate.longitude < -180
+      || candidate.longitude > 180
+      || (candidate.name !== undefined && typeof candidate.name !== 'string')
+    ) {
+      continue;
     }
     return {
-      toolName: tc.toolName,
-      arguments: JSON.stringify(argsPlain, null, 2),
-      result: tr ? JSON.stringify(tr.success ? resultPlain : { error: tr.error }, null, 2) : undefined,
-      success: tr?.success ?? false,
-      error: tr?.error,
+      latitude: candidate.latitude,
+      longitude: candidate.longitude,
+      ...(candidate.name !== undefined ? { name: candidate.name } : {}),
     };
-  });
+  }
+  return null;
+}
 
-  const assistantMsg: ChatMessage = {
-    id: crypto.randomUUID(),
-    role: 'assistant',
-    content: result.text,
-    timestamp: Date.now(),
-    modelId: loaded.id,
-    toolCalls: toolCallInfos.length > 0 ? toolCallInfos : undefined,
+function parseOpenMeteoCurrentWeather(payload: unknown): OpenMeteoCurrentWeather | null {
+  if (!isJsonObject(payload) || !isJsonObject(payload.current)) return null;
+  const current = payload.current;
+  if (
+    !isFiniteNumber(current.temperature_2m)
+    || !isFiniteNumber(current.relative_humidity_2m)
+    || current.relative_humidity_2m < 0
+    || current.relative_humidity_2m > 100
+    || !isFiniteNumber(current.weather_code)
+    || !Number.isInteger(current.weather_code)
+    || !isFiniteNumber(current.wind_speed_10m)
+    || current.wind_speed_10m < 0
+  ) {
+    return null;
+  }
+  return {
+    temperature: current.temperature_2m,
+    relativeHumidity: current.relative_humidity_2m,
+    weatherCode: current.weather_code,
+    windSpeed: current.wind_speed_10m,
   };
-  messages.push(assistantMsg);
-  renderMessage(assistantMsg);
 }
 
-/**
- * Convert ToolValue to plain JS for display.
- */
-function toolValueToPlain(tv: { type: string; value?: unknown }): unknown {
-  switch (tv.type) {
-    case 'string': return tv.value;
-    case 'number': return tv.value;
-    case 'boolean': return tv.value;
-    case 'null': return null;
-    case 'array': return (tv.value as unknown[]).map((v) => toolValueToPlain(v as { type: string; value?: unknown }));
-    case 'object': {
-      const obj: Record<string, unknown> = {};
-      for (const [k, v] of Object.entries(tv.value as Record<string, unknown>)) {
-        obj[k] = toolValueToPlain(v as { type: string; value?: unknown });
-      }
-      return obj;
-    }
-    default: return tv.value;
-  }
+/** WMO weather code → condition — iOS parity: ToolSettingsView.swift:423-442. */
+function weatherCodeToCondition(code: number): string {
+  if (code === 0) return 'Clear sky';
+  if (code === 1) return 'Mainly clear';
+  if (code === 2) return 'Partly cloudy';
+  if (code === 3) return 'Overcast';
+  if (code === 45 || code === 48) return 'Foggy';
+  if (code >= 51 && code <= 55) return 'Drizzle';
+  if (code === 56 || code === 57) return 'Freezing drizzle';
+  if (code === 61 || code === 63 || code === 65) return 'Rain';
+  if (code === 66 || code === 67) return 'Freezing rain';
+  if (code === 71 || code === 73 || code === 75) return 'Snow';
+  if (code === 77) return 'Snow grains';
+  if (code >= 80 && code <= 82) return 'Rain showers';
+  if (code === 85 || code === 86) return 'Snow showers';
+  if (code === 95) return 'Thunderstorm';
+  if (code === 96 || code === 99) return 'Thunderstorm with hail';
+  return 'Unknown';
 }
 
 // ---------------------------------------------------------------------------
-// Render Messages
+// Safe math evaluator — iOS parity: SafeMathEvaluator
+// (ToolSettingsView.swift:455-570). Deterministic recursive-descent parser;
+// never uses eval(). Grammar: expr := term (("+"|"-") term)*;
+// term := factor (("*"|"/") factor)*; factor := ("+"|"-") factor | primary;
+// primary := number | "(" expr ")".
 // ---------------------------------------------------------------------------
 
-function renderMessage(msg: ChatMessage): void {
-  const row = document.createElement('div');
-  row.className = `message-row ${msg.role}`;
+function safeMathEvaluate(expression: string): number | null {
+  let index = 0;
 
-  let html = '';
-
-  if (msg.role === 'assistant' && msg.thinking) {
-    html += `
-      <div class="thinking-section" onclick="this.classList.toggle('expanded')">
-        <div class="thinking-header">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 1 1 7.072 0l-.548.547A3.374 3.374 0 0 0 12 18.469V19"/></svg>
-          <span>Thinking...</span>
-        </div>
-        <div class="thinking-content">${escapeHtml(msg.thinking)}</div>
-      </div>
-    `;
-  }
-
-  // Tool call pills (before the response text)
-  if (msg.toolCalls && msg.toolCalls.length > 0) {
-    html += '<div class="tool-calls-container mb-sm">';
-    for (const tc of msg.toolCalls) {
-      const statusClass = tc.success ? 'success' : 'error';
-      const statusIcon = tc.success
-        ? '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>'
-        : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
-      const pillId = `tool-pill-${msg.id}-${tc.toolName}`;
-      const detailId = `tool-detail-${msg.id}-${tc.toolName}`;
-      html += `
-        <span class="tool-call-pill ${statusClass}" id="${pillId}">
-          ${statusIcon}
-          ${escapeHtml(tc.toolName)}
-        </span>
-      `;
-      html += `
-        <div class="tool-call-detail hidden" id="${detailId}">
-          <h4>${escapeHtml(tc.toolName)}</h4>
-          <div class="text-secondary text-xs mb-xs">Arguments:</div>
-          <pre>${escapeHtml(tc.arguments)}</pre>
-          ${tc.result ? `<div class="text-secondary text-xs mb-xs">Result:</div><pre>${escapeHtml(tc.result)}</pre>` : ''}
-          ${tc.error ? `<div class="text-red text-xs">Error: ${escapeHtml(tc.error)}</div>` : ''}
-        </div>
-      `;
+  const skipWhitespace = (): void => {
+    while (index < expression.length && /\s/.test(expression[index])) index += 1;
+  };
+  const peek = (): string | null => {
+    skipWhitespace();
+    return index < expression.length ? expression[index] : null;
+  };
+  const match = (char: string): boolean => {
+    if (peek() === char) {
+      index += 1;
+      return true;
     }
-    html += '</div>';
-  }
+    return false;
+  };
 
-  html += `<div class="message-bubble ${msg.role}">${renderMarkdown(msg.content)}</div>`;
-
-  row.innerHTML = html;
-  messagesEl.appendChild(row);
-
-  // Attach click handlers for tool call pills to toggle detail views
-  if (msg.toolCalls) {
-    for (const tc of msg.toolCalls) {
-      const pillId = `tool-pill-${msg.id}-${tc.toolName}`;
-      const detailId = `tool-detail-${msg.id}-${tc.toolName}`;
-      const pill = row.querySelector(`#${pillId}`);
-      const detail = row.querySelector(`#${detailId}`);
-      if (pill && detail) {
-        pill.addEventListener('click', () => {
-          (detail as HTMLElement).classList.toggle('hidden');
-        });
+  const parseNumber = (): number | null => {
+    skipWhitespace();
+    const start = index;
+    let seenDot = false;
+    while (index < expression.length) {
+      const char = expression[index];
+      if (/\d/.test(char)) {
+        index += 1;
+      } else if (char === '.' && !seenDot) {
+        seenDot = true;
+        index += 1;
+      } else {
+        break;
       }
     }
+    if (index === start) return null;
+    const value = Number(expression.slice(start, index));
+    return Number.isFinite(value) ? value : null;
+  };
+
+  const parsePrimary = (): number | null => {
+    if (match('(')) {
+      const value = parseExpression();
+      if (value === null || !match(')')) return null;
+      return value;
+    }
+    return parseNumber();
+  };
+
+  const parseFactor = (): number | null => {
+    if (match('+')) return parseFactor();
+    if (match('-')) {
+      const value = parseFactor();
+      return value === null ? null : -value;
+    }
+    return parsePrimary();
+  };
+
+  const parseTerm = (): number | null => {
+    let value = parseFactor();
+    if (value === null) return null;
+    for (let op = peek(); op === '*' || op === '/'; op = peek()) {
+      index += 1;
+      const rhs = parseFactor();
+      if (rhs === null) return null;
+      if (op === '/') {
+        if (rhs === 0) return null;
+        value /= rhs;
+      } else {
+        value *= rhs;
+      }
+    }
+    return value;
+  };
+
+  const parseExpression = (): number | null => {
+    let value = parseTerm();
+    if (value === null) return null;
+    for (let op = peek(); op === '+' || op === '-'; op = peek()) {
+      index += 1;
+      const rhs = parseTerm();
+      if (rhs === null) return null;
+      value = op === '+' ? value + rhs : value - rhs;
+    }
+    return value;
+  };
+
+  const result = parseExpression();
+  skipWhitespace();
+  if (result === null || index < expression.length || !Number.isFinite(result)) {
+    return null;
   }
-
-  scrollToBottom();
+  return result;
 }
 
-/**
- * Create a streaming assistant bubble (starts empty, tokens appended later).
- */
-function renderStreamingBubble(msg: ChatMessage): { bubbleEl: HTMLElement; rowEl: HTMLElement } {
-  const row = document.createElement('div');
-  row.className = 'message-row assistant';
+// ---------------------------------------------------------------------------
+// IndexedDB conversation history.
+// ---------------------------------------------------------------------------
 
-  let html = '';
-  if (msg.modelId) {
-    const displayName = formatModelName(msg.modelId);
-    html += `<div class="model-badge">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9.75 3.104v5.714a2.25 2.25 0 0 1-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 0 1 4.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0 1 12 15a9.065 9.065 0 0 0-6.23.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0 1 12 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5"/></svg>
-      ${escapeHtml(displayName)}
-    </div>`;
+/**
+ * Convert completed UI turns into the public proto chat shape accepted by
+ * `RunAnywhere.generateStream({ history, conversationId })`. The current user
+ * prompt is deliberately not included; callers snapshot history before they
+ * append that prompt to the visible conversation.
+ */
+export function conversationHistoryForGeneration(
+  conversationMessages: readonly unknown[],
+): SDKChatMessage[] {
+  return conversationMessages
+    .filter(isChatMessage)
+    .filter(({ content }) => content.trim().length > 0)
+    .map((message) => ({
+      id: '',
+      role: message.role === 'user'
+        ? MessageRole.MESSAGE_ROLE_USER
+        : MessageRole.MESSAGE_ROLE_ASSISTANT,
+      content: message.content,
+      timestampUs: 0,
+      toolCalls: [],
+      status: ChatMessageStatus.CHAT_MESSAGE_STATUS_COMPLETE,
+      metadata: {},
+      attachments: [],
+    }));
+}
+
+async function loadConversation(): Promise<ChatMessage[]> {
+  const conversation = await ConversationsStore.getCurrent();
+  return conversation?.messages.filter(isChatMessage) ?? [];
+}
+
+async function saveConversation(): Promise<StoredConversation | null> {
+  try {
+    return await ConversationsStore.saveCurrent(messages);
+  } catch (error) {
+    if (!conversationStorageWarningShown) {
+      conversationStorageWarningShown = true;
+      showToast('This chat could not be saved to the local database.', 'warning', 4200);
+    }
+    appLogger.warning('[Chat] Conversation database write failed:', error);
+    return null;
   }
-  html += `<div class="message-bubble assistant" id="streaming-bubble-${msg.id}"></div>`;
-
-  row.innerHTML = html;
-  messagesEl.appendChild(row);
-  scrollToBottom();
-
-  const bubbleEl = row.querySelector<HTMLElement>(`#streaming-bubble-${msg.id}`)!;
-  return { bubbleEl, rowEl: row };
 }
 
-/**
- * Append a metrics footer below a message bubble.
- */
-function appendMetrics(rowEl: HTMLElement, metrics: {
-  tokens: number;
-  latencyMs: number;
-  tokensPerSecond: number;
-}): void {
-  const metricsEl = document.createElement('div');
-  metricsEl.className = 'message-metrics';
-  metricsEl.innerHTML = `
-    <span class="metric">
-      <span class="metric-value">${metrics.tokensPerSecond.toFixed(1)}</span> tok/s
-    </span>
-    <span class="metric-separator">&middot;</span>
-    <span class="metric">
-      <span class="metric-value">${metrics.tokens}</span> tokens
-    </span>
-    <span class="metric-separator">&middot;</span>
-    <span class="metric">
-      <span class="metric-value">${(metrics.latencyMs / 1000).toFixed(1)}s</span>
-    </span>
-  `;
-  rowEl.appendChild(metricsEl);
+function loadToolsEnabled(): boolean {
+  try {
+    return localStorage.getItem(TOOLS_ENABLED_STORAGE_KEY) === 'true';
+  } catch {
+    return false;
+  }
 }
 
-/**
- * Format a model ID into a shorter, display-friendly name.
- */
-function formatModelName(modelId: string): string {
-  const loaded = ModelManager.getLoadedModel(ModelCategory.Language);
-  if (loaded && loaded.id === modelId) return loaded.name;
-  return modelId
-    .replace(/-q\d.*$/i, '')
-    .replace(/-/g, ' ')
-    .replace(/\b\w/g, c => c.toUpperCase());
-}
-
-function showTypingIndicator(): void {
-  const indicator = document.createElement('div');
-  indicator.className = 'message-row assistant';
-  indicator.id = 'typing-indicator';
-  indicator.innerHTML = `
-    <div class="typing-indicator">
-      <div class="typing-dots">
-        <div class="typing-dot"></div>
-        <div class="typing-dot"></div>
-        <div class="typing-dot"></div>
-      </div>
-      <span class="typing-text">AI is thinking...</span>
-    </div>
-  `;
-  messagesEl.appendChild(indicator);
-  scrollToBottom();
-}
-
-function hideTypingIndicator(): void {
-  const indicator = document.getElementById('typing-indicator');
-  indicator?.remove();
-}
-
-function scrollToBottom(): void {
-  messagesEl.scrollTop = messagesEl.scrollHeight;
+function saveToolsEnabled(enabled: boolean): void {
+  try {
+    localStorage.setItem(TOOLS_ENABLED_STORAGE_KEY, String(enabled));
+  } catch { /* storage may not be available */ }
 }
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function escapeHtml(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+function isLLMBackendAvailable(): boolean {
+  try {
+    return RunAnywhere.textGeneration.supportsProtoLLM();
+  } catch {
+    return false;
+  }
 }
 
-function renderMarkdown(text: string): string {
-  return escapeHtml(text)
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/`(.*?)`/g, '<code class="inline-code">$1</code>')
+function navigateTo(tab: string): void {
+  window.dispatchEvent(new CustomEvent('runanywhere:navigate', { detail: { tab } }));
+}
+
+function svgIcon(paths: string): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
+}
+
+/**
+ * True when the C++ lifecycle reports an LLM loaded. Used to gate the chat
+ * Send button so users can't click into a silent no-op before loading a
+ * model from the toolbar picker.
+ */
+function isModelLoaded(): boolean {
+  try {
+    const current = RunAnywhere.currentModel({
+      category: ModelCategory.MODEL_CATEGORY_LANGUAGE,
+      includeModelMetadata: false,
+    });
+    return Boolean(current?.modelId);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Whether the loaded LLM supports a thinking phase — read from the registry
+ * record, same source iOS uses (LLMViewModel `loadedModelSupportsThinking`).
+ */
+function loadedModelSupportsThinking(): boolean {
+  try {
+    const current = RunAnywhere.currentModel({
+      category: ModelCategory.MODEL_CATEGORY_LANGUAGE,
+      includeModelMetadata: false,
+    });
+    if (!current?.modelId) return false;
+    return RunAnywhere.getModel(current.modelId)?.supportsThinking ?? false;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Split built-in thinking sections out of raw model text. Handles an
+ * unterminated tag while tokens are still streaming. iOS receives the
+ * split from commons (result.thinkingContent); the Web stream carries raw
+ * tokens, so the view performs the same tag split client-side.
+ */
+function splitThinking(raw: string): { content: string; thinking: string } {
+  const thinkingParts: string[] = [];
+  const content = raw.replace(
+    /<(think|thinking)>([\s\S]*?)(<\/\1>|$)/gi,
+    (_match, _tag: string, inner: string) => {
+      if (inner.trim().length > 0) thinkingParts.push(inner.trim());
+      return '';
+    },
+  );
+  return { content: content.trim(), thinking: thinkingParts.join('\n\n') };
+}
+
+// ---------------------------------------------------------------------------
+// Rendering
+// ---------------------------------------------------------------------------
+
+function greeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 5) return 'Working late?';
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}
+
+const STARTER_PROMPTS: Array<{ label: string; prompt: string; icon: string }> = [
+  {
+    label: 'Draft a message',
+    prompt: 'Help me draft a short, friendly message to my team about shipping our next release this Friday.',
+    icon: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  },
+  {
+    label: 'Explain a topic',
+    prompt: 'Explain how on-device AI keeps my data private, in simple terms.',
+    icon: '<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
+  },
+  {
+    label: 'Compare options',
+    prompt: 'Help me compare two small local models for private chat.',
+    icon: '<path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M21 3l-7 7"/><path d="M3 3l7 7"/><path d="M16 21h5v-5"/><path d="M8 21H3v-5"/><path d="M21 21l-7-7"/><path d="M3 21l7-7"/>',
+  },
+  {
+    label: 'Make a checklist',
+    prompt: 'Draft a concise checklist for testing an on-device AI app.',
+    icon: '<path d="M3 17l2 2 4-4"/><path d="M3 7l2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>',
+  },
+];
+
+function renderMessages(host: HTMLElement): void {
+  if (messages.length === 0) {
+    host.innerHTML = `
+      <div class="chat-empty-state">
+        <div class="empty-logo">${svgIcon('<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/><path d="M5 3l.8 2.2L8 6l-2.2.8L5 9l-.8-2.2L2 6l2.2-.8L5 3z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15z"/>')}</div>
+        <h3>${greeting()}</h3>
+        <p>
+          AI inference runs on this device. Setup, model downloads, and
+          enabled web tools may contact the services identified by the app.
+        </p>
+        <div class="suggestion-chips">
+          ${STARTER_PROMPTS.map((starter) => `
+            <button type="button" class="suggestion-chip" data-prompt="${escapeHtml(starter.prompt)}">
+              ${svgIcon(starter.icon)}
+              <span>${starter.label}</span>
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    `;
+    host.querySelectorAll<HTMLButtonElement>('[data-prompt]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const input = container.querySelector<HTMLTextAreaElement>('#chat-input');
+        if (!input) return;
+        input.value = button.dataset.prompt ?? '';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.focus();
+      });
+    });
+    return;
+  }
+
+  host.innerHTML = messages.map((msg, idx) => `
+    <div class="chat-message chat-message--${msg.role}" data-idx="${idx}">
+      ${renderMessageBody(msg)}
+      ${renderMessageActions(msg, idx)}
+    </div>
+  `).join('');
+
+  host.scrollTop = host.scrollHeight;
+}
+
+function renderMessageActions(msg: ChatMessage, idx: number): string {
+  if (msg.role !== 'assistant' || !msg.content) return '';
+  return `
+    <div class="chat-msg-actions">
+      <button type="button" class="chat-action-btn" data-copy-idx="${idx}" aria-label="Copy reply">
+        ${svgIcon('<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>')}
+        <span>Copy</span>
+      </button>
+    </div>
+  `;
+}
+
+function renderLastMessage(host: HTMLElement, msg: ChatMessage): void {
+  const last = host.lastElementChild;
+  if (last) {
+    last.innerHTML = renderMessageBody(msg, isGenerating);
+  }
+  host.scrollTop = host.scrollHeight;
+}
+
+function renderMessageBody(msg: ChatMessage, streaming = false): string {
+  // Collapsible thinking section — iOS parity:
+  // ChatMessageComponents.swift:128-181 (thinkingSection).
+  const thinking = msg.thinking?.trim();
+  const thinkingSection = msg.role === 'assistant' && thinking
+    ? `
+      <details class="chat-thinking">
+        <summary>Thinking</summary>
+        <pre class="chat-thinking-content">${escapeHtml(thinking)}</pre>
+      </details>
+    `
+    : '';
+
+  const toolSection = msg.role === 'assistant' && msg.toolCalls?.length
+    ? `
+      <div class="chat-tool-stack">
+        ${msg.toolCalls.map((call) => `
+          <details class="chat-tool-call">
+            <summary>
+              ${svgIcon(call.error
+                ? '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/>'
+                : '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9l-3.8 3.8z"/>')}
+              <span>${escapeHtml(call.name)}</span>
+              <small>${call.error ? 'failed' : 'completed'}</small>
+            </summary>
+            <pre>Args: ${escapeHtml(call.argumentsJson || '{}')}${call.resultJson ? `\nResult: ${escapeHtml(call.resultJson)}` : ''}${call.error ? `\nError: ${escapeHtml(call.error)}` : ''}</pre>
+          </details>
+        `).join('')}
+      </div>
+    `
+    : '';
+
+  const attachmentSection = msg.attachment
+    ? `
+      <div class="chat-attachment-card chat-attachment-card--${msg.attachment.kind}">
+        ${svgIcon(msg.attachment.kind === 'image'
+          ? '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10.5" r="1.5"/><path d="M21 15l-4.5-4.5L9 18"/>'
+          : '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8"/><path d="M8 17h5"/>')}
+        <span><strong>${escapeHtml(msg.attachment.name)}</strong><small>${escapeHtml(msg.attachment.detail ?? '')}</small></span>
+      </div>
+    `
+    : '';
+
+  const sourcesSection = msg.role === 'assistant' && msg.sources?.length
+    ? `
+      <div class="chat-source-strip">
+        <span class="chat-source-strip__label">Sources</span>
+        ${msg.sources.slice(0, 3).map((source, index) => `
+          <div class="chat-source">
+            <strong>${index + 1}. ${escapeHtml(source.document || 'Document')}</strong>
+            <span>${escapeHtml(source.text.slice(0, 180))}${source.text.length > 180 ? '...' : ''}</span>
+          </div>
+        `).join('')}
+      </div>
+    `
+    : '';
+
+  const cursor = streaming && msg.role === 'assistant'
+    ? '<span class="chat-cursor" aria-hidden="true"></span>'
+    : '';
+  const body = msg.content
+    ? renderMarkdownLite(msg.content) + cursor
+    : (streaming
+      ? (thinking
+        ? `<span class="chat-bubble-typing">Thinking&hellip;</span>${cursor}`
+        : cursor || '<span class="chat-bubble-typing">&hellip;</span>')
+      : '<span class="chat-bubble-typing">No final answer was generated.</span>');
+
+  return `${thinkingSection}${toolSection}<div class="chat-bubble">${attachmentSection}${body}${sourcesSection}</div>`;
+}
+
+/**
+ * Minimal markdown rendering on top of escapeHtml (kept dependency-free):
+ * fenced code blocks, inline code, and bold. Everything passes through
+ * escapeHtml first, so model output can never inject markup.
+ */
+function renderMarkdownLite(text: string): string {
+  const codeBlocks: string[] = [];
+  const escaped = escapeHtml(text);
+  // Fenced code blocks (tolerates an unterminated fence while streaming).
+  let html = escaped.replace(/```[^\n`]*\n?([\s\S]*?)(?:```|$)/g, (_match, code: string) => {
+    codeBlocks.push(`<pre class="chat-code"><code>${code.replace(/\n$/, '')}</code></pre>`);
+    return `\uE000${codeBlocks.length - 1}\uE000`;
+  });
+  html = html
+    .replace(/`([^`\n]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
     .replace(/\n/g, '<br>');
+  return html.replace(/\uE000(\d+)\uE000/g, (_match, i: string) => codeBlocks[Number(i)]);
+}
+
+export function formatChatError(error: unknown): string {
+  return `Error: ${formatError(error)}`;
 }

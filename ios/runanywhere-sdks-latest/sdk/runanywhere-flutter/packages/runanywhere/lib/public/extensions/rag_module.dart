@@ -25,15 +25,10 @@
 /// // Use DartBridgeRAG for pipeline operations
 /// DartBridgeRAG.shared.createPipeline(config: myConfig);
 /// ```
-library rag_module;
+library;
 
-import 'package:runanywhere/core/module/runanywhere_module.dart';
-import 'package:runanywhere/core/types/model_types.dart';
-import 'package:runanywhere/core/types/sdk_component.dart';
-import 'package:runanywhere/foundation/error_types/sdk_error.dart';
 import 'package:runanywhere/foundation/logging/sdk_logger.dart';
 import 'package:runanywhere/native/dart_bridge_rag.dart';
-import 'package:runanywhere/native/ffi_types.dart';
 
 /// RAG module for Retrieval-Augmented Generation.
 ///
@@ -42,33 +37,8 @@ import 'package:runanywhere/native/ffi_types.dart';
 /// already-registered LlamaCpp backend.
 ///
 /// Matches the Swift RAGModule pattern from the iOS SDK.
-class RAGModule implements RunAnywhereModule {
-  // ============================================================================
-  // Singleton Pattern (matches LlamaCpp pattern exactly)
-  // ============================================================================
-
-  static final RAGModule _instance = RAGModule._internal();
-  static RAGModule get module => _instance;
-  RAGModule._internal();
-
-  // ============================================================================
-  // RunAnywhereModule Conformance
-  // ============================================================================
-
-  @override
-  String get moduleId => 'rag';
-
-  @override
-  String get moduleName => 'RAG';
-
-  @override
-  Set<SDKComponent> get capabilities => {SDKComponent.llm};
-
-  @override
-  int get defaultPriority => 100;
-
-  @override
-  InferenceFramework get inferenceFramework => InferenceFramework.onnx;
+class RAGModule {
+  RAGModule._();
 
   // ============================================================================
   // Registration State
@@ -95,18 +65,7 @@ class RAGModule implements RunAnywhereModule {
     _logger.info('Registering RAG backend with C++ registry...');
 
     try {
-      final result = DartBridgeRAG.registerBackend();
-      _logger.info(
-        'rac_backend_rag_register() returned: $result (${RacResultCode.getMessage(result)})',
-      );
-
-      if (result != RacResultCode.success &&
-          result != RacResultCode.errorModuleAlreadyRegistered) {
-        _logger.error('RAG backend registration FAILED with code: $result');
-        throw SDKError.frameworkNotAvailable(
-          'RAG backend registration failed with code: $result (${RacResultCode.getMessage(result)})',
-        );
-      }
+      DartBridgeRAG.shared.register();
 
       _isRegistered = true;
       _logger.info('RAG backend registered successfully');
@@ -122,7 +81,7 @@ class RAGModule implements RunAnywhereModule {
       return;
     }
 
-    DartBridgeRAG.unregisterBackend();
+    DartBridgeRAG.shared.unregister();
     _isRegistered = false;
     _logger.info('RAG backend unregistered');
   }

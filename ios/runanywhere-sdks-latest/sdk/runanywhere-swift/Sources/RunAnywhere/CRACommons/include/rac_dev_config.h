@@ -2,18 +2,20 @@
  * @file rac_dev_config.h
  * @brief Development mode configuration API
  *
- * Provides access to development mode configuration values.
- * The actual values are defined in development_config.cpp which is git-ignored.
+ * Provides access to development mode configuration values. Normal builds use
+ * the credential-free tracked template. Developers may explicitly opt in to
+ * the ignored development_config.cpp with RAC_INCLUDE_LOCAL_DEV_CONFIG=ON.
  *
  * This allows:
- * - Cross-platform sharing of dev config (iOS, Android, Flutter)
- * - Git-ignored secrets with template for developers
+ * - Cross-platform sharing of explicitly enabled local development config
+ * - Git-ignored credentials with a credential-free build default
  * - Consistent development environment across SDKs
  *
  * Security Model:
  * - development_config.cpp is in .gitignore (not committed to main branch)
- * - Real values are ONLY in release tags (for SPM/Maven distribution)
- * - Used ONLY when SDK is in .development mode
+ * - Normal, CI, and release builds never compile the ignored local file
+ * - Local values require RAC_INCLUDE_LOCAL_DEV_CONFIG=ON and must never be packaged
+ * - Values are used only when the SDK is in .development mode
  * - Backend validates build token via POST /api/v1/devices/register/dev
  */
 
@@ -56,12 +58,6 @@ RAC_API const char* rac_dev_config_get_supabase_key(void);
  */
 RAC_API const char* rac_dev_config_get_build_token(void);
 
-/**
- * @brief Get Sentry DSN for crash reporting (optional)
- * @return Sentry DSN string, or NULL if not configured
- */
-RAC_API const char* rac_dev_config_get_sentry_dsn(void);
-
 // =============================================================================
 // Convenience Functions
 // =============================================================================
@@ -77,6 +73,26 @@ RAC_API bool rac_dev_config_has_supabase(void);
  * @return true if build token is non-empty
  */
 RAC_API bool rac_dev_config_has_build_token(void);
+
+// =============================================================================
+// Usability Checks (canonical, shared by all SDKs)
+// =============================================================================
+
+/**
+ * @brief Whether a baked-in credential string is usable: non-empty and not a
+ *        scaffolding placeholder ("your_...", "<your...", "replace_me",
+ *        "placeholder").
+ * @param value Credential string (may be NULL → not usable)
+ * @return true if the credential looks real and usable
+ */
+RAC_API bool rac_dev_config_is_usable_credential(const char* value);
+
+/**
+ * @brief Whether a string is a usable absolute http(s) URL.
+ * @param value URL string (may be NULL → not usable)
+ * @return true if the URL is well-formed and usable
+ */
+RAC_API bool rac_dev_config_is_usable_http_url(const char* value);
 
 #ifdef __cplusplus
 }

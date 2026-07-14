@@ -39,7 +39,6 @@ import os
 
 @MainActor
 final class FlowSessionManager: ObservableObject {
-
     static let shared = FlowSessionManager()
 
     private let logger = Logger(subsystem: "com.runanywhere", category: "FlowSession")
@@ -137,27 +136,7 @@ final class FlowSessionManager: ObservableObject {
         SharedDataBridge.shared.lastHeartbeatTimestamp = Date().timeIntervalSince1970
         transition(to: .activating)
 
-        // ── Model: load if not already in memory ────────────────────────────
-        if await RunAnywhere.currentSTTModel == nil {
-            if let preferredId = SharedDataBridge.shared.preferredSTTModelId {
-                logger.info("Auto-loading preferred STT model: \(preferredId)")
-                do {
-                    try await RunAnywhere.loadSTTModel(preferredId)
-                } catch {
-                    lastError = "Could not load model. Please check Voice Keyboard settings."
-                    logger.error("Auto-load failed: \(error.localizedDescription)")
-                    SharedDataBridge.shared.clearSession()
-                    transition(to: .idle)
-                    return
-                }
-            } else {
-                lastError = "No STT model selected. Open Voice Keyboard settings to download one."
-                logger.error("No STT model — aborting flow session")
-                SharedDataBridge.shared.clearSession()
-                transition(to: .idle)
-                return
-            }
-        }
+        guard await ensureSTTModelLoaded() else { return }
 
         // ── Microphone permission ────────────────────────────────────────────
         let permitted = await audioCapture.requestPermission()
@@ -169,30 +148,7 @@ final class FlowSessionManager: ObservableObject {
             return
         }
 
-        // ── Start AVAudioEngine while still foregrounded ─────────────────────
-        // iOS blocks engine.start() from a backgrounded app (error 'what'/2003329396).
-        // UIBackgroundModes:audio allows a running engine to CONTINUE in background,
-        // but the engine MUST be started here while the app is still visible.
-        // Buffer accumulation is gated by sessionPhase (.listening only) in the callback.
-        do {
-            try audioCapture.startRecording { [weak self] data in
-                // AudioCaptureManager dispatches this callback on DispatchQueue.main
-                MainActor.assumeIsolated {
-                    guard let self else { return }
-                    // Always update audio level for waveform display
-                    SharedDataBridge.shared.audioLevel = self.audioCapture.audioLevel
-                    // Only accumulate audio data during the explicit listening window
-                    guard case .listening = self.sessionPhase else { return }
-                    self.audioBuffer.append(data)
-                }
-            }
-        } catch {
-            lastError = "Could not start microphone: \(error.localizedDescription)"
-            logger.error("Audio engine start failed: \(error.localizedDescription)")
-            SharedDataBridge.shared.clearSession()
-            transition(to: .idle)
-            return
-        }
+        guard await startAudioCapture() else { return }
 
         // Start Live Activity while still foregrounded
         if #available(iOS 16.1, *) { startLiveActivity() }
@@ -205,6 +161,64 @@ final class FlowSessionManager: ObservableObject {
         SharedDataBridge.shared.sessionState = "ready"
         DarwinNotificationCenter.shared.post(name: SharedConstants.DarwinNotifications.sessionReady)
         logger.info("Flow session ready — mic active in background")
+    }
+
+    /// Ensure an STT model is loaded; returns true on success. On failure the
+    /// session is transitioned back to `.idle` and `lastError` is populated.
+    private func ensureSTTModelLoaded() async -> Bool {
+        var req = RACurrentModelRequest()
+        req.category = .speechRecognition
+        if RunAnywhere.currentModel(req).found { return true }
+
+        guard let preferredId = SharedDataBridge.shared.preferredSTTModelId else {
+            lastError = "No STT model selected. Open Voice Keyboard settings to download one."
+            logger.error("No STT model — aborting flow session")
+            SharedDataBridge.shared.clearSession()
+            transition(to: .idle)
+            return false
+        }
+
+        logger.info("Auto-loading preferred STT model: \(preferredId)")
+        var request = RAModelLoadRequest()
+        request.modelID = preferredId
+        request.category = .speechRecognition
+        let result = await RunAnywhere.loadModel(request)
+        if result.success {
+            return true
+        } else {
+            lastError = "Could not load model. Please check Voice Keyboard settings."
+            logger.error("Auto-load failed: \(result.errorMessage)")
+            SharedDataBridge.shared.clearSession()
+            transition(to: .idle)
+            return false
+        }
+    }
+
+    /// Start AVAudioEngine. Returns true on success. On failure the session is
+    /// transitioned back to `.idle` and `lastError` is populated.
+    ///
+    /// iOS blocks engine.start() from a backgrounded app (error 'what'/2003329396).
+    /// UIBackgroundModes:audio allows a running engine to CONTINUE in background,
+    /// but the engine MUST be started while the app is still visible.
+    /// Buffer accumulation is gated by sessionPhase (.listening only).
+    private func startAudioCapture() async -> Bool {
+        do {
+            try await AudioCapturePump.startRecording(with: audioCapture) { [weak self] data in
+                guard let self else { return }
+                // Always update audio level for waveform display
+                SharedDataBridge.shared.audioLevel = self.audioCapture.audioLevel
+                // Only accumulate audio data during the explicit listening window
+                guard case .listening = self.sessionPhase else { return }
+                self.audioBuffer.append(data)
+            }
+            return true
+        } catch {
+            lastError = "Could not start microphone: \(error.localizedDescription)"
+            logger.error("Audio engine start failed: \(error.localizedDescription)")
+            SharedDataBridge.shared.clearSession()
+            transition(to: .idle)
+            return false
+        }
     }
 
     // MARK: - Listening Lifecycle (State: ready → listening)
@@ -280,7 +294,8 @@ final class FlowSessionManager: ObservableObject {
         logger.info("Transcribing \(audio.count) bytes")
 
         do {
-            let text = try await RunAnywhere.transcribe(audio)
+            let output = try await RunAnywhere.transcribe(audio: audio)
+            let text = output.text
             logger.info("Transcription complete: \"\(text)\"")
             wordCount += text.split(separator: " ").count
 
@@ -358,8 +373,10 @@ final class FlowSessionManager: ObservableObject {
     private func updateLiveActivity(phase: String, transcript: String) async {
         guard let activity = liveActivity else { return }
         let state = DictationActivityAttributes.ContentState(
-            phase: phase, elapsedSeconds: elapsedSeconds,
-            transcript: transcript, wordCount: wordCount
+            phase: phase,
+            elapsedSeconds: elapsedSeconds,
+            transcript: transcript,
+            wordCount: wordCount
         )
         await activity.update(.init(state: state, staleDate: nil))
     }
@@ -368,8 +385,10 @@ final class FlowSessionManager: ObservableObject {
     private func endLiveActivity(transcript: String) async {
         guard let activity = liveActivity else { return }
         let finalState = DictationActivityAttributes.ContentState(
-            phase: "done", elapsedSeconds: elapsedSeconds,
-            transcript: transcript, wordCount: wordCount
+            phase: "done",
+            elapsedSeconds: elapsedSeconds,
+            transcript: transcript,
+            wordCount: wordCount
         )
         await activity.end(.init(state: finalState, staleDate: nil), dismissalPolicy: .after(.now + 4))
         liveActivity = nil
@@ -383,7 +402,7 @@ final class FlowSessionManager: ObservableObject {
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 1_000_000_000)
                 guard let self else { break }
-                let phase = await self.sessionPhase
+                let phase = self.sessionPhase
                 guard phase != .idle else { break }
                 await MainActor.run {
                     self.elapsedSeconds += 1
@@ -391,7 +410,7 @@ final class FlowSessionManager: ObservableObject {
                     SharedDataBridge.shared.lastHeartbeatTimestamp = Date().timeIntervalSince1970
                 }
                 if #available(iOS 16.1, *) {
-                    let currentPhase = await self.sessionPhase
+                    let currentPhase = self.sessionPhase
                     await self.updateLiveActivity(phase: currentPhase.liveActivityPhase, transcript: "")
                 }
             }

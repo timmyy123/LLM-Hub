@@ -15,7 +15,7 @@ protocol BenchmarkScenarioProvider: Sendable {
     func scenarios() -> [BenchmarkScenario]
     func execute(
         scenario: BenchmarkScenario,
-        model: ModelInfo
+        model: RAModelInfo
     ) async throws -> BenchmarkMetrics
 }
 
@@ -23,6 +23,7 @@ protocol BenchmarkScenarioProvider: Sendable {
 
 enum BenchmarkRunnerError: LocalizedError {
     case noModelsAvailable(skippedCategories: [BenchmarkCategory])
+    case noWorkItems(skippedCategories: [BenchmarkCategory])
     case fetchModelsFailed(underlying: Error)
 
     var errorDescription: String? {
@@ -30,6 +31,15 @@ enum BenchmarkRunnerError: LocalizedError {
         case .noModelsAvailable(let skipped):
             let names = skipped.map(\.displayName).joined(separator: ", ")
             return "No downloaded models found for: \(names). Download models first from the Models tab."
+        case .noWorkItems(let skipped):
+            if skipped.isEmpty {
+                return "No benchmarks to run. Select at least one downloaded model and try again."
+            }
+            let names = skipped.map(\.displayName).joined(separator: ", ")
+            return """
+            No benchmarks to run. Missing on-disk models for: \(names). \
+            Download models first from the Models tab.
+            """
         case .fetchModelsFailed(let error):
             return "Failed to fetch available models: \(error.localizedDescription)"
         }
@@ -39,15 +49,23 @@ enum BenchmarkRunnerError: LocalizedError {
 // MARK: - Pre-flight Result
 
 struct BenchmarkPreflightResult: Sendable {
-    let availableCategories: [BenchmarkCategory: [ModelInfo]]
+    let availableCategories: [BenchmarkCategory: [RAModelInfo]]
     let skippedCategories: [BenchmarkCategory]
     let totalWorkItems: Int
+}
+
+// MARK: - Work Item
+
+/// One scenario/model pair to execute in a single benchmark category.
+struct BenchmarkWorkItem: Sendable {
+    let category: BenchmarkCategory
+    let model: RAModelInfo
+    let scenario: BenchmarkScenario
 }
 
 // MARK: - Runner
 
 final class BenchmarkRunner {
-
     private let providers: [BenchmarkCategory: BenchmarkScenarioProvider]
 
     init() {
@@ -56,8 +74,7 @@ final class BenchmarkRunner {
             LLMBenchmarkProvider(),
             STTBenchmarkProvider(),
             TTSBenchmarkProvider(),
-            VLMBenchmarkProvider(),
-            DiffusionBenchmarkProvider(),
+            VLMBenchmarkProvider()
         ]
         for provider in all {
             map[provider.category] = provider
@@ -70,14 +87,22 @@ final class BenchmarkRunner {
     /// Checks which categories have downloaded models before running. This lets the UI
     /// inform the user which categories will be skipped.
     func preflight(categories: Set<BenchmarkCategory>) async throws -> BenchmarkPreflightResult {
-        let allModels: [ModelInfo]
-        do {
-            allModels = try await RunAnywhere.availableModels()
-        } catch {
-            throw BenchmarkRunnerError.fetchModelsFailed(underlying: error)
-        }
+        await RunAnywhere.refreshModelRegistry()
 
-        var available: [BenchmarkCategory: [ModelInfo]] = [:]
+        let allModels: [RAModelInfo]
+        let listResult = await RunAnywhere.listModels()
+        guard listResult.success else {
+            throw BenchmarkRunnerError.fetchModelsFailed(
+                underlying: SDKException(
+                    code: .processingFailed,
+                    message: listResult.errorMessage.isEmpty ? "model registry" : listResult.errorMessage,
+                    category: .internal
+                )
+            )
+        }
+        allModels = listResult.models.models
+
+        var available: [BenchmarkCategory: [RAModelInfo]] = [:]
         var skipped: [BenchmarkCategory] = []
 
         for category in BenchmarkCategory.allCases where categories.contains(category) {
@@ -85,9 +110,7 @@ final class BenchmarkRunner {
                 skipped.append(category)
                 continue
             }
-            let models = allModels.filter {
-                $0.category == category.modelCategory && $0.isDownloaded && !$0.isBuiltIn
-            }
+            let models = Self.downloadedModels(for: category, in: allModels)
             if models.isEmpty {
                 skipped.append(category)
             } else {
@@ -110,65 +133,66 @@ final class BenchmarkRunner {
 
     // MARK: - Run
 
+    // swiftlint:disable:next function_body_length
     func runBenchmarks(
         categories: Set<BenchmarkCategory>,
+        modelIds: Set<String>? = nil,
         onProgress: @escaping @Sendable (BenchmarkProgressUpdate) -> Void
     ) async throws -> BenchmarkRunOutput {
         let preflight = try await preflight(categories: categories)
 
         // If nothing to run, throw a descriptive error
-        if preflight.availableCategories.isEmpty {
+        if preflight.availableCategories.isEmpty || preflight.totalWorkItems == 0 {
             throw BenchmarkRunnerError.noModelsAvailable(
                 skippedCategories: preflight.skippedCategories
             )
         }
 
-        // Build work list: (category, model, scenario)
-        var workItems: [(BenchmarkCategory, ModelInfo, BenchmarkScenario)] = []
+        let workItems = buildWorkItems(
+            categories: categories,
+            modelIds: modelIds,
+            preflight: preflight
+        )
 
-        for category in BenchmarkCategory.allCases where categories.contains(category) {
-            guard let provider = providers[category],
-                  let models = preflight.availableCategories[category] else { continue }
-            let scenarioList = provider.scenarios()
-            for model in models {
-                for scenario in scenarioList {
-                    workItems.append((category, model, scenario))
-                }
-            }
+        guard !workItems.isEmpty else {
+            throw BenchmarkRunnerError.noWorkItems(
+                skippedCategories: preflight.skippedCategories
+            )
         }
 
         let total = workItems.count
         var results: [BenchmarkResult] = []
 
-        for (index, (category, model, scenario)) in workItems.enumerated() {
+        for (index, item) in workItems.enumerated() {
             try Task.checkCancellation()
 
             onProgress(BenchmarkProgressUpdate(
                 completedCount: index,
                 totalCount: total,
-                currentScenario: scenario.name,
-                currentModel: model.name
+                currentScenario: item.scenario.name,
+                currentModel: item.model.name
             ))
 
             let metrics: BenchmarkMetrics
             do {
-                guard let provider = providers[category] else { continue }
+                guard let provider = providers[item.category] else { continue }
                 metrics = try await provider.execute(
-                    scenario: scenario,
-                    model: model
+                    scenario: item.scenario,
+                    model: item.model
                 )
             } catch is CancellationError {
                 throw CancellationError()
             } catch {
                 var errorMetrics = BenchmarkMetrics()
-                errorMetrics.errorMessage = "\(category.displayName) [\(model.name)]: \(error.localizedDescription)"
+                let prefix = "\(item.category.displayName) [\(item.model.name)]"
+                errorMetrics.errorMessage = "\(prefix): \(error.localizedDescription)"
                 metrics = errorMetrics
             }
 
             results.append(BenchmarkResult(
-                category: category,
-                scenario: scenario,
-                modelInfo: ComponentModelInfo(from: model),
+                category: item.category,
+                scenario: item.scenario,
+                modelInfo: ComponentModelInfo(from: item.model),
                 metrics: metrics
             ))
         }
@@ -185,5 +209,48 @@ final class BenchmarkRunner {
             results: results,
             skippedCategories: preflight.skippedCategories
         )
+    }
+
+    /// Expand `(category × model × scenario)` into a flat list of work items.
+    private func buildWorkItems(
+        categories: Set<BenchmarkCategory>,
+        modelIds: Set<String>?,
+        preflight: BenchmarkPreflightResult
+    ) -> [BenchmarkWorkItem] {
+        var workItems: [BenchmarkWorkItem] = []
+        for category in BenchmarkCategory.allCases where categories.contains(category) {
+            guard let provider = providers[category],
+                  let models = preflight.availableCategories[category] else { continue }
+            let filteredModels: [RAModelInfo]
+            if let modelIds, !modelIds.isEmpty {
+                filteredModels = models.filter { modelIds.contains($0.id) }
+            } else {
+                filteredModels = models
+            }
+            let scenarioList = provider.scenarios()
+            for model in filteredModels {
+                for scenario in scenarioList {
+                    workItems.append(BenchmarkWorkItem(
+                        category: category,
+                        model: model,
+                        scenario: scenario
+                    ))
+                }
+            }
+        }
+        return workItems
+    }
+
+    /// Models whose artifacts exist on disk (registry `isDownloaded` may be stale).
+    static func downloadedModels(
+        for category: BenchmarkCategory,
+        in allModels: [RAModelInfo]
+    ) -> [RAModelInfo] {
+        allModels.filter { model in
+            guard model.category == category.modelCategory, !model.isBuiltIn else { return false }
+            if model.isDownloadedOnDisk { return true }
+            // Post-download registry may mark downloaded before artifact probe catches up.
+            return model.isDownloaded && !model.localPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
     }
 }

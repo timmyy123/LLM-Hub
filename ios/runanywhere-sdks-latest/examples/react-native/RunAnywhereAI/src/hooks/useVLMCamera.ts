@@ -33,11 +33,12 @@ export interface VLMCameraState {
 export interface VLMCameraActions {
   requestCameraPermission: () => Promise<void>;
   checkModelStatus: () => Promise<void>;
-  loadModel: (modelPath: string, modelName: string, mmprojPath?: string) => Promise<void>;
+  loadModel: (modelId: string, modelName: string) => Promise<void>;
   captureAndDescribe: () => Promise<void>;
   selectPhotoAndDescribe: () => Promise<void>;
   toggleAutoStreaming: () => void;
   cancelGeneration: () => void;
+  clearError: () => void;
 }
 
 export type VLMCameraHook = VLMCameraState & VLMCameraActions;
@@ -51,7 +52,9 @@ const SINGLE_CAPTURE_PROMPT = 'Describe what you see briefly.';
 const GALLERY_MAX_TOKENS = 300;
 const GALLERY_PROMPT = 'Describe this image in detail.';
 
-export function useVLMCamera(cameraRef: React.RefObject<Camera>): VLMCameraHook {
+export function useVLMCamera(
+  cameraRef: React.RefObject<Camera | null>
+): VLMCameraHook {
   // 1. CRITICAL FIX: Memoize the service so it survives re-renders
   const vlmService = useMemo(() => new VLMService(), []);
 
@@ -69,6 +72,7 @@ export function useVLMCamera(cameraRef: React.RefObject<Camera>): VLMCameraHook 
   // 2. Cleanup only when the component truly unmounts
   useEffect(() => {
     return () => {
+      // eslint-disable-next-line no-console -- demo camera lifecycle diagnostic
       console.log('[useVLMCamera] Unmounting - Cleaning up');
       if (autoStreamIntervalRef.current) {
         clearInterval(autoStreamIntervalRef.current);
@@ -79,7 +83,10 @@ export function useVLMCamera(cameraRef: React.RefObject<Camera>): VLMCameraHook 
   }, [vlmService]);
 
   const requestCameraPermission = useCallback(async () => {
-    const permission = Platform.OS === 'ios' ? PERMISSIONS.IOS.CAMERA : PERMISSIONS.ANDROID.CAMERA;
+    const permission =
+      Platform.OS === 'ios'
+        ? PERMISSIONS.IOS.CAMERA
+        : PERMISSIONS.ANDROID.CAMERA;
     const result = await check(permission);
 
     if (result === RESULTS.GRANTED) {
@@ -103,15 +110,15 @@ export function useVLMCamera(cameraRef: React.RefObject<Camera>): VLMCameraHook 
   }, [vlmService]);
 
   const loadModel = useCallback(
-    async (modelPath: string, modelName: string, mmprojPath?: string) => {
+    async (modelId: string, modelName: string) => {
       try {
         setIsProcessing(true);
         // Load into the persistent service instance
-        await vlmService.loadModel(modelPath, mmprojPath, modelName);
+        await vlmService.loadModel(modelId, modelName);
         setIsModelLoaded(true);
         setLoadedModelName(modelName);
         setError(null);
-      } catch (err: any) {
+      } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Failed to load model';
         setError(msg);
         setIsModelLoaded(false);
@@ -132,12 +139,15 @@ export function useVLMCamera(cameraRef: React.RefObject<Camera>): VLMCameraHook 
     try {
       // FIX: Removed 'qualityPrioritization' (invalid in V4)
       const photo = await cameraRef.current.takePhoto({
-        enableShutterSound: false
+        enableShutterSound: false,
       });
 
-      // Use the service to describe with a callback for streaming
-      await vlmService.describeImage(
-        photo.path,
+      // Strip file:// prefix if present (VisionCamera may return a URI)
+      const cleanPath = photo.path.replace('file://', '');
+
+      // Use the service to process the image with a callback for streaming
+      await vlmService.processImage(
+        cleanPath,
         SINGLE_CAPTURE_PROMPT,
         SINGLE_CAPTURE_MAX_TOKENS,
         (token) => {
@@ -155,7 +165,10 @@ export function useVLMCamera(cameraRef: React.RefObject<Camera>): VLMCameraHook 
 
   const selectPhotoAndDescribe = useCallback(async () => {
     try {
-      const result = await launchImageLibrary({ mediaType: 'photo', quality: 1 });
+      const result = await launchImageLibrary({
+        mediaType: 'photo',
+        quality: 1,
+      });
       if (result.didCancel || !result.assets?.[0]?.uri) return;
 
       const photoUri = result.assets[0].uri;
@@ -166,7 +179,7 @@ export function useVLMCamera(cameraRef: React.RefObject<Camera>): VLMCameraHook 
       // Strip file prefix if needed
       const cleanPath = photoUri.replace('file://', '');
 
-      await vlmService.describeImage(
+      await vlmService.processImage(
         cleanPath,
         GALLERY_PROMPT,
         GALLERY_MAX_TOKENS,
@@ -187,16 +200,19 @@ export function useVLMCamera(cameraRef: React.RefObject<Camera>): VLMCameraHook 
    */
   const performAutoStreamCapture = useCallback(async () => {
     if (!cameraRef.current) return;
-    
+
     try {
       // FIX: Removed 'qualityPrioritization'
       const photo = await cameraRef.current.takePhoto({
-        enableShutterSound: false
+        enableShutterSound: false,
       });
 
+      // Strip file:// prefix if present (VisionCamera may return a URI)
+      const cleanPath = photo.path.replace('file://', '');
+
       let accumulatedText = '';
-      await vlmService.describeImage(
-        photo.path,
+      await vlmService.processImage(
+        cleanPath,
         AUTO_STREAM_PROMPT,
         AUTO_STREAM_MAX_TOKENS,
         (token) => {
@@ -243,5 +259,6 @@ export function useVLMCamera(cameraRef: React.RefObject<Camera>): VLMCameraHook 
     selectPhotoAndDescribe,
     toggleAutoStreaming,
     cancelGeneration: () => vlmService.cancel(),
+    clearError: () => setError(null),
   };
 }

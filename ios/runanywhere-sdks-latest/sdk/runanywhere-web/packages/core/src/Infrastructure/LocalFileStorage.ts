@@ -26,7 +26,12 @@
  *   }
  */
 
-import { SDKLogger } from '../Foundation/SDKLogger';
+import { SDKLogger } from '../Foundation/SDKLogger.js';
+import {
+  getStoredDirectoryName,
+  rememberDirectoryName,
+  sanitizeStorageFilename,
+} from './StoragePathResolver.js';
 
 const logger = new SDKLogger('LocalFileStorage');
 
@@ -52,7 +57,6 @@ const DB_NAME = 'runanywhere-storage';
 const DB_VERSION = 1;
 const STORE_NAME = 'handles';
 const HANDLE_KEY = 'modelDirectory';
-const LS_DIR_NAME_KEY = 'runanywhere_storage_dir_name';
 
 // ---------------------------------------------------------------------------
 // LocalFileStorage
@@ -81,11 +85,7 @@ export class LocalFileStorage {
    * Returns the folder name only (e.g. "ai-models"), not the full path.
    */
   static get storedDirectoryName(): string | null {
-    try {
-      return localStorage.getItem(LS_DIR_NAME_KEY);
-    } catch {
-      return null;
-    }
+    return getStoredDirectoryName();
   }
 
   // -------------------------------------------------------------------------
@@ -105,6 +105,14 @@ export class LocalFileStorage {
   /** The name of the chosen directory (for display in UI). */
   get directoryName(): string | null {
     return this.dirHandle?.name ?? null;
+  }
+
+  /**
+   * Granted directory handle used by the persistent filesystem bridge.
+   * Never expose a stored-but-ungranted handle as writable.
+   */
+  get writableDirectoryHandle(): FileSystemDirectoryHandle | null {
+    return this.isReady ? this.dirHandle : null;
   }
 
   // -------------------------------------------------------------------------
@@ -127,18 +135,22 @@ export class LocalFileStorage {
     try {
       // showDirectoryPicker requires user gesture (button click)
       const win = window as Window & { showDirectoryPicker?(options?: { mode?: 'read' | 'readwrite' }): Promise<FileSystemDirectoryHandle> };
-      this.dirHandle = await win.showDirectoryPicker!({
+      const selectedHandle = await win.showDirectoryPicker!({
         mode: 'readwrite',
       });
 
-      await this.storeHandle(this.dirHandle!);
+      // Commit the new handle only after IndexedDB accepts its structured
+      // clone. If persistence fails, keep the previously active directory and
+      // bridge root instead of reporting one handle while writing to another.
+      await this.storeHandle(selectedHandle);
+      this.dirHandle = selectedHandle;
       this._isReady = true;
       this._hasStoredHandle = true;
 
       // Persist directory name in localStorage for fast UI display on next visit
-      try { localStorage.setItem(LS_DIR_NAME_KEY, this.dirHandle!.name); } catch { /* non-critical */ }
+      rememberDirectoryName(selectedHandle.name);
 
-      logger.info(`Local storage directory selected: ${this.dirHandle!.name}`);
+      logger.info(`Local storage directory selected: ${selectedHandle.name}`);
       return true;
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
@@ -253,7 +265,7 @@ export class LocalFileStorage {
       throw new Error('LocalFileStorage not ready — call chooseDirectory() or restoreDirectory() first.');
     }
 
-    const filename = this.sanitizeFilename(key);
+    const filename = sanitizeStorageFilename(key);
     const fileHandle = await this.dirHandle.getFileHandle(filename, { create: true });
     const writable = await fileHandle.createWritable();
 
@@ -272,7 +284,7 @@ export class LocalFileStorage {
       throw new Error('LocalFileStorage not ready — call chooseDirectory() or restoreDirectory() first.');
     }
 
-    const filename = this.sanitizeFilename(key);
+    const filename = sanitizeStorageFilename(key);
     const fileHandle = await this.dirHandle.getFileHandle(filename, { create: true });
     const writable = await fileHandle.createWritable();
 
@@ -318,7 +330,7 @@ export class LocalFileStorage {
     if (!this.dirHandle || !this._isReady) return null;
 
     try {
-      const filename = this.sanitizeFilename(key);
+      const filename = sanitizeStorageFilename(key);
       const fileHandle = await this.dirHandle.getFileHandle(filename);
       const file = await fileHandle.getFile();
       logger.info(`Loaded model from local storage: ${filename} (${(file.size / 1024 / 1024).toFixed(1)} MB)`);
@@ -337,7 +349,7 @@ export class LocalFileStorage {
     if (!this.dirHandle || !this._isReady) return null;
 
     try {
-      const filename = this.sanitizeFilename(key);
+      const filename = sanitizeStorageFilename(key);
       const fileHandle = await this.dirHandle.getFileHandle(filename);
       const file = await fileHandle.getFile();
       logger.info(`Loading model stream from local storage: ${filename} (${(file.size / 1024 / 1024).toFixed(1)} MB)`);
@@ -356,7 +368,7 @@ export class LocalFileStorage {
     if (!this.dirHandle || !this._isReady) return null;
 
     try {
-      const filename = this.sanitizeFilename(key);
+      const filename = sanitizeStorageFilename(key);
       const fileHandle = await this.dirHandle.getFileHandle(filename);
       return await fileHandle.getFile();
     } catch {
@@ -372,7 +384,7 @@ export class LocalFileStorage {
     if (!this.dirHandle || !this._isReady) return false;
 
     try {
-      const filename = this.sanitizeFilename(key);
+      const filename = sanitizeStorageFilename(key);
       await this.dirHandle.getFileHandle(filename);
       return true;
     } catch {
@@ -388,7 +400,7 @@ export class LocalFileStorage {
     if (!this.dirHandle || !this._isReady) return;
 
     try {
-      const filename = this.sanitizeFilename(key);
+      const filename = sanitizeStorageFilename(key);
       await this.dirHandle.removeEntry(filename);
       logger.info(`Deleted model from local storage: ${filename}`);
     } catch {
@@ -404,7 +416,7 @@ export class LocalFileStorage {
     if (!this.dirHandle || !this._isReady) return null;
 
     try {
-      const filename = this.sanitizeFilename(key);
+      const filename = sanitizeStorageFilename(key);
       const fileHandle = await this.dirHandle.getFileHandle(filename);
       const file = await fileHandle.getFile();
       return file.size;
@@ -456,49 +468,45 @@ export class LocalFileStorage {
   }
 
   private async storeHandle(handle: FileSystemDirectoryHandle): Promise<void> {
+    let db: IDBDatabase | null = null;
     try {
-      const db = await this.openDB();
+      db = await this.openDB();
       const tx = db.transaction(STORE_NAME, 'readwrite');
       tx.objectStore(STORE_NAME).put(handle, HANDLE_KEY);
       await new Promise<void>((resolve, reject) => {
         tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
+        tx.onerror = () => reject(tx.error ?? new Error('IndexedDB handle transaction failed'));
+        tx.onabort = () => reject(tx.error ?? new Error('IndexedDB handle transaction aborted'));
       });
-      db.close();
       logger.debug('Directory handle stored in IndexedDB');
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       logger.warning(`Failed to store handle in IndexedDB: ${message}`);
+      throw err;
+    } finally {
+      db?.close();
     }
   }
 
   private async retrieveHandle(): Promise<FileSystemDirectoryHandle | null> {
+    let db: IDBDatabase | null = null;
     try {
-      const db = await this.openDB();
+      db = await this.openDB();
       const tx = db.transaction(STORE_NAME, 'readonly');
       const handle = await new Promise<FileSystemDirectoryHandle | null>((resolve, reject) => {
         const req = tx.objectStore(STORE_NAME).get(HANDLE_KEY);
         req.onsuccess = () => resolve(req.result ?? null);
         req.onerror = () => reject(req.error);
+        tx.onabort = () => reject(tx.error ?? new Error('IndexedDB handle read aborted'));
       });
-      db.close();
       return handle;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       logger.warning(`Failed to retrieve handle from IndexedDB: ${message}`);
       return null;
+    } finally {
+      db?.close();
     }
   }
 
-  // -------------------------------------------------------------------------
-  // Helpers
-  // -------------------------------------------------------------------------
-
-  /**
-   * Sanitize a key for use as a filename.
-   * Keeps alphanumeric, dots, dashes, underscores. Replaces everything else.
-   */
-  private sanitizeFilename(key: string): string {
-    return key.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_');
-  }
 }

@@ -9,19 +9,18 @@ import Foundation
 import RunAnywhere
 
 struct TTSBenchmarkProvider: BenchmarkScenarioProvider {
-
     let category: BenchmarkCategory = .tts
 
     func scenarios() -> [BenchmarkScenario] {
         [
             BenchmarkScenario(name: "Short Text", category: .tts, parameters: ["length": "short"]),
-            BenchmarkScenario(name: "Medium Text", category: .tts, parameters: ["length": "medium"]),
+            BenchmarkScenario(name: "Medium Text", category: .tts, parameters: ["length": "medium"])
         ]
     }
 
     func execute(
         scenario: BenchmarkScenario,
-        model: ModelInfo
+        model: RAModelInfo
     ) async throws -> BenchmarkMetrics {
         var metrics = BenchmarkMetrics()
 
@@ -30,34 +29,44 @@ struct TTSBenchmarkProvider: BenchmarkScenarioProvider {
         case "short":
             text = "Hello, this is a test."
         default:
-            text = "The quick brown fox jumps over the lazy dog. Machine learning models can generate speech from text with remarkable quality and natural intonation."
+            text = "The quick brown fox jumps over the lazy dog. Machine learning models can "
+                + "generate speech from text with remarkable quality and natural intonation."
         }
 
         let memBefore = SyntheticInputGenerator.availableMemoryBytes()
 
-        // Load
+        // Load (canonical proto-request form)
         let loadStart = Date()
-        try await RunAnywhere.loadTTSModel(model.id)
+        var loadRequest = RAModelLoadRequest()
+        loadRequest.modelID = model.id
+        loadRequest.category = .speechSynthesis
+        let loadResult = await RunAnywhere.loadModel(loadRequest)
+        guard loadResult.success else {
+            throw SDKException(code: .unknown, message: loadResult.errorMessage, category: .internal)
+        }
         metrics.loadTimeMs = Date().timeIntervalSince(loadStart) * 1000
+
+        var unloadRequest = RAModelUnloadRequest()
+        unloadRequest.category = .speechSynthesis
 
         do {
             // Synthesize (not speak)
             let benchStart = Date()
-            let options = TTSOptions()
+            let options = RATTSOptions.defaults()
             let result = try await RunAnywhere.synthesize(text, options: options)
             metrics.endToEndLatencyMs = Date().timeIntervalSince(benchStart) * 1000
 
             // processingTime is in seconds, convert to ms-context
             metrics.audioDurationSeconds = result.duration
-            metrics.charactersProcessed = result.metadata.characterCount
+            metrics.charactersProcessed = Int(result.metadata.characterCount)
 
             let memAfter = SyntheticInputGenerator.availableMemoryBytes()
             metrics.memoryDeltaBytes = memBefore - memAfter
 
-            try? await RunAnywhere.unloadTTSVoice()
+            _ = await RunAnywhere.unloadModel(unloadRequest)
             return metrics
         } catch {
-            try? await RunAnywhere.unloadTTSVoice()
+            _ = await RunAnywhere.unloadModel(unloadRequest)
             throw error
         }
     }

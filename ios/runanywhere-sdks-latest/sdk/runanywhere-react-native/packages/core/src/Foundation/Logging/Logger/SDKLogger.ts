@@ -54,7 +54,12 @@ export class SDKLogger {
    * @param metadata - Optional metadata key-value pairs
    */
   public debug(message: string, metadata?: Record<string, unknown>): void {
-    LoggingManager.shared.log(LogLevel.Debug, this.category, message, metadata);
+    // Swift parity: debug() is compiled out of release builds via `#if DEBUG`
+    // (SDKLogger.swift:319-320). RN's equivalent gate is the `__DEV__` global.
+    if (typeof __DEV__ !== 'undefined' && !__DEV__) {
+      return;
+    }
+    LoggingManager.shared.log(LogLevel.LOG_LEVEL_DEBUG, this.category, message, metadata);
   }
 
   /**
@@ -64,7 +69,7 @@ export class SDKLogger {
    * @param metadata - Optional metadata key-value pairs
    */
   public info(message: string, metadata?: Record<string, unknown>): void {
-    LoggingManager.shared.log(LogLevel.Info, this.category, message, metadata);
+    LoggingManager.shared.log(LogLevel.LOG_LEVEL_INFO, this.category, message, metadata);
   }
 
   /**
@@ -75,7 +80,7 @@ export class SDKLogger {
    */
   public warning(message: string, metadata?: Record<string, unknown>): void {
     LoggingManager.shared.log(
-      LogLevel.Warning,
+      LogLevel.LOG_LEVEL_WARNING,
       this.category,
       message,
       metadata
@@ -89,7 +94,7 @@ export class SDKLogger {
    * @param metadata - Optional metadata key-value pairs
    */
   public error(message: string, metadata?: Record<string, unknown>): void {
-    LoggingManager.shared.log(LogLevel.Error, this.category, message, metadata);
+    LoggingManager.shared.log(LogLevel.LOG_LEVEL_ERROR, this.category, message, metadata);
   }
 
   /**
@@ -99,7 +104,7 @@ export class SDKLogger {
    * @param metadata - Optional metadata key-value pairs
    */
   public fault(message: string, metadata?: Record<string, unknown>): void {
-    LoggingManager.shared.log(LogLevel.Fault, this.category, message, metadata);
+    LoggingManager.shared.log(LogLevel.LOG_LEVEL_FATAL, this.category, message, metadata);
   }
 
   /**
@@ -122,8 +127,10 @@ export class SDKLogger {
   // ==========================================================================
 
   /**
-   * Log an Error object with full context.
-   * Extracts error information and logs with appropriate metadata.
+   * Log an Error object using only non-secret structural identifiers.
+   * Arbitrary messages, stacks, nested transport errors, and caller context
+   * can contain credentials or request bodies and therefore stay out of
+   * device logs. The original exception remains available to the caller.
    *
    * Matches iOS: logError(_ error:, additionalInfo:, file:, line:, function:)
    *
@@ -131,33 +138,30 @@ export class SDKLogger {
    * @param additionalInfo - Optional additional context
    */
   public logError(error: Error, additionalInfo?: string): void {
-    const errorDesc = error.message || 'Unknown error';
-
-    let message = errorDesc;
-    if (additionalInfo) {
-      message += ` | Context: ${additionalInfo}`;
-    }
-
     const metadata: Record<string, unknown> = {
       error_name: error.name,
-      error_message: error.message,
-      error_stack: error.stack,
+      context_provided: Boolean(additionalInfo),
     };
 
-    // If SDKError, include additional fields
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sdkError = error as any;
-    if (sdkError.code !== undefined) {
-      metadata.error_code = sdkError.code;
+    // SDKException-shaped fields are optional because this logger deliberately
+    // accepts the base Error type and must not depend on one throwable class.
+    const sdkErr = error as Error & {
+      readonly code?: unknown;
+      readonly category?: unknown;
+    };
+    if (typeof sdkErr.code === 'number') {
+      metadata.error_code = sdkErr.code;
     }
-    if (sdkError.category !== undefined) {
-      metadata.error_category = sdkError.category;
-    }
-    if (sdkError.underlyingError !== undefined) {
-      metadata.underlying_error = sdkError.underlyingError.message;
+    if (typeof sdkErr.category === 'number') {
+      metadata.error_category = sdkErr.category;
     }
 
-    LoggingManager.shared.log(LogLevel.Error, this.category, message, metadata);
+    LoggingManager.shared.log(
+      LogLevel.LOG_LEVEL_ERROR,
+      this.category,
+      'SDK operation failed',
+      metadata
+    );
   }
 
   // ==========================================================================

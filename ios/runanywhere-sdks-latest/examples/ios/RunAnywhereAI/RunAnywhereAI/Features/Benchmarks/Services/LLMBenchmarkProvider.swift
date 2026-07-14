@@ -9,63 +9,102 @@ import Foundation
 import RunAnywhere
 
 struct LLMBenchmarkProvider: BenchmarkScenarioProvider {
-
     let category: BenchmarkCategory = .llm
 
     func scenarios() -> [BenchmarkScenario] {
         [
             BenchmarkScenario(name: "Short (50 tokens)", category: .llm, parameters: ["maxTokens": "50"]),
             BenchmarkScenario(name: "Medium (256 tokens)", category: .llm, parameters: ["maxTokens": "256"]),
-            BenchmarkScenario(name: "Long (512 tokens)", category: .llm, parameters: ["maxTokens": "512"]),
+            BenchmarkScenario(name: "Long (512 tokens)", category: .llm, parameters: ["maxTokens": "512"])
         ]
     }
 
+    // swiftlint:disable:next function_body_length
     func execute(
         scenario: BenchmarkScenario,
-        model: ModelInfo
+        model: RAModelInfo
     ) async throws -> BenchmarkMetrics {
         let maxTokens = Int(scenario.parameters?["maxTokens"] ?? "") ?? 512
         var metrics = BenchmarkMetrics()
 
+        // Ensure clean state: unload any LLM left over from Chat or a previous run
+        var preUnloadRequest = RAModelUnloadRequest()
+        preUnloadRequest.category = .language
+        _ = await RunAnywhere.unloadModel(preUnloadRequest)
+
         let memBefore = SyntheticInputGenerator.availableMemoryBytes()
 
-        // Load
+        // Load (canonical proto-request form)
         let loadStart = Date()
-        try await RunAnywhere.loadModel(model.id)
+        var loadRequest = RAModelLoadRequest()
+        loadRequest.modelID = model.id
+        loadRequest.category = .language
+        let loadResult = await RunAnywhere.loadModel(loadRequest)
+        guard loadResult.success else {
+            throw SDKException(code: .unknown, message: loadResult.errorMessage, category: .internal)
+        }
         metrics.loadTimeMs = Date().timeIntervalSince(loadStart) * 1000
 
+        var unloadRequest = RAModelUnloadRequest()
+        unloadRequest.category = .language
+
         do {
-            // Warmup: short generate, discard
+            // generateStream returns
+            // AsyncStream<RALLMStreamEvent>; benchmark derives TTFT +
+            // tokens/sec from the event sequence directly.
             let warmupStart = Date()
-            let warmupOptions = LLMGenerationOptions(maxTokens: 5, temperature: 0.0)
-            let warmupResult = try await RunAnywhere.generateStream("Hello", options: warmupOptions)
-            for try await _ in warmupResult.stream {}
-            _ = try await warmupResult.result.value
+            var warmupOptions = RALLMGenerationOptions.defaults()
+            warmupOptions.maxTokens = 5
+            warmupOptions.temperature = 0.0
+            warmupOptions.streamingEnabled = true
+            let warmupRequest = warmupOptions.toRALLMGenerateRequest(prompt: "Hello")
+            let warmupEvents = try await RunAnywhere.generateStream(warmupRequest)
+            for await event in warmupEvents where event.isFinal { break }
             metrics.warmupTimeMs = Date().timeIntervalSince(warmupStart) * 1000
 
             // Benchmark
             let benchStart = Date()
-            let options = LLMGenerationOptions(maxTokens: maxTokens, temperature: 0.0)
-            let streamResult = try await RunAnywhere.generateStream(
-                "Explain the concept of machine learning in detail.",
-                options: options
-            )
-            for try await _ in streamResult.stream {}
-            let result = try await streamResult.result.value
+            let systemPrompt = "You are a helpful assistant. Always give extremely detailed, "
+                + "thorough responses. Never stop early. Use the full response length available "
+                + "to you. Elaborate on every point with examples and explanations."
+            let prompt = "Write a very long and detailed explanation of how neural networks work, "
+                + "covering perceptrons, activation functions, backpropagation, gradient descent, "
+                + "loss functions, convolutional layers, recurrent layers, transformers, attention "
+                + "mechanisms, and training procedures. Be as thorough as possible."
+            var benchOptions = RALLMGenerationOptions.defaults()
+            benchOptions.maxTokens = Int32(maxTokens)
+            benchOptions.temperature = 0.0
+            benchOptions.systemPrompt = systemPrompt
+            benchOptions.streamingEnabled = true
+            let benchRequest = benchOptions.toRALLMGenerateRequest(prompt: prompt)
+            let benchEvents = try await RunAnywhere.generateStream(benchRequest)
 
-            metrics.endToEndLatencyMs = Date().timeIntervalSince(benchStart) * 1000
-            metrics.ttftMs = result.timeToFirstTokenMs
-            metrics.tokensPerSecond = result.tokensPerSecond
-            metrics.inputTokens = result.inputTokens
-            metrics.outputTokens = result.tokensUsed
+            let result = await RunAnywhere.aggregateStream(prompt: prompt, events: benchEvents)
+            let wallMs = Date().timeIntervalSince(benchStart) * 1000
+            let generationMs = result.generationTimeMs > 0 ? result.generationTimeMs : wallMs
+
+            metrics.endToEndLatencyMs = generationMs
+            metrics.ttftMs = result.ttftMs > 0 ? result.ttftMs : nil
+            metrics.tokensPerSecond = result.tokensPerSecond > 0 ? result.tokensPerSecond : nil
+            metrics.inputTokens = result.inputTokens > 0 ? Int(result.inputTokens) : nil
+            metrics.outputTokens = result.tokensGenerated > 0 ? Int(result.tokensGenerated) : nil
+
+            if result.decodeTimeMs > 0, result.tokensGenerated > 0 {
+                metrics.decodeTokensPerSecond =
+                    Double(result.tokensGenerated) / (Double(result.decodeTimeMs) / 1000.0)
+            }
+            if result.promptEvalTimeMs > 0, result.inputTokens > 0 {
+                metrics.prefillTokensPerSecond =
+                    Double(result.inputTokens) / (Double(result.promptEvalTimeMs) / 1000.0)
+            }
 
             let memAfter = SyntheticInputGenerator.availableMemoryBytes()
             metrics.memoryDeltaBytes = memBefore - memAfter
 
-            try? await RunAnywhere.unloadModel()
+            _ = await RunAnywhere.unloadModel(unloadRequest)
             return metrics
         } catch {
-            try? await RunAnywhere.unloadModel()
+            _ = await RunAnywhere.unloadModel(unloadRequest)
             throw error
         }
     }

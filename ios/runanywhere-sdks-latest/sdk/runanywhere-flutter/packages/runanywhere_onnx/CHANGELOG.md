@@ -5,6 +5,31 @@ All notable changes to the RunAnywhere ONNX Backend will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.9] - 2026-07-13
+
+### Changed
+- Version-aligned 0.20.9 release across all RunAnywhere SDKs; dev-analytics config baked into the native core at build time.
+
+## [0.20.0] - 2026-07-12
+
+### Changed
+- Aligned the backend package and native artifact contract with RunAnywhere 0.20.0.
+
+## [0.19.15] - 2026-07-11
+
+### Changed
+- Aligned public package metadata and native artifact staging with RunAnywhere 0.19.15.
+
+## [0.19.13] - 2026-05-13
+
+### Changed
+- Kept the Flutter plugin as a thin backend registration adapter by removing unused template MethodChannel methods.
+- Aligned the iOS deployment target and platform claims with the Swift iOS 17.0 baseline.
+- Removed the backend plugin `uses-material-design` flag.
+
+### Notes
+- ONNX backend FFI typedefs still live in this package because moving them to the shared native type layer requires touching the core `runanywhere` package, which is outside this lane's write scope.
+
 ## [0.16.0] - 2026-02-14
 
 ### Changed
@@ -36,5 +61,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Streaming transcription support
 
 ### Platforms
-- iOS 13.0+ support
+- iOS 17.0+ support
 - Android API 24+ support

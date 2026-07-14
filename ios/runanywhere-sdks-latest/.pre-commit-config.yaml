@@ -13,11 +13,61 @@ repos:
     rev: v4.5.0
     hooks:
       - id: trailing-whitespace
+        exclude: |
+          (?x)^(
+            sdk/runanywhere-kotlin/src/main/kotlin/com/runanywhere/sdk/generated/|
+            sdk/runanywhere-commons/src/generated/|
+            sdk/runanywhere-swift/Sources/RunAnywhere/Generated/|
+            sdk/shared/proto-ts/src/|
+            idl/
+          )
       - id: end-of-file-fixer
+        exclude: |
+          (?x)^(
+            sdk/runanywhere-kotlin/src/main/kotlin/com/runanywhere/sdk/generated/|
+            sdk/runanywhere-commons/src/generated/|
+            sdk/runanywhere-swift/Sources/RunAnywhere/Generated/|
+            sdk/shared/proto-ts/src/|
+            idl/
+          )
       - id: check-yaml
       - id: check-added-large-files
         args: ['--maxkb=1000']
       - id: check-merge-conflict
+
+  # Repository hygiene
+  - repo: local
+    hooks:
+      - id: no-root-object-artifacts
+        name: No root object artifacts
+        entry: bash -c 'if ls ./*.o ./*.a ./*.so ./*.dylib >/dev/null 2>&1; then echo "Root build artifacts are not allowed. Run git clean -fdX or move them under build/."; exit 1; fi'
+        language: system
+        pass_filenames: false
+
+      # CLAUDE.md is a symlink to its sibling AGENTS.md (editing either edits the
+      # same file, so they never drift). At commit time this guard fails if any
+      # tracked AGENTS.md lacks its committed CLAUDE.md symlink; run the script
+      # with --fix to create/repair them, then `git add`.
+      - id: agents-claude-md-sync
+        name: Check CLAUDE.md symlinks
+        entry: bash scripts/validation/gates/check_agents_claude_sync.sh
+        language: system
+        files: (^|/)(AGENTS|CLAUDE)\.md$
+        pass_filenames: false
+        stages: [pre-commit]
+
+      # After a checkout or merge (including the first one after `pre-commit
+      # install` on a fresh clone), (re)create any missing CLAUDE.md symlinks on
+      # disk. Committed symlinks already materialize on clone for macOS/Linux;
+      # this self-heals a clobbered link or a checkout that didn't restore it.
+      # --fix only touches the filesystem — it never stages.
+      - id: agents-claude-md-link
+        name: Create CLAUDE.md symlinks
+        entry: bash scripts/validation/gates/check_agents_claude_sync.sh --fix
+        language: system
+        stages: [post-checkout, post-merge]
+        always_run: true
+        pass_filenames: false
 
   # Android Lint temporarily disabled due to compilation issues
   # - repo: local
@@ -57,10 +107,16 @@ repos:
 
       - id: ios-sdk-periphery
         name: iOS SDK Periphery (Unused Code)
-        entry: bash -c 'cd sdk/runanywhere-swift && if which periphery >/dev/null; then OUTPUT=$(periphery scan --targets RunAnywhere --targets ONNXRuntime --targets LlamaCPPRuntime --targets FoundationModelsAdapter --targets FluidAudioDiarization 2>&1); WARNINGS=$(echo "$OUTPUT" | grep "warning:" | grep -v "Associatedtype .* is unused"); if [ -n "$WARNINGS" ]; then echo "$WARNINGS"; echo "Periphery found unused code"; exit 1; fi; exit 0; else echo "Periphery not installed"; exit 0; fi'
+        entry: bash -c 'cd sdk/runanywhere-swift && if which periphery >/dev/null; then OUTPUT=$(periphery scan --targets RunAnywhere --targets ONNXRuntime --targets LlamaCPPRuntime 2>&1); WARNINGS=$(echo "$OUTPUT" | grep "warning:" | grep -v "Associatedtype .* is unused"); if [ -n "$WARNINGS" ]; then echo "$WARNINGS"; echo "Periphery found unused code"; exit 1; fi; exit 0; else echo "Periphery not installed"; exit 0; fi'
         language: system
         files: ^sdk/runanywhere-swift/.*\.swift$
         pass_filenames: false
+
+  # NOTE (ci-037, FIXED-PARTIAL): clang-format + dart format hooks are deferred to a
+  # dedicated formatter-baseline PR. clang-format v20.1.8 oscillates (period-2) on the
+  # codebase's macro-continuation / trailing-comment constructs, so `pre-commit run
+  # --all-files` cannot converge; enabling either formatter cleanly requires a one-time
+  # repo-wide reformat committed atomically with a pinned, idempotent formatter version.
 
   # SwiftLint for iOS App
   - repo: local
@@ -75,6 +131,10 @@ repos:
 # Configuration
 default_language_version:
   python: python3
+
+# `pre-commit install` wires all three stages, so the CLAUDE.md symlink hooks
+# (check at commit, (re)create after checkout/merge) are installed in one step.
+default_install_hook_types: [pre-commit, post-checkout, post-merge]
 
 # Skip these hooks during CI (they run in dedicated CI jobs)
 ci:

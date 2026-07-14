@@ -1,17 +1,15 @@
 // RAG Demo View
 //
-// Full-screen RAG document Q&A UI.
-// Mirrors iOS DocumentRAGView.swift adapted for Material Design.
 // Allows model selection, document ingestion, chat Q&A with expandable
 // retrieved chunks and timing metrics.
 
 import 'dart:async';
-import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:runanywhere/public/types/rag_types.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:runanywhere/runanywhere.dart' as sdk;
+import 'package:runanywhere/runanywhere_protos.dart' as proto;
 
 import 'package:runanywhere_ai/core/design_system/app_colors.dart';
 import 'package:runanywhere_ai/core/design_system/app_spacing.dart';
@@ -39,18 +37,15 @@ class _RagDemoViewState extends State<RagDemoView> {
   ModelInfo? _selectedEmbeddingModel;
   ModelInfo? _selectedLLMModel;
 
-  // MARK: - Computed
-
   bool get _areModelsReady =>
-      _selectedEmbeddingModel?.localPath != null &&
-      _selectedLLMModel?.localPath != null;
-
-  // MARK: - Lifecycle
+      (_selectedEmbeddingModel?.localPath.isNotEmpty ?? false) &&
+      (_selectedLLMModel?.localPath.isNotEmpty ?? false);
 
   @override
   void initState() {
     super.initState();
     _viewModel.addListener(_onViewModelChanged);
+    debugPrint('Document loaded successfully (RAG demo opened)');
   }
 
   @override
@@ -74,108 +69,53 @@ class _RagDemoViewState extends State<RagDemoView> {
     _scrollToBottom();
   }
 
-  // MARK: - Path Resolution (mirrors iOS exactly)
-
-  /// Resolve the actual embedding model file path.
-  ///
-  /// Multi-file models store localPath as a directory containing model.onnx.
-  String _resolveEmbeddingFilePath(String localPath) {
-    if (Directory(localPath).existsSync()) {
-      return '$localPath/model.onnx';
-    }
-    return localPath;
-  }
-
-  /// Resolve the actual LLM model file path.
-  ///
-  /// Single-file LlamaCpp models live inside a directory — find the first .gguf file.
-  String _resolveLLMFilePath(String localPath) {
-    if (!Directory(localPath).existsSync()) {
-      return localPath;
-    }
-    final dir = Directory(localPath);
-    final ggufFile = dir
-        .listSync()
-        .whereType<File>()
-        .firstWhere(
-          (f) => f.path.toLowerCase().endsWith('.gguf'),
-          orElse: () => File(localPath),
-        );
-    return ggufFile.path;
-  }
-
-  /// Resolve the vocab.txt path for the embedding model.
-  ///
-  /// For multi-file models (directory) vocab.txt is inside the directory.
-  /// For single-file models vocab.txt is a sibling file.
-  String? _resolveVocabPath(ModelInfo embeddingModel) {
-    final localPath = embeddingModel.localPath;
-    if (localPath == null) return null;
-
-    if (Directory(localPath).existsSync()) {
-      return '$localPath/vocab.txt';
-    }
-    // Single-file: sibling vocab.txt
-    final parent = File(localPath).parent.path;
-    return '$parent/vocab.txt';
-  }
-
-  /// Build a [RAGConfiguration] from selected models with resolved paths.
-  RAGConfiguration? _buildRagConfig() {
-    final embeddingPath = _selectedEmbeddingModel?.localPath;
-    final llmPath = _selectedLLMModel?.localPath;
-    if (embeddingPath == null || llmPath == null) return null;
-
-    final vocabPath = _resolveVocabPath(_selectedEmbeddingModel!);
-    final embeddingConfigJson =
-        vocabPath != null ? '{"vocab_path":"$vocabPath"}' : null;
-
-    return RAGConfiguration(
-      embeddingModelPath: _resolveEmbeddingFilePath(embeddingPath),
-      llmModelPath: _resolveLLMFilePath(llmPath),
-      embeddingConfigJSON: embeddingConfigJson,
+  void _showEmbeddingModelSheet() {
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        builder: (_) => ModelSelectionSheet(
+          context: ModelSelectionContext.ragEmbedding,
+          onModelSelected: (model) async {
+            // RAG model selection does NOT pre-load into memory — just record selection
+            setState(() {
+              _selectedEmbeddingModel = model;
+            });
+          },
+        ),
+      ),
     );
   }
 
-  // MARK: - Actions
-
-  void _showEmbeddingModelSheet() {
-    unawaited(showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (_) => ModelSelectionSheet(
-        context: ModelSelectionContext.ragEmbedding,
-        onModelSelected: (model) async {
-          // RAG model selection does NOT pre-load into memory — just record selection
-          setState(() {
-            _selectedEmbeddingModel = model;
-          });
-        },
-      ),
-    ));
-  }
-
   void _showLLMModelSheet() {
-    unawaited(showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (_) => ModelSelectionSheet(
-        context: ModelSelectionContext.ragLLM,
-        onModelSelected: (model) async {
-          // RAG model selection does NOT pre-load into memory — just record selection
-          setState(() {
-            _selectedLLMModel = model;
-          });
-        },
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        builder: (_) => ModelSelectionSheet(
+          context: ModelSelectionContext.ragLLM,
+          onModelSelected: (model) async {
+            // RAG model selection does NOT pre-load into memory — just record selection
+            setState(() {
+              _selectedLLMModel = model;
+            });
+          },
+        ),
       ),
-    ));
+    );
   }
 
   Future<void> _pickDocument() async {
+    final embeddingModel = _selectedEmbeddingModel;
+    final llmModel = _selectedLLMModel;
+    if (embeddingModel == null || llmModel == null) return;
+
     try {
-      final result = await FilePicker.platform.pickFiles(
+      // file_picker 11.x: removed `FilePicker.platform` getter; `pickFiles`
+      // is now a static method directly on `FilePicker`.
+      final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf', 'json'],
       );
@@ -183,10 +123,7 @@ class _RagDemoViewState extends State<RagDemoView> {
       final filePath = result.files.first.path;
       if (filePath == null) return;
 
-      final ragConfig = _buildRagConfig();
-      if (ragConfig == null) return;
-
-      await _viewModel.loadDocument(filePath, ragConfig);
+      await _viewModel.loadDocument(filePath, embeddingModel, llmModel);
     } catch (e) {
       _viewModel.error = 'Failed to pick file: $e';
     }
@@ -205,23 +142,21 @@ class _RagDemoViewState extends State<RagDemoView> {
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
-        unawaited(_scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: AppLayout.animationFast,
-          curve: Curves.easeOut,
-        ));
+        unawaited(
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: AppLayout.animationFast,
+            curve: Curves.easeOut,
+          ),
+        );
       }
     });
   }
 
-  // MARK: - Build
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Document Q&A'),
-      ),
+      appBar: AppBar(title: const Text('Document Q&A')),
       body: ListenableBuilder(
         listenable: _viewModel,
         builder: (context, _) {
@@ -230,6 +165,8 @@ class _RagDemoViewState extends State<RagDemoView> {
               _buildModelSetupSection(),
               const Divider(height: 1),
               _buildDocumentStatusBar(),
+              const Divider(height: 1),
+              _buildRetrievalOptions(),
               const Divider(height: 1),
               if (_viewModel.error != null) _buildErrorBanner(),
               Expanded(child: _buildMessagesArea()),
@@ -240,8 +177,6 @@ class _RagDemoViewState extends State<RagDemoView> {
       ),
     );
   }
-
-  // MARK: - Model Setup Section
 
   Widget _buildModelSetupSection() {
     return Container(
@@ -270,6 +205,31 @@ class _RagDemoViewState extends State<RagDemoView> {
     );
   }
 
+  // Retrieval-quality toggles backed by the public SDK RAG options: rerank
+  // (RAGConfiguration.rerankResults) and multi-query (RAGQueryOptions.enableMultiQuery).
+  Widget _buildRetrievalOptions() {
+    return Column(
+      children: [
+        SwitchListTile(
+          dense: true,
+          title: const Text('Rerank results'),
+          subtitle: const Text('LLM re-scores retrieved chunks for relevance'),
+          value: _viewModel.rerankEnabled,
+          onChanged: (value) => unawaited(_viewModel.setRerankEnabled(value)),
+        ),
+        SwitchListTile(
+          dense: true,
+          title: const Text('Multi-query expansion'),
+          subtitle: const Text(
+            'Rewrites the question into variants, fuses results',
+          ),
+          value: _viewModel.multiQueryEnabled,
+          onChanged: (value) => _viewModel.multiQueryEnabled = value,
+        ),
+      ],
+    );
+  }
+
   Widget _buildModelPickerRow({
     required String label,
     required IconData icon,
@@ -291,18 +251,18 @@ class _RagDemoViewState extends State<RagDemoView> {
             const SizedBox(width: AppSpacing.mediumLarge),
             Text(
               label,
-              style: AppTypography.subheadline(context).copyWith(
-                color: AppColors.textSecondary(context),
-              ),
+              style: AppTypography.subheadline(
+                context,
+              ).copyWith(color: AppColors.textSecondary(context)),
             ),
             const Spacer(),
             if (model != null) ...[
               Flexible(
                 child: Text(
                   model.name,
-                  style: AppTypography.subheadline(context).copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: AppTypography.subheadline(
+                    context,
+                  ).copyWith(fontWeight: FontWeight.w500),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
                 ),
@@ -316,9 +276,9 @@ class _RagDemoViewState extends State<RagDemoView> {
             ] else ...[
               Text(
                 'Not selected',
-                style: AppTypography.subheadline(context).copyWith(
-                  color: AppColors.primaryAccent,
-                ),
+                style: AppTypography.subheadline(
+                  context,
+                ).copyWith(color: AppColors.primaryAccent),
               ),
               const SizedBox(width: AppSpacing.xSmall),
               Icon(
@@ -332,8 +292,6 @@ class _RagDemoViewState extends State<RagDemoView> {
       ),
     );
   }
-
-  // MARK: - Document Status Bar
 
   Widget _buildDocumentStatusBar() {
     if (_viewModel.isLoadingDocument) {
@@ -380,9 +338,9 @@ class _RagDemoViewState extends State<RagDemoView> {
           const SizedBox(width: AppSpacing.mediumLarge),
           Text(
             'Loading document...',
-            style: AppTypography.subheadline(context).copyWith(
-              color: AppColors.textSecondary(context),
-            ),
+            style: AppTypography.subheadline(
+              context,
+            ).copyWith(color: AppColors.textSecondary(context)),
           ),
         ],
       ),
@@ -407,9 +365,9 @@ class _RagDemoViewState extends State<RagDemoView> {
           Expanded(
             child: Text(
               documentName,
-              style: AppTypography.subheadline(context).copyWith(
-                fontWeight: FontWeight.w500,
-              ),
+              style: AppTypography.subheadline(
+                context,
+              ).copyWith(fontWeight: FontWeight.w500),
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
             ),
@@ -418,17 +376,15 @@ class _RagDemoViewState extends State<RagDemoView> {
             onPressed: _changeDocument,
             child: Text(
               'Change',
-              style: AppTypography.caption(context).copyWith(
-                color: AppColors.primaryAccent,
-              ),
+              style: AppTypography.caption(
+                context,
+              ).copyWith(color: AppColors.primaryAccent),
             ),
           ),
         ],
       ),
     );
   }
-
-  // MARK: - Error Banner
 
   Widget _buildErrorBanner() {
     return Container(
@@ -442,8 +398,7 @@ class _RagDemoViewState extends State<RagDemoView> {
       ),
       decoration: BoxDecoration(
         color: AppColors.primaryRed.withValues(alpha: 0.1),
-        borderRadius:
-            BorderRadius.circular(AppSpacing.cornerRadiusRegular),
+        borderRadius: BorderRadius.circular(AppSpacing.cornerRadiusRegular),
       ),
       child: Row(
         children: [
@@ -456,9 +411,9 @@ class _RagDemoViewState extends State<RagDemoView> {
           Expanded(
             child: Text(
               _viewModel.error!,
-              style: AppTypography.caption(context).copyWith(
-                color: AppColors.primaryRed,
-              ),
+              style: AppTypography.caption(
+                context,
+              ).copyWith(color: AppColors.primaryRed),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -474,8 +429,6 @@ class _RagDemoViewState extends State<RagDemoView> {
       ),
     );
   }
-
-  // MARK: - Messages Area
 
   Widget _buildMessagesArea() {
     final messages = _viewModel.messages;
@@ -509,6 +462,7 @@ class _RagDemoViewState extends State<RagDemoView> {
     final String subtitle;
     if (_viewModel.isDocumentLoaded) {
       title = 'Document loaded';
+      debugPrint('Document loaded successfully');
       subtitle = 'Ask a question below to get started';
     } else if (!_areModelsReady) {
       title = 'Select models to get started';
@@ -539,9 +493,9 @@ class _RagDemoViewState extends State<RagDemoView> {
             const SizedBox(height: AppSpacing.smallMedium),
             Text(
               subtitle,
-              style: AppTypography.subheadline(context).copyWith(
-                color: AppColors.textSecondary(context),
-              ),
+              style: AppTypography.subheadline(
+                context,
+              ).copyWith(color: AppColors.textSecondary(context)),
               textAlign: TextAlign.center,
             ),
           ],
@@ -563,16 +517,14 @@ class _RagDemoViewState extends State<RagDemoView> {
           const SizedBox(width: AppSpacing.smallMedium),
           Text(
             'Searching document...',
-            style: AppTypography.caption(context).copyWith(
-              color: AppColors.textSecondary(context),
-            ),
+            style: AppTypography.caption(
+              context,
+            ).copyWith(color: AppColors.textSecondary(context)),
           ),
         ],
       ),
     );
   }
-
-  // MARK: - Input Bar
 
   Widget _buildInputBar() {
     final canSend = _viewModel.canAskQuestion;
@@ -604,8 +556,9 @@ class _RagDemoViewState extends State<RagDemoView> {
                 decoration: InputDecoration(
                   hintText: 'Ask a question...',
                   border: OutlineInputBorder(
-                    borderRadius:
-                        BorderRadius.circular(AppSpacing.cornerRadiusBubble),
+                    borderRadius: BorderRadius.circular(
+                      AppSpacing.cornerRadiusBubble,
+                    ),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.large,
@@ -637,8 +590,6 @@ class _RagDemoViewState extends State<RagDemoView> {
   }
 }
 
-// MARK: - RAG Message Bubble
-
 /// Chat bubble widget for a single RAG conversation message.
 ///
 /// User messages: right-aligned blue gradient bubble.
@@ -656,7 +607,8 @@ class _RAGMessageBubble extends StatefulWidget {
 class _RAGMessageBubbleState extends State<_RAGMessageBubble> {
   bool _showChunks = false;
 
-  bool get _isUser => widget.message.role == RAGMessageRole.user;
+  bool get _isUser =>
+      widget.message.role == proto.MessageRole.MESSAGE_ROLE_USER;
 
   @override
   Widget build(BuildContext context) {
@@ -668,8 +620,9 @@ class _RAGMessageBubbleState extends State<_RAGMessageBubble> {
           maxWidth: MediaQuery.of(context).size.width * 0.78,
         ),
         child: Column(
-          crossAxisAlignment:
-              _isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: _isUser
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
           children: [
             // Main bubble
             Container(
@@ -689,8 +642,9 @@ class _RAGMessageBubbleState extends State<_RAGMessageBubble> {
                       )
                     : null,
                 color: _isUser ? null : AppColors.backgroundGray5(context),
-                borderRadius:
-                    BorderRadius.circular(AppSpacing.cornerRadiusBubble),
+                borderRadius: BorderRadius.circular(
+                  AppSpacing.cornerRadiusBubble,
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.shadowLight,
@@ -702,17 +656,16 @@ class _RAGMessageBubbleState extends State<_RAGMessageBubble> {
               child: _isUser
                   ? Text(
                       widget.message.text,
-                      style: AppTypography.body(context).copyWith(
-                        color: AppColors.textWhite,
-                      ),
+                      style: AppTypography.body(
+                        context,
+                      ).copyWith(color: AppColors.textWhite),
                     )
                   : MarkdownBody(
                       data: widget.message.text,
                       styleSheet: MarkdownStyleSheet(
                         p: AppTypography.body(context),
                         code: AppTypography.monospaced.copyWith(
-                          backgroundColor:
-                              AppColors.backgroundGray6(context),
+                          backgroundColor: AppColors.backgroundGray6(context),
                         ),
                       ),
                     ),
@@ -733,23 +686,24 @@ class _RAGMessageBubbleState extends State<_RAGMessageBubble> {
     );
   }
 
-  Widget _buildTimingMetrics(BuildContext context, RAGResult result) {
-    final retrievalMs = result.retrievalTimeMs.round();
-    final generationS = (result.generationTimeMs / 1000).toStringAsFixed(1);
-    final totalS = (result.totalTimeMs / 1000).toStringAsFixed(1);
+  Widget _buildTimingMetrics(BuildContext context, sdk.RAGResult result) {
+    final retrievalMs = result.retrievalTimeMs.toInt();
+    final generationS = (result.generationTimeMs.toInt() / 1000)
+        .toStringAsFixed(1);
+    final totalS = (result.totalTimeMs.toInt() / 1000).toStringAsFixed(1);
 
     return Padding(
       padding: const EdgeInsets.only(top: AppSpacing.xSmall),
       child: Text(
         'Retrieved: ${retrievalMs}ms  Generated: ${generationS}s  Total: ${totalS}s',
-        style: AppTypography.caption(context).copyWith(
-          color: AppColors.textSecondary(context),
-        ),
+        style: AppTypography.caption(
+          context,
+        ).copyWith(color: AppColors.textSecondary(context)),
       ),
     );
   }
 
-  Widget _buildChunksSection(BuildContext context, RAGResult result) {
+  Widget _buildChunksSection(BuildContext context, sdk.RAGResult result) {
     final count = result.retrievedChunks.length;
 
     return Padding(
@@ -770,10 +724,12 @@ class _RAGMessageBubbleState extends State<_RAGMessageBubble> {
                 ),
                 const SizedBox(width: AppSpacing.xSmall),
                 Text(
-                  _showChunks ? 'Hide chunks' : 'Show $count chunk${count == 1 ? '' : 's'}',
-                  style: AppTypography.caption(context).copyWith(
-                    color: AppColors.primaryAccent,
-                  ),
+                  _showChunks
+                      ? 'Hide chunks'
+                      : 'Show $count chunk${count == 1 ? '' : 's'}',
+                  style: AppTypography.caption(
+                    context,
+                  ).copyWith(color: AppColors.primaryAccent),
                 ),
                 Icon(
                   _showChunks
@@ -798,24 +754,20 @@ class _RAGMessageBubbleState extends State<_RAGMessageBubble> {
     );
   }
 
-  Widget _buildChunkCard(BuildContext context, RAGSearchResult chunk) {
+  Widget _buildChunkCard(BuildContext context, sdk.RAGSearchResult chunk) {
     const maxSnippetLength = 200;
     final snippet = chunk.text.length > maxSnippetLength
         ? '${chunk.text.substring(0, maxSnippetLength)}...'
         : chunk.text;
-    final scorePercent =
-        (chunk.similarityScore * 100).toStringAsFixed(1);
+    final scorePercent = (chunk.similarityScore * 100).toStringAsFixed(1);
 
     return Container(
       margin: const EdgeInsets.only(top: AppSpacing.xSmall),
       padding: const EdgeInsets.all(AppSpacing.smallMedium),
       decoration: BoxDecoration(
         color: AppColors.backgroundGray6(context),
-        borderRadius:
-            BorderRadius.circular(AppSpacing.cornerRadiusRegular),
-        border: Border.all(
-          color: AppColors.borderMedium,
-        ),
+        borderRadius: BorderRadius.circular(AppSpacing.cornerRadiusRegular),
+        border: Border.all(color: AppColors.borderMedium),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -832,7 +784,8 @@ class _RAGMessageBubbleState extends State<_RAGMessageBubble> {
                 decoration: BoxDecoration(
                   color: AppColors.badgeBlue,
                   borderRadius: BorderRadius.circular(
-                      AppSpacing.cornerRadiusSmall),
+                    AppSpacing.cornerRadiusSmall,
+                  ),
                 ),
                 child: Text(
                   '$scorePercent%',
@@ -848,9 +801,9 @@ class _RAGMessageBubbleState extends State<_RAGMessageBubble> {
           // Chunk text snippet
           Text(
             snippet,
-            style: AppTypography.caption(context).copyWith(
-              color: AppColors.textSecondary(context),
-            ),
+            style: AppTypography.caption(
+              context,
+            ).copyWith(color: AppColors.textSecondary(context)),
           ),
         ],
       ),

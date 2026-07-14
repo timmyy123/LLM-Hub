@@ -1,0 +1,40 @@
+name: runanywhere_qhexrt
+publish_to: none
+description: Private Android-only Qualcomm Hexagon NPU (QHexRT) backend for RunAnywhere. Runs prebuilt QNN context binaries on Snapdragon V75, V79, and V81 NPUs.
+version: 0.20.9
+homepage: https://runanywhere.ai
+repository: https://github.com/RunanywhereAI/runanywhere-sdks
+issue_tracker: https://github.com/RunanywhereAI/runanywhere-sdks/issues
+topics:
+  - ai
+  - llm
+  - npu
+  - qualcomm
+  - on-device
+
+environment:
+  sdk: '>=3.12.0 <4.0.0'
+  flutter: '>=3.44.0'
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  runanywhere: ^0.20.9
+  # Keep this bounded for pub.dev publish validation, matching the core
+  # package's major-version range.
+  ffi: '>=2.2.0 <3.0.0'
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: any
+
+flutter:
+  uses-material-design: true
+  plugin:
+    platforms:
+      android:
+        package: ai.runanywhere.sdk.qhexrt
+        pluginClass: QhexrtPlugin

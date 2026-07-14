@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import RunAnywhere
+import Combine
 @preconcurrency import AVFoundation
 import os.log
 
@@ -35,49 +36,61 @@ final class VLMViewModel: NSObject {
 
     // Auto-streaming mode
     var isAutoStreamingEnabled = false
-    // nonisolated(unsafe) so deinit can cancel the task (deinit is nonisolated in Swift 6)
-    nonisolated(unsafe) private var autoStreamTask: Task<Void, Never>?
-    private static let autoStreamInterval: TimeInterval = 2.5 // seconds between auto-captures
+    static let autoStreamInterval: TimeInterval = 2.5 // seconds between auto-captures
+    private static let liveFrameMaxTokens: Int32 = 96
+    private static let selectedImageMaxTokens: Int32 = 128
+    private static let autoStreamMaxTokens: Int32 = 64
 
     // Camera
     private(set) var captureSession: AVCaptureSession?
     private var currentFrame: CVPixelBuffer?
 
     private let logger = Logger(subsystem: "com.runanywhere.RunAnywhereAI", category: "VLM")
+    private var lifecycleCancellable: AnyCancellable?
 
     // MARK: - Init
 
     override init() {
         super.init()
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(vlmModelLoaded(_:)),
-            name: Notification.Name("VLMModelLoaded"),
-            object: nil
-        )
+        subscribeToModelLifecycle()
         Task { await checkModelStatus() }
-    }
-
-    deinit {
-        autoStreamTask?.cancel()
-        NotificationCenter.default.removeObserver(self)
-        // Note: Camera cleanup is handled by onDisappear in VLMCameraView
     }
 
     // MARK: - Model
 
     func checkModelStatus() async {
-        isModelLoaded = await RunAnywhere.isVLMModelLoaded
+        var req = RACurrentModelRequest()
+        req.category = .multimodal
+        isModelLoaded = RunAnywhere.currentModel(req).found
     }
 
-    @objc private func vlmModelLoaded(_ notification: Notification) {
-        Task {
-            if let model = notification.object as? ModelInfo {
-                isModelLoaded = true
-                loadedModelName = model.name
-            } else {
-                await checkModelStatus()
+    /// Track the VLM model slot via the SDK event bus. Model loads route through
+    /// `RunAnywhere.loadModel(category: .multimodal)`, which publishes a
+    /// component-lifecycle event for SDK_COMPONENT_VLM — the single source of
+    /// truth, replacing the former "VLMModelLoaded" NotificationCenter post.
+    private func subscribeToModelLifecycle() {
+        lifecycleCancellable = RunAnywhere.events.events(for: .component)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] event in
+                Task { @MainActor in self?.handleComponentLifecycleEvent(event) }
             }
+    }
+
+    private func handleComponentLifecycleEvent(_ event: RASDKEvent) {
+        let lifecycle = event.componentLifecycle
+        guard lifecycle.component == .vlm else { return }
+
+        switch lifecycle.currentState {
+        case .ready:
+            isModelLoaded = true
+            if let model = ModelListViewModel.shared.availableModels.first(where: { $0.id == lifecycle.modelID }) {
+                loadedModelName = model.name
+            }
+        case .notLoaded, .unloading, .shutdown, .deleting:
+            isModelLoaded = false
+            loadedModelName = nil
+        default:
+            break
         }
     }
 
@@ -107,9 +120,8 @@ final class VLMViewModel: NSObject {
         if session.canAddInput(input) { session.addInput(input) }
 
         let output = AVCaptureVideoDataOutput()
-        // CRITICAL: Request BGRA format explicitly!
-        // Default iOS camera output is YUV, which our pixel conversion code doesn't handle.
-        // The SDK's VLMTypes.swift assumes BGRA (offset+2=R, offset+1=G, offset+0=B)
+        // Request BGRA explicitly: the default camera output is YUV, and the
+        // SDK's `RAVLMImage.fromPixelBuffer` accepts BGRA buffers.
         output.videoSettings = [
             kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
         ]
@@ -133,6 +145,32 @@ final class VLMViewModel: NSObject {
 
     // MARK: - Describe
 
+    /// Drain a typed VLM stream, forwarding TOKEN text via `onToken`.
+    /// Throws when the stream terminates with an ERROR event so callers'
+    /// existing catch blocks surface it like any other failure.
+    private func consumeVLMStream(
+        _ stream: AsyncStream<RAVLMStreamEvent>,
+        onToken: (String) -> Void
+    ) async throws {
+        for await event in stream {
+            switch event.kind {
+            case .token:
+                if !event.token.isEmpty { onToken(event.token) }
+            case .completed:
+                let result = event.result
+                logger.info("VLM streaming completed: \(result.completionTokens) tokens, \(result.tokensPerSecond) tok/s")
+            case .error:
+                throw NSError(
+                    domain: "com.runanywhere.RunAnywhereAI",
+                    code: Int(event.errorCode),
+                    userInfo: [NSLocalizedDescriptionKey: event.errorMessage.isEmpty ? "VLM stream failed" : event.errorMessage]
+                )
+            default:
+                break
+            }
+        }
+    }
+
     func describeCurrentFrame() async {
         guard let pixelBuffer = currentFrame, !isProcessing else { return }
 
@@ -141,16 +179,15 @@ final class VLMViewModel: NSObject {
         currentDescription = ""
 
         do {
-            let image = VLMImage(pixelBuffer: pixelBuffer)
-            let result = try await RunAnywhere.processImageStream(
-                image,
-                prompt: "Describe what you see briefly.",
-                maxTokens: 200
-            )
-
-            for try await token in result.stream {
-                currentDescription += token
+            guard let image = RAVLMImage.fromPixelBuffer(pixelBuffer) else {
+                throw Self.imageConversionError("Failed to convert camera frame to VLM input")
             }
+            let prompt = "Describe what you see briefly."
+            var options = RAVLMGenerationOptions.defaults(prompt: prompt)
+            options.maxTokens = Self.liveFrameMaxTokens
+            let stream = try await RunAnywhere.processImageStream(image, options: options)
+
+            try await consumeVLMStream(stream) { currentDescription += $0 }
         } catch {
             self.error = error
             logger.error("VLM error: \(error.localizedDescription)")
@@ -166,16 +203,15 @@ final class VLMViewModel: NSObject {
         currentDescription = ""
 
         do {
-            let image = VLMImage(image: uiImage)
-            let result = try await RunAnywhere.processImageStream(
-                image,
-                prompt: "Describe this image in detail.",
-                maxTokens: 300
-            )
-
-            for try await token in result.stream {
-                currentDescription += token
+            guard let image = RAVLMImage.fromUIImage(uiImage) else {
+                throw Self.imageConversionError("Failed to convert image to VLM input")
             }
+            let prompt = "Describe this image in detail."
+            var options = RAVLMGenerationOptions.defaults(prompt: prompt)
+            options.maxTokens = Self.selectedImageMaxTokens
+            let stream = try await RunAnywhere.processImageStream(image, options: options)
+
+            try await consumeVLMStream(stream) { currentDescription += $0 }
         } catch {
             self.error = error
         }
@@ -191,54 +227,15 @@ final class VLMViewModel: NSObject {
         currentDescription = ""
 
         do {
-            guard let cgImage = nsImage.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
-                let conversionError = NSError(
-                    domain: "com.runanywhere.RunAnywhereAI",
-                    code: -1,
-                    userInfo: [NSLocalizedDescriptionKey: "Failed to convert NSImage to CGImage"]
-                )
-                self.error = conversionError
-                logger.error("VLM error: failed to convert NSImage to CGImage")
-                isProcessing = false
-                return
+            guard let image = RAVLMImage.fromNSImage(nsImage) else {
+                throw Self.imageConversionError("Failed to convert image to VLM input")
             }
-            let width = cgImage.width
-            let height = cgImage.height
-            let rgbaBytesPerRow = 4 * width
-            let rgbaTotalBytes = rgbaBytesPerRow * height
-            var rgbaData = Data(count: rgbaTotalBytes)
-            rgbaData.withUnsafeMutableBytes { ptr in
-                guard let context = CGContext(
-                    data: ptr.baseAddress,
-                    width: width,
-                    height: height,
-                    bitsPerComponent: 8,
-                    bytesPerRow: rgbaBytesPerRow,
-                    space: CGColorSpaceCreateDeviceRGB(),
-                    bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
-                ) else { return }
-                context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
-            }
-            // RGBX (4 bytes/pixel) → RGB (3 bytes/pixel): strip the padding byte
-            var rgbData = Data(capacity: width * height * 3)
-            rgbaData.withUnsafeBytes { buffer in
-                let pixels = buffer.bindMemory(to: UInt8.self)
-                for i in stride(from: 0, to: rgbaTotalBytes, by: 4) {
-                    rgbData.append(pixels[i])     // R
-                    rgbData.append(pixels[i + 1]) // G
-                    rgbData.append(pixels[i + 2]) // B
-                }
-            }
-            let image = VLMImage(rgbPixels: rgbData, width: width, height: height)
-            let result = try await RunAnywhere.processImageStream(
-                image,
-                prompt: "Describe this image in detail.",
-                maxTokens: 300
-            )
+            let prompt = "Describe this image in detail."
+            var options = RAVLMGenerationOptions.defaults(prompt: prompt)
+            options.maxTokens = Self.selectedImageMaxTokens
+            let stream = try await RunAnywhere.processImageStream(image, options: options)
 
-            for try await token in result.stream {
-                currentDescription += token
-            }
+            try await consumeVLMStream(stream) { currentDescription += $0 }
         } catch {
             self.error = error
         }
@@ -255,37 +252,17 @@ final class VLMViewModel: NSObject {
 
     func toggleAutoStreaming() {
         isAutoStreamingEnabled.toggle()
-        if isAutoStreamingEnabled {
-            startAutoStreaming()
-        } else {
-            stopAutoStreaming()
-        }
     }
 
-    func startAutoStreaming() {
-        guard autoStreamTask == nil else { return }
-
-        autoStreamTask = Task {
-            while !Task.isCancelled && isAutoStreamingEnabled {
-                // Wait for any current processing to finish
-                while isProcessing {
-                    try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s
-                    if Task.isCancelled { return }
-                }
-
-                // Capture and describe
-                await describeCurrentFrameForAutoStream()
-
-                // Wait before next capture
-                try? await Task.sleep(nanoseconds: UInt64(Self.autoStreamInterval * 1_000_000_000))
+    func runAutoStreamLoop() async {
+        while !Task.isCancelled {
+            while isProcessing {
+                try? await Task.sleep(nanoseconds: 100_000_000)
+                if Task.isCancelled { return }
             }
+            await describeCurrentFrameForAutoStream()
+            try? await Task.sleep(nanoseconds: UInt64(Self.autoStreamInterval * 1_000_000_000))
         }
-    }
-
-    func stopAutoStreaming() {
-        autoStreamTask?.cancel()
-        autoStreamTask = nil
-        isAutoStreamingEnabled = false
     }
 
     private func describeCurrentFrameForAutoStream() async {
@@ -299,15 +276,16 @@ final class VLMViewModel: NSObject {
         var newDescription = ""
 
         do {
-            let image = VLMImage(pixelBuffer: pixelBuffer)
-            let result = try await RunAnywhere.processImageStream(
-                image,
-                prompt: "Describe what you see in one sentence.",
-                maxTokens: 100
-            )
+            guard let image = RAVLMImage.fromPixelBuffer(pixelBuffer) else {
+                throw Self.imageConversionError("Failed to convert camera frame to VLM input")
+            }
+            let prompt = "Describe what you see in one sentence."
+            var options = RAVLMGenerationOptions.defaults(prompt: prompt)
+            options.maxTokens = Self.autoStreamMaxTokens
+            let stream = try await RunAnywhere.processImageStream(image, options: options)
 
-            for try await token in result.stream {
-                newDescription += token
+            try await consumeVLMStream(stream) {
+                newDescription += $0
                 currentDescription = newDescription
             }
         } catch {
@@ -316,6 +294,14 @@ final class VLMViewModel: NSObject {
         }
 
         isProcessing = false
+    }
+
+    private static func imageConversionError(_ message: String) -> NSError {
+        NSError(
+            domain: "com.runanywhere.RunAnywhereAI",
+            code: -1,
+            userInfo: [NSLocalizedDescriptionKey: message]
+        )
     }
 }
 

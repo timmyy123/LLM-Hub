@@ -5,11 +5,21 @@
 
 #include "rag_backend.h"
 
+#include "bm25_index.h"
+#include "rag_pipeline_graph.h"
+#include "vector_store_usearch.h"
+
 #include <algorithm>
+#include <cctype>
+#include <chrono>
+#include <cstdlib>
 #include <cstring>
+#include <initializer_list>
 #include <unordered_set>
 
 #include "rac/core/rac_logger.h"
+#include "rac/core/rac_platform_adapter.h"
+#include "rac/foundation/rac_sha256.h"
 
 #define LOG_TAG "RAG.Backend"
 #define LOGI(...) RAC_LOG_INFO(LOG_TAG, __VA_ARGS__)
@@ -20,22 +30,65 @@ static const std::string kSystemPrompt =
     "Answer the question using only the provided context passages. "
     "If the context does not contain enough information, say so.";
 
-namespace runanywhere {
-namespace rag {
+namespace runanywhere::rag {
+namespace {
 
-RAGBackend::RAGBackend(
-    const RAGBackendConfig& config,
-    rac_handle_t llm_service,
-    rac_handle_t embeddings_service,
-    bool owns_services
-) : config_(config),
-    llm_service_(llm_service),
-    embeddings_service_(embeddings_service),
-    owns_services_(owns_services) {
+std::string first_string_metadata(const nlohmann::json& metadata,
+                                  std::initializer_list<const char*> keys) {
+    for (const char* key : keys) {
+        auto it = metadata.find(key);
+        if (it != metadata.end() && it->is_string()) {
+            return it->get<std::string>();
+        }
+    }
+    return {};
+}
 
-    VectorStoreConfig store_config;
-    store_config.dimension = config.embedding_dimension;
-    vector_store_ = std::make_unique<VectorStoreUSearch>(store_config);
+}  // namespace
+
+namespace {
+
+// Normalize text for content-addressing: trim ends and collapse internal
+// whitespace runs to a single space, so trivially-different copies of the same
+// document hash identically and are not re-embedded.
+std::string normalize_for_hash(const std::string& text) {
+    std::string out;
+    out.reserve(text.size());
+    size_t start = 0;
+    size_t end = text.size();
+    while (start < end && std::isspace(static_cast<unsigned char>(text[start])))
+        ++start;
+    while (end > start && std::isspace(static_cast<unsigned char>(text[end - 1])))
+        --end;
+    bool in_space = false;
+    for (size_t i = start; i < end; ++i) {
+        const char c = text[i];
+        if (std::isspace(static_cast<unsigned char>(c))) {
+            if (!in_space) {
+                out.push_back(' ');
+                in_space = true;
+            }
+        } else {
+            out.push_back(c);
+            in_space = false;
+        }
+    }
+    return out;
+}
+
+}  // namespace
+
+RAGBackend::RAGBackend(const RAGBackendConfig& config, rac_handle_t llm_service,
+                       rac_handle_t embeddings_service, bool owns_services)
+    : config_(config),
+      llm_service_(llm_service),
+      embeddings_service_(embeddings_service),
+      owns_services_(owns_services) {
+    if (config.embedding_dimension > 0) {
+        VectorStoreConfig store_config;
+        store_config.dimension = config.embedding_dimension;
+        vector_store_ = std::make_unique<VectorStoreUSearch>(store_config);
+    }
 
     bm25_index_ = std::make_unique<BM25Index>();
 
@@ -45,9 +98,14 @@ RAGBackend::RAGBackend(
     chunker_ = std::make_unique<DocumentChunker>(chunker_config);
 
     initialized_ = (embeddings_service_ != nullptr);
-    LOGI("RAG pipeline initialized: dim=%zu, chunk_size=%zu, has_llm=%d, has_embed=%d",
-         config.embedding_dimension, config.chunk_size,
-         llm_service_ != nullptr, embeddings_service_ != nullptr);
+    if (config.embedding_dimension > 0) {
+        LOGI("RAG pipeline initialized: dim=%zu, chunk_size=%zu, has_llm=%d, has_embed=%d",
+             config.embedding_dimension, config.chunk_size, llm_service_ != nullptr,
+             embeddings_service_ != nullptr);
+    } else {
+        LOGI("RAG pipeline initialized: dim=auto, chunk_size=%zu, has_llm=%d, has_embed=%d",
+             config.chunk_size, llm_service_ != nullptr, embeddings_service_ != nullptr);
+    }
 }
 
 RAGBackend::~RAGBackend() {
@@ -68,8 +126,44 @@ RAGBackend::~RAGBackend() {
 // Embedding helper — calls through embeddings service vtable
 // =============================================================================
 
+bool RAGBackend::ensure_embedding_dimension_locked(size_t actual_dimension) {
+    if (actual_dimension == 0) {
+        LOGE("Embedding provider returned an empty vector; cannot resolve RAG dimension");
+        return false;
+    }
+
+    if (config_.embedding_dimension > 0 && config_.embedding_dimension != actual_dimension) {
+        LOGE("Embedding dimension mismatch: model produced %zu, pipeline expects %zu",
+             actual_dimension, config_.embedding_dimension);
+        return false;
+    }
+
+    if (config_.embedding_dimension == 0) {
+        VectorStoreConfig store_config;
+        store_config.dimension = actual_dimension;
+        try {
+            auto vector_store = std::make_unique<VectorStoreUSearch>(store_config);
+            vector_store_ = std::move(vector_store);
+            config_.embedding_dimension = actual_dimension;
+            LOGI("Resolved RAG embedding dimension from model output: %zu", actual_dimension);
+        } catch (const std::exception& e) {
+            LOGE("Failed to initialize vector store for embedding dimension %zu: %s",
+                 actual_dimension, e.what());
+            return false;
+        }
+    }
+
+    if (!vector_store_) {
+        LOGE("RAG vector store is unavailable after resolving embedding dimension %zu",
+             actual_dimension);
+        return false;
+    }
+    return true;
+}
+
 std::vector<float> RAGBackend::embed_text(const std::string& text) const {
-    if (!embeddings_service_) return {};
+    if (!embeddings_service_)
+        return {};
 
     rac_embeddings_result_t result = {};
     rac_result_t status = rac_embeddings_embed(embeddings_service_, text.c_str(), nullptr, &result);
@@ -79,19 +173,17 @@ std::vector<float> RAGBackend::embed_text(const std::string& text) const {
         return {};
     }
 
-    std::vector<float> embedding(
-        result.embeddings[0].data,
-        result.embeddings[0].data + result.embeddings[0].dimension
-    );
+    std::vector<float> embedding(result.embeddings[0].data,
+                                 result.embeddings[0].data + result.embeddings[0].dimension);
 
     rac_embeddings_result_free(&result);
     return embedding;
 }
 
-std::vector<std::vector<float>> RAGBackend::embed_texts_batch(
-    const std::vector<std::string>& texts
-) const {
-    if (!embeddings_service_ || texts.empty()) return {};
+std::vector<std::vector<float>>
+RAGBackend::embed_texts_batch(const std::vector<std::string>& texts) const {
+    if (!embeddings_service_ || texts.empty())
+        return {};
 
     std::vector<const char*> c_texts;
     c_texts.reserve(texts.size());
@@ -100,8 +192,8 @@ std::vector<std::vector<float>> RAGBackend::embed_texts_batch(
     }
 
     rac_embeddings_result_t result = {};
-    rac_result_t status = rac_embeddings_embed_batch(
-        embeddings_service_, c_texts.data(), c_texts.size(), nullptr, &result);
+    rac_result_t status = rac_embeddings_embed_batch(embeddings_service_, c_texts.data(),
+                                                     c_texts.size(), nullptr, &result);
 
     if (status != RAC_SUCCESS || result.num_embeddings == 0 || !result.embeddings) {
         rac_embeddings_result_free(&result);
@@ -111,10 +203,8 @@ std::vector<std::vector<float>> RAGBackend::embed_texts_batch(
     std::vector<std::vector<float>> embeddings;
     embeddings.reserve(result.num_embeddings);
     for (size_t i = 0; i < result.num_embeddings; ++i) {
-        embeddings.emplace_back(
-            result.embeddings[i].data,
-            result.embeddings[i].data + result.embeddings[i].dimension
-        );
+        embeddings.emplace_back(result.embeddings[i].data,
+                                result.embeddings[i].data + result.embeddings[i].dimension);
     }
 
     rac_embeddings_result_free(&result);
@@ -126,7 +216,9 @@ std::vector<std::vector<float>> RAGBackend::embed_texts_batch(
 // =============================================================================
 
 bool RAGBackend::add_document(const std::string& text, const nlohmann::json& metadata) {
-    size_t embedding_dimension;
+    // Content-addressed dedup: skip re-chunk + re-embed when this exact input
+    // (normalized) was already ingested into this index.
+    const std::string content_hash = sha256_hex(normalize_for_hash(text));
 
     {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -134,13 +226,21 @@ bool RAGBackend::add_document(const std::string& text, const nlohmann::json& met
             LOGE("Pipeline not initialized");
             return false;
         }
-        embedding_dimension = config_.embedding_dimension;
+        if (ingested_content_hashes_.count(content_hash)) {
+            LOGI("Document already ingested (content hash match) — skipping re-embed");
+            return true;
+        }
+        // Reserve the hash now, under the lock, so a concurrent ingest of the
+        // same content short-circuits instead of double-embedding and appending
+        // duplicate chunks. Erased again on any failure path below.
+        ingested_content_hashes_.insert(content_hash);
     }
 
     auto chunks = chunker_->chunk_document(text);
     LOGI("Split document into %zu chunks", chunks.size());
 
-    if (chunks.empty()) return true;
+    if (chunks.empty())
+        return true;
 
     std::vector<std::string> chunk_texts;
     chunk_texts.reserve(chunks.size());
@@ -159,22 +259,54 @@ bool RAGBackend::add_document(const std::string& text, const nlohmann::json& met
     }
 
     if (embeddings.size() != chunks.size()) {
-        LOGE("Embedding count mismatch: got %zu, expected %zu",
-             embeddings.size(), chunks.size());
+        LOGE("Embedding count mismatch: got %zu, expected %zu", embeddings.size(), chunks.size());
+        std::lock_guard<std::mutex> lock(mutex_);
+        ingested_content_hashes_.erase(content_hash);
         return false;
     }
 
     std::lock_guard<std::mutex> lock(mutex_);
 
-    std::string source_preview = text.substr(0, 100);
+    // Some embedding providers cannot report a dimension before their first
+    // inference. Bind an auto-dimension pipeline to the first real output;
+    // explicit dimensions and subsequent outputs are validated here before
+    // any chunk reaches the index.
+    const size_t actual_dimension = embeddings.empty() ? 0 : embeddings.front().size();
+    if (!ensure_embedding_dimension_locked(actual_dimension)) {
+        ingested_content_hashes_.erase(content_hash);
+        return false;
+    }
+    const size_t embedding_dimension = config_.embedding_dimension;
+
+    // Truncate the source preview at a UTF-8 character boundary, not a raw
+    // byte offset: a mid-sequence cut emits invalid UTF-8, which strict proto
+    // decoders (e.g. SwiftProtobuf) reject when this flows into RAGResult's
+    // string fields. Lenient decoders (Android/Wire, Flutter/dart) tolerated
+    // it via U+FFFD substitution, masking the corruption on those platforms.
+    size_t preview_len = text.size() < 100 ? text.size() : 100;
+    while (preview_len > 0 && preview_len < text.size() &&
+           (static_cast<unsigned char>(text[preview_len]) & 0xC0) == 0x80) {
+        --preview_len;
+    }
+    std::string source_preview = text.substr(0, preview_len);
     std::vector<DocumentChunk> doc_chunks;
     doc_chunks.reserve(chunks.size());
 
     for (size_t i = 0; i < chunks.size(); ++i) {
+        // Atomic ingest: if any chunk failed to embed (empty vector from
+        // embed_text fallback) or returned the wrong dimension, abort the
+        // whole document instead of silently skipping. Skipping leaves the
+        // caller's RAGStatistics looking like a successful ingest while
+        // future queries against those chunks silently never match — data
+        // loss without notification. Callers see this as
+        // RAC_ERROR_PROCESSING_FAILED via rac_rag_ingest_proto.
         if (embeddings[i].size() != embedding_dimension) {
-            LOGE("Embedding dimension mismatch at chunk %zu: got %zu, expected %zu",
-                 i, embeddings[i].size(), embedding_dimension);
-            continue;
+            LOGE(
+                "Embedding dimension mismatch at chunk %zu: got %zu, expected %zu; aborting "
+                "document ingest",
+                i, embeddings[i].size(), embedding_dimension);
+            ingested_content_hashes_.erase(content_hash);
+            return false;
         }
 
         DocumentChunk chunk;
@@ -188,6 +320,7 @@ bool RAGBackend::add_document(const std::string& text, const nlohmann::json& met
 
     if (!doc_chunks.empty() && !vector_store_->add_chunks_batch(doc_chunks)) {
         LOGE("Failed to add chunks batch to vector store");
+        ingested_content_hashes_.erase(content_hash);
         return false;
     }
 
@@ -214,6 +347,10 @@ std::vector<SearchResult> RAGBackend::search(const std::string& query_text, size
 
     {
         std::lock_guard<std::mutex> lock(mutex_);
+        if (!vector_store_ || config_.embedding_dimension == 0) {
+            LOGE("Cannot search before the embedding dimension is resolved by document ingest");
+            return {};
+        }
         embedding_dimension = config_.embedding_dimension;
         similarity_threshold = config_.similarity_threshold;
     }
@@ -221,13 +358,12 @@ std::vector<SearchResult> RAGBackend::search(const std::string& query_text, size
     return search_with_embedding(query_text, top_k, embedding_dimension, similarity_threshold);
 }
 
-std::vector<SearchResult> RAGBackend::search_with_embedding(
-    const std::string& query_text,
-    size_t top_k,
-    size_t embedding_dimension,
-    float similarity_threshold
-) const {
-    if (!initialized_) return {};
+std::vector<SearchResult> RAGBackend::search_with_embedding(const std::string& query_text,
+                                                            size_t top_k,
+                                                            size_t embedding_dimension,
+                                                            float similarity_threshold) const {
+    if (!initialized_)
+        return {};
 
     try {
         auto query_embedding = embed_text(query_text);
@@ -246,8 +382,8 @@ std::vector<SearchResult> RAGBackend::search_with_embedding(
         }
 
         auto fused = fuse_results(dense_results, bm25_results, top_k);
-        LOGI("Hybrid search: %zu dense, %zu bm25, %zu fused",
-             dense_results.size(), bm25_results.size(), fused.size());
+        LOGI("Hybrid search: %zu dense, %zu bm25, %zu fused", dense_results.size(),
+             bm25_results.size(), fused.size());
 
         return fused;
 
@@ -261,15 +397,15 @@ std::vector<SearchResult> RAGBackend::search_with_embedding(
 // Reciprocal Rank Fusion (RRF) — merges dense + BM25 results
 // =============================================================================
 
-std::vector<SearchResult> RAGBackend::fuse_results(
-    const std::vector<SearchResult>& dense_results,
-    const std::vector<std::pair<std::string, float>>& bm25_results,
-    size_t top_k
-) const {
+std::vector<SearchResult>
+RAGBackend::fuse_results(const std::vector<SearchResult>& dense_results,
+                         const std::vector<std::pair<std::string, float>>& bm25_results,
+                         size_t top_k) const {
     static constexpr float kRRFConstant = 60.0f;
     static constexpr float kMaxRRFScore = 2.0f / 61.0f;
 
-    if (bm25_results.empty()) return dense_results;
+    if (bm25_results.empty())
+        return dense_results;
 
     size_t missing_rank = top_k + 1;
 
@@ -289,17 +425,19 @@ std::vector<SearchResult> RAGBackend::fuse_results(
     float missing_score = 1.0f / (kRRFConstant + static_cast<float>(missing_rank));
 
     std::unordered_set<std::string> dense_ids;
-    for (const auto& r : dense_results) dense_ids.insert(r.id);
+    for (const auto& r : dense_results)
+        dense_ids.insert(r.id);
 
     std::unordered_set<std::string> bm25_ids;
-    for (const auto& r : bm25_results) bm25_ids.insert(r.first);
+    for (const auto& r : bm25_results)
+        bm25_ids.insert(r.first);
 
     for (auto& [id, score] : rrf_scores) {
         if (dense_ids.find(id) == dense_ids.end()) {
-            score += missing_score; // Not in dense → add missing-rank dense score
+            score += missing_score;  // Not in dense → add missing-rank dense score
         }
         if (bm25_ids.find(id) == bm25_ids.end()) {
-            score += missing_score; // Not in BM25 → add missing-rank BM25 score
+            score += missing_score;  // Not in BM25 → add missing-rank BM25 score
         }
     }
 
@@ -331,14 +469,11 @@ std::vector<SearchResult> RAGBackend::fuse_results(
         if (dense_it != dense_map.end()) {
             SearchResult result = *(dense_it->second);
             result.score = normalized;
-            result.similarity = normalized;
             fused.push_back(std::move(result));
         } else {
             SearchResult result;
             result.id = id;
-            result.chunk_id = id;
             result.score = normalized;
-            result.similarity = normalized;
 
             if (vector_store_) {
                 auto chunk = vector_store_->get_chunk(id);
@@ -356,136 +491,147 @@ std::vector<SearchResult> RAGBackend::fuse_results(
 }
 
 // =============================================================================
-// Context helpers
+// Query — GraphScheduler-driven DAG
 // =============================================================================
+//
+// The entire orchestration (embed → retrieve → assemble →
+// generate) now lives in `run_rag_query()` which builds and runs a typed
+// `GraphScheduler` per call. This method is just the snapshot+dispatch
+// shim that hands the right inputs to the graph and translates its
+// `RAGGraphResult` into the legacy `rac_llm_result_t` + metadata JSON
+// pair that the public C ABI returns.
 
-std::string RAGBackend::build_context(const std::vector<SearchResult>& results) const {
-    static constexpr size_t kCharsPerToken = 4;
-    const size_t max_chars = config_.max_context_tokens * kCharsPerToken;
-
-    std::string context;
-    for (size_t i = 0; i < results.size(); ++i) {
-        const std::string& chunk_text = results[i].text;
-        size_t separator_len = (i > 0) ? 2 : 0; // "\n\n"
-
-        if (context.size() + separator_len + chunk_text.size() > max_chars) {
-            LOGI("Context budget reached at chunk %zu/%zu (%zu chars, limit ~%zu)",
-                 i, results.size(), context.size(), max_chars);
-            break;
+rac_result_t RAGBackend::query(const std::string& question, const rac_llm_options_t* options,
+                               rac_llm_result_t* out_result, nlohmann::json& out_metadata,
+                               std::function<bool(const std::string&)> on_token,
+                               const QueryOverrides* overrides) {
+    auto request_cancel = std::make_shared<std::atomic<bool>>(false);
+    {
+        std::lock_guard<std::mutex> state_lock(query_state_mutex_);
+        if (active_query_cancel_) {
+            LOGE("A RAG query is already active for this session");
+            return RAC_ERROR_INVALID_STATE;
         }
-
-        if (i > 0) context += "\n\n";
-        context += chunk_text;
+        active_query_cancel_ = request_cancel;
     }
-    return context;
-}
-
-std::string RAGBackend::format_prompt(const std::string& query, const std::string& context) const {
-    std::string prompt = config_.prompt_template;
-
-    for (size_t pos = prompt.find("{query}"); pos != std::string::npos;
-         pos = prompt.find("{query}", pos + query.size())) {
-        prompt.replace(pos, 7, query);
-    }
-
-    for (size_t pos = prompt.find("{context}"); pos != std::string::npos;
-         pos = prompt.find("{context}", pos + context.size())) {
-        prompt.replace(pos, 9, context);
-    }
-
-    return prompt;
-}
-
-// =============================================================================
-// Query — insert top N chunks then generate
-// =============================================================================
-
-rac_result_t RAGBackend::query(
-    const std::string& question,
-    const rac_llm_options_t* options,
-    rac_llm_result_t* out_result,
-    nlohmann::json& out_metadata
-) {
-    rac_handle_t llm;
-    size_t embedding_dimension;
-    float similarity_threshold;
-    size_t top_k;
-    bool initialized;
+    // Every return path retires exactly this request token. A later query gets
+    // a distinct false token rather than resetting shared cancellation state.
+    std::unique_ptr<void, std::function<void(void*)>> request_scope(
+        reinterpret_cast<void*>(1), [this, request_cancel](void*) {
+            std::lock_guard<std::mutex> state_lock(query_state_mutex_);
+            if (active_query_cancel_.get() == request_cancel.get()) {
+                active_query_cancel_.reset();
+            }
+        });
+    RAGGraphInputs g_in;
 
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        llm = llm_service_;
-        embedding_dimension = config_.embedding_dimension;
-        similarity_threshold = config_.similarity_threshold;
-        top_k = config_.top_k;
-        initialized = initialized_;
-    }
-
-    if (!initialized || !llm) {
-        LOGE("Pipeline not initialized or LLM service not available");
-        return RAC_ERROR_INVALID_STATE;
-    }
-
-    // 1. Retrieve top-k chunks
-    auto search_results = search_with_embedding(
-        question, top_k, embedding_dimension, similarity_threshold);
-
-    if (search_results.empty()) {
-        LOGI("No relevant documents found");
-        if (out_result) {
-            out_result->text = rac_strdup("I don't have enough information to answer that question.");
-            out_result->completion_tokens = 0;
-            out_result->prompt_tokens = 0;
-            out_result->total_tokens = 0;
-            out_result->total_time_ms = 0;
-            out_result->tokens_per_second = 0;
-            out_result->time_to_first_token_ms = 0;
+        if (!initialized_ || !llm_service_) {
+            LOGE("Pipeline not initialized or LLM service not available");
+            return RAC_ERROR_INVALID_STATE;
         }
+        if (!vector_store_ || config_.embedding_dimension == 0) {
+            LOGE("RAG query requires at least one successfully embedded document");
+            return RAC_ERROR_INVALID_STATE;
+        }
+        g_in.llm_service = llm_service_;
+        g_in.embeddings_service = embeddings_service_;
+        g_in.vector_store = vector_store_.get();
+        g_in.bm25_index = bm25_index_.get();
+        g_in.embedding_dimension = config_.embedding_dimension;
+        g_in.top_k = config_.top_k;
+        g_in.similarity_threshold = config_.similarity_threshold;
+        g_in.max_context_tokens = config_.max_context_tokens;
+        g_in.prompt_template = config_.prompt_template;
+        g_in.rerank = config_.rerank;
+    }
+
+    // Per-query overrides from RAGQueryOptions (idl/rag.proto). Zero/unset
+    // values fall back to the session-level RAGConfig defaults captured
+    // above so this stays backward-compatible with callers that omit them.
+    if (overrides != nullptr) {
+        if (overrides->retrieval_top_k > 0) {
+            g_in.top_k = static_cast<size_t>(overrides->retrieval_top_k);
+        }
+        // Honor an explicit floor including 0.0 (accept-all); unset falls back.
+        if (overrides->has_similarity_threshold) {
+            g_in.similarity_threshold = overrides->similarity_threshold;
+        }
+        g_in.enable_multi_query = overrides->enable_multi_query;
+        if (overrides->multi_query_count > 0) {
+            g_in.multi_query_count = static_cast<size_t>(overrides->multi_query_count);
+        }
+        g_in.scope_prefix = overrides->scope_prefix;
+    }
+
+    g_in.question = question;
+    g_in.llm_options = options ? *options : RAC_LLM_OPTIONS_DEFAULT;
+    g_in.system_prompt = kSystemPrompt;
+    g_in.cancel_requested = request_cancel.get();
+
+    auto t_start = std::chrono::high_resolution_clock::now();
+    RAGGraphResult g_out;
+    rac_result_t status = run_rag_query(g_in, std::move(on_token), g_out);
+    auto t_end = std::chrono::high_resolution_clock::now();
+    const double total_ms = std::chrono::duration<double, std::milli>(t_end - t_start).count();
+
+    if (status != RAC_SUCCESS)
+        return status;
+
+    if (out_result) {
+        out_result->text = !g_out.answer.empty() ? rac_strdup(g_out.answer.c_str()) : nullptr;
+        out_result->completion_tokens = 0;
+        out_result->prompt_tokens = 0;
+        out_result->total_tokens = 0;
+        out_result->total_time_ms = total_ms;
+        out_result->tokens_per_second = 0;
+        out_result->time_to_first_token_ms = 0;
+    }
+
+    if (g_out.sources.empty()) {
         out_metadata["reason"] = "no_context";
         return RAC_SUCCESS;
     }
 
-    // 2. Build context from retrieved chunks
-    std::string assembled_context = build_context(search_results);
-    LOGI("Built context from %zu chunks (%zu chars)", search_results.size(), assembled_context.size());
-
-    // 3. Format the full prompt using the prompt template (context + query together)
-    std::string full_prompt = format_prompt(question, assembled_context);
-
-    // 4. Generate via standard rac_llm_generate so the chat template is applied
-    //    uniformly to the entire prompt (system + context + question).
-    //    This avoids the KV cache / chat template mismatch that occurs when raw
-    //    context is injected via append_context and only the query gets templated.
-    rac_llm_options_t rag_options = options ? *options : RAC_LLM_OPTIONS_DEFAULT;
-    if (!rag_options.system_prompt || rag_options.system_prompt[0] == '\0') {
-        rag_options.system_prompt = kSystemPrompt.c_str();
-    }
-
-    rac_result_t status = rac_llm_generate(llm, full_prompt.c_str(), &rag_options, out_result);
-
-    if (status != RAC_SUCCESS) {
-        LOGE("rac_llm_generate failed: %d", status);
-        return status;
-    }
-
-    // 6. Populate metadata
-    out_metadata["chunks_used"] = search_results.size();
-    out_metadata["context_used"] = assembled_context;
+    out_metadata["chunks_used"] = g_out.sources.size();
+    out_metadata["context_used"] = g_out.assembled_context;
 
     nlohmann::json sources = nlohmann::json::array();
-    for (const auto& result : search_results) {
+    for (const auto& result : g_out.sources) {
         nlohmann::json source;
         source["id"] = result.id;
         source["score"] = result.score;
         source["text"] = result.text;
+        const std::string source_document =
+            first_string_metadata(result.metadata, {"source_document", "source", "filename"});
+        if (!source_document.empty()) {
+            source["source_document"] = source_document;
+        }
         if (result.metadata.contains("source_text")) {
             source["source"] = result.metadata["source_text"];
         }
         sources.push_back(source);
     }
     out_metadata["sources"] = sources;
-
     return RAC_SUCCESS;
+}
+
+rac_result_t RAGBackend::cancel_query() {
+    std::lock_guard<std::mutex> state_lock(query_state_mutex_);
+    if (!active_query_cancel_) {
+        // Idempotent idle cancellation must not affect a future query or its
+        // provider session.
+        return RAC_SUCCESS;
+    }
+    active_query_cancel_->store(true, std::memory_order_release);
+    // Do not acquire mutex_: the query thread may be blocked inside the
+    // provider while this call is delivered from a different thread. Keep the
+    // small request-state lock through provider cancel so this request cannot
+    // retire and publish a successor between selecting the token and issuing
+    // its native cancel.
+    const rac_result_t rc = llm_service_ ? rac_llm_cancel(llm_service_) : RAC_SUCCESS;
+    return rc;
 }
 
 // =============================================================================
@@ -494,24 +640,26 @@ rac_result_t RAGBackend::query(
 
 void RAGBackend::clear() {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (vector_store_) vector_store_->clear();
-    if (bm25_index_) bm25_index_->clear();
+    if (vector_store_)
+        vector_store_->clear();
+    if (bm25_index_)
+        bm25_index_->clear();
     next_chunk_id_ = 0;
+    ingested_content_hashes_.clear();
 }
 
 nlohmann::json RAGBackend::get_statistics() const {
     std::lock_guard<std::mutex> lock(mutex_);
     nlohmann::json stats;
-    if (vector_store_) stats = vector_store_->get_statistics();
+    if (vector_store_)
+        stats = vector_store_->get_statistics();
 
     stats["bm25_chunks"] = bm25_index_ ? bm25_index_->size() : 0;
-    stats["config"] = {
-        {"embedding_dimension", config_.embedding_dimension},
-        {"top_k", config_.top_k},
-        {"similarity_threshold", config_.similarity_threshold},
-        {"chunk_size", config_.chunk_size},
-        {"chunk_overlap", config_.chunk_overlap}
-    };
+    stats["config"] = {{"embedding_dimension", config_.embedding_dimension},
+                       {"top_k", config_.top_k},
+                       {"similarity_threshold", config_.similarity_threshold},
+                       {"chunk_size", config_.chunk_size},
+                       {"chunk_overlap", config_.chunk_overlap}};
     return stats;
 }
 
@@ -520,5 +668,4 @@ size_t RAGBackend::document_count() const {
     return vector_store_ ? vector_store_->size() : 0;
 }
 
-} // namespace rag
-} // namespace runanywhere
+}  // namespace runanywhere::rag

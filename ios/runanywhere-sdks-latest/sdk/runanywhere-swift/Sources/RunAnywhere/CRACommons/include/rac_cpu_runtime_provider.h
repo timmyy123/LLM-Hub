@@ -1,0 +1,6 @@
+#ifndef RAC_SWIFT_CPU_RUNTIME_PROVIDER_FORWARDER_H
+#define RAC_SWIFT_CPU_RUNTIME_PROVIDER_FORWARDER_H
+
+#include "rac/plugin/rac_cpu_runtime_provider.h"
+
+#endif  // RAC_SWIFT_CPU_RUNTIME_PROVIDER_FORWARDER_H

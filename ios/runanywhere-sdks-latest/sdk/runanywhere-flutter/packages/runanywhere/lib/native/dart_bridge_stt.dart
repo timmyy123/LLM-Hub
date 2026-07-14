@@ -2,29 +2,33 @@
 ///
 /// STT component bridge - manages C++ STT component lifecycle.
 /// Mirrors Swift's CppBridge+STT.swift pattern.
-library dart_bridge_stt;
+library;
 
+import 'dart:async';
 import 'dart:ffi';
 import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
-
+import 'package:runanywhere/core/native/rac_native.dart';
 import 'package:runanywhere/foundation/logging/sdk_logger.dart';
-import 'package:runanywhere/native/ffi_types.dart';
-import 'package:runanywhere/native/platform_loader.dart';
+import 'package:runanywhere/generated/stt_options.pb.dart'
+    show
+        STTAudioSource_Source,
+        STTOptions,
+        STTOutput,
+        STTPartialResult,
+        STTStreamEvent,
+        STTStreamEventKind,
+        STTTranscriptionRequest;
+import 'package:runanywhere/native/dart_bridge_proto_utils.dart';
+import 'package:runanywhere/native/native_functions.dart';
+import 'package:runanywhere/native/types/basic_types.dart';
 
 /// STT component bridge for C++ interop.
 ///
 /// Provides thread-safe access to the C++ STT component.
 /// Handles model loading, transcription, and streaming.
-///
-/// Usage:
-/// ```dart
-/// final stt = DartBridgeSTT.shared;
-/// await stt.loadModel('/path/to/model', 'model-id', 'Model Name');
-/// final text = await stt.transcribe(audioData);
-/// ```
 class DartBridgeSTT {
   // MARK: - Singleton
 
@@ -38,6 +42,14 @@ class DartBridgeSTT {
   RacHandle? _handle;
   String? _loadedModelId;
   final _logger = SDKLogger('DartBridge.STT');
+  static STTOutput Function(STTTranscriptionRequest)?
+  _transcribeLifecycleProtoForTesting;
+
+  static void setTranscribeLifecycleProtoForTesting(
+    STTOutput Function(STTTranscriptionRequest)? override,
+  ) {
+    _transcribeLifecycleProtoForTesting = override;
+  }
 
   // MARK: - Handle Management
 
@@ -48,13 +60,9 @@ class DartBridgeSTT {
     }
 
     try {
-      final lib = PlatformLoader.loadCommons();
-      final create = lib.lookupFunction<Int32 Function(Pointer<RacHandle>),
-          int Function(Pointer<RacHandle>)>('rac_stt_component_create');
-
       final handlePtr = calloc<RacHandle>();
       try {
-        final result = create(handlePtr);
+        final result = NativeFunctions.sttCreate(handlePtr);
 
         if (result != RAC_SUCCESS) {
           throw StateError(
@@ -81,11 +89,7 @@ class DartBridgeSTT {
     if (_handle == null) return false;
 
     try {
-      final lib = PlatformLoader.loadCommons();
-      final isLoadedFn = lib.lookupFunction<Int32 Function(RacHandle),
-          int Function(RacHandle)>('rac_stt_component_is_loaded');
-
-      return isLoadedFn(_handle!) == RAC_TRUE;
+      return NativeFunctions.sttIsLoaded(_handle!) == RAC_TRUE;
     } catch (e) {
       _logger.debug('isLoaded check failed: $e');
       return false;
@@ -100,54 +104,154 @@ class DartBridgeSTT {
     if (_handle == null) return false;
 
     try {
-      final lib = PlatformLoader.loadCommons();
-      final supportsStreamingFn = lib.lookupFunction<Int32 Function(RacHandle),
-          int Function(RacHandle)>('rac_stt_component_supports_streaming');
-
-      return supportsStreamingFn(_handle!) == RAC_TRUE;
+      return NativeFunctions.sttSupportsStreaming(_handle!) == RAC_TRUE;
     } catch (e) {
       return false;
     }
   }
 
-  // MARK: - Model Lifecycle
+  // MARK: - Transcription
 
-  /// Load an STT model.
+  /// Transcribe audio through the lifecycle-owned generated-proto STT ABI.
   ///
-  /// [modelPath] - Full path to the model directory.
-  /// [modelId] - Unique identifier for the model.
-  /// [modelName] - Human-readable name.
-  ///
-  /// Throws on failure.
-  Future<void> loadModel(
-    String modelPath,
-    String modelId,
-    String modelName,
+  /// Synchronous variant retained for the unit-test harness (which drives it
+  /// with [setTranscribeLifecycleProtoForTesting]). Production callers use
+  /// [transcribeLifecycleProtoAsync], which runs the blocking native call off
+  /// the UI isolate.
+  STTOutput transcribeLifecycleProto(STTTranscriptionRequest request) {
+    _validateLifecycleRequest(request);
+
+    final override = _transcribeLifecycleProtoForTesting;
+    if (override != null) {
+      return override(request);
+    }
+
+    final fn = RacNative.bindings.rac_stt_transcribe_lifecycle_proto;
+    if (fn == null) {
+      throw UnsupportedError(
+        'rac_stt_transcribe_lifecycle_proto is unavailable',
+      );
+    }
+
+    return DartBridgeProtoUtils.callRequest<STTOutput>(
+      request: request,
+      invoke: fn,
+      decode: STTOutput.fromBuffer,
+      symbol: 'rac_stt_transcribe_lifecycle_proto',
+    );
+  }
+
+  /// Transcribe audio through the lifecycle-owned generated-proto STT ABI,
+  /// running the blocking native call in a short-lived worker isolate
+  /// (`Isolate.run`) so the calling isolate — usually the Flutter UI isolate —
+  /// stays responsive for the whole transcription. Whisper decode of a batch
+  /// buffer is a long synchronous block; on the UI isolate it freezes frames.
+  /// Mirrors `dart_bridge_llm.dart`'s `generateProto`: this ABI is
+  /// lifecycle-owned (no Dart-held handle), so the worker re-resolves the
+  /// engine via the commons model lifecycle — nothing isolate-bound crosses.
+  Future<STTOutput> transcribeLifecycleProtoAsync(
+    STTTranscriptionRequest request,
+  ) async {
+    _validateLifecycleRequest(request);
+
+    final override = _transcribeLifecycleProtoForTesting;
+    if (override != null) {
+      return override(request);
+    }
+
+    if (RacNative.bindings.rac_stt_transcribe_lifecycle_proto == null) {
+      throw UnsupportedError(
+        'rac_stt_transcribe_lifecycle_proto is unavailable',
+      );
+    }
+
+    final requestBytes = request.writeToBuffer();
+    final resultBytes = await Isolate.run(
+      () => _sttTranscribeWorker(requestBytes),
+    );
+    return STTOutput.fromBuffer(resultBytes);
+  }
+
+  /// Transcribe audio with serialized runanywhere.v1.STTOptions.
+  Future<STTOutput> transcribeProto(
+    Uint8List audioData,
+    STTOptions options,
   ) async {
     final handle = getHandle();
+    if (!isLoaded) {
+      throw UnsupportedError(
+        'No STT component handle is loaded. Public STT uses '
+        'transcribeLifecycleProto instead of Dart-held component handles.',
+      );
+    }
 
-    final pathPtr = modelPath.toNativeUtf8();
-    final idPtr = modelId.toNativeUtf8();
-    final namePtr = modelName.toNativeUtf8();
+    final fn = RacNative.bindings.rac_stt_component_transcribe_proto;
+    if (fn == null) {
+      throw UnsupportedError(
+        'rac_stt_component_transcribe_proto is unavailable',
+      );
+    }
+
+    final optionsBytes = options.writeToBuffer();
+    final audioPtr = calloc<Uint8>(audioData.isEmpty ? 1 : audioData.length);
+    final optionsPtr = DartBridgeProtoUtils.copyBytes(optionsBytes);
+    final out = calloc<RacProtoBuffer>();
+    final bindings = RacNative.bindings;
 
     try {
-      final lib = PlatformLoader.loadCommons();
-      final loadModelFn = lib.lookupFunction<
-          Int32 Function(
-              RacHandle, Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>),
-          int Function(RacHandle, Pointer<Utf8>, Pointer<Utf8>,
-              Pointer<Utf8>)>('rac_stt_component_load_model');
+      if (audioData.isNotEmpty) {
+        audioPtr.asTypedList(audioData.length).setAll(0, audioData);
+      }
+      bindings.rac_proto_buffer_init(out);
+      final code = fn(
+        handle,
+        audioPtr.cast<Void>(),
+        audioData.length,
+        optionsPtr,
+        optionsBytes.length,
+        out,
+      );
+      DartBridgeProtoUtils.ensureSuccess(
+        out,
+        code,
+        'rac_stt_component_transcribe_proto',
+      );
+      return DartBridgeProtoUtils.decodeBuffer(out, STTOutput.fromBuffer);
+    } finally {
+      bindings.rac_proto_buffer_free(out);
+      calloc.free(audioPtr);
+      calloc.free(optionsPtr);
+      calloc.free(out);
+    }
+  }
 
-      final result = loadModelFn(handle, pathPtr, idPtr, namePtr);
+  // MARK: - Streaming Session (chunk-feed)
 
-      if (result != RAC_SUCCESS) {
+  /// Load a model onto this component handle. Streaming sessions are
+  /// handle-bound, so the lifecycle-resolved model must be loaded here first
+  /// (mirrors Swift `prepareStreamingHandle`). No-op when already loaded.
+  void loadModelForStreaming({
+    required String path,
+    required String id,
+    required String name,
+  }) {
+    if (_loadedModelId == id && isLoaded) {
+      return;
+    }
+    final fn = RacNative.bindings.rac_stt_component_load_model;
+    final handle = getHandle();
+    final pathPtr = path.toNativeUtf8();
+    final idPtr = id.toNativeUtf8();
+    final namePtr = name.toNativeUtf8();
+    try {
+      final code = fn(handle, pathPtr, idPtr, namePtr);
+      if (code != RAC_SUCCESS) {
         throw StateError(
-          'Failed to load STT model: ${RacResultCode.getMessage(result)}',
+          'rac_stt_component_load_model failed: '
+          '${RacResultCode.getMessage(code)}',
         );
       }
-
-      _loadedModelId = modelId;
-      _logger.info('STT model loaded: $modelId');
+      _loadedModelId = id;
     } finally {
       calloc.free(pathPtr);
       calloc.free(idPtr);
@@ -155,200 +259,181 @@ class DartBridgeSTT {
     }
   }
 
-  /// Unload the current model.
-  void unload() {
-    if (_handle == null) return;
-
-    try {
-      final lib = PlatformLoader.loadCommons();
-      final cleanupFn = lib.lookupFunction<Int32 Function(RacHandle),
-          int Function(RacHandle)>('rac_stt_component_cleanup');
-
-      cleanupFn(_handle!);
-      _loadedModelId = null;
-      _logger.info('STT model unloaded');
-    } catch (e) {
-      _logger.error('Failed to unload STT model: $e');
-    }
-  }
-
-  // MARK: - Transcription
-
-  /// Transcribe audio data.
+  /// Canonical chunk-feed stream-in / stream-out transcription session.
   ///
-  /// [audioData] - PCM16 audio data (WAV format expected with 16kHz sample rate).
-  /// [sampleRate] - Sample rate of the audio (default: 16000 Hz for Whisper).
+  /// Consumes a `Stream<Uint8List>` of PCM audio chunks and yields
+  /// `STTPartialResult` events as the native session emits them. Closing the
+  /// input stream stops the session, which flushes the final result. Mirrors
+  /// Swift `CppBridge.STT.transcribeSessionStream` over the
+  /// `rac_stt_stream_*_proto` ABI (rac_stt_stream.h).
   ///
-  /// Returns the transcription result.
-  /// Runs in a background isolate to prevent UI blocking.
-  Future<STTComponentResult> transcribe(
-    Uint8List audioData, {
-    int sampleRate = 16000,
-  }) async {
-    final handle = getHandle();
-
-    if (!isLoaded) {
-      throw StateError('No STT model loaded. Call loadModel() first.');
-    }
-
-    _logger.debug(
-        'Transcribing ${audioData.length} bytes at $sampleRate Hz in background isolate...');
-
-    // Run transcription in background isolate
-    final result = await Isolate.run(() => _transcribeInIsolate(
-          handle.address,
-          audioData,
-          sampleRate,
-        ));
-
-    _logger.info(
-        'Transcription complete: ${result.text.length} chars, confidence: ${result.confidence}');
-
-    return result;
-  }
-
-  /// Static helper to perform FFI transcription in isolate.
-  /// Must be static/top-level for Isolate.run().
-  static STTComponentResult _transcribeInIsolate(
-    int handleAddress,
-    Uint8List audioData,
-    int sampleRate,
+  /// On iOS and Android, events are delivered through a native-port helper
+  /// that copies bytes before posting to Dart, so MLX/Swift async and native
+  /// worker-thread callbacks do not need to enter a Dart `isolateLocal`
+  /// trampoline from a non-Dart thread.
+  Stream<STTPartialResult> transcribeSessionStream(
+    Stream<Uint8List> audio,
+    STTOptions options,
   ) {
-    final lib = PlatformLoader.loadCommons();
-    final handle = RacHandle.fromAddress(handleAddress);
+    final controller = StreamController<STTPartialResult>();
+    ReceivePort? nativePortEvents;
+    var cancelled = false;
+    var sessionId = 0;
 
-    // Allocate native memory
-    final dataPtr = calloc<Uint8>(audioData.length);
-    final optionsPtr = calloc<RacSttOptionsStruct>();
-    final resultPtr = calloc<RacSttResultStruct>();
-
-    try {
-      // Copy audio data
-      final dataList = dataPtr.asTypedList(audioData.length);
-      dataList.setAll(0, audioData);
-
-      // Set up options with correct sample rate
-      // Matches Swift's STTOptions setup
-      final languagePtr = 'en'.toNativeUtf8();
-      optionsPtr.ref.language = languagePtr;
-      optionsPtr.ref.detectLanguage = RAC_FALSE;
-      optionsPtr.ref.enablePunctuation = RAC_TRUE;
-      optionsPtr.ref.enableDiarization = RAC_FALSE;
-      optionsPtr.ref.maxSpeakers = 0;
-      optionsPtr.ref.enableTimestamps = RAC_TRUE;
-      optionsPtr.ref.audioFormat = racAudioFormatWav; // WAV format
-      optionsPtr.ref.sampleRate = sampleRate;
-
-      // Get transcribe function
-      final transcribeFn = lib.lookupFunction<
-          Int32 Function(
-            RacHandle,
-            Pointer<Void>,
-            IntPtr,
-            Pointer<RacSttOptionsStruct>,
-            Pointer<RacSttResultStruct>,
-          ),
-          int Function(
-            RacHandle,
-            Pointer<Void>,
-            int,
-            Pointer<RacSttOptionsStruct>,
-            Pointer<RacSttResultStruct>,
-          )>('rac_stt_component_transcribe');
-
-      final status = transcribeFn(
-        handle,
-        dataPtr.cast<Void>(),
-        audioData.length,
-        optionsPtr,
-        resultPtr,
-      );
-
-      // Free the language string
-      calloc.free(languagePtr);
-
-      if (status != RAC_SUCCESS) {
-        throw StateError(
-          'STT transcription failed: ${RacResultCode.getMessage(status)}',
-        );
-      }
-
-      // Extract result before freeing
-      final result = resultPtr.ref;
-      final text = result.text != nullptr ? result.text.toDartString() : '';
-      final confidence = result.confidence;
-      final durationMs = result.durationMs;
-      final language =
-          result.language != nullptr ? result.language.toDartString() : null;
-
-      return STTComponentResult(
-        text: text,
-        confidence: confidence,
-        durationMs: durationMs,
-        language: language,
-      );
-    } finally {
-      // Free C-allocated strings inside the result (strdup'd by rac_stt_component_transcribe).
-      // Must happen before calloc.free(resultPtr) which frees the struct itself.
-      try {
-        final resultFreeFn = lib.lookupFunction<
-            Void Function(Pointer<Void>),
-            void Function(Pointer<Void>)>('rac_stt_result_free');
-        resultFreeFn(resultPtr.cast<Void>());
-      } catch (_) {
-        // Symbol may not exist in older builds — fall through to struct free
-      }
-      calloc.free(dataPtr);
-      calloc.free(optionsPtr);
-      calloc.free(resultPtr);
+    void emitFailure(String message) {
+      if (controller.isClosed) return;
+      controller.add(STTPartialResult(text: message, isFinal: true));
     }
-  }
 
-  /// Transcribe with streaming.
-  ///
-  /// Returns a stream of partial transcriptions.
-  Stream<STTStreamResult> transcribeStream(Stream<Uint8List> audioStream) {
-    // Create async generator for streaming transcription
-    return _transcribeStreamImpl(audioStream);
-  }
-
-  Stream<STTStreamResult> _transcribeStreamImpl(
-    Stream<Uint8List> audioStream,
-  ) async* {
-    // Accumulate audio and emit partial results
-    final buffer = <int>[];
-
-    await for (final chunk in audioStream) {
-      buffer.addAll(chunk);
-
-      // Process every ~0.5 seconds of audio (8000 samples at 16kHz)
-      if (buffer.length >= 8000) {
-        try {
-          final result = await transcribe(Uint8List.fromList(buffer));
-          yield STTStreamResult(
-            text: result.text,
-            isFinal: false,
-            confidence: result.confidence,
+    controller
+      ..onListen = () async {
+        final bindings = RacNative.bindings;
+        final setNativePortCallback =
+            bindings.ra_flutter_stt_set_stream_proto_native_port;
+        final unsetNativePortCallback =
+            bindings.ra_flutter_stt_unset_stream_proto_native_port;
+        final start = bindings.rac_stt_stream_start_proto;
+        final feed = bindings.rac_stt_stream_feed_audio_proto;
+        final stop = bindings.rac_stt_stream_stop_proto;
+        final cancel = bindings.rac_stt_stream_cancel_proto;
+        if (setNativePortCallback == null || unsetNativePortCallback == null) {
+          controller.addError(
+            UnsupportedError(
+              'The Flutter STT native-port helper is unavailable on this '
+              'platform',
+            ),
           );
-        } catch (e) {
-          _logger.debug('Partial transcription failed: $e');
+          unawaited(controller.close());
+          return;
+        }
+
+        RacHandle? handle;
+        try {
+          handle = getHandle();
+
+          void dispatchEventBytes(Uint8List copy) {
+            if (controller.isClosed || cancelled || copy.isEmpty) {
+              return;
+            }
+            try {
+              final event = STTStreamEvent.fromBuffer(copy);
+              switch (event.kind) {
+                case STTStreamEventKind.STT_STREAM_EVENT_KIND_PARTIAL:
+                case STTStreamEventKind.STT_STREAM_EVENT_KIND_ENDPOINT:
+                  if (event.hasPartial()) {
+                    controller.add(event.partial);
+                  }
+                case STTStreamEventKind.STT_STREAM_EVENT_KIND_FINAL:
+                  // `event` is a local decode of copied bytes; mutating its
+                  // submessage in place is safe.
+                  final partial = event.hasPartial()
+                      ? event.partial
+                      : STTPartialResult();
+                  partial.isFinal = true;
+                  if (event.hasFinalOutput()) {
+                    partial.finalOutput = event.finalOutput;
+                    if (partial.text.isEmpty) {
+                      partial.text = event.finalOutput.text;
+                    }
+                  }
+                  controller.add(partial);
+                case STTStreamEventKind.STT_STREAM_EVENT_KIND_ERROR:
+                  emitFailure(
+                    event.hasErrorMessage()
+                        ? event.errorMessage
+                        : 'STT stream failed',
+                  );
+                default:
+                  break;
+              }
+            } catch (e, st) {
+              controller.addError(e, st);
+            }
+          }
+
+          nativePortEvents = ReceivePort();
+          nativePortEvents!.listen((Object? message) {
+            if (message is Uint8List) {
+              dispatchEventBytes(message);
+            }
+          });
+          final registerCode = setNativePortCallback(
+            handle,
+            nativePortEvents!.sendPort.nativePort,
+            NativeApi.postCObject,
+          );
+          if (registerCode != RAC_SUCCESS) {
+            emitFailure(
+              'STT stream callback registration failed: $registerCode',
+            );
+            return;
+          }
+
+          final optionsBytes = options.writeToBuffer();
+          final optionsPtr = DartBridgeProtoUtils.copyBytes(optionsBytes);
+          final sessionOut = calloc<Uint64>();
+          try {
+            final startCode = start(
+              handle,
+              optionsPtr,
+              optionsBytes.length,
+              sessionOut,
+            );
+            sessionId = sessionOut.value;
+            if (startCode != RAC_SUCCESS || sessionId == 0) {
+              emitFailure('STT stream start failed: $startCode');
+              return;
+            }
+          } finally {
+            calloc.free(optionsPtr);
+            calloc.free(sessionOut);
+          }
+
+          await for (final chunk in audio) {
+            if (cancelled || controller.isClosed) break;
+            if (chunk.isEmpty) continue;
+            final chunkPtr = DartBridgeProtoUtils.copyBytes(chunk);
+            try {
+              final feedCode = feed(sessionId, chunkPtr, chunk.length);
+              if (feedCode != RAC_SUCCESS) {
+                emitFailure('STT stream feed failed: $feedCode');
+                cancelled = true;
+                break;
+              }
+            } finally {
+              calloc.free(chunkPtr);
+            }
+          }
+
+          if (cancelled) {
+            cancel(sessionId);
+          } else {
+            final stopCode = stop(sessionId);
+            if (stopCode != RAC_SUCCESS) {
+              emitFailure('STT stream stop failed: $stopCode');
+            }
+          }
+          sessionId = 0;
+        } catch (e, st) {
+          controller.addError(e, st);
+        } finally {
+          if (handle != null) {
+            unsetNativePortCallback(handle);
+          }
+          nativePortEvents?.close();
+          nativePortEvents = null;
+          unawaited(controller.close());
         }
       }
-    }
+      ..onCancel = () {
+        cancelled = true;
+        if (sessionId != 0) {
+          RacNative.bindings.rac_stt_stream_cancel_proto(sessionId);
+          sessionId = 0;
+        }
+      };
 
-    // Final transcription with all audio
-    if (buffer.isNotEmpty) {
-      try {
-        final result = await transcribe(Uint8List.fromList(buffer));
-        yield STTStreamResult(
-          text: result.text,
-          isFinal: true,
-          confidence: result.confidence,
-        );
-      } catch (e) {
-        _logger.error('Final transcription failed: $e');
-      }
-    }
+    return controller.stream;
   }
 
   // MARK: - Cleanup
@@ -357,11 +442,7 @@ class DartBridgeSTT {
   void destroy() {
     if (_handle != null) {
       try {
-        final lib = PlatformLoader.loadCommons();
-        final destroyFn = lib.lookupFunction<Void Function(RacHandle),
-            void Function(RacHandle)>('rac_stt_component_destroy');
-
-        destroyFn(_handle!);
+        NativeFunctions.sttDestroy(_handle!);
         _handle = null;
         _loadedModelId = null;
         _logger.debug('STT component destroyed');
@@ -370,91 +451,65 @@ class DartBridgeSTT {
       }
     }
   }
+
+  void _validateLifecycleRequest(STTTranscriptionRequest request) {
+    if (!request.hasAudio()) {
+      throw ArgumentError(
+        'STTTranscriptionRequest.audio is required for lifecycle STT',
+      );
+    }
+    switch (request.audio.whichSource()) {
+      case STTAudioSource_Source.audioData:
+        if (request.audio.audioData.isEmpty) {
+          throw ArgumentError(
+            'STTTranscriptionRequest.audio.audio_data is required',
+          );
+        }
+        return;
+      case STTAudioSource_Source.fileUri:
+      case STTAudioSource_Source.adapterHandle:
+        throw UnsupportedError(
+          'STT audio file_uri/adapter_handle requires a platform adapter',
+        );
+      case STTAudioSource_Source.notSet:
+        throw ArgumentError(
+          'STTTranscriptionRequest.audio.audio_data is required',
+        );
+    }
+  }
 }
 
-/// Result from STT transcription.
-class STTComponentResult {
-  final String text;
-  final double confidence;
-  final int durationMs;
-  final String? language;
+/// Blocking body of [DartBridgeSTT.transcribeLifecycleProtoAsync]: a plain
+/// request→response proto call with no callbacks. Top-level so the
+/// `Isolate.run` closure captures only its sendable `Uint8List` argument.
+/// `RacNative.bindings` is a per-isolate static — the worker re-resolves the
+/// dylib symbols on first access (idempotent `PlatformLoader.loadCommons()`,
+/// same convention as the LLM/VLM workers). Returns the serialized STTOutput
+/// so the main isolate owns the decode.
+Uint8List _sttTranscribeWorker(Uint8List requestBytes) {
+  final bindings = RacNative.bindings;
+  final fn = bindings.rac_stt_transcribe_lifecycle_proto;
+  if (fn == null) {
+    throw UnsupportedError('rac_stt_transcribe_lifecycle_proto is unavailable');
+  }
 
-  const STTComponentResult({
-    required this.text,
-    required this.confidence,
-    required this.durationMs,
-    this.language,
-  });
-}
-
-/// Streaming result from STT transcription.
-class STTStreamResult {
-  final String text;
-  final bool isFinal;
-  final double confidence;
-
-  const STTStreamResult({
-    required this.text,
-    required this.isFinal,
-    required this.confidence,
-  });
-}
-
-// =============================================================================
-// FFI Structs
-// =============================================================================
-
-/// Audio format enum (matches rac_audio_format_enum_t)
-const int racAudioFormatPcm = 0;
-const int racAudioFormatWav = 1;
-const int racAudioFormatMp3 = 2;
-const int racAudioFormatOpus = 3;
-const int racAudioFormatAac = 4;
-const int racAudioFormatFlac = 5;
-
-/// FFI struct for STT options (matches rac_stt_options_t)
-final class RacSttOptionsStruct extends Struct {
-  /// Language code (e.g., "en")
-  external Pointer<Utf8> language;
-
-  /// Whether to auto-detect language
-  @Int32()
-  external int detectLanguage;
-
-  /// Whether to add punctuation
-  @Int32()
-  external int enablePunctuation;
-
-  /// Whether to enable speaker diarization
-  @Int32()
-  external int enableDiarization;
-
-  /// Maximum number of speakers for diarization
-  @Int32()
-  external int maxSpeakers;
-
-  /// Whether to include word timestamps
-  @Int32()
-  external int enableTimestamps;
-
-  /// Audio format of input data
-  @Int32()
-  external int audioFormat;
-
-  /// Sample rate of input audio (default: 16000 Hz)
-  @Int32()
-  external int sampleRate;
-}
-
-/// FFI struct for STT result (matches rac_stt_result_t)
-final class RacSttResultStruct extends Struct {
-  external Pointer<Utf8> text;
-
-  @Double()
-  external double confidence;
-
-  @Int32()
-  external int durationMs;
-
-  external Pointer<Utf8> language;
+  final requestPtr = DartBridgeProtoUtils.copyBytes(requestBytes);
+  final out = calloc<RacProtoBuffer>();
+  try {
+    bindings.rac_proto_buffer_init(out);
+    final code = fn(requestPtr, requestBytes.length, out);
+    DartBridgeProtoUtils.ensureSuccess(
+      out,
+      code,
+      'rac_stt_transcribe_lifecycle_proto',
+    );
+    if (out.ref.data == nullptr || out.ref.size == 0) {
+      return Uint8List(0);
+    }
+    return Uint8List.fromList(out.ref.data.asTypedList(out.ref.size));
+  } finally {
+    bindings.rac_proto_buffer_free(out);
+    calloc.free(out);
+    calloc.free(requestPtr);
+  }
 }

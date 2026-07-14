@@ -1,75 +1,73 @@
 # @runanywhere/web-llamacpp
 
-LLM, VLM, tool calling, structured output, embeddings, and diffusion backend for the [RunAnywhere Web SDK](https://www.npmjs.com/package/@runanywhere/web) — powered by [llama.cpp](https://github.com/ggerganov/llama.cpp) compiled to WebAssembly.
+The independent llama.cpp backend for the RunAnywhere Web SDK. It provides
+LLM, VLM, LoRA, tool calling, and structured-output capabilities through
+the public `RunAnywhere` facade.
 
-> **Peer dependency:** Requires [`@runanywhere/web`](https://www.npmjs.com/package/@runanywhere/web) `>=0.1.0-beta.0`
+Web embeddings are provided by `@runanywhere/web-onnx`; the core package
+composes those embeddings with llama.cpp generation for cross-WASM RAG.
 
-## Installation
+This browser package integrates with core only through
+`@runanywhere/web/backend`; it does not depend on the ONNX backend or core's
+private `/internal` entrypoint.
+
+## Install and initialize
 
 ```bash
 npm install @runanywhere/web @runanywhere/web-llamacpp
 ```
 
-## Quick Start
+```ts
+import { RunAnywhere, SDKEnvironment } from '@runanywhere/web';
+import { LlamaCPP } from '@runanywhere/web-llamacpp';
 
-```typescript
-import { RunAnywhere } from '@runanywhere/web';
-import { LlamaCPP, TextGeneration } from '@runanywhere/web-llamacpp';
+await RunAnywhere.initialize({
+  environment: SDKEnvironment.SDK_ENVIRONMENT_DEVELOPMENT,
+});
+await LlamaCPP.register({ acceleration: 'auto' });
 
-// 1. Initialize core SDK
-await RunAnywhere.initialize({ environment: 'development' });
-
-// 2. Register the llama.cpp backend
-await LlamaCPP.register();
-
-// 3. Load a GGUF model and generate
-await TextGeneration.loadModel('/models/qwen2.5-0.5b-instruct-q4_0.gguf', 'qwen2.5-0.5b');
-const result = await TextGeneration.generate('Explain quantum computing briefly.');
-console.log(result.text);
-
-// Stream tokens
-for await (const token of TextGeneration.generateStream('Write a haiku.')) {
-  process.stdout.write(token);
-}
+// Register/download/load a compatible GGUF through RunAnywhere first.
+const stream = await RunAnywhere.generateStream({
+  prompt: 'Write a short haiku about local AI.',
+  maxTokens: 96,
+});
+for await (const token of stream.stream) renderToken(token);
 ```
 
 ## Capabilities
 
-| Feature | Class | Description |
-|---------|-------|-------------|
-| **Text Generation** | `TextGeneration` | LLM inference with streaming, system prompts, temperature, top-k/top-p |
-| **Vision Language Models** | `VLM` | Multimodal inference (image + text) via llama.cpp mtmd — runs in a Web Worker |
-| **Tool Calling** | `ToolCalling` | Function calling with typed definitions (Hermes-style and generic) |
-| **Structured Output** | `StructuredOutput` | JSON schema-guided generation |
-| **Embeddings** | `Embeddings` | Vector embedding generation with configurable normalization/pooling |
-| **Diffusion** | `Diffusion` | Image generation (WebGPU, scaffold) |
+- LLM generation and cancellation.
+- VLM image/video-frame inference through llama.cpp mtmd.
+- LoRA adapter registration and application.
+- Tool calling and JSON-schema structured output.
+- CPU fallback and WebGPU/Asyncify acceleration selected at runtime.
 
-## WASM Files
+## Artifacts
 
-This package includes pre-built WASM binaries:
+The package ships two self-contained variants:
 
-| File | Description |
-|------|-------------|
-| `wasm/racommons-llamacpp.wasm` | CPU variant (~3.7 MB) |
-| `wasm/racommons-llamacpp-webgpu.wasm` | WebGPU-accelerated variant (~3.9 MB) |
-
-The SDK automatically selects the WebGPU variant when available, falling back to CPU.
-
-Configure your bundler to serve these as static assets — see the [main SDK README](https://www.npmjs.com/package/@runanywhere/web) for Vite/Webpack examples.
-
-> **Warning (Vite):** You must add `@runanywhere/web-llamacpp` to [`optimizeDeps.exclude`](https://vite.dev/config/dep-optimization-options#optimizedeps-exclude) in your `vite.config.ts`. Vite's pre-bundling breaks the `import.meta.url` paths the SDK uses to locate WASM files. See the [main SDK README](https://www.npmjs.com/package/@runanywhere/web#serve-wasm-files--cross-origin-isolation) for the full Vite config.
-
-## Cross-Origin Isolation
-
-Multi-threaded WASM requires `SharedArrayBuffer`, which needs Cross-Origin Isolation headers:
-
-```
-Cross-Origin-Opener-Policy: same-origin
-Cross-Origin-Embedder-Policy: credentialless
+```text
+wasm/racommons-llamacpp.{js,wasm}
+wasm/racommons-llamacpp-webgpu.{js,wasm}
 ```
 
-See the [main SDK docs](https://www.npmjs.com/package/@runanywhere/web#cross-origin-isolation-headers) for platform-specific configuration.
+No symbols are shared with core or ONNX WASM. Configure your bundler to retain
+package-relative `import.meta.url` asset resolution. Vite users should exclude
+`@runanywhere/web-llamacpp` from dependency pre-bundling and serve the app with
+COOP/COEP headers.
+
+Build and verify from `sdk/runanywhere-web`:
+
+```bash
+npm run build:wasm -- --llamacpp
+npm run build:wasm -- --webgpu
+npm run build -w packages/llamacpp
+npm run verify:package -w packages/llamacpp
+```
+
+This is a browser-bundler package, not a server-side Node.js inference runtime.
 
 ## License
 
-Apache 2.0
+Copyright (c) 2025 RunAnywhere, Inc. See the included `LICENSE` file for the
+custom RunAnywhere License.

@@ -1,12 +1,16 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
-import 'package:runanywhere/public/runanywhere_tool_calling.dart';
-import 'package:runanywhere/public/types/tool_calling_types.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:runanywhere/runanywhere.dart';
+import 'package:runanywhere_ai/core/utilities/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+// SAMPLE_HTTP_CARVE_OUT: this sample uses `package:http` only for external
+// weather-tool demo calls. SDK auth/download/model traffic stays on
+// RACommons-backed adapters.
 
 /// Tool Settings ViewModel (mirroring iOS ToolSettingsViewModel)
 ///
@@ -14,8 +18,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ToolSettingsViewModel extends ChangeNotifier {
   // Singleton pattern (matches iOS)
   static final ToolSettingsViewModel shared = ToolSettingsViewModel._internal();
-
-  factory ToolSettingsViewModel() => shared;
 
   ToolSettingsViewModel._internal() {
     unawaited(_loadSettings());
@@ -31,39 +33,51 @@ class ToolSettingsViewModel extends ChangeNotifier {
 
   set toolCallingEnabled(bool value) {
     _toolCallingEnabled = value;
-    unawaited(_saveSettings());
+    unawaited(_saveSettingsAndSyncTools());
     notifyListeners();
   }
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    _toolCallingEnabled = prefs.getBool('tool_calling_enabled') ?? false;
-    await refreshRegisteredTools();
+    _toolCallingEnabled =
+        prefs.getBool(PreferenceKeys.toolCallingEnabled) ?? false;
+    if (_toolCallingEnabled) {
+      await registerDemoTools();
+    } else {
+      RunAnywhere.tools.clearTools();
+      await refreshRegisteredTools();
+    }
     notifyListeners();
   }
 
-  Future<void> _saveSettings() async {
+  Future<void> _saveSettingsAndSyncTools() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('tool_calling_enabled', _toolCallingEnabled);
+    await prefs.setBool(PreferenceKeys.toolCallingEnabled, _toolCallingEnabled);
+    if (_toolCallingEnabled) {
+      await registerDemoTools();
+    } else {
+      RunAnywhere.tools.clearTools();
+      await refreshRegisteredTools();
+    }
   }
 
   Future<void> refreshRegisteredTools() async {
-    _registeredTools = RunAnywhereTools.getRegisteredTools();
+    _registeredTools = RunAnywhere.tools.getRegisteredTools();
     notifyListeners();
   }
 
   /// Register demo tools (matches iOS implementation)
   Future<void> registerDemoTools() async {
     // 1. Weather Tool - Uses Open-Meteo API (free, no API key required)
-    RunAnywhereTools.registerTool(
-      const ToolDefinition(
+    RunAnywhere.tools.registerTool(
+      ToolDefinition(
         name: 'get_weather',
         description:
             'Gets the current weather for a given location using Open-Meteo API',
         parameters: [
           ToolParameter(
             name: 'location',
-            type: ToolParameterType.string,
+            type: ToolParameterType.TOOL_PARAMETER_TYPE_STRING,
             description: "City name (e.g., 'San Francisco', 'London', 'Tokyo')",
           ),
         ],
@@ -72,8 +86,8 @@ class ToolSettingsViewModel extends ChangeNotifier {
     );
 
     // 2. Time Tool - Real system time with timezone
-    RunAnywhereTools.registerTool(
-      const ToolDefinition(
+    RunAnywhere.tools.registerTool(
+      ToolDefinition(
         name: 'get_current_time',
         description: 'Gets the current date, time, and timezone information',
         parameters: [],
@@ -82,15 +96,15 @@ class ToolSettingsViewModel extends ChangeNotifier {
     );
 
     // 3. Calculator Tool - Real math evaluation
-    RunAnywhereTools.registerTool(
-      const ToolDefinition(
+    RunAnywhere.tools.registerTool(
+      ToolDefinition(
         name: 'calculate',
         description:
             'Performs math calculations. Supports +, -, *, /, and parentheses',
         parameters: [
           ToolParameter(
             name: 'expression',
-            type: ToolParameterType.string,
+            type: ToolParameterType.TOOL_PARAMETER_TYPE_STRING,
             description: "Math expression (e.g., '2 + 2 * 3', '(10 + 5) / 3')",
           ),
         ],
@@ -102,25 +116,21 @@ class ToolSettingsViewModel extends ChangeNotifier {
   }
 
   Future<void> clearAllTools() async {
-    RunAnywhereTools.clearTools();
+    RunAnywhere.tools.clearTools();
     await refreshRegisteredTools();
   }
 
   // MARK: - Tool Executors
 
   /// Weather tool executor - fetches real weather data from Open-Meteo
-  Future<Map<String, ToolValue>> _fetchWeather(
-    Map<String, ToolValue> args,
-  ) async {
-    final rawLocation = args['location']?.stringValue;
-    
+  Future<Map<String, dynamic>> _fetchWeather(Map<String, dynamic> args) async {
+    final rawLocation = args['location'] as String?;
+
     // Require location argument - no hardcoded defaults
     if (rawLocation == null || rawLocation.isEmpty) {
-      return {
-        'error': const StringToolValue('Missing required argument: location'),
-      };
+      return {'error': 'Missing required argument: location'};
     }
-    
+
     // Clean up location string - Open-Meteo works better with just city names
     // Remove common suffixes like ", CA", ", US", ", USA", etc.
     final location = _cleanLocationString(rawLocation);
@@ -141,8 +151,8 @@ class ToolSettingsViewModel extends ChangeNotifier {
       final results = geocodeData['results'] as List?;
       if (results == null || results.isEmpty) {
         return {
-          'error': StringToolValue('Could not find location: $location'),
-          'location': StringToolValue(location),
+          'error': 'Could not find location: $location',
+          'location': location,
         };
       }
 
@@ -170,18 +180,15 @@ class ToolSettingsViewModel extends ChangeNotifier {
       final weatherCode = current['weather_code'] as int? ?? 0;
 
       return {
-        'location': StringToolValue(cityName),
-        'temperature': NumberToolValue(temp.toDouble()),
-        'unit': const StringToolValue('fahrenheit'),
-        'humidity': NumberToolValue(humidity.toDouble()),
-        'wind_speed_mph': NumberToolValue(windSpeed.toDouble()),
-        'condition': StringToolValue(_weatherCodeToCondition(weatherCode)),
+        'location': cityName,
+        'temperature': temp.toDouble(),
+        'unit': 'fahrenheit',
+        'humidity': humidity.toDouble(),
+        'wind_speed_mph': windSpeed.toDouble(),
+        'condition': _weatherCodeToCondition(weatherCode),
       };
     } catch (e) {
-      return {
-        'error': StringToolValue('Weather fetch failed: $e'),
-        'location': StringToolValue(location),
-      };
+      return {'error': 'Weather fetch failed: $e', 'location': location};
     }
   }
 
@@ -239,7 +246,7 @@ class ToolSettingsViewModel extends ChangeNotifier {
   /// Removes common suffixes like ", CA", ", US", state abbreviations, etc.
   String _cleanLocationString(String location) {
     var cleaned = location.trim();
-    
+
     // Common patterns to remove: ", CA", ", NY", ", US", ", USA", ", United States"
     // Also handle variations like "CA" at the end
     final patterns = [
@@ -247,11 +254,11 @@ class ToolSettingsViewModel extends ChangeNotifier {
       RegExp(r',\s*[A-Z]{2}$'), // State abbreviations like ", CA", ", NY"
       RegExp(r',\s*[A-Z]{2},\s*(US|USA)$', caseSensitive: false), // ", CA, US"
     ];
-    
+
     for (final pattern in patterns) {
       cleaned = cleaned.replaceAll(pattern, '');
     }
-    
+
     // Also handle "SF" -> "San Francisco" for common abbreviations
     final abbreviations = {
       'SF': 'San Francisco',
@@ -259,45 +266,40 @@ class ToolSettingsViewModel extends ChangeNotifier {
       'LA': 'Los Angeles',
       'DC': 'Washington DC',
     };
-    
+
     final upperCleaned = cleaned.toUpperCase();
     if (abbreviations.containsKey(upperCleaned)) {
       return abbreviations[upperCleaned]!;
     }
-    
+
     return cleaned;
   }
 
   /// Time tool executor
-  Future<Map<String, ToolValue>> _getCurrentTime(
-    Map<String, ToolValue> args,
+  Future<Map<String, dynamic>> _getCurrentTime(
+    Map<String, dynamic> args,
   ) async {
     final now = DateTime.now();
 
     return {
-      'datetime': StringToolValue(now.toString()),
-      'time': StringToolValue(
-        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}',
-      ),
-      'timestamp': StringToolValue(now.toIso8601String()),
-      'timezone': StringToolValue(now.timeZoneName),
-      'utc_offset': StringToolValue(
-        '${now.timeZoneOffset.isNegative ? '-' : '+'}${now.timeZoneOffset.inHours.abs().toString().padLeft(2, '0')}:${(now.timeZoneOffset.inMinutes.abs() % 60).toString().padLeft(2, '0')}',
-      ),
+      'datetime': now.toString(),
+      'time':
+          '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}',
+      'timestamp': now.toIso8601String(),
+      'timezone': now.timeZoneName,
+      'utc_offset':
+          '${now.timeZoneOffset.isNegative ? '-' : '+'}${now.timeZoneOffset.inHours.abs().toString().padLeft(2, '0')}:${(now.timeZoneOffset.inMinutes.abs() % 60).toString().padLeft(2, '0')}',
     };
   }
 
   /// Calculator tool executor
-  Future<Map<String, ToolValue>> _calculate(
-    Map<String, ToolValue> args,
-  ) async {
+  Future<Map<String, dynamic>> _calculate(Map<String, dynamic> args) async {
     // Try both 'expression' and 'input' keys - no hardcoded defaults
-    final expression = args['expression']?.stringValue ?? args['input']?.stringValue;
-    
+    final expression =
+        args['expression'] as String? ?? args['input'] as String?;
+
     if (expression == null || expression.isEmpty) {
-      return {
-        'error': const StringToolValue('Missing required argument: expression'),
-      };
+      return {'error': 'Missing required argument: expression'};
     }
 
     try {
@@ -311,14 +313,11 @@ class ToolSettingsViewModel extends ChangeNotifier {
 
       final result = _evaluateExpression(cleanedExpression);
 
-      return {
-        'result': NumberToolValue(result),
-        'expression': StringToolValue(expression),
-      };
+      return {'result': result, 'expression': expression};
     } catch (e) {
       return {
-        'error': StringToolValue('Could not evaluate expression: $expression'),
-        'expression': StringToolValue(expression),
+        'error': 'Could not evaluate expression: $expression',
+        'expression': expression,
       };
     }
   }
@@ -347,7 +346,7 @@ class ToolSettingsViewModel extends ChangeNotifier {
     // Handle simple operations
     if (expr.contains('+')) {
       final parts = expr.split('+');
-      return parts.map((p) => double.parse(p)).reduce((a, b) => a + b);
+      return parts.map(double.parse).reduce((a, b) => a + b);
     } else if (expr.contains('-') && !expr.startsWith('-')) {
       final parts = expr.split('-');
       var result = double.parse(parts[0]);
@@ -357,7 +356,7 @@ class ToolSettingsViewModel extends ChangeNotifier {
       return result;
     } else if (expr.contains('*')) {
       final parts = expr.split('*');
-      return parts.map((p) => double.parse(p)).reduce((a, b) => a * b);
+      return parts.map(double.parse).reduce((a, b) => a * b);
     } else if (expr.contains('/')) {
       final parts = expr.split('/');
       var result = double.parse(parts[0]);
@@ -369,7 +368,7 @@ class ToolSettingsViewModel extends ChangeNotifier {
 
     return double.parse(expr);
   }
-  
+
   double _pow(double base, double exponent) {
     return math.pow(base, exponent).toDouble();
   }

@@ -32,14 +32,21 @@ struct BenchmarkDetailView: View {
                     }
                     let successCount = run.results.filter(\.metrics.didSucceed).count
                     let failCount = run.results.count - successCount
-                    LabeledContent("Results", value: "\(run.results.count) (\(successCount) passed, \(failCount) failed)")
+                    LabeledContent(
+                        "Results",
+                        value: "\(run.results.count) (\(successCount) passed, \(failCount) failed)"
+                    )
                 }
 
                 // Device Info
                 Section("Device") {
                     LabeledContent("Model", value: run.deviceInfo.modelName)
                     LabeledContent("Chip", value: run.deviceInfo.chipName)
-                    LabeledContent("RAM", value: ByteCountFormatter.string(fromByteCount: run.deviceInfo.totalMemoryBytes, countStyle: .memory))
+                    let ramString = ByteCountFormatter.string(
+                        fromByteCount: run.deviceInfo.totalMemoryBytes,
+                        countStyle: .memory
+                    )
+                    LabeledContent("RAM", value: ramString)
                     LabeledContent("OS", value: run.deviceInfo.osVersion)
                 }
 
@@ -69,7 +76,7 @@ struct BenchmarkDetailView: View {
                 }
 
                 // Results grouped by category
-                let grouped = Dictionary(grouping: run.results, by: { $0.category })
+                let grouped = Dictionary(grouping: run.results) { $0.category }
                 ForEach(BenchmarkCategory.allCases) { category in
                     if let results = grouped[category], !results.isEmpty {
                         Section {
@@ -123,7 +130,7 @@ struct BenchmarkDetailView: View {
         }
         .navigationTitle("Benchmark Details")
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayModeCompat(.inline)
         #endif
         .task {
             jsonURL = viewModel.shareJSON(run: run)
@@ -176,7 +183,11 @@ private struct MetricsGrid: View {
 
     var body: some View {
         let items = metricItems
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], alignment: .leading, spacing: AppSpacing.xSmall) {
+        LazyVGrid(
+            columns: [GridItem(.flexible()), GridItem(.flexible())],
+            alignment: .leading,
+            spacing: AppSpacing.xSmall
+        ) {
             ForEach(items, id: \.label) { item in
                 HStack(spacing: AppSpacing.xSmall) {
                     Text(item.label)
@@ -198,9 +209,21 @@ private struct MetricsGrid: View {
 
         switch category {
         case .llm:
-            if let tps = metrics.tokensPerSecond { items.append(("tok/s", String(format: "%.1f", tps))) }
+            if let decode = metrics.decodeTokensPerSecond {
+                items.append(("Decode", String(format: "%.1f tok/s", decode)))
+            }
+            if let prefill = metrics.prefillTokensPerSecond {
+                items.append(("Prefill", String(format: "%.1f tok/s", prefill)))
+            }
+            if let tps = metrics.tokensPerSecond, metrics.decodeTokensPerSecond == nil {
+                items.append(("tok/s", String(format: "%.1f", tps)))
+            }
             if let ttft = metrics.ttftMs { items.append(("TTFT", String(format: "%.0fms", ttft))) }
-            if let out = metrics.outputTokens { items.append(("Tokens", "\(out)")) }
+            if let inp = metrics.inputTokens, inp > 0 { items.append(("In Tokens", "\(inp)")) }
+            if let out = metrics.outputTokens { items.append(("Out Tokens", "\(out)")) }
+            if metrics.warmupTimeMs > 0 {
+                items.append(("Warmup", String(format: "%.0fms", metrics.warmupTimeMs)))
+            }
         case .stt:
             if let rtf = metrics.realTimeFactor { items.append(("RTF", String(format: "%.2fx", rtf))) }
             if let dur = metrics.audioLengthSeconds { items.append(("Audio", String(format: "%.1fs", dur))) }
@@ -209,15 +232,20 @@ private struct MetricsGrid: View {
             if let chars = metrics.charactersProcessed { items.append(("Chars", "\(chars)")) }
         case .vlm:
             if let tps = metrics.tokensPerSecond { items.append(("tok/s", String(format: "%.1f", tps))) }
-            if let ct = metrics.completionTokens { items.append(("Tokens", "\(ct)")) }
-        case .diffusion:
-            if let gen = metrics.generationTimeMs { items.append(("Gen", String(format: "%.0fms", gen))) }
+            if let pt = metrics.promptTokens, pt > 0 { items.append(("Prompt Tok", "\(pt)")) }
+            if let ct = metrics.completionTokens { items.append(("Comp Tok", "\(ct)")) }
+            if metrics.warmupTimeMs > 0 {
+                items.append(("Warmup", String(format: "%.0fms", metrics.warmupTimeMs)))
+            }
         }
 
         if metrics.memoryDeltaBytes != 0 {
-            items.append(("Mem Δ", ByteCountFormatter.string(fromByteCount: metrics.memoryDeltaBytes, countStyle: .memory)))
+            let memString = ByteCountFormatter.string(
+                fromByteCount: metrics.memoryDeltaBytes,
+                countStyle: .memory
+            )
+            items.append(("Mem Δ", memString))
         }
         return items
     }
 }
-

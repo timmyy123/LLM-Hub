@@ -1,875 +1,97 @@
-#!/bin/bash
-# =============================================================================
-# RunAnywhere Commons - iOS (+ macOS) Build Script
-# =============================================================================
+#!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
 #
-# Builds everything for iOS: RACommons + Backend frameworks.
-# Optionally includes macOS native builds with --include-macos.
+# Canonical Apple release build and packaging entry point.
 #
-# USAGE:
-#   ./scripts/build-ios.sh [options]
-#
-# OPTIONS:
-#   --skip-download     Skip downloading dependencies
-#   --skip-backends     Build RACommons only, skip backend frameworks
-#   --skip-simulator    Skip simulator slices (device-only build, faster)
-#   --backend NAME      Build specific backend: llamacpp, onnx, rag, all (default: all)
-#                       - llamacpp: LLM text generation (GGUF models)
-#                       - onnx: STT/TTS/VAD (Sherpa-ONNX models)
-#                       - rag: RAG pipeline with embeddings and text generation
-#                       - all: All backends (default)
-#   --clean             Clean build directories first
-#   --release           Release build (default)
-#   --debug             Debug build
-#   --package           Create release ZIP packages
-#   --help              Show this help
-#
-# OUTPUTS:
-#   dist/RACommons.xcframework                 (always built, includes RAG pipeline)
-#   dist/RABackendLLAMACPP.xcframework         (if --backend llamacpp or all)
-#   dist/RABackendONNX.xcframework             (if --backend onnx or all)
-#
-# EXAMPLES:
-#   # Full build (all backends, iOS only)
-#   ./scripts/build-ios.sh
-#
-#   # Full build with macOS support (iOS + macOS slices)
-#   ./scripts/build-ios.sh --include-macos
-#
-#   # Build only LlamaCPP backend (LLM/text generation)
-#   ./scripts/build-ios.sh --backend llamacpp
-#
-#   # Build only ONNX backend (speech-to-text/text-to-speech)
-#   ./scripts/build-ios.sh --backend onnx
-#
-#   # Build only RAG pipeline (embeddings + text generation)
-#   ./scripts/build-ios.sh --backend rag
-#
-#   # Build only RACommons (no backends)
-#   ./scripts/build-ios.sh --skip-backends
-#
-#   # Other useful combinations
-#   ./scripts/build-ios.sh --skip-download    # Use cached dependencies
-#   ./scripts/build-ios.sh --clean --package  # Clean build with packaging
-#
-# =============================================================================
-
-set -e
+# Builds the canonical Apple slice set through
+# sdk/runanywhere-swift/scripts/build-core-xcframework.sh, then packages the
+# resulting `.xcframework` bundles into the versioned
+#      `sdk/runanywhere-commons/dist/packages/<Framework>-ios-v<version>.zip`
+#      (+ .sha256) that release.yml uploads and `publish` asserts on.
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-BUILD_DIR="${PROJECT_ROOT}/build/ios"
-DIST_DIR="${PROJECT_ROOT}/dist"
+COMMONS_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+REPO_ROOT="$(cd "${COMMONS_ROOT}/../.." && pwd)"
 
-# Codex/non-interactive shells may not inherit the user Python bin path where
-# cmake/ninja are installed on this machine.
-if [[ -d "${HOME}/Library/Python/3.9/bin" ]]; then
-    export PATH="${HOME}/Library/Python/3.9/bin:${PATH}"
+if [ "$(uname -s)" != "Darwin" ]; then
+    echo "error: build-ios.sh only runs on macOS" >&2
+    exit 1
+fi
+if [ "$#" -ne 0 ]; then
+    echo "usage: build-ios.sh" >&2
+    exit 2
 fi
 
-# Load versions
-source "${SCRIPT_DIR}/load-versions.sh"
+XCFRAMEWORK_SCRIPT="${REPO_ROOT}/sdk/runanywhere-swift/scripts/build-core-xcframework.sh"
+if [ ! -x "${XCFRAMEWORK_SCRIPT}" ]; then
+    echo "error: ${XCFRAMEWORK_SCRIPT} not found or not executable" >&2
+    exit 1
+fi
 
-# Keep the llama.cpp bump scoped to the iOS/macOS SDK build so Android continues
-# to use the shared default pin unless it is explicitly overridden.
-IOS_LLAMACPP_REPOSITORY="${IOS_LLAMACPP_REPOSITORY:-https://github.com/ggml-org/llama.cpp.git}"
-IOS_LLAMACPP_VERSION="${IOS_LLAMACPP_VERSION:-b9493}"
+echo "▶ Delegating iOS/macOS xcframework build to sdk/runanywhere-swift/scripts/build-core-xcframework.sh"
+# Keep Apple static archives free of per-build member timestamps.
+export ZERO_AR_DATE=1
+"${XCFRAMEWORK_SCRIPT}"
 
-# Get version
-VERSION=$(cat "${PROJECT_ROOT}/VERSION" 2>/dev/null | head -1 || echo "0.1.0")
+# Stage the produced xcframeworks into dist/packages/ as the versioned release
+# archives (<Framework>-ios-v<version>.zip + .sha256) that release.yml's upload
+# step, sync-checksums.sh, and the Package.swift binary targets all expect.
+# Version: RAC_RELEASE_VERSION (the release tag, passed by release.yml) or the
+# canonical PROJECT_VERSION from VERSIONS for standalone/local runs.
+# The sourced path is resolved from this script at runtime.
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/load-versions.sh" >/dev/null
+VERSION="${RAC_RELEASE_VERSION:-${PROJECT_VERSION}}"
 
-# Options
-SKIP_DOWNLOAD=false
-SKIP_BACKENDS=false
-BUILD_BACKEND="all"
-INCLUDE_MACOS=true
-CLEAN_BUILD=false
-BUILD_TYPE="Release"
-CREATE_PACKAGE=false
+SRC_DIR="${REPO_ROOT}/sdk/runanywhere-swift/Binaries"
+DEST_DIR="${COMMONS_ROOT}/dist/packages"
+mkdir -p "${DEST_DIR}"
+rm -f "${DEST_DIR}"/*.zip "${DEST_DIR}"/*.sha256
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+if [ ! -d "${SRC_DIR}" ]; then
+    echo "error: expected xcframework output directory ${SRC_DIR} is missing" >&2
+    exit 1
+fi
 
-log_info()   { echo -e "${GREEN}[✓]${NC} $1"; }
-log_warn()   { echo -e "${YELLOW}[!]${NC} $1"; }
-log_error()  { echo -e "${RED}[✗]${NC} $1"; exit 1; }
-log_step()   { echo -e "${BLUE}==>${NC} $1"; }
-log_time()   { echo -e "${CYAN}[⏱]${NC} $1"; }
-log_header() { echo -e "\n${GREEN}═══════════════════════════════════════════${NC}"; echo -e "${GREEN} $1${NC}"; echo -e "${GREEN}═══════════════════════════════════════════${NC}"; }
-require_cmd() {
-    local cmd="$1"
-    local hint="$2"
-    if ! command -v "${cmd}" >/dev/null 2>&1; then
-        log_warn "Required tool '${cmd}' is not installed or not in PATH."
-        [[ -n "${hint}" ]] && log_warn "${hint}"
-        log_error "Cannot continue without '${cmd}'."
+# Keep the public release surface explicit. Globbing this directory could
+# accidentally publish a stale or private XCFramework left by a local build.
+xcframework_names=(
+    RACommons
+    RABackendLLAMACPP
+    RABackendONNX
+    RABackendSherpa
+    RABackendMLX
+    RunAnywhereMLXRuntime
+    RunAnywhereMLXMetal
+)
+
+for framework_name in "${xcframework_names[@]}"; do
+    fw_name="${framework_name}.xcframework"
+    fw="${SRC_DIR}/${fw_name}"
+    if [ ! -d "${fw}" ]; then
+        echo "error: required public XCFramework not found: ${fw}" >&2
+        exit 1
     fi
-}
-
-show_help() {
-    head -45 "$0" | tail -40
-    exit 0
-}
-
-# =============================================================================
-# Parse Arguments
-# =============================================================================
-
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        --skip-download) SKIP_DOWNLOAD=true; shift ;;
-        --skip-backends) SKIP_BACKENDS=true; shift ;;
-        --backend) BUILD_BACKEND="$2"; shift 2 ;;
-        --include-macos) INCLUDE_MACOS=true; shift ;;
-        --skip-macos) INCLUDE_MACOS=false; shift ;;
-        --skip-simulator) SKIP_SIMULATOR=true; shift ;;
-        --clean) CLEAN_BUILD=true; shift ;;
-        --release) BUILD_TYPE="Release"; shift ;;
-        --debug) BUILD_TYPE="Debug"; shift ;;
-        --package) CREATE_PACKAGE=true; shift ;;
-        --help|-h) show_help ;;
-        *) log_error "Unknown option: $1" ;;
-    esac
+    zip_path="${DEST_DIR}/${fw_name%.xcframework}-ios-v${VERSION}.zip"
+    echo "▶ Packaging ${fw_name} → ${zip_path}"
+    "${REPO_ROOT}/sdk/runanywhere-swift/scripts/create-reproducible-xcframework-zip.sh" \
+        "${fw}" "${zip_path}"
 done
 
-# Timing
-TOTAL_START=$(date +%s)
-
-# =============================================================================
-# Download Dependencies
-# =============================================================================
-
-download_deps() {
-    log_header "Downloading iOS Dependencies"
-
-    # ONNX Runtime
-    if [[ ! -d "${PROJECT_ROOT}/third_party/onnxruntime-ios/onnxruntime.xcframework" ]]; then
-        log_step "Downloading ONNX Runtime..."
-        "${SCRIPT_DIR}/ios/download-onnx.sh"
-    else
-        log_info "ONNX Runtime already present"
-    fi
-
-    # Sherpa-ONNX
-    if [[ ! -d "${PROJECT_ROOT}/third_party/sherpa-onnx-ios/sherpa-onnx.xcframework" ]]; then
-        log_step "Downloading Sherpa-ONNX..."
-        "${SCRIPT_DIR}/ios/download-sherpa-onnx.sh"
-    else
-        log_info "Sherpa-ONNX already present"
-    fi
-}
-
-# =============================================================================
-# Download macOS Dependencies
-# =============================================================================
-
-download_macos_deps() {
-    log_header "Downloading macOS Dependencies"
-
-    # ONNX Runtime for macOS
-    if [[ ! -d "${PROJECT_ROOT}/third_party/onnxruntime-macos/lib" ]]; then
-        log_step "Downloading ONNX Runtime for macOS..."
-        "${SCRIPT_DIR}/macos/download-onnx.sh"
-    else
-        log_info "ONNX Runtime macOS already present"
-    fi
-
-    # Sherpa-ONNX static for macOS (builds from source if needed)
-    if [[ ! -f "${PROJECT_ROOT}/third_party/sherpa-onnx-macos/lib/libsherpa-onnx-c-api.a" ]]; then
-        log_step "Building Sherpa-ONNX static for macOS..."
-        "${SCRIPT_DIR}/macos/download-sherpa-onnx.sh"
-    else
-        log_info "Sherpa-ONNX macOS already present"
-    fi
-}
-
-# =============================================================================
-# Build for macOS (native, no toolchain needed)
-# =============================================================================
-
-build_macos() {
-    local PLATFORM_DIR="${BUILD_DIR}/MACOS"
-
-    log_step "Building for macOS (native arm64)..."
-    require_cmd "cmake" "Install it with: brew install cmake"
-    mkdir -p "${PLATFORM_DIR}"
-    cd "${PLATFORM_DIR}"
-
-    # Determine backend flags (same logic as iOS)
-    local BACKEND_FLAGS=""
-    if [[ "$SKIP_BACKENDS" == true ]]; then
-        BACKEND_FLAGS="-DRAC_BUILD_BACKENDS=OFF"
-    else
-        BACKEND_FLAGS="-DRAC_BUILD_BACKENDS=ON"
-        case "$BUILD_BACKEND" in
-            llamacpp)
-                BACKEND_FLAGS="$BACKEND_FLAGS -DRAC_BACKEND_LLAMACPP=ON -DRAC_BACKEND_ONNX=OFF -DRAC_BACKEND_WHISPERCPP=OFF"
-                ;;
-            onnx)
-                BACKEND_FLAGS="$BACKEND_FLAGS -DRAC_BACKEND_LLAMACPP=OFF -DRAC_BACKEND_ONNX=ON -DRAC_BACKEND_WHISPERCPP=OFF"
-                ;;
-            all|*)
-                BACKEND_FLAGS="$BACKEND_FLAGS -DRAC_BACKEND_LLAMACPP=ON -DRAC_BACKEND_ONNX=ON -DRAC_BACKEND_WHISPERCPP=OFF"
-                ;;
-        esac
-    fi
-
-    # Native macOS build - NO toolchain file needed
-    cmake "${PROJECT_ROOT}" \
-        -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
-        -DCMAKE_OSX_ARCHITECTURES="arm64" \
-        -DCMAKE_OSX_DEPLOYMENT_TARGET="14.0" \
-        -DRAC_BUILD_PLATFORM=ON \
-        -DRAC_BUILD_SHARED=OFF \
-        -DRAC_BUILD_JNI=OFF \
-        -DRAC_IOS_LLAMACPP_REPOSITORY="${IOS_LLAMACPP_REPOSITORY}" \
-        -DRAC_IOS_LLAMACPP_VERSION="${IOS_LLAMACPP_VERSION}" \
-        $BACKEND_FLAGS
-
-    cmake --build . --config "${BUILD_TYPE}" -j"$(sysctl -n hw.ncpu)"
-
-    cd "${PROJECT_ROOT}"
-    log_info "Built macOS arm64"
-}
-
-# =============================================================================
-# Build for iOS Platform
-# =============================================================================
-
-build_platform() {
-    local PLATFORM=$1
-    local PLATFORM_DIR="${BUILD_DIR}/${PLATFORM}"
-
-    log_step "Building for ${PLATFORM}..."
-    require_cmd "cmake" "Install it with: brew install cmake (macOS) or: sudo apt-get install cmake (Debian/Ubuntu)"
-    mkdir -p "${PLATFORM_DIR}"
-    cd "${PLATFORM_DIR}"
-
-    # Determine backend flags
-    local BACKEND_FLAGS=""
-    if [[ "$SKIP_BACKENDS" == true ]]; then
-        BACKEND_FLAGS="-DRAC_BUILD_BACKENDS=OFF"
-    else
-        BACKEND_FLAGS="-DRAC_BUILD_BACKENDS=ON"
-        case "$BUILD_BACKEND" in
-            llamacpp)
-                BACKEND_FLAGS="$BACKEND_FLAGS -DRAC_BACKEND_LLAMACPP=ON -DRAC_BACKEND_ONNX=OFF -DRAC_BACKEND_WHISPERCPP=OFF"
-                ;;
-            onnx)
-                BACKEND_FLAGS="$BACKEND_FLAGS -DRAC_BACKEND_LLAMACPP=OFF -DRAC_BACKEND_ONNX=ON -DRAC_BACKEND_WHISPERCPP=OFF"
-                ;;
-            all|*)
-                BACKEND_FLAGS="$BACKEND_FLAGS -DRAC_BACKEND_LLAMACPP=ON -DRAC_BACKEND_ONNX=ON -DRAC_BACKEND_WHISPERCPP=OFF"
-                ;;
-        esac
-    fi
-
-    # BLAS (Accelerate) works on device but FindBLAS fails during simulator
-    # cross-compilation. Disable BLAS for simulator targets.
-    local BLAS_FLAGS="-DGGML_BLAS=ON -DGGML_BLAS_VENDOR=Apple"
-    if [[ "$PLATFORM" == "SIMULATOR"* ]]; then
-        BLAS_FLAGS="-DGGML_BLAS=OFF"
-    fi
-
-    cmake "${PROJECT_ROOT}" \
-        -DCMAKE_TOOLCHAIN_FILE="${PROJECT_ROOT}/cmake/ios.toolchain.cmake" \
-        -DIOS_PLATFORM="${PLATFORM}" \
-        -DIOS_DEPLOYMENT_TARGET="${IOS_DEPLOYMENT_TARGET}" \
-        -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
-        -DRAC_BUILD_PLATFORM=ON \
-        -DRAC_BUILD_SHARED=OFF \
-        -DRAC_BUILD_JNI=OFF \
-        -DRAC_IOS_LLAMACPP_REPOSITORY="${IOS_LLAMACPP_REPOSITORY}" \
-        -DRAC_IOS_LLAMACPP_VERSION="${IOS_LLAMACPP_VERSION}" \
-        $BLAS_FLAGS \
-        $BACKEND_FLAGS
-
-    cmake --build . --config "${BUILD_TYPE}" -j"$(sysctl -n hw.ncpu)"
-
-    cd "${PROJECT_ROOT}"
-    log_info "Built ${PLATFORM}"
-}
-
-# =============================================================================
-# Create macOS Versioned Framework Bundle
-# =============================================================================
-# macOS frameworks require a versioned layout:
-#   Framework.framework/Versions/A/{binary,Headers,Modules,Resources}
-#   Framework.framework/{binary,Headers,Modules,Resources} -> Versions/Current/...
-
-create_macos_versioned_framework() {
-    local SRC_DIR=$1       # Flat framework dir with binary, Headers/, Modules/
-    local FRAMEWORK_NAME=$2
-
-    local FLAT="${SRC_DIR}/${FRAMEWORK_NAME}.framework"
-    local VERSIONED="${SRC_DIR}/${FRAMEWORK_NAME}.framework.versioned"
-
-    mkdir -p "${VERSIONED}/Versions/A/Headers"
-    mkdir -p "${VERSIONED}/Versions/A/Modules"
-    mkdir -p "${VERSIONED}/Versions/A/Resources"
-
-    # Copy binary
-    cp "${FLAT}/${FRAMEWORK_NAME}" "${VERSIONED}/Versions/A/${FRAMEWORK_NAME}"
-
-    # Copy headers
-    cp -R "${FLAT}/Headers/"* "${VERSIONED}/Versions/A/Headers/" 2>/dev/null || true
-
-    # Copy modules
-    cp -R "${FLAT}/Modules/"* "${VERSIONED}/Versions/A/Modules/" 2>/dev/null || true
-
-    # Move Info.plist to Resources
-    cp "${FLAT}/Info.plist" "${VERSIONED}/Versions/A/Resources/Info.plist"
-
-    # Create Current symlink
-    cd "${VERSIONED}/Versions"
-    ln -sf A Current
-    cd "${VERSIONED}"
-
-    # Create top-level symlinks
-    ln -sf Versions/Current/${FRAMEWORK_NAME} ${FRAMEWORK_NAME}
-    ln -sf Versions/Current/Headers Headers
-    ln -sf Versions/Current/Modules Modules
-    ln -sf Versions/Current/Resources Resources
-
-    cd "${PROJECT_ROOT}"
-
-    # Replace flat framework with versioned
-    rm -rf "${FLAT}"
-    mv "${VERSIONED}" "${FLAT}"
-
-    # Ad-hoc sign the framework binary so Xcode codesigning succeeds
-    codesign --force --sign - "${FLAT}/Versions/A/${FRAMEWORK_NAME}" 2>/dev/null || true
-}
-
-# =============================================================================
-# Inject Info.plist into XCFramework slices for App Store validation
-# Library-format xcframeworks don't carry Info.plist automatically, so Xcode
-# generates a minimal one at embed time that may lack CFBundleShortVersionString.
-# =============================================================================
-
-inject_xcframework_info_plist() {
-    local XCFW_PATH=$1
-    local FRAMEWORK_NAME=$2
-
-    for slice_dir in "${XCFW_PATH}"/*/; do
-        [[ ! -d "$slice_dir" ]] && continue
-        local slice_name
-        slice_name=$(basename "$slice_dir")
-        local min_os_key="MinimumOSVersion"
-        local min_os_val="${IOS_DEPLOYMENT_TARGET}"
-        if [[ "$slice_name" == *"macos"* ]]; then
-            min_os_key="LSMinimumSystemVersion"
-            min_os_val="14.0"
-        fi
-        cat > "${slice_dir}Info.plist" << EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>CFBundleExecutable</key><string>${FRAMEWORK_NAME}</string>
-    <key>CFBundleIdentifier</key><string>ai.runanywhere.${FRAMEWORK_NAME}</string>
-    <key>CFBundlePackageType</key><string>FMWK</string>
-    <key>CFBundleShortVersionString</key><string>${VERSION}</string>
-    <key>CFBundleVersion</key><string>${VERSION}</string>
-    <key>${min_os_key}</key><string>${min_os_val}</string>
-</dict>
-</plist>
-EOF
-    done
-    log_info "Injected Info.plist into ${FRAMEWORK_NAME}.xcframework slices"
-}
-
-# =============================================================================
-# Create XCFramework
-# =============================================================================
-
-create_xcframework() {
-    local LIB_NAME=$1
-    local FRAMEWORK_NAME=$2
-
-    log_step "Creating ${FRAMEWORK_NAME}.xcframework..."
-
-    # Platforms to build frameworks for (iOS always, macOS if requested)
-    local PLATFORMS="OS"
-    if [[ "${SKIP_SIMULATOR:-false}" != true ]]; then
-        PLATFORMS="$PLATFORMS SIMULATORARM64 SIMULATOR"
-    fi
-    if [[ "$INCLUDE_MACOS" == true ]]; then
-        PLATFORMS="$PLATFORMS MACOS"
-    fi
-
-    # Create framework for each platform
-    for PLATFORM in $PLATFORMS; do
-        local PLATFORM_DIR="${BUILD_DIR}/${PLATFORM}"
-        local FRAMEWORK_DIR="${PLATFORM_DIR}/${FRAMEWORK_NAME}.framework"
-
-        rm -rf "${FRAMEWORK_DIR}"
-        mkdir -p "${FRAMEWORK_DIR}/Headers"
-        mkdir -p "${FRAMEWORK_DIR}/Modules"
-
-        # Find the library (try multiple locations)
-        local LIB_PATH="${PLATFORM_DIR}/lib${LIB_NAME}.a"
-
-        # Try Xcode generator output paths
-        if [[ ! -f "${LIB_PATH}" ]]; then
-            if [[ "$PLATFORM" == "OS" ]]; then
-                LIB_PATH="${PLATFORM_DIR}/Release-iphoneos/lib${LIB_NAME}.a"
-            else
-                LIB_PATH="${PLATFORM_DIR}/Release-iphonesimulator/lib${LIB_NAME}.a"
-            fi
-        fi
-
-        # Try backend-specific paths
-        [[ ! -f "${LIB_PATH}" ]] && LIB_PATH="${PLATFORM_DIR}/src/backends/${BUILD_BACKEND}/lib${LIB_NAME}.a"
-
-        if [[ ! -f "${LIB_PATH}" ]]; then
-            log_warn "Library not found: ${LIB_PATH}"
-            return 1
-        fi
-
-        cp "${LIB_PATH}" "${FRAMEWORK_DIR}/${FRAMEWORK_NAME}"
-
-        # Copy headers (flatten rac/subdir/header.h paths to flat includes)
-        if [[ "$FRAMEWORK_NAME" == "RACommons" ]]; then
-            find "${PROJECT_ROOT}/include/rac" -name "*.h" | while read -r header; do
-                local filename=$(basename "$header")
-                sed -e 's|#include "rac/[^"]*\/\([^"]*\)"|#include "\1"|g' \
-                    "$header" > "${FRAMEWORK_DIR}/Headers/${filename}"
-            done
-        else
-            # Backend headers
-            local backend_name=$(echo "$LIB_NAME" | sed 's/rac_backend_//')
-            local header_src="${PROJECT_ROOT}/include/rac/backends/rac_${backend_name}.h"
-            [[ -f "$header_src" ]] && cp "$header_src" "${FRAMEWORK_DIR}/Headers/"
-        fi
-
-        # Module map
-        cat > "${FRAMEWORK_DIR}/Modules/module.modulemap" << EOF
-framework module ${FRAMEWORK_NAME} {
-    umbrella header "${FRAMEWORK_NAME}.h"
-    export *
-    module * { export * }
-}
-EOF
-
-        # Umbrella header
-        echo "// ${FRAMEWORK_NAME} Umbrella Header" > "${FRAMEWORK_DIR}/Headers/${FRAMEWORK_NAME}.h"
-        echo "#ifndef ${FRAMEWORK_NAME}_h" >> "${FRAMEWORK_DIR}/Headers/${FRAMEWORK_NAME}.h"
-        echo "#define ${FRAMEWORK_NAME}_h" >> "${FRAMEWORK_DIR}/Headers/${FRAMEWORK_NAME}.h"
-        for h in "${FRAMEWORK_DIR}/Headers/"*.h; do
-            [[ "$(basename "$h")" != "${FRAMEWORK_NAME}.h" ]] && \
-                echo "#include \"$(basename "$h")\"" >> "${FRAMEWORK_DIR}/Headers/${FRAMEWORK_NAME}.h"
-        done
-        echo "#endif" >> "${FRAMEWORK_DIR}/Headers/${FRAMEWORK_NAME}.h"
-
-        # Info.plist
-        local MIN_OS_KEY="MinimumOSVersion"
-        local MIN_OS_VAL="${IOS_DEPLOYMENT_TARGET}"
-        if [[ "$PLATFORM" == "MACOS" ]]; then
-            MIN_OS_KEY="LSMinimumSystemVersion"
-            MIN_OS_VAL="14.0"
-        fi
-        cat > "${FRAMEWORK_DIR}/Info.plist" << EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>CFBundleExecutable</key><string>${FRAMEWORK_NAME}</string>
-    <key>CFBundleIdentifier</key><string>ai.runanywhere.${FRAMEWORK_NAME}</string>
-    <key>CFBundlePackageType</key><string>FMWK</string>
-    <key>CFBundleShortVersionString</key><string>${VERSION}</string>
-    <key>CFBundleVersion</key><string>${VERSION}</string>
-    <key>${MIN_OS_KEY}</key><string>${MIN_OS_VAL}</string>
-</dict>
-</plist>
-EOF
-    done
-
-    if [[ "${SKIP_SIMULATOR:-false}" != true ]]; then
-    local SIM_FAT="${BUILD_DIR}/SIMULATOR_UNIVERSAL"
-    rm -rf "${SIM_FAT}"
-    mkdir -p "${SIM_FAT}/${FRAMEWORK_NAME}.framework"
-
-    local SIM_ARM64_BIN="${BUILD_DIR}/SIMULATORARM64/${FRAMEWORK_NAME}.framework/${FRAMEWORK_NAME}"
-    local SIM_X64_BIN="${BUILD_DIR}/SIMULATOR/${FRAMEWORK_NAME}.framework/${FRAMEWORK_NAME}"
-    if [[ -f "${SIM_ARM64_BIN}" && -f "${SIM_X64_BIN}" ]]; then
-        lipo -create -output "${SIM_FAT}/${FRAMEWORK_NAME}.framework/${FRAMEWORK_NAME}" \
-            "${SIM_ARM64_BIN}" "${SIM_X64_BIN}"
-        cp -R "${BUILD_DIR}/SIMULATORARM64/${FRAMEWORK_NAME}.framework/Headers" "${SIM_FAT}/${FRAMEWORK_NAME}.framework/"
-    elif [[ -f "${SIM_ARM64_BIN}" ]]; then
-        cp "${SIM_ARM64_BIN}" "${SIM_FAT}/${FRAMEWORK_NAME}.framework/${FRAMEWORK_NAME}"
-        cp -R "${BUILD_DIR}/SIMULATORARM64/${FRAMEWORK_NAME}.framework/Headers" "${SIM_FAT}/${FRAMEWORK_NAME}.framework/"
-    else
-        cp "${SIM_X64_BIN}" "${SIM_FAT}/${FRAMEWORK_NAME}.framework/${FRAMEWORK_NAME}"
-        cp -R "${BUILD_DIR}/SIMULATOR/${FRAMEWORK_NAME}.framework/Headers" "${SIM_FAT}/${FRAMEWORK_NAME}.framework/"
-    fi
-    fi  # end SKIP_SIMULATOR
-
-    # Create XCFramework using library format (prevents SPM from embedding static libs)
-    local XCFW_PATH="${DIST_DIR}/${FRAMEWORK_NAME}.xcframework"
-    rm -rf "${XCFW_PATH}"
-
-    # Prepare library files (rename binary to lib*.a for library format)
-    local IOS_LIB="${BUILD_DIR}/OS/lib${FRAMEWORK_NAME}.a"
-    cp "${BUILD_DIR}/OS/${FRAMEWORK_NAME}.framework/${FRAMEWORK_NAME}" "${IOS_LIB}"
-
-    if [[ "${SKIP_SIMULATOR:-false}" != true ]]; then
-    local SIM_LIB="${SIM_FAT}/lib${FRAMEWORK_NAME}.a"
-    cp "${SIM_FAT}/${FRAMEWORK_NAME}.framework/${FRAMEWORK_NAME}" "${SIM_LIB}"
-    fi
-
-    local XCFW_ARGS=(
-        -library "${IOS_LIB}" -headers "${BUILD_DIR}/OS/${FRAMEWORK_NAME}.framework/Headers"
-    )
-    if [[ "${SKIP_SIMULATOR:-false}" != true ]]; then
-        XCFW_ARGS+=(-library "${SIM_LIB}" -headers "${SIM_FAT}/${FRAMEWORK_NAME}.framework/Headers")
-    fi
-
-    if [[ "$INCLUDE_MACOS" == true && -f "${BUILD_DIR}/MACOS/${FRAMEWORK_NAME}.framework/${FRAMEWORK_NAME}" ]]; then
-        local MACOS_LIB="${BUILD_DIR}/MACOS/lib${FRAMEWORK_NAME}.a"
-        cp "${BUILD_DIR}/MACOS/${FRAMEWORK_NAME}.framework/${FRAMEWORK_NAME}" "${MACOS_LIB}"
-        XCFW_ARGS+=(-library "${MACOS_LIB}" -headers "${BUILD_DIR}/MACOS/${FRAMEWORK_NAME}.framework/Headers")
-        log_info "Including macOS slice in ${FRAMEWORK_NAME}.xcframework"
-    fi
-
-    xcodebuild -create-xcframework "${XCFW_ARGS[@]}" -output "${XCFW_PATH}"
-    inject_xcframework_info_plist "${XCFW_PATH}" "${FRAMEWORK_NAME}"
-
-    log_info "Created: ${XCFW_PATH}"
-    echo "  Size: $(du -sh "${XCFW_PATH}" | cut -f1)"
-}
-
-# =============================================================================
-# Create Backend XCFramework (bundles dependencies)
-# =============================================================================
-
-create_backend_xcframework() {
-    local BACKEND_NAME=$1
-    local FRAMEWORK_NAME=$2
-
-    log_step "Creating ${FRAMEWORK_NAME}.xcframework (bundled)..."
-
-    local FOUND_ANY=false
-
-    # Platforms to build frameworks for (iOS always, macOS if requested)
-    local PLATFORMS="OS"
-    if [[ "${SKIP_SIMULATOR:-false}" != true ]]; then
-        PLATFORMS="$PLATFORMS SIMULATORARM64 SIMULATOR"
-    fi
-    if [[ "$INCLUDE_MACOS" == true ]]; then
-        PLATFORMS="$PLATFORMS MACOS"
-    fi
-
-    for PLATFORM in $PLATFORMS; do
-        local PLATFORM_DIR="${BUILD_DIR}/${PLATFORM}"
-        local FRAMEWORK_DIR="${PLATFORM_DIR}/${FRAMEWORK_NAME}.framework"
-
-        rm -rf "${FRAMEWORK_DIR}"
-        mkdir -p "${FRAMEWORK_DIR}/Headers"
-        mkdir -p "${FRAMEWORK_DIR}/Modules"
-
-        # Collect all libraries to bundle
-        local LIBS_TO_BUNDLE=()
-
-        # Backend library - check multiple possible locations
-        local BACKEND_LIB=""
-        local XCODE_SUBDIR
-        if [[ "$PLATFORM" == "OS" ]]; then
-            XCODE_SUBDIR="Release-iphoneos"
-        else
-            XCODE_SUBDIR="Release-iphonesimulator"
-        fi
-
-        for possible_path in \
-            "${PLATFORM_DIR}/src/backends/${BACKEND_NAME}/librac_backend_${BACKEND_NAME}.a" \
-            "${PLATFORM_DIR}/src/features/${BACKEND_NAME}/librac_backend_${BACKEND_NAME}.a" \
-            "${PLATFORM_DIR}/${XCODE_SUBDIR}/librac_backend_${BACKEND_NAME}.a" \
-            "${PLATFORM_DIR}/librac_backend_${BACKEND_NAME}.a" \
-            "${PLATFORM_DIR}/backends/${BACKEND_NAME}/librac_backend_${BACKEND_NAME}.a"; do
-            if [[ -f "$possible_path" ]]; then
-                BACKEND_LIB="$possible_path"
-                break
-            fi
-        done
-        [[ -n "$BACKEND_LIB" ]] && LIBS_TO_BUNDLE+=("$BACKEND_LIB")
-
-        if [[ "$BACKEND_NAME" == "llamacpp" ]]; then
-            # Bundle llama.cpp libraries
-            local LLAMA_BUILD="${PLATFORM_DIR}/src/backends/llamacpp/_deps/llamacpp-build"
-            [[ ! -d "$LLAMA_BUILD" ]] && LLAMA_BUILD="${PLATFORM_DIR}/_deps/llamacpp-build"
-
-            for lib in llama llama-common llama-common-base common cpp-httplib ggml ggml-base ggml-cpu ggml-metal ggml-blas; do
-                local lib_path=""
-                for possible in \
-                    "${LLAMA_BUILD}/src/lib${lib}.a" \
-                    "${LLAMA_BUILD}/common/lib${lib}.a" \
-                    "${LLAMA_BUILD}/vendor/cpp-httplib/lib${lib}.a" \
-                    "${LLAMA_BUILD}/ggml/src/lib${lib}.a" \
-                    "${LLAMA_BUILD}/ggml/src/ggml-metal/lib${lib}.a" \
-                    "${LLAMA_BUILD}/ggml/src/ggml-blas/lib${lib}.a" \
-                    "${LLAMA_BUILD}/ggml/src/ggml-cpu/lib${lib}.a"; do
-                    if [[ -f "$possible" ]]; then
-                        lib_path="$possible"
-                        break
-                    fi
-                done
-                [[ -n "$lib_path" ]] && LIBS_TO_BUNDLE+=("$lib_path")
-            done
-        elif [[ "$BACKEND_NAME" == "onnx" ]]; then
-    if [[ "$PLATFORM" == "MACOS" ]]; then
-        # Bundle Sherpa-ONNX static libs for macOS
-        local SHERPA_MACOS="${PROJECT_ROOT}/third_party/sherpa-onnx-macos"
-        if [[ -f "${SHERPA_MACOS}/lib/libsherpa-onnx-c-api.a" ]]; then
-            LIBS_TO_BUNDLE+=("${SHERPA_MACOS}/lib/libsherpa-onnx-c-api.a")
-            for dep_lib in \
-                sherpa-onnx-core sherpa-onnx-fst sherpa-onnx-fstfar \
-                sherpa-onnx-kaldifst-core kaldi-decoder-core kaldi-native-fbank-core \
-                piper_phonemize espeak-ng ucd cppinyin_core ssentencepiece_core kissfft-float; do
-                if [[ -f "${SHERPA_MACOS}/lib/lib${dep_lib}.a" ]]; then
-                    LIBS_TO_BUNDLE+=("${SHERPA_MACOS}/lib/lib${dep_lib}.a")
-                fi
-            done
-        fi
-    else
-        # iOS - bundle Sherpa-ONNX static library
-        local SHERPA_XCFW="${PROJECT_ROOT}/third_party/sherpa-onnx-ios/sherpa-onnx.xcframework"
-        local SHERPA_ARCH
-
-        case $PLATFORM in
-            OS) SHERPA_ARCH="ios-arm64" ;;
-            *)  SHERPA_ARCH="ios-arm64_x86_64-simulator" ;;
-        esac
-
-        for possible in \
-            "${SHERPA_XCFW}/${SHERPA_ARCH}/libsherpa-onnx.a" \
-            "${SHERPA_XCFW}/${SHERPA_ARCH}/sherpa-onnx.framework/sherpa-onnx"; do
-            if [[ -f "$possible" ]]; then
-                LIBS_TO_BUNDLE+=("$possible")
-                break
-            fi
-        done
-    fi
-    fi
-
-        # Bundle all libraries
-        if [[ ${#LIBS_TO_BUNDLE[@]} -gt 0 ]]; then
-            log_info "  ${PLATFORM}: Bundling ${#LIBS_TO_BUNDLE[@]} libraries"
-            libtool -static -o "${FRAMEWORK_DIR}/${FRAMEWORK_NAME}" "${LIBS_TO_BUNDLE[@]}"
-            FOUND_ANY=true
-        else
-            log_warn "No libraries found for ${BACKEND_NAME} on ${PLATFORM}"
-            continue
-        fi
-
-        # Headers
-        local header_src="${PROJECT_ROOT}/include/rac/backends/rac_${BACKEND_NAME}.h"
-        [[ -f "$header_src" ]] && cp "$header_src" "${FRAMEWORK_DIR}/Headers/"
-
-        # Module map and umbrella header
-        cat > "${FRAMEWORK_DIR}/Modules/module.modulemap" << EOF
-framework module ${FRAMEWORK_NAME} {
-    umbrella header "${FRAMEWORK_NAME}.h"
-    export *
-    module * { export * }
-}
-EOF
-        echo "// ${FRAMEWORK_NAME}" > "${FRAMEWORK_DIR}/Headers/${FRAMEWORK_NAME}.h"
-        echo "#include \"rac_${BACKEND_NAME}.h\"" >> "${FRAMEWORK_DIR}/Headers/${FRAMEWORK_NAME}.h"
-
-        # Info.plist
-        local MIN_OS_KEY="MinimumOSVersion"
-        local MIN_OS_VAL="${IOS_DEPLOYMENT_TARGET}"
-        if [[ "$PLATFORM" == "MACOS" ]]; then
-            MIN_OS_KEY="LSMinimumSystemVersion"
-            MIN_OS_VAL="14.0"
-        fi
-        cat > "${FRAMEWORK_DIR}/Info.plist" << EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>CFBundleExecutable</key><string>${FRAMEWORK_NAME}</string>
-    <key>CFBundleIdentifier</key><string>ai.runanywhere.${FRAMEWORK_NAME}</string>
-    <key>CFBundlePackageType</key><string>FMWK</string>
-    <key>CFBundleShortVersionString</key><string>${VERSION}</string>
-    <key>CFBundleVersion</key><string>${VERSION}</string>
-    <key>${MIN_OS_KEY}</key><string>${MIN_OS_VAL}</string>
-</dict>
-</plist>
-EOF
-    done
-
-    if [[ "$FOUND_ANY" == false ]]; then
-        log_warn "Skipping ${FRAMEWORK_NAME}.xcframework - no libraries found"
-        return 0
-    fi
-
-    if [[ "${SKIP_SIMULATOR:-false}" != true ]]; then
-    local SIM_FAT="${BUILD_DIR}/SIMULATOR_UNIVERSAL"
-    rm -rf "${SIM_FAT}"
-    mkdir -p "${SIM_FAT}/${FRAMEWORK_NAME}.framework"
-
-    local SIM_ARM64_BIN="${BUILD_DIR}/SIMULATORARM64/${FRAMEWORK_NAME}.framework/${FRAMEWORK_NAME}"
-    local SIM_X64_BIN="${BUILD_DIR}/SIMULATOR/${FRAMEWORK_NAME}.framework/${FRAMEWORK_NAME}"
-    if [[ -f "${SIM_ARM64_BIN}" && -f "${SIM_X64_BIN}" ]]; then
-        lipo -create -output "${SIM_FAT}/${FRAMEWORK_NAME}.framework/${FRAMEWORK_NAME}" \
-            "${SIM_ARM64_BIN}" "${SIM_X64_BIN}"
-        cp -R "${BUILD_DIR}/SIMULATORARM64/${FRAMEWORK_NAME}.framework/Headers" "${SIM_FAT}/${FRAMEWORK_NAME}.framework/"
-    elif [[ -f "${SIM_ARM64_BIN}" ]]; then
-        cp "${SIM_ARM64_BIN}" "${SIM_FAT}/${FRAMEWORK_NAME}.framework/${FRAMEWORK_NAME}"
-        cp -R "${BUILD_DIR}/SIMULATORARM64/${FRAMEWORK_NAME}.framework/Headers" "${SIM_FAT}/${FRAMEWORK_NAME}.framework/"
-    else
-        cp "${SIM_X64_BIN}" "${SIM_FAT}/${FRAMEWORK_NAME}.framework/${FRAMEWORK_NAME}"
-        cp -R "${BUILD_DIR}/SIMULATOR/${FRAMEWORK_NAME}.framework/Headers" "${SIM_FAT}/${FRAMEWORK_NAME}.framework/"
-    fi
-    fi  # end SKIP_SIMULATOR
-
-    # Create XCFramework using library format (prevents SPM from embedding static libs)
-    local XCFW_PATH="${DIST_DIR}/${FRAMEWORK_NAME}.xcframework"
-    rm -rf "${XCFW_PATH}"
-
-    if [[ -f "${BUILD_DIR}/OS/${FRAMEWORK_NAME}.framework/${FRAMEWORK_NAME}" ]]; then
-        # Prepare library files (rename binary to lib*.a for library format)
-        local IOS_LIB="${BUILD_DIR}/OS/lib${FRAMEWORK_NAME}.a"
-        cp "${BUILD_DIR}/OS/${FRAMEWORK_NAME}.framework/${FRAMEWORK_NAME}" "${IOS_LIB}"
-
-    if [[ "${SKIP_SIMULATOR:-false}" != true ]]; then
-        local SIM_LIB="${SIM_FAT}/lib${FRAMEWORK_NAME}.a"
-        cp "${SIM_FAT}/${FRAMEWORK_NAME}.framework/${FRAMEWORK_NAME}" "${SIM_LIB}"
-    fi
-
-        local XCFW_ARGS=(
-            -library "${IOS_LIB}" -headers "${BUILD_DIR}/OS/${FRAMEWORK_NAME}.framework/Headers"
-        )
-        if [[ "${SKIP_SIMULATOR:-false}" != true ]]; then
-            XCFW_ARGS+=(-library "${SIM_LIB}" -headers "${SIM_FAT}/${FRAMEWORK_NAME}.framework/Headers")
-        fi
-
-        if [[ "$INCLUDE_MACOS" == true && -f "${BUILD_DIR}/MACOS/${FRAMEWORK_NAME}.framework/${FRAMEWORK_NAME}" ]]; then
-            local MACOS_LIB="${BUILD_DIR}/MACOS/lib${FRAMEWORK_NAME}.a"
-            cp "${BUILD_DIR}/MACOS/${FRAMEWORK_NAME}.framework/${FRAMEWORK_NAME}" "${MACOS_LIB}"
-            XCFW_ARGS+=(-library "${MACOS_LIB}" -headers "${BUILD_DIR}/MACOS/${FRAMEWORK_NAME}.framework/Headers")
-            log_info "Including macOS slice in ${FRAMEWORK_NAME}.xcframework"
-        fi
-
-        xcodebuild -create-xcframework "${XCFW_ARGS[@]}" -output "${XCFW_PATH}"
-        inject_xcframework_info_plist "${XCFW_PATH}" "${FRAMEWORK_NAME}"
-
-        log_info "Created: ${XCFW_PATH}"
-        echo "  Size: $(du -sh "${XCFW_PATH}" | cut -f1)"
-    else
-        log_warn "Could not create ${FRAMEWORK_NAME}.xcframework"
-    fi
-}
-
-# =============================================================================
-# Package for Release
-# =============================================================================
-
-create_packages() {
-    log_header "Creating Release Packages"
-
-    local PKG_DIR="${DIST_DIR}/packages"
-    mkdir -p "${PKG_DIR}"
-
-    for xcfw in "${DIST_DIR}"/*.xcframework; do
-        if [[ -d "$xcfw" ]]; then
-            local name=$(basename "$xcfw" .xcframework)
-            local pkg_name="${name}-ios-v${VERSION}.zip"
-            log_step "Packaging ${name}..."
-            cd "${DIST_DIR}"
-            zip -r "packages/${pkg_name}" "$(basename "$xcfw")"
-            cd "${PKG_DIR}"
-            shasum -a 256 "${pkg_name}" > "${pkg_name}.sha256"
-            cd "${PROJECT_ROOT}"
-            log_info "Created: ${pkg_name}"
-        fi
-    done
-}
-
-# =============================================================================
-# Main
-# =============================================================================
-
-main() {
-    log_header "RunAnywhere Commons - iOS Build"
-    echo "Version:        ${VERSION}"
-    echo "Build Type:     ${BUILD_TYPE}"
-    echo "Backends:       ${BUILD_BACKEND}"
-    echo "Include macOS:  ${INCLUDE_MACOS}"
-    echo "Skip Download:  ${SKIP_DOWNLOAD}"
-    echo "Skip Backends:  ${SKIP_BACKENDS}"
-    echo ""
-
-    # Clean if requested
-    if [[ "$CLEAN_BUILD" == true ]]; then
-        log_step "Cleaning build directory..."
-        rm -rf "${BUILD_DIR}"
-        rm -rf "${DIST_DIR}"
-    fi
-
-    mkdir -p "${DIST_DIR}"
-
-    # Step 1: Download dependencies
-    if [[ "$SKIP_DOWNLOAD" != true ]]; then
-        download_deps
-        if [[ "$INCLUDE_MACOS" == true ]]; then
-            download_macos_deps
-        fi
-    fi
-
-    # Step 2: Build for all iOS platforms
-    log_header "Building for iOS"
-    build_platform "OS"
-    if [[ "${SKIP_SIMULATOR:-false}" != true ]]; then
-        build_platform "SIMULATORARM64"
-        build_platform "SIMULATOR"
-    fi
-
-    # Step 2b: Build for macOS if requested
-    if [[ "$INCLUDE_MACOS" == true ]]; then
-        log_header "Building for macOS"
-        build_macos
-    fi
-
-    # Step 3: Create RACommons.xcframework (includes RAG pipeline via CMake OBJECT library)
-    log_header "Creating XCFrameworks"
-    create_xcframework "rac_commons" "RACommons"
-
-    # Step 4: Create backend XCFrameworks
-    if [[ "$SKIP_BACKENDS" != true ]]; then
-        if [[ "$BUILD_BACKEND" == "all" || "$BUILD_BACKEND" == "llamacpp" ]]; then
-            create_backend_xcframework "llamacpp" "RABackendLLAMACPP"
-        fi
-        if [[ "$BUILD_BACKEND" == "all" || "$BUILD_BACKEND" == "onnx" ]]; then
-            create_backend_xcframework "onnx" "RABackendONNX"
-        fi
-    fi
-
-    # Step 5: Package if requested
-    if [[ "$CREATE_PACKAGE" == true ]]; then
-        create_packages
-    fi
-
-    # Summary
-    local TOTAL_TIME=$(($(date +%s) - TOTAL_START))
-    log_header "Build Complete!"
-    echo ""
-    echo "Output: ${DIST_DIR}/"
-    for xcfw in "${DIST_DIR}"/*.xcframework; do
-        [[ -d "$xcfw" ]] && echo "  $(du -sh "$xcfw" | cut -f1)  $(basename "$xcfw")"
-    done
-    if [[ "$INCLUDE_MACOS" == true ]]; then
-        echo ""
-        echo "✅ XCFrameworks include macOS arm64 slices"
-    fi
-    echo ""
-    log_time "Total build time: ${TOTAL_TIME}s"
-}
-
-main "$@"
+# Hub/Crypto Bundle.module payloads and attribution notices are not a SwiftPM
+# binary target. Keep them in their own archive so each binary-target ZIP
+# contains exactly one XCFramework and passes SwiftPM artifact validation.
+mlx_resources="${SRC_DIR}/RunAnywhereMLXRuntimeResources"
+if [ ! -d "${mlx_resources}" ]; then
+    echo "error: MLX runtime resource payload not found: ${mlx_resources}" >&2
+    exit 1
+fi
+mlx_resources_zip="${DEST_DIR}/RunAnywhereMLXResources-ios-v${VERSION}.zip"
+echo "▶ Packaging MLX resources → ${mlx_resources_zip}"
+"${REPO_ROOT}/sdk/runanywhere-swift/scripts/create-reproducible-directory-zip.sh" \
+    "${mlx_resources}" "${mlx_resources_zip}"
+(cd "${DEST_DIR}" && for f in *.zip; do shasum -a 256 "$f" > "$f.sha256"; done)
+
+archive_count=$((${#xcframework_names[@]} + 1))
+echo "✓ build-ios.sh complete; staged ${archive_count} versioned archive(s) under ${DEST_DIR}"

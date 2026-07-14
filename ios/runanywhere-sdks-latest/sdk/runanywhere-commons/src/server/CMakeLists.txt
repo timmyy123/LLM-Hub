@@ -40,7 +40,13 @@ target_include_directories(rac_server PUBLIC
 target_include_directories(rac_server PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../generated/proto
+    ${Protobuf_INCLUDE_DIRS}
 )
+
+if(RAC_PROTOBUF_NAMESPACE_ISOLATED)
+    target_compile_definitions(rac_server PRIVATE google=runanywhere_internal)
+endif()
 
 # Link dependencies
 target_link_libraries(rac_server PUBLIC
@@ -49,10 +55,15 @@ target_link_libraries(rac_server PUBLIC
     nlohmann_json::nlohmann_json
 )
 
-# If backends are built, link them
-if(TARGET rac_backend_llamacpp)
-    target_link_libraries(rac_server PUBLIC rac_backend_llamacpp)
-    target_compile_definitions(rac_server PRIVATE RAC_HAS_LLAMACPP=1)
+# rac_server directly includes generated Protobuf C++ message headers. Link the
+# runtime target privately so its Abseil/utf8-range usage requirements reach
+# every clean compiler invocation instead of relying on host include paths.
+if(TARGET protobuf::libprotobuf)
+    target_link_libraries(rac_server PRIVATE protobuf::libprotobuf)
+elseif(Protobuf_LIBRARIES)
+    target_link_libraries(rac_server PRIVATE ${Protobuf_LIBRARIES})
+else()
+    message(FATAL_ERROR "rac_server requires the Protobuf C++ runtime target")
 endif()
 
 # Threading support
@@ -66,7 +77,7 @@ if(UNIX AND NOT APPLE)
 endif()
 
 # Compiler options
-target_compile_features(rac_server PUBLIC cxx_std_17)
+target_compile_features(rac_server PUBLIC cxx_std_20)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(rac_server PRIVATE -Wall -Wextra -Wpedantic)

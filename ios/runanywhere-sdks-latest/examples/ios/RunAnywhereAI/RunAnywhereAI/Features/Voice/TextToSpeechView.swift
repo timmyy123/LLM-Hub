@@ -6,7 +6,7 @@ import AppKit
 
 // MARK: - Sample Texts
 
-/// Collection of funny sample texts for TTS demo
+/// Collection of light sample texts for text-to-speech.
 private let funnyTTSSampleTexts: [String] = [
     "I'm not saying I'm Batman, but have you ever seen me and Batman in the same room?",
     "According to my calculations, I should have been a millionaire by now. My calculations were wrong.",
@@ -25,13 +25,14 @@ private let funnyTTSSampleTexts: [String] = [
     "We're a Y Combinator company now. Our moms are finally proud of us.",
     "On-device AI means your voice data stays on your phone. Unlike your ex, we respect privacy.",
     "RunAnywhere: Making cloud APIs jealous since 2024.",
-    "Our SDK is so fast, it finished processing before you finished reading this sentence.",
+    "RunAnywhere is so fast, it finished processing before you finished reading this sentence.",
     "Why pay per API call when you can run AI locally? Your wallet called, it says thank you.",
     "Voice AI that runs offline? That's not magic, that's just good engineering. Okay, maybe a little magic."
 ]
 
 // MARK: - Text-to-Speech View
 
+// swiftlint:disable type_body_length
 /// Dedicated Text-to-Speech view with text input and instant playback
 struct TextToSpeechView: View {
     @StateObject private var viewModel = TTSViewModel()
@@ -71,7 +72,7 @@ struct TextToSpeechView: View {
             }
             .navigationTitle(hasModelSelected ? "Text to Speech" : "")
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayModeCompat(.inline)
             .navigationBarHidden(!hasModelSelected)
             #endif
             .toolbar {
@@ -183,7 +184,7 @@ struct TextToSpeechView: View {
                     )
                 )
                 #endif
-                .cornerRadius(16)
+                .cornerRadius(AppSpacing.cornerRadiusCard)
                 .background {
                     if #available(iOS 26.0, macOS 26.0, *) {
                         RoundedRectangle(cornerRadius: 16)
@@ -208,7 +209,7 @@ struct TextToSpeechView: View {
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "sparkles")
-                            .font(.system(size: 11))
+                            .font(AppTypography.system11)
                         Text("Surprise me")
                             .font(.system(size: 12, weight: .semibold))
                     }
@@ -216,13 +217,13 @@ struct TextToSpeechView: View {
                     .padding(.vertical, 6)
                     .background(AppColors.primaryPurple.opacity(0.15))
                     .foregroundColor(AppColors.primaryPurple)
-                    .cornerRadius(8)
+                    .cornerRadius(AppSpacing.cornerRadiusRegular)
                 }
             }
         }
     }
 
-    /// Voice settings section with rate and pitch controls
+    /// Voice settings section with speech rate control
     private var voiceSettingsSection: some View {
         VStack(alignment: .leading, spacing: 20) {
             Text("Voice Settings")
@@ -243,31 +244,14 @@ struct TextToSpeechView: View {
                 Slider(value: $viewModel.speechRate, in: 0.5...2.0, step: 0.1)
                     .tint(AppColors.primaryAccent)
             }
-
-            // TODO: Find a model for TTS that supports pitch, or manually implement a good quality pitch adjustment
-
-            // Pitch (not implemented in the current TTS models. Once supported, we can have this back.)
-            // VStack(alignment: .leading, spacing: 10) {
-            //     HStack {
-            //         Text("Pitch")
-            //             .font(.subheadline)
-            //             .foregroundColor(.secondary)
-            //         Spacer()
-            //         Text(String(format: "%.1fx", viewModel.pitch))
-            //             .font(.system(size: 15, weight: .medium, design: .rounded))
-            //             .foregroundColor(.primary)
-            //     }
-            //     Slider(value: $viewModel.pitch, in: 0.5...2.0, step: 0.1)
-            //         .tint(AppColors.primaryPurple)
-            // }
         }
         .padding(20)
         .background(AppColors.backgroundTertiary)
-        .cornerRadius(16)
+        .cornerRadius(AppSpacing.cornerRadiusCard)
     }
 
     /// Speech info section showing result details
-    private func speechInfoSection(result: TTSSpeakResult) -> some View {
+    private func speechInfoSection(result: RATTSSpeakResult) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Last Speech")
                 .font(.headline)
@@ -288,13 +272,15 @@ struct TextToSpeechView: View {
                     metadataRow(
                         icon: "speaker.wave.2",
                         label: "Format",
-                        value: result.format.rawValue.uppercased()
+                        value: result.audioFormat.wireString.uppercased()
                     )
                 }
                 metadataRow(
                     icon: "person.wave.2",
                     label: "Voice",
-                    value: result.metadata.voice.modelNameFromID()
+                    value: result.metadata.voiceID.isEmpty
+                        ? (viewModel.selectedModelName ?? "Current voice")
+                        : result.metadata.voiceID.modelNameFromID()
                 )
             }
             .font(.caption)
@@ -302,7 +288,7 @@ struct TextToSpeechView: View {
         }
         .padding()
         .background(AppColors.backgroundSecondary)
-        .cornerRadius(12)
+        .cornerRadius(AppSpacing.cornerRadiusXLarge)
     }
 
     /// Controls section with waveform visualization and speak button
@@ -467,10 +453,10 @@ struct TextToSpeechView: View {
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 36, height: 36)
-                        .cornerRadius(4)
+                        .cornerRadius(AppSpacing.cornerRadiusSmall)
                 } else {
                     Image(systemName: "cube")
-                        .font(.system(size: 14))
+                        .font(AppTypography.system14)
                 }
 
                 if let modelName = viewModel.selectedModelName {
@@ -549,10 +535,11 @@ struct TextToSpeechView: View {
     private func frameworkColor(for framework: InferenceFramework) -> Color {
         switch framework {
         case .foundationModels: return .primary
-        default: return .gray
+        default: return AppColors.statusGray
         }
     }
 }
+// swiftlint:enable type_body_length
 
 // MARK: - Preview
 

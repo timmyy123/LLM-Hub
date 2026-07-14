@@ -15,7 +15,6 @@ import SwiftUI
 import RunAnywhere
 
 struct VoiceDictationManagementView: View {
-
     @StateObject private var viewModel = VoiceDictationManagementViewModel()
     @EnvironmentObject private var flowSession: FlowSessionManager
 
@@ -29,7 +28,7 @@ struct VoiceDictationManagementView: View {
             }
         }
         .navigationTitle("Voice Keyboard")
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayModeCompat(.large)
         .sheet(isPresented: $viewModel.showModelPicker) {
             ModelSelectionSheet(context: .stt) { model in
                 await viewModel.loadModel(model)
@@ -80,9 +79,9 @@ struct VoiceDictationManagementView: View {
 
     private var permissionColor: Color {
         switch viewModel.microphonePermission {
-        case .granted: return .green
-        case .denied:  return .red
-        case .unknown: return .orange
+        case .granted: return AppColors.statusGreen
+        case .denied:  return AppColors.statusRed
+        case .unknown: return AppColors.statusOrange
         }
     }
 
@@ -110,7 +109,7 @@ struct VoiceDictationManagementView: View {
             } else if let name = viewModel.loadedModelName {
                 HStack {
                     Image(systemName: "checkmark.seal.fill")
-                        .foregroundColor(.green)
+                        .foregroundColor(AppColors.statusGreen)
                     Text(name)
                         .font(.subheadline)
                     Spacer()
@@ -147,7 +146,8 @@ struct VoiceDictationManagementView: View {
             SetupStep(
                 number: 2,
                 title: "Grant Full Access",
-                detail: "Tap RunAnywhereKeyboard → enable 'Allow Full Access' (required for App Group IPC and mic prompt)."
+                detail: "Tap RunAnywhereKeyboard → enable 'Allow Full Access' "
+                    + "(required for App Group IPC and mic prompt)."
             )
             SetupStep(
                 number: 3,

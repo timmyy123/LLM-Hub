@@ -1,47 +1,50 @@
 /**
- * SDK-wide constants (metadata only)
+ * SDK-wide constants.
  *
- * Centralized constants to ensure consistency across the SDK.
- * Matches pattern: sdk/runanywhere-swift/Sources/RunAnywhere/Foundation/Constants/SDKConstants.swift
+ * Mirrors `sdk/runanywhere-swift/Sources/RunAnywhere/Foundation/Constants/SDKConstants.swift`.
  */
 
 import { Platform } from 'react-native';
 
 /**
- * SDK Constants
- *
- * All SDK-wide constants should be defined here to avoid hardcoded values
- * scattered throughout the codebase.
+ * Backend `DevicePlatform` enum value for the current OS family. The backend
+ * auth/device contract only accepts the OS family ("ios", "android", "macos",
+ * "windows", "web") — not the binding name ("react_native"), which 422s the
+ * SDK auth exchange and leaves every request unauthenticated (telemetry +
+ * device registration both fail). Mirrors the Flutter SDK's
+ * `SDKConstants.platform` getter and Kotlin's "android".
  */
+function osPlatform(): string {
+  // Platform.OS is already the OS family the backend expects
+  // ("ios"/"android"/"macos"/"windows"/"web"), never the binding name.
+  return Platform.OS;
+}
+
 export const SDKConstants = {
   /**
-   * SDK version - must match the VERSION file in the repository root
-   * Update this when bumping the SDK version
+   * SDK version - must stay in sync with package.json `version`.
+   * Native commons receives this through the Phase 1 init payload.
+   * The literal is rewritten by `scripts/release/sync-versions.sh`.
    */
-  version: '0.2.0',
+  version: '0.20.9',
 
-  /**
-   * SDK name
-   */
+  /** SDK name. Mirrors Swift `SDKConstants.name`. */
   name: 'RunAnywhere SDK',
 
-  /**
-   * User agent string
-   */
+  /** User agent string. Mirrors Swift `SDKConstants.userAgent`. */
   get userAgent(): string {
     return `${this.name}/${this.version} (React Native)`;
   },
 
   /**
-   * Platform identifier (ios/android)
+   * SDK platform identifier used by backend auth/device metadata. Must be the
+   * OS family (backend `DevicePlatform` enum), not the binding name.
    */
-  get platform(): string {
-    return Platform.OS === 'ios' ? 'ios' : 'android';
-  },
+  platform: osPlatform(),
 
   /**
-   * Minimum log level in production
+   * Minimum log level in production.
+   * Mirrors Swift `SDKConstants.productionLogLevel`.
    */
   productionLogLevel: 'error',
 } as const;
-

@@ -1,74 +1,229 @@
 // RunAnywhere+LoRA.swift
 // RunAnywhere SDK
 //
-// Public API for LoRA adapter management.
-// Runtime operations delegate to CppBridge.LLM; catalog operations delegate to CppBridge.LoraRegistry.
+// Public API for LoRA adapter management - namespaced under
+// `RunAnywhere.lora.*` per the canonical cross-SDK spec
+// (CANONICAL_API §3 - LoRA).
+//
+// Runtime operations delegate to the generated LoRA proto ABI through
+// CppBridge.LLM; catalog operations delegate to CppBridge.LoraRegistry.
 
 import Foundation
 
-// MARK: - LoRA Adapter Management
+// MARK: - LoRA Capability Namespace
 
 public extension RunAnywhere {
 
-    // MARK: Runtime Operations
+    /// Capability accessor for LoRA adapter management.
+    ///
+    /// Mirrors the namespaced `lora.*` shape used by the other SDKs
+    /// (Kotlin/Flutter/RN/Web). All eight canonical methods live on
+    /// the returned `LoRA` value.
+    static var lora: LoRA { LoRA() }
 
-    /// Load and apply a LoRA adapter to the currently loaded model.
-    /// Multiple adapters can be stacked. Context is recreated internally.
-    static func loadLoraAdapter(_ config: LoRAAdapterConfig) async throws {
-        guard isInitialized else {
-            throw SDKError.general(.notInitialized, "SDK not initialized")
+    /// Stateless namespace exposing the generated LoRA surface.
+    /// Backed by the C ABI via `CppBridge.LLM` (runtime ops) and
+    /// `CppBridge.LoraRegistry` (catalog ops).
+    struct LoRA: Sendable {
+
+        // MARK: Runtime Operations
+
+        /// Apply one or more LoRA adapters to the currently loaded model.
+        ///
+        /// - Parameter request: Generated apply request carrying adapter configs.
+        /// - Returns: Generated apply result from commons.
+        @discardableResult
+        public func apply(_ request: RALoRAApplyRequest) async throws -> RALoRAApplyResult {
+            return try await CppBridge.LLM.shared.applyLoraAdapters(request)
         }
-        try await CppBridge.LLM.shared.loadLoraAdapter(config)
-    }
 
-    /// Remove a specific LoRA adapter by path.
-    static func removeLoraAdapter(_ path: String) async throws {
-        guard isInitialized else {
-            throw SDKError.general(.notInitialized, "SDK not initialized")
+        /// Apply a registered catalog adapter to the currently loaded model.
+        ///
+        /// This preserves the catalog adapter id in the generated apply request,
+        /// allowing commons to validate the adapter against the loaded base model.
+        @discardableResult
+        public func apply(
+            _ entry: RALoraAdapterCatalogEntry,
+            localPath: String? = nil,
+            scale: Float? = nil,
+            replaceExisting: Bool = false
+        ) async throws -> RALoRAApplyResult {
+            let adapterPath = localPath ?? entry.localPath
+            guard !adapterPath.isEmpty else {
+                throw SDKException(
+                    code: .invalidArgument,
+                    message: "LoRA catalog adapter '\(entry.id)' has no local path",
+                    category: .internal
+                )
+            }
+
+            var config = RALoRAAdapterConfig()
+            config.adapterPath = adapterPath
+            config.scale = scale ?? (entry.defaultScale > 0 ? entry.defaultScale : 1.0)
+            if !entry.id.isEmpty {
+                config.adapterID = entry.id
+            }
+
+            var request = RALoRAApplyRequest()
+            request.adapters = [config]
+            request.replaceExisting = replaceExisting
+            return try await apply(request)
         }
-        try await CppBridge.LLM.shared.removeLoraAdapter(path)
-    }
 
-    /// Remove all loaded LoRA adapters.
-    static func clearLoraAdapters() async throws {
-        guard isInitialized else {
-            throw SDKError.general(.notInitialized, "SDK not initialized")
+        /// Same as `apply(_:localPath:scale:replaceExisting:)`, with a name
+        /// that is easy to mirror in SDKs without overloads.
+        @discardableResult
+        public func applyCatalogAdapter(
+            _ entry: RALoraAdapterCatalogEntry,
+            localPath: String? = nil,
+            scale: Float? = nil,
+            replaceExisting: Bool = false
+        ) async throws -> RALoRAApplyResult {
+            try await apply(entry, localPath: localPath, scale: scale, replaceExisting: replaceExisting)
         }
-        try await CppBridge.LLM.shared.clearLoraAdapters()
-    }
 
-    /// Get info about all currently loaded LoRA adapters.
-    static func getLoadedLoraAdapters() async throws -> [LoRAAdapterInfo] {
-        guard isInitialized else {
-            throw SDKError.general(.notInitialized, "SDK not initialized")
+        /// Remove one or more LoRA adapters, or clear all adapters.
+        ///
+        /// - Parameter request: Generated proto remove request carrying adapter ids,
+        ///   adapter paths, or `clearAll_p`.
+        /// - Returns: Generated LoRA state after removal.
+        @discardableResult
+        public func remove(_ request: RALoRARemoveRequest) async throws -> RALoRAState {
+            return try await CppBridge.LLM.shared.removeLoraAdapters(request)
         }
-        return try await CppBridge.LLM.shared.getLoadedLoraAdapters()
-    }
 
-    /// Check if a LoRA adapter file is compatible with the currently loaded model.
-    /// This is a lightweight pre-check; the definitive check happens on load.
-    static func checkLoraCompatibility(loraPath: String) async -> LoraCompatibilityResult {
-        guard isInitialized else {
-            return LoraCompatibilityResult(isCompatible: false, error: "SDK not initialized")
+        /// Get info about all currently loaded LoRA adapters.
+        public func list() async throws -> RALoRAState {
+            return try await CppBridge.LLM.shared.listLoraAdapters(RALoRAState())
         }
-        return await CppBridge.LLM.shared.checkLoraCompatibility(loraPath: loraPath)
-    }
 
-    // MARK: Catalog Operations
+        /// Get the LoRA service state reported by commons.
+        public func state() async throws -> RALoRAState {
+            return try await CppBridge.LLM.shared.getLoraState(RALoRAState())
+        }
 
-    /// Register a LoRA adapter in the SDK catalog at app startup.
-    /// Call this before loading any adapters so the SDK knows what's available.
-    static func registerLoraAdapter(_ entry: LoraAdapterCatalogEntry) async throws {
-        try await CppBridge.LoraRegistry.shared.register(entry)
-    }
+        /// Check whether a LoRA adapter is compatible with a model.
+        ///
+        /// The lifecycle-aware C ABI resolves the active LLM component
+        /// internally; callers no longer need to thread a handle.
+        public func checkCompatibility(_ config: RALoRAAdapterConfig) async -> RALoraCompatibilityResult {
+            do {
+                return try await CppBridge.LLM.shared.checkLoraCompatibility(config)
+            } catch {
+                return incompatibleResult(error.localizedDescription)
+            }
+        }
 
-    /// Get all LoRA adapters compatible with a specific model.
-    static func loraAdaptersForModel(_ modelId: String) async -> [LoraAdapterCatalogEntry] {
-        return await CppBridge.LoraRegistry.shared.getForModel(modelId)
-    }
+        // MARK: Catalog Operations
 
-    /// Get all registered LoRA adapters.
-    static func allRegisteredLoraAdapters() async -> [LoraAdapterCatalogEntry] {
-        return await CppBridge.LoraRegistry.shared.getAll()
+        /// Register a LoRA adapter from a full catalog entry.
+        @discardableResult
+        public func register(_ entry: RALoraAdapterCatalogEntry) async throws -> RALoraAdapterCatalogEntry {
+            guard RunAnywhere.isInitialized else {
+                throw SDKException(code: .notInitialized, message: "SDK not initialized", category: .internal)
+            }
+            return try await CppBridge.LoraRegistry.shared.register(entry)
+        }
+
+        /// List LoRA catalog entries using the generated catalog request/result ABI.
+        public func listCatalog(
+            _ request: RALoraAdapterCatalogListRequest = RALoraAdapterCatalogListRequest()
+        ) async throws -> RALoraAdapterCatalogListResult {
+            guard RunAnywhere.isInitialized else {
+                throw SDKException(code: .notInitialized, message: "SDK not initialized", category: .internal)
+            }
+            return try await CppBridge.LoraRegistry.shared.listCatalog(request)
+        }
+
+        /// Query LoRA catalog entries using the generated catalog query/result ABI.
+        public func queryCatalog(
+            _ query: RALoraAdapterCatalogQuery
+        ) async throws -> RALoraAdapterCatalogListResult {
+            guard RunAnywhere.isInitialized else {
+                throw SDKException(code: .notInitialized, message: "SDK not initialized", category: .internal)
+            }
+            return try await CppBridge.LoraRegistry.shared.queryCatalog(query)
+        }
+
+        /// Fetch one LoRA catalog entry by generated request.
+        public func getCatalogEntry(
+            _ request: RALoraAdapterCatalogGetRequest
+        ) async throws -> RALoraAdapterCatalogGetResult {
+            guard RunAnywhere.isInitialized else {
+                throw SDKException(code: .notInitialized, message: "SDK not initialized", category: .internal)
+            }
+            return try await CppBridge.LoraRegistry.shared.getCatalogEntry(request)
+        }
+
+        /// Persist native-reported LoRA adapter download completion in commons.
+        ///
+        /// Swift owns the URLSession/file work. Commons owns the generated catalog
+        /// state update once the stable local path is known.
+        @discardableResult
+        public func markDownloadCompleted(
+            _ request: RALoraAdapterDownloadCompletedRequest
+        ) async throws -> RALoraAdapterDownloadCompletedResult {
+            guard RunAnywhere.isInitialized else {
+                throw SDKException(code: .notInitialized, message: "SDK not initialized", category: .internal)
+            }
+            return try await CppBridge.LoraRegistry.shared.markDownloadCompleted(request)
+        }
+
+        /// Persist native-reported LoRA adapter import completion in commons.
+        ///
+        /// This uses the generated download-completed message with `imported`
+        /// asserted, matching the IDL contract for platform file-picker/import
+        /// completion.
+        @discardableResult
+        public func markImportCompleted(
+            _ request: RALoraAdapterDownloadCompletedRequest
+        ) async throws -> RALoraAdapterDownloadCompletedResult {
+            var importRequest = request
+            importRequest.imported = true
+            if importRequest.statusMessage.isEmpty {
+                importRequest.statusMessage = "import completed"
+            }
+            return try await markDownloadCompleted(importRequest)
+        }
+
+        /// Get all LoRA adapters compatible with a specific model (CANONICAL_API §3).
+        ///
+        /// - Parameter modelId: Model identifier to filter by.
+        /// - Returns: Generated catalog entries for compatible adapters.
+        public func adaptersForModel(_ modelId: String) async throws -> [RALoraAdapterCatalogEntry] {
+            var query = RALoraAdapterCatalogQuery()
+            query.modelID = modelId
+            let result = try await queryCatalog(query)
+            guard result.success else {
+                throw SDKException(
+                    code: .processingFailed,
+                    message: result.errorMessage.isEmpty ? "LoRA catalog query failed" : result.errorMessage,
+                    category: .internal
+                )
+            }
+            return result.entries
+        }
+
+        /// Get all registered LoRA adapters (CANONICAL_API §3).
+        ///
+        /// - Returns: Generated catalog entries for all registered adapters.
+        public func allRegistered() async throws -> [RALoraAdapterCatalogEntry] {
+            let result = try await listCatalog()
+            guard result.success else {
+                throw SDKException(
+                    code: .processingFailed,
+                    message: result.errorMessage.isEmpty ? "LoRA catalog list failed" : result.errorMessage,
+                    category: .internal
+                )
+            }
+            return result.entries
+        }
+
+        private func incompatibleResult(_ message: String) -> RALoraCompatibilityResult {
+            var result = RALoraCompatibilityResult()
+            result.isCompatible = false
+            result.errorMessage = message
+            return result
+        }
     }
 }

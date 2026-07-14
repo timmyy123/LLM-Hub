@@ -10,6 +10,7 @@ import Foundation
 import SwiftUI
 import RunAnywhere
 import Combine
+import os
 
 @MainActor
 class SettingsViewModel: ObservableObject {
@@ -18,13 +19,22 @@ class SettingsViewModel: ObservableObject {
     // Generation Settings
     @Published var temperature: Double = 0.7
     @Published var maxTokens: Int = 10000
-    @Published var systemPrompt: String = ""
+    @Published var systemPrompt: String = "You are a helpful, concise AI assistant."
+    @Published var thinkingModeEnabled: Bool = false
+    @Published private(set) var loadedModelSupportsThinking: Bool = false
 
     // API Configuration
     @Published var apiKey: String = ""
     @Published var baseURL: String = ""
     @Published var isApiKeyConfigured: Bool = false
     @Published var isBaseURLConfigured: Bool = false
+
+    // Private model downloads
+    @Published var hfToken: String = ""
+    @Published var isHfTokenConfigured: Bool = false
+    @Published var isSavingHfToken: Bool = false
+    @Published var hfTokenMessage: String?
+    @Published var hfTokenMessageIsError: Bool = false
 
     // Logging Configuration
     @Published var analyticsLogToLocal: Bool = false
@@ -33,7 +43,7 @@ class SettingsViewModel: ObservableObject {
     @Published var totalStorageSize: Int64 = 0
     @Published var availableSpace: Int64 = 0
     @Published var modelStorageSize: Int64 = 0
-    @Published var storedModels: [StoredModel] = []
+    @Published var storedModels: [RAModelStorageMetrics] = []
 
     // UI State
     @Published var showApiKeyEntry: Bool = false
@@ -43,13 +53,16 @@ class SettingsViewModel: ObservableObject {
 
     // MARK: - Private Properties
 
+    private let logger = Logger(subsystem: "com.runanywhere.RunAnywhereAI", category: "Settings")
     private var cancellables = Set<AnyCancellable>()
     private let keychainService = KeychainService.shared
     private let apiKeyStorageKey = "runanywhere_api_key"
     private let baseURLStorageKey = "runanywhere_base_url"
+    private let hfTokenStorageKey = "runanywhere_hf_token"
     private let temperatureDefaultsKey = "defaultTemperature"
     private let maxTokensDefaultsKey = "defaultMaxTokens"
     private let systemPromptDefaultsKey = "defaultSystemPrompt"
+    private let thinkingModeKey = "thinkingModeEnabled"
     private let analyticsLogKey = "analyticsLogToLocal"
     private let deviceRegisteredKey = "com.runanywhere.sdk.deviceRegistered"
 
@@ -82,6 +95,16 @@ class SettingsViewModel: ObservableObject {
         return "https://\(trimmed)"
     }
 
+    /// Get stored Hugging Face token (for private model downloads at launch)
+    nonisolated static func getStoredHfToken() -> String? {
+        guard let data = try? KeychainService.shared.retrieve(key: "runanywhere_hf_token"),
+              let value = String(data: data, encoding: .utf8),
+              !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return nil
+        }
+        return value.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     /// Check if custom configuration is set
     static var hasCustomConfiguration: Bool {
         getStoredApiKey() != nil && getStoredBaseURL() != nil
@@ -92,6 +115,38 @@ class SettingsViewModel: ObservableObject {
     init() {
         loadSettings()
         setupObservers()
+        subscribeToModelNotifications()
+    }
+
+    private func subscribeToModelNotifications() {
+        // The SDK's typed lifecycle stream covers every LLM load source
+        // (chat, voice agent, RAG) with one subscription.
+        RunAnywhere.events.modelLifecycle
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] change in
+                Task { @MainActor in
+                    self?.handleModelLifecycle(change)
+                }
+            }
+            .store(in: &cancellables)
+    }
+
+    private func handleModelLifecycle(_ change: RAModelLifecycleChange) {
+        guard change.component == .llm || change.event.category == .llm else { return }
+
+        switch change.kind {
+        case .loaded:
+            if let model = ModelListViewModel.shared.availableModels.first(where: { $0.id == change.modelID }) {
+                loadedModelSupportsThinking = model.supportsThinking
+                logger.info("LLM loaded (\(change.modelID)), supportsThinking: \(model.supportsThinking)")
+            } else {
+                loadedModelSupportsThinking = false
+                logger.warning("LLM loaded (\(change.modelID)), but it was not found in the registry")
+            }
+        case .unloaded:
+            loadedModelSupportsThinking = false
+            logger.info("LLM unloaded, thinking mode disabled")
+        }
     }
 
     // MARK: - Setup
@@ -124,6 +179,14 @@ class SettingsViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
+        // Auto-save thinking mode preference
+        $thinkingModeEnabled
+            .dropFirst()
+            .sink { [weak self] newValue in
+                self?.saveThinkingModePreference(newValue)
+            }
+            .store(in: &cancellables)
+
         // Auto-save analytics logging preference
         $analyticsLogToLocal
             .dropFirst() // Skip initial value to avoid saving on init
@@ -139,20 +202,29 @@ class SettingsViewModel: ObservableObject {
     func loadSettings() {
         loadGenerationSettings()
         loadApiKeyConfiguration()
+        loadHfTokenConfiguration()
         loadLoggingConfiguration()
     }
 
     private func loadGenerationSettings() {
-        // Load temperature
-        let savedTemperature = UserDefaults.standard.double(forKey: temperatureDefaultsKey)
-        temperature = savedTemperature > 0 ? savedTemperature : 0.7
+        // Load temperature — use object(forKey:) to distinguish unset (nil) from explicit 0.0
+        let savedTemperature = UserDefaults.standard.object(forKey: temperatureDefaultsKey) as? Double
+        temperature = savedTemperature ?? 0.7
 
         // Load max tokens
         let savedMaxTokens = UserDefaults.standard.integer(forKey: maxTokensDefaultsKey)
         maxTokens = savedMaxTokens > 0 ? savedMaxTokens : 10000
 
-        // Load system prompt
-        systemPrompt = UserDefaults.standard.string(forKey: systemPromptDefaultsKey) ?? ""
+        // Load system prompt — fall back to the default when the key has never been set
+        let defaultPrompt = "You are a helpful, concise AI assistant."
+        systemPrompt = UserDefaults.standard.string(forKey: systemPromptDefaultsKey) ?? defaultPrompt
+        // Persist the default so that other ViewModels reading UserDefaults directly always find a value
+        if UserDefaults.standard.string(forKey: systemPromptDefaultsKey) == nil {
+            UserDefaults.standard.set(systemPrompt, forKey: systemPromptDefaultsKey)
+        }
+
+        // Load thinking mode
+        thinkingModeEnabled = UserDefaults.standard.bool(forKey: thinkingModeKey)
     }
 
     private func loadApiKeyConfiguration() {
@@ -179,6 +251,18 @@ class SettingsViewModel: ObservableObject {
         }
     }
 
+    private func loadHfTokenConfiguration() {
+        if let tokenData = try? keychainService.retrieve(key: hfTokenStorageKey),
+           let savedToken = String(data: tokenData, encoding: .utf8),
+           !savedToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            hfToken = savedToken
+            isHfTokenConfigured = true
+        } else {
+            hfToken = ""
+            isHfTokenConfigured = false
+        }
+    }
+
     private func loadLoggingConfiguration() {
         analyticsLogToLocal = keychainService.loadBool(key: analyticsLogKey, defaultValue: false)
     }
@@ -200,12 +284,18 @@ class SettingsViewModel: ObservableObject {
         print("Settings: Saved system prompt (\(value.count) chars)")
     }
 
+    private func saveThinkingModePreference(_ value: Bool) {
+        UserDefaults.standard.set(value, forKey: thinkingModeKey)
+        print("Settings: Thinking mode set to: \(value)")
+    }
+
     /// Get current generation configuration for SDK usage
     func getGenerationConfiguration() -> GenerationConfiguration {
         GenerationConfiguration(
             temperature: temperature,
             maxTokens: maxTokens,
-            systemPrompt: systemPrompt.isEmpty ? nil : systemPrompt
+            systemPrompt: systemPrompt.isEmpty ? nil : systemPrompt,
+            thinkingModeEnabled: thinkingModeEnabled
         )
     }
 
@@ -314,6 +404,47 @@ class SettingsViewModel: ObservableObject {
         isApiKeyConfigured && isBaseURLConfigured
     }
 
+    // MARK: - Private Download Configuration
+
+    func saveHfToken() {
+        let trimmed = hfToken.trimmingCharacters(in: .whitespacesAndNewlines)
+        isSavingHfToken = true
+        hfTokenMessage = nil
+        hfTokenMessageIsError = false
+
+        do {
+            if trimmed.isEmpty {
+                try keychainService.delete(key: hfTokenStorageKey)
+                hfToken = ""
+                isHfTokenConfigured = false
+                RunAnywhere.setHfToken("")
+                hfTokenMessage = "Hugging Face token cleared"
+            } else if let tokenData = trimmed.data(using: .utf8) {
+                try keychainService.save(key: hfTokenStorageKey, data: tokenData)
+                hfToken = trimmed
+                isHfTokenConfigured = true
+                RunAnywhere.setHfToken(trimmed)
+                hfTokenMessage = "Hugging Face token saved"
+            }
+
+            Task {
+                await ModelListViewModel.shared.loadModelsFromRegistry()
+            }
+        } catch {
+            hfTokenMessage = trimmed.isEmpty
+                ? "Could not clear Hugging Face token"
+                : "Could not save Hugging Face token"
+            hfTokenMessageIsError = true
+        }
+
+        isSavingHfToken = false
+    }
+
+    func clearHfToken() {
+        hfToken = ""
+        saveHfToken()
+    }
+
     // MARK: - Logging Configuration
 
     private func saveAnalyticsLogPreference(_ value: Bool) {
@@ -323,22 +454,23 @@ class SettingsViewModel: ObservableObject {
 
     // MARK: - Storage Management
 
+    // Storage state and SDK storage calls live in StorageViewModel.shared
+    // (single owner); the Settings section just projects its state.
+
     /// Load storage information
     func loadStorageData() async {
         isLoadingStorage = true
         errorMessage = nil
 
-        do {
-            let storageInfo = await RunAnywhere.getStorageInfo()
-
-            totalStorageSize = storageInfo.appStorage.totalSize
-            availableSpace = storageInfo.deviceStorage.freeSpace
-            modelStorageSize = storageInfo.totalModelsSize
-            storedModels = storageInfo.storedModels
-
-            print("Settings: Loaded storage data - Total: \(totalStorageSize), Available: \(availableSpace)")
-        } catch {
-            errorMessage = "Failed to load storage data: \(error.localizedDescription)"
+        let storage = StorageViewModel.shared
+        await storage.loadData()
+        if let storageError = storage.errorMessage {
+            errorMessage = storageError
+        } else {
+            totalStorageSize = storage.totalStorageSize
+            availableSpace = storage.availableSpace
+            modelStorageSize = storage.modelStorageSize
+            storedModels = storage.storedModels
         }
 
         isLoadingStorage = false
@@ -351,40 +483,20 @@ class SettingsViewModel: ObservableObject {
 
     /// Clear cache
     func clearCache() async {
-        do {
-            try await RunAnywhere.clearCache()
-            await refreshStorageData()
-            print("Settings: Cache cleared successfully")
-        } catch {
-            errorMessage = "Failed to clear cache: \(error.localizedDescription)"
-        }
+        await StorageViewModel.shared.clearCache()
+        await loadStorageData()
     }
 
     /// Clean temporary files
     func cleanTempFiles() async {
-        do {
-            try await RunAnywhere.cleanTempFiles()
-            await refreshStorageData()
-            print("Settings: Temporary files cleaned successfully")
-        } catch {
-            errorMessage = "Failed to clean temporary files: \(error.localizedDescription)"
-        }
+        await StorageViewModel.shared.cleanTempFiles()
+        await loadStorageData()
     }
 
     /// Delete a stored model
-    func deleteModel(_ model: StoredModel) async {
-        guard let framework = model.framework else {
-            errorMessage = "Cannot delete model: unknown framework"
-            return
-        }
-
-        do {
-            try await RunAnywhere.deleteStoredModel(model.id, framework: framework)
-            await refreshStorageData()
-            print("Settings: Model \(model.name) deleted successfully")
-        } catch {
-            errorMessage = "Failed to delete model: \(error.localizedDescription)"
-        }
+    func deleteModel(_ model: RAModelStorageMetrics) async {
+        await StorageViewModel.shared.deleteModel(model)
+        await loadStorageData()
     }
 
     // MARK: - Helper Methods
@@ -418,4 +530,5 @@ struct GenerationConfiguration {
     let temperature: Double
     let maxTokens: Int
     let systemPrompt: String?
+    let thinkingModeEnabled: Bool
 }

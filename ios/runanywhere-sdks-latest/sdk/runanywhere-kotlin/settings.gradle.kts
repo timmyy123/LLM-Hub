@@ -17,35 +17,11 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven { url = uri("https://jitpack.io") }
-    }
-    versionCatalogs {
-        create("libs") {
-            from(files("../../gradle/libs.versions.toml"))
-        }
     }
 }
 
 rootProject.name = "RunAnywhereKotlinSDK"
 
-// =============================================================================
-// RunAnywhere Backend Modules (mirrors iOS Swift Package architecture)
-// =============================================================================
-
-// Native libs (.so files) are built from runanywhere-commons and included
-// directly in the main SDK's jniLibs folder. No separate native module needed.
-// See: runanywhere-commons/scripts/build-android.sh
-
-// LlamaCPP module - thin wrapper that calls C++ backend registration
-// Single file: LlamaCPP.kt which calls rac_backend_llamacpp_register()
-// Matches iOS: Sources/LlamaCPPRuntime/LlamaCPP.swift
 include(":modules:runanywhere-core-llamacpp")
-
-// ONNX module - thin wrapper that calls C++ backend registration
-// Single file: ONNX.kt which calls rac_backend_onnx_register()
-// Matches iOS: Sources/ONNXRuntime/ONNX.swift
 include(":modules:runanywhere-core-onnx")
-
-// RAG pipeline — NOT a separate module. RAG is an orchestration pipeline (like Voice Agent)
-// that uses existing LLM + Embeddings services. Registration is handled by the core SDK
-// when ragCreatePipeline() is called. See: RunAnywhere+RAG.jvmAndroid.kt
+include(":modules:runanywhere-core-qhexrt")

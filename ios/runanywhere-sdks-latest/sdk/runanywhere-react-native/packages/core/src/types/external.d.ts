@@ -62,6 +62,8 @@ declare module 'react-native-fs' {
       totalSpace: number;
       freeSpace: number;
     }>;
+    // Type declaration only. Core runtime must not call the RNFS network downloader;
+    // model downloads are handled by native C++ rac_http_download_execute.
     downloadFile(options: {
       fromUrl: string;
       toFile: string;
@@ -95,8 +97,7 @@ declare module 'react-native-fs' {
 declare module 'rn-fetch-blob' {
   interface FetchBlobResponse {
     path(): string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- External library JSON type
-    json(): any;
+    json(): unknown;
     text(): string;
     data: string;
     info(): { status: number; headers: Record<string, string> };
@@ -127,12 +128,13 @@ declare module 'rn-fetch-blob' {
       appendExt?: string;
       timeout?: number;
     }): {
+      // Type declaration only. Core runtime must not call RNFetchBlob.fetch;
+      // HTTP transport is native C++ via rac_http_client_* / rac_http_download_execute.
       fetch(
         method: string,
         url: string,
         headers?: Record<string, string>,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- External library body type
-        body?: any
+        body?: unknown
       ): StatefulPromise<FetchBlobResponse>;
     };
   }

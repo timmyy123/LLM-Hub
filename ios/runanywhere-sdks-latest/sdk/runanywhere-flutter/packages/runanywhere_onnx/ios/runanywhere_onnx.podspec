@@ -1,157 +1,127 @@
 #
 # RunAnywhere ONNX Backend - iOS
 #
-# This podspec integrates RABackendONNX.xcframework into Flutter iOS apps.
-# RABackendONNX provides STT, TTS, VAD capabilities using ONNX Runtime and Sherpa-ONNX.
+# Uses locally staged RABackendONNX and RABackendSherpa XCFrameworks during
+# monorepo development. A clean pub.dev package downloads checksum-pinned
+# release archives before CocoaPods resolves the vendored frameworks.
 #
-# Binary Configuration:
-#   - Set RA_TEST_LOCAL=1 or create .testlocal file to use local binaries
-#   - Otherwise, binaries are downloaded from GitHub releases (production mode)
-#
-# Version: Must match Swift SDK's Package.swift and Kotlin SDK's build.gradle.kts
-#
-# Architecture Note:
-#   This follows the same pattern as React Native and Swift SDKs - bundling
-#   onnxruntime.xcframework directly rather than using a CocoaPods dependency.
-#   This ensures version consistency across all SDKs.
+# Note: as of v0.19.0 the ONNX Runtime C library is statically linked
+# directly into RABackendONNX.a — no separate onnxruntime.xcframework is
+# required (matches the Swift SPM + React Native setup).
 #
 
-# =============================================================================
-# Version Constants (MUST match Swift Package.swift)
-# =============================================================================
-ONNX_VERSION = "0.1.6"
-ONNXRUNTIME_VERSION = "1.17.1"
+package_manifest = File.read(File.join(__dir__, 'runanywhere_onnx', 'Package.swift'))
+checksum_for = lambda do |name|
+  match = package_manifest.match(
+    /runAnywhereBinaryTarget\(\s*name:\s*"#{Regexp.escape(name)}",\s*checksum:\s*"([0-9a-f]{64})"\s*\)/m
+  )
+  unless match
+    raise Pod::Informative, "Missing immutable checksum for #{name} in runanywhere_onnx/Package.swift"
+  end
 
-# =============================================================================
-# Binary Source - RABackendONNX from runanywhere-binaries
-# =============================================================================
-GITHUB_ORG = "RunanywhereAI"
-BINARIES_REPO = "runanywhere-sdks"
-
-# =============================================================================
-# testLocal Toggle
-# Set RA_TEST_LOCAL=1 or create .testlocal file to use local binaries
-# =============================================================================
-TEST_LOCAL = ENV['RA_TEST_LOCAL'] == '1' || File.exist?(File.join(__dir__, '.testlocal'))
+  match[1]
+end
 
 Pod::Spec.new do |s|
   s.name             = 'runanywhere_onnx'
-  s.version          = '0.16.0'
+  s.version          = '0.20.9'
   s.summary          = 'RunAnywhere ONNX: STT, TTS, VAD for Flutter'
   s.description      = <<-DESC
 ONNX Runtime backend for RunAnywhere Flutter SDK. Provides speech-to-text (STT),
-text-to-speech (TTS), and voice activity detection (VAD) capabilities using
-ONNX Runtime and Sherpa-ONNX. Pre-built binaries are downloaded from:
-https://github.com/RunanywhereAI/runanywhere-binaries
+text-to-speech (TTS), voice activity detection (VAD), and embeddings via
+ONNX Runtime and Sherpa-ONNX — all statically linked into
+RABackendONNX.xcframework.
                        DESC
   s.homepage         = 'https://runanywhere.ai'
-  s.license          = { :type => 'MIT' }
+  s.license          = { :type => 'RunAnywhere License', :file => '../LICENSE' }
   s.author           = { 'RunAnywhere' => 'team@runanywhere.ai' }
   s.source           = { :path => '.' }
 
-  s.ios.deployment_target = '14.0'
-  s.swift_version = '5.0'
+  # The base URL override is for release-contract fixtures only; archive
+  # checksums are read from the package manifest and cannot be overridden.
+  s.prepare_command = <<-CMD
+set -euo pipefail
 
-  # Source files (minimal - main logic is in the xcframework)
-  s.source_files = 'Classes/**/*'
+fail() {
+  echo "RunAnywhere iOS preparation failed: $*" >&2
+  exit 1
+}
 
-  # Flutter dependency
+release_base_url="${RUNANYWHERE_FLUTTER_IOS_RELEASE_BASE_URL:-https://github.com/RunanywhereAI/runanywhere-sdks/releases/download}"
+while [ "${release_base_url%/}" != "$release_base_url" ]; do
+  release_base_url="${release_base_url%/}"
+done
+
+work_root="$(mktemp -d "${TMPDIR:-/tmp}/runanywhere-flutter-ios.XXXXXX")"
+trap 'rm -rf "$work_root"' EXIT HUP INT TERM
+
+download_xcframework() {
+  name="$1"
+  expected_checksum="$2"
+  framework_root="$3"
+  destination="$framework_root/$name.xcframework"
+
+  if [ -d "$destination" ]; then
+    [ -f "$destination/Info.plist" ] || fail "$destination is incomplete"
+    return
+  fi
+  [ ! -e "$destination" ] || fail "$destination exists but is not an XCFramework directory"
+
+  archive_url="$release_base_url/v#{s.version}/$name-ios-v#{s.version}.zip"
+  case "$archive_url" in
+    https://*|file://*) ;;
+    *) fail "unsupported release URL: $archive_url" ;;
+  esac
+
+  archive="$work_root/$name.zip"
+  curl --fail --location --silent --show-error \
+    --proto '=https,file' --proto-redir '=https' --tlsv1.2 --retry 3 \
+    --output "$archive" "$archive_url"
+
+  actual_checksum="$(shasum -a 256 "$archive" | awk '{print $1}')"
+  [ "$actual_checksum" = "$expected_checksum" ] || \
+    fail "checksum mismatch for $name (expected $expected_checksum, got $actual_checksum)"
+
+  mkdir -p "$framework_root"
+  staging="$(mktemp -d "$framework_root/.$name.XXXXXX")"
+  ditto -x -k "$archive" "$staging"
+  [ -f "$staging/$name.xcframework/Info.plist" ] || \
+    fail "archive does not contain $name.xcframework"
+  mv "$staging/$name.xcframework" "$destination"
+  rmdir "$staging"
+}
+
+download_xcframework \
+  RABackendONNX \
+  "#{checksum_for.call('RABackendONNX')}" \
+  runanywhere_onnx/Frameworks
+download_xcframework \
+  RABackendSherpa \
+  "#{checksum_for.call('RABackendSherpa')}" \
+  runanywhere_onnx/Frameworks
+  CMD
+
+  s.ios.deployment_target = '17.5'
+  s.swift_version = '6.2'
+
+  # Source files (plugin entry point only — native logic lives in xcframework).
+  s.source_files = 'runanywhere_onnx/Sources/**/*.swift'
+
   s.dependency 'Flutter'
-
-  # Core SDK dependency (provides RACommons)
   s.dependency 'runanywhere'
 
   # =============================================================================
-  # RABackendONNX + ONNX Runtime XCFrameworks
-  #
-  # Unlike using `s.dependency 'onnxruntime-c'`, we bundle onnxruntime.xcframework
-  # directly to match the architecture of other SDKs:
-  #   - Swift SDK: Downloads via SPM binaryTarget from download.onnxruntime.ai
-  #   - React Native: Downloads in prepare_command alongside RABackendONNX
-  #   - Kotlin: Bundles libonnxruntime.so in jniLibs
-  #
-  # This ensures version consistency (1.17.1) across all platforms.
+  # Vendored xcframeworks (local builds or checksum-pinned release archives)
   # =============================================================================
-  if TEST_LOCAL
-    puts "[runanywhere_onnx] Using LOCAL frameworks from Frameworks/"
-    s.vendored_frameworks = [
-      'Frameworks/RABackendONNX.xcframework',
-      'Frameworks/onnxruntime.xcframework'
-    ]
-  else
-    s.prepare_command = <<-CMD
-      set -e
-
-      FRAMEWORK_DIR="Frameworks"
-      VERSION="#{ONNX_VERSION}"
-      ONNX_VERSION="#{ONNXRUNTIME_VERSION}"
-      VERSION_FILE="$FRAMEWORK_DIR/.onnx_version"
-
-      # Check if already downloaded with correct version
-      if [ -f "$VERSION_FILE" ] && [ -d "$FRAMEWORK_DIR/RABackendONNX.xcframework" ]; then
-        CURRENT_VERSION=$(cat "$VERSION_FILE")
-        if [ "$CURRENT_VERSION" = "$VERSION" ]; then
-          echo "✅ RABackendONNX.xcframework version $VERSION already downloaded"
-          # Still need to check onnxruntime
-          if [ -d "$FRAMEWORK_DIR/onnxruntime.xcframework" ]; then
-            exit 0
-          fi
-        fi
-      fi
-
-      echo "📦 Downloading RABackendONNX.xcframework version $VERSION..."
-
-      mkdir -p "$FRAMEWORK_DIR"
-      rm -rf "$FRAMEWORK_DIR/RABackendONNX.xcframework"
-
-      # Download from runanywhere-binaries
-      DOWNLOAD_URL="https://github.com/#{GITHUB_ORG}/#{BINARIES_REPO}/releases/download/commons-v$VERSION/RABackendONNX-ios-v$VERSION.zip"
-      ZIP_FILE="/tmp/RABackendONNX.zip"
-
-      echo "   URL: $DOWNLOAD_URL"
-
-      curl -L -f -o "$ZIP_FILE" "$DOWNLOAD_URL" || {
-        echo "❌ Failed to download RABackendONNX from $DOWNLOAD_URL"
-        exit 1
-      }
-
-      echo "📂 Extracting RABackendONNX.xcframework..."
-      unzip -q -o "$ZIP_FILE" -d "$FRAMEWORK_DIR/"
-      rm -f "$ZIP_FILE"
-
-      # Download ONNX Runtime if not present (matches Swift/React Native SDKs)
-      if [ ! -d "$FRAMEWORK_DIR/onnxruntime.xcframework" ]; then
-        echo "📦 Downloading ONNX Runtime version $ONNX_VERSION..."
-        ONNX_URL="https://download.onnxruntime.ai/pod-archive-onnxruntime-c-$ONNX_VERSION.zip"
-        ONNX_ZIP="/tmp/onnxruntime.zip"
-
-        curl -L -f -o "$ONNX_ZIP" "$ONNX_URL" || {
-          echo "❌ Failed to download ONNX Runtime from $ONNX_URL"
-          exit 1
-        }
-
-        echo "📂 Extracting onnxruntime.xcframework..."
-        unzip -q -o "$ONNX_ZIP" -d "$FRAMEWORK_DIR/"
-        rm -f "$ONNX_ZIP"
-      fi
-
-      echo "$VERSION" > "$VERSION_FILE"
-
-      if [ -d "$FRAMEWORK_DIR/RABackendONNX.xcframework" ] && [ -d "$FRAMEWORK_DIR/onnxruntime.xcframework" ]; then
-        echo "✅ ONNX frameworks installed successfully"
-      else
-        echo "❌ ONNX framework extraction failed"
-        exit 1
-      fi
-    CMD
-
-    s.vendored_frameworks = [
-      'Frameworks/RABackendONNX.xcframework',
-      'Frameworks/onnxruntime.xcframework'
-    ]
-  end
-
-  s.preserve_paths = 'Frameworks/**/*'
+  # RABackendONNX provides the ONNX Runtime engine.
+  # RABackendSherpa provides STT/TTS/VAD via sherpa-onnx — its plugin entry
+  # symbol (_rac_plugin_entry_sherpa) is referenced from RACommons, so without
+  # vendoring this xcframework the linker fails with an Undefined symbol error.
+  s.vendored_frameworks = [
+    'runanywhere_onnx/Frameworks/RABackendONNX.xcframework',
+    'runanywhere_onnx/Frameworks/RABackendSherpa.xcframework'
+  ]
+  s.preserve_paths = 'runanywhere_onnx/Frameworks/**/*'
 
   # Required frameworks
   s.frameworks = [
@@ -169,28 +139,25 @@ https://github.com/RunanywhereAI/runanywhere-binaries
     'MetalPerformanceShaders'
   ]
 
-  # Build settings
+  # See runanywhere.podspec for rationale on EXCLUDED_ARCHS.
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
-    'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386',
-    'OTHER_LDFLAGS' => '-lc++ -larchive -lbz2',
+    'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'x86_64',
+    'OTHER_LDFLAGS' => '-lc++ -larchive -lbz2 -lz',
     'CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES' => 'YES',
-    'ENABLE_BITCODE' => 'NO',
-    # Header search paths for onnxruntime.xcframework (needed for compilation)
     'HEADER_SEARCH_PATHS' => [
-      '$(PODS_TARGET_SRCROOT)/Frameworks/onnxruntime.xcframework/ios-arm64/Headers',
-      '$(PODS_TARGET_SRCROOT)/Frameworks/onnxruntime.xcframework/ios-arm64_x86_64-simulator/Headers',
+      '"${PODS_TARGET_SRCROOT}/runanywhere_onnx/Frameworks/RABackendONNX.xcframework/ios-arm64/Headers"',
+      '"${PODS_TARGET_SRCROOT}/runanywhere_onnx/Frameworks/RABackendONNX.xcframework/ios-arm64-simulator/Headers"',
     ].join(' '),
   }
 
-  # CRITICAL: -all_load ensures ALL object files from RABackendONNX.xcframework are linked.
-  # This is required for Flutter FFI to find symbols at runtime via dlsym().
+  # -all_load ensures every object in RABackendONNX.xcframework is linked;
+  # Flutter FFI resolves symbols via dlsym() at runtime.
   s.user_target_xcconfig = {
-    'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386',
-    'OTHER_LDFLAGS' => '-lc++ -larchive -lbz2 -all_load',
+    'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'x86_64',
+    'OTHER_LDFLAGS' => '-lc++ -larchive -lbz2 -lz -all_load',
     'DEAD_CODE_STRIPPING' => 'NO',
   }
 
-  # Mark static framework for proper linking
   s.static_framework = true
 end

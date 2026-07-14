@@ -1,1 +1,7 @@
 /build
+
+# Synced/generated NPU instrumentation test assets
+/src/androidTest/assets/README.md
+/src/androidTest/assets/npu_suites/
+/src/androidTest/assets/qhexrt_fixtures/
+/src/androidTest/assets/.qhexrt_device_assets.json

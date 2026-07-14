@@ -665,6 +665,7 @@ class LLMBackend: ObservableObject {
         }
 
         await RunAnywhere.unloadVLMModel()
+        syncGpuLayersToRegistry(for: model)
         do {
             try await RunAnywhere.loadVLMModel(modelPath, mmprojPath: mmprojPath, modelId: model.id, modelName: model.name)
         } catch {
@@ -692,6 +693,32 @@ class LLMBackend: ObservableObject {
 
         try await RunAnywhere.loadModel(model.id)
         loadedLLMModelId = model.id
+    }
+
+    private func syncGpuLayersToRegistry(for model: AIModel) {
+        let key = "gpu_layers_\(model.id)"
+        let layers = UserDefaults.standard.object(forKey: key) != nil ?
+            Int32(UserDefaults.standard.integer(forKey: key)) : 99
+        let targetValue: Int32 = (layers == 99) ? 999 : layers
+        
+        // Sync for model ID
+        CppBridge.ModelRegistry.shared.setGpuLayers(modelId: model.id, gpuLayers: targetValue)
+        let runAnywhereModelId = activeRunAnywhereModelId(for: model)
+        CppBridge.ModelRegistry.shared.setGpuLayers(modelId: runAnywhereModelId, gpuLayers: targetValue)
+        
+        // Sync for model file paths if available
+        if let folderURL = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: model.id, framework: framework(for: model)) {
+            CppBridge.ModelRegistry.shared.setGpuLayers(modelId: folderURL.path, gpuLayers: targetValue)
+            for ggufFile in listGGUFFiles(in: folderURL) {
+                CppBridge.ModelRegistry.shared.setGpuLayers(modelId: ggufFile.path, gpuLayers: targetValue)
+            }
+        }
+        if let folderURL = runAnywhereModelDirectory(for: model) {
+            CppBridge.ModelRegistry.shared.setGpuLayers(modelId: folderURL.path, gpuLayers: targetValue)
+            for ggufFile in listGGUFFiles(in: folderURL) {
+                CppBridge.ModelRegistry.shared.setGpuLayers(modelId: ggufFile.path, gpuLayers: targetValue)
+            }
+        }
     }
 
     private func fileSummary(at path: String) -> String {
@@ -946,6 +973,7 @@ class LLMBackend: ObservableObject {
                 try? await CppBridge.ModelRegistry.shared.save(pathModelInfo)
             }
 
+            syncGpuLayersToRegistry(for: model)
             try await RunAnywhere.loadModel(runAnywhereModelId)
         }
 

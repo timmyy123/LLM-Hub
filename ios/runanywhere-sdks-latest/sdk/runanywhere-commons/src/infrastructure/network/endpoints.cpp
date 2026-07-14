@@ -5,6 +5,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <utility>
 
 #include "rac/core/rac_logger.h"
 #include "rac/infrastructure/network/rac_endpoints.h"
@@ -17,17 +18,6 @@ const char* rac_endpoint_device_registration(rac_environment_t env) {
         case RAC_ENV_PRODUCTION:
         default:
             return RAC_ENDPOINT_DEVICE_REGISTER;
-    }
-}
-
-const char* rac_endpoint_telemetry(rac_environment_t env) {
-    switch (env) {
-        case RAC_ENV_DEVELOPMENT:
-            return RAC_ENDPOINT_DEV_TELEMETRY;
-        case RAC_ENV_STAGING:
-        case RAC_ENV_PRODUCTION:
-        default:
-            return RAC_ENDPOINT_TELEMETRY;
     }
 }
 
@@ -52,12 +42,12 @@ int rac_build_url(const char* base_url, const char* endpoint, char* out_buffer,
     if (*ep != '/') {
         // Shouldn't happen with our constants, but handle it
         int written = snprintf(out_buffer, buffer_size, "%.*s/%s", (int)base_len, base_url, ep);
-        return (written < 0 || (size_t)written >= buffer_size) ? -1 : written;
+        return (written < 0 || std::cmp_greater_equal(written, buffer_size)) ? -1 : written;
     }
 
     int written = snprintf(out_buffer, buffer_size, "%.*s%s", (int)base_len, base_url, ep);
 
-    if (written < 0 || (size_t)written >= buffer_size) {
+    if (written < 0 || std::cmp_greater_equal(written, buffer_size)) {
         return -1;
     }
 

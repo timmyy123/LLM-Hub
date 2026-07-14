@@ -1,5 +1,24 @@
+# =============================================================================
+# COUPLING NOTE: This file references librac_commons.so + RAC headers from the
+# sibling @runanywhere/core npm package via a hard-coded relative path:
+#   ../../core/android/src/main/jniLibs/${ANDROID_ABI}/librac_commons.so
+#   ../../core/android/src/main/jniLibs/include/
+# (computed via RN_NODE_MODULES → @runanywhere/core/android/src/main/jniLibs/).
+#
+# This is a known fragility — if the package directory structure changes,
+# update the path here. Future improvement: migrate to Android Prefab module
+# consumption (build.gradle: `prefab { commons { ... } }`) so the dependency
+# is declared at the Gradle layer rather than the CMake layer.
+#
+# Prefab adoption was attempted but deferred because librac_commons.so is a
+# pre-built binary downloaded by core's Gradle task (not produced by core's
+# externalNativeBuild), so AGP's `prefabPublishing` publisher cannot
+# auto-export it without additional manifest wiring. The relative-path
+# coupling is therefore documented and intentionally preserved.
+# =============================================================================
 project(runanywhereonnx)
-cmake_minimum_required(VERSION 3.9.0)
+# Must match sdk/runanywhere-commons/VERSIONS::MIN_CMAKE_VERSION (3.24).
+cmake_minimum_required(VERSION 3.24)
 
 set(PACKAGE_NAME runanywhereonnx)
 set(CMAKE_VERBOSE_MAKEFILE ON)
@@ -9,7 +28,7 @@ set(CMAKE_CXX_STANDARD 20)
 # 16KB Page Alignment for Android 15+ (API 35) Compliance
 # Required starting November 1, 2025 for Google Play submissions
 # =============================================================================
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,max-page-size=16384")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384")
 
 # Path to pre-built native libraries (downloaded from runanywhere-binaries)
 set(JNILIB_DIR ${CMAKE_SOURCE_DIR}/src/main/jniLibs/${ANDROID_ABI})
@@ -19,12 +38,8 @@ set(JNILIB_DIR ${CMAKE_SOURCE_DIR}/src/main/jniLibs/${ANDROID_ABI})
 # Downloaded via Gradle downloadNativeLibs task
 # =============================================================================
 if(NOT EXISTS "${JNILIB_DIR}/librac_backend_onnx.so")
-    message(WARNING "[RunAnywhereONNX] RABackendONNX not found for ${ANDROID_ABI} at ${JNILIB_DIR}/librac_backend_onnx.so\n"
-                    "This ABI will not be functional. To fix, run: ./gradlew :runanywhere_onnx:downloadNativeLibs\n"
-                    "Or set reactNativeArchitectures=arm64-v8a in gradle.properties to skip this ABI.")
-    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/stub.cpp" "// Stub for missing ABI ${ANDROID_ABI}")
-    add_library(${PACKAGE_NAME} SHARED "${CMAKE_CURRENT_BINARY_DIR}/stub.cpp")
-    return()
+    message(FATAL_ERROR "[RunAnywhereONNX] RABackendONNX not found for ${ANDROID_ABI} at ${JNILIB_DIR}/librac_backend_onnx.so\n"
+                        "Run ./scripts/build/build-core-android.sh from the repo root or set reactNativeArchitectures to an ABI with staged natives.")
 endif()
 
 add_library(rac_backend_onnx SHARED IMPORTED)
@@ -50,39 +65,37 @@ set_target_properties(onnxruntime PROPERTIES
 message(STATUS "[RunAnywhereONNX] Found ONNX Runtime at ${JNILIB_DIR}/libonnxruntime.so")
 
 # =============================================================================
-# Sherpa ONNX libraries (optional but typically present)
+# Sherpa ONNX libraries (required by the package's speech contract)
 # =============================================================================
-if(EXISTS "${JNILIB_DIR}/libsherpa-onnx-c-api.so")
-    add_library(sherpa_onnx_c_api SHARED IMPORTED)
-    set_target_properties(sherpa_onnx_c_api PROPERTIES
-        IMPORTED_LOCATION "${JNILIB_DIR}/libsherpa-onnx-c-api.so"
-        IMPORTED_NO_SONAME TRUE
-    )
-endif()
-if(EXISTS "${JNILIB_DIR}/libsherpa-onnx-cxx-api.so")
-    add_library(sherpa_onnx_cxx_api SHARED IMPORTED)
-    set_target_properties(sherpa_onnx_cxx_api PROPERTIES
-        IMPORTED_LOCATION "${JNILIB_DIR}/libsherpa-onnx-cxx-api.so"
-        IMPORTED_NO_SONAME TRUE
-    )
-endif()
-if(EXISTS "${JNILIB_DIR}/libsherpa-onnx-jni.so")
-    add_library(sherpa_onnx_jni SHARED IMPORTED)
-    set_target_properties(sherpa_onnx_jni PROPERTIES
-        IMPORTED_LOCATION "${JNILIB_DIR}/libsherpa-onnx-jni.so"
-        IMPORTED_NO_SONAME TRUE
-    )
-endif()
+foreach(_required_sherpa_lib
+    libsherpa-onnx-c-api.so
+    libsherpa-onnx-jni.so
+    librac_backend_sherpa.so)
+    if(NOT EXISTS "${JNILIB_DIR}/${_required_sherpa_lib}")
+        message(FATAL_ERROR "[RunAnywhereONNX] Required Sherpa library not found: ${JNILIB_DIR}/${_required_sherpa_lib}")
+    endif()
+endforeach()
 
-# =============================================================================
-# Source files - ONNX bridges
-# =============================================================================
-file(GLOB BRIDGE_SOURCES "../cpp/bridges/*.cpp")
+add_library(sherpa_onnx_c_api SHARED IMPORTED)
+set_target_properties(sherpa_onnx_c_api PROPERTIES
+    IMPORTED_LOCATION "${JNILIB_DIR}/libsherpa-onnx-c-api.so"
+    IMPORTED_NO_SONAME TRUE
+)
+add_library(sherpa_onnx_jni SHARED IMPORTED)
+set_target_properties(sherpa_onnx_jni PROPERTIES
+    IMPORTED_LOCATION "${JNILIB_DIR}/libsherpa-onnx-jni.so"
+    IMPORTED_NO_SONAME TRUE
+)
+add_library(rac_backend_sherpa SHARED IMPORTED)
+set_target_properties(rac_backend_sherpa PROPERTIES
+    IMPORTED_LOCATION "${JNILIB_DIR}/librac_backend_sherpa.so"
+    IMPORTED_NO_SONAME TRUE
+)
+message(STATUS "[RunAnywhereONNX] Found required Sherpa native libraries")
 
 add_library(${PACKAGE_NAME} SHARED
     src/main/cpp/cpp-adapter.cpp
     ../cpp/HybridRunAnywhereONNX.cpp
-    ${BRIDGE_SOURCES}
 )
 
 # =============================================================================
@@ -110,13 +123,12 @@ include(${CMAKE_SOURCE_DIR}/../nitrogen/generated/android/runanywhereonnx+autoli
 # =============================================================================
 # Get core package include dir (for rac/*.h headers)
 get_filename_component(RN_NODE_MODULES "${CMAKE_SOURCE_DIR}/../../.." ABSOLUTE)
-set(CORE_INCLUDE_DIR "${RN_NODE_MODULES}/@runanywhere/core/android/src/main/include")
+set(CORE_INCLUDE_DIR "${RN_NODE_MODULES}/@runanywhere/core/android/src/main/jniLibs/include")
 set(CORE_JNILIB_DIR "${RN_NODE_MODULES}/@runanywhere/core/android/src/main/jniLibs/${ANDROID_ABI}")
 
 include_directories(
     "src/main/cpp"
     "../cpp"
-    "../cpp/bridges"
     "${CMAKE_SOURCE_DIR}/include"
     # RAC API headers from core package (flat access for all subdirectories)
     "${CORE_INCLUDE_DIR}"
@@ -164,24 +176,22 @@ target_link_libraries(
     ${PACKAGE_NAME}
     ${LOG_LIB}
     android
+    c++_shared
     rac_commons
     rac_backend_onnx
     onnxruntime
 )
 
-# Also link sherpa-onnx libraries if available
-if(TARGET sherpa_onnx_c_api)
-    target_link_libraries(${PACKAGE_NAME} sherpa_onnx_c_api)
-endif()
-if(TARGET sherpa_onnx_cxx_api)
-    target_link_libraries(${PACKAGE_NAME} sherpa_onnx_cxx_api)
-endif()
-if(TARGET sherpa_onnx_jni)
-    target_link_libraries(${PACKAGE_NAME} sherpa_onnx_jni)
-endif()
+target_link_libraries(
+    ${PACKAGE_NAME}
+    sherpa_onnx_c_api
+    sherpa_onnx_jni
+    rac_backend_sherpa)
 
 # HAS_ONNX is always defined since ONNX backend is required
 target_compile_definitions(${PACKAGE_NAME} PRIVATE HAS_ONNX=1 HAS_RACOMMONS=1 ORT_API_VERSION=17)
 
 # 16KB page alignment - MUST be on target for Android 15+ compliance
-target_link_options(${PACKAGE_NAME} PRIVATE -Wl,-z,max-page-size=16384)
+target_link_options(${PACKAGE_NAME} PRIVATE
+    -Wl,-z,max-page-size=16384
+    -Wl,-z,common-page-size=16384)

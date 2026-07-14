@@ -1,90 +1,119 @@
+import { RunAnywhere } from '@runanywhere/core';
 import {
-  processImageStream,
-  loadVLMModel as sdkLoadModel,
-  isVLMModelLoaded as sdkCheckLoaded,
-  cancelVLMGeneration,
-} from '@runanywhere/llamacpp';
-import { VLMImageFormat, type VLMImage } from '@runanywhere/core';
+  ModelCategory,
+  ModelLoadRequest,
+} from '@runanywhere/proto-ts/model_types';
+import {
+  VLMGenerationOptions,
+  VLMImage,
+  VLMImageFormat,
+} from '@runanywhere/proto-ts/vlm_options';
+import { isModelLoadedForCategory } from '../utils/runAnywhereLifecycle';
 
 export class VLMService {
-  private _isLoaded: boolean = false;
-
   /**
    * Load the model and track internal state
-   * Updated to accept modelName (3rd argument)
    */
-  async loadModel(modelPath: string, mmprojPath?: string, modelName?: string): Promise<void> {
+  async loadModel(modelId: string, modelName?: string): Promise<void> {
     try {
-      console.log(`[VLMService] Loading model: ${modelName}`);
-      
-      // Pass 'undefined' for loraPath (3rd arg) as per SDK requirement
-      const success = await sdkLoadModel(modelPath, mmprojPath, undefined, modelName);
-      
+      // eslint-disable-next-line no-console -- demo VLM lifecycle diagnostic
+      console.log(`[VLMService] Loading model: ${modelName ?? modelId}`);
+
+      const result = await RunAnywhere.loadModel(
+        ModelLoadRequest.fromPartial({
+          modelId,
+          category: ModelCategory.MODEL_CATEGORY_MULTIMODAL,
+          forceReload: false,
+          validateAvailability: true,
+        })
+      );
+      const success = result.success;
+
       if (success) {
-        this._isLoaded = true;
+        // eslint-disable-next-line no-console -- demo VLM lifecycle diagnostic
         console.log('[VLMService] Load success');
       } else {
-        this._isLoaded = false;
         throw new Error('SDK returned failure for model load');
       }
     } catch (error) {
       console.error('[VLMService] Load failed:', error);
-      this._isLoaded = false;
       throw error;
     }
   }
 
   /**
-   * Check if model is loaded (checks both internal flag and SDK)
+   * Check if model is loaded through the SDK lifecycle state.
    */
   async isModelLoaded(): Promise<boolean> {
-    if (!this._isLoaded) return false;
     try {
-      return await sdkCheckLoaded();
-    } catch (e) {
+      return await isModelLoadedForCategory(
+        ModelCategory.MODEL_CATEGORY_MULTIMODAL
+      );
+    } catch {
       return false;
     }
   }
 
   /**
-   * Describe an image with streaming results
+   * Process an image with streaming results.
    */
-  async describeImage(
-    imagePath: string, 
-    prompt: string, 
+  async processImage(
+    imagePath: string,
+    prompt: string,
     maxTokens: number,
     onToken: (token: string) => void
   ): Promise<void> {
-    if (!this._isLoaded) {
+    if (!(await this.isModelLoaded())) {
       throw new Error('Model not loaded. Please select a model first.');
     }
 
-    const image: VLMImage = {
-      format: VLMImageFormat.FilePath,
+    const image = VLMImage.fromPartial({
+      format: VLMImageFormat.VLM_IMAGE_FORMAT_FILE_PATH,
       filePath: imagePath,
-    };
+      width: 0,
+      height: 0,
+      sizeBytes: 0,
+      metadata: {},
+    });
 
+    // eslint-disable-next-line no-console -- demo VLM inference diagnostic
     console.log(`[VLMService] Processing image: ${imagePath}`);
-    
+
     try {
-      const response = await processImageStream(image, prompt, { maxTokens });
-      
-      // Consume the async iterator and fire callback
-      for await (const token of response.stream) {
-        onToken(token);
+      const stream = await RunAnywhere.processImageStream(
+        image,
+        VLMGenerationOptions.fromPartial({
+          prompt,
+          maxTokens,
+          streamingEnabled: true,
+        })
+      );
+
+      // Manual async iteration — Hermes doesn't recognise NitroModules async iterables with for-await
+      const iter = stream[Symbol.asyncIterator]();
+      let result = await iter.next();
+      while (!result.done) {
+        const event = result.value;
+        if (event.token) {
+          onToken(event.token);
+        }
+        if (event.result) {
+          break;
+        }
+        result = await iter.next();
       }
     } catch (error) {
-      console.error('[VLMService] Description error:', error);
+      console.error('[VLMService] Processing error:', error);
       throw error;
     }
   }
 
   cancel(): void {
-    cancelVLMGeneration();
+    RunAnywhere.cancelVLMGeneration();
   }
 
   release(): void {
-    this._isLoaded = false;
+    // eslint-disable-next-line no-console -- demo VLM lifecycle diagnostic
     console.log('[VLMService] Service state released');
   }
 }

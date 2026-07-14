@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:runanywhere/runanywhere.dart' as sdk;
+import 'package:runanywhere/runanywhere_protos.dart' as proto;
 
 import 'package:runanywhere_ai/core/design_system/app_colors.dart';
 import 'package:runanywhere_ai/core/design_system/app_spacing.dart';
@@ -10,11 +10,12 @@ import 'package:runanywhere_ai/core/models/app_types.dart';
 import 'package:runanywhere_ai/core/services/permission_service.dart';
 import 'package:runanywhere_ai/features/models/model_selection_sheet.dart';
 import 'package:runanywhere_ai/features/models/model_types.dart';
+import 'package:runanywhere_ai/features/voice/voice_agent_view_model.dart';
 
-/// VoiceAssistantView (mirroring iOS VoiceAssistantView.swift)
+/// VoiceAssistantView
 ///
-/// Main voice assistant UI with conversational interface.
-/// Orchestrates STT -> LLM -> TTS pipeline using SDK's VoiceSession API.
+/// Main voice assistant UI with conversational interface. Purely UI — the
+/// STT -> LLM -> TTS session state machine lives in [VoiceAgentViewModel].
 class VoiceAssistantView extends StatefulWidget {
   const VoiceAssistantView({super.key});
 
@@ -24,56 +25,17 @@ class VoiceAssistantView extends StatefulWidget {
 
 class _VoiceAssistantViewState extends State<VoiceAssistantView>
     with SingleTickerProviderStateMixin {
-  // Session state
-  VoiceSessionState _sessionState = VoiceSessionState.disconnected;
-  sdk.VoiceSessionHandle? _voiceSession;
-  StreamSubscription<sdk.VoiceSessionEvent>? _eventSubscription;
-
-  // Conversation
-  final List<_ConversationTurn> _conversation = [];
-  String _currentTranscript = '';
-  String _assistantResponse = '';
-
-  // Audio level for visualization
-  double _audioLevel = 0.0;
-  bool _isSpeechDetected = false;
-
-  // Model state - tracks which models are loaded
-  AppModelLoadState _sttModelState = AppModelLoadState.notLoaded;
-  AppModelLoadState _llmModelState = AppModelLoadState.notLoaded;
-  AppModelLoadState _ttsModelState = AppModelLoadState.notLoaded;
-
-  // Current model names
-  String _currentSTTModel = 'Not loaded';
-  String _currentLLMModel = 'Not loaded';
-  String _currentTTSModel = 'Not loaded';
+  final VoiceAgentViewModel _viewModel = VoiceAgentViewModel();
 
   // UI state
   bool _showModelInfo = false;
-
-  // Error state
-  String? _errorMessage;
 
   // Animation
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
-  bool get _allModelsLoaded =>
-      _sttModelState == AppModelLoadState.loaded &&
-      _llmModelState == AppModelLoadState.loaded &&
-      _ttsModelState == AppModelLoadState.loaded;
-
-  bool get _isActive =>
-      _sessionState != VoiceSessionState.disconnected &&
-      _sessionState != VoiceSessionState.error;
-
-  bool get _isListening =>
-      _sessionState == VoiceSessionState.listening ||
-      _sessionState == VoiceSessionState.connected;
-
-  bool get _isProcessing =>
-      _sessionState == VoiceSessionState.processing ||
-      _sessionState == VoiceSessionState.connecting;
+  // Keeps the conversation pinned to the newest message.
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -85,266 +47,166 @@ class _VoiceAssistantViewState extends State<VoiceAssistantView>
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
-    unawaited(_initialize());
+    // Drive the pulse animation from the ViewModel's session state.
+    _viewModel.addListener(_syncPulseAnimation);
+    unawaited(_viewModel.initialize());
   }
 
   @override
   void dispose() {
-    _cleanup();
+    _viewModel.removeListener(_syncPulseAnimation);
+    _viewModel.dispose();
     _pulseController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
-  Future<void> _initialize() async {
-    await _refreshComponentStates();
+  /// Pin the conversation list to the newest message after the frame paints.
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        unawaited(
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+          ),
+        );
+      }
+    });
   }
 
-  /// Refresh model states from SDK (matches Swift VoiceAgentViewModel pattern)
-  /// NOTE: Voice agent API is not yet fully implemented in SDK
-  Future<void> _refreshComponentStates() async {
-    try {
-      // Use SDK public API to check loaded states (matches Swift pattern)
-      final currentModelId = sdk.RunAnywhere.currentModelId;
-      final sttModelId = sdk.RunAnywhere.currentSTTModelId;
-      final ttsVoiceId = sdk.RunAnywhere.currentTTSVoiceId;
-
-      if (!mounted) return;
-      setState(() {
-        _sttModelState = sttModelId != null
-            ? AppModelLoadState.loaded
-            : AppModelLoadState.notLoaded;
-        _llmModelState = currentModelId != null
-            ? AppModelLoadState.loaded
-            : AppModelLoadState.notLoaded;
-        _ttsModelState = ttsVoiceId != null
-            ? AppModelLoadState.loaded
-            : AppModelLoadState.notLoaded;
-
-        _currentSTTModel = sttModelId ?? 'Not loaded';
-        _currentLLMModel = currentModelId ?? 'Not loaded';
-        _currentTTSModel = ttsVoiceId ?? 'Not loaded';
-      });
-    } catch (e) {
-      debugPrint('Failed to get component states: $e');
+  void _syncPulseAnimation() {
+    if (_viewModel.isActive) {
+      if (!_pulseController.isAnimating) {
+        unawaited(_pulseController.repeat(reverse: true));
+      }
+    } else if (_pulseController.isAnimating) {
+      _pulseController.stop();
+      _pulseController.reset();
     }
   }
 
   Future<void> _startConversation() async {
-    // Request STT permissions before starting
-    final hasPermission =
-        await PermissionService.shared.requestSTTPermissions(context);
+    // Permission UI needs a BuildContext, so the request stays in the view.
+    final hasPermission = await PermissionService.shared.requestSTTPermissions(
+      context,
+    );
     if (!hasPermission) {
-      setState(() {
-        _sessionState = VoiceSessionState.error;
-        _errorMessage = 'Microphone permission is required for voice assistant';
-      });
+      _viewModel.reportPermissionDenied();
       return;
     }
-
-    setState(() {
-      _sessionState = VoiceSessionState.connecting;
-      _errorMessage = null;
-    });
-
-    try {
-      // Check if voice agent is ready using SDK API
-      if (!sdk.RunAnywhere.isVoiceAgentReady) {
-        setState(() {
-          _sessionState = VoiceSessionState.error;
-          _errorMessage = 'Please load STT, LLM, and TTS models first';
-        });
-        return;
-      }
-
-      // Use SDK's startVoiceSession API (matches Swift: RunAnywhere.startVoiceSession())
-      _voiceSession = await sdk.RunAnywhere.startVoiceSession(
-        config: const sdk.VoiceSessionConfig(),
-      );
-
-      // Listen to session events
-      _eventSubscription = _voiceSession!.events.listen(
-        _handleSessionEvent,
-        onError: (Object error) {
-          setState(() {
-            _sessionState = VoiceSessionState.error;
-            _errorMessage = 'Voice session error: $error';
-          });
-        },
-      );
-
-      setState(() {
-        _sessionState = VoiceSessionState.connected;
-      });
-
-      // Start pulse animation
-      unawaited(_pulseController.repeat(reverse: true));
-    } catch (e) {
-      setState(() {
-        _sessionState = VoiceSessionState.error;
-        _errorMessage = 'Failed to start voice session: $e';
-      });
-    }
-  }
-
-  void _handleSessionEvent(sdk.VoiceSessionEvent event) {
-    if (event is sdk.VoiceSessionListening) {
-      setState(() {
-        _sessionState = VoiceSessionState.listening;
-        _audioLevel = event.audioLevel;
-        // Update speech detected based on audio level threshold
-        _isSpeechDetected = event.audioLevel > 0.1;
-      });
-    } else if (event is sdk.VoiceSessionSpeechStarted) {
-      setState(() {
-        _isSpeechDetected = true;
-      });
-    } else if (event is sdk.VoiceSessionTranscribed) {
-      setState(() {
-        _currentTranscript = event.text;
-        _sessionState = VoiceSessionState.processing;
-      });
-    } else if (event is sdk.VoiceSessionResponded) {
-      setState(() {
-        _assistantResponse = event.text;
-      });
-    } else if (event is sdk.VoiceSessionSpeaking) {
-      setState(() {
-        _sessionState = VoiceSessionState.speaking;
-      });
-    } else if (event is sdk.VoiceSessionTurnCompleted) {
-      // Add completed turn to conversation
-      if (event.transcript.isNotEmpty) {
-        setState(() {
-          _conversation.add(_ConversationTurn(
-            role: ConversationRole.user,
-            text: event.transcript,
-          ));
-          if (event.response.isNotEmpty) {
-            _conversation.add(_ConversationTurn(
-              role: ConversationRole.assistant,
-              text: event.response,
-            ));
-          }
-          _currentTranscript = '';
-          _assistantResponse = '';
-          _sessionState = VoiceSessionState.listening;
-        });
-      }
-    } else if (event is sdk.VoiceSessionError) {
-      setState(() {
-        _sessionState = VoiceSessionState.error;
-        _errorMessage = event.message;
-      });
-    } else if (event is sdk.VoiceSessionStopped) {
-      // Properly clean up subscriptions and controllers instead of just setting state
-      unawaited(_stopConversation());
-    }
-  }
-
-  Future<void> _stopConversation() async {
-    _pulseController.stop();
-    _pulseController.reset();
-
-    await _eventSubscription?.cancel();
-    _eventSubscription = null;
-
-    _voiceSession?.stop();
-    _voiceSession = null;
-
-    setState(() {
-      _sessionState = VoiceSessionState.disconnected;
-      _currentTranscript = '';
-      _assistantResponse = '';
-      _audioLevel = 0.0;
-      _isSpeechDetected = false;
-    });
+    await _viewModel.startConversation();
   }
 
   void _toggleListening() {
-    if (_isActive) {
-      unawaited(_stopConversation());
+    if (_viewModel.isActive) {
+      unawaited(_viewModel.stopConversation());
     } else {
       unawaited(_startConversation());
     }
   }
 
-  void _cleanup() {
-    unawaited(_stopConversation());
-  }
-
   void _showSTTModelSelection() {
-    unawaited(showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => ModelSelectionSheet(
-        context: ModelSelectionContext.stt,
-        onModelSelected: (model) async {
-          await _refreshComponentStates();
-        },
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => ModelSelectionSheet(
+          context: ModelSelectionContext.stt,
+          onModelSelected: (model) async {
+            await _viewModel.refreshComponentStates();
+          },
+        ),
       ),
-    ));
+    );
   }
 
   void _showLLMModelSelection() {
-    unawaited(showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => ModelSelectionSheet(
-        context: ModelSelectionContext.llm,
-        onModelSelected: (model) async {
-          await _refreshComponentStates();
-        },
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => ModelSelectionSheet(
+          context: ModelSelectionContext.llm,
+          onModelSelected: (model) async {
+            await _viewModel.refreshComponentStates();
+          },
+        ),
       ),
-    ));
+    );
   }
 
   void _showTTSModelSelection() {
-    unawaited(showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => ModelSelectionSheet(
-        context: ModelSelectionContext.tts,
-        onModelSelected: (model) async {
-          await _refreshComponentStates();
-        },
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => ModelSelectionSheet(
+          context: ModelSelectionContext.tts,
+          onModelSelected: (model) async {
+            await _viewModel.refreshComponentStates();
+          },
+        ),
       ),
-    ));
+    );
+  }
+
+  void _showVADModelSelection() {
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => ModelSelectionSheet(
+          context: ModelSelectionContext.vad,
+          onModelSelected: (model) async {
+            await _viewModel.refreshComponentStates();
+          },
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Show setup view when models aren't all loaded
-    if (!_allModelsLoaded) {
-      return _buildSetupView();
-    }
+    return ListenableBuilder(
+      listenable: _viewModel,
+      builder: (context, _) {
+        // Show setup view when models aren't all loaded
+        if (!_viewModel.allModelsLoaded) {
+          return _buildSetupView();
+        }
 
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header with model controls
-            _buildHeader(),
+        return Scaffold(
+          body: SafeArea(
+            child: Column(
+              children: [
+                // Header with model controls
+                _buildHeader(),
 
-            // Model info (expandable)
-            if (_showModelInfo) _buildModelInfoSection(),
+                // Model info (expandable)
+                if (_showModelInfo) _buildModelInfoSection(),
 
-            // Conversation area
-            Expanded(child: _buildConversationArea()),
+                // Conversation area
+                Expanded(child: _buildConversationArea()),
 
-            // Error message
-            if (_errorMessage != null) _buildErrorBanner(),
+                // Error message
+                if (_viewModel.errorMessage != null) _buildErrorBanner(),
 
-            // Audio level indicator
-            if (_isListening) _buildAudioLevelIndicator(),
+                // Audio level indicator
+                if (_viewModel.isListening) _buildAudioLevelIndicator(),
 
-            // Control area
-            _buildControlArea(),
-          ],
-        ),
-      ),
+                // Control area
+                _buildControlArea(),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -367,9 +229,9 @@ class _VoiceAssistantViewState extends State<VoiceAssistantView>
             const SizedBox(height: AppSpacing.smallMedium),
             Text(
               'Select models for each component to enable voice conversations.',
-              style: AppTypography.body(context).copyWith(
-                color: AppColors.textSecondary(context),
-              ),
+              style: AppTypography.body(
+                context,
+              ).copyWith(color: AppColors.textSecondary(context)),
             ),
             const SizedBox(height: AppSpacing.xxLarge),
 
@@ -377,8 +239,8 @@ class _VoiceAssistantViewState extends State<VoiceAssistantView>
             _buildModelConfigRow(
               icon: Icons.graphic_eq,
               label: 'Speech-to-Text',
-              modelName: _currentSTTModel,
-              state: _sttModelState,
+              modelName: _viewModel.currentSTTModel,
+              state: _viewModel.sttModelState,
               color: AppColors.statusGreen,
               onTap: _showSTTModelSelection,
             ),
@@ -388,8 +250,8 @@ class _VoiceAssistantViewState extends State<VoiceAssistantView>
             _buildModelConfigRow(
               icon: Icons.psychology,
               label: 'Language Model',
-              modelName: _currentLLMModel,
-              state: _llmModelState,
+              modelName: _viewModel.currentLLMModel,
+              state: _viewModel.llmModelState,
               color: AppColors.primaryBlue,
               onTap: _showLLMModelSelection,
             ),
@@ -399,16 +261,28 @@ class _VoiceAssistantViewState extends State<VoiceAssistantView>
             _buildModelConfigRow(
               icon: Icons.volume_up,
               label: 'Text-to-Speech',
-              modelName: _currentTTSModel,
-              state: _ttsModelState,
+              modelName: _viewModel.currentTTSModel,
+              state: _viewModel.ttsModelState,
               color: AppColors.primaryPurple,
               onTap: _showTTSModelSelection,
             ),
+            const SizedBox(height: AppSpacing.large),
+
+            // VAD Model
+            _buildModelConfigRow(
+              icon: Icons.hearing,
+              label: 'Voice Activity (VAD)',
+              modelName: _viewModel.currentVADModel,
+              state: _viewModel.vadModelState,
+              color: AppColors.statusOrange,
+              onTap: _showVADModelSelection,
+            ),
+            const SizedBox(height: AppSpacing.smallMedium),
 
             const Spacer(),
 
             // Start button (enabled when all models loaded)
-            if (_allModelsLoaded)
+            if (_viewModel.allModelsLoaded)
               Center(
                 child: ElevatedButton.icon(
                   onPressed: () {
@@ -437,11 +311,11 @@ class _VoiceAssistantViewState extends State<VoiceAssistantView>
     required IconData icon,
     required String label,
     required String modelName,
-    required AppModelLoadState state,
+    required UiModelLoadState state,
     required Color color,
     required VoidCallback onTap,
   }) {
-    final isLoaded = state == AppModelLoadState.loaded;
+    final isLoaded = state == UiModelLoadState.loaded;
 
     return InkWell(
       onTap: onTap,
@@ -478,8 +352,9 @@ class _VoiceAssistantViewState extends State<VoiceAssistantView>
                   Text(
                     modelName,
                     style: AppTypography.caption(context).copyWith(
-                      color:
-                          isLoaded ? color : AppColors.textSecondary(context),
+                      color: isLoaded
+                          ? color
+                          : AppColors.textSecondary(context),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -509,10 +384,12 @@ class _VoiceAssistantViewState extends State<VoiceAssistantView>
           IconButton(
             onPressed: () {
               // Show model selection options
-              unawaited(showModalBottomSheet<void>(
-                context: context,
-                builder: (context) => _buildModelSelectionMenu(),
-              ));
+              unawaited(
+                showModalBottomSheet<void>(
+                  context: context,
+                  builder: (context) => _buildModelSelectionMenu(),
+                ),
+              );
             },
             icon: Container(
               padding: const EdgeInsets.all(8),
@@ -539,10 +416,10 @@ class _VoiceAssistantViewState extends State<VoiceAssistantView>
               ),
               const SizedBox(width: 6),
               Text(
-                _sessionState.name,
-                style: AppTypography.caption(context).copyWith(
-                  color: AppColors.textSecondary(context),
-                ),
+                _viewModel.sessionState.name,
+                style: AppTypography.caption(
+                  context,
+                ).copyWith(color: AppColors.textSecondary(context)),
               ),
             ],
           ),
@@ -581,7 +458,7 @@ class _VoiceAssistantViewState extends State<VoiceAssistantView>
           ListTile(
             leading: const Icon(Icons.graphic_eq, color: AppColors.statusGreen),
             title: const Text('Speech-to-Text'),
-            subtitle: Text(_currentSTTModel),
+            subtitle: Text(_viewModel.currentSTTModel),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
               Navigator.pop(context);
@@ -591,7 +468,7 @@ class _VoiceAssistantViewState extends State<VoiceAssistantView>
           ListTile(
             leading: const Icon(Icons.psychology, color: AppColors.primaryBlue),
             title: const Text('Language Model'),
-            subtitle: Text(_currentLLMModel),
+            subtitle: Text(_viewModel.currentLLMModel),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
               Navigator.pop(context);
@@ -599,10 +476,12 @@ class _VoiceAssistantViewState extends State<VoiceAssistantView>
             },
           ),
           ListTile(
-            leading:
-                const Icon(Icons.volume_up, color: AppColors.primaryPurple),
+            leading: const Icon(
+              Icons.volume_up,
+              color: AppColors.primaryPurple,
+            ),
             title: const Text('Text-to-Speech'),
-            subtitle: Text(_currentTTSModel),
+            subtitle: Text(_viewModel.currentTTSModel),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
               Navigator.pop(context);
@@ -627,19 +506,19 @@ class _VoiceAssistantViewState extends State<VoiceAssistantView>
           _ModelBadge(
             icon: Icons.psychology,
             label: 'LLM',
-            value: _currentLLMModel,
+            value: _viewModel.currentLLMModel,
             color: AppColors.primaryBlue,
           ),
           _ModelBadge(
             icon: Icons.graphic_eq,
             label: 'STT',
-            value: _currentSTTModel,
+            value: _viewModel.currentSTTModel,
             color: AppColors.statusGreen,
           ),
           _ModelBadge(
             icon: Icons.volume_up,
             label: 'TTS',
-            value: _currentTTSModel,
+            value: _viewModel.currentTTSModel,
             color: AppColors.primaryPurple,
           ),
         ],
@@ -648,9 +527,9 @@ class _VoiceAssistantViewState extends State<VoiceAssistantView>
   }
 
   Widget _buildConversationArea() {
-    if (_conversation.isEmpty &&
-        _currentTranscript.isEmpty &&
-        _assistantResponse.isEmpty) {
+    if (_viewModel.conversation.isEmpty &&
+        _viewModel.currentTranscript.isEmpty &&
+        _viewModel.assistantResponse.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -663,70 +542,92 @@ class _VoiceAssistantViewState extends State<VoiceAssistantView>
             const SizedBox(height: AppSpacing.mediumLarge),
             Text(
               'Tap the microphone to start',
-              style: AppTypography.subheadline(context).copyWith(
-                color: AppColors.textSecondary(context),
-              ),
+              style: AppTypography.subheadline(
+                context,
+              ).copyWith(color: AppColors.textSecondary(context)),
             ),
           ],
         ),
       );
     }
 
+    _scrollToBottom();
+
     return ListView(
+      controller: _scrollController,
       padding: const EdgeInsets.all(AppSpacing.large),
       children: [
         // Past conversation turns
-        ..._conversation.map(_buildConversationBubble),
+        ..._viewModel.conversation.map(_buildConversationBubble),
 
         // Current transcription (in progress)
-        if (_currentTranscript.isNotEmpty)
-          _buildConversationBubble(_ConversationTurn(
-            role: ConversationRole.user,
-            text: _currentTranscript,
-          )),
+        if (_viewModel.currentTranscript.isNotEmpty)
+          _buildConversationBubble(
+            ConversationTurn(
+              role: proto.MessageRole.MESSAGE_ROLE_USER,
+              text: _viewModel.currentTranscript,
+            ),
+          ),
 
         // Current assistant response (in progress)
-        if (_assistantResponse.isNotEmpty)
-          _buildConversationBubble(_ConversationTurn(
-            role: ConversationRole.assistant,
-            text: _assistantResponse,
-          )),
+        if (_viewModel.assistantResponse.isNotEmpty)
+          _buildConversationBubble(
+            ConversationTurn(
+              role: proto.MessageRole.MESSAGE_ROLE_ASSISTANT,
+              text: _viewModel.assistantResponse,
+            ),
+          ),
       ],
     );
   }
 
-  Widget _buildConversationBubble(_ConversationTurn turn) {
-    final isUser = turn.role == ConversationRole.user;
-    final speaker = isUser ? 'You' : 'Assistant';
+  Widget _buildConversationBubble(ConversationTurn turn) {
+    final isUser = turn.role == proto.MessageRole.MESSAGE_ROLE_USER;
+    const radius = AppSpacing.cornerRadiusBubble;
+
+    final bubble = ConstrainedBox(
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.of(context).size.width * 0.76,
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.large,
+          vertical: AppSpacing.mediumLarge,
+        ),
+        decoration: BoxDecoration(
+          gradient: isUser
+              ? LinearGradient(
+                  colors: [
+                    AppColors.userBubbleGradientStart,
+                    AppColors.userBubbleGradientEnd,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          color: isUser ? null : AppColors.assistantBubbleBg(context),
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(radius),
+            topRight: const Radius.circular(radius),
+            bottomLeft: Radius.circular(isUser ? radius : 4),
+            bottomRight: Radius.circular(isUser ? 4 : radius),
+          ),
+        ),
+        child: Text(
+          turn.text,
+          style: AppTypography.body(context).copyWith(
+            color: isUser ? Colors.white : AppColors.textPrimary(context),
+          ),
+        ),
+      ),
+    );
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.large),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            speaker,
-            style: AppTypography.caption(context).copyWith(
-              color: AppColors.textSecondary(context),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.mediumLarge),
-            decoration: BoxDecoration(
-              color: isUser
-                  ? AppColors.backgroundGray5(context)
-                  : AppColors.primaryBlue.withValues(alpha: 0.08),
-              borderRadius:
-                  BorderRadius.circular(AppSpacing.cornerRadiusBubble),
-            ),
-            child: Text(
-              turn.text,
-              style: AppTypography.body(context),
-            ),
-          ),
-        ],
+      padding: const EdgeInsets.only(bottom: AppSpacing.mediumLarge),
+      child: Row(
+        mainAxisAlignment:
+            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        children: [bubble],
       ),
     );
   }
@@ -780,10 +681,10 @@ class _VoiceAssistantViewState extends State<VoiceAssistantView>
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(20, (index) {
                 final threshold = index / 20;
-                final isActive = _audioLevel > threshold;
+                final isActive = _viewModel.audioLevel > threshold;
                 return Container(
                   width: 4,
-                  height: 24 * (isActive ? _audioLevel : 0.2),
+                  height: 24 * (isActive ? _viewModel.audioLevel : 0.2),
                   margin: const EdgeInsets.symmetric(horizontal: 1),
                   decoration: BoxDecoration(
                     color: isActive
@@ -814,13 +715,13 @@ class _VoiceAssistantViewState extends State<VoiceAssistantView>
           const SizedBox(width: AppSpacing.smallMedium),
           Expanded(
             child: Text(
-              _errorMessage!,
+              _viewModel.errorMessage!,
               style: AppTypography.subheadline(context),
             ),
           ),
           IconButton(
             icon: const Icon(Icons.close),
-            onPressed: () => setState(() => _errorMessage = null),
+            onPressed: _viewModel.clearError,
           ),
         ],
       ),
@@ -838,7 +739,8 @@ class _VoiceAssistantViewState extends State<VoiceAssistantView>
               animation: _pulseAnimation,
               builder: (context, child) {
                 return Transform.scale(
-                  scale: _isListening ? _pulseAnimation.value : 1.0,
+                  scale:
+                      _viewModel.isListening ? _pulseAnimation.value : 1.0,
                   child: GestureDetector(
                     onTap: _toggleListening,
                     child: Container(
@@ -850,12 +752,12 @@ class _VoiceAssistantViewState extends State<VoiceAssistantView>
                         boxShadow: [
                           BoxShadow(
                             color: _getMicButtonColor().withValues(alpha: 0.3),
-                            blurRadius: _isListening ? 20 : 10,
-                            spreadRadius: _isListening ? 5 : 0,
+                            blurRadius: _viewModel.isListening ? 20 : 10,
+                            spreadRadius: _viewModel.isListening ? 5 : 0,
                           ),
                         ],
                       ),
-                      child: _isProcessing
+                      child: _viewModel.isProcessing
                           ? const CircularProgressIndicator(
                               color: Colors.white,
                               strokeWidth: 2,
@@ -888,39 +790,39 @@ class _VoiceAssistantViewState extends State<VoiceAssistantView>
   }
 
   Color _getStatusColor() {
-    switch (_sessionState) {
-      case VoiceSessionState.disconnected:
+    switch (_viewModel.sessionState) {
+      case UiVoiceSessionState.disconnected:
         return AppColors.statusGray;
-      case VoiceSessionState.connecting:
+      case UiVoiceSessionState.connecting:
         return AppColors.statusBlue;
-      case VoiceSessionState.connected:
-      case VoiceSessionState.listening:
+      case UiVoiceSessionState.connected:
+      case UiVoiceSessionState.listening:
         return AppColors.statusGreen;
-      case VoiceSessionState.processing:
+      case UiVoiceSessionState.processing:
         return AppColors.statusBlue;
-      case VoiceSessionState.speaking:
+      case UiVoiceSessionState.speaking:
         return AppColors.primaryPurple;
-      case VoiceSessionState.error:
+      case UiVoiceSessionState.error:
         return AppColors.statusRed;
     }
   }
 
   Color _getMicButtonColor() {
-    if (_isActive) {
+    if (_viewModel.isActive) {
       return AppColors.primaryRed;
     }
     return AppColors.primaryBlue;
   }
 
   IconData _getMicButtonIcon() {
-    switch (_sessionState) {
-      case VoiceSessionState.disconnected:
-      case VoiceSessionState.error:
+    switch (_viewModel.sessionState) {
+      case UiVoiceSessionState.disconnected:
+      case UiVoiceSessionState.error:
         return Icons.mic;
-      case VoiceSessionState.connected:
-      case VoiceSessionState.listening:
+      case UiVoiceSessionState.connected:
+      case UiVoiceSessionState.listening:
         return Icons.stop;
-      case VoiceSessionState.speaking:
+      case UiVoiceSessionState.speaking:
         return Icons.volume_up;
       default:
         return Icons.mic;
@@ -928,25 +830,23 @@ class _VoiceAssistantViewState extends State<VoiceAssistantView>
   }
 
   String _getInstructionText() {
-    switch (_sessionState) {
-      case VoiceSessionState.disconnected:
+    switch (_viewModel.sessionState) {
+      case UiVoiceSessionState.disconnected:
         return 'Tap to start voice conversation';
-      case VoiceSessionState.connecting:
+      case UiVoiceSessionState.connecting:
         return 'Connecting...';
-      case VoiceSessionState.connected:
-      case VoiceSessionState.listening:
-        return _isSpeechDetected ? 'Listening...' : 'Speak now';
-      case VoiceSessionState.processing:
+      case UiVoiceSessionState.connected:
+      case UiVoiceSessionState.listening:
+        return _viewModel.isSpeechDetected ? 'Listening...' : 'Speak now';
+      case UiVoiceSessionState.processing:
         return 'Processing...';
-      case VoiceSessionState.speaking:
+      case UiVoiceSessionState.speaking:
         return 'Assistant is speaking';
-      case VoiceSessionState.error:
+      case UiVoiceSessionState.error:
         return 'Tap to retry';
     }
   }
 }
-
-// MARK: - Supporting Widgets
 
 class _ModelBadge extends StatelessWidget {
   final IconData icon;
@@ -990,10 +890,9 @@ class _ModelBadge extends StatelessWidget {
               ),
               Text(
                 value,
-                style: AppTypography.caption2(context).copyWith(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 10,
-                ),
+                style: AppTypography.caption2(
+                  context,
+                ).copyWith(fontWeight: FontWeight.w500, fontSize: 10),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -1003,20 +902,4 @@ class _ModelBadge extends StatelessWidget {
       ),
     );
   }
-}
-
-// MARK: - Helper Classes
-
-enum ConversationRole { user, assistant }
-
-class _ConversationTurn {
-  final ConversationRole role;
-  final String text;
-  final DateTime timestamp;
-
-  _ConversationTurn({
-    required this.role,
-    required this.text,
-    DateTime? timestamp,
-  }) : timestamp = timestamp ?? DateTime.now();
 }

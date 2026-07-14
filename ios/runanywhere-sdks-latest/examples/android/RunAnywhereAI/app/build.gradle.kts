@@ -1,30 +1,84 @@
+import java.net.URI
+import java.security.MessageDigest
+import java.time.Instant
+import java.util.Properties
+import java.util.UUID
+import org.gradle.api.artifacts.dsl.LockMode
+
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.detekt)
-    alias(libs.plugins.ktlint)
+}
+
+dependencyLocking {
+    lockAllConfigurations()
+    lockMode.set(LockMode.STRICT)
+}
+
+// Backend config comes from CI-safe environment variables first, then the
+// gitignored local.properties file. Empty defaults keep local/offline builds
+// working until publication credentials are provided.
+val localProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+fun releaseValue(environmentName: String, localName: String): String =
+    providers.environmentVariable(environmentName).orNull?.trim().orEmpty()
+        .ifBlank { localProps.getProperty(localName).orEmpty().trim() }
+
+fun String.asBuildConfigString(): String = buildString {
+    append('"')
+    this@asBuildConfigString.forEach { char ->
+        when (char) {
+            '\\' -> append("\\\\")
+            '"' -> append("\\\"")
+            '\n' -> append("\\n")
+            '\r' -> append("\\r")
+            else -> append(char)
+        }
+    }
+    append('"')
+}
+
+val runanywhereBaseUrl = releaseValue("RUNANYWHERE_BASE_URL", "runanywhere.baseUrl")
+val runanywhereApiKey = releaseValue("RUNANYWHERE_API_KEY", "runanywhere.apiKey")
+val privacyPolicyUrl = releaseValue("RUNANYWHERE_PRIVACY_POLICY_URL", "runanywhere.privacyPolicyUrl")
+val webSearchUrl = releaseValue("RUNANYWHERE_WEB_SEARCH_URL", "runanywhere.webSearchUrl")
+require(runanywhereBaseUrl.isBlank() == runanywhereApiKey.isBlank()) {
+    "RUNANYWHERE_BASE_URL and RUNANYWHERE_API_KEY must either both be set or both be blank"
+}
+
+val releaseKeystorePath = System.getenv("KEYSTORE_PATH")
+val releaseKeystorePassword = System.getenv("KEYSTORE_PASSWORD")
+val releaseKeyAlias = System.getenv("KEY_ALIAS")
+val releaseKeyPassword = System.getenv("KEY_PASSWORD")
+val expectedUploadCertSha256 = System.getenv("UPLOAD_CERT_SHA256")?.trim().orEmpty()
+val releaseSigningValues = listOf(releaseKeystorePath, releaseKeystorePassword, releaseKeyAlias, releaseKeyPassword)
+val hasReleaseSigning = releaseSigningValues.all { !it.isNullOrBlank() }
+require(hasReleaseSigning || releaseSigningValues.all { it.isNullOrBlank() }) {
+    "KEYSTORE_PATH, KEYSTORE_PASSWORD, KEY_ALIAS, and KEY_PASSWORD must all be set together"
 }
 
 android {
     namespace = "com.runanywhere.runanywhereai"
-    compileSdk = 36
-
-    ndkVersion = "27.0.12077973"
+    // Debug remains the normal developer target. Device acceptance can compile
+    // instrumentation against the exact minified/signed release variant with
+    // `-Prunanywhere.testBuildType=release`.
+    testBuildType = providers.gradleProperty("runanywhere.testBuildType").orElse("debug").get()
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 0
+        }
+    }
 
     signingConfigs {
-        val keystorePath = System.getenv("KEYSTORE_PATH")
-        val keystorePassword = System.getenv("KEYSTORE_PASSWORD")
-        val keyAlias = System.getenv("KEY_ALIAS")
-        val keyPassword = System.getenv("KEY_PASSWORD")
-
-        if (keystorePath != null && keystorePassword != null && keyAlias != null && keyPassword != null) {
+        if (hasReleaseSigning) {
             create("release") {
-                storeFile = file(keystorePath)
-                storePassword = keystorePassword
-                this.keyAlias = keyAlias
-                this.keyPassword = keyPassword
+                storeFile = file(checkNotNull(releaseKeystorePath))
+                storePassword = releaseKeystorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
             }
         }
     }
@@ -32,311 +86,269 @@ android {
     defaultConfig {
         applicationId = "com.runanywhere.runanywhereai"
         minSdk = 24
-        targetSdk = 36
-        versionCode = 13
-        versionName = "0.1.4"
+        targetSdk = 37
+        versionCode = 21
+        versionName = "0.1.12"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Native build disabled for now to focus on Kotlin implementation
-        // externalNativeBuild {
-        //     cmake {
-        //         cppFlags += listOf("-std=c++17", "-O3")
-        //         arguments += listOf(
-        //             "-DANDROID_STL=c++_shared",
-        //             "-DBUILD_SHARED_LIBS=ON"
-        //         )
-        //     }
-        // }
+        buildConfigField("String", "RUNANYWHERE_BASE_URL", runanywhereBaseUrl.asBuildConfigString())
+        buildConfigField("String", "RUNANYWHERE_API_KEY", runanywhereApiKey.asBuildConfigString())
+        buildConfigField("String", "PRIVACY_POLICY_URL", privacyPolicyUrl.asBuildConfigString())
+        buildConfigField("String", "WEB_SEARCH_URL", webSearchUrl.asBuildConfigString())
 
-        // Note: ndk.abiFilters removed — splits.abi handles ABI filtering
+        // Release/device builds ship arm64-v8a: the Qualcomm Hexagon NPU (QHexRT, Hexagon v75+)
+        // is arm64-only hardware, and target devices (Snapdragon 8 Gen 3+) are all
+        // arm64. Constraining to one ABI keeps a single consistent native slice (no
+        // stale armv7 commons), guarantees the QAIRT skels travel with
+        // it, and roughly halves the APK size.
+        ndk {
+            abiFilters += "arm64-v8a"
+        }
     }
 
     buildTypes {
         debug {
-            isDebuggable = true
-            isMinifyEnabled = false
-            isShrinkResources = false
-            applicationIdSuffix = ".debug"
-            versionNameSuffix = "-debug"
-
-            // Disable optimizations for faster builds
-            buildConfigField("boolean", "DEBUG_MODE", "true")
-            buildConfigField("String", "BUILD_TYPE", "\"debug\"")
-        }
-
-        release {
-            // MUST be false for Play Store publishing
-            isDebuggable = false
-            isMinifyEnabled = true
-            isShrinkResources = true
-
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro",
-            )
-
-            // Build configuration fields
-            buildConfigField("boolean", "DEBUG_MODE", "false")
-            buildConfigField("String", "BUILD_TYPE", "\"release\"")
-
-            // MUST be false for Play Store publishing
-            isJniDebuggable = false
-
-            // Use release signing config if available
-            val releaseSigningConfig = signingConfigs.findByName("release")
-            if (releaseSigningConfig != null) {
-                signingConfig = releaseSigningConfig
+            // Keep emulator development available for the shared example app.
+            // QHexRT remains unavailable on x86_64; the SDK falls back to CPU backends.
+            ndk {
+                abiFilters += "x86_64"
             }
         }
-
-        create("benchmark") {
-            initWith(getByName("release"))
-            matchingFallbacks += listOf("release")
-            isDebuggable = false
-
-            // Additional optimizations for benchmarking
-            buildConfigField("boolean", "BENCHMARK_MODE", "true")
-            applicationIdSuffix = ".benchmark"
-            versionNameSuffix = "-benchmark"
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            ndk.debugSymbolLevel = "SYMBOL_TABLE"
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            testProguardFiles("test-proguard-rules.pro")
+            // CI/store builds use the env-provided upload key. The debug-key fallback
+            // exists only so a minified release APK can be installed on a test device;
+            // bundleRelease is gated by verifyPlayRelease below.
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
-
-    // Signing configurations
-    // Using default debug keystore for now
-
-    splits {
-        abi {
-            isEnable = true
-            reset()
-            include("arm64-v8a", "x86_64")
-            isUniversalApk = false
-        }
-    }
-
-    // Packaging options
-    packaging {
-        resources {
-            excludes +=
-                listOf(
-                    "/META-INF/{AL2.0,LGPL2.1}",
-                    "/META-INF/DEPENDENCIES",
-                    "/META-INF/LICENSE",
-                    "/META-INF/LICENSE.txt",
-                    "/META-INF/NOTICE",
-                    "/META-INF/NOTICE.txt",
-                    "/META-INF/licenses/**",
-                    "/META-INF/AL2.0",
-                    "/META-INF/LGPL2.1",
-                    "**/kotlin/**",
-                    "kotlin/**",
-                    "META-INF/kotlin/**",
-                    "META-INF/*.kotlin_module",
-                    "META-INF/INDEX.LIST",
-                )
-        }
-
-        jniLibs {
-            // Use legacy packaging to extract libraries to filesystem
-            // This helps with symbol resolution for transitive dependencies
-            // CRITICAL: useLegacyPackaging = true is REQUIRED for 16KB page size support
-            // when using AGP < 8.5.1. With AGP 8.5.1+, this ensures proper extraction
-            // and 16KB alignment during packaging.
-            useLegacyPackaging = true
-
-            // Handle duplicate native libraries from multiple SDK modules.
-            // The main SDK, ONNX module, and LlamaCPP module may share common
-            // libraries (libc++_shared, libomp, librac_commons). Use a wildcard
-            // to safely pick the first copy for any ABI.
-            pickFirsts += listOf("lib/**/*.so")
-        }
-    }
-
-    // Bundle configuration for Play Store
-    bundle {
-        language {
-            enableSplit = true
-        }
-        density {
-            enableSplit = true
-        }
-        abi {
-            enableSplit = true
-        }
-    }
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-
-        // Kotlin compiler optimizations
-        freeCompilerArgs +=
-            listOf(
-                "-opt-in=kotlin.RequiresOptIn",
-                "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
-                "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
-                "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
-                "-Xjvm-default=all",
-            )
-    }
-
     buildFeatures {
         compose = true
         buildConfig = true
-
-        // Disable unused features for smaller APK
-        aidl = false
-        renderScript = false
-        resValues = false
-        shaders = false
-        viewBinding = false
-        dataBinding = false
     }
-    lint {
-        abortOnError = true
-        checkDependencies = true
-        warningsAsErrors = true
-        baseline = file("lint-baseline.xml")
-        lintConfig = file("lint.xml")
+    packaging {
+        jniLibs {
+            // SDK + backend AARs each bundle the NDK C++ runtime; keep one copy per ABI.
+            pickFirsts += "**/libc++_shared.so"
+            pickFirsts += "**/libomp.so"
+            pickFirsts += "**/librac_commons.so"
+        }
     }
-    // Native build disabled for now to focus on Kotlin implementation
-    // externalNativeBuild {
-    //     cmake {
-    //         path = file("src/main/cpp/CMakeLists.txt")
-    //         version = "3.22.1"
-    //     }
-    // }
 }
 
 dependencies {
-    // SDK
-    implementation(project(":runanywhere-kotlin"))
-
-    // Backend modules - each is SELF-CONTAINED with all native libs
-    // Pick the backends you need:
-    implementation(project(":runanywhere-core-llamacpp")) // ~45MB - LLM text generation
-    implementation(project(":runanywhere-core-onnx")) // ~30MB - STT, TTS, VAD
-    // RAG pipeline is now part of the core SDK (not a separate module)
-
-    // AndroidX Core & Lifecycle
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation(libs.androidx.activity.compose)
-
-    // Material Design
-    implementation(libs.material)
-
-    // Compose
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
-    implementation(libs.androidx.material.icons.extended)
-
-    // Navigation
-    implementation(libs.androidx.navigation.compose)
-
-    // Coroutines
-    implementation(libs.kotlinx.coroutines.core)
-    implementation(libs.kotlinx.coroutines.android)
-
-    // Serialization & DateTime
-    implementation(libs.kotlinx.serialization.json)
-    implementation(libs.kotlinx.datetime)
-
-    // Networking
+    implementation(files("../libs/runanywhere-sdk.aar"))
+    implementation(files("../libs/runanywhere-llamacpp.aar"))
+    implementation(files("../libs/runanywhere-onnx.aar"))
+    implementation(files("../libs/runanywhere-qhexrt.aar"))
     implementation(libs.okhttp)
-    implementation(libs.okhttp.logging)
-    implementation(libs.retrofit)
-    implementation(libs.retrofit.gson)
-    implementation(libs.gson)
-
-    // File Management & Storage
-    implementation(libs.commons.io)
-
-    // ========================================
-    // PDF Text Extraction (RAG document ingestion)
-    // ========================================
     implementation(libs.pdfbox.android)
 
-    // Background Work
-    implementation(libs.androidx.work.runtime.ktx)
-
-    // Speech Recognition & Audio Processing
-    implementation(libs.whisper.jni)
-    implementation(libs.android.vad.webrtc)
-    implementation(libs.prdownloader)
-
-    // Security
-    implementation(libs.androidx.security.crypto)
-
-    // DataStore
-    implementation(libs.androidx.datastore.preferences)
-
-    // Permissions
-    implementation(libs.accompanist.permissions)
-
-    // CameraX
+    // CameraX — Vision screen Live mode
     implementation(libs.androidx.camera.core)
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
 
-    // Database
-    implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
-
-    // Play Services
-    implementation(libs.google.play.app.update)
-    implementation(libs.google.play.app.update.ktx)
-
-    // Logging
-    implementation(libs.timber)
-
-    // Testing
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.kotlinx.serialization.json)
+    // files(...) AARs carry no POM; declare coroutines 1.11.0 directly so it outranks
+    // the older transitive core from androidx (SDK is compiled against 1.11.0).
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.proto.wire.runtime)
     testImplementation(libs.junit)
-    testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.mockk)
 
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.androidx.junit)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
+    debugImplementation(libs.androidx.compose.ui.tooling)
+}
 
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
+val verifyPlayRelease = tasks.register("verifyPlayRelease") {
+    group = "verification"
+    description = "Fails unless the Play bundle has real signing and backend configuration."
+    doLast {
+        check(hasReleaseSigning) {
+            "Play release requires KEYSTORE_PATH, KEYSTORE_PASSWORD, KEY_ALIAS, and KEY_PASSWORD"
+        }
+        check(runanywhereBaseUrl.isNotBlank() && runanywhereApiKey.isNotBlank()) {
+            "Play release requires RUNANYWHERE_BASE_URL and RUNANYWHERE_API_KEY"
+        }
+        fun requireHttps(name: String, value: String) {
+            val uri = runCatching { URI(value) }.getOrNull()
+            check(uri?.scheme.equals("https", ignoreCase = true) && !uri?.host.isNullOrBlank() && uri?.userInfo == null) {
+                "$name must be a valid HTTPS URL without embedded credentials"
+            }
+        }
+        requireHttps("RUNANYWHERE_BASE_URL", runanywhereBaseUrl)
+        requireHttps("RUNANYWHERE_PRIVACY_POLICY_URL", privacyPolicyUrl)
+        if (webSearchUrl.isNotBlank()) {
+            requireHttps("RUNANYWHERE_WEB_SEARCH_URL", webSearchUrl)
+        }
 
-    // Kotlin version constraints
-    constraints {
-        implementation("org.jetbrains.kotlin:kotlin-stdlib") {
-            version {
-                strictly(libs.versions.kotlin.get())
-            }
+        val keystore = file(checkNotNull(releaseKeystorePath))
+        check(keystore.isFile) { "KEYSTORE_PATH does not point to a readable upload keystore" }
+        check(expectedUploadCertSha256.isNotBlank()) {
+            "Play release requires UPLOAD_CERT_SHA256 for upload-certificate verification"
         }
-        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7") {
-            version {
-                strictly(libs.versions.kotlin.get())
-            }
-        }
-        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8") {
-            version {
-                strictly(libs.versions.kotlin.get())
-            }
-        }
-        implementation("org.jetbrains.kotlin:kotlin-reflect") {
-            version {
-                strictly(libs.versions.kotlin.get())
-            }
+        val keytool = ProcessBuilder(
+            "keytool", "-list", "-v",
+            "-keystore", keystore.absolutePath,
+            "-alias", checkNotNull(releaseKeyAlias),
+            "-storepass:env", "KEYSTORE_PASSWORD",
+        ).redirectErrorStream(true).start()
+        val keytoolOutput = keytool.inputStream.bufferedReader().use { it.readText() }
+        check(keytool.waitFor() == 0) { "Could not inspect the configured upload keystore" }
+        val actualFingerprint = Regex("SHA256:\\s*([0-9A-Fa-f:]+)")
+            .find(keytoolOutput)?.groupValues?.get(1)?.replace(":", "")?.uppercase()
+        val expectedFingerprint = expectedUploadCertSha256.replace(":", "").uppercase()
+        check(actualFingerprint == expectedFingerprint) {
+            "Upload certificate SHA-256 does not match UPLOAD_CERT_SHA256"
         }
     }
 }
 
-detekt {
-    config.setFrom("${project.rootDir}/detekt.yml")
+val localSdkVersion = providers.environmentVariable("SDK_VERSION").orNull
+    ?.removePrefix("v")
+    ?.takeIf { it.isNotBlank() }
+    ?: "0.1.12-SNAPSHOT"
+val localSdkAars = fileTree("../libs") { include("*.aar") }
+
+val generateReleaseSbom = tasks.register("generateReleaseSbom") {
+    group = "verification"
+    description = "Writes a CycloneDX JSON inventory for the release runtime classpath and local SDK AARs."
+    val output = layout.buildDirectory.file("reports/release-sbom.cdx.json")
+    inputs.files(localSdkAars)
+        .withPropertyName("localSdkAars")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.property("applicationVersion", android.defaultConfig.versionName.orEmpty())
+    inputs.property("localSdkVersion", localSdkVersion)
+    outputs.file(output)
+    doLast {
+        data class Component(
+            val group: String,
+            val name: String,
+            val version: String,
+            val file: File,
+        )
+
+        val runtime = configurations.getByName("releaseRuntimeClasspath")
+        val components = runtime.resolvedConfiguration.resolvedArtifacts.map { artifact ->
+            Component(
+                group = artifact.moduleVersion.id.group,
+                name = artifact.name,
+                version = artifact.moduleVersion.id.version,
+                file = artifact.file,
+            )
+        }.toMutableList()
+        localSdkAars.files.forEach { aar ->
+            if (components.none { it.file.canonicalFile == aar.canonicalFile }) {
+                components += Component("com.runanywhere.local", aar.nameWithoutExtension, localSdkVersion, aar)
+            }
+        }
+
+        fun String.json(): String = buildString {
+            append('"')
+            this@json.forEach { c ->
+                when (c) {
+                    '\\' -> append("\\\\")
+                    '"' -> append("\\\"")
+                    '\n' -> append("\\n")
+                    '\r' -> append("\\r")
+                    '\t' -> append("\\t")
+                    else -> append(c)
+                }
+            }
+            append('"')
+        }
+        fun File.sha256(): String {
+            val digest = MessageDigest.getInstance("SHA-256")
+            inputStream().use { input ->
+                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                while (true) {
+                    val count = input.read(buffer)
+                    if (count < 0) break
+                    digest.update(buffer, 0, count)
+                }
+            }
+            return digest.digest().joinToString("") { "%02x".format(it) }
+        }
+
+        val componentJson = components
+            .distinctBy { it.file.canonicalFile }
+            .sortedWith(compareBy<Component>({ it.group }, { it.name }, { it.version }, { it.file.name }))
+            .joinToString(",\n") { component ->
+                """    {
+      "type": "library",
+      "group": ${component.group.json()},
+      "name": ${component.name.json()},
+      "version": ${component.version.json()},
+      "hashes": [{"alg": "SHA-256", "content": ${component.file.sha256().json()}}],
+      "properties": [{"name": "artifact.file", "value": ${component.file.name.json()}}]
+    }"""
+            }
+        val json = """{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "serialNumber": "urn:uuid:${UUID.randomUUID()}",
+  "version": 1,
+  "metadata": {
+    "timestamp": ${Instant.now().toString().json()},
+    "component": {
+      "type": "application",
+      "group": "com.runanywhere",
+      "name": "RunAnywhere",
+      "version": ${android.defaultConfig.versionName.orEmpty().json()}
+    }
+  },
+  "components": [
+$componentJson
+  ]
+}
+"""
+        output.get().asFile.apply {
+            parentFile.mkdirs()
+            writeText(json)
+        }
+    }
+}
+
+// Android variant configurations are materialized after this script has been
+// evaluated, so attach the runtime-classpath input at that point while keeping
+// task execution and dependency resolution lazy.
+afterEvaluate {
+    generateReleaseSbom.configure {
+        inputs.files(configurations.getByName("releaseRuntimeClasspath"))
+            .withPropertyName("releaseRuntimeClasspath")
+            .withPathSensitivity(PathSensitivity.RELATIVE)
+    }
+}
+
+tasks.configureEach {
+    if (name == "signReleaseBundle" || name == "bundleRelease") {
+        dependsOn(verifyPlayRelease)
+    }
+    if (name == "bundleRelease") {
+        dependsOn(generateReleaseSbom)
+    }
 }

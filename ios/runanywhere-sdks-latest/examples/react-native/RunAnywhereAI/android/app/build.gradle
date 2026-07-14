@@ -2,99 +2,6 @@ apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
-// Fix for React Native 0.83 std::format incompatibility with Android NDK 26
-// C++ 17 codebase - patch graphicsConversions.h to use ostringstream instead of std::format
-def fixStdFormatIssue() {
-    def gradleHome = project.gradle.gradleUserHomeDir
-    def transformsDir = new File(gradleHome, "caches/${gradle.gradleVersion}/transforms")
-    
-    if (!transformsDir.exists()) {
-        println "ℹ️ Gradle transforms dir not found yet, will patch on next build"
-        return
-    }
-    
-    int patched = 0
-    transformsDir.eachFileRecurse { file ->
-        if ((file.name == "graphicsConversions.h" || file.name == "propsConversions.h") && file.path.contains("react-android")) {
-            def content = file.text
-            if (content.contains('std::format')) {
-                println "🔧 Patching ${file.absolutePath}"
-
-                // Replace percent formatting using std::to_string (avoids std::format)
-                content = content.replaceAll(
-                    /case\s+YGUnitPercent:\s*\n?\s*return\s+std::format\(".*?%.*?",\s*dimension\.value\);/,
-                    'case YGUnitPercent: return std::to_string(dimension.value) + "%";'
-                )
-
-                // Fallback: replace any std::format("{}%", dimension.value)
-                content = content.replaceAll(
-                    /std::format\("\{\}%",\s*dimension\.value\)/,
-                    'std::to_string(dimension.value) + "%"'
-                )
-
-                // Direct string replacement as a final safety net
-                content = content.replace(
-                    'return std::format("{}%", dimension.value);',
-                    'return std::to_string(dimension.value) + "%";'
-                )
-
-                // Add string include if not present
-                if (!content.contains('#include <string>')) {
-                    content = content.replace(
-                        '#include <array>',
-                        '#include <array>\n#include <string>'
-                    )
-                    println "✅ Added #include <string>"
-                }
-
-                file.text = content
-                patched++
-                println "✅ Successfully patched std::format usage"
-            }
-        }
-    }
-    
-    if (patched == 0) {
-        println "ℹ️ No std::format issues found to patch (may have already been patched or will be done on next build)"
-    } else {
-        println "✅ Applied ${patched} std::format patches"
-    }
-}
-
-// Patch at the earliest possible time
-gradle.projectsEvaluated {
-    fixStdFormatIssue()
-}
-
-// Also patch when CMake tasks are added (for rebuild scenarios)
-tasks.whenTaskAdded { task ->
-    if (task.name.contains('CMake') || task.name.contains('cxx')) {
-        fixStdFormatIssue()
-    }
-}
-
-// Add a more aggressive pre-build hook
-tasks.register('patchStdFormatBeforeBuild') {
-    doFirst {
-        println "🔧 Pre-build: Checking for std::format issues..."
-        fixStdFormatIssue()
-    }
-}
-
-// Run patch immediately before relevant build tasks (ensures transformed headers exist)
-tasks.matching {
-    it.name.contains('CMake') ||
-    it.name.contains('externalNativeBuild') ||
-    it.name.toLowerCase().contains('prebuild') ||
-    it.name.toLowerCase().contains('generate') ||
-    it.name.toLowerCase().contains('compile') ||
-    it.name.toLowerCase().contains('assemble')
-}.configureEach { task ->
-    task.doFirst {
-        fixStdFormatIssue()
-    }
-}
-
 /**
  * This is the configuration block to customize your React Native Android app.
  * By default you don't need to apply any configuration, just uncomment the lines you need.
@@ -104,10 +11,93 @@ react {
     autolinkLibrariesWithApp()
 }
 
+// =============================================================================
+// Auto-sync SDK native libraries into node_modules before each build
+// =============================================================================
+// node_modules/@runanywhere/<pkg> is a real copy (not symlink), so .so files from
+// the SDK source tree never automatically reach the Gradle modules that read from
+// node_modules/. Without this sync, every SDK rebuild requires a manual `cp` step
+// before `assembleDebug`, and stale .so silently ship in the APK.
+// =============================================================================
+// rootProject.projectDir resolves to examples/react-native/RunAnywhereAI/android,
+// so we walk up four levels (android -> RunAnywhereAI -> react-native -> examples -> root).
+def sdkRnPackagesRoot = file("${rootProject.projectDir}/../../../../sdk/runanywhere-react-native/packages")
+def rnExampleNodeModules = file("${rootProject.projectDir}/../node_modules/@runanywhere")
+
+def packageNameMap = [
+    "core"    : "core",
+    "llamacpp": "llamacpp",
+    "onnx"    : "onnx",
+    "qhexrt"  : "qhexrt",
+]
+
+task syncSdkNativeLibs {
+    description = "Copy fresh .so + headers from SDK source tree into node_modules/@runanywhere/* before build."
+    group = "build setup"
+
+    doLast {
+        if (!sdkRnPackagesRoot.exists()) {
+            logger.lifecycle("[syncSdkNativeLibs] Skipping — SDK source tree not present at ${sdkRnPackagesRoot}")
+            return
+        }
+        def synced = 0
+        packageNameMap.each { sdkPkg, npmPkg ->
+            def src = new File(sdkRnPackagesRoot, "${sdkPkg}/android/src/main/jniLibs")
+            def dst = new File(rnExampleNodeModules, "${npmPkg}/android/src/main/jniLibs")
+            if (!src.exists()) {
+                logger.lifecycle("[syncSdkNativeLibs] No source jniLibs at ${src} — skipping ${sdkPkg}")
+                return
+            }
+            if (!dst.parentFile.exists()) {
+                logger.lifecycle("[syncSdkNativeLibs] Skipping ${sdkPkg} — node_modules dest missing (run yarn install?)")
+                return
+            }
+            // When yarn workspaces hoist + symlink node_modules/@runanywhere/* back into
+            // sdk/runanywhere-react-native/packages/*, src and dst resolve to the same
+            // canonical path — copying onto itself wipes header bytes. Skip in that case.
+            if (src.canonicalPath == dst.canonicalPath) {
+                logger.lifecycle("[syncSdkNativeLibs] Skipping ${sdkPkg} — node_modules entry is symlinked to SDK source (no copy needed)")
+                return
+            }
+            project.copy {
+                from src
+                into dst
+            }
+            synced++
+            logger.lifecycle("[syncSdkNativeLibs] Synced ${sdkPkg} -> ${dst}")
+        }
+        logger.lifecycle("[syncSdkNativeLibs] Synced ${synced} package(s)")
+    }
+}
+
+// Hook into the standard pre-build task so every assemble/install runs the sync.
+tasks.matching { it.name == "preBuild" }.configureEach {
+    dependsOn syncSdkNativeLibs
+}
+
+// react-native-vision-camera 4.7.3 + Gradle 9.0
+// has a task-dependency race where :app:configureCMakeDebug[<abi>] tries to read
+// the vision-camera prefab directory before :react-native-vision-camera:prefabDebugPackage
+// has produced it. AGP only auto-wires prefabDebugConfigurePackage (which sets up the
+// publication metadata) but not prefabDebugPackage (which writes the actual prefab
+// dir under build/intermediates/prefab_package/debug/prefab/). Forcing the package
+// task as a hard dependency of every configureCMake variant resolves CXX1429 with
+// "directory ... is not readable".
+afterEvaluate {
+    def visionCameraProject = rootProject.findProject(":react-native-vision-camera")
+    if (visionCameraProject != null) {
+        tasks.matching { it.name.startsWith("configureCMakeDebug") || it.name.startsWith("configureCMakeRelWithDebInfo") || it.name.startsWith("configureCMakeRelease") }.configureEach { configTask ->
+            visionCameraProject.tasks.matching { it.name.startsWith("prefab") && it.name.endsWith("Package") }.configureEach { prefabTask ->
+                configTask.dependsOn prefabTask
+            }
+        }
+    }
+}
+
 /**
  * Set this to true to Run Proguard on Release builds to minify the Java bytecode.
  */
-def enableProguardInReleaseBuilds = false
+def enableProguardInReleaseBuilds = true
 
 /**
  * The preferred build flavor of JavaScriptCore (JSC)
@@ -115,11 +105,11 @@ def enableProguardInReleaseBuilds = false
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
 android {
-    ndkVersion rootProject.ext.ndkVersion
+    ndkVersion = rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.runanywhereaI"
+    namespace = "com.runanywhereaI"
     defaultConfig {
         applicationId "com.runanywhereaI"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -140,7 +130,7 @@ android {
                           "-DCMAKE_MODULE_PATH=${projectDir}"
             }
         }
-        ndkVersion "26.3.11579264"
+        ndkVersion = "27.3.13750724"
     }
     signingConfigs {
         debug {
@@ -149,15 +139,28 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            def keystorePath = System.getenv("KEYSTORE_PATH")
+            def keystorePassword = System.getenv("KEYSTORE_PASSWORD")
+            def releaseKeyAlias = System.getenv("KEY_ALIAS")
+            def releaseKeyPassword = System.getenv("KEY_PASSWORD")
+
+            if (keystorePath && keystorePassword && releaseKeyAlias && releaseKeyPassword) {
+                storeFile file(keystorePath)
+                storePassword keystorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
     }
     buildTypes {
         debug {
-            signingConfig signingConfigs.debug
+            signingConfig = signingConfigs.debug
         }
         release {
             // Caution! In production, you need to generate your own keystore file.
             // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig = signingConfigs.release.storeFile != null ? signingConfigs.release : signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
@@ -172,18 +175,24 @@ android {
             "**/libfolly_runtime.so",
             "**/libreactnative.so",
             "**/libNitroModules.so",  // Nitro modules shared by @runanywhere/onnx and react-native-nitro-modules
-            "**/librac_backend_onnx.so", // ONNX backend duplicated via rag + onnx modules
+            "**/librac_backend_onnx.so", // ONNX backend shared by multiple modules
             "**/librac_commons.so",
-            "**/libomp.so"
+            "**/libomp.so",
+            "**/libcdsprpc.so",
+            "**/libQnn*.so"
         ]
     }
 
-    // 16KB page size alignment for Android 15+ (API 35) compliance
-    // Required starting November 1, 2025 for Google Play submissions
-    // This ensures native libraries are properly aligned within the APK
+    // QHexRT (QNN) requires the Hexagon HTP skel .so files (libQnnHtpV*Skel.so)
+    // to exist as real files on disk: FastRPC fopen()s them to offload to the
+    // cDSP. With modern packaging (extractNativeLibs=false) the skels are
+    // page-mapped from the APK with no on-disk file, so the DSP load fails with
+    // "cannot open libQnnHtpV81Skel.so, errno 2" and model load fails. Legacy
+    // packaging extracts them to nativeLibraryDir, matching the working Kotlin
+    // app. The .so set is already 16 KB-aligned, so 16 KB-page devices are fine.
     packaging {
         jniLibs {
-            useLegacyPackaging = false
+            useLegacyPackaging = true
         }
     }
 }
@@ -192,14 +201,19 @@ dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
 
+    // PDF text extraction for DocumentService (RAG)
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+
     // Manually link Nitro modules (excluded from autolinking)
     implementation project(':react-native-nitro-modules')
-    
+
     // Manually link @runanywhere packages (Nitro modules)
     implementation project(':runanywhere_core')
     implementation project(':runanywhere_llamacpp')
     implementation project(':runanywhere_onnx')
-    implementation project(':runanywhere_rag')
+    if (rootProject.findProject(':runanywhere_qhexrt') != null) {
+        implementation project(':runanywhere_qhexrt')
+    }
 
     def isHermesEnabled = project.hasProperty("hermesEnabled") ? project.hermesEnabled.toBoolean() : true
     // Expose hermesEnabled for other modules (like react-native-worklets)

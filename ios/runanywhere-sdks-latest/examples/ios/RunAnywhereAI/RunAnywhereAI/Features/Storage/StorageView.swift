@@ -9,7 +9,7 @@ import SwiftUI
 import RunAnywhere
 
 struct StorageView: View {
-    @StateObject private var viewModel = StorageViewModel()
+    @ObservedObject private var viewModel = StorageViewModel.shared
 
     var body: some View {
         #if os(macOS)
@@ -210,11 +210,11 @@ struct StorageView: View {
                     Spacer()
                 }
             } else {
-                ForEach(viewModel.storedModels, id: \.id) { model in
+                ForEach(viewModel.storedModels, id: \.modelID) { model in
                     StoredModelRow(model: model) {
                         await viewModel.deleteModel(model)
                     }
-                    if model.id != viewModel.storedModels.last?.id {
+                    if model.modelID != viewModel.storedModels.last?.modelID {
                         Divider()
                             .padding(.vertical, AppSpacing.xSmall)
                     }
@@ -231,7 +231,7 @@ struct StorageView: View {
                     .foregroundColor(AppColors.textSecondary)
                     .font(AppTypography.caption)
             } else {
-                ForEach(viewModel.storedModels, id: \.id) { model in
+                ForEach(viewModel.storedModels, id: \.modelID) { model in
                     StoredModelRow(model: model) {
                         await viewModel.deleteModel(model)
                     }
@@ -344,42 +344,51 @@ struct StorageView: View {
 // MARK: - Supporting Views
 
 private struct StoredModelRow: View {
-    let model: StoredModel
+    let model: RAModelStorageMetrics
     let onDelete: () async -> Void
+    @ObservedObject private var modelListViewModel = ModelListViewModel.shared
     @State private var showingDetails = false
     @State private var showingDeleteConfirmation = false
     @State private var isDeleting = false
+
+    private var registryModel: RAModelInfo? {
+        modelListViewModel.availableModels.first { $0.id == model.modelID }
+    }
+
+    private var displayName: String {
+        guard let name = registryModel?.name, !name.isEmpty else { return model.modelID }
+        return name
+    }
+
+    private var localPath: String? {
+        guard let path = registryModel?.localPath, !path.isEmpty else { return nil }
+        return path
+    }
+
+    private var backend: InferenceFramework? {
+        registryModel?.framework
+    }
+
+    private var lastUsedDate: Date? {
+        guard model.hasLastUsedMs else { return nil }
+        return Date(timeIntervalSince1970: TimeInterval(model.lastUsedMs) / 1000.0)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: AppSpacing.smallMedium) {
             HStack {
                 VStack(alignment: .leading, spacing: AppSpacing.xSmall) {
-                    Text(model.name)
+                    Text(displayName)
                         .font(AppTypography.subheadlineMedium)
-
-                    HStack(spacing: AppSpacing.smallMedium) {
-                        Text(model.format.rawValue.uppercased())
-                            .font(AppTypography.caption2)
-                            .padding(.horizontal, AppSpacing.small)
-                            .padding(.vertical, AppSpacing.xxSmall)
-                            .background(AppColors.badgePrimary)
-                            .cornerRadius(AppSpacing.cornerRadiusSmall)
-
-                        if let framework = model.framework {
-                            Text(framework.displayName)
-                                .font(AppTypography.caption2)
-                                .padding(.horizontal, AppSpacing.small)
-                                .padding(.vertical, AppSpacing.xxSmall)
-                                .background(AppColors.badgeGreen)
-                                .cornerRadius(AppSpacing.cornerRadiusSmall)
-                        }
+                    if let backend {
+                        backendBadge(backend)
                     }
                 }
 
                 Spacer()
 
                 VStack(alignment: .trailing, spacing: AppSpacing.xSmall) {
-                    Text(ByteCountFormatter.string(fromByteCount: model.size, countStyle: .file))
+                    Text(ByteCountFormatter.string(fromByteCount: model.sizeOnDiskBytes, countStyle: .file))
                         .font(AppTypography.captionMedium)
 
                     HStack(spacing: AppSpacing.xSmall) {
@@ -413,67 +422,26 @@ private struct StoredModelRow: View {
 
             if showingDetails {
                 VStack(alignment: .leading, spacing: AppSpacing.small) {
-                    // Model Format and Framework
-                    HStack {
-                        Text("Format:")
-                            .font(AppTypography.caption2Medium)
-                        Text(model.format.rawValue.uppercased())
-                            .font(AppTypography.caption2)
-                            .foregroundColor(AppColors.textSecondary)
-                    }
-
-                    if let framework = model.framework {
-                        HStack {
-                            Text("Framework:")
-                                .font(AppTypography.caption2Medium)
-                            Text(framework.displayName)
-                                .font(AppTypography.caption2)
-                                .foregroundColor(AppColors.textSecondary)
-                        }
-                    }
-
-                    // Description
-                    if let description = model.description {
-                        VStack(alignment: .leading, spacing: AppSpacing.xxSmall) {
-                            Text("Description:")
-                                .font(AppTypography.caption2Medium)
-                            Text(description)
-                                .font(AppTypography.caption2)
-                                .foregroundColor(AppColors.textSecondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
-
-                    Divider()
-
-                    // File Information
-                    VStack(alignment: .leading, spacing: AppSpacing.xxSmall) {
+                    if let localPath {
                         Text("Path:")
                             .font(AppTypography.caption2Medium)
-                        Text(model.path.path)
+                        Text(localPath)
                             .font(AppTypography.caption2)
                             .foregroundColor(AppColors.textSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
 
-                    if let checksum = model.checksum {
-                        VStack(alignment: .leading, spacing: AppSpacing.xxSmall) {
-                            Text("Checksum:")
+                    if let lastUsedDate {
+                        HStack {
+                            Text("Last used:")
                                 .font(AppTypography.caption2Medium)
-                            Text(checksum)
+                            Text(lastUsedDate, style: .date)
                                 .font(AppTypography.caption2)
                                 .foregroundColor(AppColors.textSecondary)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
                         }
-                    }
-
-                    HStack {
-                        Text("Created:")
+                    } else {
+                        Text("Last used: Never")
                             .font(AppTypography.caption2Medium)
-                        Text(model.createdDate, style: .date)
-                            .font(AppTypography.caption2)
-                            .foregroundColor(AppColors.textSecondary)
                     }
                 }
                 .padding(.top, AppSpacing.xSmall)
@@ -494,8 +462,22 @@ private struct StoredModelRow: View {
                 }
             }
         } message: {
-            Text("Are you sure you want to delete \(model.name)? This action cannot be undone.")
+            Text("Are you sure you want to delete \(displayName)? This action cannot be undone.")
         }
+    }
+
+    @ViewBuilder
+    private func backendBadge(_ framework: InferenceFramework) -> some View {
+        HStack(spacing: AppSpacing.xxSmall) {
+            Image(systemName: framework.consumerBackendIcon)
+            Text(framework.consumerBackendLabel)
+        }
+        .font(AppTypography.caption2Medium)
+        .foregroundColor(framework.consumerBackendColor)
+        .padding(.horizontal, AppSpacing.xSmall)
+        .padding(.vertical, 2)
+        .background(framework.consumerBackendColor.opacity(0.12))
+        .cornerRadius(AppSpacing.cornerRadiusSmall)
     }
 }
 

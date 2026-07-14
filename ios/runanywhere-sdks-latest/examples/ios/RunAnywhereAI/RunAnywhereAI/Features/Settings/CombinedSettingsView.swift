@@ -6,13 +6,15 @@
 //  Refactored to use SettingsViewModel (MVVM pattern)
 //
 
+// swiftlint:disable file_length
+
 import SwiftUI
 import RunAnywhere
 import Combine
 
 struct CombinedSettingsView: View {
     // ViewModel - all business logic is here
-    @StateObject private var viewModel = SettingsViewModel()
+    @ObservedObject private var viewModel = SettingsViewModel.shared
     @StateObject private var toolViewModel = ToolSettingsViewModel.shared
 
     var body: some View {
@@ -44,9 +46,24 @@ struct CombinedSettingsView: View {
                 viewModel.showRestartAlert = false
             }
         } message: {
-            Text("Please restart the app for the new API configuration to take effect. The SDK will be reinitialized with your custom settings.")
+            Text(
+                "Please restart the app for the new API configuration to take effect. "
+                + "RunAnywhere will use your custom connection after restarting."
+            )
         }
     }
+}
+
+// MARK: - Helpers
+
+@MainActor
+private func thinkingModeDescription(for viewModel: SettingsViewModel) -> String {
+    guard viewModel.loadedModelSupportsThinking else {
+        return "Not available for the currently loaded model."
+    }
+    return viewModel.thinkingModeEnabled
+        ? "Model will use its default thinking/reasoning mode."
+        : "Thinking disabled. The model will skip its reasoning step."
 }
 
 // MARK: - iOS Layout
@@ -57,44 +74,103 @@ private struct IOSSettingsContent: View {
 
     var body: some View {
         Form {
-            // Generation Settings
-            Section("Generation Settings") {
+            Section {
+                TextField("How should RunAnywhere respond?", text: $viewModel.systemPrompt, axis: .vertical)
+                    .lineLimit(3...8)
+
                 VStack(alignment: .leading) {
-                    Text("Temperature: \(String(format: "%.2f", viewModel.temperature))")
-                        .font(AppTypography.caption)
-                        .foregroundColor(AppColors.textSecondary)
+                    Label(
+                        "Creativity: \(String(format: "%.2f", viewModel.temperature))",
+                        systemImage: "dial.medium"
+                    )
+                    .font(AppTypography.caption)
+                    .foregroundColor(AppColors.textSecondary)
                     Slider(value: $viewModel.temperature, in: 0...2, step: 0.1)
                 }
 
-                Stepper(
-                    "Max Tokens: \(viewModel.maxTokens)",
-                    value: $viewModel.maxTokens,
-                    in: 500...20000,
-                    step: 500
-                )
-            }
+                Toggle(isOn: $viewModel.thinkingModeEnabled) {
+                    Label("Thinking Mode", systemImage: "brain")
+                }
+                .disabled(!viewModel.loadedModelSupportsThinking)
+                .onChange(of: viewModel.thinkingModeEnabled) { _, _ in
+                    Haptics.light()
+                }
 
-            // System Prompt
-            Section {
-                TextField("Enter system prompt...", text: $viewModel.systemPrompt, axis: .vertical)
-                    .lineLimit(3...8)
+                Text(thinkingModeDescription(for: viewModel))
+                    .font(AppTypography.caption)
+                    .foregroundColor(AppColors.textSecondary)
             } header: {
-                Text("System Prompt")
+                Text("Personalization")
             } footer: {
-                Text("Optional instructions that define AI behavior and response style.")
+                Text("Customize tone, reasoning, and default assistant behavior.")
                     .font(AppTypography.caption)
             }
 
-            // Tool Calling Settings
+            Section {
+                NavigationLink(destination: SimplifiedModelsView()) {
+                    SettingsNavigationRow(
+                        icon: "square.stack.3d.up",
+                        color: AppColors.primaryAccent,
+                        title: "Manage Downloads",
+                        subtitle: "Choose, download, and remove local models"
+                    )
+                }
+
+                HStack {
+                    Label("Max Response Length", systemImage: "text.line.last.and.arrowtriangle.forward")
+                    Spacer()
+                    Stepper(
+                        "\(viewModel.maxTokens)",
+                        value: $viewModel.maxTokens,
+                        in: 500...20000,
+                        step: 500
+                    )
+                    .labelsHidden()
+                }
+            } header: {
+                Text("Models")
+            } footer: {
+                Text(
+                    "Each model is labeled with the technology it uses, "
+                    + "so you can choose what fits your device."
+                )
+                .font(AppTypography.caption)
+            }
+
             ToolSettingsSection(viewModel: toolViewModel)
 
-            // API Configuration (for testing custom backend)
             Section {
+                Label("Chats and downloads stay on this device", systemImage: "lock.shield")
+                    .foregroundColor(AppColors.textPrimary)
+                Toggle(isOn: $viewModel.analyticsLogToLocal) {
+                    Label("Log Analytics Locally", systemImage: "chart.bar.doc.horizontal")
+                }
+                .onChange(of: viewModel.analyticsLogToLocal) { _, _ in
+                    Haptics.light()
+                }
+            } header: {
+                Text("Privacy")
+            } footer: {
+                Text("When enabled, analytics events are saved locally on your device.")
+                    .font(AppTypography.caption)
+            }
+
+            Section {
+                NavigationLink(destination: ConsumerAdvancedHubView()) {
+                    SettingsNavigationRow(
+                        icon: "slider.horizontal.3",
+                        color: AppColors.primaryPurple,
+                        title: "AI Tools",
+                        subtitle: "Voice, performance, and model controls"
+                    )
+                }
+
+                #if DEBUG
                 Button(
                     action: { viewModel.showApiKeySheet() },
                     label: {
                         HStack {
-                            Text("API Key")
+                            Label("API Key", systemImage: "key")
                             Spacer()
                             if viewModel.isApiKeyConfigured {
                                 Text("Configured")
@@ -110,7 +186,7 @@ private struct IOSSettingsContent: View {
                 )
 
                 HStack {
-                    Text("Base URL")
+                    Label("Base URL", systemImage: "link")
                     Spacer()
                     if viewModel.isBaseURLConfigured {
                         Text("Configured")
@@ -136,35 +212,34 @@ private struct IOSSettingsContent: View {
                         }
                     )
                 }
-            } header: {
-                Text("API Configuration (Testing)")
-            } footer: {
-                Text("Configure custom API key and base URL for testing. Requires app restart to take effect.")
-                    .font(AppTypography.caption)
-            }
+                #endif
 
-            // Logging Configuration
-            Section("Logging Configuration") {
-                Toggle("Log Analytics Locally", isOn: $viewModel.analyticsLogToLocal)
-
-                Text("When enabled, analytics events will be saved locally on your device.")
-                    .font(AppTypography.caption)
-                    .foregroundColor(AppColors.textSecondary)
-            }
-
-            // Performance
-            Section("Performance") {
-                NavigationLink(destination: BenchmarkDashboardView()) {
-                    Label("Benchmarks", systemImage: "gauge.with.dots.needle.33percent")
+                DisclosureGroup {
+                    PrivateDownloadsControls(viewModel: viewModel)
+                } label: {
+                    Label("Private Downloads", systemImage: "key.icloud")
                 }
+            } header: {
+                Text("Advanced")
+            } footer: {
+                #if DEBUG
+                Text(
+                    "Connection controls are kept here so the main app stays assistant-first. "
+                    + "Add a Hugging Face token to download models from private repos."
+                )
+                .font(AppTypography.caption)
+                #else
+                Text("Add a Hugging Face token to download models from private repos.")
+                    .font(AppTypography.caption)
+                #endif
             }
 
             // About
             Section {
                 VStack(alignment: .leading, spacing: AppSpacing.smallMedium) {
-                    Label("RunAnywhere SDK", systemImage: "cube")
+                    Label("RunAnywhere", systemImage: "app")
                         .font(AppTypography.headline)
-                    Text("Version 0.1")
+                    Text(Bundle.main.displayVersion)
                         .font(AppTypography.caption)
                         .foregroundColor(AppColors.textSecondary)
                 }
@@ -174,11 +249,46 @@ private struct IOSSettingsContent: View {
                         Label("Documentation", systemImage: "book")
                     }
                 }
+
+                if let xURL = URL(string: "https://x.com/RunanywhereAI") {
+                    Link(destination: xURL) {
+                        Label("Follow on X", systemImage: "person.crop.circle.badge.plus")
+                    }
+                }
             } header: {
                 Text("About")
             }
         }
         .navigationTitle("Settings")
+        .scrollDismissesKeyboard(.interactively)
+    }
+}
+
+private struct SettingsNavigationRow: View {
+    let icon: String
+    let color: Color
+    let title: String
+    let subtitle: String
+
+    var body: some View {
+        HStack(spacing: AppSpacing.mediumLarge) {
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(color)
+                .frame(width: 32, height: 32)
+                .background(color.opacity(0.12))
+                .cornerRadius(AppSpacing.cornerRadiusRegular)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .foregroundColor(AppColors.textPrimary)
+                Text(subtitle)
+                    .font(AppTypography.caption)
+                    .foregroundColor(AppColors.textSecondary)
+                    .lineLimit(2)
+            }
+        }
+        .padding(.vertical, AppSpacing.xSmall)
     }
 }
 
@@ -195,9 +305,13 @@ private struct MacOSSettingsContent: View {
                     .font(AppTypography.largeTitleBold)
                     .padding(.bottom, AppSpacing.medium)
 
+                AssistantSettingsCard()
                 GenerationSettingsCard(viewModel: viewModel)
                 ToolSettingsCard(viewModel: toolViewModel)
+                #if DEBUG
                 APIConfigurationCard(viewModel: viewModel)
+                #endif
+                PrivateDownloadsCard(viewModel: viewModel)
                 LoggingConfigurationCard(viewModel: viewModel)
                 BenchmarksCard()
                 AboutCard()
@@ -213,6 +327,42 @@ private struct MacOSSettingsContent: View {
 }
 
 // MARK: - macOS Settings Cards
+
+private struct AssistantSettingsCard: View {
+    var body: some View {
+        SettingsCard(title: "Assistant") {
+            VStack(alignment: .leading, spacing: AppSpacing.large) {
+                NavigationLink(destination: SimplifiedModelsView()) {
+                    SettingsNavigationRow(
+                        icon: "square.stack.3d.up",
+                        color: AppColors.primaryAccent,
+                        title: "Manage Downloads",
+                        subtitle: "Choose and identify models across all local backends"
+                    )
+                }
+                .buttonStyle(.plain)
+
+                NavigationLink(destination: ConsumerAdvancedHubView()) {
+                    SettingsNavigationRow(
+                        icon: "slider.horizontal.3",
+                        color: AppColors.primaryPurple,
+                        title: "AI Tools",
+                        subtitle: "Voice, performance, and model controls"
+                    )
+                }
+                .buttonStyle(.plain)
+
+                HStack {
+                    Image(systemName: "lock.shield")
+                        .foregroundColor(AppColors.statusGreen)
+                    Text("Chats and downloads stay on this Mac unless you export or delete them.")
+                        .font(AppTypography.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+            }
+        }
+    }
+}
 
 private struct GenerationSettingsCard: View {
     @ObservedObject var viewModel: SettingsViewModel
@@ -261,6 +411,28 @@ private struct GenerationSettingsCard: View {
                             .frame(maxWidth: 400)
                     }
                 }
+
+                HStack {
+                    Text("Thinking Mode")
+                        .frame(width: 150, alignment: .leading)
+
+                    Toggle("", isOn: $viewModel.thinkingModeEnabled)
+                        .disabled(!viewModel.loadedModelSupportsThinking)
+
+                    Spacer()
+
+                    Text(viewModel.thinkingModeEnabled ? "Enabled" : "Disabled")
+                        .font(AppTypography.caption)
+                        .foregroundColor(
+                            viewModel.thinkingModeEnabled
+                                ? AppColors.primaryPurple
+                                : AppColors.textSecondary
+                        )
+                }
+
+                Text(thinkingModeDescription(for: viewModel))
+                    .font(AppTypography.caption)
+                    .foregroundColor(AppColors.textSecondary)
             }
         }
     }
@@ -330,6 +502,66 @@ private struct APIConfigurationCard: View {
     }
 }
 
+private struct PrivateDownloadsCard: View {
+    @ObservedObject var viewModel: SettingsViewModel
+
+    var body: some View {
+        SettingsCard(title: "Private Downloads") {
+            PrivateDownloadsControls(viewModel: viewModel)
+        }
+    }
+}
+
+private struct PrivateDownloadsControls: View {
+    @ObservedObject var viewModel: SettingsViewModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: AppSpacing.padding15) {
+            HStack {
+                Text("Hugging Face Token")
+                Spacer()
+                Text(viewModel.isHfTokenConfigured ? "Configured" : "Not Set")
+                    .font(AppTypography.caption)
+                    .foregroundColor(viewModel.isHfTokenConfigured ? AppColors.statusGreen : AppColors.statusOrange)
+            }
+
+            SecureField("hf_...", text: $viewModel.hfToken)
+                .textFieldStyle(.roundedBorder)
+                .disabled(viewModel.isSavingHfToken)
+
+            Text("Used only for downloading models from private Hugging Face repos.")
+                .font(AppTypography.caption)
+                .foregroundColor(AppColors.textSecondary)
+
+            HStack(spacing: AppSpacing.smallMedium) {
+                Button("Save Token") {
+                    viewModel.saveHfToken()
+                }
+                .buttonStyle(.bordered)
+                .tint(AppColors.primaryAccent)
+                .disabled(viewModel.isSavingHfToken)
+
+                Button("Clear") {
+                    viewModel.clearHfToken()
+                }
+                .buttonStyle(.bordered)
+                .tint(AppColors.primaryRed)
+                .disabled(viewModel.isSavingHfToken)
+
+                if viewModel.isSavingHfToken {
+                    ProgressView()
+                }
+            }
+
+            if let message = viewModel.hfTokenMessage {
+                Text(message)
+                    .font(AppTypography.caption)
+                    .foregroundColor(viewModel.hfTokenMessageIsError ? AppColors.primaryRed : AppColors.statusGreen)
+            }
+        }
+    }
+}
+
 private struct StorageCard: View {
     @ObservedObject var viewModel: SettingsViewModel
 
@@ -380,11 +612,11 @@ private struct DownloadedModelsCard: View {
                         Spacer()
                     }
                 } else {
-                    ForEach(viewModel.storedModels, id: \.id) { model in
+                    ForEach(viewModel.storedModels, id: \.modelID) { model in
                         StoredModelRow(model: model) {
                             await viewModel.deleteModel(model)
                         }
-                        if model.id != viewModel.storedModels.last?.id {
+                        if model.modelID != viewModel.storedModels.last?.modelID {
                             Divider()
                                 .padding(.vertical, AppSpacing.xSmall)
                         }
@@ -427,10 +659,10 @@ private struct LoggingConfigurationCard: View {
     @ObservedObject var viewModel: SettingsViewModel
 
     var body: some View {
-        SettingsCard(title: "Logging Configuration") {
+        SettingsCard(title: "Privacy") {
             VStack(alignment: .leading, spacing: AppSpacing.padding15) {
                 HStack {
-                    Text("Log Analytics Locally")
+                    Text("Save Performance History")
                         .frame(width: 150, alignment: .leading)
 
                     Toggle("", isOn: $viewModel.analyticsLogToLocal)
@@ -446,7 +678,7 @@ private struct LoggingConfigurationCard: View {
                         )
                 }
 
-                Text("When enabled, analytics events will be logged locally instead of being sent to the server.")
+                Text("When enabled, performance history is stored locally on this Mac.")
                     .font(AppTypography.caption)
                     .foregroundColor(AppColors.textSecondary)
             }
@@ -459,12 +691,12 @@ private struct AboutCard: View {
         SettingsCard(title: "About") {
             VStack(alignment: .leading, spacing: AppSpacing.padding15) {
                 HStack {
-                    Image(systemName: "cube")
+                    Image(systemName: "app")
                         .foregroundColor(AppColors.primaryAccent)
                     VStack(alignment: .leading) {
-                        Text("RunAnywhere SDK")
+                        Text("RunAnywhere")
                             .font(AppTypography.headline)
-                        Text("Version 0.1")
+                        Text(Bundle.main.displayVersion)
                             .font(AppTypography.caption)
                             .foregroundColor(AppColors.textSecondary)
                     }
@@ -475,6 +707,15 @@ private struct AboutCard: View {
                         HStack {
                             Image(systemName: "book")
                             Text("Documentation")
+                        }
+                    }
+                }
+
+                if let xURL = URL(string: "https://x.com/RunanywhereAI") {
+                    Link(destination: xURL) {
+                        HStack {
+                            Image(systemName: "person.crop.circle.badge.plus")
+                            Text("Follow on X")
                         }
                     }
                 }
@@ -639,7 +880,10 @@ private struct ApiConfigurationSheet: View {
                             .foregroundColor(AppColors.primaryOrange)
                             .font(AppTypography.subheadlineMedium)
 
-                        Text("After saving, you must restart the app for changes to take effect. The SDK will reinitialize with your custom configuration.")
+                        Text(
+                            "After saving, you must restart the app for changes to take effect. "
+                            + "RunAnywhere will use your custom connection after restarting."
+                        )
                             .font(AppTypography.caption)
                             .foregroundColor(AppColors.textSecondary)
                     }
@@ -651,7 +895,7 @@ private struct ApiConfigurationSheet: View {
             #endif
             .navigationTitle("API Configuration")
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayModeCompat(.inline)
             #endif
             .toolbar {
                 #if os(iOS)
@@ -692,34 +936,56 @@ private struct ApiConfigurationSheet: View {
 // MARK: - Supporting Views
 
 private struct StoredModelRow: View {
-    let model: StoredModel
+    let model: RAModelStorageMetrics
     let onDelete: () async -> Void
+    @ObservedObject private var modelListViewModel = ModelListViewModel.shared
     @State private var showingDetails = false
     @State private var showingDeleteConfirmation = false
     @State private var isDeleting = false
 
+    private var registryModel: RAModelInfo? {
+        modelListViewModel.availableModels.first { $0.id == model.modelID }
+    }
+
+    private var displayName: String {
+        guard let name = registryModel?.name, !name.isEmpty else { return model.modelID }
+        return name
+    }
+
+    private var backend: InferenceFramework? {
+        registryModel?.framework
+    }
+
+    private var lastUsedDate: Date? {
+        guard model.hasLastUsedMs else { return nil }
+        return Date(timeIntervalSince1970: TimeInterval(model.lastUsedMs) / 1000.0)
+    }
+
     private var isDeletable: Bool {
-        // Platform models (built-in) can't be deleted
-        guard let framework = model.framework else { return false }
-        return framework != .foundationModels && framework != .systemTTS
+        !model.modelID.isEmpty
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: AppSpacing.smallMedium) {
             HStack {
                 VStack(alignment: .leading, spacing: AppSpacing.xSmall) {
-                    Text(model.name)
+                    Text(displayName)
                         .font(AppTypography.subheadlineMedium)
 
-                    Text(ByteCountFormatter.string(fromByteCount: model.size, countStyle: .file))
-                        .font(AppTypography.caption2)
-                        .foregroundColor(AppColors.textSecondary)
+                    HStack(spacing: AppSpacing.small) {
+                        Text(ByteCountFormatter.string(fromByteCount: model.sizeOnDiskBytes, countStyle: .file))
+                            .font(AppTypography.caption2)
+                            .foregroundColor(AppColors.textSecondary)
+                        if let backend {
+                            backendBadge(backend)
+                        }
+                    }
                 }
 
                 Spacer()
 
                 VStack(alignment: .trailing, spacing: AppSpacing.xSmall) {
-                    Text(ByteCountFormatter.string(fromByteCount: model.size, countStyle: .file))
+                    Text(ByteCountFormatter.string(fromByteCount: model.sizeOnDiskBytes, countStyle: .file))
                         .font(AppTypography.captionMedium)
 
                     HStack(spacing: AppSpacing.xSmall) {
@@ -769,24 +1035,43 @@ private struct StoredModelRow: View {
                 }
             }
         } message: {
-            Text("Are you sure you want to delete \(model.name)? This action cannot be undone.")
+            Text("Are you sure you want to delete \(displayName)? This action cannot be undone.")
         }
+    }
+
+    @ViewBuilder
+    private func backendBadge(_ framework: InferenceFramework) -> some View {
+        HStack(spacing: AppSpacing.xxSmall) {
+            Image(systemName: framework.consumerBackendIcon)
+            Text(framework.consumerBackendLabel)
+        }
+        .font(AppTypography.caption2Medium)
+        .foregroundColor(framework.consumerBackendColor)
+        .padding(.horizontal, AppSpacing.xSmall)
+        .padding(.vertical, 2)
+        .background(framework.consumerBackendColor.opacity(0.12))
+        .cornerRadius(AppSpacing.cornerRadiusSmall)
     }
 
     private var modelDetailsView: some View {
         VStack(alignment: .leading, spacing: AppSpacing.small) {
-            HStack {
-                Text("Downloaded:")
+            if let lastUsedDate {
+                HStack {
+                    Text("Last used:")
+                        .font(AppTypography.caption2Medium)
+                    Text(lastUsedDate, style: .date)
+                        .font(AppTypography.caption2)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+            } else {
+                Text("Last used: Never")
                     .font(AppTypography.caption2Medium)
-                Text(model.createdDate, style: .date)
-                    .font(AppTypography.caption2)
-                    .foregroundColor(AppColors.textSecondary)
             }
 
             HStack {
                 Text("Size:")
                     .font(AppTypography.caption2Medium)
-                Text(ByteCountFormatter.string(fromByteCount: model.size, countStyle: .file))
+                Text(ByteCountFormatter.string(fromByteCount: model.sizeOnDiskBytes, countStyle: .file))
                     .font(AppTypography.caption2)
                     .foregroundColor(AppColors.textSecondary)
             }
@@ -809,10 +1094,6 @@ private struct BenchmarksCard: View {
                             .foregroundColor(AppColors.primaryAccent)
                         Text("Benchmarks")
                         Spacer()
-                        #if !os(macOS)
-                        Image(systemName: "chevron.right")
-                            .foregroundColor(AppColors.textSecondary)
-                        #endif
                     }
                 }
                 .buttonStyle(.plain)
@@ -822,6 +1103,14 @@ private struct BenchmarksCard: View {
                     .foregroundColor(AppColors.textSecondary)
             }
         }
+    }
+}
+
+private extension Bundle {
+    var displayVersion: String {
+        let version = object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Unknown"
+        let build = object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""
+        return build.isEmpty ? "Version \(version)" : "Version \(version) (\(build))"
     }
 }
 

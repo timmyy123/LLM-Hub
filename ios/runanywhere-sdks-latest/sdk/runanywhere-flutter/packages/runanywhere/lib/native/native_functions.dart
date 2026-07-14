@@ -1,0 +1,200 @@
+/// NativeFunctions
+///
+/// Cached FFI function lookup registry.
+///
+/// All [DynamicLibrary.lookupFunction] calls are performed once at first access
+/// via lazy static fields. Subsequent calls return the cached function pointer,
+/// avoiding repeated symbol-table searches (dlsym) on every invocation.
+library;
+
+import 'dart:ffi';
+
+import 'package:ffi/ffi.dart';
+import 'package:runanywhere/native/platform_loader.dart';
+import 'package:runanywhere/native/types/basic_types.dart';
+
+/// Cached native function pointers for the RACommons library.
+///
+/// Usage:
+/// ```dart
+/// final result = NativeFunctions.llmIsLoaded(_handle!);
+/// ```
+abstract class NativeFunctions {
+  static final _lib = PlatformLoader.loadCommons();
+
+  // ---------------------------------------------------------------------------
+  // LLM Component
+  // ---------------------------------------------------------------------------
+
+  static final int Function(Pointer<RacHandle>) llmCreate = _lib.lookupFunction<
+      Int32 Function(Pointer<RacHandle>),
+      int Function(Pointer<RacHandle>)>('rac_llm_component_create');
+
+  static final int Function(RacHandle) llmIsLoaded =
+      _lib.lookupFunction<Int32 Function(RacHandle), int Function(RacHandle)>(
+          'rac_llm_component_is_loaded');
+
+  static final int Function(RacHandle) llmSupportsStreaming =
+      _lib.lookupFunction<Int32 Function(RacHandle), int Function(RacHandle)>(
+          'rac_llm_component_supports_streaming');
+
+  static final int Function(RacHandle) llmCleanup =
+      _lib.lookupFunction<Int32 Function(RacHandle), int Function(RacHandle)>(
+          'rac_llm_component_cleanup');
+
+  static final int Function(RacHandle) llmCancel =
+      _lib.lookupFunction<Int32 Function(RacHandle), int Function(RacHandle)>(
+          'rac_llm_component_cancel');
+
+  static final void Function(RacHandle) llmDestroy =
+      _lib.lookupFunction<Void Function(RacHandle), void Function(RacHandle)>(
+          'rac_llm_component_destroy');
+
+  // ---------------------------------------------------------------------------
+  // STT Component
+  // ---------------------------------------------------------------------------
+
+  static final int Function(Pointer<RacHandle>) sttCreate = _lib.lookupFunction<
+      Int32 Function(Pointer<RacHandle>),
+      int Function(Pointer<RacHandle>)>('rac_stt_component_create');
+
+  static final int Function(RacHandle) sttIsLoaded =
+      _lib.lookupFunction<Int32 Function(RacHandle), int Function(RacHandle)>(
+          'rac_stt_component_is_loaded');
+
+  static final int Function(RacHandle) sttSupportsStreaming =
+      _lib.lookupFunction<Int32 Function(RacHandle), int Function(RacHandle)>(
+          'rac_stt_component_supports_streaming');
+
+  // Note: rac_stt_result_free is intentionally NOT cached here. The STT
+  // transcription path runs inside Isolate.run(...), which cannot access
+  // main-isolate static state — `_transcribeInIsolate` in dart_bridge_stt.dart
+  // performs its own inline lookup so each spawned isolate resolves the
+  // symbol once. A main-isolate cache entry would be dead code.
+
+  static final void Function(RacHandle) sttDestroy =
+      _lib.lookupFunction<Void Function(RacHandle), void Function(RacHandle)>(
+          'rac_stt_component_destroy');
+
+  // ---------------------------------------------------------------------------
+  // TTS Component
+  // ---------------------------------------------------------------------------
+
+  static final int Function(Pointer<RacHandle>) ttsCreate = _lib.lookupFunction<
+      Int32 Function(Pointer<RacHandle>),
+      int Function(Pointer<RacHandle>)>('rac_tts_component_create');
+
+  static final int Function(RacHandle) ttsIsLoaded =
+      _lib.lookupFunction<Int32 Function(RacHandle), int Function(RacHandle)>(
+          'rac_tts_component_is_loaded');
+
+  static final int Function(RacHandle) ttsStop =
+      _lib.lookupFunction<Int32 Function(RacHandle), int Function(RacHandle)>(
+          'rac_tts_component_stop');
+
+  static final void Function(RacHandle) ttsDestroy =
+      _lib.lookupFunction<Void Function(RacHandle), void Function(RacHandle)>(
+          'rac_tts_component_destroy');
+
+  // ---------------------------------------------------------------------------
+  // VAD Component
+  // ---------------------------------------------------------------------------
+
+  static final int Function(Pointer<RacHandle>) vadCreate = _lib.lookupFunction<
+      Int32 Function(Pointer<RacHandle>),
+      int Function(Pointer<RacHandle>)>('rac_vad_component_create');
+
+  static final int Function(RacHandle) vadIsInitialized =
+      _lib.lookupFunction<Int32 Function(RacHandle), int Function(RacHandle)>(
+          'rac_vad_component_is_initialized');
+
+  static final int Function(RacHandle) vadIsSpeechActive =
+      _lib.lookupFunction<Int32 Function(RacHandle), int Function(RacHandle)>(
+          'rac_vad_component_is_speech_active');
+
+  static final double Function(RacHandle) vadGetEnergyThreshold = _lib
+      .lookupFunction<Float Function(RacHandle), double Function(RacHandle)>(
+          'rac_vad_component_get_energy_threshold');
+
+  static final int Function(RacHandle, double) vadSetEnergyThreshold =
+      _lib.lookupFunction<
+          Int32 Function(RacHandle, Float),
+          int Function(
+              RacHandle, double)>('rac_vad_component_set_energy_threshold');
+
+  static final void Function(RacHandle) vadDestroy =
+      _lib.lookupFunction<Void Function(RacHandle), void Function(RacHandle)>(
+          'rac_vad_component_destroy');
+
+  // ---------------------------------------------------------------------------
+  // VoiceAgent Component
+  // ---------------------------------------------------------------------------
+
+  static final int Function(RacHandle, Pointer<Int32>) voiceAgentIsReady =
+      _lib.lookupFunction<Int32 Function(RacHandle, Pointer<Int32>),
+          int Function(RacHandle, Pointer<Int32>)>('rac_voice_agent_is_ready');
+
+  static final int Function(RacHandle) voiceAgentInitializeWithLoadedModels =
+      _lib.lookupFunction<Int32 Function(RacHandle), int Function(RacHandle)>(
+          'rac_voice_agent_initialize_with_loaded_models');
+
+  static final int Function(RacHandle, Pointer<Utf8>, Pointer<Pointer<Utf8>>)
+      voiceAgentGenerateResponse = _lib.lookupFunction<
+          Int32 Function(RacHandle, Pointer<Utf8>, Pointer<Pointer<Utf8>>),
+          int Function(RacHandle, Pointer<Utf8>,
+              Pointer<Pointer<Utf8>>)>('rac_voice_agent_generate_response');
+
+  static final int Function(RacHandle) voiceAgentCleanup =
+      _lib.lookupFunction<Int32 Function(RacHandle), int Function(RacHandle)>(
+          'rac_voice_agent_cleanup');
+
+  static final void Function(Pointer<Void>) racFree = _lib.lookupFunction<
+      Void Function(Pointer<Void>),
+      void Function(Pointer<Void>)>('rac_free');
+
+  // ---------------------------------------------------------------------------
+  // Solutions runtime (rac/solutions/rac_solution.h).
+  //
+  // Proto-byte / YAML driven L5 solution runtime. `solutionCreateFromProto`
+  // and `solutionCreateFromYaml` allocate a `rac_solution_handle_t` via
+  // their out-pointer; the lifecycle verbs (start/stop/cancel/feed/
+  // closeInput/destroy) take that handle directly. Every entry point is
+  // wrapped by the higher-level `RunAnywhereSolutions` capability.
+  // ---------------------------------------------------------------------------
+
+  static final int Function(Pointer<Void>, int, Pointer<RacHandle>)
+      solutionCreateFromProto = _lib.lookupFunction<
+          Int32 Function(Pointer<Void>, IntPtr, Pointer<RacHandle>),
+          int Function(Pointer<Void>, int,
+              Pointer<RacHandle>)>('rac_solution_create_from_proto');
+
+  static final int Function(Pointer<Utf8>, Pointer<RacHandle>)
+      solutionCreateFromYaml = _lib.lookupFunction<
+          Int32 Function(Pointer<Utf8>, Pointer<RacHandle>),
+          int Function(Pointer<Utf8>,
+              Pointer<RacHandle>)>('rac_solution_create_from_yaml');
+
+  static final int Function(RacHandle) solutionStart =
+      _lib.lookupFunction<Int32 Function(RacHandle), int Function(RacHandle)>(
+          'rac_solution_start');
+
+  static final int Function(RacHandle) solutionStop =
+      _lib.lookupFunction<Int32 Function(RacHandle), int Function(RacHandle)>(
+          'rac_solution_stop');
+
+  static final int Function(RacHandle) solutionCancel =
+      _lib.lookupFunction<Int32 Function(RacHandle), int Function(RacHandle)>(
+          'rac_solution_cancel');
+
+  static final int Function(RacHandle, Pointer<Utf8>) solutionFeed =
+      _lib.lookupFunction<Int32 Function(RacHandle, Pointer<Utf8>),
+          int Function(RacHandle, Pointer<Utf8>)>('rac_solution_feed');
+
+  static final int Function(RacHandle) solutionCloseInput =
+      _lib.lookupFunction<Int32 Function(RacHandle), int Function(RacHandle)>(
+          'rac_solution_close_input');
+
+  static final void Function(RacHandle) solutionDestroy =
+      _lib.lookupFunction<Void Function(RacHandle), void Function(RacHandle)>(
+          'rac_solution_destroy');
+}
