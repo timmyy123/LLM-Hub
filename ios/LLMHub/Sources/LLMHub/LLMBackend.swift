@@ -1456,8 +1456,8 @@ class LLMBackend: ObservableObject {
         }
 
         let result = finalStreamResult ?? RALLMStreamFinalResult()
-        // Strip trailing Gemma stop tokens that leak through when generation ends on EOG
-        let gemmaTrailingTokens = ["<end_of_turn>", "</s>", "<eos>"]
+        // Strip trailing stop tokens that leak through when generation ends on EOG
+        let gemmaTrailingTokens = ["<end_of_turn>", "</s>", "<eos>", "<|eot_id|>"]
         for tok in gemmaTrailingTokens {
             if currentOutput.hasSuffix(tok) {
                 currentOutput = String(currentOutput.dropLast(tok.count))

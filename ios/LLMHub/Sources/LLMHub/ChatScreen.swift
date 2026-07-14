@@ -676,18 +676,27 @@ class ChatViewModel: ObservableObject {
     )
 
     @Published var inputText: String = ""
+    /// Set by the view layer to indicate the user has scrolled away from the
+    /// generating message. When true, streaming UI updates are throttled to
+    /// ~8fps to avoid layout thrashing on off-screen content.
+    var viewIsScrolledUp: Bool = false
+
+    private var streamThrottleTask: Task<Void, Never>?
+    private var pendingStreamUpdate: (() -> Void)?
+
     @Published var isGenerating: Bool = false {
         didSet {
             // When generation ends, flush the streamed content to disk. We skip
             // saves during streaming to avoid JSON encode storms that can make
             // SwiftUI's LazyVStack render blank briefly on big chats.
             if oldValue == true && isGenerating == false {
+                flushThrottledStreamUpdate()
                 chatStore.saveSessions()
             }
         }
     }
-    @Published var tokensPerSecond: Double = 0
-    @Published var totalTokens: Int = 0
+    var tokensPerSecond: Double = 0
+    var totalTokens: Int = 0
     @Published var selectedModelName: String = AppSettings.shared.localized("no_model_selected") {
         didSet {
             guard selectedModelName != oldValue else { return }
@@ -822,6 +831,12 @@ class ChatViewModel: ObservableObject {
         contextUsageFractionRaw >= 0.995
     }
     
+    private func setMessagesSilently(_ newValue: [ChatMessage]) {
+        if let index = chatStore.chatSessions.firstIndex(where: { $0.id == currentSessionId }) {
+            chatStore.chatSessions[index].messages = newValue
+        }
+    }
+
     var messages: [ChatMessage] {
         get {
             chatStore.chatSessions.first(where: { $0.id == currentSessionId })?.messages ?? []
@@ -1466,17 +1481,47 @@ class ChatViewModel: ObservableObject {
             }
             msgs[idx].content = normalizedContent
             msgs[idx].isGenerating = isGenerating
-            self.totalTokens = tokens
-            self.tokensPerSecond = tps
             msgs[idx].tokenCount = tokens > 0 ? tokens : msgs[idx].tokenCount
             msgs[idx].tokensPerSecond = tps > 0 ? tps : msgs[idx].tokensPerSecond
-            self.messages = msgs
+
+            if isGenerating && viewIsScrolledUp {
+                setMessagesSilently(msgs)
+                scheduleThrottledStreamUpdate { [weak self] in
+                    guard let self else { return }
+                    self.totalTokens = tokens
+                    self.tokensPerSecond = tps
+                    self.objectWillChange.send()
+                }
+            } else {
+                self.totalTokens = tokens
+                self.tokensPerSecond = tps
+                self.messages = msgs
+            }
 
             // Progressive TTS: speak completed sentences as they stream in
             if isGenerating {
                 progressiveTTSUpdate(fullContent: normalizedContent, messageKey: msgs[idx].id.uuidString)
             }
         }
+    }
+
+    private func scheduleThrottledStreamUpdate(_ update: @escaping () -> Void) {
+        pendingStreamUpdate = update
+        guard streamThrottleTask == nil else { return }
+        streamThrottleTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 500_000_000) // ~2fps while scrolled away
+            guard let self, !Task.isCancelled else { return }
+            self.pendingStreamUpdate?()
+            self.pendingStreamUpdate = nil
+            self.streamThrottleTask = nil
+        }
+    }
+
+    func flushThrottledStreamUpdate() {
+        streamThrottleTask?.cancel()
+        streamThrottleTask = nil
+        pendingStreamUpdate = nil
+        objectWillChange.send()
     }
 
     private func normalizeStreamText(_ text: String) -> String {
@@ -1785,17 +1830,18 @@ class ChatViewModel: ObservableObject {
         let modelName = selectedModelName.lowercased()
         let isGemma  = modelName.contains("gemma")
         let isLlama  = modelName.contains("llama") || modelName.contains("mistral")
+        let isLlama3 = isLlama && (modelName.contains("llama-3") || modelName.contains("llama 3") || modelName.contains("llama-3."))
         let isHarmony = modelName.contains("gpt-oss") || modelName.contains("gpt_oss")
 
         if isGemma {
-            // Gemma uses special tokens handled by the tokenizer
             return []
+        } else if isLlama3 {
+            return ["<|eot_id|>"]
         } else if isLlama {
             return ["[INST]"]
         } else if isHarmony {
             return ["<|start|>user"]
         } else {
-            // Generic User:/Assistant: template (LFM, Phi, Qwen, etc.)
             return ["\nUser:", "\nuser:"]
         }
     }
@@ -1806,6 +1852,7 @@ class ChatViewModel: ObservableObject {
         let isGemma  = modelName.contains("gemma")
         let isGemma4 = isGemma && (modelName.contains("gemma 4") || modelName.contains("gemma-4")) && !modelName.contains("translate")
         let isLlama  = modelName.contains("llama") || modelName.contains("mistral")
+        let isLlama3 = isLlama && (modelName.contains("llama-3") || modelName.contains("llama 3") || modelName.contains("llama-3."))
         let isHarmonyModel = modelName.contains("gpt-oss") || modelName.contains("gpt_oss")
 
         // 1. Identify history (exclude placeholder turns)
@@ -1857,6 +1904,10 @@ class ChatViewModel: ObservableObject {
         // This prevents the SDK from wrapping our already-formatted string.
         parts.append("__RAW_PROMPT__")
 
+        if isLlama3 {
+            parts.append("<|begin_of_text|>")
+        }
+
         if isHarmonyModel {
             var harmonyParts: [String] = []
             let systemContent = ragPrefix?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -1894,6 +1945,8 @@ class ChatViewModel: ObservableObject {
                 parts.append("<|turn>system\n\(rag)<turn|>")
             } else if isGemma {
                 parts.append("<start_of_turn>user\n\(rag)<end_of_turn>\n<start_of_turn>model\nUnderstood.<end_of_turn>")
+            } else if isLlama3 {
+                parts.append("<|start_header_id|>system<|end_header_id|>\n\n\(rag)<|eot_id|>")
             } else if isLlama {
                 parts.append("[INST] \(rag) [/INST]\nUnderstood.")
             } else {
@@ -1921,6 +1974,9 @@ class ChatViewModel: ObservableObject {
             } else if isGemma {
                 let gemmaRole = msg.isFromUser ? "user" : "model"
                 parts.append("<start_of_turn>\(gemmaRole)\n\(content)<end_of_turn>")
+            } else if isLlama3 {
+                let role = msg.isFromUser ? "user" : "assistant"
+                parts.append("<|start_header_id|>\(role)<|end_header_id|>\n\n\(content)<|eot_id|>")
             } else if isLlama {
                 if msg.isFromUser {
                     parts.append("[INST] \(content) [/INST]")
@@ -1940,6 +1996,9 @@ class ChatViewModel: ObservableObject {
         } else if isGemma {
             parts.append("<start_of_turn>user\n\(currentUserPrompt)<end_of_turn>")
             parts.append("<start_of_turn>model\n")
+        } else if isLlama3 {
+            parts.append("<|start_header_id|>user<|end_header_id|>\n\n\(currentUserPrompt)<|eot_id|>")
+            parts.append("<|start_header_id|>assistant<|end_header_id|>\n\n")
         } else if isLlama {
             parts.append("[INST] \(currentUserPrompt) [/INST]")
         } else {
@@ -2982,9 +3041,13 @@ struct ChatScreen: View {
                         isComposerFocused = false
                     }
                     .onChange(of: userHasScrolledUp) { _, scrolledUp in
-                        if !scrolledUp, let last = vm.messages.last {
-                            withAnimation {
-                                proxy.scrollTo(last.id, anchor: .bottom)
+                        vm.viewIsScrolledUp = scrolledUp
+                        if !scrolledUp {
+                            vm.flushThrottledStreamUpdate()
+                            if let last = vm.messages.last {
+                                withAnimation {
+                                    proxy.scrollTo(last.id, anchor: .bottom)
+                                }
                             }
                         }
                     }
