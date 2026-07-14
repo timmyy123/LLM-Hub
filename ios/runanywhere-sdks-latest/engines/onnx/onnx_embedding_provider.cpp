@@ -535,8 +535,19 @@ class ONNXEmbeddingProvider::Impl {
 
         std::string resolved_model_path = model_path;
         if (std::filesystem::is_directory(resolved_model_path)) {
-            resolved_model_path =
-                (std::filesystem::path(resolved_model_path) / "model.onnx").string();
+            bool found_onnx = false;
+            std::error_code ec;
+            for (auto& entry : std::filesystem::directory_iterator(resolved_model_path, ec)) {
+                if (!ec && entry.is_regular_file() && entry.path().extension() == ".onnx") {
+                    resolved_model_path = entry.path().string();
+                    found_onnx = true;
+                    break;
+                }
+            }
+            if (!found_onnx) {
+                resolved_model_path =
+                    (std::filesystem::path(resolved_model_path) / "model.onnx").string();
+            }
         }
 
         if (!load_model(resolved_model_path)) {
@@ -809,7 +820,7 @@ class ONNXEmbeddingProvider::Impl {
         using runanywhere::runtime::onnxrt::ElementType;
         using runanywhere::runtime::onnxrt::TensorInput;
 
-        const TensorInput inputs[] = {
+        const TensorInput inputs_with_tti[] = {
             {"input_ids", input_ids.data(), input_ids.size() * sizeof(int64_t), shape.data(),
              shape.size(), ElementType::Int64},
             {"attention_mask", attention_mask.data(), attention_mask.size() * sizeof(int64_t),
@@ -817,10 +828,42 @@ class ONNXEmbeddingProvider::Impl {
             {"token_type_ids", token_type_ids.data(), token_type_ids.size() * sizeof(int64_t),
              shape.data(), shape.size(), ElementType::Int64},
         };
+        const TensorInput inputs_without_tti[] = {
+            {"input_ids", input_ids.data(), input_ids.size() * sizeof(int64_t), shape.data(),
+             shape.size(), ElementType::Int64},
+            {"attention_mask", attention_mask.data(), attention_mask.size() * sizeof(int64_t),
+             shape.data(), shape.size(), ElementType::Int64},
+        };
         const char* output_names[] = {"last_hidden_state"};
         std::vector<runanywhere::runtime::onnxrt::TensorOutput> outputs;
         std::string error;
-        rac_result_t rc = onnx_session_->run(inputs, 3, output_names, 1, outputs, &error);
+
+        if (!token_type_ids_probed_) {
+            token_type_ids_probed_ = true;
+            rac_result_t rc =
+                onnx_session_->run(inputs_with_tti, 3, output_names, 1, outputs, &error);
+            if (rc == RAC_SUCCESS && !outputs.empty()) {
+                has_token_type_ids_ = true;
+                output = std::move(outputs.front());
+                return true;
+            }
+            if (error.find("token_type_ids") != std::string::npos) {
+                has_token_type_ids_ = false;
+                outputs.clear();
+                error.clear();
+                rc = onnx_session_->run(inputs_without_tti, 2, output_names, 1, outputs, &error);
+                if (rc == RAC_SUCCESS && !outputs.empty()) {
+                    output = std::move(outputs.front());
+                    return true;
+                }
+            }
+            LOGE("ONNX embedding inference failed: %s", error.c_str());
+            return false;
+        }
+
+        const TensorInput* inputs = has_token_type_ids_ ? inputs_with_tti : inputs_without_tti;
+        size_t input_count = has_token_type_ids_ ? 3 : 2;
+        rac_result_t rc = onnx_session_->run(inputs, input_count, output_names, 1, outputs, &error);
         if (rc != RAC_SUCCESS || outputs.empty()) {
             LOGE("ONNX embedding inference failed: %s", error.c_str());
             return false;
@@ -844,6 +887,8 @@ class ONNXEmbeddingProvider::Impl {
     std::vector<int64_t> input_shape_ = {1, 0};  // Updated in constructor
 
     bool ready_ = false;
+    bool token_type_ids_probed_ = false;
+    bool has_token_type_ids_ = true;
     size_t embedding_dim_ = 384;   // all-MiniLM-L6-v2 dimension
     size_t max_seq_length_ = 512;  // all-MiniLM-L6-v2 max_position_embeddings=512
     std::mutex embed_mutex_;       // Protects pre-allocated buffers during concurrent
