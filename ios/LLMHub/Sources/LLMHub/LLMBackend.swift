@@ -217,17 +217,24 @@ class LLMBackend: ObservableObject {
 
     private static func cleanGemma4Output(_ raw: String) -> String {
         let startTokens = ["<|channel|>thought", "<|channel>thought"]
-        
-        // 1. If the raw string is a prefix of any start token, hide it (prevent flashing)
+
+        // 1. If the raw string is a prefix of any start token, hide it (prevent flashing).
+        // Also suppress a bare leading "thought" — the <|channel|> special token can decode as
+        // empty string in llama.cpp, making the stream start with just "thought" instead of
+        // "<|channel|>thought". This check is safe because it only fires at position 0.
         if !raw.isEmpty {
             for pfx in startTokens {
                 if pfx.hasPrefix(raw) && raw.count < pfx.count {
                     return ""
                 }
             }
+            // Bare "thought" at position 0 = <|channel|> decoded as empty
+            if raw == "thought" {
+                return ""
+            }
         }
-        
-        // 2. Look for the start of the thought channel
+
+        // 2. Look for the start of the thought channel.
         var hasStartTag = false
         var startTagEndIndex: String.Index? = nil
         for tag in startTokens {
@@ -236,6 +243,11 @@ class LLMBackend: ObservableObject {
                 startTagEndIndex = range.upperBound
                 break
             }
+        }
+        // Fallback: <|channel|> decoded as empty, so raw starts with bare "thought"
+        if !hasStartTag && raw.hasPrefix("thought") {
+            hasStartTag = true
+            startTagEndIndex = raw.index(raw.startIndex, offsetBy: "thought".count)
         }
         
         var remainder: String
@@ -280,7 +292,8 @@ class LLMBackend: ObservableObject {
             "<channel|>",
             "<|channel|>",
             "<|turn|>model",
-            "<|turn>model"
+            "<|turn>model",
+            "<turn|>"
         ]
         for tok in tokensToRemove {
             remainder = remainder.replacingOccurrences(of: tok, with: "")
@@ -296,6 +309,7 @@ class LLMBackend: ObservableObject {
             "<|channel>text",
             "<|turn|>model",
             "<|turn>model",
+            "<turn|>",
             "<end_of_turn>",
             "</s>",
             "<eos>"
@@ -1465,7 +1479,7 @@ class LLMBackend: ObservableObject {
 
         let result = finalStreamResult ?? RALLMStreamFinalResult()
         // Strip trailing stop tokens that leak through when generation ends on EOG
-        let gemmaTrailingTokens = ["<end_of_turn>", "</s>", "<eos>", "<|eot_id|>"]
+        let gemmaTrailingTokens = ["<end_of_turn>", "<turn|>", "</s>", "<eos>", "<|eot_id|>"]
         for tok in gemmaTrailingTokens {
             if currentOutput.hasSuffix(tok) {
                 currentOutput = String(currentOutput.dropLast(tok.count))
