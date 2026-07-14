@@ -482,7 +482,10 @@ class LLMBackend: ObservableObject {
             // in the same directory instead (mmproj/CLIP files can't be loaded as main models).
             if model.url.lowercased().contains("mmproj") {
                 let directory = URL(fileURLWithPath: model.url).deletingLastPathComponent()
-                if let mainModel = listGGUFFiles(in: directory).first(where: { !$0.lastPathComponent.lowercased().contains("mmproj") }) {
+                if let mainModel = listGGUFFiles(in: directory).first(where: {
+                    let name = $0.lastPathComponent.lowercased()
+                    return !name.contains("mmproj") && !name.contains("projector")
+                }) {
                     return mainModel.path
                 }
             }
@@ -976,7 +979,10 @@ class LLMBackend: ObservableObject {
             // auto-detecting a larger value (e.g. 4096) which causes OOM on <8 GB devices.
             if model.source == "Custom",
                let folderURL = runAnywhereModelDirectory(for: model),
-               let ggufFile = listGGUFFiles(in: folderURL).first(where: { !$0.lastPathComponent.lowercased().contains("mmproj") }) {
+               let ggufFile = listGGUFFiles(in: folderURL).first(where: {
+                   let name = $0.lastPathComponent.lowercased()
+                   return !name.contains("mmproj") && !name.contains("projector")
+               }) {
                 let ggufURL = ggufFile
                 var registeredModelInfo = await CppBridge.ModelRegistry.shared.get(modelId: runAnywhereModelId) ?? ModelInfo(
                     id: runAnywhereModelId,
@@ -1003,7 +1009,10 @@ class LLMBackend: ObservableObject {
             } else if let folderURL = try? SimplifiedFileManager.shared.getModelFolderURL(
                 modelId: runAnywhereModelId,
                 framework: framework(for: model)
-            ), let ggufFile = listGGUFFiles(in: folderURL).first {
+            ), let ggufFile = listGGUFFiles(in: folderURL).first(where: {
+                let name = $0.lastPathComponent.lowercased()
+                return !name.contains("mmproj") && !name.contains("projector")
+            }) {
                 var registeredModelInfo = await CppBridge.ModelRegistry.shared.get(modelId: runAnywhereModelId) ?? ModelInfo(
                     id: runAnywhereModelId,
                     name: model.name,
@@ -1026,6 +1035,30 @@ class LLMBackend: ObservableObject {
                 pathModelInfo.category = loadCategory
                 pathModelInfo.setLocalPath(folderURL)
                 try? await CppBridge.ModelRegistry.shared.save(pathModelInfo)
+            }
+
+            if useMultimodal,
+               let folderURL = (model.source == "Custom" ? runAnywhereModelDirectory(for: model) : try? SimplifiedFileManager.shared.getModelFolderURL(modelId: runAnywhereModelId, framework: framework(for: model))),
+               let projectorPath = resolveVisionProjectorPath(for: model) {
+                let projectorSourceURL = URL(fileURLWithPath: projectorPath)
+                let projectorDestURL = folderURL.appendingPathComponent(projectorSourceURL.lastPathComponent)
+                print("🔍 [LLMBackend] Symlink check: source=\(projectorSourceURL.path), dest=\(projectorDestURL.path)")
+                if projectorSourceURL.path != projectorDestURL.path {
+                    do {
+                        try FileManager.default.removeItem(at: projectorDestURL)
+                        print("🔍 [LLMBackend] Removed old symlink/file at \(projectorDestURL.path)")
+                    } catch {
+                        print("🔍 [LLMBackend] Failed to remove at \(projectorDestURL.path): \(error)")
+                    }
+                    do {
+                        let relativePath = "../" + projectorSourceURL.deletingLastPathComponent().lastPathComponent + "/" + projectorSourceURL.lastPathComponent
+                        print("🔍 [LLMBackend] Creating symlink to relativePath=\(relativePath)")
+                        try FileManager.default.createSymbolicLink(atPath: projectorDestURL.path, withDestinationPath: relativePath)
+                        print("🔍 [LLMBackend] Symlink created successfully!")
+                    } catch {
+                        print("🔍 [LLMBackend] Failed to create symlink: \(error)")
+                    }
+                }
             }
 
             await syncGpuLayersToRegistry(for: model)

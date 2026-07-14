@@ -477,6 +477,7 @@ ModelArtifactResolution resolve_model_artifacts(const runanywhere::v1::ModelInfo
     // Flutter/RN VLM loads.
     if (!model.local_path().empty() && !model.has_multi_file() && !model.has_expected_files() &&
         !model.has_archive() &&
+        model.category() != runanywhere::v1::MODEL_CATEGORY_MULTIMODAL &&
         rac_framework_uses_directory_based_models(c_framework_from_proto(model.framework())) !=
             RAC_TRUE) {
         return out;

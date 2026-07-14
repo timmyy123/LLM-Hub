@@ -465,7 +465,7 @@ static std::vector<scanned_file> scan_model_files(const fs::path& root, rac_mode
             it.increment(ec);
             continue;
         }
-        if (it->is_regular_file(ec)) {
+        if (fs::is_regular_file(current, ec)) {
             files.push_back(
                 {current, relative_to_root(root, current), infer_file_role(current, format)});
         }
@@ -1128,6 +1128,8 @@ rac_result_t rac_model_paths_resolve_artifact(const rac_model_info_t* model_info
         }
 
         std::string abs = file.path.generic_string();
+        RAC_LOG_INFO("ModelPaths", "Scanned file in resolution: path=%s, relative=%s, role=%d",
+                     abs.c_str(), file.relative_path.c_str(), static_cast<int>(role));
         if (!append_resolved_file(
                 out_resolution, file.relative_path, abs, role,
                 role == RAC_RESOLVED_MODEL_FILE_ROLE_PRIMARY ? RAC_TRUE : RAC_FALSE, RAC_TRUE)) {
