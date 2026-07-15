@@ -65,9 +65,9 @@ private enum ToolCallingRunLoopProtoABI {
     typealias RunLoop = @convention(c) (
         UnsafePointer<UInt8>?,
         Int,
-        ExecuteCallback,
+        ExecuteCallback?,
         UnsafeMutableRawPointer?,
-        HandlePublishedCallback,
+        HandlePublishedCallback?,
         UnsafeMutableRawPointer?,
         UnsafeMutablePointer<rac_proto_buffer_t>?
     ) -> rac_result_t
@@ -76,8 +76,8 @@ private enum ToolCallingRunLoopProtoABI {
     static let runLoopName = "rac_tool_calling_run_loop_proto"
     static let cancelName = "rac_tool_calling_run_loop_cancel_proto"
 
-    static let runLoop = NativeProtoABI.load(runLoopName, as: RunLoop.self)
-    static let cancel = NativeProtoABI.load(cancelName, as: Cancel.self)
+    static let runLoop: RunLoop? = rac_tool_calling_run_loop_proto
+    static let cancel: Cancel? = rac_tool_calling_run_loop_cancel_proto
 }
 
 // MARK: - Tool Calling Extension

@@ -18,23 +18,6 @@ extension CppBridge {
     /// Two-phase SDK init bridge.
     public enum SdkInit {
 
-        // MARK: - Symbol bindings (lazy-loaded from RACommons)
-
-        private static let phase1Symbol = NativeProtoABI.load(
-            "rac_sdk_init_phase1_proto",
-            as: NativeProtoABI.ProtoRequest.self
-        )
-
-        private static let phase2Symbol = NativeProtoABI.load(
-            "rac_sdk_init_phase2_proto",
-            as: NativeProtoABI.ProtoRequest.self
-        )
-
-        private static let retryHTTPSymbol = NativeProtoABI.load(
-            "rac_sdk_retry_http_proto",
-            as: (@convention(c) (UnsafeMutablePointer<rac_proto_buffer_t>?) -> rac_result_t).self
-        )
-
         // MARK: - Phase 1 (synchronous core init)
 
         /// Drive Phase 1 (synchronous core init) through the canonical C ABI.
@@ -56,7 +39,7 @@ extension CppBridge {
 
             let result = try NativeProtoABI.invoke(
                 request,
-                symbol: phase1Symbol,
+                symbol: rac_sdk_init_phase1_proto,
                 symbolName: "rac_sdk_init_phase1_proto",
                 responseType: RASdkInitResult.self
             )
@@ -88,7 +71,7 @@ extension CppBridge {
 
             let result = try NativeProtoABI.invoke(
                 request,
-                symbol: phase2Symbol,
+                symbol: rac_sdk_init_phase2_proto,
                 symbolName: "rac_sdk_init_phase2_proto",
                 responseType: RASdkInitResult.self
             )
@@ -104,10 +87,9 @@ extension CppBridge {
         /// config is available.
         @discardableResult
         public static func retryHTTP() throws -> RASdkInitResult {
-            let symbol = try NativeProtoABI.require(retryHTTPSymbol, named: "rac_sdk_retry_http_proto")
             var outBuffer = rac_proto_buffer_t()
             defer { NativeProtoABI.free(&outBuffer) }
-            let status = symbol(&outBuffer)
+            let status = rac_sdk_retry_http_proto(&outBuffer)
             guard status == RAC_SUCCESS else {
                 let message = outBuffer.error_message.map { String(cString: $0) }
                     ?? "rac_sdk_retry_http_proto failed: rc=\(status)"

@@ -20,14 +20,8 @@ private enum StorageProtoABI {
         UnsafeMutablePointer<rac_proto_buffer_t>?
     ) -> rac_result_t
 
-    static let info = NativeProtoABI.load(
-        "rac_storage_analyzer_info_proto",
-        as: StorageProtoFunction.self
-    )
-    static let delete = NativeProtoABI.load(
-        "rac_storage_analyzer_delete_proto",
-        as: StorageProtoFunction.self
-    )
+    static let info: StorageProtoFunction? = rac_storage_analyzer_info_proto
+    static let delete: StorageProtoFunction? = rac_storage_analyzer_delete_proto
 }
 
 /// Storage-analyzer pointer owned by the `Storage` actor.

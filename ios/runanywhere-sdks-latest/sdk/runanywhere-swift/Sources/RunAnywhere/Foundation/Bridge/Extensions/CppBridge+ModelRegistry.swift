@@ -6,7 +6,6 @@
 //
 
 import CRACommons
-import Darwin
 import Foundation
 import SwiftProtobuf
 
@@ -46,68 +45,22 @@ private enum RegistryProtoABI {
     ) -> rac_result_t
     typealias FreeProto = @convention(c) (UnsafeMutablePointer<UInt8>?) -> Void
 
-    private static func load<T>(_ symbolName: String, as _: T.Type) -> T? {
-        guard let symbol = dlsym(UnsafeMutableRawPointer(bitPattern: -2), symbolName) else {
-            return nil
-        }
-        return unsafeBitCast(symbol, to: T.self)
-    }
-
-    static let registerProto = load(
-        "rac_model_registry_register_proto",
-        as: RegisterProto.self
-    )
-    static let updateProto = load(
-        "rac_model_registry_update_proto",
-        as: UpdateProto.self
-    )
-    static let getProto = load(
-        "rac_model_registry_get_proto",
-        as: GetProto.self
-    )
-    static let listProto = load(
-        "rac_model_registry_list_proto",
-        as: ListProto.self
-    )
-    static let queryProto = load(
-        "rac_model_registry_query_proto",
-        as: QueryProto.self
-    )
-    static let listDownloadedProto = load(
-        "rac_model_registry_list_downloaded_proto",
-        as: ListProto.self
-    )
-    static let removeProto = load(
-        "rac_model_registry_remove_proto",
-        as: RemoveProto.self
-    )
-    static let discoverProto = NativeProtoABI.load(
-        "rac_model_registry_discover_proto",
-        as: RegistryRequestProto.self
-    )
-    static let refreshProto = NativeProtoABI.load(
-        "rac_model_registry_refresh_proto",
-        as: RegistryRequestProto.self
-    )
-    static let importProto = NativeProtoABI.load(
-        "rac_model_registry_import_proto",
-        as: RegistryRequestProto.self
-    )
+    static let registerProto: RegisterProto? = rac_model_registry_register_proto
+    static let updateProto: UpdateProto? = rac_model_registry_update_proto
+    static let getProto: GetProto? = rac_model_registry_get_proto
+    static let listProto: ListProto? = rac_model_registry_list_proto
+    static let queryProto: QueryProto? = rac_model_registry_query_proto
+    static let listDownloadedProto: ListProto? = rac_model_registry_list_downloaded_proto
+    static let removeProto: RemoveProto? = rac_model_registry_remove_proto
+    static let discoverProto: RegistryRequestProto? = rac_model_registry_discover_proto
+    static let refreshProto: RegistryRequestProto? = rac_model_registry_refresh_proto
+    static let importProto: RegistryRequestProto? = rac_model_registry_import_proto
     // Canonical registration factories (global registry, no handle): commons
     // owns id/name/format/artifact derivation, hf.co/org/repo[:quant]
     // resolution, and merge-on-reseed download-state preservation.
-    static let registerFromUrlProto = NativeProtoABI.load(
-        "rac_register_model_from_url_proto",
-        as: NativeProtoABI.ProtoRequest.self
-    )
-    static let registerMultiFileProto = NativeProtoABI.load(
-        "rac_register_multi_file_model_proto",
-        as: NativeProtoABI.ProtoRequest.self
-    )
-    static let freeProto = load(
-        "rac_model_registry_proto_free",
-        as: FreeProto.self
-    )
+    static let registerFromUrlProto: NativeProtoABI.ProtoRequest? = rac_register_model_from_url_proto
+    static let registerMultiFileProto: NativeProtoABI.ProtoRequest? = rac_register_multi_file_model_proto
+    static let freeProto: FreeProto? = rac_model_registry_proto_free
 }
 
 // MARK: - ModelRegistry Bridge

@@ -9,6 +9,7 @@
 //  commons C++ layer. The Swift façade is a thin proto-byte bridge.
 //
 
+import CRACommons
 import Foundation
 
 // pass3-syn-110: `generate(_:)` + its `generateName`/`generate` symbol-cache
@@ -21,8 +22,8 @@ private enum StructuredOutputGeneratedProtoABI {
     static let parseName = "rac_structured_output_parse_proto"
     static let preparePromptName = "rac_structured_output_prepare_prompt_proto"
 
-    static let parse = NativeProtoABI.load(parseName, as: NativeProtoABI.ProtoRequest.self)
-    static let preparePrompt = NativeProtoABI.load(preparePromptName, as: NativeProtoABI.ProtoRequest.self)
+    static let parse: NativeProtoABI.ProtoRequest? = rac_structured_output_parse_proto
+    static let preparePrompt: NativeProtoABI.ProtoRequest? = rac_structured_output_prepare_prompt_proto
 }
 
 extension CppBridge {

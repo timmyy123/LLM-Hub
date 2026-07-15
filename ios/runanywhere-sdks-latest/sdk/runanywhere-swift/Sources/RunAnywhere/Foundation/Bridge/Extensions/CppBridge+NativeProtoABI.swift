@@ -26,11 +26,9 @@ enum NativeProtoABI {
         return unsafeBitCast(symbol, to: T.self)
     }
 
-    static let freeBuffer = load("rac_proto_buffer_free", as: ProtoBufferFree.self)
+    static let freeBuffer: ProtoBufferFree? = rac_proto_buffer_free
 
-    static var canReceiveProtoBuffer: Bool {
-        freeBuffer != nil
-    }
+    static var canReceiveProtoBuffer: Bool { true }
 
     static func missingSymbolMessage(_ symbolName: String) -> String {
         "\(unavailableMessage): \(symbolName)"

@@ -27,18 +27,12 @@ private enum DownloadProtoABI {
         UnsafeMutableRawPointer?
     ) -> rac_result_t
 
-    static let setProgressCallback = NativeProtoABI.load(
-        "rac_download_set_progress_proto_callback",
-        as: SetProgressCallback.self
-    )
-    static let plan = NativeProtoABI.load("rac_download_plan_proto", as: ProtoFunction.self)
-    static let start = NativeProtoABI.load("rac_download_start_proto", as: ProtoFunction.self)
-    static let cancel = NativeProtoABI.load("rac_download_cancel_proto", as: ProtoFunction.self)
-    static let resume = NativeProtoABI.load("rac_download_resume_proto", as: ProtoFunction.self)
-    static let pollProgress = NativeProtoABI.load(
-        "rac_download_progress_poll_proto",
-        as: ProtoFunction.self
-    )
+    static let setProgressCallback: SetProgressCallback? = rac_download_set_progress_proto_callback
+    static let plan: ProtoFunction? = rac_download_plan_proto
+    static let start: ProtoFunction? = rac_download_start_proto
+    static let cancel: ProtoFunction? = rac_download_cancel_proto
+    static let resume: ProtoFunction? = rac_download_resume_proto
+    static let pollProgress: ProtoFunction? = rac_download_progress_poll_proto
 }
 
 private final class DownloadProtoProgressBox {

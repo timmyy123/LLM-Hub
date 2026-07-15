@@ -30,8 +30,8 @@ private enum ToolValueJSONABI {
     static let toJSONName = "rac_tool_value_to_json_proto"
     static let fromJSONName = "rac_tool_value_from_json_proto"
 
-    static let toJSON = NativeProtoABI.load(toJSONName, as: NativeProtoABI.ProtoRequest.self)
-    static let fromJSON = NativeProtoABI.load(fromJSONName, as: NativeProtoABI.ProtoRequest.self)
+    static let toJSON: NativeProtoABI.ProtoRequest? = rac_tool_value_to_json_proto
+    static let fromJSON: NativeProtoABI.ProtoRequest? = rac_tool_value_from_json_proto
 }
 
 // MARK: - RAToolValue Helpers

@@ -47,11 +47,8 @@ private enum VADComponentProtoABI {
     static let processName = "rac_vad_component_process_proto"
     static let setActivityCallbackName = "rac_vad_component_set_activity_proto_callback"
 
-    static let process = NativeProtoABI.load(processName, as: Process.self)
-    static let setActivityCallback = NativeProtoABI.load(
-        setActivityCallbackName,
-        as: SetActivityCallback.self
-    )
+    static let process: Process? = rac_vad_component_process_proto
+    static let setActivityCallback: SetActivityCallback? = rac_vad_component_set_activity_proto_callback
 }
 
 private enum VoiceAgentStateProtoABI {
@@ -78,8 +75,8 @@ private enum VoiceAgentStateProtoABI {
     static let processTurnName = "rac_voice_agent_process_voice_turn_proto"
     static let feedAudioName = "rac_voice_agent_feed_audio_proto"
 
-    static let processTurn = NativeProtoABI.load(processTurnName, as: ProcessTurn.self)
-    static let feedAudio = NativeProtoABI.load(feedAudioName, as: FeedAudio.self)
+    static let processTurn: ProcessTurn? = rac_voice_agent_process_voice_turn_proto
+    static let feedAudio: FeedAudio? = rac_voice_agent_feed_audio_proto
 }
 
 private enum VLMCustomProtoABI {
@@ -110,11 +107,11 @@ private enum VLMCustomProtoABI {
     static let streamName = "rac_vlm_stream_proto"
     static let cancelName = "rac_vlm_cancel_lifecycle_proto"
 
-    static let process = NativeProtoABI.load(processName, as: Process.self)
-    static let stream = NativeProtoABI.load(streamName, as: Stream.self)
+    static let process: Process? = rac_vlm_generate_proto
+    static let stream: Stream? = rac_vlm_stream_proto
     // Lifecycle cancel used by `processStream`'s onTermination so consumer
     // cancellation tears down native generation instead of letting it run.
-    static let cancel = NativeProtoABI.load(cancelName, as: Cancel.self)
+    static let cancel: Cancel? = rac_vlm_cancel_lifecycle_proto
 }
 
 private func cancelLifecycleVLMGeneration() {
@@ -130,7 +127,7 @@ private enum RAGSessionProtoABI {
 
     static let destroyName = "rac_rag_session_destroy_proto"
 
-    static let destroy = NativeProtoABI.load(destroyName, as: Destroy.self)
+    static let destroy: Destroy? = rac_rag_session_destroy_proto
 }
 
 /// Retained VLM stream context released by the detached worker after the
@@ -672,10 +669,7 @@ private enum EmbeddingsLifecycleProtoABI {
 
     static let embedBatchLifecycleName = "rac_embeddings_embed_batch_lifecycle_proto"
 
-    static let embedBatchLifecycle = NativeProtoABI.load(
-        embedBatchLifecycleName,
-        as: EmbedBatchLifecycle.self
-    )
+    static let embedBatchLifecycle: EmbedBatchLifecycle? = rac_embeddings_embed_batch_lifecycle_proto
 }
 
 extension CppBridge.EmbeddingsProto {

@@ -29,16 +29,13 @@ private enum SDKEventProtoABI {
     ) -> rac_result_t
     typealias ClearQueue = @convention(c) () -> Void
 
-    static let subscribe = NativeProtoABI.load("rac_sdk_event_subscribe", as: Subscribe.self)
-    static let unsubscribe = NativeProtoABI.load("rac_sdk_event_unsubscribe", as: Unsubscribe.self)
-    static let quiesce = NativeProtoABI.load("rac_sdk_event_quiesce", as: Quiesce.self)
-    static let publish = NativeProtoABI.load("rac_sdk_event_publish_proto", as: Publish.self)
-    static let poll = NativeProtoABI.load("rac_sdk_event_poll", as: Poll.self)
-    static let publishFailure = NativeProtoABI.load(
-        "rac_sdk_event_publish_failure",
-        as: PublishFailure.self
-    )
-    static let clearQueue = NativeProtoABI.load("rac_sdk_event_clear_queue", as: ClearQueue.self)
+    static let subscribe: Subscribe? = rac_sdk_event_subscribe
+    static let unsubscribe: Unsubscribe? = rac_sdk_event_unsubscribe
+    static let quiesce: Quiesce? = rac_sdk_event_quiesce
+    static let publish: Publish? = rac_sdk_event_publish_proto
+    static let poll: Poll? = rac_sdk_event_poll
+    static let publishFailure: PublishFailure? = rac_sdk_event_publish_failure
+    static let clearQueue: ClearQueue? = rac_sdk_event_clear_queue
 }
 
 private final class SDKEventSubscriptionBox: Sendable {

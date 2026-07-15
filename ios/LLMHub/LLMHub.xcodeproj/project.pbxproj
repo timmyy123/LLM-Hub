@@ -475,7 +475,13 @@
 				CODE_SIGN_ENTITLEMENTS = LLMHub.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 35;
+				CURRENT_PROJECT_VERSION = 41;
+				DEAD_CODE_STRIPPING = NO;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-force_load",
+					"$(BUILT_PRODUCTS_DIR)/librac_commons.a",
+				);
 				DEVELOPMENT_TEAM = 76K65T869A;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "LLMHub-Info.plist";
@@ -494,16 +500,11 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.6;
+				MARKETING_VERSION = 1.1.7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.llmhub.llmhub;
 				PRODUCT_NAME = LLMHub;
 				SDKROOT = iphoneos;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					"-force_load",
-					"$(BUILT_PRODUCTS_DIR)/librac_commons.a",
-				);
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -517,7 +518,7 @@
 				CODE_SIGN_ENTITLEMENTS = LLMHub.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 35;
+				CURRENT_PROJECT_VERSION = 41;
 				DEVELOPMENT_TEAM = 76K65T869A;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "LLMHub-Info.plist";
@@ -536,11 +537,12 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.6;
+				MARKETING_VERSION = 1.1.7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.llmhub.llmhub;
 				PRODUCT_NAME = LLMHub;
 				SDKROOT = iphoneos;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				DEAD_CODE_STRIPPING = NO;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-force_load",

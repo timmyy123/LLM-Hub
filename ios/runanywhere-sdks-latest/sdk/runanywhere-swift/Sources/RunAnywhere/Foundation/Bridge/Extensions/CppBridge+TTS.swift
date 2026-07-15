@@ -38,17 +38,11 @@ private enum TTSStreamSessionABI {
     ) -> rac_result_t
     typealias Finish = @convention(c) (UInt64) -> rac_result_t
 
-    static let setCallback = NativeProtoABI.load(
-        "rac_tts_set_stream_proto_callback",
-        as: SetCallback.self
-    )
-    static let unsetCallback = NativeProtoABI.load(
-        "rac_tts_unset_stream_proto_callback",
-        as: UnsetCallback.self
-    )
-    static let start = NativeProtoABI.load("rac_tts_stream_start_proto", as: Start.self)
-    static let stop = NativeProtoABI.load("rac_tts_stream_stop_proto", as: Finish.self)
-    static let cancel = NativeProtoABI.load("rac_tts_stream_cancel_proto", as: Finish.self)
+    static let setCallback: SetCallback? = rac_tts_set_stream_proto_callback
+    static let unsetCallback: UnsetCallback? = rac_tts_unset_stream_proto_callback
+    static let start: Start? = rac_tts_stream_start_proto
+    static let stop: Finish? = rac_tts_stream_stop_proto
+    static let cancel: Finish? = rac_tts_stream_cancel_proto
 
     struct Functions {
         let setCallback: SetCallback

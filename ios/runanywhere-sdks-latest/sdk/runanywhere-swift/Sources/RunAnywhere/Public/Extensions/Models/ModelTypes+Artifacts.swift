@@ -16,14 +16,8 @@ import Foundation
 // MARK: - Native ABI bindings
 
 private enum ArtifactProtoABI {
-    static let makeModelInfo = NativeProtoABI.load(
-        "rac_model_info_make_proto",
-        as: NativeProtoABI.ProtoRequest.self
-    )
-    static let expectedFiles = NativeProtoABI.load(
-        "rac_artifact_expected_files_proto",
-        as: NativeProtoABI.ProtoRequest.self
-    )
+    static let makeModelInfo: NativeProtoABI.ProtoRequest? = rac_model_info_make_proto
+    static let expectedFiles: NativeProtoABI.ProtoRequest? = rac_artifact_expected_files_proto
 }
 
 // MARK: - Generated Model Contract Helpers

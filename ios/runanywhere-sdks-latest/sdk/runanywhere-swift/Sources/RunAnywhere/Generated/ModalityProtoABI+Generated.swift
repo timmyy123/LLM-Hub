@@ -33,7 +33,7 @@ private enum LLMGeneratedProtoABI {
     typealias GenerateStreamFn = @convention(c) (
         UnsafePointer<UInt8>?,
         Int,
-        @convention(c) (UnsafePointer<UInt8>?, Int, UnsafeMutableRawPointer?) -> Void,
+        (@convention(c) (UnsafePointer<UInt8>?, Int, UnsafeMutableRawPointer?) -> Void)?,
         UnsafeMutableRawPointer?
     ) -> rac_result_t
     typealias CancelProtoFn = @convention(c) (
@@ -44,22 +44,22 @@ private enum LLMGeneratedProtoABI {
     static let generateStreamName = "rac_llm_generate_stream_proto"
     static let cancelProtoName = "rac_llm_cancel_proto"
 
-    static let generate = NativeProtoABI.load(generateName, as: GenerateFn.self)
-    static let generateStream = NativeProtoABI.load(generateStreamName, as: GenerateStreamFn.self)
-    static let cancelProto = NativeProtoABI.load(cancelProtoName, as: CancelProtoFn.self)
+    static let generate: GenerateFn? = rac_llm_generate_proto
+    static let generateStream: GenerateStreamFn? = rac_llm_generate_stream_proto
+    static let cancelProto: CancelProtoFn? = rac_llm_cancel_proto
 }
 
 private enum StructuredOutputGeneratedProtoABI {
     typealias GenerateStreamFn = @convention(c) (
         UnsafePointer<UInt8>?,
         Int,
-        @convention(c) (UnsafePointer<UInt8>?, Int, UnsafeMutableRawPointer?) -> Void,
+        (@convention(c) (UnsafePointer<UInt8>?, Int, UnsafeMutableRawPointer?) -> Void)?,
         UnsafeMutableRawPointer?
     ) -> rac_result_t
 
     static let generateStreamName = "rac_structured_output_generate_stream_proto"
 
-    static let generateStream = NativeProtoABI.load(generateStreamName, as: GenerateStreamFn.self)
+    static let generateStream: GenerateStreamFn? = rac_structured_output_generate_stream_proto
 }
 
 private enum STTGeneratedProtoABI {
@@ -67,15 +67,15 @@ private enum STTGeneratedProtoABI {
     typealias TranscribeStreamFn = @convention(c) (
         UnsafePointer<UInt8>?,
         Int,
-        @convention(c) (UnsafePointer<UInt8>?, Int, UnsafeMutableRawPointer?) -> Void,
+        (@convention(c) (UnsafePointer<UInt8>?, Int, UnsafeMutableRawPointer?) -> Void)?,
         UnsafeMutableRawPointer?
     ) -> rac_result_t
 
     static let transcribeName = "rac_stt_transcribe_lifecycle_proto"
     static let transcribeStreamName = "rac_stt_transcribe_stream_lifecycle_proto"
 
-    static let transcribe = NativeProtoABI.load(transcribeName, as: TranscribeFn.self)
-    static let transcribeStream = NativeProtoABI.load(transcribeStreamName, as: TranscribeStreamFn.self)
+    static let transcribe: TranscribeFn? = rac_stt_transcribe_lifecycle_proto
+    static let transcribeStream: TranscribeStreamFn? = rac_stt_transcribe_stream_lifecycle_proto
 }
 
 private enum TTSGeneratedProtoABI {
@@ -86,7 +86,7 @@ private enum TTSGeneratedProtoABI {
     typealias SynthesizeStreamFn = @convention(c) (
         UnsafePointer<UInt8>?,
         Int,
-        @convention(c) (UnsafePointer<UInt8>?, Int, UnsafeMutableRawPointer?) -> Void,
+        (@convention(c) (UnsafePointer<UInt8>?, Int, UnsafeMutableRawPointer?) -> Void)?,
         UnsafeMutableRawPointer?
     ) -> rac_result_t
 
@@ -94,9 +94,9 @@ private enum TTSGeneratedProtoABI {
     static let synthesizeName = "rac_tts_synthesize_lifecycle_proto"
     static let synthesizeStreamName = "rac_tts_synthesize_stream_lifecycle_proto"
 
-    static let listVoices = NativeProtoABI.load(listVoicesName, as: ListVoicesFn.self)
-    static let synthesize = NativeProtoABI.load(synthesizeName, as: SynthesizeFn.self)
-    static let synthesizeStream = NativeProtoABI.load(synthesizeStreamName, as: SynthesizeStreamFn.self)
+    static let listVoices: ListVoicesFn? = rac_tts_list_voices_lifecycle_proto
+    static let synthesize: SynthesizeFn? = rac_tts_synthesize_lifecycle_proto
+    static let synthesizeStream: SynthesizeStreamFn? = rac_tts_synthesize_stream_lifecycle_proto
 }
 
 private enum VADGeneratedProtoABI {
@@ -129,13 +129,13 @@ private enum VADGeneratedProtoABI {
     static let resetLifecycleName = "rac_vad_reset_lifecycle_proto"
     static let processLifecycleName = "rac_vad_process_lifecycle_proto"
 
-    static let configure = NativeProtoABI.load(configureName, as: ConfigureFn.self)
-    static let statisticsProto = NativeProtoABI.load(statisticsProtoName, as: StatisticsProtoFn.self)
-    static let configureLifecycle = NativeProtoABI.load(configureLifecycleName, as: ConfigureLifecycleFn.self)
-    static let startLifecycle = NativeProtoABI.load(startLifecycleName, as: StartLifecycleFn.self)
-    static let stopLifecycle = NativeProtoABI.load(stopLifecycleName, as: StopLifecycleFn.self)
-    static let resetLifecycle = NativeProtoABI.load(resetLifecycleName, as: ResetLifecycleFn.self)
-    static let processLifecycle = NativeProtoABI.load(processLifecycleName, as: ProcessLifecycleFn.self)
+    static let configure: ConfigureFn? = rac_vad_component_configure_proto
+    static let statisticsProto: StatisticsProtoFn? = rac_vad_component_get_statistics_proto
+    static let configureLifecycle: ConfigureLifecycleFn? = rac_vad_configure_lifecycle_proto
+    static let startLifecycle: StartLifecycleFn? = rac_vad_start_lifecycle_proto
+    static let stopLifecycle: StopLifecycleFn? = rac_vad_stop_lifecycle_proto
+    static let resetLifecycle: ResetLifecycleFn? = rac_vad_reset_lifecycle_proto
+    static let processLifecycle: ProcessLifecycleFn? = rac_vad_process_lifecycle_proto
 }
 
 private enum VoiceAgentGeneratedProtoABI {
@@ -153,8 +153,8 @@ private enum VoiceAgentGeneratedProtoABI {
     static let initializeName = "rac_voice_agent_initialize_proto"
     static let componentStatesProtoName = "rac_voice_agent_component_states_proto"
 
-    static let initialize = NativeProtoABI.load(initializeName, as: InitializeFn.self)
-    static let componentStatesProto = NativeProtoABI.load(componentStatesProtoName, as: ComponentStatesProtoFn.self)
+    static let initialize: InitializeFn? = rac_voice_agent_initialize_proto
+    static let componentStatesProto: ComponentStatesProtoFn? = rac_voice_agent_component_states_proto
 }
 
 private enum VLMGeneratedProtoABI {
@@ -164,7 +164,7 @@ private enum VLMGeneratedProtoABI {
 
     static let cancelLifecycleName = "rac_vlm_cancel_lifecycle_proto"
 
-    static let cancelLifecycle = NativeProtoABI.load(cancelLifecycleName, as: CancelLifecycleFn.self)
+    static let cancelLifecycle: CancelLifecycleFn? = rac_vlm_cancel_lifecycle_proto
 }
 
 private enum EmbeddingsGeneratedProtoABI {
@@ -177,7 +177,7 @@ private enum EmbeddingsGeneratedProtoABI {
 
     static let embedBatchName = "rac_embeddings_embed_batch_proto"
 
-    static let embedBatch = NativeProtoABI.load(embedBatchName, as: EmbedBatchFn.self)
+    static let embedBatch: EmbedBatchFn? = rac_embeddings_embed_batch_proto
 }
 
 private enum RAGGeneratedProtoABI {
@@ -213,11 +213,11 @@ private enum RAGGeneratedProtoABI {
     static let clearProtoName = "rac_rag_clear_proto"
     static let statsProtoName = "rac_rag_stats_proto"
 
-    static let createPipeline = NativeProtoABI.load(createPipelineName, as: CreatePipelineFn.self)
-    static let ingest = NativeProtoABI.load(ingestName, as: IngestFn.self)
-    static let query = NativeProtoABI.load(queryName, as: QueryFn.self)
-    static let clearProto = NativeProtoABI.load(clearProtoName, as: ClearProtoFn.self)
-    static let statsProto = NativeProtoABI.load(statsProtoName, as: StatsProtoFn.self)
+    static let createPipeline: CreatePipelineFn? = rac_rag_session_create_proto
+    static let ingest: IngestFn? = rac_rag_ingest_proto
+    static let query: QueryFn? = rac_rag_query_proto
+    static let clearProto: ClearProtoFn? = rac_rag_clear_proto
+    static let statsProto: StatsProtoFn? = rac_rag_stats_proto
 }
 
 private enum LoRAGeneratedProtoABI {
@@ -233,11 +233,11 @@ private enum LoRAGeneratedProtoABI {
     static let getLoraStateName = "rac_lora_state_proto"
     static let checkLoraCompatibilityName = "rac_lora_compatibility_proto"
 
-    static let applyLoraAdapters = NativeProtoABI.load(applyLoraAdaptersName, as: ApplyLoraAdaptersFn.self)
-    static let removeLoraAdapters = NativeProtoABI.load(removeLoraAdaptersName, as: RemoveLoraAdaptersFn.self)
-    static let listLoraAdapters = NativeProtoABI.load(listLoraAdaptersName, as: ListLoraAdaptersFn.self)
-    static let getLoraState = NativeProtoABI.load(getLoraStateName, as: GetLoraStateFn.self)
-    static let checkLoraCompatibility = NativeProtoABI.load(checkLoraCompatibilityName, as: CheckLoraCompatibilityFn.self)
+    static let applyLoraAdapters: ApplyLoraAdaptersFn? = rac_lora_apply_proto
+    static let removeLoraAdapters: RemoveLoraAdaptersFn? = rac_lora_remove_proto
+    static let listLoraAdapters: ListLoraAdaptersFn? = rac_lora_list_proto
+    static let getLoraState: GetLoraStateFn? = rac_lora_state_proto
+    static let checkLoraCompatibility: CheckLoraCompatibilityFn? = rac_lora_compatibility_proto
 }
 
 private enum LoraRegistryGeneratedProtoABI {
@@ -285,12 +285,12 @@ private enum LoraRegistryGeneratedProtoABI {
     static let markDownloadCompletedName = "rac_lora_catalog_mark_download_completed_proto"
     static let importAdapterName = "rac_lora_adapter_import_proto"
 
-    static let register = NativeProtoABI.load(registerName, as: RegisterFn.self)
-    static let listCatalog = NativeProtoABI.load(listCatalogName, as: ListCatalogFn.self)
-    static let queryCatalog = NativeProtoABI.load(queryCatalogName, as: QueryCatalogFn.self)
-    static let getCatalogEntry = NativeProtoABI.load(getCatalogEntryName, as: GetCatalogEntryFn.self)
-    static let markDownloadCompleted = NativeProtoABI.load(markDownloadCompletedName, as: MarkDownloadCompletedFn.self)
-    static let importAdapter = NativeProtoABI.load(importAdapterName, as: ImportAdapterFn.self)
+    static let register: RegisterFn? = rac_lora_register_proto
+    static let listCatalog: ListCatalogFn? = rac_lora_catalog_list_proto
+    static let queryCatalog: QueryCatalogFn? = rac_lora_catalog_query_proto
+    static let getCatalogEntry: GetCatalogEntryFn? = rac_lora_catalog_get_proto
+    static let markDownloadCompleted: MarkDownloadCompletedFn? = rac_lora_catalog_mark_download_completed_proto
+    static let importAdapter: ImportAdapterFn? = rac_lora_adapter_import_proto
 }
 
 // MARK: - LLM

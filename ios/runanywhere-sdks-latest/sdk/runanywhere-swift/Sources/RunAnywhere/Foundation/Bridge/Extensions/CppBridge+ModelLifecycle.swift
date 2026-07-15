@@ -25,17 +25,11 @@ private enum ModelLifecycleProtoABI {
     ) -> rac_result_t
     typealias Reset = @convention(c) () -> Void
 
-    static let load = NativeProtoABI.load("rac_model_lifecycle_load_proto", as: Load.self)
-    static let unload = NativeProtoABI.load("rac_model_lifecycle_unload_proto", as: Request.self)
-    static let currentModel = NativeProtoABI.load(
-        "rac_model_lifecycle_current_model_proto",
-        as: Request.self
-    )
-    static let componentSnapshot = NativeProtoABI.load(
-        "rac_component_lifecycle_snapshot_proto",
-        as: Snapshot.self
-    )
-    static let reset = NativeProtoABI.load("rac_model_lifecycle_reset", as: Reset.self)
+    static let load: Load? = rac_model_lifecycle_load_proto
+    static let unload: Request? = rac_model_lifecycle_unload_proto
+    static let currentModel: Request? = rac_model_lifecycle_current_model_proto
+    static let componentSnapshot: Snapshot? = rac_component_lifecycle_snapshot_proto
+    static let reset: Reset? = rac_model_lifecycle_reset
 }
 
 extension CppBridge {
