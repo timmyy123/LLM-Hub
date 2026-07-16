@@ -10,6 +10,7 @@ enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
     case systemDefault = "system"
     case english = "en"
     case arabic = "ar"
+    case danish = "da"
     case german = "de"
     case spanish = "es"
     case persian = "fa"
@@ -19,16 +20,15 @@ enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
     case italian = "it"
     case japanese = "ja"
     case korean = "ko"
+    case dutch = "nl"
     case polish = "pl"
     case portuguese = "pt"
     case russian = "ru"
+    case thai = "th"
     case turkish = "tr"
     case ukrainian = "uk"
-    case chinese = "zh"
-    case dutch = "nl"
-    case danish = "da"
-    case thai = "th"
     case vietnamese = "vi"
+    case chinese = "zh"
 
     var id: String { rawValue }
 
@@ -37,6 +37,7 @@ enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
         case .systemDefault: return "system_default_language"
         case .english: return "language_english"
         case .arabic: return "language_arabic"
+        case .danish: return "language_danish"
         case .german: return "language_german"
         case .spanish: return "language_spanish"
         case .persian: return "language_persian"
@@ -46,16 +47,15 @@ enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
         case .italian: return "language_italian"
         case .japanese: return "language_japanese"
         case .korean: return "language_korean"
+        case .dutch: return "language_dutch"
         case .polish: return "language_polish"
         case .portuguese: return "language_portuguese"
         case .russian: return "language_russian"
+        case .thai: return "language_thai"
         case .turkish: return "language_turkish"
         case .ukrainian: return "language_ukrainian"
-        case .chinese: return "language_chinese"
-        case .dutch: return "language_dutch"
-        case .danish: return "language_danish"
-        case .thai: return "language_thai"
         case .vietnamese: return "language_vietnamese"
+        case .chinese: return "language_chinese"
         }
     }
 
@@ -359,6 +359,8 @@ final class OnDeviceTtsManager: NSObject, ObservableObject, AVSpeechSynthesizerD
             return ["en-US", "en-GB", "en"]
         case .arabic:
             return ["ar-SA", "ar-AE", "ar"]
+        case .danish:
+            return ["da-DK", "da"]
         case .german:
             return ["de-DE", "de"]
         case .spanish:
@@ -377,26 +379,24 @@ final class OnDeviceTtsManager: NSObject, ObservableObject, AVSpeechSynthesizerD
             return ["ja-JP", "ja"]
         case .korean:
             return ["ko-KR", "ko"]
+        case .dutch:
+            return ["nl-NL", "nl-BE", "nl"]
         case .polish:
             return ["pl-PL", "pl"]
         case .portuguese:
             return ["pt-BR", "pt-PT", "pt"]
         case .russian:
             return ["ru-RU", "ru"]
+        case .thai:
+            return ["th-TH", "th"]
         case .turkish:
             return ["tr-TR", "tr"]
         case .ukrainian:
             return ["uk-UA", "uk"]
-        case .chinese:
-            return ["zh-CN", "zh-TW", "zh-HK", "zh"]
-        case .dutch:
-            return ["nl-NL", "nl-BE", "nl"]
-        case .danish:
-            return ["da-DK", "da"]
-        case .thai:
-            return ["th-TH", "th"]
         case .vietnamese:
             return ["vi-VN", "vi"]
+        case .chinese:
+            return ["zh-CN", "zh-TW", "zh-HK", "zh"]
         }
     }
 
