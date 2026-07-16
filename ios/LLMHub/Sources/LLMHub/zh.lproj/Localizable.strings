@@ -505,7 +505,7 @@
 "translator_auto_detect" = "自动检测";
 "translator_translate" = "翻译";
 "translator_result" = "翻译结果";
-"translator_requires_gemma3n" = "此功能需要一个 Translate Gemma 或 Gemma 4 模型。请从模型列表下载一个。";
+"translator_requires_gemma3n" = "此功能需要一个 Gemma 4 模型。请从模型列表下载一个。";
 "transcriber_title" = "听写";
 "transcriber_record" = "录制音频";
 "transcriber_upload" = "上传音频";

@@ -506,8 +506,8 @@
 "translator_auto_detect" = "Tự động phát hiện";
 "translator_translate" = "Dịch";
 "translator_result" = "Bản dịch";
-"translator_requires_gemma3n" = "Tính năng này yêu cầu mô hình Translate Gemma hoặc Gemma 4. Vui lòng tải xuống một cái từ màn hình Mô hình.";
-"translator_load_model_desc" = "Tải xuống hoặc tải mô hình Translate Gemma hoặc Gemma 4 để bắt đầu dịch.";
+"translator_requires_gemma3n" = "Tính năng này yêu cầu mô hình Gemma 4. Vui lòng tải xuống một cái từ màn hình Mô hình.";
+"translator_load_model_desc" = "Tải xuống hoặc tải mô hình Gemma 4 để bắt đầu dịch.";
 "translator_missing_vision_projector" = "Máy chiếu thị giác (mmproj) bị thiếu cho%1$@.";
 "transcriber_title" = "Phiên âm ngoại tuyến";
 "transcriber_record" = "Ghi âm thanh";

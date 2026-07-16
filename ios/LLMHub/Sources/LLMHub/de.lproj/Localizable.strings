@@ -394,7 +394,7 @@
 "translator_auto_detect" = "Automatisch erkennen";
 "translator_translate" = "Übersetzen";
 "translator_result" = "Übersetzung";
-"translator_requires_gemma3n" = "Diese Funktion erfordert ein Translate Gemma- oder Gemma 4-Modell. Bitte laden Sie eines vom Modellbildschirm herunter.";
+"translator_requires_gemma3n" = "Diese Funktion erfordert ein Gemma 4-Modell. Bitte laden Sie eines vom Modellbildschirm herunter.";
 "transcriber_title" = "Offline-Transkriptor";
 "transcriber_record" = "Audio aufnehmen";
 "transcriber_upload" = "Audio hochladen";

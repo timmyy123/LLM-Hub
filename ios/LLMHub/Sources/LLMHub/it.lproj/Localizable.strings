@@ -412,7 +412,7 @@
 "translator_auto_detect" = "Rilevamento automatico";
 "translator_translate" = "Traduci";
 "translator_result" = "Traduzione";
-"translator_requires_gemma3n" = "Questa funzionalità richiede un modello Translate Gemma o Gemma 4. Per favore scaricane uno dalla schermata Modelli.";
+"translator_requires_gemma3n" = "Questa funzionalità richiede un modello Gemma 4. Per favore scaricane uno dalla schermata Modelli.";
 "transcriber_title" = "Trascrittore offline";
 "transcriber_record" = "Registra audio";
 "transcriber_upload" = "Carica audio";

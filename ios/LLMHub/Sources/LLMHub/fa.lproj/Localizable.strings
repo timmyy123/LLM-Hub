@@ -414,7 +414,7 @@
 "translator_auto_detect" = "تشخیص خودکار";
 "translator_translate" = "ترجمه";
 "translator_result" = "ترجمه";
-"translator_requires_gemma3n" = "این ویژگی به یک مدل Translate Gemma یا Gemma 4 نیاز دارد. لطفاً یکی را از صفحه مدل‌ها دانلود کنید.";
+"translator_requires_gemma3n" = "این ویژگی به یک مدل Gemma 4 نیاز دارد. لطفاً یکی را از صفحه مدل‌ها دانلود کنید.";
 "transcriber_title" = "رونویس‌گر آفلاین";
 "transcriber_record" = "ضبط صدا";
 "transcriber_upload" = "آپلود صدا";

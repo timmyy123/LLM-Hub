@@ -506,8 +506,8 @@
 "translator_auto_detect" = "Auto Detect";
 "translator_translate" = "Translate";
 "translator_result" = "Translation";
-"translator_requires_gemma3n" = "This feature requires a Translate Gemma or Gemma 4 model. Please download one from the Models screen.";
-"translator_load_model_desc" = "Download or load a Translate Gemma or Gemma 4 model to start translating.";
+"translator_requires_gemma3n" = "This feature requires a Gemma 4 model. Please download one from the Models screen.";
+"translator_load_model_desc" = "Download or load a Gemma 4 model to start translating.";
 "translator_missing_vision_projector" = "Vision projector (mmproj) is missing for %1$@.";
 "transcriber_title" = "Offline Transcriber";
 "transcriber_record" = "Record Audio";

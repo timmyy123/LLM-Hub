@@ -377,7 +377,7 @@
 "translator_auto_detect" = "Detectar Automaticamente";
 "translator_translate" = "Traduzir";
 "translator_result" = "Tradução";
-"translator_requires_gemma3n" = "Este recurso requer um modelo Translate Gemma ou Gemma 4. Por favor baixe um na tela de Modelos.";
+"translator_requires_gemma3n" = "Este recurso requer um modelo Gemma 4. Por favor baixe um na tela de Modelos.";
 "transcriber_title" = "Transcritor Offline";
 "transcriber_record" = "Gravar Áudio";
 "transcriber_upload" = "Enviar Áudio";

@@ -411,7 +411,7 @@
 "translator_auto_detect" = "自動検出";
 "translator_translate" = "翻訳";
 "translator_result" = "翻訳";
-"translator_requires_gemma3n" = "この機能にはTranslate GemmaまたはGemma 4モデルが必要です。モデル画面から1つダウンロードしてください。";
+"translator_requires_gemma3n" = "この機能にはGemma 4モデルが必要です。モデル画面から1つダウンロードしてください。";
 "transcriber_title" = "オフライン文字起こし";
 "transcriber_record" = "音声を録音";
 "transcriber_upload" = "音声をアップロード";

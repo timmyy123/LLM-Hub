@@ -506,8 +506,8 @@
 "translator_auto_detect" = "Automatisk registrering";
 "translator_translate" = "Oversæt";
 "translator_result" = "Oversættelse";
-"translator_requires_gemma3n" = "Denne funktion kræver en Translate Gemma- eller Gemma 4-model. Download venligst en fra skærmen Models.";
-"translator_load_model_desc" = "Download eller indlæs en Translate Gemma- eller Gemma 4-model for at begynde at oversætte.";
+"translator_requires_gemma3n" = "Denne funktion kræver en Gemma 4-model. Download venligst en fra skærmen Models.";
+"translator_load_model_desc" = "Download eller indlæs en Gemma 4-model for at begynde at oversætte.";
 "translator_missing_vision_projector" = "Vision projektor (mmproj) mangler til%1$@.";
 "transcriber_title" = "Offline transskribering";
 "transcriber_record" = "Optag lyd";

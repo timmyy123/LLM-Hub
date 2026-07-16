@@ -506,8 +506,8 @@
 "translator_auto_detect" = "Automatische detectie";
 "translator_translate" = "Vertaal";
 "translator_result" = "Vertaling";
-"translator_requires_gemma3n" = "Voor deze functie is een Translate Gemma- of Gemma 4-model vereist. Download er een vanuit het scherm Modellen.";
-"translator_load_model_desc" = "Download of laad een Translate Gemma- of Gemma 4-model om te beginnen met vertalen.";
+"translator_requires_gemma3n" = "Voor deze functie is een Gemma 4-model vereist. Download er een vanuit het scherm Modellen.";
+"translator_load_model_desc" = "Download of laad een Gemma 4-model om te beginnen met vertalen.";
 "translator_missing_vision_projector" = "Vision-projector (mmproj) ontbreekt voor%1$@.";
 "transcriber_title" = "Offline transcribent";
 "transcriber_record" = "Audio opnemen";

@@ -411,7 +411,7 @@
 "translator_auto_detect" = "Deteksi Otomatis";
 "translator_translate" = "Terjemahkan";
 "translator_result" = "Terjemahan";
-"translator_requires_gemma3n" = "Fitur ini memerlukan model Translate Gemma atau Gemma 4. Harap unduh satu dari layar Model.";
+"translator_requires_gemma3n" = "Fitur ini memerlukan model Gemma 4. Harap unduh satu dari layar Model.";
 "transcriber_title" = "Transkriptor Offline";
 "transcriber_record" = "Rekam Audio";
 "transcriber_upload" = "Unggah Audio";

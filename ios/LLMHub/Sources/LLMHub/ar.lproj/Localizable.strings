@@ -411,7 +411,7 @@
 "translator_auto_detect" = "اكتشاف تلقائي";
 "translator_translate" = "ترجمة";
 "translator_result" = "الترجمة";
-"translator_requires_gemma3n" = "تتطلب هذه الميزة نموذج Translate Gemma أو Gemma 4. يرجى تنزيل نموذج من شاشة النماذج.";
+"translator_requires_gemma3n" = "تتطلب هذه الميزة نموذج Gemma 4. يرجى تنزيل نموذج من شاشة النماذج.";
 "transcriber_title" = "ناسخ دون اتصال";
 "transcriber_record" = "تسجيل صوت";
 "transcriber_upload" = "رفع ملف صوتي";

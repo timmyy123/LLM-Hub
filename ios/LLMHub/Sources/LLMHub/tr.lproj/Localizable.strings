@@ -411,7 +411,7 @@
 "translator_auto_detect" = "Otomatik Algıla";
 "translator_translate" = "Çevir";
 "translator_result" = "Çeviri";
-"translator_requires_gemma3n" = "Bu özellik bir Translate Gemma veya Gemma 4 modeli gerektirir. Lütfen Modeller ekranından bir tane indirin.";
+"translator_requires_gemma3n" = "Bu özellik bir Gemma 4 modeli gerektirir. Lütfen Modeller ekranından bir tane indirin.";
 "transcriber_title" = "Çevrimdışı Transkripsiyon";
 "transcriber_record" = "Ses Kaydet";
 "transcriber_upload" = "Ses Yükle";

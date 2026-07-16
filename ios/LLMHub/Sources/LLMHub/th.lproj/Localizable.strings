@@ -506,8 +506,8 @@
 "translator_auto_detect" = "ตรวจจับอัตโนมัติ";
 "translator_translate" = "แปล";
 "translator_result" = "การแปล";
-"translator_requires_gemma3n" = "คุณลักษณะนี้ต้องใช้โมเดล Translate Gemma หรือ Gemma 4 กรุณาดาวน์โหลดหนึ่งรายการจากหน้าจอโมเดล";
-"translator_load_model_desc" = "ดาวน์โหลดหรือโหลดโมเดล Translate Gemma หรือ Gemma 4 เพื่อเริ่มการแปล";
+"translator_requires_gemma3n" = "คุณลักษณะนี้ต้องใช้โมเดล Gemma 4 กรุณาดาวน์โหลดหนึ่งรายการจากหน้าจอโมเดล";
+"translator_load_model_desc" = "ดาวน์โหลดหรือโหลดโมเดล Gemma 4 เพื่อเริ่มการแปล";
 "translator_missing_vision_projector" = "วิชันโปรเจ็กเตอร์ (mmproj) หายไปสำหรับ%1$@";
 "transcriber_title" = "ทรานสคริปเตอร์ออฟไลน์";
 "transcriber_record" = "บันทึกเสียง";

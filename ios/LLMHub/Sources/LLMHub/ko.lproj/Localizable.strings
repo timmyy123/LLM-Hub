@@ -411,7 +411,7 @@
 "translator_auto_detect" = "자동 감지";
 "translator_translate" = "번역";
 "translator_result" = "번역";
-"translator_requires_gemma3n" = "이 기능에는 Translate Gemma 또는 Gemma 4 모델이 필요합니다. 모델 화면에서 다운로드하세요.";
+"translator_requires_gemma3n" = "이 기능에는 Gemma 4 모델이 필요합니다. 모델 화면에서 다운로드하세요.";
 "transcriber_title" = "오프라인 전사기";
 "transcriber_record" = "오디오 녹음";
 "transcriber_upload" = "오디오 업로드";

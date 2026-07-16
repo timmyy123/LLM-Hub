@@ -414,7 +414,7 @@
 "translator_auto_detect" = "זיהוי אוטומטי";
 "translator_translate" = "תרגם";
 "translator_result" = "תרגום";
-"translator_requires_gemma3n" = "תכונה זו דורשת מודל Translate Gemma או Gemma 4. הורד אחד ממסך המודלים.";
+"translator_requires_gemma3n" = "תכונה זו דורשת מודל Gemma 4. הורד אחד ממסך המודלים.";
 "transcriber_title" = "מתמלל לא מקוון";
 "transcriber_record" = "הקלט אודיו";
 "transcriber_upload" = "העלה אודיו";

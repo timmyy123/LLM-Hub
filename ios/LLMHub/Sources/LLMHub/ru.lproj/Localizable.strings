@@ -394,7 +394,7 @@
 "translator_auto_detect" = "Автоопределение";
 "translator_translate" = "Перевести";
 "translator_result" = "Перевод";
-"translator_requires_gemma3n" = "Эта функция требует модель Translate Gemma или Gemma 4. Пожалуйста, загрузите её с экрана Модели.";
+"translator_requires_gemma3n" = "Эта функция требует модель Gemma 4. Пожалуйста, загрузите её с экрана Модели.";
 "transcriber_title" = "Офлайн транскрибатор";
 "transcriber_record" = "Записать аудио";
 "transcriber_upload" = "Загрузить аудио";

@@ -428,7 +428,7 @@
 "translator_auto_detect" = "Détection Automatique";
 "translator_translate" = "Traduire";
 "translator_result" = "Traduction";
-"translator_requires_gemma3n" = "Cette fonctionnalité nécessite un modèle Translate Gemma ou Gemma 4. Veuillez en télécharger un depuis l\'écran Modèles.";
+"translator_requires_gemma3n" = "Cette fonctionnalité nécessite un modèle Gemma 4. Veuillez en télécharger un depuis l\'écran Modèles.";
 "transcriber_title" = "Transcripteur Hors Ligne";
 "transcriber_record" = "Enregistrer l\'Audio";
 "transcriber_upload" = "Téléverser l\'Audio";
