@@ -30,7 +30,11 @@ object LocaleHelper {
         "he", // Hebrew (modern code)
         "iw", // Hebrew (legacy Android code for compatibility)
         "uk",  // Ukrainian
-        "zh"  // Chinese (simplified)
+        "zh",  // Chinese (simplified)
+        "nl",  // Dutch
+        "da",  // Danish
+        "th",  // Thai
+        "vi"   // Vietnamese
     )
     
     /**

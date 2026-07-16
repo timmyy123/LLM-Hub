@@ -25,6 +25,10 @@ enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
     case turkish = "tr"
     case ukrainian = "uk"
     case chinese = "zh"
+    case dutch = "nl"
+    case danish = "da"
+    case thai = "th"
+    case vietnamese = "vi"
 
     var id: String { rawValue }
 
@@ -48,6 +52,10 @@ enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
         case .turkish: return "language_turkish"
         case .ukrainian: return "language_ukrainian"
         case .chinese: return "language_chinese"
+        case .dutch: return "language_dutch"
+        case .danish: return "language_danish"
+        case .thai: return "language_thai"
+        case .vietnamese: return "language_vietnamese"
         }
     }
 
@@ -381,6 +389,14 @@ final class OnDeviceTtsManager: NSObject, ObservableObject, AVSpeechSynthesizerD
             return ["uk-UA", "uk"]
         case .chinese:
             return ["zh-CN", "zh-TW", "zh-HK", "zh"]
+        case .dutch:
+            return ["nl-NL", "nl-BE", "nl"]
+        case .danish:
+            return ["da-DK", "da"]
+        case .thai:
+            return ["th-TH", "th"]
+        case .vietnamese:
+            return ["vi-VN", "vi"]
         }
     }
 

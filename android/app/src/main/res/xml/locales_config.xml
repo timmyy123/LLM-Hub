@@ -23,4 +23,8 @@
     <locale android:name="he"/>
     <locale android:name="uk"/>
     <locale android:name="zh"/>
+    <locale android:name="nl"/>
+    <locale android:name="da"/>
+    <locale android:name="th"/>
+    <locale android:name="vi"/>
 </locale-config>

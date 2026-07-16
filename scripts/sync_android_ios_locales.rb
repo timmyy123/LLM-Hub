@@ -21,7 +21,11 @@ mapping = {
   'ru' => 'values-ru/strings.xml',
   'tr' => 'values-tr/strings.xml',
   'uk' => 'values-uk/strings.xml',
-  'zh' => 'values-zh/strings.xml'
+  'zh' => 'values-zh/strings.xml',
+  'nl' => 'values-nl/strings.xml',
+  'da' => 'values-da/strings.xml',
+  'th' => 'values-th/strings.xml',
+  'vi' => 'values-vi/strings.xml'
 }
 
 def parse_android_strings(path)

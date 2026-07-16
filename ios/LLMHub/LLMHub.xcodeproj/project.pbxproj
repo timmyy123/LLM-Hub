@@ -115,6 +115,10 @@
 		E7D017ED03C80DCB4E040377 /* pl */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = pl; path = pl.lproj/Localizable.strings; sourceTree = "<group>"; };
 		ECD7AAE029AF6E8F7EA01B3D /* LLMBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMBackend.swift; sourceTree = "<group>"; };
 		F5C1B532F7D3AE6F20EB4AEC /* he */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = he; path = he.lproj/Localizable.strings; sourceTree = "<group>"; };
+		A69D8D4DF513F8D642F730D1 /* nl */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = nl; path = nl.lproj/Localizable.strings; sourceTree = "<group>"; };
+		A69D8D4DF513F8D642F730D2 /* da */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = da; path = da.lproj/Localizable.strings; sourceTree = "<group>"; };
+		A69D8D4DF513F8D642F730D3 /* th */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = th; path = th.lproj/Localizable.strings; sourceTree = "<group>"; };
+		A69D8D4DF513F8D642F730D4 /* vi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = vi; path = vi.lproj/Localizable.strings; sourceTree = "<group>"; };
 		F841EEA264BDE0E6E2A1BC18 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Icon.png; sourceTree = "<group>"; };
 		FA001122334455667788AACC /* StableDiffusionBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StableDiffusionBackend.swift; sourceTree = "<group>"; };
 		FA0011BB334455667788AA02 /* PreviewServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewServer.swift; sourceTree = "<group>"; };
@@ -295,6 +299,10 @@
 				tr,
 				uk,
 				zh,
+				nl,
+				da,
+				th,
+				vi,
 			);
 			mainGroup = 60C52022B63693117913378C;
 			packageReferences = (
@@ -396,6 +404,10 @@
 				52C0ECF6F3CAD2637A0AC803 /* tr */,
 				94722918DD9186F0D751D9C0 /* uk */,
 				70D3A8BE6F91CC4E2E5D0A11 /* zh */,
+				A69D8D4DF513F8D642F730D1 /* nl */,
+				A69D8D4DF513F8D642F730D2 /* da */,
+				A69D8D4DF513F8D642F730D3 /* th */,
+				A69D8D4DF513F8D642F730D4 /* vi */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";

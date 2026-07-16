@@ -72,7 +72,7 @@
 "thinking_tokens" = "Thinking (%1$d tokens)";
 "enable_thinking" = "Enable Thinking";
 "thinking_toggle_label" = "Enable Thinking";
-"version_number" = "Version 3.8.4";
+"version_number" = "Version 3.8.5";
 "app_version" = "App Version";
 "terms_of_service" = "Terms of Service";
 "tos_last_updated" = "Last updated: July 16, 2025";
@@ -816,6 +816,11 @@
 "whisper_download_hint" = "Download an ASR model to use Whisper transcription";
 "whisper_live_transcription" = "Live Whisper Transcription";
 "whisper_transcribing" = "Transcribing with Whisper…";
+
+"language_dutch" = "Nederlands";
+"language_danish" = "Dansk";
+"language_thai" = "ไทย";
+"language_vietnamese" = "Tiếng Việt";
 
 "on_device_ai_engine" = "ON-DEVICE AI ENGINE";
 "secure_private" = "SECURE & PRIVATE";
