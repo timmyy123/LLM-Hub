@@ -295,6 +295,9 @@
 "remaining" = "verbleibend";
 "auto_readout" = "Automatisches Vorlesen";
 "auto_readout_description" = "KI-Antworten nach dem Senden einer Anfrage automatisch laut vorlesen";
+"text_to_speech_voices" = "Text-zu-Sprache-Stimmen";
+"text_to_speech_voices_description" = "iOS-Stimmen für gesprochene Inhalte auswählen";
+"tts_voices_nav_hint" = "Gehe zu Einstellungen → Bedienungshilfen → Lesen & Sprechen → Stimmen.";
 "model_supports_multimodal" = "Vision+Audio+Text";
 "multimodal_format" = "%1$@+%2$@+Text";
 "gemma3n_e2b_gpu_requires_6gb" = "Benötigt mindestens 6GB RAM für GPU";

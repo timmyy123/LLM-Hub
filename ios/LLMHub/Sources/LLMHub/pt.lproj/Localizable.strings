@@ -276,6 +276,9 @@
 "remaining" = "restantes";
 "auto_readout" = "Leitura Automática";
 "auto_readout_description" = "Ler automaticamente as respostas da IA em voz alta após enviar uma mensagem";
+"text_to_speech_voices" = "Vozes de texto para fala";
+"text_to_speech_voices_description" = "Escolha vozes do iOS para conteúdo falado";
+"tts_voices_nav_hint" = "Vá a Definições → Acessibilidade → Ler e falar → Vozes.";
 "translating_tap_to_cancel" = "Traduzindo (toque para cancelar)";
 "transcribing_tap_to_cancel" = "Transcrevendo (toque para cancelar)";
 "model_supports_multimodal" = "Visão+Áudio+Texto";

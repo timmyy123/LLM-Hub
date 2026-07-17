@@ -267,6 +267,9 @@
 "remaining" = "pozostało";
 "auto_readout" = "Automatyczne Odczytywanie";
 "auto_readout_description" = "Automatycznie odczytuj odpowiedzi AI na głos po wysłaniu wiadomości";
+"text_to_speech_voices" = "Głosy zamiany tekstu na mowę";
+"text_to_speech_voices_description" = "Wybierz głosy iOS dla treści mówionych";
+"tts_voices_nav_hint" = "Przejdź do Ustawienia → Dostępność → Czytaj i mów → Głosy.";
 "image_copied_clipboard" = "Obraz skopiowany z czatu";
 "image_copied_to_clipboard" = "Obraz skopiowany do schowka";
 "failed_to_copy_image" = "Nie udało się skopiować obrazu";

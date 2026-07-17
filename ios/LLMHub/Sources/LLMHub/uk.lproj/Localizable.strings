@@ -310,6 +310,9 @@
 "clear_all" = "Очистити все";
 "auto_readout" = "Автоматичне озвучення";
 "auto_readout_description" = "Автоматично озвучувати відповіді AI після надсилання запиту";
+"text_to_speech_voices" = "Голоси перетворення тексту на мовлення";
+"text_to_speech_voices_description" = "Виберіть голоси iOS для озвучуваного вмісту";
+"tts_voices_nav_hint" = "Перейдіть до Налаштування → Спеціальні можливості → Читати й говорити → Голоси.";
 "memory_cleared" = "Усі пам\'яті очищено";
 "confirm_replace_memory_title" = "Замінити наявну пам\'ять?";
 "confirm_replace_memory_message" = "У вас уже є глобальна пам\'ять. Заміна видалить наявну пам\'ять та її embeddings. Продовжити?";

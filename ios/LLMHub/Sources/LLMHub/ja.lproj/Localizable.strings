@@ -267,6 +267,9 @@
 "remaining" = "残り";
 "auto_readout" = "自動読み上げ";
 "auto_readout_description" = "メッセージ送信後、AIの応答を自動的に音声で読み上げます";
+"text_to_speech_voices" = "テキスト読み上げ音声";
+"text_to_speech_voices_description" = "読み上げコンテンツ用のiOS音声を選択します";
+"tts_voices_nav_hint" = "設定 → アクセシビリティ → 読み上げと発話 → 声 に移動してください。";
 "image_copied_clipboard" = "チャットから画像をコピーしました";
 "image_copied_to_clipboard" = "画像がクリップボードにコピーされました";
 "failed_to_copy_image" = "画像のコピーに失敗しました";

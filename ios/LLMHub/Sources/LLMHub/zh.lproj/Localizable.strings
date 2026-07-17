@@ -320,6 +320,9 @@
 "clear_all" = "清除全部";
 "auto_readout" = "自动朗读";
 "auto_readout_description" = "大声朗读 AI 的回复内容";
+"text_to_speech_voices" = "文本转语音声音";
+"text_to_speech_voices_description" = "为朗读内容选择 iOS 声音";
+"tts_voices_nav_hint" = "前往设置 → 辅助功能 → 阅读与朗读 → 声音。";
 "memory_cleared" = "所有记忆已清除";
 "confirm_replace_memory_title" = "替换当前的记忆";
 "confirm_replace_memory_message" = "您已拥有一个全局记忆。替换它将删除现有记忆以及导入的数据。要继续吗？";

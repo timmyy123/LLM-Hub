@@ -266,6 +266,9 @@
 "remaining" = "rimanenti";
 "auto_readout" = "Lettura Automatica";
 "auto_readout_description" = "Leggere automaticamente le risposte dell\'IA ad alta voce dopo l\'invio di un messaggio";
+"text_to_speech_voices" = "Voci sintesi vocale";
+"text_to_speech_voices_description" = "Scegli le voci iOS per i contenuti letti";
+"tts_voices_nav_hint" = "Vai in Impostazioni → Accessibilità → Leggi e parla → Voci.";
 "translating_tap_to_cancel" = "Traduzione in corso (tocca per annullare)";
 "transcribing_tap_to_cancel" = "Trascrizione in corso (tocca per annullare)";
 "image_copied_clipboard" = "Immagine copiata dalla chat";

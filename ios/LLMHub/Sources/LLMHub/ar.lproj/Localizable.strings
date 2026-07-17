@@ -267,6 +267,9 @@
 "remaining" = "متبقٍ";
 "auto_readout" = "القراءة التلقائية";
 "auto_readout_description" = "قراءة ردود الذكاء الاصطناعي بصوت عالٍ تلقائيًا بعد إرسال الطلب";
+"text_to_speech_voices" = "أصوات تحويل النص إلى كلام";
+"text_to_speech_voices_description" = "اختر أصوات iOS للمحتوى المنطوق";
+"tts_voices_nav_hint" = "اذهب إلى الإعدادات ← إمكانية الوصول ← القراءة والتحدث ← الأصوات.";
 "image_copied_clipboard" = "تم نسخ الصورة من الدردشة";
 "image_copied_to_clipboard" = "تم نسخ الصورة إلى الحافظة";
 "failed_to_copy_image" = "فشل نسخ الصورة";

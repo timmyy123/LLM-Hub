@@ -321,6 +321,9 @@
 "clear_all" = "Alles wissen";
 "auto_readout" = "Automatische uitlezing";
 "auto_readout_description" = "Lees AI-reacties automatisch voor na het verzenden van een prompt";
+"text_to_speech_voices" = "Tekst-naar-spraakstemmen";
+"text_to_speech_voices_description" = "Kies iOS-stemmen voor gesproken inhoud";
+"tts_voices_nav_hint" = "Ga naar Instellingen → Toegankelijkheid → Lezen en spreken → Stemmen.";
 "memory_cleared" = "Alle herinneringen gewist";
 "confirm_replace_memory_title" = "Bestaand geheugen vervangen?";
 "confirm_replace_memory_message" = "Je hebt al een globaal geheugen. Als u het vervangt, worden het bestaande geheugen en de inbedding ervan verwijderd. Doorgaan?";

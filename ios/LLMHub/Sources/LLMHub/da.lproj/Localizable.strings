@@ -321,6 +321,9 @@
 "clear_all" = "Ryd alle";
 "auto_readout" = "Automatisk udlæsning";
 "auto_readout_description" = "Læs automatisk AI-svar højt efter at have sendt en prompt";
+"text_to_speech_voices" = "Tekst til tale-stemmer";
+"text_to_speech_voices_description" = "Vælg iOS-stemmer til oplæst indhold";
+"tts_voices_nav_hint" = "Gå til Indstillinger → Tilgængelighed → Læs og tal → Stemmer.";
 "memory_cleared" = "Alle minder ryddet";
 "confirm_replace_memory_title" = "Vil du udskifte eksisterende hukommelse?";
 "confirm_replace_memory_message" = "Du har allerede en global hukommelse. Udskiftning vil slette den eksisterende hukommelse og dens indlejringer. Fortsætte?";

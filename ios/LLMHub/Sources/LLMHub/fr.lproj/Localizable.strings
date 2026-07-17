@@ -254,6 +254,9 @@
 "remaining" = "restant";
 "auto_readout" = "Lecture Automatique";
 "auto_readout_description" = "Lire automatiquement les réponses de l\'IA à haute voix après l\'envoi d\'un message";
+"text_to_speech_voices" = "Voix de synthèse vocale";
+"text_to_speech_voices_description" = "Choisir les voix iOS pour le contenu lu à voix haute";
+"tts_voices_nav_hint" = "Allez dans Réglages → Accessibilité → Lire et parler → Voix.";
 "translating_tap_to_cancel" = "Traduction en cours (touchez pour annuler)";
 "transcribing_tap_to_cancel" = "Transcription en cours (touchez pour annuler)";
 "image_copied_clipboard" = "Image copiée du chat";

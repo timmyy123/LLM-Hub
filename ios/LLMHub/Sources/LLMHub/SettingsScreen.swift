@@ -22,6 +22,7 @@ struct SettingsScreen: View {
     @StateObject private var ragManager = RagServiceManager.shared
     @State private var showAbout = false
     @State private var showTerms = false
+    @State private var showTTSAlert = false
 
 
     var body: some View {
@@ -104,6 +105,17 @@ struct SettingsScreen: View {
                         subtitle: settings.localized("auto_readout_description"),
                         isOn: $settings.autoReadoutEnabled
                     )
+                    .listRowInsets(EdgeInsets(top: 6, leading: 14, bottom: 6, trailing: 14))
+                    .listRowBackground(Color.clear)
+
+                    SettingsRow(
+                        icon: "waveform",
+                        iconColor: ApolloPalette.accentStrong,
+                        titleKey: "text_to_speech_voices",
+                        subtitleKey: "text_to_speech_voices_description"
+                    ) {
+                        openTextToSpeechVoiceSettings()
+                    }
                     .listRowInsets(EdgeInsets(top: 6, leading: 14, bottom: 6, trailing: 14))
                     .listRowBackground(Color.clear)
 
@@ -239,6 +251,19 @@ struct SettingsScreen: View {
                 }
             }
         }
+        // TTS Voice Settings guidance alert
+        .alert(settings.localized("text_to_speech_voices"), isPresented: $showTTSAlert) {
+            Button(settings.localized("ok"), role: .cancel) {}
+        } message: {
+            Text(settings.localized("tts_voices_nav_hint"))
+        }
+    }
+
+    private func openTextToSpeechVoiceSettings() {
+        // prefs:root=ACCESSIBILITY is blocked by the iOS sandbox for App Store apps.
+        // The only reliable deep-link is UIApplication.openSettingsURLString (app's own settings).
+        // We guide the user with an alert instead.
+        showTTSAlert = true
     }
 }
 

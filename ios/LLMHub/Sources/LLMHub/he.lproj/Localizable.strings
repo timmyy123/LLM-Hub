@@ -310,6 +310,9 @@
 "clear_all" = "נקה הכל";
 "auto_readout" = "קריאה אוטומטית";
 "auto_readout_description" = "קרא בקול את תגובות ה-AI לאחר שליחת בקשה";
+"text_to_speech_voices" = "קולות טקסט לדיבור";
+"text_to_speech_voices_description" = "בחר קולות iOS עבור תוכן מוקרא";
+"tts_voices_nav_hint" = "עבור אל הגדרות ← נגישות ← קרא ודבר ← קולות.";
 "memory_cleared" = "כל הזיכרונות נוקו";
 "confirm_replace_memory_title" = "להחליף זיכרון קיים?";
 "confirm_replace_memory_message" = "כבר קיים זיכרון גלובלי. החלפתו תמחק את הזיכרון ואת האימבדינגים. להמשיך?";

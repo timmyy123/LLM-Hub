@@ -310,6 +310,9 @@
 "clear_all" = "پاک‌سازی همه";
 "auto_readout" = "خواندن خودکار";
 "auto_readout_description" = "پس از ارسال درخواست، پاسخ‌های هوش مصنوعی را خودکار بخوان";
+"text_to_speech_voices" = "صداهای تبدیل متن به گفتار";
+"text_to_speech_voices_description" = "صداهای iOS را برای محتوای گفتاری انتخاب کنید";
+"tts_voices_nav_hint" = "برو به تنظیمات ← دسترسی‌پذیری ← خواندن و صحبت کردن ← صداها.";
 "memory_cleared" = "همه حافظه‌ها پاک شدند";
 "confirm_replace_memory_title" = "حافظه موجود جایگزین شود؟";
 "confirm_replace_memory_message" = "شما یک حافظه سراسری دارید. جایگزینی آن حافظه و امبدینگ‌های موجود را حذف می‌کند. ادامه می‌دهید؟";

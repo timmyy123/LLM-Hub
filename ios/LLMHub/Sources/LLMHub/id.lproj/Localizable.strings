@@ -267,6 +267,9 @@
 "remaining" = "tersisa";
 "auto_readout" = "Pembacaan Otomatis";
 "auto_readout_description" = "Membaca respons AI dengan suara keras secara otomatis setelah mengirim pesan";
+"text_to_speech_voices" = "Suara teks ke ucapan";
+"text_to_speech_voices_description" = "Pilih suara iOS untuk konten yang dibacakan";
+"tts_voices_nav_hint" = "Buka Pengaturan → Aksesibilitas → Baca & Bicara → Suara.";
 "image_copied_clipboard" = "Gambar disalin dari obrolan";
 "image_copied_to_clipboard" = "Gambar disalin ke clipboard";
 "failed_to_copy_image" = "Gagal menyalin gambar";

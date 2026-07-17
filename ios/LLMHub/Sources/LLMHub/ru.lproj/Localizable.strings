@@ -295,6 +295,9 @@
 "remaining" = "осталось";
 "auto_readout" = "Автоматическое Озвучивание";
 "auto_readout_description" = "Автоматически озвучивать ответы ИИ после отправки сообщения";
+"text_to_speech_voices" = "Голоса преобразования текста в речь";
+"text_to_speech_voices_description" = "Выберите голоса iOS для озвучиваемого содержимого";
+"tts_voices_nav_hint" = "Перейдите в Настройки → Спецвозможности → Чтение и речь → Голоса.";
 "model_supports_multimodal" = "Зрение+Аудио+Текст";
 "multimodal_format" = "%1$@+%2$@+Текст";
 "gemma3n_e2b_gpu_requires_6gb" = "Требуется минимум 6ГБ RAM для GPU";

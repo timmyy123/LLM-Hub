@@ -321,6 +321,9 @@
 "clear_all" = "Xóa tất cả";
 "auto_readout" = "Tự động đọc";
 "auto_readout_description" = "Tự động đọc to câu trả lời của AI sau khi gửi lời nhắc";
+"text_to_speech_voices" = "Giọng đọc văn bản";
+"text_to_speech_voices_description" = "Chọn giọng iOS cho nội dung được đọc";
+"tts_voices_nav_hint" = "Vào Cài đặt → Trợ năng → Đọc & Nói → Giọng nói.";
 "memory_cleared" = "Xóa hết ký ức";
 "confirm_replace_memory_title" = "Thay thế bộ nhớ hiện có?";
 "confirm_replace_memory_message" = "Bạn đã có một bộ nhớ toàn cầu. Việc thay thế nó sẽ xóa bộ nhớ hiện có và các phần nhúng của nó. Tiếp tục?";

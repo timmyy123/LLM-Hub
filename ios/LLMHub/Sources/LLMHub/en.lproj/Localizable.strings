@@ -321,6 +321,9 @@
 "clear_all" = "Clear All";
 "auto_readout" = "Auto Readout";
 "auto_readout_description" = "Automatically read AI responses aloud after sending a prompt";
+"text_to_speech_voices" = "Text to Speech Voices";
+"text_to_speech_voices_description" = "Choose iOS voices for spoken content";
+"tts_voices_nav_hint" = "Go to Settings → Accessibility → Read & Speak → Voices to add and manage iOS voices.";
 "memory_cleared" = "All memories cleared";
 "confirm_replace_memory_title" = "Replace existing memory?";
 "confirm_replace_memory_message" = "You already have a global memory. Replacing it will delete the existing memory and its embeddings. Continue?";

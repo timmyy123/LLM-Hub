@@ -267,6 +267,9 @@
 "remaining" = "kalan";
 "auto_readout" = "Otomatik Okuma";
 "auto_readout_description" = "Mesaj gönderdikten sonra AI yanıtlarını otomatik olarak sesli oku";
+"text_to_speech_voices" = "Metinden konuşmaya sesleri";
+"text_to_speech_voices_description" = "Sesli içerik için iOS seslerini seç";
+"tts_voices_nav_hint" = "Ayarlar → Erişilebilirlik → Oku ve Konuş → Sesler bölümüne gidin.";
 "image_copied_clipboard" = "Görsel sohbetten kopyalandı";
 "image_copied_to_clipboard" = "Görsel panoya kopyalandı";
 "failed_to_copy_image" = "Görsel kopyalanamadı";

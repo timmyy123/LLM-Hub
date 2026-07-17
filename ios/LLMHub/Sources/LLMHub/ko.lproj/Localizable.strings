@@ -267,6 +267,9 @@
 "remaining" = "남음";
 "auto_readout" = "자동 읽어주기";
 "auto_readout_description" = "메시지 전송 후 AI 응답을 자동으로 소리내어 읽어줍니다";
+"text_to_speech_voices" = "텍스트 음성 변환 목소리";
+"text_to_speech_voices_description" = "읽어 주는 콘텐츠에 사용할 iOS 목소리를 선택합니다";
+"tts_voices_nav_hint" = "설정 → 손쉬운 사용 → 읽기 및 말하기 → 목소리로 이동하세요.";
 "image_copied_clipboard" = "채팅에서 이미지 복사됨";
 "image_copied_to_clipboard" = "이미지가 클립보드에 복사됨";
 "failed_to_copy_image" = "이미지 복사 실패";
