@@ -1271,8 +1271,12 @@ class ChatViewModel: ObservableObject {
             return ""
         }()
 
-        let projectedChars = messages.reduce(0) { $0 + $1.content.count } + generationPrompt.count
-        let projectedTokens = Double(projectedChars) / 4.0
+        // Use the reset-aware approximateContextTokensUsed as the baseline so that
+        // after a context reset the projected fraction starts from 0 (only new messages),
+        // not from all-time total. Without this, projectedFraction stays ≥ 99.5% forever
+        // after the first reset, causing every subsequent send to also reset.
+        let newPromptTokens = Double(generationPrompt.count) / 4.0
+        let projectedTokens = approximateContextTokensUsed + newPromptTokens
         let projectedFraction = contextBudgetForRing > 0 ? (projectedTokens / contextBudgetForRing) : 0
         let shouldResetInferenceContext = (isContextBudgetExceededForSession || projectedFraction >= 0.995) && !messages.isEmpty
 
@@ -1855,8 +1859,13 @@ class ChatViewModel: ObservableObject {
         let isLlama3 = isLlama && (modelName.contains("llama-3") || modelName.contains("llama 3") || modelName.contains("llama-3."))
         let isHarmonyModel = modelName.contains("gpt-oss") || modelName.contains("gpt_oss")
 
-        // 1. Identify history (exclude placeholder turns)
-        var history: [ChatMessage] = messages.count >= 2 ? Array(messages.dropLast(2)) : []
+        // 1. Identify history (exclude placeholder turns).
+        // Respect context-reset boundary: if the context ring was previously reset,
+        // only feed messages from the reset point onward so the model truly forgets
+        // pre-reset history (matching what the display ring already shows).
+        let resetStart = contextResetStartBySessionId[currentSessionId] ?? 0
+        let allHistory: [ChatMessage] = messages.count >= 2 ? Array(messages.dropLast(2)) : []
+        var history: [ChatMessage] = resetStart > 0 ? Array(allHistory.dropFirst(min(resetStart, allHistory.count))) : allHistory
 
         // 2. Context Window Management (Sliding Window)
         // Size history budget from the actual loaded context window so prompt + response fit.
@@ -1882,17 +1891,35 @@ class ChatViewModel: ObservableObject {
         // the start and end of long assistant replies (e.g. stories).
         for msg in history.reversed() {
             // For context budget, count only the answer portion (thinking is stripped)
-            let effectiveLen: Int
+            let rawContent: String
             if !msg.isFromUser && contentHasThinkingMarkers(msg.content) {
-                effectiveLen = getDisplayContentWithoutThinking(msg.content).count
+                rawContent = getDisplayContentWithoutThinking(msg.content)
             } else {
-                effectiveLen = msg.content.count
+                rawContent = msg.content
             }
-            if currentChars + effectiveLen < maxHistoryChars {
+            let effectiveLen = rawContent.count
+            let remaining = maxHistoryChars - currentChars
+
+            if effectiveLen <= remaining {
+                // Message fits entirely — include as-is.
                 truncatedHistory.insert(msg, at: 0)
                 currentChars += effectiveLen
+            } else if remaining > 300 {
+                // Message exceeds remaining budget but there is still meaningful space.
+                // Truncate the MIDDLE so we keep both the opening and closing context
+                // (e.g. a long story's intro + conclusion).  This prevents a single long
+                // assistant reply from silently wiping out all history on the next turn.
+                let half = remaining / 2
+                let startSlice = String(rawContent.prefix(half))
+                let endSlice   = String(rawContent.suffix(half))
+                var elided = msg
+                elided.content = startSlice + "\n…\n" + endSlice
+                truncatedHistory.insert(elided, at: 0)
+                currentChars = maxHistoryChars // budget exhausted
+                break
             } else {
-                break // Stop adding older messages
+                // Too little budget left for even a truncated version — stop here.
+                break
             }
         }
         history = truncatedHistory
