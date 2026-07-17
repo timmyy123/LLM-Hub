@@ -66,6 +66,7 @@ class GeniexInferenceService @Inject constructor(
     private var currentModel: LLMModel? = null
     private var currentPreferredBackend: LlmInference.Backend? = null
     private var currentIsNpu: Boolean = false
+    private var currentDeviceId: String? = null
     private var lastDecodeSpeedTokPerSec: Double? = null
     private var currentVisionDisabled: Boolean = false
     private var currentAudioDisabled: Boolean = false
@@ -305,6 +306,7 @@ class GeniexInferenceService @Inject constructor(
                         currentModel = model
                         currentPreferredBackend = if (backendId == "CPU") LlmInference.Backend.CPU else LlmInference.Backend.GPU
                         currentIsNpu = deviceToUse == "npu"
+                        currentDeviceId = deviceId
                         currentVisionDisabled = disableVision
                         Log.i(
                             TAG,
@@ -341,6 +343,7 @@ class GeniexInferenceService @Inject constructor(
                         currentModel = model
                         currentPreferredBackend = if (backendId == "CPU") LlmInference.Backend.CPU else LlmInference.Backend.GPU
                         currentIsNpu = deviceToUse == "npu"
+                        currentDeviceId = deviceId
                         currentVisionDisabled = disableVision
                         Log.i(
                             TAG,
@@ -462,6 +465,7 @@ class GeniexInferenceService @Inject constructor(
              isVlmLoaded = false
              currentModel = null
              currentPreferredBackend = null
+             currentDeviceId = null
              return
          }
 
@@ -481,6 +485,7 @@ class GeniexInferenceService @Inject constructor(
              isVlmLoaded = false
              currentModel = null
              currentPreferredBackend = null
+             currentDeviceId = null
          }
     }
 
@@ -1312,6 +1317,8 @@ class GeniexInferenceService @Inject constructor(
             val modelToReload = currentModel
             val backendToUse = currentPreferredBackend
 
+            val deviceToUse = currentDeviceId
+
             if (isVlmLoaded && vlmWrapper != null) {
                 // VLM always needs a full reload to reset vision encoder state
                 Log.d(TAG, "VLM: Destroying wrapper to clear vision state for new chat")
@@ -1320,10 +1327,18 @@ class GeniexInferenceService @Inject constructor(
                 vlmWrapper = null
                 if (modelToReload != null) {
                     Log.d(TAG, "VLM: Reloading model ${modelToReload.name} for fresh state (visionDisabled=$currentVisionDisabled)")
-                    loadModelInternal(modelToReload, backendToUse, currentVisionDisabled)
+                    loadModelInternal(modelToReload, backendToUse, currentVisionDisabled, deviceToUse)
                 }
             } else if (llmWrapper != null) {
                 llmWrapper?.stopStream()
+                if (hasGeneratedTokensSinceLoad && modelToReload != null) {
+                    Log.d(TAG, "LLM: Destroying wrapper to clear KV cache for chat $chatId")
+                    llmWrapper?.destroy()
+                    llmWrapper = null
+                    hasGeneratedTokensSinceLoad = false
+                    Log.d(TAG, "LLM: Reloading model ${modelToReload.name} for fresh state")
+                    loadModelInternal(modelToReload, backendToUse, currentVisionDisabled, deviceToUse)
+                }
             }
         } catch (e: Exception) {
             Log.w(TAG, "Error resetting chat session: ${e.message}")
