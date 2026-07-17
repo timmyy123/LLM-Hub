@@ -2588,9 +2588,18 @@ private struct IOS17VibeVoiceScreen: View {
         var truncatedHistory: [(role: String, content: String)] = []
         for msg in conversationHistory.reversed() {
             let msgLen = msg.content.count
-            if currentChars + msgLen < maxHistoryChars {
+            let remaining = maxHistoryChars - currentChars
+            if msgLen <= remaining {
                 truncatedHistory.insert(msg, at: 0)
                 currentChars += msgLen
+            } else if remaining > 300 {
+                // Message exceeds remaining budget — truncate its MIDDLE so both
+                // the opening and closing of a long reply are preserved.
+                let half = remaining / 2
+                let elided = (role: msg.role, content: String(msg.content.prefix(half)) + "\n…\n" + String(msg.content.suffix(half)))
+                truncatedHistory.insert(elided, at: 0)
+                currentChars = maxHistoryChars
+                break
             } else {
                 break
             }
@@ -2602,6 +2611,7 @@ private struct IOS17VibeVoiceScreen: View {
         let isGemma  = modelName.contains("gemma")
         let isGemma4 = isGemma && (modelName.contains("gemma 4") || modelName.contains("gemma-4")) && !modelName.contains("translate")
         let isLlama  = modelName.contains("llama") || modelName.contains("mistral")
+        let isLlama3 = isLlama && (modelName.contains("llama-3") || modelName.contains("llama 3") || modelName.contains("llama-3."))
         let isHarmonyModel = modelName.contains("gpt-oss") || modelName.contains("gpt_oss")
 
         // 4. Build Raw Prompt (Prepend __RAW_PROMPT__ to bypass SDK auto-formatting)
@@ -2691,12 +2701,14 @@ private struct IOS17VibeVoiceScreen: View {
             return
         }
         
-        // When using RAW_PROMPT, the SDK's systemPrompt argument is ignored, 
+        // When using RAW_PROMPT, the SDK's systemPrompt argument is ignored,
         // so we must inject it manually into our sequence.
         if isGemma4 {
             parts.append("<|turn>system\n\(systemPrompt)<turn|>")
         } else if isGemma {
             parts.append("<start_of_turn>system\n\(systemPrompt)<end_of_turn>")
+        } else if isLlama3 {
+            parts.append("<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n\(systemPrompt)<|eot_id|>")
         } else if isLlama {
             parts.append("<<SYS>>\n\(systemPrompt)\n<</SYS>>")
         } else {
@@ -2713,6 +2725,9 @@ private struct IOS17VibeVoiceScreen: View {
             } else if isGemma {
                 let role = (msg.role == "user") ? "user" : "model"
                 parts.append("<start_of_turn>\(role)\n\(content)<end_of_turn>")
+            } else if isLlama3 {
+                let role = (msg.role == "user") ? "user" : "assistant"
+                parts.append("<|start_header_id|>\(role)<|end_header_id|>\n\n\(content)<|eot_id|>")
             } else if isLlama {
                 if msg.role == "user" {
                     parts.append("[INST] \(content) [/INST]")
@@ -2730,6 +2745,8 @@ private struct IOS17VibeVoiceScreen: View {
             parts.append("<|turn>model\n")
         } else if isGemma {
             parts.append("<start_of_turn>model\n")
+        } else if isLlama3 {
+            parts.append("<|start_header_id|>assistant<|end_header_id|>\n\n")
         } else {
             parts.append("Assistant:")
         }
@@ -5910,6 +5927,7 @@ struct VibeCoderScreen: View {
         let isGemma  = modelName.contains("gemma")
         let isGemma4 = isGemma && (modelName.contains("gemma 4") || modelName.contains("gemma-4")) && !modelName.contains("translate")
         let isLlama  = modelName.contains("llama") || modelName.contains("mistral")
+        let isLlama3 = isLlama && (modelName.contains("llama-3") || modelName.contains("llama 3") || modelName.contains("llama-3."))
         let isHarmonyModel = modelName.contains("gpt-oss") || modelName.contains("gpt_oss")
 
         // 1. Get history (exclude placeholder turns)
@@ -5980,6 +5998,8 @@ struct VibeCoderScreen: View {
             parts.append("<|turn>system\n\(systemPrompt)<turn|>")
         } else if isGemma {
             parts.append("<start_of_turn>system\n\(systemPrompt)<end_of_turn>")
+        } else if isLlama3 {
+            parts.append("<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n\(systemPrompt)<|eot_id|>")
         } else if isLlama {
             parts.append("<<SYS>>\n\(systemPrompt)\n<</SYS>>")
         } else {
@@ -6005,6 +6025,9 @@ struct VibeCoderScreen: View {
             } else if isGemma {
                 let role = (msg.role == "user") ? "user" : "model"
                 parts.append("<start_of_turn>\(role)\n\(content)<end_of_turn>")
+            } else if isLlama3 {
+                let role = (msg.role == "user") ? "user" : "assistant"
+                parts.append("<|start_header_id|>\(role)<|end_header_id|>\n\n\(content)<|eot_id|>")
             } else if isLlama {
                 if msg.role == "user" {
                     parts.append("[INST] \(content) [/INST]")
@@ -6024,6 +6047,9 @@ struct VibeCoderScreen: View {
         } else if isGemma {
             parts.append("<start_of_turn>user\n\(currentFilePrompt)<end_of_turn>")
             parts.append("<start_of_turn>model\n")
+        } else if isLlama3 {
+            parts.append("<|start_header_id|>user<|end_header_id|>\n\n\(currentFilePrompt)<|eot_id|>")
+            parts.append("<|start_header_id|>assistant<|end_header_id|>\n\n")
         } else if isLlama {
             parts.append("[INST] \(currentFilePrompt) [/INST]")
         } else {
