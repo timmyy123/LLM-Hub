@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -44,6 +45,7 @@ data class FeatureCard(
     val description: Int,
     val icon: ImageVector,
     val gradient: Pair<Color, Color>,
+    val darkColor: Color,
     val route: String
 )
 
@@ -73,6 +75,7 @@ fun HomeScreen(
                 description = R.string.feature_ai_chat_desc,
                 icon = Icons.Filled.Chat,
                 gradient = Pair(Color(0xFF667eea), Color(0xFF764ba2)),
+                darkColor = Color(0xFF5C4DB8),
                 route = "chat"
             ),
             FeatureCard(
@@ -80,6 +83,7 @@ fun HomeScreen(
                 description = R.string.feature_writing_aid_desc,
                 icon = Icons.Filled.Edit,
                 gradient = Pair(Color(0xFFf093fb), Color(0xFFf5576c)),
+                darkColor = Color(0xFF7B2D4E),
                 route = "writing_aid"
             ),
             FeatureCard(
@@ -87,6 +91,7 @@ fun HomeScreen(
                 description = R.string.feature_translator_desc,
                 icon = Icons.Filled.Language,
                 gradient = Pair(Color(0xFF4facfe), Color(0xFF00f2fe)),
+                darkColor = Color(0xFF1A4971),
                 route = "translator"
             ),
             FeatureCard(
@@ -94,6 +99,7 @@ fun HomeScreen(
                 description = R.string.feature_transcriber_desc,
                 icon = Icons.Filled.Mic,
                 gradient = Pair(Color(0xFF43e97b), Color(0xFF38f9d7)),
+                darkColor = Color(0xFF1B5E3A),
                 route = "transcriber"
             ),
             FeatureCard(
@@ -101,6 +107,7 @@ fun HomeScreen(
                 description = R.string.feature_scam_detector_desc,
                 icon = Icons.Filled.Security,
                 gradient = Pair(Color(0xFFfa709a), Color(0xFFfee140)),
+                darkColor = Color(0xFF6E3028),
                 route = "scam_detector"
             ),
             FeatureCard(
@@ -108,6 +115,7 @@ fun HomeScreen(
                 description = R.string.feature_image_generator_desc,
                 icon = Icons.Filled.Palette,
                 gradient = Pair(Color(0xFF6a11cb), Color(0xFF2575fc)),
+                darkColor = Color(0xFF2A1854),
                 route = "image_generator"
             ),
             FeatureCard(
@@ -115,6 +123,7 @@ fun HomeScreen(
                 description = R.string.feature_vibe_coder_desc,
                 icon = Icons.Filled.Code,
                 gradient = Pair(Color(0xFFf794a4), Color(0xFFfdd6bd)),
+                darkColor = Color(0xFF4A2D3A),
                 route = "vibe_coder"
             ),
             FeatureCard(
@@ -122,6 +131,7 @@ fun HomeScreen(
                 description = R.string.feature_creator_generation_desc,
                 icon = Icons.Filled.AutoAwesome,
                 gradient = Pair(Color(0xFF8EC5FC), Color(0xFFE0C3FC)),
+                darkColor = Color(0xFF2E3D5C),
                 route = "creator_generation"
             ),
             FeatureCard(
@@ -129,6 +139,7 @@ fun HomeScreen(
                 description = R.string.feature_image_upscale_desc,
                 icon = Icons.Filled.AutoFixHigh,
                 gradient = Pair(Color(0xFF11998e), Color(0xFF38ef7d)),
+                darkColor = Color(0xFF14403A),
                 route = "image_upscale"
             ),
             FeatureCard(
@@ -136,6 +147,7 @@ fun HomeScreen(
                 description = R.string.feature_vibevoice_desc,
                 icon = Icons.Filled.GraphicEq,
                 gradient = Pair(Color(0xFF7BC6CC), Color(0xFF8A82FB)),
+                darkColor = Color(0xFF263F4A),
                 route = "vibevoice"
             )
         )
@@ -374,6 +386,8 @@ private fun HomeHeroCard(
     isLocked: Boolean,
     onClick: () -> Unit
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -386,12 +400,17 @@ private fun HomeHeroCard(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
-                    Brush.linearGradient(
-                        colors = listOf(
+                    if (isDark) {
+                        Brush.linearGradient(listOf(
+                            feature.darkColor.copy(alpha = if (isLocked) 0.45f else 1f),
+                            feature.darkColor.copy(alpha = if (isLocked) 0.45f else 1f)
+                        ))
+                    } else {
+                        Brush.linearGradient(listOf(
                             feature.gradient.first.copy(alpha = if (isLocked) 0.45f else 1f),
                             feature.gradient.second.copy(alpha = if (isLocked) 0.45f else 1f)
-                        )
-                    )
+                        ))
+                    }
                 )
                 .padding(if (compact) 12.dp else 18.dp)
         ) {
@@ -486,6 +505,8 @@ private fun SmallFeatureCard(
     isLocked: Boolean,
     onClick: () -> Unit
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -498,12 +519,17 @@ private fun SmallFeatureCard(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
-                    Brush.linearGradient(
-                        colors = listOf(
+                    if (isDark) {
+                        Brush.linearGradient(listOf(
+                            feature.darkColor.copy(alpha = if (isLocked) 0.45f else 1f),
+                            feature.darkColor.copy(alpha = if (isLocked) 0.45f else 1f)
+                        ))
+                    } else {
+                        Brush.linearGradient(listOf(
                             feature.gradient.first.copy(alpha = if (isLocked) 0.45f else 0.95f),
                             feature.gradient.second.copy(alpha = if (isLocked) 0.45f else 0.95f)
-                        )
-                    )
+                        ))
+                    }
                 )
                 .padding(if (compact) 8.dp else 12.dp)
         ) {
@@ -567,17 +593,16 @@ fun AnimatedFeatureCard(
     isLocked: Boolean = false,
     onClick: () -> Unit
 ) {
-    // Calculate initial visibility based on time passed since screen load
-    // This prevents delay when scrolling down to items that should already be visible
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+
     val initialDelay = index * 80L
     val timePassed = System.currentTimeMillis() - startTime
-    
-    var visible by remember { 
-        mutableStateOf(timePassed > initialDelay) 
+
+    var visible by remember {
+        mutableStateOf(timePassed > initialDelay)
     }
     var isPressed by remember { mutableStateOf(false) }
-    
-    // Staggered entrance animation only if not already visible
+
     LaunchedEffect(Unit) {
         if (!visible) {
             val delayNeeded = (initialDelay - timePassed).coerceAtLeast(0L)
@@ -585,7 +610,7 @@ fun AnimatedFeatureCard(
             visible = true
         }
     }
-    
+
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.95f else 1f,
         animationSpec = spring(
@@ -594,7 +619,7 @@ fun AnimatedFeatureCard(
         ),
         label = "scale"
     )
-    
+
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn(
@@ -627,12 +652,17 @@ fun AnimatedFeatureCard(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(
+                        if (isDark) {
+                            Brush.linearGradient(listOf(
+                                feature.darkColor.copy(alpha = if (isLocked) 0.45f else 1f),
+                                feature.darkColor.copy(alpha = if (isLocked) 0.45f else 1f)
+                            ))
+                        } else {
+                            Brush.linearGradient(listOf(
                                 feature.gradient.first.copy(alpha = if (isLocked) 0.45f else 0.9f),
                                 feature.gradient.second.copy(alpha = if (isLocked) 0.45f else 0.9f)
-                            )
-                        )
+                            ))
+                        }
                     )
                     .padding(12.dp),
                 contentAlignment = Alignment.Center
