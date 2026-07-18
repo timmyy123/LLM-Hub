@@ -810,5 +810,9 @@
 "whisper_live_transcription" = "תמלול חי עם Whisper";
 "whisper_transcribing" = "מתמלל עם Whisper…";
 
+"prompt_template_optional" = "תבנית פרומפט (אופציונלי)";
+"prompt_template_placeholder" = "e.g. <|im_start|>usern{{USER}}<|im_end|>n<|im_start|>assistantn{{ASSISTANT}}<|im_end|>";
+"prompt_template_hint" = "השתמש ב-{{SYSTEM}}, {{USER}}, {{ASSISTANT}} כמצייני מיקום";
+
 "on_device_ai_engine" = "מנוע בינה מלאכותית על המכשיר";
 "secure_private" = "מאובטח ופרטי";

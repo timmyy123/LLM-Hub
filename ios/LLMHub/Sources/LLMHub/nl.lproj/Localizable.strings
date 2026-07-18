@@ -818,5 +818,9 @@
 "language_danish" = "Dansk";
 "language_thai" = "ไทย";
 "language_vietnamese" = "Tiếng Việt";
+"prompt_template_optional" = "Prompt-sjabloon (Optioneel)";
+"prompt_template_placeholder" = "e.g. <|im_start|>usern{{USER}}<|im_end|>n<|im_start|>assistantn{{ASSISTANT}}<|im_end|>";
+"prompt_template_hint" = "Gebruik {{SYSTEM}}, {{USER}}, {{ASSISTANT}} als plaatshouders";
+
 "on_device_ai_engine" = "AI-MOTOR OP HET APPARAAT";
 "secure_private" = "VEILIG & PRIVÉ";

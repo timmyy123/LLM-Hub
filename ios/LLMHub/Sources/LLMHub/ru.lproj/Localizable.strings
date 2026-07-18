@@ -782,5 +782,9 @@
 "whisper_live_transcription" = "Прямая транскрипция с Whisper";
 "whisper_transcribing" = "Транскрипция Whisper…";
 
+"prompt_template_optional" = "Шаблон промпта (Необязательно)";
+"prompt_template_placeholder" = "e.g. <|im_start|>usern{{USER}}<|im_end|>n<|im_start|>assistantn{{ASSISTANT}}<|im_end|>";
+"prompt_template_hint" = "Используйте {{SYSTEM}}, {{USER}}, {{ASSISTANT}} как заполнители";
+
 "on_device_ai_engine" = "ЛОКАЛЬНЫЙ ИИ-ДВИЖОК";
 "secure_private" = "БЕЗОПАСНО И КОНФИДЕНЦИАЛЬНО";

@@ -810,5 +810,9 @@
 "whisper_live_transcription" = "النسخ المباشر بـ Whisper";
 "whisper_transcribing" = "جارٍ النسخ بـ Whisper…";
 
+"prompt_template_optional" = "قالب المطالبة (اختياري)";
+"prompt_template_placeholder" = "e.g. <|im_start|>usern{{USER}}<|im_end|>n<|im_start|>assistantn{{ASSISTANT}}<|im_end|>";
+"prompt_template_hint" = "استخدم {{SYSTEM}}، {{USER}}، {{ASSISTANT}} كعناصر نائبة";
+
 "on_device_ai_engine" = "محرك الذكاء الاصطناعي على الجهاز";
 "secure_private" = "آمن وخاص";

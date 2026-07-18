@@ -810,5 +810,9 @@
 "whisper_live_transcription" = "Transkrypcja na żywo z Whisper";
 "whisper_transcribing" = "Transkrypcja Whisper w toku…";
 
+"prompt_template_optional" = "Szablon Promptu (Opcjonalnie)";
+"prompt_template_placeholder" = "e.g. <|im_start|>usern{{USER}}<|im_end|>n<|im_start|>assistantn{{ASSISTANT}}<|im_end|>";
+"prompt_template_hint" = "Użyj {{SYSTEM}}, {{USER}}, {{ASSISTANT}} jako symboli zastępczych";
+
 "on_device_ai_engine" = "LOKALNY SILNIK AI";
 "secure_private" = "BEZPIECZNE I PRYWATNE";

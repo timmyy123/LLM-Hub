@@ -818,5 +818,9 @@
 "language_danish" = "Dansk";
 "language_thai" = "ไทย";
 "language_vietnamese" = "Tiếng Việt";
+"prompt_template_optional" = "Mẫu Prompt (Tùy chọn)";
+"prompt_template_placeholder" = "e.g. <|im_start|>usern{{USER}}<|im_end|>n<|im_start|>assistantn{{ASSISTANT}}<|im_end|>";
+"prompt_template_hint" = "Sử dụng {{SYSTEM}}, {{USER}}, {{ASSISTANT}} làm chỗ giữ chỗ";
+
 "on_device_ai_engine" = "ĐỘNG CƠ AI TRÊN THIẾT BỊ";
 "secure_private" = "AN TOÀN & RIÊNG TƯ";

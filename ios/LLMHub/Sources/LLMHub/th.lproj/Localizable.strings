@@ -818,5 +818,9 @@
 "language_danish" = "Dansk";
 "language_thai" = "ไทย";
 "language_vietnamese" = "Tiếng Việt";
+"prompt_template_optional" = "เทมเพลตพรอมต์ (ไม่บังคับ)";
+"prompt_template_placeholder" = "e.g. <|im_start|>usern{{USER}}<|im_end|>n<|im_start|>assistantn{{ASSISTANT}}<|im_end|>";
+"prompt_template_hint" = "ใช้ {{SYSTEM}}, {{USER}}, {{ASSISTANT}} เป็นตัวแทน";
+
 "on_device_ai_engine" = "เครื่องยนต์ AI บนอุปกรณ์";
 "secure_private" = "ปลอดภัยและเป็นส่วนตัว";

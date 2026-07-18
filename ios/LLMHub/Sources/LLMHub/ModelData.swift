@@ -87,6 +87,7 @@ public struct AIModel: Identifiable, Codable, Sendable {
     public let contextWindowSize: Int
     public let modelFormat: ModelFormat
     public let additionalFiles: [String]
+    public let promptTemplate: String?
 
     public init(
         id: String? = nil,
@@ -103,7 +104,8 @@ public struct AIModel: Identifiable, Codable, Sendable {
         requirements: ModelRequirements,
         contextWindowSize: Int = 2048,
         modelFormat: ModelFormat = .gguf,
-        additionalFiles: [String] = []
+        additionalFiles: [String] = [],
+        promptTemplate: String? = nil
     ) {
         self.id = id ?? name.lowercased().replacingOccurrences(of: " ", with: "_")
         self.name = name
@@ -120,6 +122,7 @@ public struct AIModel: Identifiable, Codable, Sendable {
         self.contextWindowSize = contextWindowSize
         self.modelFormat = modelFormat
         self.additionalFiles = additionalFiles
+        self.promptTemplate = promptTemplate
     }
 
     public var sizeLabel: String {

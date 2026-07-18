@@ -810,5 +810,9 @@
 "whisper_live_transcription" = "رونویسی زنده با Whisper";
 "whisper_transcribing" = "در حال رونویسی با Whisper…";
 
+"prompt_template_optional" = "قالب پرامپت (اختیاری)";
+"prompt_template_placeholder" = "e.g. <|im_start|>usern{{USER}}<|im_end|>n<|im_start|>assistantn{{ASSISTANT}}<|im_end|>";
+"prompt_template_hint" = "از {{SYSTEM}}، {{USER}}، {{ASSISTANT}} به عنوان جایگزین استفاده کنید";
+
 "on_device_ai_engine" = "موتور هوش مصنوعی روی دستگاه";
 "secure_private" = "امن و خصوصی";

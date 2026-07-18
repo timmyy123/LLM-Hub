@@ -818,5 +818,9 @@
 "whisper_live_transcription" = "Whisper 实时转录";
 "whisper_transcribing" = "Whisper 转录中…";
 
+"prompt_template_optional" = "提示词模板（可选）";
+"prompt_template_placeholder" = "e.g. <|im_start|>usern{{USER}}<|im_end|>n<|im_start|>assistantn{{ASSISTANT}}<|im_end|>";
+"prompt_template_hint" = "使用 {{SYSTEM}}、{{USER}}、{{ASSISTANT}} 作为占位符";
+
 "on_device_ai_engine" = "端侧 AI 引擎";
 "secure_private" = "安全与私密";

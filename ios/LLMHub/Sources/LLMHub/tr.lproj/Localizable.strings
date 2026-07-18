@@ -810,5 +810,9 @@
 "whisper_live_transcription" = "Whisper ile Canlı Transkripsiyon";
 "whisper_transcribing" = "Whisper ile transkribe ediliyor…";
 
+"prompt_template_optional" = "Prompt Şablonu (İsteğe Bağlı)";
+"prompt_template_placeholder" = "e.g. <|im_start|>usern{{USER}}<|im_end|>n<|im_start|>assistantn{{ASSISTANT}}<|im_end|>";
+"prompt_template_hint" = "{{SYSTEM}}, {{USER}}, {{ASSISTANT}} yer tutucularını kullanın";
+
 "on_device_ai_engine" = "CİHAZ ÜZERİ YAPAY ZEKA MOTORU";
 "secure_private" = "GÜVENLİ VE ÖZEL";

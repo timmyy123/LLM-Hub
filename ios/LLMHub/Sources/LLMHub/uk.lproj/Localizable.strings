@@ -810,5 +810,9 @@
 "whisper_live_transcription" = "Пряма транскрипція з Whisper";
 "whisper_transcribing" = "Транскрипція Whisper…";
 
+"prompt_template_optional" = "Шаблон промпту (Необов'язково)";
+"prompt_template_placeholder" = "e.g. <|im_start|>usern{{USER}}<|im_end|>n<|im_start|>assistantn{{ASSISTANT}}<|im_end|>";
+"prompt_template_hint" = "Використовуйте {{SYSTEM}}, {{USER}}, {{ASSISTANT}} як заповнювачі";
+
 "on_device_ai_engine" = "ЛОКАЛЬНИЙ ІІ-ДВИГУН";
 "secure_private" = "БЕЗПЕЧНО ТА КОНФІДЕНЦІЙНО";

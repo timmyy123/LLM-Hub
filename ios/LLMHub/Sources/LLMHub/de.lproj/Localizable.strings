@@ -782,5 +782,9 @@
 "whisper_live_transcription" = "Live-Whisper-Transkription";
 "whisper_transcribing" = "Whisper transkribiert…";
 
+"prompt_template_optional" = "Prompt-Vorlage (Optional)";
+"prompt_template_placeholder" = "e.g. <|im_start|>usern{{USER}}<|im_end|>n<|im_start|>assistantn{{ASSISTANT}}<|im_end|>";
+"prompt_template_hint" = "Verwende {{SYSTEM}}, {{USER}}, {{ASSISTANT}} als Platzhalter";
+
 "on_device_ai_engine" = "ON-DEVICE-KI-ENGINE";
 "secure_private" = "SICHER & PRIVAT";

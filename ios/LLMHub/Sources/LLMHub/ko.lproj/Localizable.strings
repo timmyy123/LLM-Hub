@@ -810,5 +810,9 @@
 "whisper_live_transcription" = "Whisper 실시간 전사";
 "whisper_transcribing" = "Whisper로 전사 중…";
 
+"prompt_template_optional" = "프롬프트 템플릿 (선택사항)";
+"prompt_template_placeholder" = "e.g. <|im_start|>usern{{USER}}<|im_end|>n<|im_start|>assistantn{{ASSISTANT}}<|im_end|>";
+"prompt_template_hint" = "{{SYSTEM}}, {{USER}}, {{ASSISTANT}}를 플레이스홀더로 사용";
+
 "on_device_ai_engine" = "온디바이스 AI 엔진";
 "secure_private" = "안전 및 개인정보 보호";

@@ -825,5 +825,9 @@
 "language_thai" = "ไทย";
 "language_vietnamese" = "Tiếng Việt";
 
+"prompt_template_optional" = "Prompt Template (Optional)";
+"prompt_template_placeholder" = "e.g. <|im_start|>user\n{{USER}}<|im_end|>\n<|im_start|>assistant\n{{ASSISTANT}}<|im_end|>";
+"prompt_template_hint" = "Use {{SYSTEM}}, {{USER}}, {{ASSISTANT}} as placeholders";
+
 "on_device_ai_engine" = "ON-DEVICE AI ENGINE";
 "secure_private" = "SECURE & PRIVATE";

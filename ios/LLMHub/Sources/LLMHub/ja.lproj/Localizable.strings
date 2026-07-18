@@ -810,5 +810,9 @@
 "whisper_live_transcription" = "Whisperリアルタイム文字起こし";
 "whisper_transcribing" = "Whisperで文字起こし中…";
 
+"prompt_template_optional" = "プロンプトテンプレート（任意）";
+"prompt_template_placeholder" = "e.g. <|im_start|>usern{{USER}}<|im_end|>n<|im_start|>assistantn{{ASSISTANT}}<|im_end|>";
+"prompt_template_hint" = "{{SYSTEM}}、{{USER}}、{{ASSISTANT}} をプレースホルダーとして使用";
+
 "on_device_ai_engine" = "オンデバイスAIエンジン";
 "secure_private" = "安全・プライベート";

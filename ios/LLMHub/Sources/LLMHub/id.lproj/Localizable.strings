@@ -810,5 +810,9 @@
 "whisper_live_transcription" = "Transkripsi Langsung dengan Whisper";
 "whisper_transcribing" = "Mentranskrip dengan Whisper…";
 
+"prompt_template_optional" = "Template Prompt (Opsional)";
+"prompt_template_placeholder" = "e.g. <|im_start|>usern{{USER}}<|im_end|>n<|im_start|>assistantn{{ASSISTANT}}<|im_end|>";
+"prompt_template_hint" = "Gunakan {{SYSTEM}}, {{USER}}, {{ASSISTANT}} sebagai placeholder";
+
 "on_device_ai_engine" = "MESIN AI PADA PERANGKAT";
 "secure_private" = "AMAN & PRIVAT";

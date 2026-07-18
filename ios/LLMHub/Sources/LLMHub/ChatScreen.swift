@@ -1856,7 +1856,115 @@ class ChatViewModel: ObservableObject {
         }
     }
 
+    private func buildCustomTemplatePrompt(template: String, currentUserPrompt: String, ragPrefix: String? = nil) -> String {
+        let resetStart = contextResetStartBySessionId[currentSessionId] ?? 0
+        let allHistory: [ChatMessage] = messages.count >= 2 ? Array(messages.dropLast(2)) : []
+        var history: [ChatMessage] = resetStart > 0 ? Array(allHistory.dropFirst(min(resetStart, allHistory.count))) : allHistory
+
+        let effectiveCtxTokens = llmBackend.loadedContextWindow ?? max(512, Int(contextWindow))
+        let currentPromptTokensEstimate = max(32, currentUserPrompt.count / 3)
+        let ragTokensEstimate = (ragPrefix?.count ?? 0) / 3
+        let reservedForResponse = max(256, min(Int(maxTokens), effectiveCtxTokens / 4))
+        let reservedForCurrent = currentPromptTokensEstimate + ragTokensEstimate + 64
+        let availableHistoryTokens = max(128, effectiveCtxTokens - reservedForResponse - reservedForCurrent - 128)
+        let maxHistoryChars = availableHistoryTokens * 3
+        var currentChars = 0
+        var truncatedHistory: [ChatMessage] = []
+
+        for msg in history.reversed() {
+            let rawContent: String
+            if !msg.isFromUser && contentHasThinkingMarkers(msg.content) {
+                rawContent = getDisplayContentWithoutThinking(msg.content)
+            } else {
+                rawContent = msg.content
+            }
+            let effectiveLen = rawContent.count
+            let remaining = maxHistoryChars - currentChars
+            if effectiveLen <= remaining {
+                truncatedHistory.insert(msg, at: 0)
+                currentChars += effectiveLen
+            } else if remaining > 300 {
+                let half = remaining / 2
+                var elided = msg
+                elided.content = String(rawContent.prefix(half)) + "\n…\n" + String(rawContent.suffix(half))
+                truncatedHistory.insert(elided, at: 0)
+                break
+            } else {
+                break
+            }
+        }
+
+        // Template uses {{SYSTEM}}, {{USER}}, {{ASSISTANT}} as placeholders.
+        // Build prompt by applying the template to each turn.
+        var parts: [String] = ["__RAW_PROMPT__"]
+
+        if let rag = ragPrefix, !rag.isEmpty {
+            let systemTurn = template
+                .replacingOccurrences(of: "{{SYSTEM}}", with: rag)
+                .replacingOccurrences(of: "{{USER}}", with: "")
+                .replacingOccurrences(of: "{{ASSISTANT}}", with: "")
+            if template.contains("{{SYSTEM}}") {
+                parts.append(systemTurn)
+            } else {
+                // No system placeholder — inject as first user turn
+                let userTurn = template.replacingOccurrences(of: "{{USER}}", with: rag)
+                    .replacingOccurrences(of: "{{SYSTEM}}", with: "")
+                    .replacingOccurrences(of: "{{ASSISTANT}}", with: "")
+                parts.append(userTurn)
+            }
+        }
+
+        for msg in truncatedHistory {
+            let rawContent = msg.content.trimmingCharacters(in: .whitespacesAndNewlines)
+            let content: String
+            if msg.isFromUser {
+                content = rawContent
+            } else {
+                let answer = getDisplayContentWithoutThinking(rawContent)
+                content = answer.isEmpty ? rawContent : answer
+            }
+            guard !content.isEmpty else { continue }
+
+            if msg.isFromUser {
+                let turn = template.replacingOccurrences(of: "{{USER}}", with: content)
+                    .replacingOccurrences(of: "{{SYSTEM}}", with: "")
+                    .replacingOccurrences(of: "{{ASSISTANT}}", with: "")
+                parts.append(turn)
+            } else {
+                let turn = template.replacingOccurrences(of: "{{ASSISTANT}}", with: content)
+                    .replacingOccurrences(of: "{{USER}}", with: "")
+                    .replacingOccurrences(of: "{{SYSTEM}}", with: "")
+                parts.append(turn)
+            }
+        }
+
+        // Current user prompt + assistant prefix
+        let userTurn = template.replacingOccurrences(of: "{{USER}}", with: currentUserPrompt)
+            .replacingOccurrences(of: "{{SYSTEM}}", with: "")
+            .replacingOccurrences(of: "{{ASSISTANT}}", with: "")
+        parts.append(userTurn)
+
+        // Add assistant prefix (template up to {{ASSISTANT}} placeholder)
+        if let range = template.range(of: "{{ASSISTANT}}") {
+            let prefix = String(template[template.startIndex..<range.lowerBound])
+            let cleaned = prefix.replacingOccurrences(of: "{{USER}}", with: "")
+                .replacingOccurrences(of: "{{SYSTEM}}", with: "")
+            if !cleaned.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                parts.append(cleaned)
+            }
+        }
+
+        return parts.joined(separator: "\n")
+    }
+
     func buildMultiTurnPrompt(currentUserPrompt: String, ragPrefix: String? = nil) -> String {
+        let currentModel = chatModel(named: selectedModelName)
+
+        // Custom prompt template: user-typed format for imported models
+        if let template = currentModel?.promptTemplate, !template.isEmpty {
+            return buildCustomTemplatePrompt(template: template, currentUserPrompt: currentUserPrompt, ragPrefix: ragPrefix)
+        }
+
         let modelName = selectedModelName.lowercased()
         let modelSupportsThinking = chatModel(named: selectedModelName)?.supportsThinking == true
         let isGemma      = modelName.contains("gemma")
@@ -1864,9 +1972,7 @@ class ChatViewModel: ObservableObject {
         let isLlama      = modelName.contains("llama") || modelName.contains("mistral")
         let isLlama3     = isLlama && (modelName.contains("llama-3") || modelName.contains("llama 3") || modelName.contains("llama-3."))
         let isHarmonyModel = modelName.contains("gpt-oss") || modelName.contains("gpt_oss")
-        // Granite 4.x uses IBM's <|start_of_role|>role<|end_of_role|>content<|end_of_text|> template
         let isGranite    = modelName.contains("granite")
-        // LFM (Liquid AI) and other ChatML-style models use <|im_start|>role\ncontent<|im_end|>
         let isChatML     = modelName.contains("lfm") || modelName.contains("liquid")
 
         // 1. Identify history (exclude placeholder turns).

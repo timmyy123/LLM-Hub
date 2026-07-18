@@ -268,7 +268,7 @@ class ModelDownloadViewModel: ObservableObject {
             supportsAudio: model.supportsAudio, supportsThinking: model.supportsThinking,
             supportsGpu: model.supportsGpu, requirements: model.requirements,
             contextWindowSize: model.contextWindowSize, modelFormat: model.modelFormat,
-            additionalFiles: files
+            additionalFiles: files, promptTemplate: model.promptTemplate
         )
         models[idx] = updated
         saveImportedModels()
@@ -1119,6 +1119,7 @@ struct ImportExternalModelSheet: View {
     @State private var showError = false
     @State private var errorMessage = ""
     @State private var isImporting = false
+    @State private var promptTemplate = ""
 
     var body: some View {
         NavigationStack {
@@ -1164,6 +1165,24 @@ struct ImportExternalModelSheet: View {
                             TextField("4096", text: $contextWindowSize)
                                 .keyboardType(.numberPad)
                                 .foregroundColor(.white)
+                        }
+
+                        // Prompt template (optional)
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(settings.localized("prompt_template_optional"))
+                                .font(.caption.bold())
+                                .foregroundColor(.white.opacity(0.55))
+                            VStack(alignment: .leading, spacing: 4) {
+                                glassRow {
+                                    TextField(settings.localized("prompt_template_placeholder"), text: $promptTemplate, axis: .vertical)
+                                        .lineLimit(3...6)
+                                        .foregroundColor(.white)
+                                        .font(.system(.caption, design: .monospaced))
+                                }
+                                Text(settings.localized("prompt_template_hint"))
+                                    .font(.caption2)
+                                    .foregroundColor(.white.opacity(0.4))
+                            }
                         }
 
                         // Vision toggle
@@ -1367,6 +1386,8 @@ struct ImportExternalModelSheet: View {
             // Get file size
             let fileSize = (try? FileManager.default.attributesOfItem(atPath: destFile.path)[.size] as? Int64) ?? 0
 
+            let templateValue = promptTemplate.trimmingCharacters(in: .whitespacesAndNewlines)
+
             let model = AIModel(
                 id: modelId,
                 name: name,
@@ -1382,7 +1403,8 @@ struct ImportExternalModelSheet: View {
                 requirements: ModelRequirements(minRamGB: max(2, Int(fileSize / 1_073_741_824) + 1), recommendedRamGB: max(4, Int(fileSize / 1_073_741_824) + 2)),
                 contextWindowSize: contextSize,
                 modelFormat: .gguf,
-                additionalFiles: []
+                additionalFiles: [],
+                promptTemplate: templateValue.isEmpty ? nil : templateValue
             )
 
             await MainActor.run {
