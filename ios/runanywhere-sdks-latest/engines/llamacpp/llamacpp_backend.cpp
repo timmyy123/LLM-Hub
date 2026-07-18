@@ -708,7 +708,8 @@ std::string LlamaCppTextGeneration::build_prompt(const TextGenerationRequest& re
         // it through verbatim to avoid double-applying the template.
         if (request.prompt.find("<|im_start|>") != std::string::npos ||
             request.prompt.find("<|begin_of_text|>") != std::string::npos ||
-            request.prompt.find("[INST]") != std::string::npos) {
+            request.prompt.find("[INST]") != std::string::npos ||
+            request.prompt.find("<|start|>") != std::string::npos) {
             RAC_LOG_INFO("LLM.LlamaCpp",
                          "Prompt already contains chat template tokens, using as-is (len=%zu)",
                          request.prompt.length());

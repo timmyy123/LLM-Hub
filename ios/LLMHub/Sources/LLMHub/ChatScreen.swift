@@ -1832,10 +1832,12 @@ class ChatViewModel: ObservableObject {
     /// fake "User:" / "Assistant:" exchanges).
     private func stopSequencesForCurrentModel() -> [String] {
         let modelName = selectedModelName.lowercased()
-        let isGemma  = modelName.contains("gemma")
-        let isLlama  = modelName.contains("llama") || modelName.contains("mistral")
-        let isLlama3 = isLlama && (modelName.contains("llama-3") || modelName.contains("llama 3") || modelName.contains("llama-3."))
+        let isGemma   = modelName.contains("gemma")
+        let isLlama   = modelName.contains("llama") || modelName.contains("mistral")
+        let isLlama3  = isLlama && (modelName.contains("llama-3") || modelName.contains("llama 3") || modelName.contains("llama-3."))
         let isHarmony = modelName.contains("gpt-oss") || modelName.contains("gpt_oss")
+        let isGranite = modelName.contains("granite")
+        let isChatML  = modelName.contains("lfm") || modelName.contains("liquid")
 
         if isGemma {
             return []
@@ -1845,6 +1847,10 @@ class ChatViewModel: ObservableObject {
             return ["[INST]"]
         } else if isHarmony {
             return ["<|start|>user"]
+        } else if isGranite {
+            return ["<|start_of_role|>user", "<|start_of_role|>system"]
+        } else if isChatML {
+            return ["<|im_start|>user", "<|im_start|>system"]
         } else {
             return ["\nUser:", "\nuser:"]
         }
@@ -1853,11 +1859,15 @@ class ChatViewModel: ObservableObject {
     func buildMultiTurnPrompt(currentUserPrompt: String, ragPrefix: String? = nil) -> String {
         let modelName = selectedModelName.lowercased()
         let modelSupportsThinking = chatModel(named: selectedModelName)?.supportsThinking == true
-        let isGemma  = modelName.contains("gemma")
-        let isGemma4 = isGemma && (modelName.contains("gemma 4") || modelName.contains("gemma-4")) && !modelName.contains("translate")
-        let isLlama  = modelName.contains("llama") || modelName.contains("mistral")
-        let isLlama3 = isLlama && (modelName.contains("llama-3") || modelName.contains("llama 3") || modelName.contains("llama-3."))
+        let isGemma      = modelName.contains("gemma")
+        let isGemma4     = isGemma && (modelName.contains("gemma 4") || modelName.contains("gemma-4")) && !modelName.contains("translate")
+        let isLlama      = modelName.contains("llama") || modelName.contains("mistral")
+        let isLlama3     = isLlama && (modelName.contains("llama-3") || modelName.contains("llama 3") || modelName.contains("llama-3."))
         let isHarmonyModel = modelName.contains("gpt-oss") || modelName.contains("gpt_oss")
+        // Granite 4.x uses IBM's <|start_of_role|>role<|end_of_role|>content<|end_of_text|> template
+        let isGranite    = modelName.contains("granite")
+        // LFM (Liquid AI) and other ChatML-style models use <|im_start|>role\ncontent<|im_end|>
+        let isChatML     = modelName.contains("lfm") || modelName.contains("liquid")
 
         // 1. Identify history (exclude placeholder turns).
         // Respect context-reset boundary: if the context ring was previously reset,
@@ -1933,6 +1943,8 @@ class ChatViewModel: ObservableObject {
 
         if isLlama3 {
             parts.append("<|begin_of_text|>")
+        } else if isChatML {
+            parts.append("<|startoftext|>")
         }
 
         if isHarmonyModel {
@@ -1976,6 +1988,10 @@ class ChatViewModel: ObservableObject {
                 parts.append("<|start_header_id|>system<|end_header_id|>\n\n\(rag)<|eot_id|>")
             } else if isLlama {
                 parts.append("[INST] \(rag) [/INST]\nUnderstood.")
+            } else if isGranite {
+                parts.append("<|start_of_role|>system<|end_of_role|>\(rag)<|end_of_text|>")
+            } else if isChatML {
+                parts.append("<|im_start|>system\n\(rag)<|im_end|>")
             } else {
                 parts.append("System: \(rag)")
             }
@@ -2010,6 +2026,12 @@ class ChatViewModel: ObservableObject {
                 } else {
                     parts.append(content)
                 }
+            } else if isGranite {
+                let role = msg.isFromUser ? "user" : "assistant"
+                parts.append("<|start_of_role|>\(role)<|end_of_role|>\(content)<|end_of_text|>")
+            } else if isChatML {
+                let role = msg.isFromUser ? "user" : "assistant"
+                parts.append("<|im_start|>\(role)\n\(content)<|im_end|>")
             } else {
                 let prefix = msg.isFromUser ? "User" : "Assistant"
                 parts.append("\(prefix): \(content)")
@@ -2028,6 +2050,12 @@ class ChatViewModel: ObservableObject {
             parts.append("<|start_header_id|>assistant<|end_header_id|>\n\n")
         } else if isLlama {
             parts.append("[INST] \(currentUserPrompt) [/INST]")
+        } else if isGranite {
+            parts.append("<|start_of_role|>user<|end_of_role|>\(currentUserPrompt)<|end_of_text|>")
+            parts.append("<|start_of_role|>assistant<|end_of_role|>")
+        } else if isChatML {
+            parts.append("<|im_start|>user\n\(currentUserPrompt)<|im_end|>")
+            parts.append("<|im_start|>assistant\n")
         } else {
             parts.append("User: \(currentUserPrompt)")
             parts.append("Assistant:")

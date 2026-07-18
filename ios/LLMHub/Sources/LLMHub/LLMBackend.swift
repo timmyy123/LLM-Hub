@@ -171,6 +171,26 @@ class LLMBackend: ObservableObject {
         let endTag = Self.harmonyEndTag
         let finalHeader = Self.harmonyFinalHeader
 
+        // Suppress partial Harmony prefixes that are still assembling token-by-token.
+        // Without this, early chunks like "<|sta" or "<|start|>assi" would pass through
+        // unrecognized and leak into the display / TTS.
+        if !raw.isEmpty {
+            let knownPrefixes = [
+                Self.harmonyFinalHeader,              // <|start|>assistant<|channel|>final<|message|>
+                Self.harmonyAssistantHeader + "<|channel|>analysis<|message|>",
+                Self.harmonyAssistantHeader + "analysis<|message|>",
+                Self.harmonyAssistantHeader + "final<|message|>",
+                Self.harmonyAssistantHeader,          // <|start|>assistant
+                analysisHeader,                       // <|channel|>analysis<|message|>
+                analysisHeaderShort,                  // analysis<|message|>
+            ]
+            for pfx in knownPrefixes {
+                if pfx.hasPrefix(raw) && raw.count < pfx.count {
+                    return ("", true)
+                }
+            }
+        }
+
         // Handle rendered short form: stream starts with analysis<|message|>THINKING
         if raw.hasPrefix(analysisHeaderShort) && !raw.hasPrefix(analysisHeader) {
             let analysisBody = raw.dropFirst(analysisHeaderShort.count)
@@ -203,11 +223,41 @@ class LLMBackend: ObservableObject {
         if let finalRange = raw.range(of: finalHeader) {
             return (String(raw[finalRange.upperBound...]), true)
         }
+        // <|channel|> may be non-rendering: "<|start|>assistantfinal<|message|>ANSWER"
+        let shortFinalHeader = Self.harmonyAssistantHeader + "final<|message|>"
+        if let shortFinalRange = raw.range(of: shortFinalHeader) {
+            return (String(raw[shortFinalRange.upperBound...]), true)
+        }
 
         if let assistantRange = raw.range(of: Self.harmonyAssistantHeader) {
             let remainder = String(raw[assistantRange.upperBound...])
             if remainder.isEmpty {
                 return ("", true)
+            }
+            // <|channel|> may be non-rendering, so remainder starts with "analysis<|message|>..."
+            let shortAnalysis = Self.harmonyAnalysisPrefixShort
+            if remainder.hasPrefix(shortAnalysis) {
+                let body = String(remainder.dropFirst(shortAnalysis.count))
+                let endTag = Self.harmonyEndTag
+                if let endRange = body.range(of: endTag) {
+                    let thinking = String(body[..<endRange.lowerBound])
+                    let afterEnd = String(body[endRange.upperBound...])
+                    if let fRange = afterEnd.range(of: Self.harmonyFinalHeader) {
+                        return (Self.thinkingSentinelOpen + thinking + Self.thinkingSentinelClose + String(afterEnd[fRange.upperBound...]), true)
+                    }
+                    // Also handle final header without <|channel|> (non-rendering)
+                    let shortFinal = "<|start|>assistant" + "final<|message|>"
+                    if let fRange = afterEnd.range(of: shortFinal) {
+                        return (Self.thinkingSentinelOpen + thinking + Self.thinkingSentinelClose + String(afterEnd[fRange.upperBound...]), true)
+                    }
+                    return (Self.thinkingSentinelOpen + thinking + Self.thinkingSentinelClose, true)
+                }
+                return (Self.thinkingSentinelOpen + body, true)
+            }
+            // Check for "final<|message|>" (non-rendering <|channel|> before it)
+            let shortFinal = "final<|message|>"
+            if remainder.hasPrefix(shortFinal) {
+                return (String(remainder.dropFirst(shortFinal.count)), true)
             }
             return (remainder, true)
         }
@@ -1205,12 +1255,25 @@ class LLMBackend: ObservableObject {
             rawPrompt = prompt
         }
         let usePrompt: String
-        if rawPrompt.hasPrefix("__RAW_PROMPT__\n") {
-            usePrompt = String(rawPrompt.dropFirst("__RAW_PROMPT__\n".count))
-        } else if rawPrompt.hasPrefix("__RAW_PROMPT__") {
-            usePrompt = String(rawPrompt.dropFirst("__RAW_PROMPT__".count))
-        } else {
-            usePrompt = rawPrompt
+        do {
+            let strippedPrompt: String
+            if rawPrompt.hasPrefix("__RAW_PROMPT__\n") {
+                strippedPrompt = String(rawPrompt.dropFirst("__RAW_PROMPT__\n".count))
+            } else if rawPrompt.hasPrefix("__RAW_PROMPT__") {
+                strippedPrompt = String(rawPrompt.dropFirst("__RAW_PROMPT__".count))
+            } else {
+                strippedPrompt = rawPrompt
+            }
+            // Workaround: the C++ llamacpp_backend build_prompt only recognizes
+            // <|im_start|>, <|begin_of_text|>, and [INST] as pre-formatted markers.
+            // Harmony prompts use <|start|> which isn't in that list, causing the
+            // C++ to double-wrap the already-formatted prompt. Include <|begin_of_text|>
+            // so the C++ layer passes the prompt through verbatim.
+            if isHarmonyModel && strippedPrompt.contains("<|start|>") && !strippedPrompt.contains("<|begin_of_text|>") {
+                usePrompt = "<|begin_of_text|>" + strippedPrompt
+            } else {
+                usePrompt = strippedPrompt
+            }
         }
 
         let effectiveSystemPrompt: String?
@@ -1369,8 +1432,17 @@ class LLMBackend: ObservableObject {
             var phase2Final: RALLMStreamFinalResult?
             // The model may echo a channel prefix before the actual answer ("final<|message|>" or
             // "analysis<|message|>" variants). Strip it in-place so the answer stays clean.
-            let finalChannelPrefixes = ["final<|message|>", "analysis<|message|>",
-                                        "<|channel|>final<|message|>", "<|channel|>analysis<|message|>"]
+            let finalChannelPrefixes = [
+                "<|start|>assistant<|channel|>final<|message|>",
+                "<|start|>assistant<|channel|>analysis<|message|>",
+                "<|start|>assistantfinal<|message|>",
+                "<|start|>assistantanalysis<|message|>",
+                "<|start|>assistant",
+                "<|channel|>final<|message|>",
+                "<|channel|>analysis<|message|>",
+                "final<|message|>",
+                "analysis<|message|>",
+            ]
 
             for try await event in streamResult2 {
                 try Task.checkCancellation()

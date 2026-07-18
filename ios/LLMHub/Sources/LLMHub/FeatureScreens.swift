@@ -2608,11 +2608,15 @@ private struct IOS17VibeVoiceScreen: View {
         // 3. Family Detection
         let modelName = selectedModelName.lowercased()
         let modelSupportsThinking = selectedFeatureModel(named: selectedModelName)?.supportsThinking == true
-        let isGemma  = modelName.contains("gemma")
-        let isGemma4 = isGemma && (modelName.contains("gemma 4") || modelName.contains("gemma-4")) && !modelName.contains("translate")
-        let isLlama  = modelName.contains("llama") || modelName.contains("mistral")
-        let isLlama3 = isLlama && (modelName.contains("llama-3") || modelName.contains("llama 3") || modelName.contains("llama-3."))
+        let isGemma      = modelName.contains("gemma")
+        let isGemma4     = isGemma && (modelName.contains("gemma 4") || modelName.contains("gemma-4")) && !modelName.contains("translate")
+        let isLlama      = modelName.contains("llama") || modelName.contains("mistral")
+        let isLlama3     = isLlama && (modelName.contains("llama-3") || modelName.contains("llama 3") || modelName.contains("llama-3."))
         let isHarmonyModel = modelName.contains("gpt-oss") || modelName.contains("gpt_oss")
+        // Granite 4.x: IBM's <|start_of_role|>role<|end_of_role|>content<|end_of_text|> template
+        let isGranite    = modelName.contains("granite")
+        // LFM (Liquid AI) and similar ChatML-style models
+        let isChatML     = modelName.contains("lfm") || modelName.contains("liquid")
 
         // 4. Build Raw Prompt (Prepend __RAW_PROMPT__ to bypass SDK auto-formatting)
         var parts: [String] = ["__RAW_PROMPT__"]
@@ -2628,16 +2632,16 @@ private struct IOS17VibeVoiceScreen: View {
                 harmonyParts.append("<|start|>\(role)<|message|>\(content)<|end|>")
             }
 
-            if modelSupportsThinking && llm.enableThinking {
-                harmonyParts.append("<|start|>assistant")
-            } else {
-                harmonyParts.append("<|start|>assistant<|channel|>analysis<|message|><|end|><|start|>assistant<|channel|>final<|message|>")
-            }
+            // VibeVoice always disables thinking — no reasoning should be generated or shown
+            harmonyParts.append("<|start|>assistant<|channel|>analysis<|message|><|end|><|start|>assistant<|channel|>final<|message|>")
             parts.append(contentsOf: harmonyParts)
             let multiTurnPrompt = parts.joined()
 
             generationTask = Task {
                 do {
+                    let savedThinking = self.llm.enableThinking
+                    self.llm.enableThinking = false
+                    defer { self.llm.enableThinking = savedThinking }
                     try await llm.generate(
                         prompt: multiTurnPrompt,
                         maxTokensOverride: Int(maxTokens)
@@ -2646,7 +2650,7 @@ private struct IOS17VibeVoiceScreen: View {
                             let sanitized = sanitizeModelOutputText(content)
                             let answerSoFar = getDisplayContentWithoutThinking(sanitized)
                             self.latestReply = answerSoFar
-                            
+
                             let delta = String(answerSoFar.dropFirst(self.ttsReadCursor))
                             if !delta.isEmpty {
                                 self.ttsReadCursor = answerSoFar.count
@@ -2660,7 +2664,7 @@ private struct IOS17VibeVoiceScreen: View {
                 await MainActor.run {
                     self.generationTask = nil
                     guard self.isChatActive else { return }
-                    
+
                     let displayContent = getDisplayContentWithoutThinking(self.latestReply)
                     if displayContent.count > self.ttsReadCursor {
                         let delta = String(displayContent.dropFirst(self.ttsReadCursor))
@@ -2670,12 +2674,13 @@ private struct IOS17VibeVoiceScreen: View {
                     }
                     self.ttsManager.flushStreamingBuffer(fallbackLanguage: self.settings.selectedLanguage, key: self.ttsKey)
                     self.ttsReadCursor = 0
-                    
+
                     let rawReply = self.latestReply.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !rawReply.isEmpty {
-                        let replyForTts = getDisplayContentWithoutThinking(rawReply)
-                        self.latestReply = replyForTts
-                        self.conversationHistory.append((role: "assistant", content: replyForTts))
+                    let replyForHistory = getDisplayContentWithoutThinking(rawReply)
+                    let finalReply = replyForHistory.isEmpty ? rawReply : replyForHistory
+                    if !finalReply.isEmpty && !contentHasThinkingMarkers(finalReply) {
+                        self.latestReply = finalReply
+                        self.conversationHistory.append((role: "assistant", content: finalReply))
                         if self.ttsManager.isSpeaking(key: self.ttsKey) {
                             self.voiceState = .speaking
                         } else {
@@ -2688,6 +2693,7 @@ private struct IOS17VibeVoiceScreen: View {
                             }
                         }
                     } else {
+                        self.latestReply = ""
                         self.voiceState = .idle
                         Task { @MainActor in
                             try? await Task.sleep(nanoseconds: 350_000_000)
@@ -2700,7 +2706,7 @@ private struct IOS17VibeVoiceScreen: View {
             }
             return
         }
-        
+
         // When using RAW_PROMPT, the SDK's systemPrompt argument is ignored,
         // so we must inject it manually into our sequence.
         if isGemma4 {
@@ -2711,6 +2717,10 @@ private struct IOS17VibeVoiceScreen: View {
             parts.append("<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n\(systemPrompt)<|eot_id|>")
         } else if isLlama {
             parts.append("<<SYS>>\n\(systemPrompt)\n<</SYS>>")
+        } else if isGranite {
+            parts.append("<|start_of_role|>system<|end_of_role|>\(systemPrompt)<|end_of_text|>")
+        } else if isChatML {
+            parts.append("<|startoftext|><|im_start|>system\n\(systemPrompt)<|im_end|>")
         } else {
             parts.append("System: \(systemPrompt)")
         }
@@ -2734,6 +2744,12 @@ private struct IOS17VibeVoiceScreen: View {
                 } else {
                     parts.append(content)
                 }
+            } else if isGranite {
+                let role = (msg.role == "user") ? "user" : "assistant"
+                parts.append("<|start_of_role|>\(role)<|end_of_role|>\(content)<|end_of_text|>")
+            } else if isChatML {
+                let role = (msg.role == "user") ? "user" : "assistant"
+                parts.append("<|im_start|>\(role)\n\(content)<|im_end|>")
             } else {
                 let prefix = (msg.role == "user") ? "User" : "Assistant"
                 parts.append("\(prefix): \(content)")
@@ -2742,11 +2758,20 @@ private struct IOS17VibeVoiceScreen: View {
 
         // Final Open Turn (Assistant)
         if isGemma4 {
+            parts.append("<|turn>user\n\(text)<turn|>")
             parts.append("<|turn>model\n")
         } else if isGemma {
+            parts.append("<start_of_turn>user\n\(text)<end_of_turn>")
             parts.append("<start_of_turn>model\n")
         } else if isLlama3 {
+            parts.append("<|start_header_id|>user<|end_header_id|>\n\n\(text)<|eot_id|>")
             parts.append("<|start_header_id|>assistant<|end_header_id|>\n\n")
+        } else if isGranite {
+            parts.append("<|start_of_role|>user<|end_of_role|>\(text)<|end_of_text|>")
+            parts.append("<|start_of_role|>assistant<|end_of_role|>")
+        } else if isChatML {
+            parts.append("<|im_start|>user\n\(text)<|im_end|>")
+            parts.append("<|im_start|>assistant\n")
         } else {
             parts.append("Assistant:")
         }
@@ -2755,6 +2780,9 @@ private struct IOS17VibeVoiceScreen: View {
 
         generationTask = Task {
             do {
+                let savedThinking = self.llm.enableThinking
+                self.llm.enableThinking = false
+                defer { self.llm.enableThinking = savedThinking }
                 try await llm.generate(
                     prompt: multiTurnPrompt,
                     systemPrompt: nil,
@@ -2762,11 +2790,9 @@ private struct IOS17VibeVoiceScreen: View {
                 ) { content, _, _ in
                     Task { @MainActor in
                         let sanitized = sanitizeModelOutputText(content)
-                        // During streaming, show only the answer portion — never show thinking tokens
-                        // in the voice UI card. While still in thinking phase the card is hidden.
                         let answerSoFar = getDisplayContentWithoutThinking(sanitized)
                         self.latestReply = answerSoFar
-                        
+
                         let delta = String(answerSoFar.dropFirst(self.ttsReadCursor))
                         if !delta.isEmpty {
                             self.ttsReadCursor = answerSoFar.count
@@ -2780,7 +2806,7 @@ private struct IOS17VibeVoiceScreen: View {
             await MainActor.run {
                 self.generationTask = nil
                 guard self.isChatActive else { return }
-                
+
                 let displayContent = getDisplayContentWithoutThinking(self.latestReply)
                 if displayContent.count > self.ttsReadCursor {
                     let delta = String(displayContent.dropFirst(self.ttsReadCursor))
@@ -2790,15 +2816,13 @@ private struct IOS17VibeVoiceScreen: View {
                 }
                 self.ttsManager.flushStreamingBuffer(fallbackLanguage: self.settings.selectedLanguage, key: self.ttsKey)
                 self.ttsReadCursor = 0
-                
+
                 let rawReply = self.latestReply.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !rawReply.isEmpty {
-                    // Strip thinking tokens: store only the answer in history and speak only the answer.
-                    let replyForTts = getDisplayContentWithoutThinking(rawReply)
-                    // Update latestReply UI with stripped content so the card shows only the answer
-                    self.latestReply = replyForTts
-                    // Store answer (not thinking chain) in conversation history
-                    self.conversationHistory.append((role: "assistant", content: replyForTts))
+                let replyForHistory = getDisplayContentWithoutThinking(rawReply)
+                let finalReply = replyForHistory.isEmpty ? rawReply : replyForHistory
+                if !finalReply.isEmpty && !contentHasThinkingMarkers(finalReply) {
+                    self.latestReply = finalReply
+                    self.conversationHistory.append((role: "assistant", content: finalReply))
                     if self.ttsManager.isSpeaking(key: self.ttsKey) {
                         self.voiceState = .speaking
                     } else {
@@ -2810,6 +2834,7 @@ private struct IOS17VibeVoiceScreen: View {
                         }
                     }
                 } else {
+                    self.latestReply = ""
                     self.voiceState = .idle
                     Task { @MainActor in
                         try? await Task.sleep(nanoseconds: 300_000_000)
@@ -5865,6 +5890,11 @@ struct VibeCoderScreen: View {
                 // Build the file-aware base prompt for the current request.
                 let filePrompt = buildFileAwareEditPrompt(trimmedPrompt)
 
+                // Sync VibeCode's thinking toggle to the backend before building prompt & generating
+                let savedThinking = llm.enableThinking
+                llm.enableThinking = enableThinking
+                defer { llm.enableThinking = savedThinking }
+
                 // Wrap with full conversation history so the model remembers prior turns.
                 let prompt = buildVibeCoderMultiTurnPrompt(
                     currentFilePrompt: filePrompt,
@@ -5924,11 +5954,15 @@ struct VibeCoderScreen: View {
     private func buildVibeCoderMultiTurnPrompt(currentFilePrompt: String, sessionId: UUID) -> String {
         let modelName = selectedModelName.lowercased()
         let modelSupportsThinking = selectedFeatureModel(named: selectedModelName)?.supportsThinking == true
-        let isGemma  = modelName.contains("gemma")
-        let isGemma4 = isGemma && (modelName.contains("gemma 4") || modelName.contains("gemma-4")) && !modelName.contains("translate")
-        let isLlama  = modelName.contains("llama") || modelName.contains("mistral")
-        let isLlama3 = isLlama && (modelName.contains("llama-3") || modelName.contains("llama 3") || modelName.contains("llama-3."))
+        let isGemma      = modelName.contains("gemma")
+        let isGemma4     = isGemma && (modelName.contains("gemma 4") || modelName.contains("gemma-4")) && !modelName.contains("translate")
+        let isLlama      = modelName.contains("llama") || modelName.contains("mistral")
+        let isLlama3     = isLlama && (modelName.contains("llama-3") || modelName.contains("llama 3") || modelName.contains("llama-3."))
         let isHarmonyModel = modelName.contains("gpt-oss") || modelName.contains("gpt_oss")
+        // Granite 4.x: IBM's <|start_of_role|>role<|end_of_role|>content<|end_of_text|> template
+        let isGranite    = modelName.contains("granite")
+        // LFM (Liquid AI) and similar ChatML-style models
+        let isChatML     = modelName.contains("lfm") || modelName.contains("liquid")
 
         // 1. Get history (exclude placeholder turns)
         var allMessages: [VibeChatMessage] = []
@@ -6002,6 +6036,10 @@ struct VibeCoderScreen: View {
             parts.append("<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n\(systemPrompt)<|eot_id|>")
         } else if isLlama {
             parts.append("<<SYS>>\n\(systemPrompt)\n<</SYS>>")
+        } else if isGranite {
+            parts.append("<|start_of_role|>system<|end_of_role|>\(systemPrompt)<|end_of_text|>")
+        } else if isChatML {
+            parts.append("<|startoftext|><|im_start|>system\n\(systemPrompt)<|im_end|>")
         } else {
             parts.append("System: \(systemPrompt)")
         }
@@ -6034,6 +6072,12 @@ struct VibeCoderScreen: View {
                 } else {
                     parts.append(content)
                 }
+            } else if isGranite {
+                let role = (msg.role == "user") ? "user" : "assistant"
+                parts.append("<|start_of_role|>\(role)<|end_of_role|>\(content)<|end_of_text|>")
+            } else if isChatML {
+                let role = (msg.role == "user") ? "user" : "assistant"
+                parts.append("<|im_start|>\(role)\n\(content)<|im_end|>")
             } else {
                 let prefix = (msg.role == "user") ? "User" : "Assistant"
                 parts.append("\(prefix): \(content)")
@@ -6052,6 +6096,12 @@ struct VibeCoderScreen: View {
             parts.append("<|start_header_id|>assistant<|end_header_id|>\n\n")
         } else if isLlama {
             parts.append("[INST] \(currentFilePrompt) [/INST]")
+        } else if isGranite {
+            parts.append("<|start_of_role|>user<|end_of_role|>\(currentFilePrompt)<|end_of_text|>")
+            parts.append("<|start_of_role|>assistant<|end_of_role|>")
+        } else if isChatML {
+            parts.append("<|im_start|>user\n\(currentFilePrompt)<|im_end|>")
+            parts.append("<|im_start|>assistant\n")
         } else {
             parts.append("User: \(currentFilePrompt)")
             parts.append("Assistant:")
