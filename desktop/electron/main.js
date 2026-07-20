@@ -15,13 +15,14 @@ const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://localhost:11434';
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1380,
+    width: 1400,
     height: 900,
     minWidth: 1000,
     minHeight: 650,
-    title: 'Grok Build IDE',
-    backgroundColor: '#0D0F12',
+    title: 'LLM Hub Studio',
+    backgroundColor: '#0A0C10',
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
+    trafficLightPosition: { x: 16, y: 14 },
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -198,7 +199,6 @@ ipcMain.handle('grok:run-prompt', async (event, { prompt, model, workspacePath }
     GROK_MODEL: model,
   };
 
-  // Run grok-build CLI (or fallback to node execution / mock stream if CLI not found)
   const isWindows = process.platform === 'win32';
   const command = isWindows ? 'grok-build.cmd' : 'grok-build';
 

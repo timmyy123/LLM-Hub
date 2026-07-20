@@ -3,7 +3,7 @@ import FileExplorer from './components/FileExplorer';
 import AgentChat from './components/AgentChat';
 import ModelManagerModal from './components/ModelManagerModal';
 import { filterAllowedModels } from './services/ollamaService';
-import { Cpu, Wifi, WifiOff, Terminal, ShieldAlert } from 'lucide-react';
+import { Cpu, Wifi, WifiOff } from 'lucide-react';
 
 export default function App() {
   const [ollamaOnline, setOllamaOnline] = useState(false);
@@ -30,13 +30,8 @@ export default function App() {
         }
       }
     } else {
-      // Browser preview mode
       setOllamaOnline(true);
-      setInstalledModels([
-        { name: 'gemma4:latest' },
-        { name: 'ministral-3:latest' },
-        { name: 'lfm2:24b-a4b' },
-      ]);
+      setInstalledModels([]);
     }
   };
 
@@ -67,45 +62,42 @@ export default function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#0D0F12] text-slate-100 overflow-hidden">
-      {/* Top Application Bar */}
-      <div className="h-10 bg-[#16191E] border-b border-slate-800/80 px-4 flex items-center justify-between text-xs select-none">
+    <div className="flex flex-col h-screen w-screen bg-[#0A0C10] text-slate-100 overflow-hidden select-none">
+      {/* macOS Liquid Glass Drag Header */}
+      <div className="h-11 liquid-glass-bar px-4 flex items-center justify-between text-xs app-drag-region pl-20">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 font-semibold tracking-wide text-slate-200">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm shadow-amber-500/50" />
-            Grok Build Desktop
-          </div>
-          <span className="text-slate-600">|</span>
-          <span className="text-slate-400 font-mono text-[11px]">Claude Code / Codex Agent GUI</span>
+          <span className="font-medium tracking-tight text-slate-200 font-sans text-xs">
+            LLM Hub Studio
+          </span>
         </div>
 
-        {/* Status Indicators */}
-        <div className="flex items-center gap-4">
+        {/* Header Actions */}
+        <div className="flex items-center gap-3 app-no-drag">
           <div className="flex items-center gap-1.5 font-mono text-[11px]">
             {ollamaOnline ? (
               <span className="flex items-center gap-1.5 text-emerald-400">
-                <Wifi size={13} />
-                Ollama Local Active
+                <Wifi size={12} />
+                Ollama Connected
               </span>
             ) : (
-              <span className="flex items-center gap-1.5 text-red-400">
-                <WifiOff size={13} />
-                Ollama Offline (localhost:11434)
+              <span className="flex items-center gap-1.5 text-rose-400">
+                <WifiOff size={12} />
+                Ollama Disconnected
               </span>
             )}
           </div>
 
           <button
             onClick={() => setIsModelModalOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 transition-colors font-mono text-[11px]"
+            className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/10 hover:bg-white/15 text-slate-200 border border-white/10 transition-all font-sans text-[11px]"
           >
-            <Cpu size={13} />
-            <span>Models Download</span>
+            <Cpu size={12} />
+            <span>Models</span>
           </button>
         </div>
       </div>
 
-      {/* Main Workspace Layout */}
+      {/* Main Workspace */}
       <div className="flex-1 flex overflow-hidden">
         <FileExplorer
           workspacePath={workspacePath}
@@ -122,7 +114,7 @@ export default function App() {
         />
       </div>
 
-      {/* Local Models Manager Modal */}
+      {/* Models Manager Modal */}
       <ModelManagerModal
         isOpen={isModelModalOpen}
         onClose={() => setIsModelModalOpen(false)}
