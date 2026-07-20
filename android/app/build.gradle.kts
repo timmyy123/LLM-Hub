@@ -383,7 +383,7 @@ dependencies {
     implementation("com.github.medavox:IPA-Transcribers:v0.2")
 
     // GenieX SDK for GGUF model support (LLM/VLM inference on CPU/GPU/NPU)
-    implementation(files("libs/geniex-android-0.3.14.aar"))
+    implementation(files("libs/geniex-android-0.3.16.aar"))
 
     // WhisperKit for fast on-device ASR (TFLite + QNN NPU acceleration)
     implementation("com.argmaxinc:whisperkit:0.3.3")
@@ -412,7 +412,7 @@ dependencies {
 }
 
 // ── Extract QNN HTP .so files from GenieX AAR into geniex_npu_pack ──────────────
-// GenieX 0.3.12 bundles ~175 MB of QNN HTP runtime libs (libQnn*, libPlatformValidator,
+// GenieX 0.3.16 bundles ~175 MB of QNN HTP runtime libs (libQnn*, libPlatformValidator,
 // libCalculator, libhta*) in its jni/arm64-v8a/ folder. We extract them into the
 // geniex_npu_pack asset pack source directory so Play Asset Delivery can serve them
 // at install time. This keeps the base module well under Play Store's 200 MB limit.
@@ -425,7 +425,7 @@ val geniexAarConfig by configurations.creating {
     isCanBeConsumed = false
     isCanBeResolved = true
 }
-dependencies { geniexAarConfig(files("libs/geniex-android-0.3.14.aar")) }
+dependencies { geniexAarConfig(files("libs/geniex-android-0.3.16.aar")) }
 
 val npuPackAssetsDir = rootProject.file("geniex_npu_pack/src/main/assets/npu")
 
