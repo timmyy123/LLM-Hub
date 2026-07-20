@@ -1,3 +1,19 @@
+# Node & Web
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+*.log
+npm-debug.log*
+
+# OS & IDE
+.DS_Store
+**/.DS_Store
+.idea/
+.vscode/
+.gradle/
+
+# Repository specific
 temp_status.txt
 rebase_editor.py
 .claude/worktrees/
