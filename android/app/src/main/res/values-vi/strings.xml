@@ -1,3 +1,4 @@
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">LLM Hub</string>
     <string name="ok">được</string>
@@ -71,7 +72,7 @@
     <string name="ai_thinking">AI đang suy nghĩ...</string>
     <string name="thinking_label">Suy nghĩ</string>
     <string name="thinking_tokens">Suy nghĩ (%1$dmã thông báo)</string>
-    <string name="version_number">Phiên bản 3.8.5</string>
+    <string name="version_number">Phiên bản 3.8.6</string>
     <string name="app_version">Phiên bản ứng dụng</string>
     <string name="terms_of_service">Điều khoản dịch vụ</string>
     <string name="tos_last_updated">Cập nhật lần cuối: Ngày 22 tháng 6 năm 2026</string>
@@ -205,8 +206,8 @@
     <string name="dialog_delete_all_chats_message">Thao tác này sẽ xóa vĩnh viễn tất cả lịch sử cuộc trò chuyện. Không thể hoàn tác hành động này.</string>
     <string name="dialog_delete_chat_title">Xóa cuộc trò chuyện?</string>
     <string name="dialog_delete_chat_message">Xóa cuộc trò chuyện \"%1$s\"?</string>
-    <string name="dialog_delete_creator_title">Xóa người sáng tạo?</string>
-    <string name="dialog_delete_creator_message">Xóa người sáng tạo \"%1$s\"?</string>
+    <string name="dialog_delete_creator_title">Xóa creAItor?</string>
+    <string name="dialog_delete_creator_message">Xóa creAItor "%1"?</string>
     <string name="action_delete_all">Xóa tất cả</string>
     <string name="action_delete">Xóa</string>
     <string name="action_rename">Đổi tên</string>
@@ -387,9 +388,9 @@
     <string name="ready_to_use">Sẵn sàng sử dụng</string>
     <string name="unsupported_file_format">Định dạng tệp không được hỗ trợ. Vui lòng chọn tệp .task, .litertlm hoặc .zip.</string>
     <string name="download_models_from_litert_community">Bạn có thể tải xuống các mô hình LLM tương thích từ:</string>
-    <string name="litert_community_link">Cộng đồng LiteRT ôm mặt</string>
+    <string name="litert_community_link">Cộng đồng LiteRT trên Hugging Face</string>
     <string name="download_image_models_from">Bạn có thể tải xuống các mẫu hình ảnh tương thích từ:</string>
-    <string name="sd_models_link">Mô hình khuếch tán ổn định trên khuôn mặt ôm</string>
+    <string name="sd_models_link">Mô hình Stable Diffusion trên Hugging Face</string>
     <string name="supports_npu">Hỗ trợ NPU</string>
     <string name="import_model_warning">⚠️ Quan trọng: Vui lòng đọc README trên HuggingFace của mô hình trước khi nhập. Nhập các khả năng chính xác (hình ảnh, âm thanh, GPU) và kích thước cửa sổ ngữ cảnh như được chỉ định trong tài liệu mô hình. Cài đặt không chính xác có thể khiến mô hình không hoạt động bình thường. Quan trọng: Các mẫu Vision GGUF yêu cầu Máy chiếu Vision (mmproj). Nhập tệp máy chiếu để bật đầu vào hình ảnh.</string>
     <string name="home_welcome">Chào mừng đến với LLM Hub</string>
@@ -408,9 +409,9 @@
     <string name="feature_image_generator_desc">Tạo hình ảnh từ lời nhắc văn bản bằng AI</string>
     <string name="feature_vibe_coder">Vibecode</string>
     <string name="feature_vibe_coder_desc">Tạo mã HTML, JavaScript và Python bằng AI</string>
-    <string name="feature_creator_generation">người sáng tạo</string>
+    <string name="feature_creator_generation">creAItors</string>
     <string name="feature_creator_generation_desc">Tạo nhân vật AI tùy chỉnh của riêng bạn</string>
-    <string name="drawer_my_creators">người sáng tạo của tôi</string>
+    <string name="drawer_my_creators">creAItors của tôi</string>
     <string name="premium_title">LLM Hub Premium trọn đời</string>
     <string name="premium_subtitle">Mở khóa trải nghiệm trọn vẹn</string>
     <string name="premium_feature_no_ads">Không bao giờ có quảng cáo</string>
@@ -488,7 +489,7 @@
     <string name="vibe_coder_no_file_selected_error">Không có tập tin nào được chọn. Trước tiên, hãy tạo/mở tệp từ thư mục không gian làm việc.</string>
     <string name="vibe_coder_delete_file_error">Không xóa được tập tin</string>
     <string name="vibe_coder_autosave_failed">Tự động lưu không thành công. Nhấn lưu lại hoặc mở lại tệp.</string>
-    <string name="creator_screen_title">người sáng tạo mới</string>
+    <string name="creator_screen_title">creAItor mới</string>
     <string name="creator_bring_to_life">Mang AI vào cuộc sống</string>
     <string name="creator_description">Bạn có khả năng biến người sáng tạo AI tùy chỉnh thành hiện thực. Chỉ cần mô tả cách người sáng tạo của bạn sẽ phản hồi bất kỳ thông tin đầu vào, yêu cầu hoặc ý tưởng nào. Sau khi chúng tôi tạo creAItor cho bạn, bạn sẽ có thể sử dụng nó trong cuộc trò chuyện.</string>
     <string name="creator_prompt_label">Hãy mô tả người sáng tạo ra bạn...</string>
@@ -568,8 +569,8 @@
     <string name="image_generator_generate">Tạo Hình Ảnh</string>
     <string name="image_generator_generating">Đang tạo hình ảnh...</string>
     <string name="image_generator_iterations">Bước</string>
-    <string name="image_generator_seed">Hạt giống</string>
-    <string name="image_generator_random_seed">Hạt giống ngẫu nhiên</string>
+    <string name="image_generator_seed">Seed</string>
+    <string name="image_generator_random_seed">Seed ngẫu nhiên</string>
     <string name="image_generator_save">Lưu hình ảnh</string>
     <string name="image_generator_download_model">Tải xuống mẫu đầu tiên</string>
     <string name="image_generator_download_model_desc">Tải xuống mô hình Thực tế tuyệt đối (NPU hoặc CPU) từ màn hình Mô hình để bắt đầu tạo hình ảnh</string>

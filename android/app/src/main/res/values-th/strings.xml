@@ -1,3 +1,4 @@
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">LLM Hub</string>
     <string name="ok">ตกลง</string>
@@ -69,9 +70,9 @@
     <string name="sd_models_credit">โมเดลการสร้างภาพขับเคลื่อนโดยการใช้งาน Stable Diffusion ของ xororz โดยใช้แบ็กเอนด์ Qualcomm QNN (NPU) และ Alibaba MNN (CPU)</string>
     <string name="nexa_sdk_credit">การอนุมานแบบจำลอง GGUF ขับเคลื่อนโดย GenieX SDK</string>
     <string name="ai_thinking">AI กำลังคิด...</string>
-    <string name="thinking_label">คิดถึง</string>
+    <string name="thinking_label">กำลังคิด</string>
     <string name="thinking_tokens">กำลังคิด (%1$dโทเค็น)</string>
-    <string name="version_number">เวอร์ชัน 3.8.5</string>
+    <string name="version_number">เวอร์ชัน 3.8.6</string>
     <string name="app_version">เวอร์ชันของแอป</string>
     <string name="terms_of_service">ข้อกำหนดในการให้บริการ</string>
     <string name="tos_last_updated">อัปเดตล่าสุด: 22 มิถุนายน 2569</string>
@@ -205,8 +206,8 @@
     <string name="dialog_delete_all_chats_message">การดำเนินการนี้จะลบประวัติการสนทนาทั้งหมดอย่างถาวร การดำเนินการนี้ไม่สามารถยกเลิกได้</string>
     <string name="dialog_delete_chat_title">ลบแชท?</string>
     <string name="dialog_delete_chat_message">ลบการสนทนา \"%1$s\" หรือไม่</string>
-    <string name="dialog_delete_creator_title">ลบครีเอเตอร์ใช่ไหม</string>
-    <string name="dialog_delete_creator_message">ลบครีเอเตอร์ \"%1$s\" หรือไม่</string>
+    <string name="dialog_delete_creator_title">ลบ creAItor?</string>
+    <string name="dialog_delete_creator_message">ลบ creAItor "%1"?</string>
     <string name="action_delete_all">ลบทั้งหมด</string>
     <string name="action_delete">ลบ</string>
     <string name="action_rename">เปลี่ยนชื่อ</string>
@@ -363,7 +364,7 @@
     <string name="gemma3n_e4b_gpu_audio_warning">สำหรับอุปกรณ์ที่มี RAM ขนาด 7-8GB การเร่งความเร็ว GPU จำเป็นต้องปิดใช้งานคุณสมบัติด้านเสียง อินพุตเสียงจะไม่สามารถใช้ได้ แต่รองรับไฟล์แนบรูปภาพ</string>
     <string name="audio_disabled_for_gpu">เสียงถูกปิดใช้งานสำหรับการเร่งความเร็ว GPU</string>
     <string name="audio_disabled_no_audio">คุณสมบัติด้านเสียงถูกปิดใช้งานสำหรับการกำหนดค่ารุ่นนี้ อินพุตเสียงไม่พร้อมใช้งาน แต่รองรับไฟล์แนบรูปภาพ</string>
-    <string name="modality_options">ตัวเลือกกิริยา</string>
+    <string name="modality_options">ตัวเลือกรูปแบบข้อมูล</string>
     <string name="enable_vision">เปิดใช้งานการมองเห็น (รองรับรูปภาพ)</string>
     <string name="enable_audio">เปิดใช้งานเสียง (การป้อนข้อมูลด้วยเสียง)</string>
     <string name="enable_thinking">เปิดใช้งานการคิด</string>
@@ -389,7 +390,7 @@
     <string name="download_models_from_litert_community">คุณสามารถดาวน์โหลดโมเดล LLM ที่เข้ากันได้ได้จาก:</string>
     <string name="litert_community_link">ชุมชน LiteRT บน Hugging Face</string>
     <string name="download_image_models_from">คุณสามารถดาวน์โหลดโมเดลรูปภาพที่เข้ากันได้ได้จาก:</string>
-    <string name="sd_models_link">โมเดลการแพร่กระจายที่เสถียรบนใบหน้ากอด</string>
+    <string name="sd_models_link">โมเดล Stable Diffusion บน Hugging Face</string>
     <string name="supports_npu">รองรับ NPU</string>
     <string name="import_model_warning">⚠️ สำคัญ: โปรดอ่าน README ของโมเดลบน Hugging Face ก่อนที่จะนำเข้า ป้อนความสามารถที่ถูกต้อง (การมองเห็น เสียง GPU) และขนาดหน้าต่างบริบทตามที่ระบุไว้ในเอกสารประกอบโมเดล การตั้งค่าที่ไม่ถูกต้องอาจทำให้โมเดลทำงานไม่ถูกต้อง สำคัญ: รุ่น Vision GGUF ต้องใช้ Vision Projector (mmproj) นำเข้าไฟล์โปรเจ็กเตอร์เพื่อเปิดใช้งานอินพุตภาพ</string>
     <string name="home_welcome">ยินดีต้อนรับสู่ LLM Hub</string>
@@ -408,9 +409,9 @@
     <string name="feature_image_generator_desc">สร้างภาพจากข้อความแจ้งด้วย AI</string>
     <string name="feature_vibe_coder">Vibecode</string>
     <string name="feature_vibe_coder_desc">สร้างโค้ด HTML, JavaScript และ Python ด้วย AI</string>
-    <string name="feature_creator_generation">ครีเอเตอร์</string>
+    <string name="feature_creator_generation">creAItors</string>
     <string name="feature_creator_generation_desc">สร้างบุคลิก AI ที่คุณกำหนดเอง</string>
-    <string name="drawer_my_creators">ผู้สร้างของฉัน</string>
+    <string name="drawer_my_creators">creAItors ของฉัน</string>
     <string name="premium_title">LLM Hub อายุการใช้งานระดับพรีเมียม</string>
     <string name="premium_subtitle">ปลดล็อคประสบการณ์เต็มรูปแบบ</string>
     <string name="premium_feature_no_ads">ไม่มีโฆษณาเลย</string>
@@ -488,7 +489,7 @@
     <string name="vibe_coder_no_file_selected_error">ไม่ได้เลือกไฟล์ สร้าง/เปิดไฟล์จากโฟลเดอร์พื้นที่ทำงานก่อน</string>
     <string name="vibe_coder_delete_file_error">ไม่สามารถลบไฟล์</string>
     <string name="vibe_coder_autosave_failed">บันทึกอัตโนมัติล้มเหลว แตะบันทึกอีกครั้งหรือเปิดไฟล์อีกครั้ง</string>
-    <string name="creator_screen_title">ผู้สร้างใหม่</string>
+    <string name="creator_screen_title">creAItor ใหม่</string>
     <string name="creator_bring_to_life">นำ AI มาสู่ชีวิต</string>
     <string name="creator_description">คุณมีพลังที่จะทำให้ครีเอเตอร์ AI แบบกำหนดเองมีชีวิตขึ้นมาได้ เพียงอธิบายว่าครีเอเตอร์ของคุณจะตอบสนองต่อข้อมูล คำขอ หรือแนวคิดอย่างไร เมื่อเราสร้าง creAItor ของคุณแล้ว คุณจะสามารถใช้มันในการแชทได้</string>
     <string name="creator_prompt_label">อธิบายผู้สร้างของคุณ...</string>
@@ -568,8 +569,8 @@
     <string name="image_generator_generate">สร้างภาพ</string>
     <string name="image_generator_generating">กำลังสร้างภาพ...</string>
     <string name="image_generator_iterations">ขั้นตอน</string>
-    <string name="image_generator_seed">เมล็ดพันธุ์</string>
-    <string name="image_generator_random_seed">เมล็ดสุ่ม</string>
+    <string name="image_generator_seed">Seed</string>
+    <string name="image_generator_random_seed">สุ่ม Seed</string>
     <string name="image_generator_save">บันทึกรูปภาพ</string>
     <string name="image_generator_download_model">ดาวน์โหลดโมเดลเฟิร์ส</string>
     <string name="image_generator_download_model_desc">ดาวน์โหลดโมเดล Absolute Reality (NPU หรือ CPU) จากหน้าจอโมเดลเพื่อเริ่มสร้างภาพ</string>

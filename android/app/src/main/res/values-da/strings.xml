@@ -1,3 +1,4 @@
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">LLM Hub</string>
     <string name="ok">OK</string>
@@ -71,7 +72,7 @@
     <string name="ai_thinking">AI tænker...</string>
     <string name="thinking_label">Tænker</string>
     <string name="thinking_tokens">Tænker (%1$dtokens)</string>
-    <string name="version_number">Version 3.8.5</string>
+    <string name="version_number">Version 3.8.6</string>
     <string name="app_version">Appversion</string>
     <string name="terms_of_service">Servicevilkår</string>
     <string name="tos_last_updated">Sidst opdateret: 22. juni 2026</string>
@@ -82,9 +83,21 @@
     <string name="tos_app_description_title">2. Anvendelsesbeskrivelse</string>
     <string name="tos_app_description_text">LLM Hub er en open source Android-applikation, der giver adgang til store sprogmodeller (LLM\'er) til AI-samtaler på enheden. Appen behandler alle data lokalt på din enhed og sender ikke personlige oplysninger til eksterne servere.</string>
     <string name="tos_user_responsibilities_title">3. Brugeransvar</string>
-    <string name="tos_user_responsibilities_text">Du accepterer at bruge LLM Hub ansvarligt og i overensstemmelse med gældende love. Du er ansvarlig for:\n\n• Kun at bruge applikationen til lovlige formål\n• Ikke at forsøge at reverse engineering eller modificere applikationen\n• Ikke at bruge applikationen til at generere skadeligt, ulovligt eller stødende indhold\n• Respektere de intellektuelle ejendomsrettigheder for din tredjeparts enhed, der opfylder minimumskravene til enhedens\n</string>
+    <string name="tos_user_responsibilities_text">Du accepterer at bruge LLM Hub ansvarligt og i overensstemmelse med gældende lovgivning. Du er ansvarlig for:
+
+• Kun at bruge applikationen til lovlige formål
+• Ikke at forsøge at reverse-engineere eller modificere applikationen
+• Ikke at bruge applikationen til at generere skadeligt, ulovligt eller stødende indhold
+• At respektere tredjeparts intellektuelle ejendomsrettigheder
+• At sikre, at din enhed opfylder minimumskravene for korrekt drift</string>
     <string name="tos_privacy_data_title">4. Privatliv og data</string>
-    <string name="tos_privacy_data_text">LLM Hub er designet med privatliv i tankerne:\n\n• Alle samtaler og databehandling foregår lokalt på din enhed\n• Ingen personlige data overføres til eksterne servere\n• Chathistorik gemmes lokalt og kan til enhver tid slettes\n• Modeldownloads udføres direkte fra officielle applikationsarkiver, •____ indsamler ikke Googles officielle applikationslagre (Hugging ___) analyse- eller brugsdata</string>
+    <string name="tos_privacy_data_text">LLM Hub er designet med privatliv i tankerne:
+
+• Alle samtaler og databehandling foregår lokalt på din enhed
+• Ingen personlige data overføres til eksterne servere
+• Chathistorik gemmes lokalt og kan til enhver tid slettes
+• Modeldownloads udføres direkte fra officielle arkiver (Hugging Face, Google)
+• Applikationen indsamler ikke analyse- eller brugsdata</string>
     <string name="tos_disclaimer_title">5. Ansvarsfraskrivelse</string>
     <string name="tos_disclaimer_text">LLM Hub leveres \"som den er\" uden garantier af nogen art. Vi garanterer ikke for nøjagtigheden, pålideligheden eller tilgængeligheden af ​​applikationen eller dens genererede indhold. Brug af AI-modeller kan give uforudsigelige resultater.</string>
     <string name="tos_limitation_liability_title">6. Ansvarsbegrænsning</string>
@@ -205,8 +218,8 @@
     <string name="dialog_delete_all_chats_message">Dette sletter hele samtalehistorikken permanent. Denne handling kan ikke fortrydes.</string>
     <string name="dialog_delete_chat_title">Vil du slette chat?</string>
     <string name="dialog_delete_chat_message">Vil du slette samtalen \"%1$s\"?</string>
-    <string name="dialog_delete_creator_title">Vil du slette skaberen?</string>
-    <string name="dialog_delete_creator_message">Vil du slette skaberen \"%1$s\"?</string>
+    <string name="dialog_delete_creator_title">Slet creAItor?</string>
+    <string name="dialog_delete_creator_message">Vil du slette creAItor "%1"?</string>
     <string name="action_delete_all">Slet alle</string>
     <string name="action_delete">Slet</string>
     <string name="action_rename">Omdøb</string>
@@ -387,9 +400,9 @@
     <string name="ready_to_use">Klar til brug</string>
     <string name="unsupported_file_format">Ikke-understøttet filformat. Vælg venligst en .task-, .litertlm- eller .zip-fil.</string>
     <string name="download_models_from_litert_community">Du kan downloade kompatible LLM-modeller fra:</string>
-    <string name="litert_community_link">LiteRT-fællesskab om kramme ansigt</string>
+    <string name="litert_community_link">LiteRT-fællesskab på Hugging Face</string>
     <string name="download_image_models_from">Du kan downloade kompatible billedmodeller fra:</string>
-    <string name="sd_models_link">Stabile diffusionsmodeller på Hugging Face</string>
+    <string name="sd_models_link">Stable Diffusion-modeller på Hugging Face</string>
     <string name="supports_npu">Understøtter NPU</string>
     <string name="import_model_warning">⚠️ Vigtigt: Læs venligst modellens README på Hugging Face før import. Indtast de korrekte muligheder (vision, lyd, GPU) og kontekstvinduesstørrelse som angivet i modeldokumentationen. Forkerte indstillinger kan medføre, at modellen ikke fungerer korrekt. Vigtigt: Vision GGUF-modeller kræver en Vision Projector (mmproj). Importer projektorfilen for at aktivere billedinput.</string>
     <string name="home_welcome">Velkommen til LLM Hub</string>
@@ -408,9 +421,9 @@
     <string name="feature_image_generator_desc">Generer billeder fra tekstprompter med AI</string>
     <string name="feature_vibe_coder">Vibecode</string>
     <string name="feature_vibe_coder_desc">Generer HTML, JavaScript og Python-kode med AI</string>
-    <string name="feature_creator_generation">skabere</string>
+    <string name="feature_creator_generation">creAItors</string>
     <string name="feature_creator_generation_desc">Opret dine egne tilpassede AI-personas</string>
-    <string name="drawer_my_creators">mine skabere</string>
+    <string name="drawer_my_creators">mine creAItors</string>
     <string name="premium_title">LLM Hub Premium Levetid</string>
     <string name="premium_subtitle">Lås op for den fulde oplevelse</string>
     <string name="premium_feature_no_ads">Ingen annoncer, nogensinde</string>
@@ -488,7 +501,7 @@
     <string name="vibe_coder_no_file_selected_error">Ingen fil valgt. Opret/åbn først en fil fra arbejdsområdemappen.</string>
     <string name="vibe_coder_delete_file_error">Kunne ikke slette filen</string>
     <string name="vibe_coder_autosave_failed">Automatisk lagring mislykkedes. Tryk på gem igen, eller åbn filen igen.</string>
-    <string name="creator_screen_title">ny skaber</string>
+    <string name="creator_screen_title">ny creAItor</string>
     <string name="creator_bring_to_life">Bring en AI til live</string>
     <string name="creator_description">Du har magten til at bringe en tilpasset AI-skaber til live. Bare beskriv, hvordan din skaber vil reagere på input, anmodninger eller idéer. Når vi har genereret din skaber, vil du være i stand til at bruge den i chatten.</string>
     <string name="creator_prompt_label">Beskriv din skaber...</string>
@@ -568,8 +581,8 @@
     <string name="image_generator_generate">Generer billede</string>
     <string name="image_generator_generating">Genererer billede...</string>
     <string name="image_generator_iterations">Trin</string>
-    <string name="image_generator_seed">Frø</string>
-    <string name="image_generator_random_seed">Tilfældig frø</string>
+    <string name="image_generator_seed">Seed</string>
+    <string name="image_generator_random_seed">Tilfældig seed</string>
     <string name="image_generator_save">Gem billede</string>
     <string name="image_generator_download_model">Download Model First</string>
     <string name="image_generator_download_model_desc">Download Absolute Reality (NPU eller CPU) model fra skærmen Models for at begynde at skabe billeder</string>
@@ -736,8 +749,57 @@
     <string name="web_search_found_results">✅ Fundet%1$dresultater. Analyserer...</string>
     <string name="web_search_no_results">❌ Ingen aktuelle søgeresultater fundet. Giver svar baseret på træningsdata...</string>
     <string name="web_search_failed">❌ Websøgning mislykkedes:%1$s. Giver svar baseret på træningsdata...</string>
-    <string name="vision_chat_cannot_open">🚫 **Kan ikke åbne denne chat**\n\nDenne samtale indeholder billeder, men du har i øjeblikket en **kun tekstmodel** indlæst:\n\n📱 **Nuværende model:**%1$s\n\nindeholder disse billeder _____NL** Indeholder disse billeder _____NL** ---\n\n## 🎯 Sådan løser du dette:\n\n1. **📥 Download en Vision Model**\n- Gå til \"Download modeller\"\n- Se efter modeller, der er markeret med 🖼️ eller \"Vision E__2__t\" eller \"Prøv_NL**nB_\" eller \"Prøv_NL**B_\" (Vision+Tekst)**\n\n2. **🔄 Skift til Vision Model**\n- Indlæs den vision-model, du har downloadet\n- Vision-modeller kan håndtere både tekst OG billeder\n\n3. **✅ Returner til denne chat____**, når en vision-chat er indlæst, perfekt!\n\n---\n\n💡 **Prof tip:** Vision-modeller kan alt, hvad tekstmodeller kan, plus håndtere billeder!</string>
-    <string name="vision_image_cannot_send">🖼️ **Kan ikke sende billeder**\n\nDu forsøger at sende et billede, men den nuværende model er **kun tekst**:\n\n📱 **Nuværende model:**%1$s\n-\nNL___ #\n\nNL__ #\n\nNL___ # For at sende billeder:\n\n1. **📥 Download en Vision Model**\n- Tryk på menuen → \"Download modeller\"\n- Se efter 🖼️ **Vision+Text** modeller\n- Anbefalet: E**TBGemma_**t___NL_3\n2. **🔄 Skift model**\n- Indlæs den vision-model, du downloadede\n- Vision-modeller håndterer både tekst OG billeder\n\n3. **✅ Prøv igen**\n- Når først den er indlæst, kan du sende billeder frit!\n\n---\n\n💡 **Prof tip:** Vision-modeller kan alt, hvad tekstmodeller kan, plus forstå billeder!</string>
+    <string name="vision_chat_cannot_open">🚫 **Kan ikke åbne denne chat**
+
+Denne samtale indeholder billeder, men du har i øjeblikket indlæst en **kun-tekst model**:
+
+📱 **Nuværende model:** %1
+🖼️ **Denne chat:** Indeholder billeder
+
+---
+
+## 🎯 Sådan løser du dette:
+
+1. **📥 Download en Vision-model**
+   - Gå til "Download modeller"
+   - Se efter modeller markeret med 🖼️ eller "Vision+Tekst"
+   - Prøv: **Gemma-3n E2B (Vision+Tekst)**
+
+2. **🔄 Skift til Vision-model**
+   - Indlæs den vision-model, du har downloadet
+   - Vision-modeller kan håndtere både tekst OG billeder
+
+3. **✅ Returner til denne chat**
+   - Når en vision-model er indlæst, vil denne chat fungere perfekt!
+
+---
+
+💡 **Tip:** Vision-modeller kan gøre alt det, tekstmodeller kan, plus håndtere billeder!</string>
+    <string name="vision_image_cannot_send">🖼️ **Kan ikke sende billeder**
+
+Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
+
+📱 **Nuværende model:** %1
+
+---
+
+## 🎯 For at sende billeder:
+
+1. **📥 Download en Vision-model**
+   - Tryk på menuen → "Download modeller"
+   - Se efter 🖼️ **Vision+Tekst** modeller
+   - Anbefalet: **Gemma-3n E2B (Vision+Tekst)**
+
+2. **🔄 Skift model**
+   - Indlæs den vision-model, du downloadede
+   - Vision-modeller håndterer både tekst OG billeder
+
+3. **✅ Prøv igen**
+   - Når den er indlæst, kan du frit sende billeder!
+
+---
+
+💡 **Tip:** Vision-modeller kan gøre alt det, tekstmodeller kan, plus forstå billeder!</string>
     <string name="please_download_model">Download venligst en model for at begynde at chatte.</string>
     <string name="model_not_loaded">Model ikke korrekt indlæst. Prøv at skifte til en anden model, eller genstart appen.</string>
     <string name="no_response_produced">Intet svar produceret. (Muligt: ​​token-grænse eller sessionsnulstilling). Tryk på Gendan.</string>
