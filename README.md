@@ -2,6 +2,8 @@
 
 **LLM Hub** is an open-source mobile app for on-device LLM chat, image generation, and video generation, available for both **Android** and **iOS**. It's optimized for mobile usage (CPU/GPU/NPU acceleration) and supports multiple model formats so you can run powerful models locally and privately.
 
+🌟 **Featured:** Featured by **RunAnywhere** on their website — read the [LLM Hub iOS Case Study](https://www.runanywhere.ai/blog/llm-hub-ios-case-study)!
+
 ## Download
 
 <table>
