@@ -21,12 +21,19 @@ export default function App() {
 
       if (status.online) {
         const res = await window.api.listModels();
+        console.log('[App] listModels response:', res);
         if (res.success && res.models) {
           const allowed = filterAllowedModels(res.models);
+          console.log('[App] Filtered installed models:', allowed);
           setInstalledModels(allowed);
           if (allowed.length > 0) {
-            setSelectedModel((prev) => prev || allowed[0].name || allowed[0].model);
+            setSelectedModel((prev) => {
+              const next = prev || allowed[0].name || allowed[0].model;
+              console.log('[App] Selected model set to:', next);
+              return next;
+            });
           } else {
+            console.log('[App] No models installed.');
             setSelectedModel(null);
           }
         } else {
@@ -123,6 +130,7 @@ export default function App() {
         installedModels={installedModels}
         selectedModel={selectedModel}
         onSelectModel={(tag) => {
+          console.log('[App] User manually selected model:', tag);
           setSelectedModel(tag);
           setIsModelModalOpen(false);
         }}

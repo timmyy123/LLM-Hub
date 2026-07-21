@@ -41,11 +41,15 @@ function createWindow() {
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     trafficLightPosition: { x: 16, y: 14 },
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
     },
+  });
+
+  mainWindow.webContents.on('console-message', (event, level, message) => {
+    console.log(`[Renderer] ${message}`);
   });
 
   const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
@@ -122,6 +126,7 @@ ipcMain.handle('ollama:list-models', async () => {
       res.on('end', () => {
         try {
           const parsed = JSON.parse(data);
+          console.log(`[IPC Main] ollama:list-models returning ${parsed.models ? parsed.models.length : 0} models`);
           resolve({ success: true, models: parsed.models || [] });
         } catch (e) {
           resolve({ success: false, error: e.message, models: [] });
@@ -133,12 +138,15 @@ ipcMain.handle('ollama:list-models', async () => {
   });
 });
 
-// IPC: Ollama Pull Model (with strict error detection)
+// IPC: Ollama Pull Model (with line buffering & error handling)
 ipcMain.handle('ollama:pull-model', async (event, { modelName }) => {
+  console.log(`[IPC Main] ollama:pull-model received request for "${modelName}"`);
   return new Promise((resolve) => {
     const url = new URL(`${OLLAMA_HOST}/api/pull`);
     const postData = JSON.stringify({ name: modelName, stream: true });
     let pullError = null;
+    let isSuccess = false;
+    let buffer = '';
 
     const req = http.request(url, {
       method: 'POST',
@@ -147,31 +155,59 @@ ipcMain.handle('ollama:pull-model', async (event, { modelName }) => {
         'Content-Length': Buffer.byteLength(postData),
       },
     }, (res) => {
+      console.log(`[IPC Main] Ollama pull connection established for "${modelName}". HTTP Status: ${res.statusCode}`);
+
       res.on('data', (chunk) => {
-        const lines = chunk.toString().split('\n').filter(Boolean);
+        buffer += chunk.toString();
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+
         for (const line of lines) {
+          if (!line.trim()) continue;
           try {
             const parsed = JSON.parse(line);
             if (parsed.error) {
               pullError = parsed.error;
+              console.error(`[IPC Main] Ollama returned error line for "${modelName}":`, parsed.error);
             }
+            if (parsed.status === 'success') {
+              isSuccess = true;
+              console.log(`[IPC Main] Ollama returned 'success' status line for "${modelName}"`);
+            }
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('ollama:pull-progress', { modelName, ...parsed });
+            }
+          } catch (e) {
+            console.error(`[IPC Main] Failed to parse JSON stream line:`, line);
+          }
+        }
+      });
+
+      res.on('end', () => {
+        if (buffer.trim()) {
+          try {
+            const parsed = JSON.parse(buffer);
+            if (parsed.error) pullError = parsed.error;
+            if (parsed.status === 'success') isSuccess = true;
             if (mainWindow && !mainWindow.isDestroyed()) {
               mainWindow.webContents.send('ollama:pull-progress', { modelName, ...parsed });
             }
           } catch {}
         }
-      });
 
-      res.on('end', () => {
+        console.log(`[IPC Main] Ollama pull stream ended for "${modelName}". isSuccess: ${isSuccess}, pullError: ${pullError}`);
         if (pullError) {
           resolve({ success: false, error: pullError });
-        } else {
+        } else if (isSuccess) {
           resolve({ success: true });
+        } else {
+          resolve({ success: false, error: 'Download connection ended prematurely.' });
         }
       });
     });
 
     req.on('error', (err) => {
+      console.error(`[IPC Main] HTTP request error pulling "${modelName}":`, err.message);
       resolve({ success: false, error: err.message });
     });
 
@@ -230,54 +266,139 @@ ipcMain.handle('fs:read-file', async (event, filePath) => {
   }
 });
 
-// IPC: Run Grok Build Agent
+// IPC: Run Agent Execution with Ollama direct streaming fallback
 ipcMain.handle('grok:run-prompt', async (event, { prompt, model, workspacePath }) => {
   if (activeGrokProcess) {
     try { activeGrokProcess.kill(); } catch {}
   }
 
-  const env = {
-    ...process.env,
-    OPENAI_BASE_URL: `${OLLAMA_HOST}/v1`,
-    OPENAI_API_KEY: 'ollama',
-    OLLAMA_HOST: OLLAMA_HOST,
-    GROK_MODEL: model,
+  const modelToUse = model || 'gemma4:latest';
+  console.log(`[IPC Main] grok:run-prompt called for model "${modelToUse}"`);
+
+  const runOllamaDirectStream = () => {
+    console.log(`[IPC Main] Direct Ollama stream executing for model "${modelToUse}"...`);
+    const url = new URL(`${OLLAMA_HOST}/api/chat`);
+    const postData = JSON.stringify({
+      model: modelToUse,
+      messages: [{ role: 'user', content: prompt }],
+      stream: true,
+    });
+
+    let buffer = '';
+    const req = http.request(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData),
+      },
+    }, (res) => {
+      res.on('data', (chunk) => {
+        buffer += chunk.toString();
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const parsed = JSON.parse(line);
+            if (parsed.message && parsed.message.content) {
+              if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('grok:stream', { type: 'stdout', text: parsed.message.content });
+              }
+            }
+          } catch {}
+        }
+      });
+
+      res.on('end', () => {
+        if (buffer.trim()) {
+          try {
+            const parsed = JSON.parse(buffer);
+            if (parsed.message && parsed.message.content) {
+              if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('grok:stream', { type: 'stdout', text: parsed.message.content });
+              }
+            }
+          } catch {}
+        }
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('grok:stream', { type: 'exit', code: 0 });
+        }
+      });
+    });
+
+    req.on('error', (err) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('grok:stream', { type: 'stderr', text: `Ollama connection error: ${err.message}` });
+        mainWindow.webContents.send('grok:stream', { type: 'exit', code: 1 });
+      }
+    });
+
+    req.write(postData);
+    req.end();
+    return { success: true, mode: 'ollama-direct' };
   };
 
   const isWindows = process.platform === 'win32';
   const command = isWindows ? 'grok-build.cmd' : 'grok-build';
 
-  let proc;
   try {
-    proc = spawn(command, ['run', '--model', model, '--prompt', prompt], {
+    const env = {
+      ...process.env,
+      OPENAI_BASE_URL: `${OLLAMA_HOST}/v1`,
+      OPENAI_API_KEY: 'ollama',
+      OLLAMA_HOST: OLLAMA_HOST,
+      GROK_MODEL: modelToUse,
+    };
+
+    let cliSpawned = false;
+    let proc = spawn(command, ['run', '--model', modelToUse, '--prompt', prompt], {
       cwd: workspacePath || process.cwd(),
       env,
       shell: true,
     });
     activeGrokProcess = proc;
 
+    proc.on('error', () => {
+      if (!cliSpawned) {
+        runOllamaDirectStream();
+      }
+    });
+
     proc.stdout.on('data', (data) => {
+      cliSpawned = true;
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('grok:stream', { type: 'stdout', text: data.toString() });
       }
     });
 
     proc.stderr.on('data', (data) => {
+      const text = data.toString();
+      if (text.includes('command not found') || text.includes('not recognized')) {
+        if (!cliSpawned) {
+          try { proc.kill(); } catch {}
+          runOllamaDirectStream();
+          return;
+        }
+      }
+      cliSpawned = true;
       if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('grok:stream', { type: 'stderr', text: data.toString() });
+        mainWindow.webContents.send('grok:stream', { type: 'stderr', text });
       }
     });
 
     proc.on('close', (code) => {
       activeGrokProcess = null;
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('grok:stream', { type: 'exit', code });
+      if (cliSpawned) {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('grok:stream', { type: 'exit', code });
+        }
       }
     });
 
     return { success: true, pid: proc.pid };
   } catch (err) {
-    return { success: false, error: err.message };
+    return runOllamaDirectStream();
   }
 });
 

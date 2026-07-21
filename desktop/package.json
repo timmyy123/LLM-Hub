@@ -9,7 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "electron:start": "electron .",
-    "app": "concurrently \"npm run dev\" \"npx wait-on http://localhost:5173 && npm run electron:start\""
+    "app": "npx concurrently \"npm run dev\" \"npx wait-on http://localhost:5173 && npm run electron:start\""
   },
   "dependencies": {
     "axios": "^1.6.8",

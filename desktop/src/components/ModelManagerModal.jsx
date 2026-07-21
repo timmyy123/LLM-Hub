@@ -13,45 +13,96 @@ export default function ModelManagerModal({ isOpen, onClose, installedModels, se
   const isInstalled = (tag) => {
     if (!Array.isArray(installedModels) || installedModels.length === 0) return false;
     const target = tag.toLowerCase().replace(/^library\//, '');
-    const baseTarget = target.split(':')[0];
 
-    return installedModels.some((m) => {
+    const found = installedModels.some((m) => {
       const rawName = (typeof m === 'string' ? m : (m.name || m.model || '')).toLowerCase();
       const name = rawName.replace(/^library\//, '');
-      const baseName = name.split(':')[0];
 
+      // Exact tag match (e.g. "gemma4:e2b" === "gemma4:e2b")
       if (name === target) return true;
-      if (name.replace(/:latest$/, '') === target.replace(/:latest$/, '')) return true;
-      if ((target.endsWith(':latest') || !target.includes(':')) && baseName === baseTarget) return true;
-      if (name.includes(target) || target.includes(name)) return true;
+
+      // Base tag equivalency (gemma4 === gemma4:latest)
+      if (
+        (target === 'gemma4:latest' || target === 'gemma4') &&
+        (name === 'gemma4' || name === 'gemma4:latest')
+      ) return true;
+
+      if (
+        (target === 'ministral-3:latest' || target === 'ministral-3') &&
+        (name === 'ministral-3' || name === 'ministral-3:latest')
+      ) return true;
+
+      if (
+        (target === 'lfm2:latest' || target === 'lfm2') &&
+        (name === 'lfm2' || name === 'lfm2:latest')
+      ) return true;
 
       return false;
     });
+
+    console.log(`[Modal] isInstalled tag "${tag}":`, found);
+    return found;
   };
 
   const handlePullModel = async (tagToPull) => {
+    console.log(`[Modal] Starting pull for model tag: "${tagToPull}"`);
     setErrorMessage('');
     setDownloadingTag(tagToPull);
     setDownloadProgress({ status: 'Connecting to Ollama...', percent: 0 });
     let streamError = null;
+    let maxTotalBytes = 0;
+
+    const processProgressData = (data) => {
+      console.log(`[Modal] Stream Progress Event for "${tagToPull}":`, data);
+      if (data.error) {
+        streamError = data.error;
+        console.error(`[Modal] Stream Error for "${tagToPull}":`, data.error);
+        setErrorMessage(`Ollama Error: ${data.error}`);
+        return;
+      }
+
+      if (data.status === 'success') {
+        console.log(`[Modal] Received 'success' status from Ollama for "${tagToPull}"`);
+        setDownloadProgress({ status: 'Download Complete', percent: 100 });
+        return;
+      }
+
+      if (data.total && data.completed) {
+        if (data.total > maxTotalBytes) {
+          maxTotalBytes = data.total;
+        }
+
+        if (data.total >= 5000000 || data.total === maxTotalBytes) {
+          const rawPct = Math.round((data.completed / data.total) * 100);
+          const pct = Math.min(rawPct, 99);
+          const currentStatus = data.status || `Downloading (${pct}%)`;
+          setDownloadProgress({ status: currentStatus, percent: pct });
+        } else {
+          setDownloadProgress((prev) => ({
+            status: data.status || prev?.status || 'Downloading...',
+            percent: prev?.percent || 0,
+          }));
+        }
+      } else if (data.status) {
+        setDownloadProgress((prev) => ({
+          status: data.status,
+          percent: prev?.percent || 0,
+        }));
+      }
+    };
 
     if (window.api && window.api.pullModel) {
       const unsub = window.api.onPullProgress((data) => {
-        if (data.error) {
-          streamError = data.error;
-          setErrorMessage(`Ollama Error: ${data.error}`);
-        } else if (data.total && data.completed) {
-          const pct = Math.round((data.completed / data.total) * 100);
-          setDownloadProgress({ status: data.status || `Downloading (${pct}%)`, percent: pct });
-        } else {
-          setDownloadProgress({ status: data.status || 'Downloading...', percent: 0 });
-        }
+        processProgressData(data);
       });
 
+      console.log(`[Modal] Invoking IPC pullModel for "${tagToPull}"...`);
       const res = await window.api.pullModel(tagToPull);
+      console.log(`[Modal] IPC pullModel finished with result:`, res);
       unsub();
 
       if (res.success && !streamError) {
+        console.log(`[Modal] Download succeeded for "${tagToPull}". Refreshing models list in 800ms...`);
         setDownloadProgress({ status: 'Download Complete', percent: 100 });
         setTimeout(() => {
           setDownloadingTag(null);
@@ -60,12 +111,14 @@ export default function ModelManagerModal({ isOpen, onClose, installedModels, se
         }, 800);
       } else {
         const finalErr = streamError || res.error || `Failed to download '${tagToPull}'.`;
+        console.error(`[Modal] Download failed for "${tagToPull}":`, finalErr);
         setErrorMessage(finalErr);
         setDownloadingTag(null);
         setDownloadProgress(null);
       }
     } else {
       try {
+        console.log(`[Modal] Fallback direct fetch to http://localhost:11434/api/pull for "${tagToPull}"...`);
         const response = await fetch('http://localhost:11434/api/pull', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -76,29 +129,26 @@ export default function ModelManagerModal({ isOpen, onClose, installedModels, se
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
+        let buffer = '';
 
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          const text = decoder.decode(value);
-          const lines = text.split('\n').filter(Boolean);
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop();
+
           for (const line of lines) {
+            if (!line.trim()) continue;
             try {
               const parsed = JSON.parse(line);
-              if (parsed.error) {
-                streamError = parsed.error;
-                setErrorMessage(`Ollama Error: ${parsed.error}`);
-              } else if (parsed.total && parsed.completed) {
-                const pct = Math.round((parsed.completed / parsed.total) * 100);
-                setDownloadProgress({ status: parsed.status, percent: pct });
-              } else {
-                setDownloadProgress({ status: parsed.status || 'Downloading...', percent: 0 });
-              }
+              processProgressData(parsed);
             } catch {}
           }
         }
 
         if (!streamError) {
+          console.log(`[Modal] Direct fetch pull complete for "${tagToPull}". Refreshing models...`);
           setDownloadProgress({ status: 'Download Complete', percent: 100 });
           setTimeout(() => {
             setDownloadingTag(null);
@@ -110,6 +160,7 @@ export default function ModelManagerModal({ isOpen, onClose, installedModels, se
           setDownloadProgress(null);
         }
       } catch (err) {
+        console.error(`[Modal] Direct fetch error for "${tagToPull}":`, err.message);
         setErrorMessage(`Ollama service error: ${err.message}`);
         setDownloadingTag(null);
         setDownloadProgress(null);
@@ -158,7 +209,7 @@ export default function ModelManagerModal({ isOpen, onClose, installedModels, se
 
         {/* Error Notification */}
         {errorMessage && (
-          <div className="mx-6 mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-sans font-mono">
+          <div className="mx-6 mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-mono">
             {errorMessage}
           </div>
         )}
