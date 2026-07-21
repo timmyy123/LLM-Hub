@@ -1,4 +1,4 @@
-// Ollama Model Manager Service - Complete official variants for Gemma 4, Ministral 3, and LFM2 24B
+// Ollama Model Manager Service
 
 export const ALLOWED_FAMILIES = {
   GEMMA_4: {
@@ -29,11 +29,10 @@ export const ALLOWED_FAMILIES = {
   },
   LFM2_24B: {
     id: 'lfm2',
-    name: 'LFM2 24B A4B / A2B',
+    name: 'LFM2 24B',
     description: 'Liquid AI Hybrid SSM-Transformer 24B architecture',
     pattern: /^lfm2.*24b/i,
     popularTags: [
-      'lfm2:24b-a4b',
       'lfm2:24b-a2b',
       'lfm2:latest',
     ],

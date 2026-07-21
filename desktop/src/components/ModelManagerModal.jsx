@@ -12,10 +12,20 @@ export default function ModelManagerModal({ isOpen, onClose, installedModels, se
 
   const isInstalled = (tag) => {
     if (!Array.isArray(installedModels) || installedModels.length === 0) return false;
-    return installedModels.some(m => {
-      const name = (m.name || m.model || '').toLowerCase();
-      const target = tag.toLowerCase();
-      return name === target || name === `${target}:latest` || target === `${name}:latest`;
+    const target = tag.toLowerCase().replace(/^library\//, '');
+    const baseTarget = target.split(':')[0];
+
+    return installedModels.some((m) => {
+      const rawName = (typeof m === 'string' ? m : (m.name || m.model || '')).toLowerCase();
+      const name = rawName.replace(/^library\//, '');
+      const baseName = name.split(':')[0];
+
+      if (name === target) return true;
+      if (name.replace(/:latest$/, '') === target.replace(/:latest$/, '')) return true;
+      if ((target.endsWith(':latest') || !target.includes(':')) && baseName === baseTarget) return true;
+      if (name.includes(target) || target.includes(name)) return true;
+
+      return false;
     });
   };
 
@@ -23,10 +33,14 @@ export default function ModelManagerModal({ isOpen, onClose, installedModels, se
     setErrorMessage('');
     setDownloadingTag(tagToPull);
     setDownloadProgress({ status: 'Connecting to Ollama...', percent: 0 });
+    let streamError = null;
 
     if (window.api && window.api.pullModel) {
       const unsub = window.api.onPullProgress((data) => {
-        if (data.total && data.completed) {
+        if (data.error) {
+          streamError = data.error;
+          setErrorMessage(`Ollama Error: ${data.error}`);
+        } else if (data.total && data.completed) {
           const pct = Math.round((data.completed / data.total) * 100);
           setDownloadProgress({ status: data.status || `Downloading (${pct}%)`, percent: pct });
         } else {
@@ -37,20 +51,20 @@ export default function ModelManagerModal({ isOpen, onClose, installedModels, se
       const res = await window.api.pullModel(tagToPull);
       unsub();
 
-      if (res.success) {
+      if (res.success && !streamError) {
         setDownloadProgress({ status: 'Download Complete', percent: 100 });
         setTimeout(() => {
           setDownloadingTag(null);
           setDownloadProgress(null);
           onRefresh();
-        }, 1000);
+        }, 800);
       } else {
-        setErrorMessage(res.error || 'Failed to download model from Ollama server');
+        const finalErr = streamError || res.error || `Failed to download '${tagToPull}'.`;
+        setErrorMessage(finalErr);
         setDownloadingTag(null);
         setDownloadProgress(null);
       }
     } else {
-      // Direct HTTP fetch to local Ollama server if running in web dev mode
       try {
         const response = await fetch('http://localhost:11434/api/pull', {
           method: 'POST',
@@ -58,9 +72,7 @@ export default function ModelManagerModal({ isOpen, onClose, installedModels, se
           body: JSON.stringify({ name: tagToPull, stream: true }),
         });
 
-        if (!response.ok) {
-          throw new Error(`HTTP Error ${response.status}: ${response.statusText}`);
-        }
+        if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -73,7 +85,10 @@ export default function ModelManagerModal({ isOpen, onClose, installedModels, se
           for (const line of lines) {
             try {
               const parsed = JSON.parse(line);
-              if (parsed.total && parsed.completed) {
+              if (parsed.error) {
+                streamError = parsed.error;
+                setErrorMessage(`Ollama Error: ${parsed.error}`);
+              } else if (parsed.total && parsed.completed) {
                 const pct = Math.round((parsed.completed / parsed.total) * 100);
                 setDownloadProgress({ status: parsed.status, percent: pct });
               } else {
@@ -83,14 +98,19 @@ export default function ModelManagerModal({ isOpen, onClose, installedModels, se
           }
         }
 
-        setDownloadProgress({ status: 'Download Complete', percent: 100 });
-        setTimeout(() => {
+        if (!streamError) {
+          setDownloadProgress({ status: 'Download Complete', percent: 100 });
+          setTimeout(() => {
+            setDownloadingTag(null);
+            setDownloadProgress(null);
+            onRefresh();
+          }, 800);
+        } else {
           setDownloadingTag(null);
           setDownloadProgress(null);
-          onRefresh();
-        }, 1000);
+        }
       } catch (err) {
-        setErrorMessage(`Ollama Connection Error: ${err.message}. Is 'ollama serve' running on http://localhost:11434?`);
+        setErrorMessage(`Ollama service error: ${err.message}`);
         setDownloadingTag(null);
         setDownloadProgress(null);
       }
@@ -138,7 +158,7 @@ export default function ModelManagerModal({ isOpen, onClose, installedModels, se
 
         {/* Error Notification */}
         {errorMessage && (
-          <div className="mx-6 mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-sans">
+          <div className="mx-6 mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-sans font-mono">
             {errorMessage}
           </div>
         )}
@@ -175,26 +195,26 @@ export default function ModelManagerModal({ isOpen, onClose, installedModels, se
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                 {family.popularTags.map((tag) => {
                   const installed = isInstalled(tag);
-                  const isSelected = selectedModel === tag || selectedModel === `${tag}:latest`;
+                  const isSelected = selectedModel === tag;
                   const isPullingThis = downloadingTag === tag;
 
                   return (
                     <div
                       key={tag}
                       className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${
-                        isSelected
-                          ? 'bg-white/15 border-white/30 text-white'
+                        installed
+                          ? 'bg-white/10 border-white/20 text-white'
                           : 'bg-black/30 border-white/5 text-slate-300 hover:border-white/15'
                       }`}
                     >
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="font-mono text-xs truncate">{tag}</span>
                         {installed ? (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-medium">
                             Installed
                           </span>
                         ) : (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800/80 text-slate-400 border border-slate-700/60">
                             Not Installed
                           </span>
                         )}

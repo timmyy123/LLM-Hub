@@ -10,8 +10,25 @@ const __dirname = path.dirname(__filename);
 
 let mainWindow = null;
 let activeGrokProcess = null;
+let ollamaDaemonProcess = null;
 
 const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://localhost:11434';
+
+function ensureOllamaProcessRunning() {
+  http.get(`${OLLAMA_HOST}/api/version`, (res) => {
+    // Ollama is already active
+  }).on('error', () => {
+    try {
+      const isWindows = process.platform === 'win32';
+      const cmd = isWindows ? 'ollama.exe' : 'ollama';
+      ollamaDaemonProcess = spawn(cmd, ['serve'], {
+        detached: true,
+        stdio: 'ignore',
+      });
+      ollamaDaemonProcess.unref();
+    } catch {}
+  });
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -32,14 +49,33 @@ function createWindow() {
   });
 
   const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+  const distIndex = path.join(__dirname, '../dist/index.html');
+
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
+    mainWindow.loadURL('http://localhost:5173').catch(() => {
+      if (fs.existsSync(distIndex)) {
+        mainWindow.loadFile(distIndex);
+      }
+    });
+
+    mainWindow.webContents.on('did-fail-load', () => {
+      setTimeout(() => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.loadURL('http://localhost:5173').catch(() => {
+            if (fs.existsSync(distIndex)) {
+              mainWindow.loadFile(distIndex);
+            }
+          });
+        }
+      }, 1200);
+    });
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    mainWindow.loadFile(distIndex);
   }
 }
 
 app.whenReady().then(() => {
+  ensureOllamaProcessRunning();
   createWindow();
 
   app.on('activate', () => {
@@ -66,7 +102,10 @@ ipcMain.handle('ollama:check-status', async () => {
         }
       });
     });
-    req.on('error', () => resolve({ online: false }));
+    req.on('error', () => {
+      ensureOllamaProcessRunning();
+      resolve({ online: false });
+    });
     req.setTimeout(2000, () => {
       req.destroy();
       resolve({ online: false });
@@ -94,11 +133,12 @@ ipcMain.handle('ollama:list-models', async () => {
   });
 });
 
-// IPC: Ollama Pull Model (Stream download status)
+// IPC: Ollama Pull Model (with strict error detection)
 ipcMain.handle('ollama:pull-model', async (event, { modelName }) => {
   return new Promise((resolve) => {
     const url = new URL(`${OLLAMA_HOST}/api/pull`);
     const postData = JSON.stringify({ name: modelName, stream: true });
+    let pullError = null;
 
     const req = http.request(url, {
       method: 'POST',
@@ -112,17 +152,22 @@ ipcMain.handle('ollama:pull-model', async (event, { modelName }) => {
         for (const line of lines) {
           try {
             const parsed = JSON.parse(line);
+            if (parsed.error) {
+              pullError = parsed.error;
+            }
             if (mainWindow && !mainWindow.isDestroyed()) {
               mainWindow.webContents.send('ollama:pull-progress', { modelName, ...parsed });
             }
-          } catch {
-            // Partial chunk
-          }
+          } catch {}
         }
       });
 
       res.on('end', () => {
-        resolve({ success: true });
+        if (pullError) {
+          resolve({ success: false, error: pullError });
+        } else {
+          resolve({ success: true });
+        }
       });
     });
 

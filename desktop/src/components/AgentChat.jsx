@@ -9,7 +9,7 @@ export default function AgentChat({ selectedModel, workspacePath, onOpenModelMan
     {
       id: 'welcome',
       role: 'assistant',
-      text: 'Grok Build Agent initialized with local Ollama backend.\nEnter a prompt to begin coding.',
+      text: 'Grok Build Agent initialized.\nEnter a prompt to begin coding.',
       timestamp: new Date().toLocaleTimeString(),
     },
   ]);
@@ -24,6 +24,11 @@ export default function AgentChat({ selectedModel, workspacePath, onOpenModelMan
   const handleSendPrompt = async (e) => {
     if (e) e.preventDefault();
     if (!promptInput.trim() || isRunning) return;
+
+    if (!selectedModel) {
+      onOpenModelManager();
+      return;
+    }
 
     const userText = promptInput.trim();
     setPromptInput('');
@@ -94,10 +99,20 @@ export default function AgentChat({ selectedModel, workspacePath, onOpenModelMan
         <div className="flex items-center gap-3">
           <button
             onClick={onOpenModelManager}
-            className="flex items-center gap-2 text-xs text-slate-300 font-mono bg-white/10 hover:bg-white/15 px-3 py-1 rounded-lg border border-white/10 transition-colors"
+            className={`flex items-center gap-2 text-xs font-mono px-3 py-1 rounded-lg border transition-colors ${
+              selectedModel
+                ? 'bg-white/10 hover:bg-white/15 text-slate-300 border-white/10'
+                : 'bg-white/10 text-slate-300 border-white/10 hover:bg-white/15'
+            }`}
           >
-            <Cpu size={13} className="text-slate-300" />
-            <span>Active Model: <strong className="text-white font-medium">{selectedModel}</strong></span>
+            <Cpu size={13} />
+            <span>
+              {selectedModel ? (
+                <>Active Model: <strong className="text-white font-medium">{selectedModel}</strong></>
+              ) : (
+                <strong className="text-amber-300 font-medium">No Model Installed (Click to Select/Download)</strong>
+              )}
+            </span>
           </button>
         </div>
 
@@ -161,7 +176,11 @@ export default function AgentChat({ selectedModel, workspacePath, onOpenModelMan
               value={promptInput}
               onChange={(e) => setPromptInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask Grok agent to generate code, analyze files, or perform tasks..."
+              placeholder={
+                selectedModel
+                  ? "Ask Grok agent to generate code, analyze files, or perform tasks..."
+                  : "Please download or select a model first (Click 'No Model Installed' above)..."
+              }
               className="w-full bg-transparent px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none resize-none font-sans"
             />
 
@@ -178,7 +197,7 @@ export default function AgentChat({ selectedModel, workspacePath, onOpenModelMan
               ) : (
                 <button
                   type="submit"
-                  disabled={!promptInput.trim()}
+                  disabled={!promptInput.trim() || !selectedModel}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white hover:bg-slate-200 text-slate-950 text-xs font-semibold transition-all disabled:opacity-40"
                 >
                   <span>Run Agent</span>
