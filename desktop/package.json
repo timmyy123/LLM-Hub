@@ -12,9 +12,11 @@
     "app": "npx concurrently \"npm run dev\" \"npx wait-on http://localhost:5173 && npm run electron:start\""
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
     "axios": "^1.6.8",
     "clsx": "^2.1.0",
     "lucide-react": "^0.359.0",
+    "marked": "^18.0.7",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "tailwind-merge": "^2.2.2"

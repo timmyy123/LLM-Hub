@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import Sidebar from './components/Sidebar';
 import FileExplorer from './components/FileExplorer';
 import AgentChat from './components/AgentChat';
+import CodeEditor from './components/CodeEditor';
 import ModelManagerModal from './components/ModelManagerModal';
 import { filterAllowedModels } from './services/ollamaService';
-import { Cpu, Wifi, WifiOff } from 'lucide-react';
 
 export default function App() {
   const [ollamaOnline, setOllamaOnline] = useState(false);
@@ -14,6 +15,14 @@ export default function App() {
   const [activeFile, setActiveFile] = useState(null);
   const [isModelModalOpen, setIsModelModalOpen] = useState(false);
 
+  // Chat History & Active Chat State
+  const [chats, setChats] = useState([]);
+  const [currentChatId, setCurrentChatId] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [activeSidebarTab, setActiveSidebarTab] = useState('home'); // 'home' | 'code'
+
+  // Load Installed Models
   const fetchOllamaStatusAndModels = async () => {
     if (window.api && window.api.checkOllamaStatus) {
       const status = await window.api.checkOllamaStatus();
@@ -21,41 +30,157 @@ export default function App() {
 
       if (status.online) {
         const res = await window.api.listModels();
-        console.log('[App] listModels response:', res);
         if (res.success && res.models) {
           const allowed = filterAllowedModels(res.models);
-          console.log('[App] Filtered installed models:', allowed);
           setInstalledModels(allowed);
           if (allowed.length > 0) {
-            setSelectedModel((prev) => {
-              const next = prev || allowed[0].name || allowed[0].model;
-              console.log('[App] Selected model set to:', next);
-              return next;
-            });
+            setSelectedModel((prev) => prev || allowed[0].name || allowed[0].model);
           } else {
-            console.log('[App] No models installed.');
             setSelectedModel(null);
           }
-        } else {
-          setInstalledModels([]);
-          setSelectedModel(null);
         }
-      } else {
-        setInstalledModels([]);
-        setSelectedModel(null);
       }
-    } else {
-      setOllamaOnline(false);
-      setInstalledModels([]);
-      setSelectedModel(null);
+    }
+  };
+
+  // Load Persistent Chats from Storage
+  const loadChatsFromStorage = async () => {
+    if (window.api && window.api.listChats) {
+      const res = await window.api.listChats();
+      if (res.success && res.chats) {
+        setChats(res.chats);
+        if (res.chats.length > 0 && !currentChatId) {
+          setCurrentChatId(res.chats[0].id);
+          setMessages(res.chats[0].messages || []);
+        }
+      }
     }
   };
 
   useEffect(() => {
     fetchOllamaStatusAndModels();
+    loadChatsFromStorage();
     const interval = setInterval(fetchOllamaStatusAndModels, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  // Listen for agent streaming chunks
+  useEffect(() => {
+    if (window.api && window.api.onGrokStream) {
+      const unsub = window.api.onGrokStream((data) => {
+        if (data.type === 'stdout' && data.text) {
+          setMessages((prev) => {
+            const newArr = [...prev];
+            if (newArr.length > 0 && newArr[newArr.length - 1].role === 'assistant') {
+              newArr[newArr.length - 1] = {
+                ...newArr[newArr.length - 1],
+                content: newArr[newArr.length - 1].content + data.text,
+              };
+            } else {
+              newArr.push({ role: 'assistant', content: data.text });
+            }
+            return newArr;
+          });
+
+          // Refresh workspace tree if agent generated files
+          if (workspacePath) {
+            window.api.readTree(workspacePath).then((res) => {
+              if (res.success) setWorkspaceTree(res.tree);
+            });
+          }
+        } else if (data.type === 'exit') {
+          setIsExecuting(false);
+          setMessages((latestMessages) => {
+            saveCurrentChat(latestMessages);
+            return latestMessages;
+          });
+        }
+      });
+      return () => unsub();
+    }
+  }, [workspacePath, currentChatId]);
+
+  const saveCurrentChat = async (currentMessages) => {
+    if (!currentChatId || currentMessages.length === 0) return;
+    const title = currentMessages[0]?.content?.slice(0, 32) || 'New Chat';
+    const chatObject = {
+      id: currentChatId,
+      title,
+      messages: currentMessages,
+      workspacePath,
+      model: selectedModel,
+    };
+
+    if (window.api && window.api.saveChat) {
+      await window.api.saveChat(chatObject);
+      loadChatsFromStorage();
+    }
+  };
+
+  const handleNewChat = () => {
+    const newId = `chat_${Date.now()}`;
+    setCurrentChatId(newId);
+    setMessages([]);
+  };
+
+  const handleSelectChat = (id) => {
+    const target = chats.find((c) => c.id === id);
+    if (target) {
+      setCurrentChatId(id);
+      setMessages(target.messages || []);
+      if (target.workspacePath) {
+        setWorkspacePath(target.workspacePath);
+        window.api.readTree(target.workspacePath).then((res) => {
+          if (res.success) setWorkspaceTree(res.tree);
+        });
+      }
+    }
+  };
+
+  const handleDeleteChat = async (id) => {
+    if (window.api && window.api.deleteChat) {
+      await window.api.deleteChat(id);
+      if (currentChatId === id) {
+        handleNewChat();
+      }
+      loadChatsFromStorage();
+    }
+  };
+
+  const handleRenameChat = async (id, newTitle) => {
+    if (window.api && window.api.renameChat) {
+      await window.api.renameChat(id, newTitle);
+      loadChatsFromStorage();
+    }
+  };
+
+  const handleSendMessage = async (promptText, mode) => {
+    let activeId = currentChatId;
+    if (!activeId) {
+      activeId = `chat_${Date.now()}`;
+      setCurrentChatId(activeId);
+    }
+
+    const updatedUserMessages = [...messages, { role: 'user', content: promptText }];
+    setMessages(updatedUserMessages);
+    setIsExecuting(true);
+
+    if (window.api && window.api.runGrokPrompt) {
+      // Pass full multi-turn messages array history so agent retains context
+      await window.api.runGrokPrompt({
+        messages: updatedUserMessages,
+        model: selectedModel || 'gemma4:latest',
+        workspacePath,
+      });
+    }
+  };
+
+  const handleCancel = async () => {
+    if (window.api && window.api.cancelGrok) {
+      await window.api.cancelGrok();
+      setIsExecuting(false);
+    }
+  };
 
   const handleSelectWorkspace = async () => {
     if (window.api && window.api.selectWorkspace) {
@@ -70,57 +195,64 @@ export default function App() {
     }
   };
 
+  const handleSelectFileFromTree = (file) => {
+    setActiveFile(file);
+    // Switch to Code tab automatically when clicking a file
+    setActiveSidebarTab('code');
+  };
+
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#0A0C10] text-slate-100 overflow-hidden select-none">
-      {/* macOS Drag Header Bar */}
-      <div className="h-11 liquid-glass-bar px-4 flex items-center justify-between text-xs app-drag-region pl-20">
-        <div className="flex items-center gap-3">
-          <span className="font-medium tracking-tight text-slate-200 font-sans text-xs">
-            LLM Hub Studio
-          </span>
-        </div>
+    <div className="flex h-screen w-screen bg-[#0A0C10] text-slate-100 overflow-hidden select-none">
+      {/* Sidebar */}
+      <Sidebar
+        chats={chats}
+        currentChatId={currentChatId}
+        onNewChat={handleNewChat}
+        onSelectChat={handleSelectChat}
+        onDeleteChat={handleDeleteChat}
+        onRenameChat={handleRenameChat}
+        activeTab={activeSidebarTab}
+        onTabChange={(t) => setActiveSidebarTab(t)}
+      />
 
-        {/* Status Actions */}
-        <div className="flex items-center gap-3 app-no-drag">
-          <div className="flex items-center gap-1.5 font-mono text-[11px]">
-            {ollamaOnline ? (
-              <span className="flex items-center gap-1.5 text-emerald-400">
-                <Wifi size={12} />
-                Ollama Active
-              </span>
-            ) : (
-              <span className="flex items-center gap-1.5 text-rose-400">
-                <WifiOff size={12} />
-                Ollama Inactive
-              </span>
-            )}
-          </div>
-
-          <button
-            onClick={() => setIsModelModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/10 hover:bg-white/15 text-slate-200 border border-white/10 transition-all font-sans text-[11px]"
-          >
-            <Cpu size={12} />
-            <span>Models Download</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Main Workspace */}
+      {/* Main Content Workspace */}
       <div className="flex-1 flex overflow-hidden">
-        <FileExplorer
-          workspacePath={workspacePath}
-          treeData={workspaceTree}
-          onSelectWorkspace={handleSelectWorkspace}
-          onSelectFile={(f) => setActiveFile(f)}
-          activeFile={activeFile}
-        />
+        {activeSidebarTab === 'home' ? (
+          /* Home View: Grok Agent Chat Workspace */
+          <AgentChat
+            messages={messages}
+            onSendMessage={handleSendMessage}
+            isExecuting={isExecuting}
+            onCancel={handleCancel}
+            selectedModel={selectedModel}
+            onSelectModel={(m) => setSelectedModel(m)}
+            installedModels={installedModels}
+            onOpenModelManager={() => setIsModelModalOpen(true)}
+            workspacePath={workspacePath}
+          />
+        ) : (
+          /* Code View: File Explorer + Code Editor */
+          <div className="flex-1 flex overflow-hidden">
+            <FileExplorer
+              workspacePath={workspacePath}
+              treeData={workspaceTree}
+              onSelectWorkspace={handleSelectWorkspace}
+              onSelectFile={handleSelectFileFromTree}
+              activeFile={activeFile}
+            />
 
-        <AgentChat
-          selectedModel={selectedModel}
-          workspacePath={workspacePath}
-          onOpenModelManager={() => setIsModelModalOpen(true)}
-        />
+            <CodeEditor
+              activeFile={activeFile}
+              onSaveFile={() => {
+                if (workspacePath) {
+                  window.api.readTree(workspacePath).then((res) => {
+                    if (res.success) setWorkspaceTree(res.tree);
+                  });
+                }
+              }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Models Manager Modal */}
@@ -130,7 +262,6 @@ export default function App() {
         installedModels={installedModels}
         selectedModel={selectedModel}
         onSelectModel={(tag) => {
-          console.log('[App] User manually selected model:', tag);
           setSelectedModel(tag);
           setIsModelModalOpen(false);
         }}
