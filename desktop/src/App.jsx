@@ -166,7 +166,6 @@ export default function App() {
     setIsExecuting(true);
 
     if (window.api && window.api.runGrokPrompt) {
-      // Pass full multi-turn messages array history so agent retains context
       await window.api.runGrokPrompt({
         messages: updatedUserMessages,
         model: selectedModel || 'gemma4:latest',
@@ -197,12 +196,11 @@ export default function App() {
 
   const handleSelectFileFromTree = (file) => {
     setActiveFile(file);
-    // Switch to Code tab automatically when clicking a file
     setActiveSidebarTab('code');
   };
 
   return (
-    <div className="flex h-screen w-screen bg-[#0A0C10] text-slate-100 overflow-hidden select-none">
+    <div className="flex h-screen w-screen bg-[#0A0C10] text-slate-100 overflow-hidden select-text">
       {/* Sidebar */}
       <Sidebar
         chats={chats}

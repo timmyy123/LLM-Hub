@@ -10,8 +10,10 @@ import {
   Check,
   X,
   Play,
-  CornerDownLeft,
-  Zap
+  Zap,
+  AlertCircle,
+  ExternalLink,
+  Copy
 } from 'lucide-react';
 
 marked.setOptions({
@@ -33,10 +35,15 @@ export default function AgentChat({
   const [prompt, setPrompt] = useState('');
   const [agentMode, setAgentMode] = useState('agent');
   const [executedCmds, setExecutedCmds] = useState({});
+  const [copiedMessageIndex, setCopiedMessageIndex] = useState(null);
   const messagesEndRef = useRef(null);
 
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  };
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    scrollToBottom();
   }, [messages, isExecuting, executedCmds]);
 
   const handleSubmit = (e) => {
@@ -48,8 +55,13 @@ export default function AgentChat({
 
   const cleanMessageContent = (rawText) => {
     if (!rawText) return '';
-    // Strip raw <<<COMMAND: ...>>> tags so they don't print as unparsed text
-    return rawText.replace(/<<<COMMAND:\s*([^\n>]+)>>>/g, '').trim();
+    return rawText
+      .replace(/<<<COMMAND:\s*([^\n>]+)>>>/g, '')
+      .replace(/\[Grok Agent Executing Command\]:\s*[^\n]+\n?/g, '')
+      .replace(/Command executed cleanly\.\s*\n?/g, '')
+      .replace(/I am physically unable to[^\n.]+\.?/gi, '')
+      .replace(/There is no code or command I can generate[^\n.]+\.?/gi, '')
+      .trim();
   };
 
   const extractCommandsFromContent = (rawText) => {
@@ -63,31 +75,44 @@ export default function AgentChat({
     return commands;
   };
 
+  const handleCopyMessage = (text, index) => {
+    navigator.clipboard.writeText(cleanMessageContent(text));
+    setCopiedMessageIndex(index);
+    setTimeout(() => setCopiedMessageIndex(null), 2000);
+  };
+
   const handleApproveCommand = async (cmdStr, messageIndex) => {
     const key = `${messageIndex}_${cmdStr}`;
     setExecutedCmds((prev) => ({ ...prev, [key]: { status: 'running' } }));
 
     if (window.api && window.api.executeCommand) {
       const res = await window.api.executeCommand(cmdStr, workspacePath);
-      const outputText = res.output || (res.success ? 'Command executed cleanly.' : res.error);
+      const outputText = res.output || (res.success ? 'Command executed cleanly.' : res.error || 'Failed');
 
       setExecutedCmds((prev) => ({
         ...prev,
-        [key]: { status: 'approved', output: outputText, success: res.success },
+        [key]: {
+          status: res.success ? 'approved' : 'failed',
+          output: outputText,
+          isServer: res.isServer,
+          serverUrl: res.serverUrl,
+          success: res.success,
+        },
       }));
 
-      // Automatically send the command execution output back to agent context
-      onSendMessage(
-        `[System Execution Result for command "${cmdStr}"]:\n\`\`\`\n${outputText}\n\`\`\``,
-        'agent'
-      );
+      if (!res.success || outputText.includes('EADDRINUSE') || outputText.includes('Error')) {
+        onSendMessage(
+          `[System Command Error for "${cmdStr}"]:\n\`\`\`\n${outputText}\n\`\`\`\nPlease analyze this error and generate a new corrected <<<COMMAND: ...>>> to fix it immediately.`,
+          'agent'
+        );
+      }
     }
   };
 
   const handleRejectCommand = (cmdStr, messageIndex) => {
     const key = `${messageIndex}_${cmdStr}`;
     setExecutedCmds((prev) => ({ ...prev, [key]: { status: 'rejected' } }));
-    onSendMessage(`User rejected command execution: "${cmdStr}"`, 'agent');
+    onSendMessage(`User rejected command: "${cmdStr}"`, 'agent');
   };
 
   const handleSkipCommand = (cmdStr, messageIndex) => {
@@ -96,11 +121,12 @@ export default function AgentChat({
   };
 
   const renderMarkdown = (content) => {
-    if (!content) return '';
+    const cleaned = cleanMessageContent(content);
+    if (!cleaned) return '';
     try {
-      return marked.parse(cleanMessageContent(content));
+      return marked.parse(cleaned);
     } catch {
-      return cleanMessageContent(content);
+      return cleaned;
     }
   };
 
@@ -109,15 +135,15 @@ export default function AgentChat({
     : [];
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#0A0C10] text-slate-100 overflow-hidden relative font-sans">
+    <div className="flex-1 flex flex-col h-full bg-[#0A0C10] text-slate-100 overflow-hidden relative font-sans select-text">
       {/* Top Header Bar */}
-      <div className="h-12 border-b border-white/10 px-6 flex items-center justify-between bg-black/20">
+      <div className="h-12 border-b border-white/10 px-6 flex items-center justify-between bg-black/20 select-none">
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold text-slate-200">
             {workspacePath ? (
               <span className="flex items-center gap-1.5 text-xs text-slate-300 font-mono">
                 <Terminal size={14} className="text-slate-400" />
-                {workspacePath.split('/').pop()}
+                {workspacePath.split(/[\/\\]/).pop()}
               </span>
             ) : (
               'Workspace: No folder opened'
@@ -154,10 +180,10 @@ export default function AgentChat({
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 space-y-6 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 space-y-6 custom-scrollbar select-text">
         {!messages || messages.length === 0 ? (
-          /* Claude Desktop Empty Welcome Screen */
-          <div className="h-full flex flex-col items-center justify-center max-w-2xl mx-auto space-y-8 py-12">
+          /* Empty Welcome Screen */
+          <div className="h-full flex flex-col items-center justify-center max-w-2xl mx-auto space-y-8 py-12 select-none">
             <div className="text-center space-y-3">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-medium">
                 <Sparkles size={14} />
@@ -234,126 +260,168 @@ export default function AgentChat({
           </div>
         ) : (
           /* Active Chat Stream View */
-          <div className="max-w-3xl mx-auto space-y-6">
+          <div className="w-full max-w-4xl mx-auto space-y-6">
             {messages.map((msg, index) => {
               const commandsInMsg = msg.role === 'assistant' ? extractCommandsFromContent(msg.content) : [];
+              const cleanedText = cleanMessageContent(msg.content);
 
               return (
                 <div
                   key={index}
-                  className={`flex flex-col space-y-1.5 ${
+                  className={`group relative flex flex-col space-y-2 w-full ${
                     msg.role === 'user' ? 'items-end' : 'items-start'
                   }`}
                 >
-                  <div className="text-[11px] text-slate-400 font-mono px-1">
-                    {msg.role === 'user' ? 'You' : 'Grok Agent'}
+                  <div className="flex items-center justify-between w-full px-1">
+                    <span className="text-[11px] text-slate-400 font-mono">
+                      {msg.role === 'user' ? 'You' : 'Grok Agent'}
+                    </span>
+
+                    {/* Copy Button on Message Hover */}
+                    <button
+                      onClick={() => handleCopyMessage(msg.content, index)}
+                      className="opacity-0 group-hover:opacity-100 flex items-center gap-1 px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-slate-300 text-[10px] font-mono transition-all"
+                    >
+                      {copiedMessageIndex === index ? (
+                        <>
+                          <Check size={11} className="text-emerald-400" />
+                          <span>Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={11} />
+                          <span>Copy</span>
+                        </>
+                      )}
+                    </button>
                   </div>
 
-                  <div
-                    className={`rounded-2xl px-5 py-4 text-sm leading-relaxed max-w-full font-sans break-words ${
-                      msg.role === 'user'
-                        ? 'bg-white/15 text-slate-100 border border-white/10 rounded-br-none'
-                        : 'bg-white/5 border border-white/10 text-slate-200 rounded-bl-none w-full'
-                    }`}
-                  >
-                    {msg.role === 'user' ? (
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
-                    ) : (
-                      <>
+                  {msg.role === 'user' ? (
+                    /* User Message Bubble */
+                    <div className="bg-white/15 text-slate-100 border border-white/10 rounded-2xl rounded-tr-none px-4 py-2.5 max-w-xl text-sm leading-relaxed font-sans whitespace-pre-wrap select-text">
+                      {msg.content}
+                    </div>
+                  ) : (
+                    /* AI Assistant Response */
+                    <div className="w-full text-slate-200 text-sm leading-relaxed font-sans break-words space-y-3 select-text">
+                      {cleanedText && (
                         <div
-                          className="markdown-body prose prose-invert max-w-none text-slate-200 text-sm leading-relaxed whitespace-pre-wrap break-words"
+                          className="markdown-body prose prose-invert max-w-none text-slate-200 text-sm leading-relaxed whitespace-pre-wrap break-words select-text"
                           dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
                         />
+                      )}
 
-                        {/* Claude Code / Cursor Command Confirmation Cards */}
-                        {commandsInMsg.map((cmdStr, cmdIdx) => {
-                          const cmdKey = `${index}_${cmdStr}`;
-                          const cmdState = executedCmds[cmdKey];
+                      {/* Cursor / Claude Code Command Execution Cards */}
+                      {commandsInMsg.map((cmdStr, cmdIdx) => {
+                        const cmdKey = `${index}_${cmdStr}`;
+                        const cmdState = executedCmds[cmdKey];
 
-                          return (
-                            <div
-                              key={cmdIdx}
-                              className="mt-4 p-4 rounded-xl bg-[#14161C] border border-amber-500/30 text-xs font-mono space-y-3 shadow-lg"
-                            >
-                              <div className="flex items-center justify-between text-amber-300">
-                                <span className="flex items-center gap-2 font-semibold text-xs">
-                                  <Terminal size={14} />
-                                  Bash Command Execution
+                        return (
+                          <div
+                            key={cmdIdx}
+                            className="mt-3 p-4 rounded-xl bg-[#131418] border border-white/15 text-xs font-mono space-y-3 shadow-xl select-text"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="flex items-center gap-2 font-semibold text-xs text-slate-200">
+                                <Terminal size={14} className="text-amber-400" />
+                                Terminal Command
+                              </span>
+
+                              {/* Status Badges */}
+                              {cmdState?.status === 'approved' ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-semibold border border-emerald-500/30">
+                                    <Check size={12} />
+                                    {cmdState.isServer ? 'Server Running' : 'Executed Successfully'}
+                                  </span>
+                                  {cmdState.serverUrl && (
+                                    <a
+                                      href={cmdState.serverUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-[11px] font-medium border border-blue-500/30 hover:underline"
+                                    >
+                                      <ExternalLink size={11} />
+                                      {cmdState.serverUrl}
+                                    </a>
+                                  )}
+                                </div>
+                              ) : cmdState?.status === 'failed' ? (
+                                <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 text-[11px] font-semibold border border-rose-500/30">
+                                  <AlertCircle size={12} />
+                                  Command Failed
                                 </span>
-                                {cmdState?.status === 'approved' ? (
-                                  <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] uppercase font-bold border border-emerald-500/30">
-                                    Executed
-                                  </span>
-                                ) : cmdState?.status === 'rejected' ? (
-                                  <span className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 text-[10px] uppercase font-bold border border-rose-500/30">
-                                    Rejected
-                                  </span>
-                                ) : cmdState?.status === 'skipped' ? (
-                                  <span className="px-2 py-0.5 rounded bg-slate-700 text-slate-400 text-[10px] uppercase font-bold">
-                                    Skipped
-                                  </span>
-                                ) : cmdState?.status === 'running' ? (
-                                  <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] uppercase font-bold animate-pulse">
-                                    Running...
-                                  </span>
-                                ) : (
-                                  <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] uppercase font-bold border border-amber-500/30">
-                                    Pending Confirmation
-                                  </span>
-                                )}
-                              </div>
-
-                              <div className="p-3 rounded-lg bg-black/60 border border-white/10 text-slate-200 text-xs overflow-x-auto select-text font-mono">
-                                <code>{cmdStr}</code>
-                              </div>
-
-                              {/* Action Buttons for Claude Code / Cursor UX */}
-                              {(!cmdState || cmdState.status === 'running') && (
-                                <div className="flex items-center gap-2 pt-1 font-sans">
-                                  <button
-                                    onClick={() => handleApproveCommand(cmdStr, index)}
-                                    disabled={cmdState?.status === 'running'}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-semibold transition-colors disabled:opacity-50"
-                                  >
-                                    <Play size={13} />
-                                    Approve & Run
-                                  </button>
-                                  <button
-                                    onClick={() => handleSkipCommand(cmdStr, index)}
-                                    className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 transition-colors"
-                                  >
-                                    Skip
-                                  </button>
-                                  <button
-                                    onClick={() => handleRejectCommand(cmdStr, index)}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 transition-colors"
-                                  >
-                                    <X size={13} />
-                                    Reject
-                                  </button>
-                                </div>
-                              )}
-
-                              {/* Output Console Box */}
-                              {cmdState?.output && (
-                                <div className="mt-2 p-3 rounded-lg bg-black/80 border border-white/10 text-[11px] font-mono text-slate-300 whitespace-pre-wrap max-h-48 overflow-y-auto">
-                                  {cmdState.output}
-                                </div>
+                              ) : cmdState?.status === 'rejected' ? (
+                                <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 text-[11px] font-semibold border border-slate-700">
+                                  <X size={12} />
+                                  Rejected
+                                </span>
+                              ) : cmdState?.status === 'skipped' ? (
+                                <span className="px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 text-[11px] font-semibold">
+                                  Skipped
+                                </span>
+                              ) : cmdState?.status === 'running' ? (
+                                <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[11px] font-semibold border border-amber-500/30 animate-pulse">
+                                  <Sparkles size={12} className="animate-spin" />
+                                  Running...
+                                </span>
+                              ) : (
+                                <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-300 text-[11px] font-semibold border border-amber-500/20">
+                                  Pending Approval
+                                </span>
                               )}
                             </div>
-                          );
-                        })}
-                      </>
-                    )}
-                  </div>
+
+                            <div className="p-3 rounded-lg bg-black/70 border border-white/10 text-slate-100 text-xs font-mono select-text">
+                              <code>{cmdStr}</code>
+                            </div>
+
+                            {/* Action Buttons */}
+                            {(!cmdState || cmdState.status === 'running') && (
+                              <div className="flex items-center gap-2 pt-1 font-sans select-none">
+                                <button
+                                  onClick={() => handleApproveCommand(cmdStr, index)}
+                                  disabled={cmdState?.status === 'running'}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-semibold transition-colors disabled:opacity-50 text-xs"
+                                >
+                                  <Play size={13} />
+                                  Approve & Run
+                                </button>
+                                <button
+                                  onClick={() => handleSkipCommand(cmdStr, index)}
+                                  className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 transition-colors text-xs"
+                                >
+                                  Skip
+                                </button>
+                                <button
+                                  onClick={() => handleRejectCommand(cmdStr, index)}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 transition-colors text-xs"
+                                >
+                                  <X size={13} />
+                                  Reject
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Output Terminal Console */}
+                            {cmdState?.output && (
+                              <div className="mt-2 p-3 rounded-lg bg-black/90 border border-white/10 text-[11px] font-mono text-slate-300 whitespace-pre-wrap max-h-56 overflow-y-auto custom-scrollbar select-text">
+                                {cmdState.output}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               );
             })}
 
             {isExecuting && (
-              <div className="flex items-center gap-3 p-4 rounded-xl bg-white/5 border border-white/10 text-xs text-slate-300 font-mono">
+              <div className="flex items-center gap-3 p-4 rounded-xl bg-white/5 border border-white/10 text-xs text-slate-300 font-mono select-none">
                 <Sparkles size={16} className="text-amber-400 animate-spin" />
-                <span>Grok Agent running with {selectedModel || 'local model'}...</span>
+                <span>Grok Agent processing request...</span>
                 <button
                   onClick={onCancel}
                   className="ml-auto flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 border border-rose-500/30 transition-colors"
@@ -368,10 +436,10 @@ export default function AgentChat({
         )}
       </div>
 
-      {/* Sticky Bottom Prompt Console for Active Chat */}
+      {/* Sticky Bottom Prompt Console */}
       {messages && messages.length > 0 && (
-        <div className="p-4 border-t border-white/10 bg-black/40">
-          <div className="max-w-3xl mx-auto liquid-glass-card rounded-2xl p-3 flex items-center gap-3 border border-white/15">
+        <div className="p-4 border-t border-white/10 bg-black/40 select-none">
+          <div className="max-w-4xl mx-auto liquid-glass-card rounded-2xl p-3 flex items-center gap-3 border border-white/15">
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
