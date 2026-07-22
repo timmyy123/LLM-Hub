@@ -85,7 +85,6 @@
 		5F60B98E5AE21634E4E47E99 /* LLMHub.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LLMHub.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		60A19FA5E2C65DD1CDCAB9BB /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		65B931DD6FE1CD242E4A7907 /* ar */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ar; path = ar.lproj/Localizable.strings; sourceTree = "<group>"; };
-		70D3A8BE6F91CC4E2E5D0A11 /* zh */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = zh; path = zh.lproj/Localizable.strings; sourceTree = "<group>"; };
 		75BBFF4AA65F0EF6FF1DB93D /* LocalizationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizationManager.swift; sourceTree = "<group>"; };
 		2A9D5B7C8E1F4A3B6C0D2E11 /* SimplifiedFileManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimplifiedFileManager.swift; sourceTree = "<group>"; };
 		8576188C8596440A08A0B171 /* LLMHubApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMHubApp.swift; sourceTree = "<group>"; };
@@ -298,7 +297,6 @@
 				ru,
 				tr,
 				uk,
-				zh,
 				nl,
 				da,
 				th,
@@ -403,7 +401,6 @@
 				A488607FEE31357AEB5904DB /* ru */,
 				52C0ECF6F3CAD2637A0AC803 /* tr */,
 				94722918DD9186F0D751D9C0 /* uk */,
-				70D3A8BE6F91CC4E2E5D0A11 /* zh */,
 				A69D8D4DF513F8D642F730D1 /* nl */,
 				A69D8D4DF513F8D642F730D2 /* da */,
 				A69D8D4DF513F8D642F730D3 /* th */,
@@ -487,7 +484,7 @@
 				CODE_SIGN_ENTITLEMENTS = LLMHub.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 46;
+				CURRENT_PROJECT_VERSION = 47;
 				DEAD_CODE_STRIPPING = NO;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
@@ -530,7 +527,7 @@
 				CODE_SIGN_ENTITLEMENTS = LLMHub.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 46;
+				CURRENT_PROJECT_VERSION = 47;
 				DEVELOPMENT_TEAM = 76K65T869A;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "LLMHub-Info.plist";

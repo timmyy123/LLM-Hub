@@ -66,8 +66,7 @@ let package = Package(
                 .process("pt.lproj"),
                 .process("ru.lproj"),
                 .process("tr.lproj"),
-                .process("uk.lproj"),
-                .process("zh.lproj")
+                .process("uk.lproj")
             ],
             linkerSettings: [
                 .linkedFramework("Accelerate"),
