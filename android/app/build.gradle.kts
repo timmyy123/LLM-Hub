@@ -25,7 +25,7 @@ android {
         applicationId = "com.llmhub.llmhub"
         minSdk = 27
         targetSdk = 37
-        versionCode = 131
+        versionCode = 132
         versionName = "3.8.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -394,8 +394,8 @@ dependencies {
     implementation("com.google.android.play:asset-delivery:2.2.2")
     implementation("com.google.android.play:asset-delivery-ktx:2.2.2")
 
-    // Google Play Billing (IAP)
-    implementation("com.android.billingclient:billing-ktx:7.1.1")
+    // Google Play Billing (IAP) - updated to latest v9.1.0 (Google Play requirement >= 8.0.0)
+    implementation("com.android.billingclient:billing-ktx:9.1.0")
 
     // AdMob
     implementation("com.google.android.gms:play-services-ads:23.6.0")

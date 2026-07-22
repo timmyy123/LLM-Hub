@@ -75,7 +75,7 @@ fun HomeScreen(
                 description = R.string.feature_ai_chat_desc,
                 icon = Icons.Filled.Chat,
                 gradient = Pair(Color(0xFF667eea), Color(0xFF764ba2)),
-                darkColor = Color(0xFF5C4DB8),
+                darkColor = Color(0xFF2B225E),
                 route = "chat"
             ),
             FeatureCard(

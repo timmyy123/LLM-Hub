@@ -47,6 +47,7 @@ class BillingManager(private val context: Context) {
 
     private val billingClient = BillingClient.newBuilder(context)
         .setListener(purchasesUpdatedListener)
+        .enableAutoServiceReconnection()
         .enablePendingPurchases(
             PendingPurchasesParams.newBuilder().enableOneTimeProducts().build()
         )
@@ -127,8 +128,8 @@ class BillingManager(private val context: Context) {
     }
 
     /**
-     * Full server-side restore — always hits Google's servers.
-     * Use this for the manual "Restore Purchase" button so new-device users are covered.
+     * Full restore from Play Store — queries active purchases.
+     * Use this for the manual "Restore Purchase" button so users are covered across devices.
      * Returns true if premium was found and activated.
      */
     suspend fun restorePurchasesFromServer(): Boolean {
@@ -137,35 +138,13 @@ class BillingManager(private val context: Context) {
             connectAndQuery()
             delay(3_000)
             if (!billingClient.isReady) {
-                Log.w(TAG, "Billing not ready for server restore")
+                Log.w(TAG, "Billing not ready for restore")
                 return false
             }
         }
 
-        // First try the local cache (fast)
+        // Query active purchases from Play Billing Client
         restorePurchasesInternal()
-        if (_isPremium.value) return true
-
-        // Fall back to server history query — works on new devices with empty local cache
-        val historyParams = QueryPurchaseHistoryParams.newBuilder()
-            .setProductType(BillingClient.ProductType.INAPP)
-            .build()
-
-        val historyResult = billingClient.queryPurchaseHistory(historyParams)
-        if (historyResult.billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-            val foundInHistory = historyResult.purchaseHistoryRecordList?.any { record ->
-                record.products.contains(PRODUCT_PREMIUM_LIFETIME)
-            } ?: false
-
-            if (foundInHistory) {
-                Log.d(TAG, "Premium found in purchase history — activating")
-                setPremium(true)
-                return true
-            }
-        } else {
-            Log.w(TAG, "queryPurchaseHistory failed: ${historyResult.billingResult.debugMessage}")
-        }
-
         return _isPremium.value
     }
 
