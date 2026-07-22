@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, FileCode, Check, Copy, AlertCircle } from 'lucide-react';
+import { Save, FileCode, Check, Copy } from 'lucide-react';
 
 export default function CodeEditor({ activeFile, onSaveFile }) {
   const [content, setContent] = useState('');
@@ -7,25 +7,26 @@ export default function CodeEditor({ activeFile, onSaveFile }) {
   const [isSaved, setIsSaved] = useState(true);
   const [saveStatusText, setSaveStatusText] = useState('');
   const [copied, setCopied] = useState(false);
-  const [errorText, setErrorText] = useState('');
+
+  const filePath = typeof activeFile === 'string' ? activeFile : activeFile?.path;
+  const fileName = typeof activeFile === 'string'
+    ? activeFile.split(/[\/\\]/).pop()
+    : activeFile?.name || (filePath ? filePath.split(/[\/\\]/).pop() : '');
 
   useEffect(() => {
-    if (activeFile && activeFile.path) {
+    if (filePath) {
       setLoading(true);
-      setErrorText('');
       if (window.api && window.api.readFile) {
-        window.api.readFile(activeFile.path).then((res) => {
+        window.api.readFile(filePath).then((res) => {
           setLoading(false);
           if (res.success && typeof res.content === 'string') {
             setContent(res.content);
             setIsSaved(true);
           } else {
-            setErrorText(res.error || 'Failed to read file.');
             setContent(`// Error reading file: ${res.error || 'Unknown'}`);
           }
         }).catch((err) => {
           setLoading(false);
-          setErrorText(err.message);
           setContent(`// Error loading file: ${err.message}`);
         });
       } else {
@@ -34,7 +35,7 @@ export default function CodeEditor({ activeFile, onSaveFile }) {
     } else {
       setContent('');
     }
-  }, [activeFile?.path]);
+  }, [filePath]);
 
   const handleChange = (e) => {
     setContent(e.target.value);
@@ -59,14 +60,14 @@ export default function CodeEditor({ activeFile, onSaveFile }) {
   };
 
   const handleSave = async () => {
-    if (!activeFile || !activeFile.path) return;
+    if (!filePath) return;
     if (window.api && window.api.writeFile) {
-      const res = await window.api.writeFile(activeFile.path, content);
+      const res = await window.api.writeFile(filePath, content);
       if (res.success) {
         setIsSaved(true);
         setSaveStatusText('Saved!');
         setTimeout(() => setSaveStatusText(''), 2000);
-        if (onSaveFile) onSaveFile(activeFile.path);
+        if (onSaveFile) onSaveFile(filePath);
       }
     }
   };
@@ -77,7 +78,7 @@ export default function CodeEditor({ activeFile, onSaveFile }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (!activeFile) {
+  if (!filePath) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-[#0A0C10] text-slate-500 text-xs font-sans">
         <FileCode size={36} className="mb-2 text-slate-600" />
@@ -91,12 +92,12 @@ export default function CodeEditor({ activeFile, onSaveFile }) {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[#0D0E12] text-slate-200 overflow-hidden select-none font-mono">
-      {/* Editor Tab Bar */}
+      {/* VS Code Editor Tab Bar */}
       <div className="h-10 border-b border-white/10 px-4 bg-black/40 flex items-center justify-between text-xs">
         <div className="flex items-center gap-2">
           <FileCode size={14} className="text-amber-400" />
-          <span className="font-semibold text-slate-200">{activeFile.name}</span>
-          <span className="text-[10px] text-slate-500 truncate max-w-xs">{activeFile.path}</span>
+          <span className="font-semibold text-slate-200">{fileName}</span>
+          <span className="text-[10px] text-slate-500 truncate max-w-xs">{filePath}</span>
           {!isSaved && <span className="w-2 h-2 rounded-full bg-amber-400" title="Unsaved changes" />}
         </div>
 

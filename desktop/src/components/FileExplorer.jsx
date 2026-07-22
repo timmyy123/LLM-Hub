@@ -2,10 +2,12 @@ import React from 'react';
 import { Folder, FileText, ChevronRight, FolderOpen, HardDrive } from 'lucide-react';
 
 export default function FileExplorer({ workspacePath, treeData, onSelectWorkspace, onSelectFile, activeFile }) {
+  const activePath = typeof activeFile === 'string' ? activeFile : activeFile?.path;
+
   return (
-    <div className="w-64 bg-white/5 border-r border-white/5 flex flex-col h-full select-none text-slate-100">
+    <div className="w-64 bg-[#131417] border-r border-white/10 flex flex-col h-full select-none text-slate-100 font-sans">
       {/* Header */}
-      <div className="h-11 border-b border-white/5 px-4 flex items-center justify-between">
+      <div className="h-11 border-b border-white/10 px-4 flex items-center justify-between bg-black/20">
         <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider font-mono">Explorer</span>
         <button
           onClick={onSelectWorkspace}
@@ -18,15 +20,15 @@ export default function FileExplorer({ workspacePath, treeData, onSelectWorkspac
       </div>
 
       {/* Directory content */}
-      <div className="flex-1 overflow-y-auto p-2">
+      <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
         {workspacePath ? (
           <div>
             <div className="flex items-center gap-2 px-2 py-1.5 text-xs text-slate-200 font-mono font-medium truncate">
-              <Folder size={14} className="text-slate-400" />
+              <Folder size={14} className="text-amber-400" />
               <span className="truncate">{workspacePath.split(/[\/\\]/).pop()}</span>
             </div>
             <div className="pl-2 mt-1 space-y-0.5">
-              {renderTreeNodes(treeData, onSelectFile, activeFile)}
+              {renderTreeNodes(treeData, onSelectFile, activePath)}
             </div>
           </div>
         ) : (
@@ -46,16 +48,16 @@ export default function FileExplorer({ workspacePath, treeData, onSelectWorkspac
   );
 }
 
-function renderTreeNodes(nodes, onSelectFile, activeFile, level = 0) {
+function renderTreeNodes(nodes, onSelectFile, activePath, level = 0) {
   if (!Array.isArray(nodes)) return null;
 
   return nodes.map((node) => {
     const isDir = node.type === 'directory';
-    const isSelected = activeFile === node.path;
+    const isSelected = activePath === node.path;
 
     if (isDir) {
       return (
-        <div key={node.path} style={{ paddingLeft: `${level * 10}px` }}>
+        <div key={node.path} style={{ paddingLeft: `${level * 8}px` }}>
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-white/5 cursor-pointer">
             <ChevronRight size={13} className="text-slate-500 shrink-0" />
             <Folder size={13} className="text-slate-400 shrink-0" />
@@ -63,7 +65,7 @@ function renderTreeNodes(nodes, onSelectFile, activeFile, level = 0) {
           </div>
           {node.children && (
             <div>
-              {renderTreeNodes(node.children, onSelectFile, activeFile, level + 1)}
+              {renderTreeNodes(node.children, onSelectFile, activePath, level + 1)}
             </div>
           )}
         </div>
@@ -73,15 +75,15 @@ function renderTreeNodes(nodes, onSelectFile, activeFile, level = 0) {
     return (
       <div
         key={node.path}
-        onClick={() => onSelectFile(node.path)}
-        style={{ paddingLeft: `${(level + 1) * 10}px` }}
+        onClick={() => onSelectFile(node)}
+        style={{ paddingLeft: `${(level + 1) * 8}px` }}
         className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs cursor-pointer transition-colors ${
           isSelected
             ? 'bg-white/15 text-white font-medium'
             : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
         }`}
       >
-        <FileText size={13} className="text-slate-500 shrink-0" />
+        <FileText size={13} className="text-slate-400 shrink-0" />
         <span className="truncate font-mono">{node.name}</span>
       </div>
     );
