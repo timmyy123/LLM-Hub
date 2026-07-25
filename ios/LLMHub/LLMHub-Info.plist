@@ -4,5 +4,9 @@
 <dict>
 	<key>BYPASS_PREMIUM_UNLOCK</key>
 	<string>$(BYPASS_PREMIUM_UNLOCK)</string>
+	<key>NSContactsUsageDescription</key>
+	<string>LLM Hub needs permission to access your contacts to send SMS messages to contacts you specify.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>LLM Hub needs permission to access your location to display nearby places and maps.</string>
 </dict>
 </plist>

@@ -190,23 +190,6 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private suspend fun processPromptWithTools(prompt: String) {
-        val lower = prompt.lowercase()
-
-        // Flashlight tool handling
-        if (lower.contains("flashlight") || lower.contains("torch")) {
-            val turnOn = lower.contains("on") || !lower.contains("off")
-            val toolId = UUID.randomUUID().toString()
-            addMessage(AgentMessage.ToolCall(callId = toolId, toolName = "toggle_flashlight", args = if (turnOn) "true" else "false", status = AgentMessage.ToolCall.Status.RUNNING))
-
-            val resMap = toolSet.toggleFlashlight(if (turnOn) "true" else "false")
-            val result = resMap["result"] as? String ?: resMap["error"] as? String ?: "Flashlight toggled."
-            val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
-
-            updateToolCall(toolId, status, result)
-            addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = result))
-            return
-        }
-
         if (_isWebSearchEnabled.value) {
             val toolId = UUID.randomUUID().toString()
             addMessage(AgentMessage.ToolCall(callId = toolId, toolName = "web_search", args = prompt, status = AgentMessage.ToolCall.Status.RUNNING))
@@ -225,17 +208,137 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
             } else {
                 addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = "Search Results:\n\n$searchResult"))
             }
-        } else {
-            val loadedModel = inferenceService.getCurrentlyLoadedModel()
-            if (loadedModel != null) {
-                val response = inferenceService.generateResponse(prompt, loadedModel)
-                addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = response))
+            return
+        }
+
+        val loadedModel = inferenceService.getCurrentlyLoadedModel()
+        if (loadedModel != null) {
+            val systemPrompt = """
+                You are an AI Agent equipped with device tools:
+                - show_map(location: "place/venue query")
+                - send_sms(recipient: "contact name/phone", body: "message text")
+                - toggle_flashlight(enabled: "true" or "false")
+
+                To execute a tool call, output formatted exactly as:
+                [TOOL: tool_name(arguments)]
+
+                User Request: $prompt
+            """.trimIndent()
+
+            val response = inferenceService.generateResponse(systemPrompt, loadedModel)
+            val toolMatch = parseToolCall(response)
+            if (toolMatch != null) {
+                handleParsedToolCall(toolMatch, prompt)
             } else {
-                addMessage(AgentMessage.Text(
-                    sender = AgentMessage.Sender.SYSTEM,
-                    text = getApplication<Application>().getString(R.string.agent_no_model_android)
-                ))
+                addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = response))
             }
+        } else {
+            // Model not loaded fallback: execute direct tool requests semantically
+            executeToolOrFallback(prompt)
+        }
+    }
+
+    private data class ParsedTool(val name: String, val args: String)
+
+    private fun parseToolCall(text: String): ParsedTool? {
+        val clean = text.trim()
+        val regex = Regex("""(?:\[|\b)(TOOL:|SHOW_MAP|SEND_SMS|TOGGLE_FLASHLIGHT)[:(]([^\])]+)[\])]?""", RegexOption.IGNORE_CASE)
+        val match = regex.find(clean) ?: return null
+        val fullMatch = match.groupValues[0].trim('[', ']', ' ')
+
+        val name: String
+        val argsStr: String
+
+        if (fullMatch.contains(":")) {
+            val parts = fullMatch.split(":", limit = 2)
+            name = parts[0].trim()
+            argsStr = parts.getOrNull(1)?.trim() ?: ""
+        } else if (fullMatch.contains("(")) {
+            val parts = fullMatch.split("(", limit = 2)
+            name = parts[0].trim()
+            argsStr = parts.getOrNull(1)?.trim(')', ' ') ?: ""
+        } else {
+            return null
+        }
+
+        if (name.equals("TOOL", ignoreCase = true)) {
+            return parseToolCall(argsStr)
+        }
+
+        return ParsedTool(name.lowercase(), argsStr)
+    }
+
+    private suspend fun handleParsedToolCall(tool: ParsedTool, originalPrompt: String) {
+        val toolId = UUID.randomUUID().toString()
+        addMessage(AgentMessage.ToolCall(callId = toolId, toolName = tool.name, args = tool.args, status = AgentMessage.ToolCall.Status.RUNNING))
+
+        when (tool.name.lowercase()) {
+            "show_map" -> {
+                val cleanLoc = extractArgValue(tool.args, "location") ?: tool.args.trim('"', '\'', ' ')
+                val resMap = toolSet.showMap(cleanLoc)
+                val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
+                val result = resMap["result"] as? String ?: resMap["error"] as? String ?: "Map location for '$cleanLoc'"
+                updateToolCall(toolId, status, result)
+
+                if (resMap["status"] == "succeeded") {
+                    val lat = (resMap["lat"] as? Double) ?: 37.422
+                    val lon = (resMap["lon"] as? Double) ?: -122.084
+                    val label = (resMap["label"] as? String) ?: cleanLoc
+                    addMessage(AgentMessage.MapLocation(label = label, latitude = lat, longitude = lon))
+                } else {
+                    addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = result))
+                }
+            }
+            "send_sms" -> {
+                val recipient = extractArgValue(tool.args, "recipient") ?: extractArgValue(tool.args, "to") ?: tool.args.split(",").firstOrNull()?.trim('"', '\'', ' ') ?: "contact"
+                val body = extractArgValue(tool.args, "body") ?: extractArgValue(tool.args, "message") ?: originalPrompt
+                val resMap = toolSet.sendSms(recipient, body)
+                val result = resMap["result"] as? String ?: resMap["error"] as? String ?: "SMS app opened."
+                val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
+                updateToolCall(toolId, status, result)
+                addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = result))
+            }
+            "toggle_flashlight" -> {
+                val enabled = tool.args.contains("true", ignoreCase = true) || tool.args.contains("on", ignoreCase = true)
+                val resMap = toolSet.toggleFlashlight(if (enabled) "true" else "false")
+                val result = resMap["result"] as? String ?: resMap["error"] as? String ?: "Flashlight toggled."
+                val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
+                updateToolCall(toolId, status, result)
+                addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = result))
+            }
+            else -> {
+                updateToolCall(toolId, AgentMessage.ToolCall.Status.FAILED, "Unknown tool")
+            }
+        }
+    }
+
+    private fun extractArgValue(args: String, key: String): String? {
+        val regex = Regex("""$key\s*=\s*"([^"]+)"|$key\s*=\s*'([^']+)'|$key\s*=\s*([^,\s)]+)""", RegexOption.IGNORE_CASE)
+        val match = regex.find(args) ?: return null
+        val raw = match.value
+        val parts = raw.split("=", limit = 2)
+        return parts.getOrNull(1)?.trim('"', '\'', ' ')
+    }
+
+    private suspend fun executeToolOrFallback(prompt: String) {
+        val toolId = UUID.randomUUID().toString()
+        addMessage(AgentMessage.ToolCall(callId = toolId, toolName = "show_map", args = prompt, status = AgentMessage.ToolCall.Status.RUNNING))
+
+        val resMap = toolSet.showMap(prompt)
+        val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
+        val result = resMap["result"] as? String ?: resMap["error"] as? String ?: "Map location for '$prompt'"
+        updateToolCall(toolId, status, result)
+
+        if (resMap["status"] == "succeeded") {
+            val lat = (resMap["lat"] as? Double) ?: 37.422
+            val lon = (resMap["lon"] as? Double) ?: -122.084
+            val label = (resMap["label"] as? String) ?: prompt
+            addMessage(AgentMessage.MapLocation(label = label, latitude = lat, longitude = lon))
+        } else {
+            addMessage(AgentMessage.Text(
+                sender = AgentMessage.Sender.SYSTEM,
+                text = getApplication<Application>().getString(R.string.agent_no_model_android)
+            ))
         }
     }
 

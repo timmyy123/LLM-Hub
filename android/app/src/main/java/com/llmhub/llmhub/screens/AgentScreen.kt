@@ -195,9 +195,9 @@ fun AgentScreen(
                             }
                         },
                         enabled = !isGenerating,
-                        supportsAttachments = false,
+                        supportsAttachments = true,
                         supportsVision = false,
-                        supportsAudio = false,
+                        supportsAudio = true,
                         isLoading = isGenerating,
                         onCancelGeneration = if (isGenerating) { { } } else null,
                         isWebSearchEnabled = isWebSearchEnabled,

@@ -98,20 +98,6 @@ public class AgentViewModel: ObservableObject {
     }
 
     private func processPromptWithTools(prompt: String) async {
-        let lower = prompt.lowercased()
-
-        // Direct tool handling for flashlight queries
-        if lower.contains("flashlight") || lower.contains("torch") {
-            let turnOn = lower.contains("on") || !lower.contains("off")
-            let toolId = UUID().uuidString
-            messages.append(.toolCall(id: toolId, name: "toggle_flashlight", args: turnOn ? "true" : "false", status: .running, result: nil))
-
-            let res = AgentTools.shared.toggleFlashlight(enabled: turnOn)
-            updateToolCall(id: toolId, status: .success, result: res)
-            messages.append(.text(id: UUID().uuidString, sender: .agent, content: res, timestamp: Date()))
-            return
-        }
-
         if isWebSearchEnabled {
             let toolId = UUID().uuidString
             messages.append(.toolCall(id: toolId, name: "web_search", args: prompt, status: .running, result: nil))
@@ -133,23 +119,145 @@ public class AgentViewModel: ObservableObject {
             } else {
                 messages.append(.text(id: UUID().uuidString, sender: .agent, content: "Search Results:\n\n\(searchResult)", timestamp: Date()))
             }
-        } else if LLMBackend.shared.isLoaded {
-            var response = ""
-            do {
-                try await LLMBackend.shared.generate(prompt: prompt, onUpdate: { text, _, _ in
-                    response = text
-                })
-            } catch {
-                response = "Error: \(error.localizedDescription)"
-            }
-            messages.append(.text(id: UUID().uuidString, sender: .agent, content: response, timestamp: Date()))
+            return
+        }
+
+        guard LLMBackend.shared.isLoaded else {
+            // Model not loaded fallback: execute direct tool requests semantically
+            await executeToolOrFallback(prompt: prompt)
+            return
+        }
+
+        // Semantic LLM Generation & Function Calling System Prompt
+        let systemPrompt = """
+        You are an AI Agent equipped with device tools:
+        - show_map(location: "place/venue query")
+        - send_sms(recipient: "contact name/phone", body: "message text")
+        - toggle_flashlight(enabled: "true" or "false")
+
+        To execute a tool call, output formatted exactly as:
+        [TOOL: tool_name(arguments)]
+
+        User Request: \(prompt)
+        """
+
+        var fullOutput = ""
+        do {
+            try await LLMBackend.shared.generate(prompt: systemPrompt, onUpdate: { text, _, _ in
+                fullOutput = text
+            })
+        } catch {
+            fullOutput = "Error: \(error.localizedDescription)"
+        }
+
+        // Check if LLM emitted a semantic tool call
+        if let toolMatch = parseToolCall(from: fullOutput) {
+            await handleParsedToolCall(toolMatch, originalPrompt: prompt)
         } else {
-            messages.append(.text(
-                id: UUID().uuidString,
-                sender: .system,
-                content: AppSettings.shared.localized("agent_no_model_ios"),
-                timestamp: Date()
-            ))
+            messages.append(.text(id: UUID().uuidString, sender: .agent, content: fullOutput, timestamp: Date()))
+        }
+    }
+
+    private struct ParsedTool {
+        let name: String
+        let args: String
+    }
+
+    private func parseToolCall(from text: String) -> ParsedTool? {
+        let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let pattern = "(?:\\[|\\b)(TOOL:|SHOW_MAP|SEND_SMS|TOGGLE_FLASHLIGHT)[:\\(]([^\\]\\)]+)[\\]\\) ]?"
+        if let range = clean.range(of: pattern, options: [.regularExpression, .caseInsensitive]) {
+            let matched = String(clean[range])
+            return parseNameAndArgs(from: matched)
+        }
+
+        return nil
+    }
+
+    private func parseNameAndArgs(from text: String) -> ParsedTool? {
+        let clean = text.trimmingCharacters(in: CharacterSet(charactersIn: "[] \t\n\r"))
+        
+        var name = ""
+        var argsStr = ""
+
+        if let colonIdx = clean.firstIndex(of: ":") {
+            name = String(clean[..<colonIdx]).trimmingCharacters(in: .whitespaces)
+            argsStr = String(clean[clean.index(after: colonIdx)...]).trimmingCharacters(in: .whitespaces)
+        } else if let parenIdx = clean.firstIndex(of: "(") {
+            name = String(clean[..<parenIdx]).trimmingCharacters(in: .whitespaces)
+            argsStr = String(clean[clean.index(after: parenIdx)...])
+                .trimmingCharacters(in: CharacterSet(charactersIn: ")\"'] \t\n\r"))
+        } else {
+            return nil
+        }
+
+        if name.lowercased().hasPrefix("tool") {
+            return parseNameAndArgs(from: argsStr)
+        }
+
+        return ParsedTool(name: name, args: argsStr)
+    }
+
+    private func handleParsedToolCall(_ tool: ParsedTool, originalPrompt: String) async {
+        let toolId = UUID().uuidString
+        messages.append(.toolCall(id: toolId, name: tool.name, args: tool.args, status: .running, result: nil))
+
+        switch tool.name.lowercased() {
+        case "show_map":
+            let cleanLoc = extractArgValue(from: tool.args, key: "location") ?? tool.args
+            if let (lat, lon, name) = await AgentTools.shared.geocodeLocation(cleanLoc) {
+                updateToolCall(id: toolId, status: .success, result: "Location found: \(name)")
+                messages.append(.map(id: UUID().uuidString, label: name, latitude: lat, longitude: lon))
+            } else {
+                updateToolCall(id: toolId, status: .failed, result: "Location not found")
+                messages.append(.text(id: UUID().uuidString, sender: .agent, content: "Could not find '\(cleanLoc)' on the map.", timestamp: Date()))
+            }
+
+        case "send_sms":
+            let recipient = extractArgValue(from: tool.args, key: "recipient") ?? extractArgValue(from: tool.args, key: "to") ?? extractFirstPart(from: tool.args)
+            let body = extractArgValue(from: tool.args, key: "body") ?? extractArgValue(from: tool.args, key: "message") ?? originalPrompt
+            let res = await AgentTools.shared.sendSms(recipient: recipient, body: body)
+            updateToolCall(id: toolId, status: .success, result: res)
+            messages.append(.text(id: UUID().uuidString, sender: .agent, content: res, timestamp: Date()))
+
+        case "toggle_flashlight":
+            let enabled = tool.args.lowercased().contains("true") || tool.args.lowercased().contains("on")
+            let res = AgentTools.shared.toggleFlashlight(enabled: enabled)
+            updateToolCall(id: toolId, status: .success, result: res)
+            messages.append(.text(id: UUID().uuidString, sender: .agent, content: res, timestamp: Date()))
+
+        default:
+            updateToolCall(id: toolId, status: .failed, result: "Unknown tool")
+        }
+    }
+
+    private func extractArgValue(from args: String, key: String) -> String? {
+        let pattern = "\(key)\\s*=\\s*\"([^\"]+)\"|\(key)\\s*=\\s*'([^']+)'|\(key)\\s*=\\s*([^,\\s)]+)"
+        if let range = args.range(of: pattern, options: [.regularExpression, .caseInsensitive]) {
+            let matched = String(args[range])
+            if let eqIdx = matched.firstIndex(of: "=") {
+                return String(matched[matched.index(after: eqIdx)...]).trimmingCharacters(in: CharacterSet(charactersIn: "\"'\t\n\r "))
+            }
+        }
+        return nil
+    }
+
+    private func extractFirstPart(from args: String) -> String {
+        let parts = args.components(separatedBy: ",")
+        return parts.first?.trimmingCharacters(in: CharacterSet(charactersIn: "\"'\t\n\r ")) ?? args
+    }
+
+    private func executeToolOrFallback(prompt: String) async {
+        let toolId = UUID().uuidString
+        messages.append(.toolCall(id: toolId, name: "show_map", args: prompt, status: .running, result: nil))
+
+        if let (lat, lon, name) = await AgentTools.shared.geocodeLocation(prompt) {
+            updateToolCall(id: toolId, status: .success, result: "Location found: \(name)")
+            messages.append(.map(id: UUID().uuidString, label: name, latitude: lat, longitude: lon))
+        } else {
+            updateToolCall(id: toolId, status: .failed, result: "Location not found")
+            messages.append(.text(id: UUID().uuidString, sender: .agent, content: AppSettings.shared.localized("agent_no_model_ios"), timestamp: Date()))
         }
     }
 

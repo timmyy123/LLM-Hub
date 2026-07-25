@@ -3,9 +3,11 @@ package com.llmhub.llmhub.agent
 import android.content.Context
 import android.content.Intent
 import android.hardware.camera2.CameraManager
+import android.location.LocationManager
 import android.net.Uri
 import android.provider.AlarmClock
 import android.provider.CalendarContract
+import android.provider.ContactsContract
 import android.util.Log
 import com.google.ai.edge.litertlm.Tool
 import com.google.ai.edge.litertlm.ToolParam
@@ -52,14 +54,30 @@ RULES:
 
     // ─── Show Map (Nominatim Geocoding + In-App Map Data) ─────────────────────
 
+    fun getUserLocation(): Pair<Double, Double>? {
+        return try {
+            val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+            val loc = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                ?: lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+            if (loc != null) Pair(loc.latitude, loc.longitude) else null
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     @Tool(description = "Find and show a place or address on an interactive map. Returns coordinates and place details.")
     fun showMap(
         @ToolParam(description = "Location, landmark or address to find (e.g. 'Eiffel Tower, Paris', 'Times Square, New York', 'Tokyo Tower').") location: String
     ): Map<String, Any> {
         return runBlocking(Dispatchers.IO) {
             try {
-                val encoded = URLEncoder.encode(location.trim(), "UTF-8")
-                val urlStr = "https://nominatim.openstreetmap.org/search?q=$encoded&format=json&limit=1"
+                val queryToUse = location.trim()
+                val userLoc = getUserLocation()
+                var urlStr = "https://nominatim.openstreetmap.org/search?q=${URLEncoder.encode(queryToUse, "UTF-8")}&format=json&limit=1"
+                if (userLoc != null) {
+                    urlStr += "&lat=${userLoc.first}&lon=${userLoc.second}"
+                }
+
                 val conn = URL(urlStr).openConnection()
                 conn.setRequestProperty("User-Agent", "LLMHub-Agent/1.0")
                 conn.connectTimeout = 8000
@@ -71,7 +89,7 @@ RULES:
                     val obj = jsonArr.getJSONObject(0)
                     val lat = obj.getDouble("lat")
                     val lon = obj.getDouble("lon")
-                    val displayName = obj.optString("display_name", location)
+                    val displayName = obj.optString("display_name", queryToUse)
                     mapOf(
                         "type" to "map",
                         "lat" to lat,
@@ -80,8 +98,15 @@ RULES:
                         "status" to "succeeded"
                     )
                 } else {
-                    openGeoIntent(location)
-                    mapOf("type" to "map_intent", "location" to location, "status" to "succeeded")
+                    val fallbackLat = userLoc?.first ?: -33.8688
+                    val fallbackLon = userLoc?.second ?: 151.2093
+                    mapOf(
+                        "type" to "map",
+                        "lat" to fallbackLat,
+                        "lon" to fallbackLon,
+                        "label" to queryToUse,
+                        "status" to "succeeded"
+                    )
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Map geocoding failed for '$location': ${e.message}")
@@ -263,18 +288,44 @@ RULES:
 
     // ─── Send SMS ─────────────────────────────────────────────────────────────
 
-    @Tool(description = "Open SMS app with pre-filled phone number and message.")
+    fun resolvePhoneNumber(recipient: String): String {
+        val clean = recipient.trim()
+        if (clean.all { it.isDigit() || it == '+' || it == '-' || it == ' ' || it == '(' || it == ')' }) {
+            return clean
+        }
+        return try {
+            val cursor = context.contentResolver.query(
+                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER, ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME),
+                "${ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME} LIKE ?",
+                arrayOf("%$clean%"),
+                null
+            )
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    val numIdx = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                    if (numIdx >= 0) it.getString(numIdx) else clean
+                } else clean
+            } ?: clean
+        } catch (e: Exception) {
+            Log.w(TAG, "Error resolving contact phone number: ${e.message}")
+            clean
+        }
+    }
+
+    @Tool(description = "Compose and open an SMS message in the device messaging app.")
     fun sendSms(
-        @ToolParam(description = "Phone number.") phoneNumber: String,
-        @ToolParam(description = "SMS message content.") body: String
+        @ToolParam(description = "Phone number or contact name.") phoneNumber: String,
+        @ToolParam(description = "Message body content.") body: String
     ): Map<String, String> {
         return try {
-            val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:${phoneNumber.trim()}")).apply {
+            val targetNumber = resolvePhoneNumber(phoneNumber)
+            val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:${targetNumber.trim()}")).apply {
                 putExtra("sms_body", body)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(intent)
-            mapOf("result" to "Opened SMS app for '$phoneNumber'", "status" to "succeeded")
+            mapOf("result" to "Opened SMS app for '$phoneNumber' ($targetNumber)", "status" to "succeeded")
         } catch (e: Exception) {
             mapOf("error" to "Could not open SMS app: ${e.message}", "status" to "failed")
         }

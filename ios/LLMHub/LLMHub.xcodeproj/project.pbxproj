@@ -500,6 +500,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "LLMHub-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = LLMHub;
+				INFOPLIST_KEY_NSContactsUsageDescription = "LLM Hub needs permission to access your contacts to send SMS messages to contacts you specify.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "LLM Hub needs permission to access your location to display nearby places and maps.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "LLM Hub uses your microphone to transcribe speech on-device.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "LLM Hub needs permission to save generated videos and images to your Photo Library.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "LLM Hub needs permission to access your Photo Library to select and save media.";
@@ -537,6 +539,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "LLMHub-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = LLMHub;
+				INFOPLIST_KEY_NSContactsUsageDescription = "LLM Hub needs permission to access your contacts to send SMS messages to contacts you specify.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "LLM Hub needs permission to access your location to display nearby places and maps.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "LLM Hub uses your microphone to transcribe speech on-device.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "LLM Hub needs permission to save generated videos and images to your Photo Library.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "LLM Hub needs permission to access your Photo Library to select and save media.";
