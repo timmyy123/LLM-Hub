@@ -1293,7 +1293,6 @@ private struct IOS26TranscriberScreen: View {
         .navigationTitle(settings.localized("transcriber_title"))
         .navigationBarTitleDisplayMode(.inline)
         .apolloScreenBackground()
-        .safeAreaInset(edge: .bottom, spacing: 0) { BannerAdContainer() }
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
@@ -1938,7 +1937,6 @@ struct TranscriberScreen: View {
                 .navigationTitle(settings.localized("transcriber_title"))
                 .navigationBarTitleDisplayMode(.inline)
                 .apolloScreenBackground()
-                .safeAreaInset(edge: .bottom, spacing: 0) { BannerAdContainer() }
                 .toolbarBackground(.hidden, for: .navigationBar)
                 .toolbar {
                     ToolbarItem(placement: .navigationBarLeading) {
@@ -2204,7 +2202,6 @@ private struct IOS17VibeVoiceScreen: View {
         .navigationTitle(settings.localized("feature_vibevoice"))
         .navigationBarTitleDisplayMode(.inline)
         .apolloScreenBackground()
-        .safeAreaInset(edge: .bottom, spacing: 0) { BannerAdContainer() }
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
@@ -3171,7 +3168,6 @@ struct WritingAidScreen: View {
         .navigationTitle(settings.localized("writing_aid_title"))
         .navigationBarTitleDisplayMode(.inline)
         .apolloScreenBackground()
-        .safeAreaInset(edge: .bottom, spacing: 0) { BannerAdContainer() }
         .simultaneousGesture(TapGesture().onEnded { dismissKeyboard() })
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
@@ -3447,7 +3443,6 @@ struct TranslatorScreen: View {
         .navigationTitle(settings.localized("translator_title"))
         .navigationBarTitleDisplayMode(.inline)
         .apolloScreenBackground()
-        .safeAreaInset(edge: .bottom, spacing: 0) { BannerAdContainer() }
         .simultaneousGesture(TapGesture().onEnded { dismissKeyboard() })
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
@@ -4386,7 +4381,6 @@ struct ScamDetectorScreen: View {
         .navigationTitle(settings.localized("scam_detector_title"))
         .navigationBarTitleDisplayMode(.inline)
         .apolloScreenBackground()
-        .safeAreaInset(edge: .bottom, spacing: 0) { BannerAdContainer() }
         .simultaneousGesture(TapGesture().onEnded { dismissKeyboard() })
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
@@ -5398,7 +5392,6 @@ struct VibeCoderScreen: View {
         .navigationTitle(settings.localized("vibe_coder_title"))
         .navigationBarTitleDisplayMode(.inline)
         .apolloScreenBackground()
-        .safeAreaInset(edge: .bottom, spacing: 0) { BannerAdContainer() }
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
@@ -6307,7 +6300,6 @@ struct ImageGeneratorScreen: View {
         .navigationTitle(settings.localized("image_generator_title"))
         .navigationBarTitleDisplayMode(.inline)
         .apolloScreenBackground()
-        .safeAreaInset(edge: .bottom, spacing: 0) { BannerAdContainer() }
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {

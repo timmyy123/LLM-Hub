@@ -678,7 +678,6 @@
 "gpu_layers_hint" = "Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers";
 "premium_title" = "LLM Hub Premium (Навсегда)";
 "premium_subtitle" = "Откройте полный доступ";
-"premium_feature_no_ads" = "Никакой рекламы";
 "premium_feature_vibe_coder" = "VibeCoder — генератор кода на ИИ";
 "premium_feature_image_gen" = "Генератор изображений — ИИ-арт на устройстве";
 "premium_feature_tts" = "Автоматическое озвучивание текста";
@@ -700,8 +699,6 @@
 "premium_restore_success" = "Покупка успешно восстановлена!";
 "premium_restore_nothing" = "Предыдущих покупок не найдено.";
 "premium_go_premium" = "Перейти на Premium";
-"privacy_ads_title" = "Конфиденциальность и реклама";
-"privacy_ads_subtitle" = "Управление персонализацией рекламы и согласиями";
 "export" = "Экспорт";
 "home_section_tools" = "Инструменты";
 "home_section_utilities" = "Утилиты";

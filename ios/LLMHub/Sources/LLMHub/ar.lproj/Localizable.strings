@@ -706,7 +706,6 @@
 "gpu_layers_hint" = "Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers";
 "premium_title" = "LLM Hub Premium مدى الحياة";
 "premium_subtitle" = "افتح التجربة الكاملة";
-"premium_feature_no_ads" = "لا إعلانات أبداً";
 "premium_feature_vibe_coder" = "VibeCoder – مولّد كود بالذكاء الاصطناعي";
 "premium_feature_image_gen" = "مولّد الصور – فن الذكاء الاصطناعي على الجهاز";
 "premium_feature_tts" = "القراءة التلقائية نصّ إلى كلام";
@@ -728,8 +727,6 @@
 "premium_restore_success" = "تمّ استعادة الشراء بنجاح!";
 "premium_restore_nothing" = "لم يُعثر على مشتريات سابقة.";
 "premium_go_premium" = "الانتقال إلى Premium";
-"privacy_ads_title" = "الخصوصية والإعلانات";
-"privacy_ads_subtitle" = "إدارة تخصيص الإعلانات وخيارات الموافقة";
 "export" = "تصدير";
 "home_section_tools" = "الأدوات";
 "home_section_utilities" = "الأدوات المساعدة";

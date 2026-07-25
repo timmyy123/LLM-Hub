@@ -706,7 +706,6 @@
 "gpu_layers_hint" = "Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers";
 "premium_title" = "LLM Hub Ömür Boyu Premium";
 "premium_subtitle" = "Tam deneyimin kilidini aç";
-"premium_feature_no_ads" = "Hiç reklam yok";
 "premium_feature_vibe_coder" = "VibeCoder – Yapay Zeka Kod Üreteci";
 "premium_feature_image_gen" = "Görsel Üreteci – Cihazda Yapay Zeka Sanatı";
 "premium_feature_tts" = "Otomatik Metinden Sese Okuma";
@@ -728,8 +727,6 @@
 "premium_restore_success" = "Satın alma başarıyla geri yüklendi!";
 "premium_restore_nothing" = "Önceki satın alma bulunamadı.";
 "premium_go_premium" = "Premium’a Geç";
-"privacy_ads_title" = "Gizlilik ve Reklamlar";
-"privacy_ads_subtitle" = "Reklam kişiselleştirme ve onay tercihlerini yönetin";
 "export" = "Dışa aktar";
 "home_section_tools" = "Araçlar";
 "home_section_utilities" = "Yardımcılar";

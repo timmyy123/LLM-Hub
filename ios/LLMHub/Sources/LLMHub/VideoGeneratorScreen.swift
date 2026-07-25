@@ -57,7 +57,6 @@ struct VideoGeneratorScreen: View {
         .navigationTitle(settings.localized("video_generator_title"))
         .navigationBarTitleDisplayMode(.inline)
         .apolloScreenBackground()
-        .safeAreaInset(edge: .bottom, spacing: 0) { BannerAdContainer() }
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {

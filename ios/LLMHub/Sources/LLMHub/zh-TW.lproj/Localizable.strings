@@ -711,7 +711,6 @@
 "prompt_too_long" = "提示資訊過長。請縮短您的訊息並重試。";
 "premium_title" = "LLM Hub 終身高階版";
 "premium_subtitle" = "解鎖完整體驗";
-"premium_feature_no_ads" = "永久去廣告";
 "premium_feature_vibe_coder" = "程式碼生成器 – AI 程式碼構建";
 "premium_feature_image_gen" = "影象生成器 – 裝置端 AI 繪畫";
 "premium_feature_tts" = "文字轉語音自動朗讀";
@@ -733,8 +732,6 @@
 "premium_restore_success" = "購買恢復成功！";
 "premium_restore_nothing" = "未找到歷史購買記錄。";
 "premium_go_premium" = "升級高階版";
-"privacy_ads_title" = "隱私與廣告";
-"privacy_ads_subtitle" = "管理您的廣告個性化和同意選項";
 "export" = "匯出";
 "home_section_tools" = "工具";
 "home_section_utilities" = "實用工具";

@@ -54,7 +54,6 @@ struct ImageUpscalerScreen: View {
         .navigationTitle(settings.localized("image_upscale_title"))
         .navigationBarTitleDisplayMode(.inline)
         .apolloScreenBackground()
-        .safeAreaInset(edge: .bottom, spacing: 0) { BannerAdContainer() }
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {

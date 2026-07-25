@@ -209,9 +209,6 @@ struct HomeScreen: View {
             }
         }
         .apolloScreenBackground()
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            BannerAdContainer()
-        }
         .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $showPremium) {
             PremiumScreen()

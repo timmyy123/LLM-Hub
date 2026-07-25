@@ -717,7 +717,6 @@
 "model_system_prompt_hint" = "Applied automatically when this model generates a response.";
 "premium_title" = "LLM Hub Premium Lifetime";
 "premium_subtitle" = "Unlock the full experience";
-"premium_feature_no_ads" = "No ads, ever";
 "premium_feature_vibe_coder" = "VibeCoder – AI code builder";
 "premium_feature_image_gen" = "Image Generator – on-device AI art";
 "premium_feature_tts" = "Text-to-Speech auto readout";
@@ -740,8 +739,6 @@
 "premium_restore_success" = "Purchase restored successfully!";
 "premium_restore_nothing" = "No previous purchase found.";
 "premium_go_premium" = "Go Premium";
-"privacy_ads_title" = "Privacy & Ads";
-"privacy_ads_subtitle" = "Manage your ad personalisation and consent choices";
 "export" = "Export";
 "home_section_tools" = "Tools";
 "home_section_utilities" = "Utilities";

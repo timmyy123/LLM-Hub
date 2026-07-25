@@ -154,9 +154,8 @@ struct PremiumScreen: View {
 
             Spacer().frame(height: 28)
 
-            // Feature list card — iOS: only remove ads + import external models
+            // Feature list card
             VStack(spacing: 0) {
-                PremiumFeatureRow(icon: "nosign",                   tint: Color(hex: "FF7043"), textKey: "premium_feature_no_ads")
                 PremiumFeatureRow(icon: "square.and.arrow.up.fill", tint: Color(hex: "FFC107"), textKey: "premium_feature_import_models")
                 PremiumFeatureRow(icon: "sparkles",                 tint: Color(hex: "00BCD4"), textKey: "premium_feature_future", isLast: true)
             }

@@ -20,14 +20,6 @@ let package = Package(
         .package(url: "https://github.com/apple/ml-stable-diffusion", from: "1.1.1"),
         .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.20"),
         .package(path: "LocalPackages/media-generation-kit"),
-        .package(
-            url: "https://github.com/googleads/swift-package-manager-google-mobile-ads",
-            from: "11.0.0"
-        ),
-        .package(
-            url: "https://github.com/googleads/swift-package-manager-google-user-messaging-platform",
-            from: "2.0.0"
-        ),
         .package(url: "https://github.com/google-ai-edge/LiteRT-LM", exact: "0.14.0"),
         .package(url: "https://github.com/ggerganov/whisper.spm", from: "1.6.2"),
     ],
@@ -40,8 +32,6 @@ let package = Package(
                 .product(name: "RunAnywhereONNX", package: "runanywhere-sdks-latest"),
                 .product(name: "StableDiffusion", package: "ml-stable-diffusion"),
                 .product(name: "ZIPFoundation", package: "ZIPFoundation"),
-                .product(name: "GoogleMobileAds", package: "swift-package-manager-google-mobile-ads"),
-                .product(name: "GoogleUserMessagingPlatform", package: "swift-package-manager-google-user-messaging-platform"),
                 .product(name: "LiteRTLM", package: "LiteRT-LM"),
                 .product(name: "MediaGenerationKit", package: "media-generation-kit"),
                 .product(name: "whisper", package: "whisper.spm"),

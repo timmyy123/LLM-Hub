@@ -706,7 +706,6 @@
 "gpu_layers_hint" = "Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers";
 "premium_title" = "LLM Hub 프리미엄 평생";
 "premium_subtitle" = "전체 기능을 잠금 해제하세요";
-"premium_feature_no_ads" = "광고 없음, 영원히";
 "premium_feature_vibe_coder" = "VibeCoder – AI 코드 생성기";
 "premium_feature_image_gen" = "이미지 생성기 – 디바이스의 AI 아트";
 "premium_feature_tts" = "텍스트 음성 변환 자동 읽기";
@@ -728,8 +727,6 @@
 "premium_restore_success" = "구매가 성공적으로 복원되었습니다!";
 "premium_restore_nothing" = "이전 구매 내역이 없습니다.";
 "premium_go_premium" = "프리미엄으로 이동";
-"privacy_ads_title" = "개인정보 및 광고";
-"privacy_ads_subtitle" = "광고 개인화 및 동의 선택 관리";
 "export" = "내보내기";
 "home_section_tools" = "도구";
 "home_section_utilities" = "유틸리티";

@@ -717,7 +717,6 @@
 "model_system_prompt_hint" = "Wordt automatisch toegepast wanneer dit model een reactie genereert.";
 "premium_title" = "LLM Hub Premium Levenslang";
 "premium_subtitle" = "Ontgrendel de volledige ervaring";
-"premium_feature_no_ads" = "Geen advertenties, ooit";
 "premium_feature_vibe_coder" = "VibeCoder – AI-codebouwer";
 "premium_feature_image_gen" = "Image Generator – AI-kunst op het apparaat";
 "premium_feature_tts" = "Automatische voorlezing van tekst-naar-spraak";
@@ -739,8 +738,6 @@
 "premium_restore_success" = "Aankoop succesvol hersteld!";
 "premium_restore_nothing" = "Geen eerdere aankoop gevonden.";
 "premium_go_premium" = "Ga voor Premium";
-"privacy_ads_title" = "Privacy en advertenties";
-"privacy_ads_subtitle" = "Beheer uw advertentiepersonalisatie en toestemmingskeuzes";
 "export" = "Exporteren";
 "home_section_tools" = "Gereedschap";
 "home_section_utilities" = "Hulpprogramma's";

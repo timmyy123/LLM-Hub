@@ -7,7 +7,6 @@ struct SettingsScreen: View {
     @EnvironmentObject var settings: AppSettings
     @Environment(\.openURL) var openURL
     @StateObject private var purchases = PurchaseManager.shared
-    @ObservedObject private var consent = ConsentManager.shared
 
     var onNavigateBack: () -> Void
     var onNavigateToModels: () -> Void
@@ -152,20 +151,6 @@ struct SettingsScreen: View {
                     ) { showTerms = true }
                     .listRowInsets(EdgeInsets(top: 6, leading: 14, bottom: 6, trailing: 14))
                     .listRowBackground(Color.clear)
-
-                    // Privacy & Ads — only shown for free users when GDPR consent is required
-                    if !purchases.isPremium {
-                        SettingsRow(
-                            icon: "hand.raised.fill",
-                            iconColor: Color(hex: "4CAF50"),
-                            titleKey: "privacy_ads_title",
-                            subtitleKey: "privacy_ads_subtitle"
-                        ) {
-                            consent.showPrivacyOptionsForm()
-                        }
-                        .listRowInsets(EdgeInsets(top: 6, leading: 14, bottom: 6, trailing: 14))
-                        .listRowBackground(Color.clear)
-                    }
                 } header: {
                     SectionHeader(titleKey: "information", icon: "info.circle")
                 }
@@ -206,9 +191,6 @@ struct SettingsScreen: View {
             }
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
-        }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            BannerAdContainer()
         }
         .navigationTitle(settings.localized("feature_settings_title"))
         .navigationBarTitleDisplayMode(.large)

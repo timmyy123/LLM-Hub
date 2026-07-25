@@ -706,7 +706,6 @@
 "gpu_layers_hint" = "Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers";
 "premium_title" = "LLM Hub Premium مادام‌العمر";
 "premium_subtitle" = "تجربه کامل را باز کنید";
-"premium_feature_no_ads" = "بدون تبلیغات، هرگز";
 "premium_feature_vibe_coder" = "VibeCoder – مولد کد هوش مصنوعی";
 "premium_feature_image_gen" = "مولد تصویر – هنر هوش مصنوعی روی دستگاه";
 "premium_feature_tts" = "خواندن خودکار متن به گفتار";
@@ -728,8 +727,6 @@
 "premium_restore_success" = "خرید با موفقیت بازیابی شد!";
 "premium_restore_nothing" = "هیچ خرید قبلی یافت نشد.";
 "premium_go_premium" = "رفتن به Premium";
-"privacy_ads_title" = "حریم خصوصی و تبلیغات";
-"privacy_ads_subtitle" = "مدیریت شخصی‌سازی تبلیغات و انتخاب‌های رضایت";
 "export" = "صادر کردن";
 "home_section_tools" = "ابزارها";
 "home_section_utilities" = "ابزارهای کمکی";

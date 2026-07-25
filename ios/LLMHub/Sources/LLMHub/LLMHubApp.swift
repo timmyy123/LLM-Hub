@@ -9,7 +9,6 @@ import ModelZoo
 @main
 struct LLMHubApp: App {
     @StateObject private var settings = AppSettings.shared
-    @StateObject private var consent = ConsentManager.shared
 
     init() {
         let line = "[LLMHub] App launched\n"
@@ -29,17 +28,9 @@ struct LLMHubApp: App {
             "4x_ultrasharp_f16.ckpt": "c8e9a1ee8bf5bc71cef7204bf1cf8cb120dc8b578189d33fd94025a6cfa9f0ec"
         ])
 
-        // Initialise AdMob SDK before any ad is shown
-        AdMobSDK.initialize()
-
         // Warm up StoreKit 2 / restore premium state
         Task {
             await PurchaseManager.shared.loadProduct()
-        }
-
-        // Request EU/GDPR consent info update — form shown automatically if required
-        Task { @MainActor in
-            ConsentManager.shared.requestConsentUpdate()
         }
 
         // Initialize RunAnywhere SDK first — sets up C++ module registry
@@ -64,7 +55,6 @@ struct LLMHubApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(settings)
-                .environmentObject(consent)
                 .preferredColorScheme(.dark)
                 .environment(\.locale, settings.selectedLanguage.locale)
                 .ifLet(layoutDirectionOverride) { view, dir in

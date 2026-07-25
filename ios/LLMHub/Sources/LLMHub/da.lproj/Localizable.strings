@@ -717,7 +717,6 @@
 "model_system_prompt_hint" = "Anvendes automatisk, når denne model genererer et svar.";
 "premium_title" = "LLM Hub Premium Levetid";
 "premium_subtitle" = "Lås op for den fulde oplevelse";
-"premium_feature_no_ads" = "Ingen annoncer, nogensinde";
 "premium_feature_vibe_coder" = "VibeCoder – AI-kodebygger";
 "premium_feature_image_gen" = "Image Generator – AI-kunst på enheden";
 "premium_feature_tts" = "Tekst-til-tale automatisk udlæsning";
@@ -739,8 +738,6 @@
 "premium_restore_success" = "Købet blev genoprettet!";
 "premium_restore_nothing" = "Intet tidligere køb fundet.";
 "premium_go_premium" = "Go Premium";
-"privacy_ads_title" = "Privatliv og annoncer";
-"privacy_ads_subtitle" = "Administrer din annoncetilpasning og dine samtykkevalg";
 "export" = "Eksporter";
 "home_section_tools" = "Værktøjer";
 "home_section_utilities" = "Hjælpeprogrammer";

@@ -717,7 +717,6 @@
 "model_system_prompt_hint" = "ใช้โดยอัตโนมัติเมื่อโมเดลนี้สร้างการตอบสนอง";
 "premium_title" = "LLM Hub อายุการใช้งานระดับพรีเมียม";
 "premium_subtitle" = "ปลดล็อคประสบการณ์เต็มรูปแบบ";
-"premium_feature_no_ads" = "ไม่มีโฆษณาเลย";
 "premium_feature_vibe_coder" = "VibeCoder – เครื่องมือสร้างโค้ด AI";
 "premium_feature_image_gen" = "Image Generator – ศิลปะ AI บนอุปกรณ์";
 "premium_feature_tts" = "การอ่านข้อความเป็นคำพูดอัตโนมัติ";
@@ -739,8 +738,6 @@
 "premium_restore_success" = "กู้คืนการซื้อสำเร็จแล้ว!";
 "premium_restore_nothing" = "ไม่พบการซื้อก่อนหน้านี้";
 "premium_go_premium" = "ไปแบบพรีเมียม";
-"privacy_ads_title" = "ความเป็นส่วนตัวและโฆษณา";
-"privacy_ads_subtitle" = "จัดการตัวเลือกการปรับเปลี่ยนโฆษณาในแบบของคุณและการยินยอม";
 "export" = "ส่งออก";
 "home_section_tools" = "เครื่องมือ";
 "home_section_utilities" = "สาธารณูปโภค";

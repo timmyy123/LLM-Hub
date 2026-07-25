@@ -717,7 +717,6 @@
 "model_system_prompt_hint" = "Được áp dụng tự động khi mô hình này tạo ra phản hồi.";
 "premium_title" = "LLM Hub Premium trọn đời";
 "premium_subtitle" = "Mở khóa trải nghiệm trọn vẹn";
-"premium_feature_no_ads" = "Không bao giờ có quảng cáo";
 "premium_feature_vibe_coder" = "VibeCoder – Trình tạo mã AI";
 "premium_feature_image_gen" = "Trình tạo hình ảnh – nghệ thuật AI trên thiết bị";
 "premium_feature_tts" = "Tự động đọc văn bản thành giọng nói";
@@ -739,8 +738,6 @@
 "premium_restore_success" = "Đã khôi phục giao dịch mua thành công!";
 "premium_restore_nothing" = "Không tìm thấy giao dịch mua trước đó.";
 "premium_go_premium" = "Đi cao cấp";
-"privacy_ads_title" = "Quyền riêng tư & Quảng cáo";
-"privacy_ads_subtitle" = "Quản lý các lựa chọn đồng ý và cá nhân hóa quảng cáo của bạn";
 "export" = "Xuất";
 "home_section_tools" = "Công cụ";
 "home_section_utilities" = "Tiện ích";

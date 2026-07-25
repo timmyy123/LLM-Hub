@@ -696,7 +696,6 @@
 "gpu_layers_hint" = "Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers";
 "premium_title" = "LLM Hub Premium Lifetime";
 "premium_subtitle" = "Sblocca l’esperienza completa";
-"premium_feature_no_ads" = "Nessuna pubblicità, mai";
 "premium_feature_vibe_coder" = "VibeCoder – Generatore di codice IA";
 "premium_feature_image_gen" = "Generatore di immagini – arte IA sul dispositivo";
 "premium_feature_tts" = "Lettura automatica testo-voce";
@@ -718,8 +717,6 @@
 "premium_restore_success" = "Acquisto ripristinato con successo!";
 "premium_restore_nothing" = "Nessun acquisto precedente trovato.";
 "premium_go_premium" = "Diventa Premium";
-"privacy_ads_title" = "Privacy e pubblicità";
-"privacy_ads_subtitle" = "Gestisci la personalizzazione degli annunci e le tue scelte di consenso";
 "export" = "Esporta";
 "home_section_tools" = "Strumenti";
 "home_section_utilities" = "Utilità";

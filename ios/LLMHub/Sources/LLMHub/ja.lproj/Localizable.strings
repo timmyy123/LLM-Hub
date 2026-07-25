@@ -706,7 +706,6 @@
 "gpu_layers_hint" = "Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers";
 "premium_title" = "LLM Hub プレミアム ライフタイム";
 "premium_subtitle" = "フル機能を解除する";
-"premium_feature_no_ads" = "広告なし、永遠に";
 "premium_feature_vibe_coder" = "VibeCoder – AIコードジェネレーター";
 "premium_feature_image_gen" = "画像ジェネレーター – デバイス上のAIアート";
 "premium_feature_tts" = "テキスト読み上げ自動再生";
@@ -728,8 +727,6 @@
 "premium_restore_success" = "購入が正常に復元されました！";
 "premium_restore_nothing" = "以前の購入履歴が見つかりませんでした。";
 "premium_go_premium" = "Premiumへ";
-"privacy_ads_title" = "プライバシーと広告";
-"privacy_ads_subtitle" = "広告のパーソナライズと同意の選択を管理する";
 "export" = "エクスポート";
 "home_section_tools" = "ツール";
 "home_section_utilities" = "ユーティリティ";

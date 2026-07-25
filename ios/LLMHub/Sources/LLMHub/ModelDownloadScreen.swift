@@ -1003,7 +1003,6 @@ struct ModelDownloadScreen: View {
         }
         .navigationTitle(settings.localized("ai_models"))
         .navigationBarTitleDisplayMode(.inline)
-        .safeAreaInset(edge: .bottom, spacing: 0) { BannerAdContainer() }
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {

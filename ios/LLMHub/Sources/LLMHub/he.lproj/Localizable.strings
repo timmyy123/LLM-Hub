@@ -706,7 +706,6 @@
 "gpu_layers_hint" = "Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers";
 "premium_title" = "LLM Hub Premium לכל החיים";
 "premium_subtitle" = "פתח את החווייה המלאה";
-"premium_feature_no_ads" = "ללא פרסומות, לעולם";
 "premium_feature_vibe_coder" = "VibeCoder – מחולל קוד AI";
 "premium_feature_image_gen" = "מחולל תמונות – אמנות AI במכשיר";
 "premium_feature_tts" = "קריאה אוטומטית טקסט לדיבור";
@@ -728,8 +727,6 @@
 "premium_restore_success" = "הרכישה שוחזרה בהצלחה!";
 "premium_restore_nothing" = "לא נמצאו רכישות קודמות.";
 "premium_go_premium" = "עבור ל-Premium";
-"privacy_ads_title" = "פרטיות ומודעות";
-"privacy_ads_subtitle" = "נהל את התאמה אישית של מודעות ובחירות הסכמה";
 "export" = "ייצוא";
 "home_section_tools" = "כלים";
 "home_section_utilities" = "כלי עזר";

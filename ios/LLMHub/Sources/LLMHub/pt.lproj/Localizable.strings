@@ -661,7 +661,6 @@
 "gpu_layers_hint" = "Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers";
 "premium_title" = "LLM Hub Premium Vitalício";
 "premium_subtitle" = "Desbloqueie a experiência completa";
-"premium_feature_no_ads" = "Sem anúncios, nunca";
 "premium_feature_vibe_coder" = "VibeCoder – Gerador de código IA";
 "premium_feature_image_gen" = "Gerador de imagens – arte IA no dispositivo";
 "premium_feature_tts" = "Leitura automática texto para fala";
@@ -683,8 +682,6 @@
 "premium_restore_success" = "Compra restaurada com sucesso!";
 "premium_restore_nothing" = "Nenhuma compra anterior encontrada.";
 "premium_go_premium" = "Ir para Premium";
-"privacy_ads_title" = "Privacidade e anúncios";
-"privacy_ads_subtitle" = "Gerencie a personalização de anúncios e suas escolhas de consentimento";
 "export" = "Exportar";
 "home_section_tools" = "Ferramentas";
 "home_section_utilities" = "Utilitários";
