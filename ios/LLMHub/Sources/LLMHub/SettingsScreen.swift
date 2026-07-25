@@ -153,18 +153,19 @@ struct SettingsScreen: View {
                     .listRowInsets(EdgeInsets(top: 6, leading: 14, bottom: 6, trailing: 14))
                     .listRowBackground(Color.clear)
 
-                    // Privacy & Ads — only shown when GDPR consent is required (EU users)
-                    // When consent is not required this row is hidden; always safe to show it though.
-                    SettingsRow(
-                        icon: "hand.raised.fill",
-                        iconColor: Color(hex: "4CAF50"),
-                        titleKey: "privacy_ads_title",
-                        subtitleKey: "privacy_ads_subtitle"
-                    ) {
-                        consent.showPrivacyOptionsForm()
+                    // Privacy & Ads — only shown for free users when GDPR consent is required
+                    if !purchases.isPremium {
+                        SettingsRow(
+                            icon: "hand.raised.fill",
+                            iconColor: Color(hex: "4CAF50"),
+                            titleKey: "privacy_ads_title",
+                            subtitleKey: "privacy_ads_subtitle"
+                        ) {
+                            consent.showPrivacyOptionsForm()
+                        }
+                        .listRowInsets(EdgeInsets(top: 6, leading: 14, bottom: 6, trailing: 14))
+                        .listRowBackground(Color.clear)
                     }
-                    .listRowInsets(EdgeInsets(top: 6, leading: 14, bottom: 6, trailing: 14))
-                    .listRowBackground(Color.clear)
                 } header: {
                     SectionHeader(titleKey: "information", icon: "info.circle")
                 }
