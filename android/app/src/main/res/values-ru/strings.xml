@@ -850,7 +850,32 @@
     <string name="gemma_voice_option">Gemma</string>
         <string name="asr_model_backend"></string>
     <string name="llm_model_backend">Бэкенд модели LLM</string>
+    <!-- Agent Feature -->
+    <string name="feature_agent">Агент</string>
+    <string name="feature_agent_desc">ИИ-ассистент с инструментами и действиями</string>
+    <string name="premium_feature_agent">Агент – ИИ с инструментами и действиями</string>
+    <string name="agent_title">Агент</string>
+    <string name="agent_subtitle">Спроси меня что угодно — я умею искать, строить карты, планировать и многое другое</string>
+    <string name="agent_input_placeholder">Спроси агента…</string>
+    <string name="agent_voice_mode_system">Системный</string>
+    <string name="agent_voice_mode_whisper">Whisper</string>
+    <string name="agent_voice_mode_gemma">Gemma</string>
+    <string name="agent_tool_running">Выполняется: %1$s</string>
+    <string name="agent_tool_success">Готово</string>
+    <string name="agent_tool_failed">Не удалось</string>
+    <string name="agent_tool_confirm_title">Разрешить действие?</string>
+    <string name="agent_tool_confirm_body">Агент хочет: %1$s</string>
+    <string name="agent_tool_approve">Разрешить</string>
+    <string name="agent_tool_deny">Отклонить</string>
+    <string name="agent_no_model">Загрузите модель для использования Агента</string>
+    <string name="agent_map_expand">Открыть полную карту</string>
+    <string name="agent_settings_voice_mode">Режим голосового ввода</string>
+    <string name="agent_settings_tools">Включённые инструменты</string>
+    <string name="agent_termux_toggle">Включить команды Termux (расширенный режим)</string>
+    <string name="agent_termux_confirm">Выполнить команду: %1$s</string>
+    <string name="agent_calendar_confirm">Создать событие: %1$s</string>
+    <string name="agent_shortcut_confirm">Запустить ярлык: %1$s</string>
+    <string name="agent_welcome_message">Здравствуйте! Я ваш ИИ-агент. Я могу искать в Интернете, показывать карты, управлять событиями в календаре, проверять погоду, устанавливать будильники, отправлять сообщения и вычислять хэши. Чем я могу помочь вам сегодня?</string>
+    <string name="agent_no_model_android">Пожалуйста, сначала скачайте модель Gemma 4 E2/4B, чтобы использовать Агента</string>
+    <string name="agent_no_model_ios">Пожалуйста, сначала скачайте модель, чтобы использовать Агента</string>
 </resources>
-
-
-

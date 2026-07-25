@@ -16,7 +16,7 @@ import FoundationModels
 import Network
 #endif
 
-private enum WritingAidMode: String, CaseIterable {
+enum WritingAidMode: String, CaseIterable {
     case friendly = "writing_aid_tone_friendly"
     case professional = "writing_aid_tone_professional"
     case concise = "writing_aid_tone_concise"
@@ -337,7 +337,8 @@ private func downloadableFeatureModels() -> [AIModel] {
 
     var models = ModelData.allModels().filter { model in
         if model.isDependencyOnly { return false }
-        if model.category == .embedding || model.category == .imageGeneration || model.category == .videoGeneration || model.category == .imageUpscale { return false }
+        if model.category == .embedding || model.category == .asr || model.category == .imageGeneration || model.category == .videoGeneration || model.category == .imageUpscale { return false }
+        if model.name.lowercased().contains("vision projector") || model.name.lowercased().contains("mmproj") || model.name.lowercased().contains("projector") { return false }
 
         guard ModelData.isModelFullyAvailableLocally(model) else { return false }
         return true
@@ -447,7 +448,7 @@ extension View {
     }
 }
 
-private struct FeatureModelSettingsSheet: View {
+struct FeatureModelSettingsSheet: View {
     @EnvironmentObject var settings: AppSettings
     @Binding var selectedModelName: String
     @Binding var maxTokens: Double

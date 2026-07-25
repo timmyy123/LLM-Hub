@@ -95,7 +95,7 @@
     <string name="tos_privacy_data_title">4. Confidentialité et Données</string>
     <string name="tos_privacy_data_text">LLM Hub est conçu avec la confidentialité à l\'esprit.</string>
     <string name="tos_disclaimer_title">5. Déni de Garanties</string>
-    <string name="tos_disclaimer_text">LLM Hub est fourni &quot;tel quel&quot; sans garanties d\'aucune sorte.</string>
+    <string name="tos_disclaimer_text">LLM Hub est fourni \"tel quel\" sans garanties d\'aucune sorte.</string>
     <string name="tos_limitation_liability_title">6. Limitation de Responsabilité</string>
     <string name="tos_limitation_liability_text">En aucun cas les développeurs ne seront responsables de dommages indirects, incidents, spéciaux ou consécutifs.</string>
     <string name="tos_model_usage_title">7. Utilisation des Modèles et Licences</string>
@@ -864,7 +864,32 @@
     <string name="gemma_voice_option">Gemma</string>
         <string name="asr_model_backend"></string>
     <string name="llm_model_backend">Backend du modèle LLM</string>
+    <!-- Agent Feature -->
+    <string name="feature_agent">Agent</string>
+    <string name="feature_agent_desc">Assistant IA avec outils et actions</string>
+    <string name="premium_feature_agent">Agent – IA avec outils et actions</string>
+    <string name="agent_title">Agent</string>
+    <string name="agent_subtitle">Demandez-moi n\'importe quoi — je peux chercher, cartographier, planifier et plus</string>
+    <string name="agent_input_placeholder">Demandez à votre agent…</string>
+    <string name="agent_voice_mode_system">Système</string>
+    <string name="agent_voice_mode_whisper">Whisper</string>
+    <string name="agent_voice_mode_gemma">Gemma</string>
+    <string name="agent_tool_running">En cours: %1$s</string>
+    <string name="agent_tool_success">Terminé</string>
+    <string name="agent_tool_failed">Échoué</string>
+    <string name="agent_tool_confirm_title">Autoriser l\'action ?</string>
+    <string name="agent_tool_confirm_body">L\'agent veut: %1$s</string>
+    <string name="agent_tool_approve">Autoriser</string>
+    <string name="agent_tool_deny">Refuser</string>
+    <string name="agent_no_model">Veuillez télécharger un modèle pour utiliser l\'Agent</string>
+    <string name="agent_map_expand">Voir la carte complète</string>
+    <string name="agent_settings_voice_mode">Mode saisie vocale</string>
+    <string name="agent_settings_tools">Outils activés</string>
+    <string name="agent_termux_toggle">Activer les commandes Termux (avancé)</string>
+    <string name="agent_termux_confirm">Exécuter la commande: %1$s</string>
+    <string name="agent_calendar_confirm">Créer un événement: %1$s</string>
+    <string name="agent_shortcut_confirm">Exécuter le raccourci: %1$s</string>
+    <string name="agent_welcome_message">Bonjour ! Je suis votre Agent IA. Je peux rechercher sur le Web, afficher des cartes, gérer les événements du calendrier, consulter la météo, régler des alarmes, envoyer des messages et calculer des hachages. Comment puis-je vous aider aujourd\'hui ?</string>
+    <string name="agent_no_model_android">Veuillez d\'abord télécharger le modèle Gemma 4 E2/4B pour utiliser l\'Agent</string>
+    <string name="agent_no_model_ios">Veuillez d\'abord télécharger un modèle pour utiliser l\'Agent</string>
 </resources>
-
-
-

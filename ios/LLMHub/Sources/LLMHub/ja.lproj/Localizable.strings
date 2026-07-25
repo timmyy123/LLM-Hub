@@ -814,3 +814,31 @@
 "on_device_ai_engine" = "オンデバイスAIエンジン";
 "secure_private" = "安全・プライベート";
 "language_chinese_traditional" = "繁體中文";
+
+// MARK: - Agent Feature
+"feature_agent" = "エージェント";
+"feature_agent_desc" = "ツールとアクションを持つAIアシスタント";
+"premium_feature_agent" = "エージェント – ツールとデバイスアクション付きAI";
+"agent_title" = "エージェント";
+"agent_subtitle" = "何でも聞いてください — 検索、地図、カレンダーなど対応できます";
+"agent_input_placeholder" = "エージェントに質問…";
+"agent_voice_mode_system" = "システム";
+"agent_voice_mode_whisper" = "Whisper";
+"agent_voice_mode_gemma" = "Gemma";
+"agent_tool_running" = "実行中: %@";
+"agent_tool_success" = "完了";
+"agent_tool_failed" = "失敗";
+"agent_tool_confirm_title" = "アクションを許可しますか?";
+"agent_tool_confirm_body" = "エージェントが次のことをしようとしています: %@";
+"agent_tool_approve" = "許可";
+"agent_tool_deny" = "拒否";
+"agent_no_model" = "エージェントを使用するにはモデルをダウンロードしてください";
+"agent_map_expand" = "フルマップを見る";
+"agent_settings_voice_mode" = "音声入力モード";
+"agent_settings_tools" = "有効なツール";
+"agent_shortcut_confirm" = "ショートカットを実行: %@";
+"agent_calendar_confirm" = "イベントを作成: %@";
+
+"agent_welcome_message" = "こんにちは！私はあなたのAIエージェントです。Web検索、マップ表示、カレンダーの予定管理、天気予報の確認、アラーム設定、メッセージ送信、ハッシュ計算ができます。本日はどのようなご用件でしょうか？";
+"agent_no_model_android" = "エージェントを使用するには、まずGemma 4 E2/4Bモデルをダウンロードしてください";
+"agent_no_model_ios" = "エージェントを使用するには、まずモデルをダウンロードしてください";

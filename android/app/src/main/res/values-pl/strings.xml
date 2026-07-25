@@ -882,7 +882,32 @@
     <string name="gemma_voice_option">Gemma</string>
         <string name="asr_model_backend"></string>
     <string name="llm_model_backend">Backend modelu LLM</string>
+    <!-- Agent Feature -->
+    <string name="feature_agent">Agent</string>
+    <string name="feature_agent_desc">Asystent AI z narzędziami i akcjami</string>
+    <string name="premium_feature_agent">Agent – IA z narzędziami i akcjami urządzenia</string>
+    <string name="agent_title">Agent</string>
+    <string name="agent_subtitle">Zapytaj mnie o cokolwiek — potrafię szukać, mapować, planować i więcej</string>
+    <string name="agent_input_placeholder">Zapytaj agenta…</string>
+    <string name="agent_voice_mode_system">System</string>
+    <string name="agent_voice_mode_whisper">Whisper</string>
+    <string name="agent_voice_mode_gemma">Gemma</string>
+    <string name="agent_tool_running">Uruchamianie: %1$s</string>
+    <string name="agent_tool_success">Gotowe</string>
+    <string name="agent_tool_failed">Nie powiodło się</string>
+    <string name="agent_tool_confirm_title">Zezwolić na akcję?</string>
+    <string name="agent_tool_confirm_body">Agent chce: %1$s</string>
+    <string name="agent_tool_approve">Zezwól</string>
+    <string name="agent_tool_deny">Odmów</string>
+    <string name="agent_no_model">Pobierz model, aby używać Agenta</string>
+    <string name="agent_map_expand">Pokaż pełną mapę</string>
+    <string name="agent_settings_voice_mode">Tryb wejścia głosowego</string>
+    <string name="agent_settings_tools">Włączone narzędzia</string>
+    <string name="agent_termux_toggle">Włącz polecenia Termux (zaawansowane)</string>
+    <string name="agent_termux_confirm">Uruchom polecenie: %1$s</string>
+    <string name="agent_calendar_confirm">Utwórz wydarzenie: %1$s</string>
+    <string name="agent_shortcut_confirm">Uruchom skrót: %1$s</string>
+    <string name="agent_welcome_message">Cześć! Jestem Twoim Agentem AI. Mogę przeszukiwać sieć, wyświetlać mapy, zarządzać wydarzeniami w kalendarzu, sprawdzać pogodę, ustawiać alarmy, wysyłać wiadomości i obliczać hasze. Jak mogę Ci dzisiaj pomóc?</string>
+    <string name="agent_no_model_android">Pobierz najpierw model Gemma 4 E2/4B, aby korzystać z Agenta</string>
+    <string name="agent_no_model_ios">Pobierz najpierw model, aby korzystać z Agenta</string>
 </resources>
-
-
-

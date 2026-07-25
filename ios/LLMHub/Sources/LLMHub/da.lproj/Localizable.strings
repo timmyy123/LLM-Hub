@@ -822,3 +822,31 @@
 "on_device_ai_engine" = "ON-DEVICE AI MOTOR";
 "secure_private" = "SIKKER & PRIVAT";
 "language_chinese_traditional" = "繁體中文";
+
+// MARK: - Agent Feature
+"feature_agent" = "Agent";
+"feature_agent_desc" = "AI-assistent med værktøjer og handlinger";
+"premium_feature_agent" = "Agent – AI med enheds-værktøjer og handlinger";
+"agent_title" = "Agent";
+"agent_subtitle" = "Spørg mig om alt — jeg kan søge, kortlægge, planlægge og meget mere";
+"agent_input_placeholder" = "Spørg din agent…";
+"agent_voice_mode_system" = "System";
+"agent_voice_mode_whisper" = "Whisper";
+"agent_voice_mode_gemma" = "Gemma";
+"agent_tool_running" = "Kører: %@";
+"agent_tool_success" = "Færdig";
+"agent_tool_failed" = "Fejlede";
+"agent_tool_confirm_title" = "Tillad handling?";
+"agent_tool_confirm_body" = "Agenten vil: %@";
+"agent_tool_approve" = "Tillad";
+"agent_tool_deny" = "Afvis";
+"agent_no_model" = "Download venligst en model for at bruge Agent";
+"agent_map_expand" = "Se det fulde kort";
+"agent_settings_voice_mode" = "Stemmeinputstilstand";
+"agent_settings_tools" = "Aktiverede værktøjer";
+"agent_shortcut_confirm" = "Kør genvej: %@";
+"agent_calendar_confirm" = "Opret begivenhed: %@";
+
+"agent_welcome_message" = "Hej! Jeg er din AI-agent. Jeg kan søge på nettet, vise kort, administrere kalenderbegivenheder, tjekke vejret, indstille alarmer, sende beskeder og beregne hashes. Hvordan kan jeg hjælpe dig i dag?";
+"agent_no_model_android" = "Download venligst Gemma 4 E2/4B-modellen først for at bruge Agent";
+"agent_no_model_ios" = "Download venligst en model først for at bruge Agent";

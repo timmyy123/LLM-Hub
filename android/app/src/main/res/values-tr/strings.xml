@@ -876,7 +876,32 @@
     <string name="gemma_voice_option">Gemma</string>
         <string name="asr_model_backend"></string>
     <string name="llm_model_backend">LLM Model Arka Ucu</string>
+    <!-- Agent Feature -->
+    <string name="feature_agent">Ajan</string>
+    <string name="feature_agent_desc">Araçlı ve etkili AI asistanı</string>
+    <string name="premium_feature_agent">Ajan – Cihaz araçları ve eylemleri olan AI</string>
+    <string name="agent_title">Ajan</string>
+    <string name="agent_subtitle">Bana her şeyi sorabilirsiniz — arama, harita, takvim ve daha fazlasını yapabilirim</string>
+    <string name="agent_input_placeholder">Ajanınıza sorun…</string>
+    <string name="agent_voice_mode_system">Sistem</string>
+    <string name="agent_voice_mode_whisper">Whisper</string>
+    <string name="agent_voice_mode_gemma">Gemma</string>
+    <string name="agent_tool_running">Çalışıyor: %1$s</string>
+    <string name="agent_tool_success">Tamamlandı</string>
+    <string name="agent_tool_failed">Başarısız</string>
+    <string name="agent_tool_confirm_title">Eyleme izin verilsin mi?</string>
+    <string name="agent_tool_confirm_body">Ajan yapmak istiyor: %1$s</string>
+    <string name="agent_tool_approve">İzin ver</string>
+    <string name="agent_tool_deny">Reddet</string>
+    <string name="agent_no_model">Ajanı kullanmak için bir model indirin</string>
+    <string name="agent_map_expand">Tam haritayı görüntüle</string>
+    <string name="agent_settings_voice_mode">Ses giriş modu</string>
+    <string name="agent_settings_tools">Etkin araçlar</string>
+    <string name="agent_termux_toggle">Termux komutlarını etkinleştir (gelişmiş)</string>
+    <string name="agent_termux_confirm">Komutu çalıştır: %1$s</string>
+    <string name="agent_calendar_confirm">Etkinlik oluştur: %1$s</string>
+    <string name="agent_shortcut_confirm">Kısayolu çalıştır: %1$s</string>
+    <string name="agent_welcome_message">Merhaba! Ben sizin Yapay Zeka Ajanınızım. Web\'de arama yapabilir, haritaları gösterebilir, takvim etkinliklerini yönetebilir, hava durumunu kontrol edebilir, alarmlar kurabilir, mesaj gönderebilir ve hash hesaplayabilirim. Bugün size nasıl yardımcı olabilirim?</string>
+    <string name="agent_no_model_android">Ajanı kullanmak için lütfen önce Gemma 4 E2/4B modelini indirin</string>
+    <string name="agent_no_model_ios">Ajanı kullanmak için lütfen önce bir model indirin</string>
 </resources>
-
-
-

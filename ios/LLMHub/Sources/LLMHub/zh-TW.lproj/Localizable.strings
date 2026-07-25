@@ -822,3 +822,31 @@
 "on_device_ai_engine" = "端側 AI 引擎";
 "secure_private" = "安全與私密";
 "language_chinese_traditional" = "繁體中文";
+
+// MARK: - Agent Feature
+"feature_agent" = "智能代理";
+"feature_agent_desc" = "具備工具與動作的 AI 助手";
+"premium_feature_agent" = "智能代理 – 具備工具與裝置動作的 AI";
+"agent_title" = "智能代理";
+"agent_subtitle" = "問我任何事 — 我可以搜尋、地圖、行事曆等";
+"agent_input_placeholder" = "詢問您的代理…";
+"agent_voice_mode_system" = "系統";
+"agent_voice_mode_whisper" = "Whisper";
+"agent_voice_mode_gemma" = "Gemma";
+"agent_tool_running" = "執行中：%@";
+"agent_tool_success" = "完成";
+"agent_tool_failed" = "失敗";
+"agent_tool_confirm_title" = "允許此動作？";
+"agent_tool_confirm_body" = "代理想要：%@";
+"agent_tool_approve" = "允許";
+"agent_tool_deny" = "拒絕";
+"agent_no_model" = "請下載模型以使用智能代理";
+"agent_map_expand" = "查看完整地圖";
+"agent_settings_voice_mode" = "語音輸入模式";
+"agent_settings_tools" = "已啟用工具";
+"agent_shortcut_confirm" = "執行捷徑：%@";
+"agent_calendar_confirm" = "建立活動：%@";
+
+"agent_welcome_message" = "你好！我是您的 AI 助理。我可以搜尋網絡、顯示地圖、管理日曆事件、查看天氣、設定鬧鐘、傳送訊息和計算雜湊。今天我能為您提供什麼幫助？";
+"agent_no_model_android" = "請先下載 Gemma 4 E2/4B 模型以使用助理";
+"agent_no_model_ios" = "請先下載模型以使用助理";

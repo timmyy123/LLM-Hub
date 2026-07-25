@@ -62,7 +62,7 @@ fun ChatSettingsSheet(
     
     // Model-specific configurations
     val baseMaxTokensCap = remember(selectedModel) { 
-        selectedModel?.let { MediaPipeInferenceService.getMaxTokensForModelStatic(it) } ?: 2048 
+        (selectedModel?.let { MediaPipeInferenceService.getMaxTokensForModelStatic(it) } ?: 2048).coerceAtLeast(1) 
     }
 
 
@@ -660,7 +660,7 @@ fun ChatSettingsSheet(
                                         maxTokensText = intVal.toString()
                                     }
                                 },
-                                valueRange = 1f..baseMaxTokensCap.toFloat(),
+                                valueRange = 1f..maxOf(1f, baseMaxTokensCap.toFloat()),
                                 modifier = Modifier.weight(1f).height(36.dp),
                                 thumb = {
                                     SliderDefaults.Thumb(

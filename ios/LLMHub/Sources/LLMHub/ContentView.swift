@@ -41,9 +41,16 @@ struct ContentView: View {
                                 path.append(Screen.videoGenerator)
                             case "image_upscaler":
                                 path.append(Screen.imageUpscaler)
+                            case "agent":
+                                if PurchaseManager.shared.isPremium {
+                                    path.append(Screen.agent)
+                                } else {
+                                    showPremium = true
+                                }
                             default:
                                 break
                             }
+
                         }
                     )
                     .navigationDestination(for: Screen.self) { screen in
@@ -119,8 +126,13 @@ struct ContentView: View {
                             )
                             .navigationBarBackButtonHidden(true)
                             .enableSwipeBack()
+                        case .agent:
+                            AgentScreen()
+                                .navigationBarBackButtonHidden(true)
+                                .enableSwipeBack()
                         }
                     }
+
                 }
                 .sheet(isPresented: $showPremium) {
                     PremiumScreen()
@@ -144,4 +156,6 @@ enum Screen: Hashable {
     case imageGenerator
     case videoGenerator
     case imageUpscaler
+    case agent
 }
+

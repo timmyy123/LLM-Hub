@@ -880,7 +880,32 @@
     <string name="gemma_voice_option">Gemma</string>
         <string name="asr_model_backend"></string>
     <string name="llm_model_backend">Backend Model LLM</string>
+    <!-- Agent Feature -->
+    <string name="feature_agent">Agen</string>
+    <string name="feature_agent_desc">Asisten AI dengan alat dan tindakan</string>
+    <string name="premium_feature_agent">Agen – AI dengan alat dan tindakan perangkat</string>
+    <string name="agent_title">Agen</string>
+    <string name="agent_subtitle">Tanyakan apa saja — saya bisa mencari, memetakan, menjadwalkan, dan lebih banyak lagi</string>
+    <string name="agent_input_placeholder">Tanya agen Anda…</string>
+    <string name="agent_voice_mode_system">Sistem</string>
+    <string name="agent_voice_mode_whisper">Whisper</string>
+    <string name="agent_voice_mode_gemma">Gemma</string>
+    <string name="agent_tool_running">Menjalankan: %1$s</string>
+    <string name="agent_tool_success">Selesai</string>
+    <string name="agent_tool_failed">Gagal</string>
+    <string name="agent_tool_confirm_title">Izinkan Tindakan?</string>
+    <string name="agent_tool_confirm_body">Agen ingin: %1$s</string>
+    <string name="agent_tool_approve">Izinkan</string>
+    <string name="agent_tool_deny">Tolak</string>
+    <string name="agent_no_model">Unduh model untuk menggunakan Agen</string>
+    <string name="agent_map_expand">Lihat Peta Lengkap</string>
+    <string name="agent_settings_voice_mode">Mode Input Suara</string>
+    <string name="agent_settings_tools">Alat yang Diaktifkan</string>
+    <string name="agent_termux_toggle">Aktifkan Perintah Termux (lanjutan)</string>
+    <string name="agent_termux_confirm">Jalankan perintah: %1$s</string>
+    <string name="agent_calendar_confirm">Buat acara: %1$s</string>
+    <string name="agent_shortcut_confirm">Jalankan pintasan: %1$s</string>
+    <string name="agent_welcome_message">Halo! Saya Agen AI Anda. Saya dapat mencari di web, menampilkan peta, mengelola acara kalender, memeriksa cuaca, mengatur alarm, mengirim pesan, dan menghitung hash. Ada yang bisa saya bantu hari ini?</string>
+    <string name="agent_no_model_android">Silakan unduh model Gemma 4 E2/4B terlebih dahulu untuk menggunakan Agen</string>
+    <string name="agent_no_model_ios">Silakan unduh model terlebih dahulu untuk menggunakan Agen</string>
 </resources>
-
-
-

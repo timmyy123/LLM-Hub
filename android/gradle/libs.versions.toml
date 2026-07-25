@@ -19,6 +19,7 @@ accompanistPermissions = "0.32.0"
 coilCompose = "2.5.0"
 gson = "2.10.1"
 materialIconsExtended = "1.6.8"
+osmdroid = "6.1.20"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -67,6 +68,9 @@ gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 
 # Material Icons Extended
 androidx-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended", version.ref = "materialIconsExtended" }
+
+# Map (OpenStreetMap — no API key required)
+osmdroid = { group = "org.osmdroid", name = "osmdroid-android", version.ref = "osmdroid" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -785,4 +785,32 @@
     <string name="gemma_voice_option">Gemma</string>
     <string name="llm_model_backend">Phần cuối của mô hình LLM</string>
     <string name="asr_model_backend">Phần cuối ASR</string>
+    <!-- Agent Feature -->
+    <string name="feature_agent">Tác nhân</string>
+    <string name="feature_agent_desc">Trợ lý AI với công cụ và hành động</string>
+    <string name="premium_feature_agent">Tác nhân – AI với công cụ và hành động thiết bị</string>
+    <string name="agent_title">Tác nhân</string>
+    <string name="agent_subtitle">Hỏi tôi bất cứ điều gì — tôi có thể tìm kiếm, bản đồ, lịch và nhiều hơn</string>
+    <string name="agent_input_placeholder">Hỏi tác nhân của bạn…</string>
+    <string name="agent_voice_mode_system">Hệ thống</string>
+    <string name="agent_voice_mode_whisper">Whisper</string>
+    <string name="agent_voice_mode_gemma">Gemma</string>
+    <string name="agent_tool_running">Đang chạy: %1$s</string>
+    <string name="agent_tool_success">Xong</string>
+    <string name="agent_tool_failed">Thất bại</string>
+    <string name="agent_tool_confirm_title">Cho phép hành động?</string>
+    <string name="agent_tool_confirm_body">Tác nhân muốn: %1$s</string>
+    <string name="agent_tool_approve">Cho phép</string>
+    <string name="agent_tool_deny">Từ chối</string>
+    <string name="agent_no_model">Vui lòng tải mô hình để sử dụng Tác nhân</string>
+    <string name="agent_map_expand">Xem bản đồ đầy đủ</string>
+    <string name="agent_settings_voice_mode">Chế độ nhập giọng nói</string>
+    <string name="agent_settings_tools">Công cụ được bật</string>
+    <string name="agent_termux_toggle">Bật lệnh Termux (nâng cao)</string>
+    <string name="agent_termux_confirm">Chạy lệnh: %1$s</string>
+    <string name="agent_calendar_confirm">Tạo sự kiện: %1$s</string>
+    <string name="agent_shortcut_confirm">Chạy phím tắt: %1$s</string>
+    <string name="agent_welcome_message">Xin chào! Tôi là Đại lý AI của bạn. Tôi có thể tìm kiếm trên web, hiển thị bản đồ, quản lý sự kiện lịch, kiểm tra thời tiết, đặt báo thức, gửi tin nhắn và tính toán hash. Tôi có thể giúp gì cho bạn hôm nay?</string>
+    <string name="agent_no_model_android">Vui lòng tải xuống mô hình Gemma 4 E2/4B trước để sử dụng Đại lý</string>
+    <string name="agent_no_model_ios">Vui lòng tải xuống mô hình trước để sử dụng Đại lý</string>
 </resources>

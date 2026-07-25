@@ -880,7 +880,32 @@
     <string name="gemma_voice_option">Gemma</string>
         <string name="asr_model_backend"></string>
     <string name="llm_model_backend">LLM model backend</string>
+    <!-- Agent Feature -->
+    <string name="feature_agent">Agen</string>
+    <string name="feature_agent_desc">Asisten AI dengan alat dan tindakan</string>
+    <string name="premium_feature_agent">Agen – AI dengan alat dan tindakan perangkat</string>
+    <string name="agent_title">Agen</string>
+    <string name="agent_subtitle">Tanyakan apa saja — saya bisa mencari, memetakan, menjadwalkan, dan lebih banyak lagi</string>
+    <string name="agent_input_placeholder">Tanya agen Anda…</string>
+    <string name="agent_voice_mode_system">Sistem</string>
+    <string name="agent_voice_mode_whisper">Whisper</string>
+    <string name="agent_voice_mode_gemma">Gemma</string>
+    <string name="agent_tool_running">Menjalankan: %1$s</string>
+    <string name="agent_tool_success">Selesai</string>
+    <string name="agent_tool_failed">Gagal</string>
+    <string name="agent_tool_confirm_title">Izinkan Tindakan?</string>
+    <string name="agent_tool_confirm_body">Agen ingin: %1$s</string>
+    <string name="agent_tool_approve">Izinkan</string>
+    <string name="agent_tool_deny">Tolak</string>
+    <string name="agent_no_model">Unduh model untuk menggunakan Agen</string>
+    <string name="agent_map_expand">Lihat Peta Lengkap</string>
+    <string name="agent_settings_voice_mode">Mode Input Suara</string>
+    <string name="agent_settings_tools">Alat yang Diaktifkan</string>
+    <string name="agent_termux_toggle">Aktifkan Perintah Termux (lanjutan)</string>
+    <string name="agent_termux_confirm">Jalankan perintah: %1$s</string>
+    <string name="agent_calendar_confirm">Buat acara: %1$s</string>
+    <string name="agent_shortcut_confirm">Jalankan pintasan: %1$s</string>
+    <string name="agent_welcome_message">Hello! I am your AI Agent. I can search the web, display maps, manage calendar events, check weather, set alarms, send messages, and calculate hashes. How can I help you today?</string>
+    <string name="agent_no_model_android">Please download Gemma 4 E2/4B model first to use Agent</string>
+    <string name="agent_no_model_ios">Please download a model first to use Agent</string>
 </resources>
-
-
-

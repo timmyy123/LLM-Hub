@@ -383,6 +383,10 @@ dependencies {
     // Google Play Billing (IAP) - updated to latest v9.1.0 (Google Play requirement >= 8.0.0)
     implementation("com.android.billingclient:billing-ktx:9.1.0")
 
+    // OpenStreetMap (osmdroid) — in-app map view for Agent feature, no API key required
+    implementation(libs.osmdroid)
+
+
 
 
     testImplementation(libs.junit)

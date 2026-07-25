@@ -39,9 +39,11 @@ struct HomeScreen: View {
         [
             FeatureCard(titleKey: "feature_scam_detector", descriptionKey: "feature_scam_detector_desc", iconSystemName: "shield.fill", gradient: [Color(hex: "ffb08a"), Color(hex: "d77c59")], route: "scam_detector"),
             FeatureCard(titleKey: "feature_vibe_coder", descriptionKey: "feature_vibe_coder_desc", iconSystemName: "chevron.left.slash.chevron.right", gradient: [Color(hex: "a8bcff"), Color(hex: "5f76be")], route: "vibe_coder"),
-            FeatureCard(titleKey: "feature_vibevoice", descriptionKey: "feature_vibevoice_desc", iconSystemName: "waveform.circle.fill", gradient: [Color(hex: "89d3f7"), Color(hex: "3a68cc")], route: "vibe_voice")
+            FeatureCard(titleKey: "feature_vibevoice", descriptionKey: "feature_vibevoice_desc", iconSystemName: "waveform.circle.fill", gradient: [Color(hex: "89d3f7"), Color(hex: "3a68cc")], route: "vibe_voice"),
+            FeatureCard(titleKey: "feature_agent", descriptionKey: "feature_agent_desc", iconSystemName: "cpu.fill", gradient: [Color(hex: "a78bfa"), Color(hex: "ec4899")], route: "agent")
         ]
     }
+
 
     var body: some View {
         GeometryReader { geo in
@@ -172,15 +174,17 @@ struct HomeScreen: View {
                             
                             LazyVGrid(columns: toolsColumns, spacing: spacing) {
                                 ForEach(toolsFeatures + utilityFeatures, id: \.route) { feature in
+                                    let isLocked = !purchases.isPremium && feature.route == "agent"
                                     Button {
                                         onNavigateToRoute(feature.route)
                                     } label: {
-                                        SmallFeatureCardView(feature: feature)
+                                        SmallFeatureCardView(feature: feature, isLocked: isLocked)
                                             .frame(height: cardHeight)
                                     }
                                     .buttonStyle(.plain)
                                 }
                             }
+
                         }
                     }
                     .padding(.horizontal, horizontalPadding)
@@ -245,21 +249,34 @@ struct HomeScreen: View {
 struct SmallFeatureCardView: View {
     @EnvironmentObject var settings: AppSettings
     let feature: FeatureCard
+    var isLocked: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            ZStack {
-                Circle()
-                    .fill(.ultraThinMaterial)
-                    .frame(width: 36, height: 36)
-                    .overlay(
-                        Circle()
-                            .stroke(Color.white.opacity(0.24), lineWidth: 1)
-                    )
+            HStack {
+                ZStack {
+                    Circle()
+                        .fill(.ultraThinMaterial)
+                        .frame(width: 36, height: 36)
+                        .overlay(
+                            Circle()
+                                .stroke(Color.white.opacity(0.24), lineWidth: 1)
+                        )
 
-                Image(systemName: feature.iconSystemName)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
+                    Image(systemName: feature.iconSystemName)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                }
+
+                Spacer()
+
+                if isLocked {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(Color(hex: "FFD700"))
+                        .padding(6)
+                        .background(Color.black.opacity(0.4), in: Circle())
+                }
             }
 
             Text(settings.localized(feature.titleKey))
@@ -295,6 +312,7 @@ struct SmallFeatureCardView: View {
         .shadow(color: .black.opacity(0.25), radius: 6, x: 0, y: 4)
     }
 }
+
 
 struct HomeHeroCardView: View {
     @EnvironmentObject var settings: AppSettings

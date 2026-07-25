@@ -829,3 +829,30 @@
 "on_device_ai_engine" = "ON-DEVICE AI ENGINE";
 "secure_private" = "SECURE & PRIVATE";
 "language_chinese_traditional" = "繁體中文";
+
+// MARK: - Agent Feature
+"feature_agent" = "Agent";
+"feature_agent_desc" = "AI assistant with tools & actions";
+"premium_feature_agent" = "Agent – AI with tools & device actions";
+"agent_title" = "Agent";
+"agent_subtitle" = "Ask me anything — I can search, map, calendar & more";
+"agent_input_placeholder" = "Ask your agent…";
+"agent_voice_mode_system" = "System";
+"agent_voice_mode_whisper" = "Whisper";
+"agent_voice_mode_gemma" = "Gemma";
+"agent_tool_running" = "Running: %@";
+"agent_tool_success" = "Done";
+"agent_tool_failed" = "Failed";
+"agent_tool_confirm_title" = "Allow Action?";
+"agent_tool_confirm_body" = "The agent wants to: %@";
+"agent_tool_approve" = "Allow";
+"agent_tool_deny" = "Deny";
+"agent_no_model" = "Please download a model to use Agent";
+"agent_map_expand" = "View Full Map";
+"agent_settings_voice_mode" = "Voice Input Mode";
+"agent_settings_tools" = "Enabled Tools";
+"agent_shortcut_confirm" = "Run shortcut: %@";
+"agent_calendar_confirm" = "Create calendar event: %@";
+"agent_welcome_message" = "Hello! I am your AI Agent. I can search the web, display maps, manage calendar events, check weather, set alarms, send messages, and calculate hashes. How can I help you today?";
+"agent_no_model_android" = "Please download Gemma 4 E2/4B model first to use Agent";
+"agent_no_model_ios" = "Please download a model first to use Agent";

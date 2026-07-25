@@ -889,7 +889,39 @@
     <string name="gemma_voice_option">Gemma</string>
     <string name="llm_model_backend">LLM Model Backend</string>
     <string name="asr_model_backend">ASR Backend</string>
+
+    <!-- Agent Feature -->
+    <string name="feature_agent">Agent</string>
+    <string name="feature_agent_desc">AI assistant with tools &amp; actions</string>
+    <string name="premium_feature_agent">Agent – AI with tools &amp; device actions</string>
+    <string name="agent_title">Agent</string>
+    <string name="agent_subtitle">Ask me anything — I can search, map, calendar &amp; more</string>
+    <string name="agent_input_placeholder">Ask your agent…</string>
+    <string name="agent_voice_mode_system">System</string>
+    <string name="agent_voice_mode_whisper">Whisper</string>
+    <string name="agent_voice_mode_gemma">Gemma</string>
+    <string name="whisper_model_label">Whisper Model</string>
+    <string name="agent_tool_running">Running: %1$s</string>
+    <string name="agent_tool_success">Done</string>
+    <string name="agent_tool_failed">Failed</string>
+    <string name="agent_tool_confirm_title">Allow Action?</string>
+    <string name="agent_tool_confirm_body">The agent wants to: %1$s</string>
+    <string name="agent_tool_approve">Allow</string>
+    <string name="agent_tool_deny">Deny</string>
+    <string name="agent_no_model">Please download a model to use Agent</string>
+    <string name="agent_map_expand">View Full Map</string>
+    <string name="agent_settings_voice_mode">Voice Input Mode</string>
+    <string name="agent_settings_tools">Enabled Tools</string>
+    <string name="agent_enable_gemma_audio">Enable Gemma Audio (Voice Mode)</string>
+    <string name="agent_termux_toggle">Enable Termux Commands (advanced)</string>
+    <string name="agent_termux_confirm">Run terminal command: %1$s</string>
+    <string name="agent_calendar_confirm">Create calendar event: %1$s</string>
+    <string name="agent_shortcut_confirm">Run shortcut: %1$s</string>
+    <string name="agent_welcome_message">Hello! I am your AI Agent. I can search the web, display maps, manage calendar events, check weather, set alarms, send messages, and calculate hashes. How can I help you today?</string>
+    <string name="agent_no_model_android">Please download Gemma 4 E2/4B model first to use Agent</string>
+    <string name="agent_no_model_ios">Please download a model first to use Agent</string>
 </resources>
+
 
 
 

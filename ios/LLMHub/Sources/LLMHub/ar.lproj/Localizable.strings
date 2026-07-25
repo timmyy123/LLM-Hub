@@ -814,3 +814,31 @@
 "on_device_ai_engine" = "محرك الذكاء الاصطناعي على الجهاز";
 "secure_private" = "آمن وخاص";
 "language_chinese_traditional" = "繁體中文";
+
+// MARK: - Agent Feature
+"feature_agent" = "وكيل";
+"feature_agent_desc" = "مساعد ذكاء اصطناعي بأدوات وإجراءات";
+"premium_feature_agent" = "الوكيل – ذكاء اصطناعي بأدوات وإجراءات";
+"agent_title" = "وكيل";
+"agent_subtitle" = "اسألني عن أي شيء — أستطيع البحث والتعيين على الخريطة وإدارة التقويم والمزيد";
+"agent_input_placeholder" = "اسأل وكيلك…";
+"agent_voice_mode_system" = "النظام";
+"agent_voice_mode_whisper" = "Whisper";
+"agent_voice_mode_gemma" = "Gemma";
+"agent_tool_running" = "جارٍ التشغيل: %@";
+"agent_tool_success" = "تم";
+"agent_tool_failed" = "فشل";
+"agent_tool_confirm_title" = "السماح بالإجراء؟";
+"agent_tool_confirm_body" = "يريد الوكيل: %@";
+"agent_tool_approve" = "سماح";
+"agent_tool_deny" = "رفض";
+"agent_no_model" = "يرجى تنزيل نموذج لاستخدام الوكيل";
+"agent_map_expand" = "عرض الخريطة الكاملة";
+"agent_settings_voice_mode" = "وضع الإدخال الصوتي";
+"agent_settings_tools" = "الأدوات المفعّلة";
+"agent_shortcut_confirm" = "تشغيل الاختصار: %@";
+"agent_calendar_confirm" = "إنشاء حدث: %@";
+
+"agent_welcome_message" = "مرحباً! أنا وكيل الذكاء الاصطناعي الخاص بك. يمكنني البحث في الويب وعرض الخرائط وإدارة أحداث التقويم والتحقق من الطقس وضبط المنبهات وإرسال الرسائل وحساب التجزئة. كيف يمكنني مساعدتك اليوم؟";
+"agent_no_model_android" = "يرجى تنزيل نموذج Gemma 4 E2/4B أولاً لاستخدام الوكيل";
+"agent_no_model_ios" = "يرجى تنزيل نموذج أولاً لاستخدام الوكيل";

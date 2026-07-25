@@ -786,3 +786,31 @@
 "on_device_ai_engine" = "ON-DEVICE-KI-ENGINE";
 "secure_private" = "SICHER & PRIVAT";
 "language_chinese_traditional" = "繁體中文";
+
+// MARK: - Agent Feature
+"feature_agent" = "Agent";
+"feature_agent_desc" = "KI-Assistent mit Tools und Aktionen";
+"premium_feature_agent" = "Agent – KI mit Tools und Geräteaktionen";
+"agent_title" = "Agent";
+"agent_subtitle" = "Frag mich alles — ich kann suchen, kartieren, kalendarisieren und mehr";
+"agent_input_placeholder" = "Agenten fragen…";
+"agent_voice_mode_system" = "System";
+"agent_voice_mode_whisper" = "Whisper";
+"agent_voice_mode_gemma" = "Gemma";
+"agent_tool_running" = "Wird ausgeführt: %@";
+"agent_tool_success" = "Fertig";
+"agent_tool_failed" = "Fehlgeschlagen";
+"agent_tool_confirm_title" = "Aktion erlauben?";
+"agent_tool_confirm_body" = "Der Agent möchte: %@";
+"agent_tool_approve" = "Erlauben";
+"agent_tool_deny" = "Ablehnen";
+"agent_no_model" = "Bitte laden Sie ein Modell herunter, um den Agenten zu verwenden";
+"agent_map_expand" = "Vollkarte anzeigen";
+"agent_settings_voice_mode" = "Spracheingabemodus";
+"agent_settings_tools" = "Aktivierte Tools";
+"agent_shortcut_confirm" = "Verknüpfung ausführen: %@";
+"agent_calendar_confirm" = "Kalendereintrag erstellen: %@";
+
+"agent_welcome_message" = "Hallo! Ich bin Ihr KI-Agent. Ich kann im Web suchen, Karten anzeigen, Kalendertermine verwalten, das Wetter prüfen, Wecker stellen, Nachrichten senden und Hashes berechnen. Wie kann ich Ihnen heute helfen?";
+"agent_no_model_android" = "Bitte laden Sie zuerst das Modell Gemma 4 E2/4B herunter, um Agent zu verwenden";
+"agent_no_model_ios" = "Bitte laden Sie zuerst ein Modell herunter, um Agent zu verwenden";

@@ -814,3 +814,31 @@
 "on_device_ai_engine" = "موتور هوش مصنوعی روی دستگاه";
 "secure_private" = "امن و خصوصی";
 "language_chinese_traditional" = "繁體中文";
+
+// MARK: - Agent Feature
+"feature_agent" = "دستیار";
+"feature_agent_desc" = "دستیار هوش مصنوعی با ابزارها و اقدامات";
+"premium_feature_agent" = "دستیار – هوش مصنوعی با ابزارها و اقدامات";
+"agent_title" = "دستیار";
+"agent_subtitle" = "از من هر چیزی بپرس — می‌توانم جستجو، نقشه‌کشی، تقویم و بیشتر انجام دهم";
+"agent_input_placeholder" = "از دستیارت بپرس…";
+"agent_voice_mode_system" = "سیستم";
+"agent_voice_mode_whisper" = "Whisper";
+"agent_voice_mode_gemma" = "Gemma";
+"agent_tool_running" = "در حال اجرا: %@";
+"agent_tool_success" = "انجام شد";
+"agent_tool_failed" = "ناموفق";
+"agent_tool_confirm_title" = "اجازه به اقدام؟";
+"agent_tool_confirm_body" = "دستیار می‌خواهد: %@";
+"agent_tool_approve" = "اجازه";
+"agent_tool_deny" = "رد";
+"agent_no_model" = "لطفاً یک مدل دانلود کنید تا از دستیار استفاده کنید";
+"agent_map_expand" = "نمایش نقشه کامل";
+"agent_settings_voice_mode" = "حالت ورودی صوتی";
+"agent_settings_tools" = "ابزارهای فعال";
+"agent_shortcut_confirm" = "اجرای میانبر: %@";
+"agent_calendar_confirm" = "ایجاد رویداد: %@";
+
+"agent_welcome_message" = "سلام! من عامل هوش مصنوعی شما هستم. می‌توانم در وب جستجو کنم، نقشه‌ها را نشان دهم، رویدادهای تقویم را مدیریت کنم، آب و هوا را بررسی کنم، هشدارها را تنظیم کنم، پیام بفرستم و هش‌ها را محاسبه کنم. امروز چگونه می‌توانم به شما کمک کنم؟";
+"agent_no_model_android" = "لطفاً ابتدا مدل Gemma 4 E2/4B را دانلود کنید تا از عامل استفاده کنید";
+"agent_no_model_ios" = "لطفاً ابتدا یک مدل دانلود کنید تا از عامل استفاده کنید";

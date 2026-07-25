@@ -843,4 +843,34 @@
     <string name="gemma_voice_option">Gemma</string>
         <string name="asr_model_backend"></string>
     <string name="llm_model_backend">LLM-Modell-Backend</string>
+
+    <!-- Agent Feature -->
+    <string name="feature_agent">Agent</string>
+    <string name="feature_agent_desc">KI-Assistent mit Tools und Aktionen</string>
+    <string name="premium_feature_agent">Agent – KI mit Tools und Geräteaktionen</string>
+    <string name="agent_title">Agent</string>
+    <string name="agent_subtitle">Frag mich alles — ich kann suchen, kartieren, kalendarisieren und mehr</string>
+    <string name="agent_input_placeholder">Agenten fragen…</string>
+    <string name="agent_voice_mode_system">System</string>
+    <string name="agent_voice_mode_whisper">Whisper</string>
+    <string name="agent_voice_mode_gemma">Gemma</string>
+    <string name="agent_tool_running">Wird ausgeführt: %1$s</string>
+    <string name="agent_tool_success">Fertig</string>
+    <string name="agent_tool_failed">Fehlgeschlagen</string>
+    <string name="agent_tool_confirm_title">Aktion erlauben?</string>
+    <string name="agent_tool_confirm_body">Der Agent möchte: %1$s</string>
+    <string name="agent_tool_approve">Erlauben</string>
+    <string name="agent_tool_deny">Ablehnen</string>
+    <string name="agent_no_model">Bitte laden Sie ein Modell herunter, um den Agenten zu verwenden</string>
+    <string name="agent_map_expand">Vollkarte anzeigen</string>
+    <string name="agent_settings_voice_mode">Spracheingabemodus</string>
+    <string name="agent_settings_tools">Aktivierte Tools</string>
+    <string name="agent_termux_toggle">Termux-Befehle aktivieren (erweitert)</string>
+    <string name="agent_termux_confirm">Terminalbefehl ausführen: %1$s</string>
+    <string name="agent_calendar_confirm">Kalendereintrag erstellen: %1$s</string>
+    <string name="agent_shortcut_confirm">Verknüpfung ausführen: %1$s</string>
+    <string name="agent_welcome_message">Hallo! Ich bin Ihr KI-Agent. Ich kann im Web suchen, Karten anzeigen, Kalendertermine verwalten, das Wetter prüfen, Wecker stellen, Nachrichten senden und Hashes berechnen. Wie kann ich Ihnen heute helfen?</string>
+    <string name="agent_no_model_android">Bitte laden Sie zuerst das Modell Gemma 4 E2/4B herunter, um Agent zu verwenden</string>
+    <string name="agent_no_model_ios">Bitte laden Sie zuerst ein Modell herunter, um Agent zu verwenden</string>
 </resources>
+

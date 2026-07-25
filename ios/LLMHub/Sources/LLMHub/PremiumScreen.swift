@@ -157,8 +157,10 @@ struct PremiumScreen: View {
             // Feature list card
             VStack(spacing: 0) {
                 PremiumFeatureRow(icon: "square.and.arrow.up.fill", tint: Color(hex: "FFC107"), textKey: "premium_feature_import_models")
+                PremiumFeatureRow(icon: "cpu.fill",                 tint: Color(hex: "A78BFA"), textKey: "premium_feature_agent")
                 PremiumFeatureRow(icon: "sparkles",                 tint: Color(hex: "00BCD4"), textKey: "premium_feature_future", isLast: true)
             }
+
             .padding(20)
             .background(.ultraThinMaterial)
             .clipShape(RoundedRectangle(cornerRadius: 20))

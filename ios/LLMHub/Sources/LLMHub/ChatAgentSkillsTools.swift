@@ -1,6 +1,7 @@
 import Foundation
 import UIKit
 import CryptoKit
+import AVFoundation
 #if canImport(LiteRTLM)
 import LiteRTLM
 
@@ -16,6 +17,7 @@ You are a helpful AI assistant. You have access to the following tools:
 - send_email: Compose and open an email using the device's email app.
 - send_sms: Compose and open an SMS message using the device's messaging app.
 - open_map: Open a location in Apple Maps on the device.
+- toggle_flashlight: Turn the device flashlight (camera torch) ON or OFF.
 
 RULES:
 1. For factual questions, always use query_wikipedia first to ground your answer.
@@ -38,7 +40,8 @@ RULES:
             CalculateHashTool(),
             SendEmailTool(),
             SendSmsTool(),
-            OpenMapTool()
+            OpenMapTool(),
+            ToggleFlashlightTool()
         ]
     }
 }
@@ -235,6 +238,33 @@ public struct OpenMapTool: Tool {
             ChatAgentSkillsTools.deferredOpenURL = url
         }
         return ["result": "Apple Maps for '\(loc)' will be opened after this response. Done.", "status": "succeeded"]
+    }
+}
+
+// MARK: - Flashlight Tool
+
+public struct ToggleFlashlightTool: Tool {
+    public static let name = "toggle_flashlight"
+    public static let description = "Turn the device flashlight (camera torch) ON or OFF."
+
+    @ToolParam(description: "Set to 'true' to turn flashlight ON, or 'false' to turn flashlight OFF.")
+    public var enabled: String
+
+    public init() {}
+
+    public func run() async throws -> Any {
+        let isEnabled = enabled.lowercased() == "true" || enabled.lowercased() == "on" || enabled == "1"
+        guard let device = AVCaptureDevice.default(for: .video), device.hasTorch else {
+            return ["error": "Flashlight unavailable on this device.", "status": "failed"]
+        }
+        do {
+            try device.lockForConfiguration()
+            device.torchMode = isEnabled ? .on : .off
+            device.unlockForConfiguration()
+            return ["result": "Flashlight turned \(isEnabled ? "on" : "off").", "status": "succeeded"]
+        } catch {
+            return ["error": "Failed to toggle flashlight: \(error.localizedDescription)", "status": "failed"]
+        }
     }
 }
 

@@ -814,3 +814,31 @@
 "on_device_ai_engine" = "MESIN AI PADA PERANGKAT";
 "secure_private" = "AMAN & PRIVAT";
 "language_chinese_traditional" = "繁體中文";
+
+// MARK: - Agent Feature
+"feature_agent" = "Agen";
+"feature_agent_desc" = "Asisten AI dengan alat dan tindakan";
+"premium_feature_agent" = "Agen – AI dengan alat dan tindakan perangkat";
+"agent_title" = "Agen";
+"agent_subtitle" = "Tanyakan apa saja — saya bisa mencari, memetakan, menjadwalkan, dan lebih banyak lagi";
+"agent_input_placeholder" = "Tanya agen Anda…";
+"agent_voice_mode_system" = "Sistem";
+"agent_voice_mode_whisper" = "Whisper";
+"agent_voice_mode_gemma" = "Gemma";
+"agent_tool_running" = "Menjalankan: %@";
+"agent_tool_success" = "Selesai";
+"agent_tool_failed" = "Gagal";
+"agent_tool_confirm_title" = "Izinkan Tindakan?";
+"agent_tool_confirm_body" = "Agen ingin: %@";
+"agent_tool_approve" = "Izinkan";
+"agent_tool_deny" = "Tolak";
+"agent_no_model" = "Unduh model untuk menggunakan Agen";
+"agent_map_expand" = "Lihat Peta Lengkap";
+"agent_settings_voice_mode" = "Mode Input Suara";
+"agent_settings_tools" = "Alat yang Diaktifkan";
+"agent_shortcut_confirm" = "Jalankan pintasan: %@";
+"agent_calendar_confirm" = "Buat acara: %@";
+
+"agent_welcome_message" = "Halo! Saya Agen AI Anda. Saya dapat mencari di web, menampilkan peta, mengelola acara kalender, memeriksa cuaca, mengatur alarm, mengirim pesan, dan menghitung hash. Ada yang bisa saya bantu hari ini?";
+"agent_no_model_android" = "Silakan unduh model Gemma 4 E2/4B terlebih dahulu untuk menggunakan Agen";
+"agent_no_model_ios" = "Silakan unduh model terlebih dahulu untuk menggunakan Agen";

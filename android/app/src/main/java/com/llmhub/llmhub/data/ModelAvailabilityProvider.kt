@@ -14,7 +14,18 @@ object ModelAvailabilityProvider {
 
     suspend fun loadAvailableModels(context: Context, includeAsr: Boolean = false): List<LLMModel> = withContext(Dispatchers.IO) {
         val baseModels = ModelData.models
-            .filter { it.category != "embedding" && (includeAsr || it.category != "asr") }
+            .filter { model ->
+                // Exclude non-LLM model types — they must not count as available LLM models
+                model.category != "embedding" &&
+                model.category != "imageGeneration" &&
+                model.category != "videoGeneration" &&
+                model.category != "imageUpscale" &&
+                (includeAsr || model.category != "asr") &&
+                // Exclude GGUF vision projectors and dependency files (mmproj files are not LLMs)
+                !model.name.contains("mmproj", ignoreCase = true) &&
+                !model.name.contains("Vision Projector", ignoreCase = true) &&
+                !model.name.contains("projector", ignoreCase = true)
+            }
             .mapNotNull { model ->
                 resolveModelFromStorage(context, model)
             }
@@ -111,8 +122,15 @@ object ModelAvailabilityProvider {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val json = prefs.getString(IMPORTED_MODELS_KEY, null) ?: return emptyList()
             val imported = gson.fromJson(json, Array<LLMModel>::class.java)?.toList().orEmpty()
-            // Filter out image generation models (qnn_npu, mnn_cpu) - those are for Image Generator only
-            imported.filter { it.isDownloaded && it.category != "qnn_npu" && it.category != "mnn_cpu" }
+            // Filter out non-LLM models (qnn_npu, mnn_cpu, vision projectors)
+            imported.filter {
+                it.isDownloaded &&
+                it.category != "qnn_npu" &&
+                it.category != "mnn_cpu" &&
+                !it.name.contains("mmproj", ignoreCase = true) &&
+                !it.name.contains("Vision Projector", ignoreCase = true) &&
+                !it.name.contains("projector", ignoreCase = true)
+            }
         } catch (e: Exception) {
             Log.w("ModelAvailability", "Failed to load imported models: ${e.message}")
             emptyList()

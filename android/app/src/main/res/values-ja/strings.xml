@@ -875,7 +875,32 @@
     <string name="gemma_voice_option">Gemma</string>
         <string name="asr_model_backend"></string>
     <string name="llm_model_backend">LLMモデルのバックエンド</string>
+    <!-- Agent Feature -->
+    <string name="feature_agent">エージェント</string>
+    <string name="feature_agent_desc">ツールとアクションを持つAIアシスタント</string>
+    <string name="premium_feature_agent">エージェント – ツールとデバイスアクション付きAI</string>
+    <string name="agent_title">エージェント</string>
+    <string name="agent_subtitle">何でも聞いてください — 検索、地図、カレンダーなど対応できます</string>
+    <string name="agent_input_placeholder">エージェントに質問…</string>
+    <string name="agent_voice_mode_system">システム</string>
+    <string name="agent_voice_mode_whisper">Whisper</string>
+    <string name="agent_voice_mode_gemma">Gemma</string>
+    <string name="agent_tool_running">実行中: %1$s</string>
+    <string name="agent_tool_success">完了</string>
+    <string name="agent_tool_failed">失敗</string>
+    <string name="agent_tool_confirm_title">アクションを許可しますか?</string>
+    <string name="agent_tool_confirm_body">エージェントが次のことをしようとしています: %1$s</string>
+    <string name="agent_tool_approve">許可</string>
+    <string name="agent_tool_deny">拒否</string>
+    <string name="agent_no_model">エージェントを使用するにはモデルをダウンロードしてください</string>
+    <string name="agent_map_expand">フルマップを見る</string>
+    <string name="agent_settings_voice_mode">音声入力モード</string>
+    <string name="agent_settings_tools">有効なツール</string>
+    <string name="agent_termux_toggle">Termuxコマンドを有効にする（上級者向け）</string>
+    <string name="agent_termux_confirm">コマンドを実行: %1$s</string>
+    <string name="agent_calendar_confirm">イベントを作成: %1$s</string>
+    <string name="agent_shortcut_confirm">ショートカットを実行: %1$s</string>
+    <string name="agent_welcome_message">こんにちは！私はあなたのAIエージェントです。Web検索、マップ表示、カレンダーの予定管理、天気予報の確認、アラーム設定、メッセージ送信、ハッシュ計算ができます。本日はどのようなご用件でしょうか？</string>
+    <string name="agent_no_model_android">エージェントを使用するには、まずGemma 4 E2/4Bモデルをダウンロードしてください</string>
+    <string name="agent_no_model_ios">エージェントを使用するには、まずモデルをダウンロードしてください</string>
 </resources>
-
-
-

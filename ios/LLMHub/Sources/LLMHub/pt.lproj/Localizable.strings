@@ -771,3 +771,31 @@
 "on_device_ai_engine" = "MOTOR DE IA NO DISPOSITIVO";
 "secure_private" = "SEGURO E PRIVADO";
 "language_chinese_traditional" = "繁體中文";
+
+// MARK: - Agent Feature
+"feature_agent" = "Agente";
+"feature_agent_desc" = "Assistente IA com ferramentas e ações";
+"premium_feature_agent" = "Agente – IA com ferramentas e ações";
+"agent_title" = "Agente";
+"agent_subtitle" = "Pergunte-me qualquer coisa — posso pesquisar, mapear, agendar e mais";
+"agent_input_placeholder" = "Pergunte ao seu agente…";
+"agent_voice_mode_system" = "Sistema";
+"agent_voice_mode_whisper" = "Whisper";
+"agent_voice_mode_gemma" = "Gemma";
+"agent_tool_running" = "Executando: %@";
+"agent_tool_success" = "Concluído";
+"agent_tool_failed" = "Falhou";
+"agent_tool_confirm_title" = "Permitir ação?";
+"agent_tool_confirm_body" = "O agente quer: %@";
+"agent_tool_approve" = "Permitir";
+"agent_tool_deny" = "Negar";
+"agent_no_model" = "Faça download de um modelo para usar o Agente";
+"agent_map_expand" = "Ver mapa completo";
+"agent_settings_voice_mode" = "Modo de entrada de voz";
+"agent_settings_tools" = "Ferramentas ativadas";
+"agent_shortcut_confirm" = "Executar atalho: %@";
+"agent_calendar_confirm" = "Criar evento: %@";
+
+"agent_welcome_message" = "Olá! Sou o seu Agente de IA. Posso pesquisar na web, mostrar mapas, gerir eventos do calendário, ver o tempo, definir alarmes, enviar mensagens e calcular hashes. Como posso ajudar hoje?";
+"agent_no_model_android" = "Faça o download do modelo Gemma 4 E2/4B primeiro para usar o Agente";
+"agent_no_model_ios" = "Faça o download de um modelo primeiro para usar o Agente";

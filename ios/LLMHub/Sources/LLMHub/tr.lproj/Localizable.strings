@@ -814,3 +814,31 @@
 "on_device_ai_engine" = "CİHAZ ÜZERİ YAPAY ZEKA MOTORU";
 "secure_private" = "GÜVENLİ VE ÖZEL";
 "language_chinese_traditional" = "繁體中文";
+
+// MARK: - Agent Feature
+"feature_agent" = "Ajan";
+"feature_agent_desc" = "Araçlı ve etkili AI asistanı";
+"premium_feature_agent" = "Ajan – Cihaz araçları ve eylemleri olan AI";
+"agent_title" = "Ajan";
+"agent_subtitle" = "Bana her şeyi sorabilirsiniz — arama, harita, takvim ve daha fazlasını yapabilirim";
+"agent_input_placeholder" = "Ajanınıza sorun…";
+"agent_voice_mode_system" = "Sistem";
+"agent_voice_mode_whisper" = "Whisper";
+"agent_voice_mode_gemma" = "Gemma";
+"agent_tool_running" = "Çalışıyor: %@";
+"agent_tool_success" = "Tamamlandı";
+"agent_tool_failed" = "Başarısız";
+"agent_tool_confirm_title" = "Eyleme izin verilsin mi?";
+"agent_tool_confirm_body" = "Ajan yapmak istiyor: %@";
+"agent_tool_approve" = "İzin ver";
+"agent_tool_deny" = "Reddet";
+"agent_no_model" = "Ajanı kullanmak için bir model indirin";
+"agent_map_expand" = "Tam haritayı görüntüle";
+"agent_settings_voice_mode" = "Ses giriş modu";
+"agent_settings_tools" = "Etkin araçlar";
+"agent_shortcut_confirm" = "Kısayolu çalıştır: %@";
+"agent_calendar_confirm" = "Etkinlik oluştur: %@";
+
+"agent_welcome_message" = "Merhaba! Ben sizin Yapay Zeka Ajanınızım. Web'de arama yapabilir, haritaları gösterebilir, takvim etkinliklerini yönetebilir, hava durumunu kontrol edebilir, alarmlar kurabilir, mesaj gönderebilir ve hash hesaplayabilirim. Bugün size nasıl yardımcı olabilirim?";
+"agent_no_model_android" = "Ajanı kullanmak için lütfen önce Gemma 4 E2/4B modelini indirin";
+"agent_no_model_ios" = "Ajanı kullanmak için lütfen önce bir model indirin";
