@@ -162,7 +162,7 @@
 "language_persian" = "فارسی";
 "language_ukrainian" = "Українська";
 "language_hebrew" = "עברית";
-"language_chinese" = "中文";
+"language_chinese" = "繁體中文";
 "failed_to_load_image" = "Kan afbeelding";
 "model_loading_error" = "niet laden Fout bij laden van model";
 "message_send_error" = "Fout bij verzenden van bericht";
@@ -824,3 +824,4 @@
 
 "on_device_ai_engine" = "AI-MOTOR OP HET APPARAAT";
 "secure_private" = "VEILIG & PRIVÉ";
+"language_chinese_traditional" = "繁體中文";

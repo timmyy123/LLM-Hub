@@ -162,7 +162,7 @@
 "language_persian" = "فارسی";
 "language_ukrainian" = "Українська";
 "language_hebrew" = "עברית";
-"language_chinese" = "中文";
+"language_chinese" = "繁體中文";
 "failed_to_load_image" = "ไม่สามารถโหลดรูปภาพ";
 "model_loading_error" = "เกิดข้อผิดพลาดในการโหลดโมเดล";
 "message_send_error" = "เกิดข้อผิดพลาดในการส่งข้อความ";
@@ -824,3 +824,4 @@
 
 "on_device_ai_engine" = "เครื่องยนต์ AI บนอุปกรณ์";
 "secure_private" = "ปลอดภัยและเป็นส่วนตัว";
+"language_chinese_traditional" = "繁體中文";

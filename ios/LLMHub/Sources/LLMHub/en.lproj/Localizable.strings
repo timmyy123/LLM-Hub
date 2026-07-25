@@ -162,7 +162,7 @@
 "language_persian" = "فارسی";
 "language_ukrainian" = "Українська";
 "language_hebrew" = "עברית";
-"language_chinese" = "中文";
+"language_chinese" = "繁體中文";
 "failed_to_load_image" = "Failed to load image";
 "model_loading_error" = "Error loading model";
 "message_send_error" = "Error sending message";
@@ -831,3 +831,4 @@
 
 "on_device_ai_engine" = "ON-DEVICE AI ENGINE";
 "secure_private" = "SECURE & PRIVATE";
+"language_chinese_traditional" = "繁體中文";

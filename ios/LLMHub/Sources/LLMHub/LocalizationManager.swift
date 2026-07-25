@@ -28,6 +28,7 @@ enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
     case turkish = "tr"
     case ukrainian = "uk"
     case vietnamese = "vi"
+    case chineseTraditional = "zh-TW"
 
     var id: String { rawValue }
 
@@ -54,6 +55,7 @@ enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
         case .turkish: return "language_turkish"
         case .ukrainian: return "language_ukrainian"
         case .vietnamese: return "language_vietnamese"
+        case .chineseTraditional: return "language_chinese"
         }
     }
 
@@ -393,6 +395,8 @@ final class OnDeviceTtsManager: NSObject, ObservableObject, AVSpeechSynthesizerD
             return ["uk-UA", "uk"]
         case .vietnamese:
             return ["vi-VN", "vi"]
+        case .chineseTraditional:
+            return ["zh-TW", "zh-HK", "zh-Hant", "zh-Hant-TW"]
         }
     }
 
@@ -435,7 +439,9 @@ final class OnDeviceTtsManager: NSObject, ObservableObject, AVSpeechSynthesizerD
             return ["tr-TR", "tr"]
         case .ukrainian:
             return ["uk-UA", "uk"]
-        case .simplifiedChinese, .traditionalChinese:
+        case .traditionalChinese:
+            return ["zh-TW", "zh-HK", "zh-Hant"]
+        case .simplifiedChinese:
             return []
         default:
             let raw = dominantLanguage.rawValue

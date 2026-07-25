@@ -162,7 +162,7 @@
 "language_persian" = "فارسی";
 "language_ukrainian" = "Українська";
 "language_hebrew" = "עברית";
-"language_chinese" = "中文";
+"language_chinese" = "繁體中文";
 "failed_to_load_image" = "Không tải được hình ảnh";
 "model_loading_error" = "Lỗi tải mô hình";
 "message_send_error" = "Lỗi gửi tin nhắn";
@@ -824,3 +824,4 @@
 
 "on_device_ai_engine" = "ĐỘNG CƠ AI TRÊN THIẾT BỊ";
 "secure_private" = "AN TOÀN & RIÊNG TƯ";
+"language_chinese_traditional" = "繁體中文";
