@@ -22,7 +22,6 @@ import com.llmhub.llmhub.ui.theme.LlmHubTheme
 import com.llmhub.llmhub.viewmodels.ChatViewModelFactory
 import com.llmhub.llmhub.viewmodels.ThemeViewModel
 import com.llmhub.llmhub.utils.LocaleHelper
-import com.llmhub.llmhub.ads.ConsentManager
 
 class MainActivity : ComponentActivity() {
     private lateinit var themeViewModel: ThemeViewModel
@@ -64,13 +63,6 @@ class MainActivity : ComponentActivity() {
                 }
                 } // CompositionLocalProvider
             }
-        }
-
-        // Request EU consent AFTER setContent so the window is fully initialised.
-        // Using window.decorView.post ensures the view hierarchy is ready before
-        // the UMP SDK tries to attach its dialog.
-        window.decorView.post {
-            ConsentManager.requestConsentInfoUpdate(this)
         }
     }
     

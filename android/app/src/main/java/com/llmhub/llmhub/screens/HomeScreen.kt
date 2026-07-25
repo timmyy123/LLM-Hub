@@ -35,9 +35,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.repository.GithubRepository
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalContext
-import com.llmhub.llmhub.ads.BannerAd
 import com.llmhub.llmhub.data.ThemePreferences
 
 data class FeatureCard(
@@ -363,12 +361,6 @@ fun HomeScreen(
                                 }
                             }
                         }
-                    }
-                }
-
-                if (!isPremium && !isLandscapeLayout) {
-                    item {
-                        BannerAd(modifier = Modifier.fillMaxWidth())
                     }
                 }
 

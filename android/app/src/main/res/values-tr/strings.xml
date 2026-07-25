@@ -807,7 +807,6 @@
     <!-- Premium / IAP -->
     <string name="premium_title">LLM Hub Ömür Boyu Premium</string>
     <string name="premium_subtitle">Tam deneyimin kilidini aç</string>
-    <string name="premium_feature_no_ads">Hiç reklam yok</string>
     <string name="premium_feature_vibe_coder">VibeCoder – Yapay Zeka Kod Üreteci</string>
     <string name="premium_feature_image_gen">Görsel Üreteci – Cihazda Yapay Zeka Sanatı</string>
     <string name="premium_feature_tts">Otomatik Metinden Sese Okuma</string>
@@ -826,10 +825,7 @@
     <string name="premium_tap_to_unlock">Premium ile açmak için dokunun</string>
     <string name="premium_restore_success">Satın alma başarıyla geri yüklendi!</string>
     <string name="premium_restore_nothing">Önceki satın alma bulunamadı.</string>
-    <string name="premium_go_premium">Premium’a Geç</string>
-    <!-- Privacy &amp; Ads consent -->
-    <string name="privacy_ads_title">Gizlilik ve Reklamlar</string>
-    <string name="privacy_ads_subtitle">Reklam kişiselleştirme ve onay tercihlerini yönetin</string>    <string name="export">Dışa aktar</string>
+    <string name="premium_go_premium">Premium’a Geç</string>    <string name="export">Dışa aktar</string>
     <string name="home_section_tools">Araçlar</string>
     <string name="home_section_utilities">Yardımcılar</string>
     <string name="feature_vibevoice">Sesli sohbet</string>

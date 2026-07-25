@@ -774,7 +774,6 @@
     <!-- Premium / IAP -->
     <string name="premium_title">LLM Hub Premium Lifetime</string>
     <string name="premium_subtitle">Vollständige Erfahrung freischalten</string>
-    <string name="premium_feature_no_ads">Keine Werbung, nie</string>
     <string name="premium_feature_vibe_coder">VibeCoder – KI-Code-Generator</string>
     <string name="premium_feature_image_gen">Bildgenerator – KI-Kunst auf dem Gerät</string>
     <string name="premium_feature_tts">Text-zu-Sprache automatisch vorlesen</string>
@@ -794,10 +793,6 @@
     <string name="premium_restore_success">Kauf erfolgreich wiederhergestellt!</string>
     <string name="premium_restore_nothing">Kein früherer Kauf gefunden.</string>
     <string name="premium_go_premium">Premium werden</string>
-
-    <!-- Privacy &amp; Ads consent -->
-    <string name="privacy_ads_title">Datenschutz &amp; Werbung</string>
-    <string name="privacy_ads_subtitle">Werbe-Personalisierung und Einwilligungen verwalten</string>
     <string name="export">Exportieren</string>
     <string name="home_section_tools">Tools</string>
     <string name="home_section_utilities">Dienstprogramme</string>

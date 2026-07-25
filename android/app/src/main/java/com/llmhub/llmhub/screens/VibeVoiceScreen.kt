@@ -75,7 +75,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.llmhub.llmhub.LlmHubApplication
 import com.llmhub.llmhub.R
-import com.llmhub.llmhub.ads.BannerAd
 import com.llmhub.llmhub.components.ModelSelectorCard
 import com.llmhub.llmhub.ui.components.AudioInputService
 import com.llmhub.llmhub.ui.components.TtsService
@@ -524,14 +523,6 @@ fun VibeVoiceScreen(
                             }
                         }
                     }
-                }
-
-                if (!isPremium) {
-                    BannerAd(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                    )
                 }
             }
         }

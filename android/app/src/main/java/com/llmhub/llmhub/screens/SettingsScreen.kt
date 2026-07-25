@@ -42,7 +42,6 @@ import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.runtime.rememberCoroutineScope
 import android.net.Uri
-import com.llmhub.llmhub.ads.ConsentManager
 import com.llmhub.llmhub.embedding.RagServiceManager
 import com.llmhub.llmhub.utils.FileUtils
 import com.llmhub.llmhub.R
@@ -800,17 +799,6 @@ fun SettingsScreen(
                         title = stringResource(R.string.terms_of_service),
                         subtitle = stringResource(R.string.legal_terms_conditions),
                         onClick = onNavigateToTerms
-                    )
-
-                    // Privacy & Ads — shows AdMob consent form (visible to all users)
-                    val activity = context as? androidx.activity.ComponentActivity
-                    SettingsItem(
-                        icon = Icons.Default.PrivacyTip,
-                        title = stringResource(R.string.privacy_ads_title),
-                        subtitle = stringResource(R.string.privacy_ads_subtitle),
-                        onClick = {
-                            activity?.let { ConsentManager.showPrivacyOptionsForm(it) }
-                        }
                     )
                 }
             }

@@ -426,7 +426,6 @@
     <string name="drawer_my_creators">mine creAItors</string>
     <string name="premium_title">LLM Hub Premium Levetid</string>
     <string name="premium_subtitle">Lås op for den fulde oplevelse</string>
-    <string name="premium_feature_no_ads">Ingen annoncer, nogensinde</string>
     <string name="premium_feature_vibe_coder">VibeCoder – AI-kodebygger</string>
     <string name="premium_feature_image_gen">Image Generator – AI-kunst på enheden</string>
     <string name="premium_feature_tts">Tekst-til-tale automatisk udlæsning</string>
@@ -446,8 +445,6 @@
     <string name="premium_restore_success">Købet blev genoprettet!</string>
     <string name="premium_restore_nothing">Intet tidligere køb fundet.</string>
     <string name="premium_go_premium">Go Premium</string>
-    <string name="privacy_ads_title">Privatliv og annoncer</string>
-    <string name="privacy_ads_subtitle">Administrer din annoncetilpasning og dine samtykkevalg</string>
     <string name="vibe_coder_title">Vibecode</string>
     <string name="vibe_coder_prompt_label">Hvad vil du gerne kode?</string>
     <string name="vibe_coder_prompt_hint">Beskriv den kode du vil generere...</string>

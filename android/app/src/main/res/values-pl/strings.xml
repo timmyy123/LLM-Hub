@@ -812,7 +812,6 @@
     <!-- Premium / IAP -->
     <string name="premium_title">LLM Hub Premium na całe życie</string>
     <string name="premium_subtitle">Odblokuj pełne doświadczenie</string>
-    <string name="premium_feature_no_ads">Żadnych reklam, nigdy</string>
     <string name="premium_feature_vibe_coder">VibeCoder – Generator kodu AI</string>
     <string name="premium_feature_image_gen">Generator obrazów – sztuka AI na urządzeniu</string>
     <string name="premium_feature_tts">Automatyczne czytanie tekstu na głos</string>
@@ -832,10 +831,6 @@
     <string name="premium_restore_success">Zakup pomyślnie przywrócony!</string>
     <string name="premium_restore_nothing">Nie znaleziono poprzednich zakupów.</string>
     <string name="premium_go_premium">Przejdź na Premium</string>
-
-    <!-- Privacy &amp; Ads consent -->
-    <string name="privacy_ads_title">Prywatność i reklamy</string>
-    <string name="privacy_ads_subtitle">Zarządzaj personalizacją reklam i wyborami zgody</string>
     <string name="export">Eksportuj</string>
     <string name="home_section_tools">Narzędzia</string>
     <string name="home_section_utilities">Narzędzia pomocnicze</string>

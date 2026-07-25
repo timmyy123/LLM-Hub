@@ -808,7 +808,6 @@
     <!-- Premium / IAP -->
     <string name="premium_title">LLM Hub Premium مادام‌العمر</string>
     <string name="premium_subtitle">تجربه کامل را باز کنید</string>
-    <string name="premium_feature_no_ads">بدون تبلیغات، هرگز</string>
     <string name="premium_feature_vibe_coder">VibeCoder – مولد کد هوش مصنوعی</string>
     <string name="premium_feature_image_gen">مولد تصویر – هنر هوش مصنوعی روی دستگاه</string>
     <string name="premium_feature_tts">خواندن خودکار متن به گفتار</string>
@@ -828,10 +827,6 @@
     <string name="premium_restore_success">خرید با موفقیت بازیابی شد!</string>
     <string name="premium_restore_nothing">هیچ خرید قبلی یافت نشد.</string>
     <string name="premium_go_premium">رفتن به Premium</string>
-
-    <!-- Privacy &amp; Ads consent -->
-    <string name="privacy_ads_title">حریم خصوصی و تبلیغات</string>
-    <string name="privacy_ads_subtitle">مدیریت شخصی‌سازی تبلیغات و انتخاب‌های رضایت</string>
     <string name="export">صادر کردن</string>
     <string name="home_section_tools">ابزارها</string>
     <string name="home_section_utilities">ابزارهای کمکی</string>

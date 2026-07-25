@@ -810,7 +810,6 @@
     <!-- Premium / IAP -->
     <string name="premium_title">LLM Hub Premium Seumur Hidup</string>
     <string name="premium_subtitle">Buka pengalaman penuh</string>
-    <string name="premium_feature_no_ads">Tanpa iklan, selamanya</string>
     <string name="premium_feature_vibe_coder">VibeCoder – Generator kode AI</string>
     <string name="premium_feature_image_gen">Generator gambar – seni AI di perangkat</string>
     <string name="premium_feature_tts">Pembacaan otomatis teks ke suara</string>
@@ -830,10 +829,6 @@
     <string name="premium_restore_success">Pembelian berhasil dipulihkan!</string>
     <string name="premium_restore_nothing">Tidak ada pembelian sebelumnya ditemukan.</string>
     <string name="premium_go_premium">Pergi ke Premium</string>
-
-    <!-- Privacy &amp; Ads consent -->
-    <string name="privacy_ads_title">Privasi &amp; Iklan</string>
-    <string name="privacy_ads_subtitle">Kelola personalisasi iklan dan pilihan persetujuan Anda</string>
     <string name="export">Ekspor</string>
     <string name="home_section_tools">Alat</string>
     <string name="home_section_utilities">Utilitas</string>

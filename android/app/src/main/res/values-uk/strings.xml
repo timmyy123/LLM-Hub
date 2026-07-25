@@ -808,7 +808,6 @@
     <!-- Premium / IAP -->
     <string name="premium_title">LLM Hub Premium (Назавжди)</string>
     <string name="premium_subtitle">Відкрийте повний доступ</string>
-    <string name="premium_feature_no_ads">Ніякої реклами</string>
     <string name="premium_feature_vibe_coder">VibeCoder — генератор коду на ШІ</string>
     <string name="premium_feature_image_gen">Генератор зображень — ШІ-арт на пристрої</string>
     <string name="premium_feature_tts">Автоматичне озвучення тексту</string>
@@ -828,10 +827,6 @@
     <string name="premium_restore_success">Покупку успішно відновлено!</string>
     <string name="premium_restore_nothing">Попередніх покупок не знайдено.</string>
     <string name="premium_go_premium">Перейти на Premium</string>
-
-    <!-- Privacy &amp; Ads consent -->
-    <string name="privacy_ads_title">Конфіденційність і реклама</string>
-    <string name="privacy_ads_subtitle">Керуйте персоналізацією реклами та вибором згоди</string>
     <string name="export">Експорт</string>
     <string name="home_section_tools">Інструменти</string>
     <string name="home_section_utilities">Утиліти</string>

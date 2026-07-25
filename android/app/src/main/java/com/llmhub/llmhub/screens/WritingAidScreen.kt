@@ -27,7 +27,6 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.llmhub.llmhub.LlmHubApplication
-import com.llmhub.llmhub.ads.BannerAd
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.components.ModelSelectorCard
 import com.llmhub.llmhub.components.ThinkingAwareResultContent
@@ -517,9 +516,6 @@ fun WritingAidScreen(
                 color = MaterialTheme.colorScheme.surface
             ) {
                 Column {
-                if (!isPremium) {
-                    BannerAd(modifier = Modifier.fillMaxWidth())
-                }
                 if (isProcessing) {
                     // Show Cancel button while processing
                     OutlinedButton(

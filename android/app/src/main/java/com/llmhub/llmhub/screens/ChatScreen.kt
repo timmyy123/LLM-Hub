@@ -42,7 +42,6 @@ import com.llmhub.llmhub.ui.components.SectionHeader
 import com.llmhub.llmhub.viewmodels.ChatViewModel
 import com.llmhub.llmhub.viewmodels.ChatViewModelFactory
 import com.llmhub.llmhub.LlmHubApplication
-import com.llmhub.llmhub.ads.BannerAd
 import kotlinx.coroutines.launch
 import android.util.Log
 
@@ -415,11 +414,6 @@ fun ChatScreen(
                             isTtsSpeaking = isTtsSpeaking && currentTtsMessageId == message.id
                         )
                     }
-                }
-
-                // Banner ad for free users — sits above the message input
-                if (!appIsPremiumForSearch) {
-                    BannerAd(modifier = Modifier.fillMaxWidth())
                 }
 
                 // Message input

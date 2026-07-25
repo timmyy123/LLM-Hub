@@ -185,11 +185,6 @@ fun PremiumScreen(
                     ) {
                         Column(modifier = Modifier.padding(20.dp)) {
                             PremiumFeatureRow(
-                                icon = Icons.Default.Block,
-                                tint = Color(0xFFFF7043),
-                                text = stringResource(R.string.premium_feature_no_ads)
-                            )
-                            PremiumFeatureRow(
                                 icon = Icons.Default.Code,
                                 tint = Color(0xFF7C4DFF),
                                 text = stringResource(R.string.premium_feature_vibe_coder)

@@ -808,7 +808,6 @@
     <!-- Premium / IAP -->
     <string name="premium_title">LLM Hub Premium مدى الحياة</string>
     <string name="premium_subtitle">افتح التجربة الكاملة</string>
-    <string name="premium_feature_no_ads">لا إعلانات أبداً</string>
     <string name="premium_feature_vibe_coder">VibeCoder – مولّد كود بالذكاء الاصطناعي</string>
     <string name="premium_feature_image_gen">مولّد الصور – فن الذكاء الاصطناعي على الجهاز</string>
     <string name="premium_feature_tts">القراءة التلقائية نصّ إلى كلام</string>
@@ -828,10 +827,6 @@
     <string name="premium_restore_success">تمّ استعادة الشراء بنجاح!</string>
     <string name="premium_restore_nothing">لم يُعثر على مشتريات سابقة.</string>
     <string name="premium_go_premium">الانتقال إلى Premium</string>
-
-    <!-- Privacy &amp; Ads consent -->
-    <string name="privacy_ads_title">الخصوصية والإعلانات</string>
-    <string name="privacy_ads_subtitle">إدارة تخصيص الإعلانات وخيارات الموافقة</string>
     <string name="export">تصدير</string>
     <string name="home_section_tools">الأدوات</string>
     <string name="home_section_utilities">الأدوات المساعدة</string>

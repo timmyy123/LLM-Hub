@@ -73,9 +73,6 @@ fun LlmHubNavigation(
     val billingManager = (context.applicationContext as LlmHubApplication).billingManager
     val isPremium by billingManager.isPremium.collectAsState()
 
-    // Interstitial — only for free users
-    val interstitialAdManager = (context.applicationContext as LlmHubApplication).interstitialAdManager
-
     LaunchedEffect(isOnChatRoute) {
         if (wasOnChatRoute && !isOnChatRoute) {
             (context.applicationContext as? LlmHubApplication)?.inferenceService?.unloadModel()
@@ -153,13 +150,7 @@ fun LlmHubNavigation(
             val chatId = backStackEntry.arguments?.getString("chatId") ?: "new"
             val creatorId = backStackEntry.arguments?.getString("creatorId")
 
-            // Trigger interstitial ad for free users starting a new chat
-            LaunchedEffect(chatId) {
-                if (!isPremium && chatId == "new" && activity != null) {
-                    interstitialAdManager.onNewChatStarted(activity)
-                }
-            }
-            
+
             // We need to pass creatorId to ChatScreen/ViewModel somehow.
             // Since ChatScreen takes a ViewModel, we might need to update ChatScreen signature
             // or rely on ViewModel to handle "new" chat with params.

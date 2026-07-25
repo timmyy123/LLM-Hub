@@ -808,7 +808,6 @@
     <!-- Premium / IAP -->
     <string name="premium_title">LLM Hub Premium לכל החיים</string>
     <string name="premium_subtitle">פתח את החווייה המלאה</string>
-    <string name="premium_feature_no_ads">ללא פרסומות, לעולם</string>
     <string name="premium_feature_vibe_coder">VibeCoder – מחולל קוד AI</string>
     <string name="premium_feature_image_gen">מחולל תמונות – אמנות AI במכשיר</string>
     <string name="premium_feature_tts">קריאה אוטומטית טקסט לדיבור</string>
@@ -828,10 +827,6 @@
     <string name="premium_restore_success">הרכישה שוחזרה בהצלחה!</string>
     <string name="premium_restore_nothing">לא נמצאו רכישות קודמות.</string>
     <string name="premium_go_premium">עבור ל-Premium</string>
-
-    <!-- Privacy &amp; Ads consent -->
-    <string name="privacy_ads_title">פרטיות ומודעות</string>
-    <string name="privacy_ads_subtitle">נהל את התאמה אישית של מודעות ובחירות הסכמה</string>
     <string name="export">ייצוא</string>
     <string name="home_section_tools">כלים</string>
     <string name="home_section_utilities">כלי עזר</string>

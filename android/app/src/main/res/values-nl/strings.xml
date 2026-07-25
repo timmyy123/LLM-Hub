@@ -414,7 +414,6 @@
     <string name="drawer_my_creators">mijn creAItoren</string>
     <string name="premium_title">LLM Hub Premium Levenslang</string>
     <string name="premium_subtitle">Ontgrendel de volledige ervaring</string>
-    <string name="premium_feature_no_ads">Geen advertenties, ooit</string>
     <string name="premium_feature_vibe_coder">VibeCoder – AI-codebouwer</string>
     <string name="premium_feature_image_gen">Image Generator – AI-kunst op het apparaat</string>
     <string name="premium_feature_tts">Automatische voorlezing van tekst-naar-spraak</string>
@@ -434,8 +433,6 @@
     <string name="premium_restore_success">Aankoop succesvol hersteld!</string>
     <string name="premium_restore_nothing">Geen eerdere aankoop gevonden.</string>
     <string name="premium_go_premium">Ga voor Premium</string>
-    <string name="privacy_ads_title">Privacy en advertenties</string>
-    <string name="privacy_ads_subtitle">Beheer uw advertentiepersonalisatie en toestemmingskeuzes</string>
     <string name="vibe_coder_title">Vibecode</string>
     <string name="vibe_coder_prompt_label">Wat wil je coderen?</string>
     <string name="vibe_coder_prompt_hint">Beschrijf de code die u wilt genereren...</string>

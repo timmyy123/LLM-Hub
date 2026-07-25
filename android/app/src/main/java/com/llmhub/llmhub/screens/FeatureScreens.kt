@@ -37,7 +37,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.activity.ComponentActivity
 import coil.compose.AsyncImage
 import com.llmhub.llmhub.LlmHubApplication
-import com.llmhub.llmhub.ads.BannerAd
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.components.ModelSelectorCard
 import com.llmhub.llmhub.components.SelectableMarkdownText
@@ -1372,9 +1371,6 @@ fun TranslatorScreen(
                     color = MaterialTheme.colorScheme.surface
                 ) {
                     Column {
-                    if (!isPremium) {
-                        BannerAd(modifier = Modifier.fillMaxWidth())
-                    }
                     if (isTranslating) {
                         // Show Cancel button while translating
                         OutlinedButton(
@@ -1909,9 +1905,6 @@ fun TranscriberScreen(
                     color = MaterialTheme.colorScheme.surface
                 ) {
                     Column {
-                    if (!isPremium) {
-                        BannerAd(modifier = Modifier.fillMaxWidth())
-                    }
                     if (isTranscribing) {
                         // Show Cancel button while transcribing
                         OutlinedButton(
@@ -2004,7 +1997,6 @@ fun ScamDetectorScreen(
     val context = LocalContext.current
     val activity = context as ComponentActivity
     val isPremium by (context.applicationContext as LlmHubApplication).billingManager.isPremium.collectAsState(initial = false)
-    val rewardedAdManager = remember { (context.applicationContext as LlmHubApplication).rewardedAdManager }
     val keyboard = LocalSoftwareKeyboardController.current
     val clipboardManager = LocalClipboardManager.current
     val coroutineScope = rememberCoroutineScope()
@@ -2115,13 +2107,7 @@ fun ScamDetectorScreen(
                     isModelLoaded = isModelLoaded,
                     onModelSelected = { viewModel.selectModel(it) },
                     onBackendSelected = { backend, deviceId -> viewModel.selectBackend(backend, deviceId) },
-                    onLoadModel = {
-                        if (isPremium) {
-                            viewModel.loadModel()
-                        } else {
-                            rewardedAdManager.showAdOrGrant(activity) { viewModel.loadModel() }
-                        }
-                    },
+                    onLoadModel = { viewModel.loadModel() },
                     onUnloadModel = { viewModel.unloadModel() },
                     filterMultimodalOnly = false
                 )
@@ -2550,9 +2536,6 @@ fun ScamDetectorScreen(
                     color = MaterialTheme.colorScheme.surface
                 ) {
                     Column {
-                    if (!isPremium) {
-                        BannerAd(modifier = Modifier.fillMaxWidth())
-                    }
                     if (isAnalyzing) {
                         FilledTonalButton(
                             onClick = { viewModel.cancelAnalysis() },

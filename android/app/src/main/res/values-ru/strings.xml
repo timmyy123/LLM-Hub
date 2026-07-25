@@ -780,7 +780,6 @@
     <!-- Premium / IAP -->
     <string name="premium_title">LLM Hub Premium (Навсегда)</string>
     <string name="premium_subtitle">Откройте полный доступ</string>
-    <string name="premium_feature_no_ads">Никакой рекламы</string>
     <string name="premium_feature_vibe_coder">VibeCoder — генератор кода на ИИ</string>
     <string name="premium_feature_image_gen">Генератор изображений — ИИ-арт на устройстве</string>
     <string name="premium_feature_tts">Автоматическое озвучивание текста</string>
@@ -800,10 +799,6 @@
     <string name="premium_restore_success">Покупка успешно восстановлена!</string>
     <string name="premium_restore_nothing">Предыдущих покупок не найдено.</string>
     <string name="premium_go_premium">Перейти на Premium</string>
-
-    <!-- Privacy &amp; Ads consent -->
-    <string name="privacy_ads_title">Конфиденциальность и реклама</string>
-    <string name="privacy_ads_subtitle">Управление персонализацией рекламы и согласиями</string>
     <string name="export">Экспорт</string>
     <string name="home_section_tools">Инструменты</string>
     <string name="home_section_utilities">Утилиты</string>

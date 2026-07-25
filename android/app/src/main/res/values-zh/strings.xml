@@ -814,7 +814,6 @@
     <!-- Premium / IAP -->
     <string name="premium_title">LLM Hub 终身高级版</string>
     <string name="premium_subtitle">解锁完整体验</string>
-    <string name="premium_feature_no_ads">永久去广告</string>
     <string name="premium_feature_vibe_coder">代码生成器 – AI 代码构建</string>
     <string name="premium_feature_image_gen">图像生成器 – 设备端 AI 绘画</string>
     <string name="premium_feature_tts">文字转语音自动朗读</string>
@@ -834,10 +833,6 @@
     <string name="premium_restore_success">购买恢复成功！</string>
     <string name="premium_restore_nothing">未找到历史购买记录。</string>
     <string name="premium_go_premium">升级高级版</string>
-
-    <!-- Privacy &amp; Ads consent -->
-    <string name="privacy_ads_title">隐私与广告</string>
-    <string name="privacy_ads_subtitle">管理您的广告个性化和同意选项</string>
 
     <!-- Preserved new keys from current file -->
     <string name="export">导出</string>
