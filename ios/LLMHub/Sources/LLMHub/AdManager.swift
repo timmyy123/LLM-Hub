@@ -1,3 +1,4 @@
+import AppTrackingTransparency
 import Foundation
 @preconcurrency import GoogleMobileAds
 import SwiftUI
@@ -67,13 +68,44 @@ final class ConsentManager: ObservableObject {
         updatePrivacyOptionsRequired()
     }
 
+    // MARK: - App Tracking Transparency (ATT)
+
+    /// Requests App Tracking Transparency permission from the user if not already determined.
+    /// Triggered after the UMP consent flow completes or if UMP form is not required.
+    /// Skipped entirely for premium users (no ads or tracking).
+    func requestATTAuthorization() {
+        guard !PurchaseManager.shared.isPremium else {
+            NSLog("[ConsentManager] User is premium — skipping ATT tracking authorization request")
+            return
+        }
+        if #available(iOS 14, macOS 11, *) {
+            guard ATTrackingManager.trackingAuthorizationStatus == .notDetermined else {
+                NSLog("[ConsentManager] ATT status already determined: \(ATTrackingManager.trackingAuthorizationStatus.rawValue)")
+                return
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                guard !PurchaseManager.shared.isPremium else { return }
+                ATTrackingManager.requestTrackingAuthorization { status in
+                    NSLog("[ConsentManager] ATT tracking authorization status: \(status.rawValue)")
+                }
+            }
+        }
+    }
+
     // MARK: - On-Launch Request
 
     /// Request a consent info update and show the form if required.
     /// Safe to call on every launch — UMP throttles duplicate requests internally.
+    /// Skipped entirely for premium users (no ads or tracking).
     /// - Parameter debugGeography: Pass `true` to force the EEA consent dialog in
     ///   non-EU regions (for QA). Must be `false` in production builds.
     func requestConsentUpdate(debugGeography: Bool = false) {
+        guard !PurchaseManager.shared.isPremium else {
+            NSLog("[ConsentManager] User is premium — skipping UMP and ATT consent requests")
+            isConsentGathered = true
+            return
+        }
+
         let params = UMPRequestParameters()
         params.tagForUnderAgeOfConsent = false
 
@@ -87,9 +119,14 @@ final class ConsentManager: ObservableObject {
         UMPConsentInformation.sharedInstance.requestConsentInfoUpdate(with: params) { [weak self] error in
             Task { @MainActor [weak self] in
                 guard let self else { return }
+                guard !PurchaseManager.shared.isPremium else {
+                    self.isConsentGathered = true
+                    return
+                }
                 if let error {
                     NSLog("[ConsentManager] Info update failed: \(error)")
                     self.isConsentGathered = true
+                    self.requestATTAuthorization()
                     return
                 }
                 self.updatePrivacyOptionsRequired()
@@ -99,6 +136,7 @@ final class ConsentManager: ObservableObject {
                 } else {
                     let status = UMPConsentInformation.sharedInstance.consentStatus
                     self.isConsentGathered = (status == .obtained || status == .notRequired)
+                    self.requestATTAuthorization()
                 }
             }
         }
@@ -107,14 +145,23 @@ final class ConsentManager: ObservableObject {
     // MARK: - Load & Show Form (called internally after info update)
 
     private func loadAndShowFormIfRequired() {
+        guard !PurchaseManager.shared.isPremium else {
+            isConsentGathered = true
+            return
+        }
         guard let rootVC = rootViewController() else {
             NSLog("[ConsentManager] No root view controller — cannot show consent form")
             isConsentGathered = true
+            self.requestATTAuthorization()
             return
         }
         UMPConsentForm.loadAndPresentIfRequired(from: rootVC) { [weak self] error in
             Task { @MainActor [weak self] in
                 guard let self else { return }
+                guard !PurchaseManager.shared.isPremium else {
+                    self.isConsentGathered = true
+                    return
+                }
                 if let error {
                     NSLog("[ConsentManager] Form error: \(error)")
                 }
@@ -122,6 +169,7 @@ final class ConsentManager: ObservableObject {
                 self.isConsentGathered = (status == .obtained || status == .notRequired)
                 self.updatePrivacyOptionsRequired()
                 NSLog("[ConsentManager] Consent gathered: \(self.isConsentGathered), status: \(status.rawValue)")
+                self.requestATTAuthorization()
             }
         }
     }
@@ -130,8 +178,9 @@ final class ConsentManager: ObservableObject {
 
     /// Shows the privacy options form so the user can change/revoke consent.
     /// Only presents a form when `isPrivacyOptionsRequired == true` (EEA/GDPR regions).
-    /// Silently no-ops for users where consent is not required.
+    /// Silently no-ops for users where consent is not required or user is premium.
     func showPrivacyOptionsForm() {
+        guard !PurchaseManager.shared.isPremium else { return }
         guard let rootVC = rootViewController() else { return }
         UMPConsentForm.presentPrivacyOptionsForm(from: rootVC) { [weak self] error in
             Task { @MainActor [weak self] in
