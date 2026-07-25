@@ -166,7 +166,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
         _isGenerating.value = true
 
         viewModelScope.launch {
-            if (inferenceService.getCurrentlyLoadedModel() == null && !_isWebSearchEnabled.value) {
+            if (inferenceService.getCurrentlyLoadedModel() == null) {
                 val agentPrefs = getApplication<Application>().getSharedPreferences("agent_prefs", Context.MODE_PRIVATE)
                 val savedName = agentPrefs.getString("selected_model_name", "") ?: ""
                 val availableModels = ModelAvailabilityProvider.loadAvailableModels(getApplication())

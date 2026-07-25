@@ -80,7 +80,7 @@ public class AgentViewModel: ObservableObject {
 
         Task {
             // Lazy load model if not loaded yet
-            if !LLMBackend.shared.isLoaded, !isWebSearchEnabled {
+            if !LLMBackend.shared.isLoaded {
                 let savedName = UserDefaults.standard.string(forKey: "agent_model_name") ?? ""
                 if let modelToLoad = ModelData.allModels().first(where: { $0.name == savedName && ModelData.isModelFullyAvailableLocally($0) })
                     ?? ModelData.allModels().first(where: { ModelData.isModelFullyAvailableLocally($0) && !$0.isDependencyOnly && $0.category != .embedding && $0.category != .asr }) {
