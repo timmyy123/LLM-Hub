@@ -3,7 +3,10 @@ package com.llmhub.llmhub.agent
 import android.content.Context
 import android.content.Intent
 import android.hardware.camera2.CameraManager
+import android.location.Location
+import android.location.LocationListener
 import android.location.LocationManager
+import android.os.Bundle
 import android.net.Uri
 import android.provider.AlarmClock
 import android.provider.CalendarContract
@@ -56,24 +59,31 @@ RULES:
     // ─── Show Map (Nominatim Geocoding + In-App Map Data) ─────────────────────
 
     fun getUserLocation(): Pair<Double, Double>? {
-        // 1. Try system LocationManager providers
-        try {
-            val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-            val providers = listOf(
-                LocationManager.GPS_PROVIDER,
-                LocationManager.NETWORK_PROVIDER,
-                LocationManager.PASSIVE_PROVIDER,
-                "fused"
-            )
-            for (p in providers) {
-                try {
-                    val loc = lm.getLastKnownLocation(p)
-                    if (loc != null && loc.latitude != 0.0 && loc.longitude != 0.0) {
-                        return Pair(loc.latitude, loc.longitude)
-                    }
-                } catch (_: Exception) {}
-            }
-        } catch (_: Exception) {}
+        return runBlocking(Dispatchers.IO) {
+            // 1. Try system LocationManager providers
+            try {
+                val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+                val providers = listOf(
+                    LocationManager.GPS_PROVIDER,
+                    LocationManager.NETWORK_PROVIDER,
+                    LocationManager.PASSIVE_PROVIDER,
+                    "fused"
+                )
+                for (p in providers) {
+                    try {
+                        val loc = lm.getLastKnownLocation(p)
+                        if (loc != null && loc.latitude != 0.0 && loc.longitude != 0.0) {
+                            return@runBlocking Pair(loc.latitude, loc.longitude)
+                        }
+                    } catch (_: Exception) {}
+                }
+
+                // 2. Request active single GPS update from Android LocationManager
+                val activeLoc = requestActiveAndroidLocation(lm)
+                if (activeLoc != null) {
+                    return@runBlocking activeLoc
+                }
+            } catch (_: Exception) {}
 
         // 2. Fallback to ip-api.com (fast, free IP geolocation)
         try {
@@ -85,7 +95,7 @@ RULES:
             if (obj.optString("status") == "success") {
                 val lat = obj.optDouble("lat", Double.NaN)
                 val lon = obj.optDouble("lon", Double.NaN)
-                if (!lat.isNaN() && !lon.isNaN()) return Pair(lat, lon)
+                if (!lat.isNaN() && !lon.isNaN()) return@runBlocking Pair(lat, lon)
             }
         } catch (_: Exception) {}
 
@@ -98,7 +108,7 @@ RULES:
             val obj = org.json.JSONObject(json)
             val lat = obj.optDouble("latitude", Double.NaN)
             val lon = obj.optDouble("longitude", Double.NaN)
-            if (!lat.isNaN() && !lon.isNaN()) return Pair(lat, lon)
+            if (!lat.isNaN() && !lon.isNaN()) return@runBlocking Pair(lat, lon)
         } catch (_: Exception) {}
 
         // 4. Fallback to ipinfo.io
@@ -113,11 +123,55 @@ RULES:
                 val parts = locStr.split(",")
                 val lat = parts[0].toDoubleOrNull()
                 val lon = parts[1].toDoubleOrNull()
-                if (lat != null && lon != null) return Pair(lat, lon)
+                if (lat != null && lon != null) return@runBlocking Pair(lat, lon)
             }
         } catch (_: Exception) {}
 
-        return null
+        null
+        }
+    }
+
+    private fun requestActiveAndroidLocation(lm: LocationManager): Pair<Double, Double>? {
+        return try {
+            val provider = when {
+                lm.isProviderEnabled(LocationManager.GPS_PROVIDER) -> LocationManager.GPS_PROVIDER
+                lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER) -> LocationManager.NETWORK_PROVIDER
+                else -> null
+            } ?: return null
+
+            val latch = java.util.concurrent.CountDownLatch(1)
+            var result: Pair<Double, Double>? = null
+
+            val listener = object : LocationListener {
+                override fun onLocationChanged(loc: Location) {
+                    if (loc.latitude != 0.0 && loc.longitude != 0.0) {
+                        result = Pair(loc.latitude, loc.longitude)
+                        latch.countDown()
+                    }
+                }
+                override fun onStatusChanged(p: String?, s: Int, e: Bundle?) {}
+                override fun onProviderEnabled(p: String) {}
+                override fun onProviderDisabled(p: String) {}
+            }
+
+            val handler = android.os.Handler(android.os.Looper.getMainLooper())
+            handler.post {
+                try {
+                    lm.requestLocationUpdates(provider, 0L, 0f, listener, android.os.Looper.getMainLooper())
+                } catch (_: Exception) {
+                    latch.countDown()
+                }
+            }
+
+            latch.await(3, java.util.concurrent.TimeUnit.SECONDS)
+            handler.post {
+                try { lm.removeUpdates(listener) } catch (_: Exception) {}
+            }
+
+            result
+        } catch (_: Exception) {
+            null
+        }
     }
 
     private fun getCityNameFromCoords(lat: Double, lon: Double): String {
@@ -334,14 +388,38 @@ RULES:
 
     @Tool(description = "Get current weather conditions and forecast for a location.")
     fun getCurrentWeather(
-        @ToolParam(description = "City or location name (e.g., 'London', 'Tokyo', 'Berlin').") location: String
+        @ToolParam(description = "City or location name, or 'my location' for current location.") location: String
     ): Map<String, String> {
         return runBlocking(Dispatchers.IO) {
             try {
-                val clean = location.trim('(', ')', '"', '\'', ' ')
+                var clean = location.trim('(', ')', '"', '\'', ' ')
                 val lower = clean.lowercase()
-                val locQuery = if (lower.isBlank() || lower == "weather" || lower.contains("weather") || lower.contains("current location") || lower.contains("my location") || lower.contains("here") || lower.startsWith("location")) "" else clean
-                val encoded = URLEncoder.encode(locQuery, "UTF-8")
+                val isCurrentLoc = lower.isBlank() || lower == "query" || lower == "weather" || lower == "my location" ||
+                        lower == "current location" || lower == "here" || lower == "me" || lower == "nearby" || lower == "local" ||
+                        lower.contains("weather") || lower.contains("current location") || lower.contains("my location") || lower.contains("here")
+
+                val userLoc = if (isCurrentLoc) getUserLocation() else null
+
+                if (userLoc != null) {
+                    val lat = userLoc.first
+                    val lon = userLoc.second
+                    val cityName = getCityNameFromCoords(lat, lon).ifBlank { "Your location" }
+                    val urlStr = "https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&current_weather=true"
+                    val conn = URL(urlStr).openConnection()
+                    conn.connectTimeout = 6000
+                    conn.readTimeout = 6000
+                    val raw = conn.getInputStream().bufferedReader().use { it.readText() }
+                    val obj = org.json.JSONObject(raw)
+                    val current = obj.optJSONObject("current_weather")
+                    if (current != null) {
+                        val temp = current.optDouble("temperature", 0.0)
+                        val wind = current.optDouble("windspeed", 0.0)
+                        return@runBlocking mapOf("result" to "Weather in $cityName: ${temp}°C, Wind: ${wind} km/h.", "status" to "succeeded")
+                    }
+                }
+
+                val queryLoc = if (isCurrentLoc) "" else clean
+                val encoded = URLEncoder.encode(queryLoc, "UTF-8")
                 val urlStr = "https://wttr.in/$encoded?format=3"
                 val conn = URL(urlStr).openConnection()
                 conn.connectTimeout = 6000

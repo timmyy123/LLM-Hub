@@ -352,13 +352,14 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                 - send_email(recipient: "email address or contact name", subject: "subject line", body: "email body text"): Open email app to compose an email.
                 - send_sms(recipient: "contact name or phone number", body: "SMS text content"): Open SMS app to send a text message.
                 - add_calendar_event(title: "event title", date: "event date/time"): Add an event to device calendar.
-                - check_weather(location: "city/location"): Look up weather forecast.
+                - check_weather(location: "city or 'my location'"): Check weather forecast for a specified city or the user's current location (e.g. "my location", "Tokyo", "London").
                 - set_alarm(time: "time e.g. 7:00 AM", label: "alarm label"): Set an alarm on device.
                 - toggle_flashlight(enabled: "true" or "false"): Turn flashlight ON or OFF.
 
                 Instructions:
                 - ALWAYS call a tool when the user asks to perform an action supported by the tools.
                 - For any request to find, show, search for, or locate a place, business, venue, address, or directions (e.g. "find bar near me"), YOU MUST call show_map.
+                - For any request about weather (e.g. "How's the weather", "Is it cold outside?"), YOU MUST call check_weather(location: "my location").
                 - Output tool calls in this format ONLY:
                 [TOOL: tool_name(arguments)]
 
@@ -541,8 +542,8 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                 cleanVal = cleanVal.substring(lowerKey.length + 1).trim('"', '\'', ' ')
             }
             val lower = cleanVal.lowercase()
-            if (key == "location" && (lower.contains("weather") || lower.contains("current location") || lower.contains("here") || lower.contains("my location"))) {
-                return "Melbourne"
+            if (key == "location" && (lower == "query" || lower.contains("weather") || lower.contains("current location") || lower.contains("here") || lower.contains("my location"))) {
+                return "my location"
             }
             return cleanVal
         }
@@ -555,8 +556,8 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
         val toolId = UUID.randomUUID().toString()
 
         if (lower.contains("weather") || lower.contains("forecast") || lower.contains("temperature")) {
-            addMessage(AgentMessage.ToolCall(callId = toolId, toolName = "check_weather", args = "Melbourne", status = AgentMessage.ToolCall.Status.RUNNING))
-            val resMap = toolSet.getCurrentWeather("Melbourne")
+            addMessage(AgentMessage.ToolCall(callId = toolId, toolName = "check_weather", args = "my location", status = AgentMessage.ToolCall.Status.RUNNING))
+            val resMap = toolSet.getCurrentWeather("my location")
             val result = resMap["result"] as? String ?: resMap["error"] as? String ?: "Weather information."
             val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
             updateToolCall(toolId, status, result)

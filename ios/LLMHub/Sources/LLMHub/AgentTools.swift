@@ -333,9 +333,10 @@ public class AgentLocationHelper: NSObject, @preconcurrency CLLocationManagerDel
     public static let shared = AgentLocationHelper()
     private let manager = CLLocationManager()
     public var lastLocation: CLLocationCoordinate2D?
+    private var locationContinuations: [CheckedContinuation<CLLocationCoordinate2D?, Never>] = []
 
     public var currentCoordinate: CLLocationCoordinate2D? {
-        if let loc = manager.location?.coordinate {
+        if let loc = manager.location?.coordinate, loc.latitude != 0 && loc.longitude != 0 {
             return loc
         }
         return lastLocation
@@ -345,13 +346,109 @@ public class AgentLocationHelper: NSObject, @preconcurrency CLLocationManagerDel
         super.init()
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyBest
-        manager.requestWhenInUseAuthorization()
+        manager.distanceFilter = kCLDistanceFilterNone
+        if manager.authorizationStatus == .notDetermined {
+            manager.requestWhenInUseAuthorization()
+        }
         manager.startUpdatingLocation()
     }
 
+    public func requestGPSCoordinate() async -> CLLocationCoordinate2D? {
+        if let coord = currentCoordinate {
+            return coord
+        }
+
+        if manager.authorizationStatus == .notDetermined {
+            manager.requestWhenInUseAuthorization()
+        }
+
+        manager.startUpdatingLocation()
+        manager.requestLocation()
+
+        return await withCheckedContinuation { continuation in
+            if let coord = self.currentCoordinate {
+                continuation.resume(returning: coord)
+            } else {
+                self.locationContinuations.append(continuation)
+                Task { @MainActor [weak self] in
+                    try? await Task.sleep(nanoseconds: 3_500_000_000)
+                    guard let self = self else { return }
+                    if let idx = self.locationContinuations.firstIndex(where: { $0 as AnyObject === continuation as AnyObject }) {
+                        let c = self.locationContinuations.remove(at: idx)
+                        c.resume(returning: self.lastLocation)
+                    }
+                }
+            }
+        }
+    }
+
+    public func getBestCoordinate() async -> CLLocationCoordinate2D? {
+        // 1. Actively request & wait for real iOS CoreLocation hardware GPS fix
+        if let gpsCoord = await requestGPSCoordinate() {
+            return gpsCoord
+        }
+
+        // 2. IP Geolocation Fallback 1: ip-api.com
+        if let url = URL(string: "http://ip-api.com/json"),
+           let (data, _) = try? await URLSession.shared.data(from: url),
+           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let status = json["status"] as? String, status == "success",
+           let lat = json["lat"] as? Double, let lon = json["lon"] as? Double {
+            let coord = CLLocationCoordinate2D(latitude: lat, longitude: lon)
+            lastLocation = coord
+            return coord
+        }
+
+        // 3. IP Geolocation Fallback 2: ipapi.co
+        if let url = URL(string: "https://ipapi.co/json/"),
+           let (data, _) = try? await URLSession.shared.data(from: url),
+           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let lat = json["latitude"] as? Double, let lon = json["longitude"] as? Double {
+            let coord = CLLocationCoordinate2D(latitude: lat, longitude: lon)
+            lastLocation = coord
+            return coord
+        }
+
+        // 4. IP Geolocation Fallback 3: ipinfo.io
+        if let url = URL(string: "https://ipinfo.io/json"),
+           let (data, _) = try? await URLSession.shared.data(from: url),
+           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let locStr = json["loc"] as? String {
+            let parts = locStr.components(separatedBy: ",")
+            if parts.count == 2, let lat = Double(parts[0]), let lon = Double(parts[1]) {
+                let coord = CLLocationCoordinate2D(latitude: lat, longitude: lon)
+                lastLocation = coord
+                return coord
+            }
+        }
+
+        return nil
+    }
+
     public func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        if let loc = locations.last {
-            lastLocation = loc.coordinate
+        if let loc = locations.last?.coordinate, loc.latitude != 0 && loc.longitude != 0 {
+            lastLocation = loc
+            let continuations = locationContinuations
+            locationContinuations.removeAll()
+            for c in continuations {
+                c.resume(returning: loc)
+            }
+        }
+    }
+
+    public func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        print("LocationManager error: \(error)")
+        let continuations = locationContinuations
+        locationContinuations.removeAll()
+        for c in continuations {
+            c.resume(returning: lastLocation)
+        }
+    }
+
+    public func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        if manager.authorizationStatus == .authorizedWhenInUse || manager.authorizationStatus == .authorizedAlways {
+            manager.startUpdatingLocation()
+            manager.requestLocation()
         }
     }
 }
@@ -407,7 +504,7 @@ public class AgentLocationHelper: NSObject, @preconcurrency CLLocationManagerDel
     /// Uses MKLocalSearch with a 15km radius, falling back to Nominatim viewbox.
     @MainActor
     public func geocodeNearby(category: String) async -> (Double, Double, String)? {
-        guard let coord = AgentLocationHelper.shared.currentCoordinate else { return nil }
+        guard let coord = await AgentLocationHelper.shared.getBestCoordinate() else { return nil }
         let query = category.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { return nil }
 
@@ -488,17 +585,45 @@ public class AgentLocationHelper: NSObject, @preconcurrency CLLocationManagerDel
         if let firstQuote = clean.firstIndex(of: "\""), let lastQuote = clean.lastIndex(of: "\""), firstQuote < lastQuote {
             clean = String(clean[clean.index(after: firstQuote)..<lastQuote])
         }
-        
+
         let lower = clean.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-        let queryLoc: String
-        if lower.isEmpty || lower == "weather" || lower.contains("weather") || lower.contains("current location") || lower.contains("my location") || lower.contains("here") || lower.hasPrefix("location") {
-            queryLoc = "Melbourne"
-        } else {
-            queryLoc = clean
+        let isCurrentLocationQuery = lower.isEmpty || lower == "query" || lower == "weather" || lower == "my location" ||
+            lower == "current location" || lower == "here" || lower == "me" || lower == "nearby" || lower == "local" ||
+            lower.contains("weather") || lower.contains("current location") || lower.contains("my location") || lower.contains("here")
+
+        var targetLat: Double?
+        var targetLon: Double?
+        var targetName: String?
+
+        if isCurrentLocationQuery {
+            if let coord = await AgentLocationHelper.shared.getBestCoordinate() {
+                targetLat = coord.latitude
+                targetLon = coord.longitude
+            }
         }
 
-        guard let (lat, lon, name) = await geocodeLocation(queryLoc) else {
+        if targetLat == nil || targetLon == nil {
+            if !isCurrentLocationQuery, let (lat, lon, name) = await geocodeLocation(clean) {
+                targetLat = lat
+                targetLon = lon
+                targetName = name
+            } else if let coord = await AgentLocationHelper.shared.getBestCoordinate() {
+                targetLat = coord.latitude
+                targetLon = coord.longitude
+            }
+        }
+
+        guard let lat = targetLat, let lon = targetLon else {
             return "Could not determine location for weather check."
+        }
+
+        let name: String
+        if let targetName = targetName {
+            name = targetName
+        } else if let rev = await geocodeReverse(lat: lat, lon: lon) {
+            name = rev
+        } else {
+            name = "your location"
         }
         let urlStr = "https://api.open-meteo.com/v1/forecast?latitude=\(lat)&longitude=\(lon)&current_weather=true"
         guard let url = URL(string: urlStr),
@@ -510,6 +635,16 @@ public class AgentLocationHelper: NSObject, @preconcurrency CLLocationManagerDel
             return "Weather info for '\(name)' is currently unavailable."
         }
         return "Weather in \(name): \(temp)°C, Wind: \(wind) km/h."
+    }
+
+    @MainActor
+    private func geocodeReverse(lat: Double, lon: Double) async -> String? {
+        let loc = CLLocation(latitude: lat, longitude: lon)
+        let geocoder = CLGeocoder()
+        if let placemarks = try? await geocoder.reverseGeocodeLocation(loc), let pm = placemarks.first {
+            return pm.locality ?? pm.subAdministrativeArea ?? pm.name
+        }
+        return nil
     }
 
     private func parseTimeComponents(from text: String) -> DateComponents {

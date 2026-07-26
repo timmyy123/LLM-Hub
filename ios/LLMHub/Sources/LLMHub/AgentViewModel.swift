@@ -197,13 +197,14 @@ public class AgentViewModel: ObservableObject {
         - send_email(recipient: "email address or contact name", subject: "subject line", body: "email body text"): Open email app to compose an email.
         - send_sms(recipient: "contact name or phone number", body: "SMS text content"): Open SMS app to send a text message.
         - add_calendar_event(title: "event title", date: "event date/time"): Add an event to device calendar.
-        - check_weather(location: "city/location"): Look up weather forecast.
+        - check_weather(location: "city or 'my location'"): Check weather forecast for a specified city or the user's current location (e.g. "my location", "Tokyo", "London").
         - set_alarm(time: "time e.g. 7:00 AM", label: "alarm label"): Set an alarm on device.
         - toggle_flashlight(enabled: "true" or "false"): Turn flashlight ON or OFF.
 
         Instructions:
         - ALWAYS call a tool when the user asks to perform an action supported by the tools.
         - For any request to find, show, search for, or locate a place, business, venue, address, or directions (e.g. "find bar near me"), YOU MUST call show_map.
+        - For any request about weather (e.g. "How's the weather", "Is it cold outside?"), YOU MUST call check_weather(location: "my location").
         - Output tool calls in this format ONLY:
         [TOOL: tool_name(arguments)]
 
@@ -418,8 +419,8 @@ public class AgentViewModel: ObservableObject {
             }
 
             let lower = cleanVal.lowercased()
-            if key == "location" && (lower.contains("weather") || lower.contains("current location") || lower.contains("here") || lower.contains("my location")) {
-                return "Melbourne"
+            if key == "location" && (lower == "query" || lower.contains("weather") || lower.contains("current location") || lower.contains("here") || lower.contains("my location")) {
+                return "my location"
             }
             return cleanVal
         }
@@ -436,8 +437,8 @@ public class AgentViewModel: ObservableObject {
         let toolId = UUID().uuidString
 
         if lower.contains("weather") || lower.contains("forecast") || lower.contains("temperature") {
-            messages.append(.toolCall(id: toolId, name: "check_weather", args: "Melbourne", status: .running, result: nil))
-            let weatherResult = await AgentTools.shared.checkWeather(location: "Melbourne")
+            messages.append(.toolCall(id: toolId, name: "check_weather", args: "my location", status: .running, result: nil))
+            let weatherResult = await AgentTools.shared.checkWeather(location: "my location")
             updateToolCall(id: toolId, status: .success, result: weatherResult)
             messages.append(.text(id: UUID().uuidString, sender: .agent, content: weatherResult, timestamp: Date()))
         } else if lower.contains("map") || lower.contains("where is") || lower.contains("find") || lower.contains("direction") {
