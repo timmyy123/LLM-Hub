@@ -337,10 +337,29 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
 
             val response = responseBuilder.toString()
             val toolMatch = parseToolCall(response)
+            val cleanText = response
+                .replace(Regex("""\[TOOL:[^\]]+\]""", RegexOption.IGNORE_CASE), "")
+                .replace(Regex("""(?:SHOW_MAP|SEND_SMS|ADD_CALENDAR_EVENT|CREATE_CALENDAR_EVENT|CHECK_WEATHER|GET_CURRENT_WEATHER|SET_ALARM|TOGGLE_FLASHLIGHT|CALCULATE_HASH|SEND_EMAIL)\([^)]*\)""", RegexOption.IGNORE_CASE), "")
+                .trim()
+
             if (toolMatch != null) {
-                handleParsedToolCall(toolMatch, prompt)
+                val isAskingQuestion = cleanText.trim().endsWith("?") ||
+                    cleanText.lowercase().contains("what date") ||
+                    cleanText.lowercase().contains("which date") ||
+                    cleanText.lowercase().contains("what time") ||
+                    cleanText.lowercase().contains("which time") ||
+                    cleanText.lowercase().contains("specific date")
+
+                if (cleanText.isNotBlank()) {
+                    addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = cleanText))
+                }
+                if (!isAskingQuestion) {
+                    handleParsedToolCall(toolMatch, prompt)
+                }
             } else {
-                addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = response))
+                if (cleanText.isNotBlank()) {
+                    addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = cleanText))
+                }
             }
         } else {
             // Model not loaded fallback: execute direct tool requests semantically
@@ -350,9 +369,23 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
 
     private data class ParsedTool(val name: String, val args: String)
 
+    private fun parseAlarmTime(text: String): Pair<Int, Int> {
+        val lower = text.lowercase()
+        val timeMatch = Regex("""(\d{1,2})(?::(\d{2}))?\s*(am|pm)?""").find(lower)
+        if (timeMatch != null) {
+            var hour = timeMatch.groupValues[1].toIntOrNull() ?: 8
+            val min = timeMatch.groupValues[2].toIntOrNull() ?: 0
+            val ampm = timeMatch.groupValues[3].ifEmpty { null }
+            if (ampm == "pm" && hour < 12) hour += 12
+            if (ampm == "am" && hour == 12) hour = 0
+            return Pair(hour.coerceIn(0, 23), min.coerceIn(0, 59))
+        }
+        return Pair(8, 0)
+    }
+
     private fun parseToolCall(text: String): ParsedTool? {
         val clean = text.trim()
-        val regex = Regex("""(?:\[|\b)(TOOL:|SHOW_MAP|SEND_SMS|ADD_CALENDAR_EVENT|CREATE_CALENDAR_EVENT|CHECK_WEATHER|GET_CURRENT_WEATHER|SET_ALARM|TOGGLE_FLASHLIGHT|CALCULATE_HASH|SEND_EMAIL)[:(](.+)[\])]?""", RegexOption.IGNORE_CASE)
+        val regex = Regex("""(?:\[|\b)(TOOL:|SHOW_MAP|SEND_SMS|ADD[./_]CALENDAR[./_]EVENT|CREATE[./_]CALENDAR[./_]EVENT|CHECK[./_]WEATHER|GET[./_]CURRENT[./_]WEATHER|SET[./_]ALARM|TOGGLE[./_]FLASHLIGHT|CALCULATE[./_]HASH|SEND[./_]EMAIL)[:(](.+)[\])]?""", RegexOption.IGNORE_CASE)
         val match = regex.find(clean) ?: return null
         val fullMatch = match.groupValues[0].trim('[', ']', ' ')
 
@@ -380,14 +413,19 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
             if (inner != null) return inner
         }
 
-        return ParsedTool(name.lowercase(), argsStr)
+        val normalizedName = name.replace(".", "_").replace("/", "_").lowercase()
+        return ParsedTool(normalizedName, argsStr)
     }
 
     private suspend fun handleParsedToolCall(tool: ParsedTool, originalPrompt: String) {
         val toolId = UUID.randomUUID().toString()
         addMessage(AgentMessage.ToolCall(callId = toolId, toolName = tool.name, args = tool.args, status = AgentMessage.ToolCall.Status.RUNNING))
 
-        when (tool.name.lowercase()) {
+        // Reroute calendar tool calls to set_alarm if prompt or title specifies alarm
+        val isAlarmIntent = originalPrompt.contains("alarm", ignoreCase = true) || tool.args.contains("alarm", ignoreCase = true)
+        val effectiveToolName = if (isAlarmIntent && (tool.name.contains("calendar") || tool.name.contains("event"))) "set_alarm" else tool.name.lowercase()
+
+        when (effectiveToolName) {
             "show_map" -> {
                 val cleanLoc = extractArgValue(tool.args, "location") ?: tool.args.trim('"', '\'', ' ')
                 val resMap = toolSet.showMap(cleanLoc)
@@ -423,7 +461,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                 updateToolCall(toolId, status, result)
                 addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = result))
             }
-            "add_calendar_event", "create_calendar_event" -> {
+            "add_calendar_event", "create_calendar_event", "add_calendar_event" -> {
                 val title = extractArgValue(tool.args, "title") ?: tool.args.split(",").firstOrNull()?.trim('"', '\'', ' ') ?: "New Event"
                 val loc = extractArgValue(tool.args, "location") ?: ""
                 val resMap = toolSet.createCalendarEvent(title, loc, "")
@@ -441,8 +479,10 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                 addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = result))
             }
             "set_alarm" -> {
-                val label = extractArgValue(tool.args, "label") ?: "Alarm"
-                val resMap = toolSet.setAlarm(8, 0, label)
+                val label = extractArgValue(tool.args, "label") ?: extractArgValue(tool.args, "title") ?: "Alarm"
+                val timeStr = extractArgValue(tool.args, "time") ?: extractArgValue(tool.args, "date") ?: tool.args
+                val (hour, min) = parseAlarmTime("$timeStr $originalPrompt")
+                val resMap = toolSet.setAlarm(hour, min, label)
                 val result = resMap["result"] as? String ?: resMap["error"] as? String ?: "Alarm set."
                 val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
                 updateToolCall(toolId, status, result)
@@ -463,14 +503,18 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun extractArgValue(args: String, key: String): String? {
-        val regex = Regex("""$key\s*(?:=\s*|\(\s*)"([^"]+)"|$key\s*(?:=\s*|\(\s*)'([^']+)'|$key\s*=\s*([^,\s)]+)""", RegexOption.IGNORE_CASE)
+        val regex = Regex("""$key\s*(?:=\s*|:\s*|\(\s*)"([^"]+)"|$key\s*(?:=\s*|:\s*|\(\s*)'([^']+)'|$key\s*(?:=\s*|:\s*)\s*([^,\s)]+)""", RegexOption.IGNORE_CASE)
         val match = regex.find(args)
         val raw = match?.groupValues?.get(1)?.ifEmpty { null }
             ?: match?.groupValues?.get(2)?.ifEmpty { null }
             ?: match?.groupValues?.get(3)?.ifEmpty { null }
 
         if (raw != null) {
-            val cleanVal = raw.trim('"', '\'', ' ')
+            var cleanVal = raw.trim('"', '\'', ' ')
+            val lowerKey = key.lowercase()
+            if (cleanVal.lowercase().startsWith("$lowerKey:")) {
+                cleanVal = cleanVal.substring(lowerKey.length + 1).trim('"', '\'', ' ')
+            }
             val lower = cleanVal.lowercase()
             if (key == "location" && (lower.contains("weather") || lower.contains("current location") || lower.contains("here") || lower.contains("my location"))) {
                 return "Melbourne"

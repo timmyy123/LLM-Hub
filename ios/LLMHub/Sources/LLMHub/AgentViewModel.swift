@@ -129,15 +129,22 @@ public class AgentViewModel: ObservableObject {
         }
 
         // Semantic LLM Generation & Function Calling System Prompt
+        let todayStr: String = {
+            let fmt = DateFormatter()
+            fmt.dateFormat = "yyyy-MM-dd"
+            return fmt.string(from: Date())
+        }()
         let systemPrompt = """
-        You are an AI Agent equipped with device tools:
+        You are an AI Agent equipped with device tools. Today's date is \(todayStr).
         - show_map(location: "place/venue query")
         - send_email(recipient: "email address or contact name", subject: "subject line", body: "email body text")
         - send_sms(recipient: "contact name or phone number", body: "SMS text content")
         - add_calendar_event(title: "event title", date: "event date/time")
         - check_weather(location: "city/location")
-        - set_alarm(time: "time", label: "label")
+        - set_alarm(time: "time e.g. 9 PM", label: "label")
         - toggle_flashlight(enabled: "true" or "false")
+
+        IMPORTANT: For alarm requests, ALWAYS use set_alarm — never add_calendar_event.
 
         To execute a tool call, output formatted exactly as:
         [TOOL: tool_name(arguments)]
@@ -170,7 +177,9 @@ public class AgentViewModel: ObservableObject {
     private func parseToolCall(from text: String) -> ParsedTool? {
         let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        let pattern = "(?:\\[|\\b)(TOOL:|SHOW_MAP|SEND_SMS|SEND_EMAIL|ADD_CALENDAR_EVENT|CHECK_WEATHER|SET_ALARM|TOGGLE_FLASHLIGHT)[:\\(](.+)"
+        // Separators between words are optional to handle CamelCase LLM outputs
+        // e.g. ADDCalendarEvent, SetAlarm, ShowMap
+        let pattern = "(?:\\[|\\b)(TOOL:|SHOW[_./ ]?MAP|SEND[_./ ]?SMS|SEND[_./ ]?EMAIL|ADD[_./ ]?CALENDAR[_./ ]?EVENT|CREATE[_./ ]?CALENDAR[_./ ]?EVENT|CHECK[_./ ]?WEATHER|SET[_./ ]?ALARM|TOGGLE[_./ ]?FLASHLIGHT)[:\\(](.+)"
         if let range = clean.range(of: pattern, options: [.regularExpression, .caseInsensitive]) {
             let matched = String(clean[range])
             return parseNameAndArgs(from: matched)
@@ -208,14 +217,20 @@ public class AgentViewModel: ObservableObject {
             }
         }
 
-        return ParsedTool(name: name, args: argsStr)
+        let normalizedName = name.replacingOccurrences(of: ".", with: "_")
+            .replacingOccurrences(of: "/", with: "_")
+            .lowercased()
+        return ParsedTool(name: normalizedName, args: argsStr)
     }
 
     private func handleParsedToolCall(_ tool: ParsedTool, originalPrompt: String) async {
         let toolId = UUID().uuidString
-        messages.append(.toolCall(id: toolId, name: tool.name, args: tool.args, status: .running, result: nil))
+        let isAlarmIntent = originalPrompt.lowercased().contains("alarm") || tool.args.lowercased().contains("alarm")
+        let effectiveToolName = (isAlarmIntent && (tool.name.contains("calendar") || tool.name.contains("event"))) ? "set_alarm" : tool.name.lowercased()
 
-        switch tool.name.lowercased() {
+        messages.append(.toolCall(id: toolId, name: effectiveToolName, args: tool.args, status: .running, result: nil))
+
+        switch effectiveToolName {
         case "show_map":
             let cleanLoc = extractArgValue(from: tool.args, key: "location") ?? tool.args
             if let (lat, lon, name) = await AgentTools.shared.geocodeLocation(cleanLoc) {
@@ -241,7 +256,7 @@ public class AgentViewModel: ObservableObject {
             updateToolCall(id: toolId, status: .success, result: res)
             messages.append(.text(id: UUID().uuidString, sender: .agent, content: res, timestamp: Date()))
 
-        case "add_calendar_event":
+        case "add_calendar_event", "create_calendar_event":
             let title = extractArgValue(from: tool.args, key: "title") ?? extractFirstPart(from: tool.args)
             let dateStr = extractArgValue(from: tool.args, key: "date") ?? "tomorrow"
             let res = await AgentTools.shared.addCalendarEvent(title: title, dateStr: dateStr)
@@ -255,9 +270,18 @@ public class AgentViewModel: ObservableObject {
             messages.append(.text(id: UUID().uuidString, sender: .agent, content: res, timestamp: Date()))
 
         case "set_alarm":
-            let time = extractArgValue(from: tool.args, key: "time") ?? tool.args
-            let label = extractArgValue(from: tool.args, key: "label") ?? "Alarm"
-            let res = await AgentTools.shared.setAlarm(time: time, label: label)
+            var rawTime = extractArgValue(from: tool.args, key: "time") ?? extractArgValue(from: tool.args, key: "date") ?? tool.args
+            // If the LLM returned a full datetime string like "2023-09-01 21:00:00",
+            // strip the date portion and keep only the time part.
+            if let spaceIdx = rawTime.lastIndex(of: " ") {
+                let possibleTime = String(rawTime[rawTime.index(after: spaceIdx)...])
+                // Only use the suffix if it looks like HH:MM or HH:MM:SS
+                if possibleTime.contains(":") {
+                    rawTime = possibleTime
+                }
+            }
+            let label = extractArgValue(from: tool.args, key: "label") ?? extractArgValue(from: tool.args, key: "title") ?? "Alarm"
+            let res = await AgentTools.shared.setAlarm(time: rawTime, label: label)
             updateToolCall(id: toolId, status: .success, result: res)
             messages.append(.text(id: UUID().uuidString, sender: .agent, content: res, timestamp: Date()))
 
@@ -273,17 +297,22 @@ public class AgentViewModel: ObservableObject {
     }
 
     private func extractArgValue(from args: String, key: String) -> String? {
-        let pattern = "\(key)\\s*(?:=\\s*|\\()\\s*\"([^\"]+)\"|\(key)\\s*(?:=\\s*|\\()\\s*'([^']+)'|\(key)\\s*=\\s*([^,\\s)]+)"
+        let pattern = "\(key)\\s*(?:=\\s*|:\\s*|\\()\\s*\"([^\"]+)\"|\(key)\\s*(?:=\\s*|:\\s*|\\()\\s*'([^']+)'|\(key)\\s*(?:=\\s*|:\\s*)\\s*([^,\\s)]+)"
         if let range = args.range(of: pattern, options: [.regularExpression, .caseInsensitive]) {
             let matched = String(args[range])
-            let cleanVal: String
+            var cleanVal: String
             if let firstQuote = matched.firstIndex(of: "\""), let lastQuote = matched.lastIndex(of: "\""), firstQuote < lastQuote {
                 cleanVal = String(matched[matched.index(after: firstQuote)..<lastQuote])
             } else if let firstQuote = matched.firstIndex(of: "'"), let lastQuote = matched.lastIndex(of: "'"), firstQuote < lastQuote {
                 cleanVal = String(matched[matched.index(after: firstQuote)..<lastQuote])
             } else {
-                let parts = matched.components(separatedBy: CharacterSet(charactersIn: "=("))
+                let parts = matched.components(separatedBy: CharacterSet(charactersIn: "=:("))
                 cleanVal = parts.count >= 2 ? parts[1].trimmingCharacters(in: CharacterSet(charactersIn: ")\"'] ")) : matched
+            }
+
+            let lowerKey = key.lowercased()
+            if cleanVal.lowercased().hasPrefix("\(lowerKey):") {
+                cleanVal = String(cleanVal.dropFirst(lowerKey.count + 1)).trimmingCharacters(in: CharacterSet(charactersIn: " \"'"))
             }
 
             let lower = cleanVal.lowercased()

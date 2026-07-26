@@ -70,9 +70,16 @@ fun AgentScreen(
         }
     }
 
+    val contactsPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { _ -> }
+
     LaunchedEffect(availableModels) {
         Configuration.getInstance().userAgentValue = context.packageName
         viewModel.initializeWelcomeMessage(context, availableModels.isNotEmpty())
+        if (androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_CONTACTS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            contactsPermissionLauncher.launch(android.Manifest.permission.READ_CONTACTS)
+        }
     }
 
     Scaffold(

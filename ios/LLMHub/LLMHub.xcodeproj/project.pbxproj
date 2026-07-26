@@ -503,6 +503,7 @@
 				INFOPLIST_KEY_NSContactsUsageDescription = "LLM Hub needs permission to access your contacts to send SMS messages to contacts you specify.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "LLM Hub needs permission to access your location to display nearby places and maps.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "LLM Hub uses your microphone to transcribe speech on-device.";
+				INFOPLIST_KEY_NSAlarmKitUsageDescription = "LLM Hub schedules alarms you create with the AI Agent.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "LLM Hub needs permission to save generated videos and images to your Photo Library.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "LLM Hub needs permission to access your Photo Library to select and save media.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "LLM Hub uses speech recognition to transcribe your audio on-device.";
@@ -542,6 +543,7 @@
 				INFOPLIST_KEY_NSContactsUsageDescription = "LLM Hub needs permission to access your contacts to send SMS messages to contacts you specify.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "LLM Hub needs permission to access your location to display nearby places and maps.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "LLM Hub uses your microphone to transcribe speech on-device.";
+				INFOPLIST_KEY_NSAlarmKitUsageDescription = "LLM Hub schedules alarms you create with the AI Agent.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "LLM Hub needs permission to save generated videos and images to your Photo Library.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "LLM Hub needs permission to access your Photo Library to select and save media.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "LLM Hub uses speech recognition to transcribe your audio on-device.";

@@ -68,11 +68,11 @@ RULES:
             conn.readTimeout = 3000
             val json = conn.getInputStream().bufferedReader().use { it.readText() }
             val obj = org.json.JSONObject(json)
-            val lat = obj.optDouble("latitude", -37.8136)
-            val lon = obj.optDouble("longitude", 144.9631)
-            Pair(lat, lon)
+            val lat = obj.optDouble("latitude", Double.NaN)
+            val lon = obj.optDouble("longitude", Double.NaN)
+            if (lat.isNaN() || lon.isNaN()) null else Pair(lat, lon)
         } catch (_: Exception) {
-            Pair(-37.8136, 144.9631)
+            null
         }
     }
 
@@ -133,22 +133,15 @@ RULES:
                         "status" to "succeeded"
                     )
                 } else {
-                    val fallbackLat = userLoc?.first ?: -37.8136
-                    val fallbackLon = userLoc?.second ?: 144.9631
                     mapOf(
-                        "type" to "map",
-                        "lat" to fallbackLat,
-                        "lon" to fallbackLon,
-                        "label" to searchQuery,
-                        "status" to "succeeded"
+                        "type" to "map_error",
+                        "error" to "Could not find location: $searchQuery",
+                        "status" to "failed"
                     )
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Map geocoding failed for '$location': ${e.message}")
-                val userLoc = getUserLocation()
-                val fallbackLat = userLoc?.first ?: -37.8136
-                val fallbackLon = userLoc?.second ?: 144.9631
-                mapOf("type" to "map", "lat" to fallbackLat, "lon" to fallbackLon, "label" to location, "status" to "succeeded")
+                mapOf("type" to "map_error", "error" to "Geocoding failed: ${e.message}", "status" to "failed")
             }
         }
     }
@@ -266,16 +259,34 @@ RULES:
         @ToolParam(description = "Description or notes for the event (optional).") description: String
     ): Map<String, String> {
         return try {
+            val startTime = System.currentTimeMillis() + 3600000L
+            val endTime = startTime + 3600000L
             val intent = Intent(Intent.ACTION_INSERT).apply {
                 data = CalendarContract.Events.CONTENT_URI
                 putExtra(CalendarContract.Events.TITLE, title)
+                putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, startTime)
+                putExtra(CalendarContract.EXTRA_EVENT_END_TIME, endTime)
                 if (location.isNotBlank()) putExtra(CalendarContract.Events.EVENT_LOCATION, location)
                 if (description.isNotBlank()) putExtra(CalendarContract.Events.DESCRIPTION, description)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
-            context.startActivity(intent)
-            mapOf("result" to "Opened Calendar to create event: '$title'", "status" to "succeeded")
+            val pm = context.packageManager
+            if (intent.resolveActivity(pm) != null) {
+                context.startActivity(intent)
+                mapOf("result" to "Opened Calendar to create event: '$title'", "status" to "succeeded")
+            } else {
+                val fallbackIntent = Intent(Intent.ACTION_EDIT).apply {
+                    type = "vnd.android.cursor.item/event"
+                    putExtra(CalendarContract.Events.TITLE, title)
+                    putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, startTime)
+                    putExtra(CalendarContract.EXTRA_EVENT_END_TIME, endTime)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(fallbackIntent)
+                mapOf("result" to "Opened Calendar to create event: '$title'", "status" to "succeeded")
+            }
         } catch (e: Exception) {
+            Log.e(TAG, "Could not open Calendar: ${e.message}", e)
             mapOf("error" to "Could not open Calendar: ${e.message}", "status" to "failed")
         }
     }
@@ -288,17 +299,20 @@ RULES:
         @ToolParam(description = "Minute of the alarm (0 to 59).") minute: Int,
         @ToolParam(description = "Label or name for the alarm.") label: String
     ): Map<String, String> {
+        val h = hour.coerceIn(0, 23)
+        val m = minute.coerceIn(0, 59)
         return try {
             val intent = Intent(AlarmClock.ACTION_SET_ALARM).apply {
-                putExtra(AlarmClock.EXTRA_HOUR, hour)
-                putExtra(AlarmClock.EXTRA_MINUTES, minute)
+                putExtra(AlarmClock.EXTRA_HOUR, h)
+                putExtra(AlarmClock.EXTRA_MINUTES, m)
                 putExtra(AlarmClock.EXTRA_MESSAGE, label)
                 putExtra(AlarmClock.EXTRA_SKIP_UI, false)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(intent)
-            mapOf("result" to "Alarm set for %02d:%02d ('$label')".format(hour, minute), "status" to "succeeded")
+            mapOf("result" to "Alarm set for %02d:%02d ('$label')".format(h, m), "status" to "succeeded")
         } catch (e: Exception) {
+            Log.e(TAG, "Could not set alarm: ${e.message}", e)
             mapOf("error" to "Could not set alarm: ${e.message}", "status" to "failed")
         }
     }
@@ -313,15 +327,29 @@ RULES:
     ): Map<String, String> {
         return try {
             val intent = Intent(Intent.ACTION_SENDTO).apply {
-                data = Uri.parse("mailto:")
-                putExtra(Intent.EXTRA_EMAIL, arrayOf(email.trim()))
+                data = Uri.parse("mailto:${email.trim()}")
                 putExtra(Intent.EXTRA_SUBJECT, subject)
                 putExtra(Intent.EXTRA_TEXT, body)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
-            context.startActivity(intent)
-            mapOf("result" to "Opened Email app for recipient '$email'", "status" to "succeeded")
+            if (intent.resolveActivity(context.packageManager) != null) {
+                context.startActivity(intent)
+                mapOf("result" to "Opened Email app for recipient '$email'", "status" to "succeeded")
+            } else {
+                val fallbackIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "message/rfc822"
+                    putExtra(Intent.EXTRA_EMAIL, arrayOf(email.trim()))
+                    putExtra(Intent.EXTRA_SUBJECT, subject)
+                    putExtra(Intent.EXTRA_TEXT, body)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(Intent.createChooser(fallbackIntent, "Send Email").apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                })
+                mapOf("result" to "Opened Email app for recipient '$email'", "status" to "succeeded")
+            }
         } catch (e: Exception) {
+            Log.e(TAG, "Could not open Email app: ${e.message}", e)
             mapOf("error" to "Could not open Email app: ${e.message}", "status" to "failed")
         }
     }
@@ -329,26 +357,61 @@ RULES:
     // ─── Send SMS ─────────────────────────────────────────────────────────────
 
     fun resolvePhoneNumber(recipient: String): String {
-        val clean = recipient.trim()
-        if (clean.all { it.isDigit() || it == '+' || it == '-' || it == ' ' || it == '(' || it == ')' }) {
+        var clean = recipient.trim('(', ')', '[', ']', ' ', '\n', '\r', '\t')
+        if (clean.lowercase().startsWith("recipient:")) {
+            clean = clean.substring(10).trim()
+        }
+        if (clean.lowercase().startsWith("to:")) {
+            clean = clean.substring(3).trim()
+        }
+        clean = clean.trim('"', '\'', ' ')
+
+        if (clean.isEmpty() || clean.all { it.isDigit() || it == '+' || it == '-' || it == ' ' || it == '(' || it == ')' }) {
             return clean
         }
+
+        val hasPermission = androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_CONTACTS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (!hasPermission) {
+            Log.w(TAG, "READ_CONTACTS permission not granted, cannot resolve '$clean'")
+            return clean
+        }
+
         return try {
+            // First search by URI filter for name
+            val uri = Uri.withAppendedPath(ContactsContract.CommonDataKinds.Phone.CONTENT_FILTER_URI, Uri.encode(clean))
             val cursor = context.contentResolver.query(
-                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                uri,
                 arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER, ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME),
+                null,
+                null,
+                null
+            )
+            val filteredNumber = cursor?.use {
+                if (it.moveToFirst()) {
+                    val numIdx = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                    if (numIdx >= 0) it.getString(numIdx) else null
+                } else null
+            }
+            if (!filteredNumber.isNullOrBlank()) {
+                return filteredNumber
+            }
+
+            // Fallback LIKE query
+            val fallbackCursor = context.contentResolver.query(
+                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER),
                 "${ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME} LIKE ?",
                 arrayOf("%$clean%"),
                 null
             )
-            cursor?.use {
+            fallbackCursor?.use {
                 if (it.moveToFirst()) {
                     val numIdx = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
                     if (numIdx >= 0) it.getString(numIdx) else clean
                 } else clean
             } ?: clean
         } catch (e: Exception) {
-            Log.w(TAG, "Error resolving contact phone number: ${e.message}")
+            Log.w(TAG, "Error resolving contact phone number for '$clean': ${e.message}")
             clean
         }
     }
@@ -360,13 +423,29 @@ RULES:
     ): Map<String, String> {
         return try {
             val targetNumber = resolvePhoneNumber(phoneNumber)
-            val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:${targetNumber.trim()}")).apply {
+            val uri = Uri.parse("smsto:${targetNumber.trim()}")
+            val intent = Intent(Intent.ACTION_SENDTO, uri).apply {
                 putExtra("sms_body", body)
+                putExtra(Intent.EXTRA_TEXT, body)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
-            context.startActivity(intent)
-            mapOf("result" to "Opened SMS app for '$phoneNumber' ($targetNumber)", "status" to "succeeded")
+            val defaultSmsPackage = android.provider.Telephony.Sms.getDefaultSmsPackage(context)
+            if (!defaultSmsPackage.isNullOrEmpty()) {
+                intent.setPackage(defaultSmsPackage)
+            }
+            if (intent.resolveActivity(context.packageManager) != null) {
+                context.startActivity(intent)
+            } else {
+                val fallbackIntent = Intent(Intent.ACTION_SENDTO, uri).apply {
+                    putExtra("sms_body", body)
+                    putExtra(Intent.EXTRA_TEXT, body)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(fallbackIntent)
+            }
+            mapOf("result" to "Opened SMS app for '$phoneNumber'", "status" to "succeeded")
         } catch (e: Exception) {
+            Log.e(TAG, "Error launching SMS intent: ${e.message}", e)
             mapOf("error" to "Could not open SMS app: ${e.message}", "status" to "failed")
         }
     }

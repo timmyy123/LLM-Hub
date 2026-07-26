@@ -14,5 +14,7 @@
 	<string>LLM Hub needs permission to add events to your calendar.</string>
 	<key>NSRemindersUsageDescription</key>
 	<string>LLM Hub needs permission to access your reminders to set alarms and reminders.</string>
+	<key>NSAlarmKitUsageDescription</key>
+	<string>LLM Hub needs permission to schedule alarms with the AI Agent.</string>
 </dict>
 </plist>

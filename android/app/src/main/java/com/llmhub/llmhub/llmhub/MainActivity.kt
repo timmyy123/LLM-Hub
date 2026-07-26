@@ -80,4 +80,11 @@ class MainActivity : ComponentActivity() {
         
         super.attachBaseContext(LocaleHelper.setLocale(newBase, savedLanguage))
     }
+
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (level >= TRIM_MEMORY_BACKGROUND || level >= TRIM_MEMORY_MODERATE || level >= TRIM_MEMORY_RUNNING_CRITICAL) {
+            System.gc()
+        }
+    }
 }
