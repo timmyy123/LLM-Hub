@@ -145,7 +145,8 @@ fun FeatureModelSettingsSheet(
         derivedStateOf {
             val name = selectedModel?.name?.lowercase() ?: ""
             name.contains("thinking") || name.contains("reasoning") ||
-                name.contains("gpt-oss") || name.contains("gpt_oss")
+                name.contains("gpt-oss") || name.contains("gpt_oss") ||
+                selectedModel?.supportsThinking == true
         }
     }
 

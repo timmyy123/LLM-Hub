@@ -73,33 +73,84 @@ public class AgentTools {
 
     // MARK: - Web Search (DuckDuckGo)
 
+    private func cleanHTML(_ raw: String) -> String {
+        var s = raw
+        if let re = try? NSRegularExpression(pattern: "<[^>]*>") {
+            s = re.stringByReplacingMatches(in: s, range: NSRange(s.startIndex..., in: s), withTemplate: " ")
+        }
+        return s
+            .replacingOccurrences(of: "&amp;",  with: "&")
+            .replacingOccurrences(of: "&lt;",   with: "<")
+            .replacingOccurrences(of: "&gt;",   with: ">")
+            .replacingOccurrences(of: "&quot;", with: "\"")
+            .replacingOccurrences(of: "&#39;",  with: "'")
+            .replacingOccurrences(of: "&nbsp;", with: " ")
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     public func webSearch(query: String) async -> String {
-        guard let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let url = URL(string: "https://html.duckduckgo.com/html/?q=\(encoded)") else {
+        let cleanQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let encoded = cleanQuery.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
             return "Invalid query."
         }
 
-        var request = URLRequest(url: url)
-        request.setValue("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)", forHTTPHeaderField: "User-Agent")
-
-        do {
-            let (data, _) = try await URLSession.shared.data(for: request)
-            if let html = String(data: data, encoding: .utf8) {
-                let matches = html.components(separatedBy: "<a class=\"result__snippet")
-                var snippets: [String] = []
-                for match in matches.dropFirst().prefix(3) {
-                    if let textEnd = match.range(of: "</a>") {
-                        let rawSnippet = String(match[..<textEnd.lowerBound])
-                        let clean = rawSnippet.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
-                            .trimmingCharacters(in: .whitespacesAndNewlines)
-                        if !clean.isEmpty { snippets.append(clean) }
+        // 1. Try DuckDuckGo Instant Answer API
+        if let jsonUrl = URL(string: "https://api.duckduckgo.com/?q=\(encoded)&format=json&no_html=1&skip_disambig=1") {
+            var req = URLRequest(url: jsonUrl)
+            req.setValue("LLM Hub iOS", forHTTPHeaderField: "User-Agent")
+            if let (data, _) = try? await URLSession.shared.data(for: req),
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                var results: [String] = []
+                if let abstract = json["Abstract"] as? String, !abstract.isEmpty {
+                    results.append(abstract)
+                }
+                if let def = json["Definition"] as? String, !def.isEmpty {
+                    results.append(def)
+                }
+                if let topics = json["RelatedTopics"] as? [[String: Any]] {
+                    for topic in topics.prefix(3) {
+                        if let text = topic["Text"] as? String, !text.isEmpty {
+                            results.append(text)
+                        }
                     }
                 }
-                return snippets.joined(separator: "\n---\n")
+                if !results.isEmpty {
+                    return results.joined(separator: "\n---\n")
+                }
             }
-        } catch {
-            return "Web search failed: \(error.localizedDescription)"
         }
+
+        // 2. DuckDuckGo HTML fallback with cleanHTML
+        if let htmlUrl = URL(string: "https://duckduckgo.com/html/?q=\(encoded)") {
+            var req = URLRequest(url: htmlUrl)
+            req.setValue("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/119.0", forHTTPHeaderField: "User-Agent")
+            req.setValue("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", forHTTPHeaderField: "Accept")
+            req.setValue("en-US,en;q=0.5", forHTTPHeaderField: "Accept-Language")
+
+            if let (data, resp) = try? await URLSession.shared.data(for: req),
+               (resp as? HTTPURLResponse)?.statusCode == 200,
+               let html = String(data: data, encoding: .utf8) {
+                
+                let nsHTML = html as NSString
+                let range = NSRange(location: 0, length: nsHTML.length)
+                if let sRe = try? NSRegularExpression(pattern: #"<a class="result__snippet"[^>]*>(.*?)</a>"#, options: .dotMatchesLineSeparators) {
+                    let matches = sRe.matches(in: html, range: range)
+                    var snippets: [String] = []
+                    for m in matches.prefix(5) {
+                        let rawSnippet = nsHTML.substring(with: m.range(at: 1))
+                        let cleaned = cleanHTML(rawSnippet)
+                        if !cleaned.isEmpty {
+                            snippets.append(cleaned)
+                        }
+                    }
+                    if !snippets.isEmpty {
+                        return snippets.joined(separator: "\n---\n")
+                    }
+                }
+            }
+        }
+
         return "No search results found."
     }
 

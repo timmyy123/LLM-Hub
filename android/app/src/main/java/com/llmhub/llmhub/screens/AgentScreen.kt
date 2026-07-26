@@ -36,6 +36,9 @@ import com.llmhub.llmhub.agent.VoiceMode
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.components.FeatureModelSettingsSheet
 import com.llmhub.llmhub.components.MessageInput
+import com.llmhub.llmhub.components.ThinkingAwareResultContent
+import com.llmhub.llmhub.components.SelectableMarkdownText
+import com.llmhub.llmhub.components.MarkdownTableView
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.ModelAvailabilityProvider
 import org.osmdroid.config.Configuration
@@ -200,6 +203,11 @@ fun AgentScreen(
                         }
                     }
                 } else {
+                    val isStreamingAIResponse = remember(messages) {
+                        val last = messages.lastOrNull()
+                        last is AgentMessage.Text && last.sender == AgentMessage.Sender.AGENT && last.text.isNotEmpty()
+                    }
+
                     LazyColumn(
                         state = listState,
                         modifier = Modifier
@@ -222,7 +230,7 @@ fun AgentScreen(
                             }
                         }
 
-                        if (isGenerating) {
+                        if (isGenerating && !isStreamingAIResponse) {
                             item {
                                 AgentProcessingBubble()
                             }
@@ -388,15 +396,24 @@ fun AgentTextMessageBubble(msg: AgentMessage.Text) {
             }
         }
     } else {
-        // AI Messages (Greetings & AI Responses): FULL WIDTH WITH NO BUBBLE/SURFACE CONTAINER!
-        Text(
-            text = msg.text,
+        // AI Messages (Greetings & AI Responses): Full Markdown, Tables, LaTeX 1:1 matching AI Chat!
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            fontSize = 15.sp,
-            color = MaterialTheme.colorScheme.onBackground
-        )
+                .padding(vertical = 4.dp)
+        ) {
+            if (msg.text.contains("|") && msg.text.contains("-|-")) {
+                MarkdownTableView(
+                    rawTable = msg.text,
+                    baseColor = MaterialTheme.colorScheme.onBackground
+                )
+            } else {
+                ThinkingAwareResultContent(
+                    content = msg.text,
+                    useMarkdownForAnswer = true
+                )
+            }
+        }
     }
 }
 

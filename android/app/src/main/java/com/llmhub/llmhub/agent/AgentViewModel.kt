@@ -17,6 +17,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.llmhub.llmhub.websearch.DuckDuckGoSearchService
+import com.llmhub.llmhub.websearch.WebSearchService
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 import java.util.UUID
 
@@ -278,24 +282,40 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
         _isWebSearchEnabled.value = !_isWebSearchEnabled.value
     }
 
-    private suspend fun processPromptWithTools(prompt: String, audioBytes: ByteArray? = null) {
-        if (_isWebSearchEnabled.value) {
-            val toolId = UUID.randomUUID().toString()
-            addMessage(AgentMessage.ToolCall(callId = toolId, toolName = "web_search", args = prompt, status = AgentMessage.ToolCall.Status.RUNNING))
 
-            val resMap = toolSet.webSearch(prompt)
-            val searchResult = resMap["result"] ?: resMap["error"] ?: "No results found"
-            val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
 
-            updateToolCall(toolId, status, searchResult)
-
-            val loadedModel = inferenceService.getCurrentlyLoadedModel()
-            if (loadedModel != null) {
-                val fullPrompt = "Web search results:\n$searchResult\n\nUser Question: $prompt"
-                val response = inferenceService.generateResponse(fullPrompt, loadedModel)
-                addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = response))
+    private fun updateAgentTextMessage(id: String, newText: String) {
+        _messages.value = _messages.value.map { msg ->
+            if (msg is AgentMessage.Text && msg.id == id) {
+                msg.copy(text = newText)
             } else {
-                addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = "Search Results:\n\n$searchResult"))
+                msg
+            }
+        }
+    }
+
+    private suspend fun processPromptWithTools(prompt: String, audioBytes: ByteArray? = null) {
+        val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+
+        if (_isWebSearchEnabled.value) {
+            val loadedModel = inferenceService.getCurrentlyLoadedModel()
+            val aiMsgId = UUID.randomUUID().toString()
+            addMessage(AgentMessage.Text(messageId = aiMsgId, sender = AgentMessage.Sender.AGENT, text = ""))
+
+            if (loadedModel != null) {
+                var responseText = ""
+                inferenceService.generateResponseStreamWithSession(
+                    prompt = prompt,
+                    model = loadedModel,
+                    chatId = "agent_session",
+                    images = emptyList(),
+                    audioData = audioBytes,
+                    webSearchEnabled = true,
+                    imagePaths = emptyList()
+                ).collect { chunk ->
+                    responseText += chunk
+                    updateAgentTextMessage(aiMsgId, responseText)
+                }
             }
             return
         }
@@ -318,48 +338,35 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                 User Request: $prompt
             """.trimIndent()
 
-            val responseBuilder = StringBuilder()
-            if (audioBytes != null && (loadedModel.supportsAudio || loadedModel.name.contains("Gemma-4", ignoreCase = true))) {
-                inferenceService.generateResponseStreamWithSession(
-                    prompt = systemPrompt,
-                    model = loadedModel,
-                    chatId = "agent_session",
-                    images = emptyList(),
-                    audioData = audioBytes,
-                    webSearchEnabled = false,
-                    imagePaths = emptyList()
-                ).collect { chunk ->
-                    responseBuilder.append(chunk)
+            val aiMsgId = UUID.randomUUID().toString()
+            addMessage(AgentMessage.Text(messageId = aiMsgId, sender = AgentMessage.Sender.AGENT, text = ""))
+
+            var responseText = ""
+            inferenceService.generateResponseStreamWithSession(
+                prompt = systemPrompt,
+                model = loadedModel,
+                chatId = "agent_session",
+                images = emptyList(),
+                audioData = audioBytes,
+                webSearchEnabled = false,
+                imagePaths = emptyList()
+            ).collect { chunk ->
+                responseText += chunk
+                val toolMatch = parseToolCall(responseText)
+                if (toolMatch != null) {
+                    _messages.value = _messages.value.filterNot { it.id == aiMsgId }
+                    handleParsedToolCall(toolMatch, prompt)
+                } else {
+                    val cleanText = responseText
+                        .replace(Regex("""\[TOOL:[^\]]+\]""", RegexOption.IGNORE_CASE), "")
+                        .replace(Regex("""(?:SHOW_MAP|SEND_SMS|ADD_CALENDAR_EVENT|CREATE_CALENDAR_EVENT|CHECK_WEATHER|GET_CURRENT_WEATHER|SET_ALARM|TOGGLE_FLASHLIGHT|CALCULATE_HASH|SEND_EMAIL)\([^)]*\)""", RegexOption.IGNORE_CASE), "")
+                        .trim()
+                    updateAgentTextMessage(aiMsgId, cleanText)
                 }
-            } else {
-                responseBuilder.append(inferenceService.generateResponse(systemPrompt, loadedModel))
             }
 
-            val response = responseBuilder.toString()
-            val toolMatch = parseToolCall(response)
-            val cleanText = response
-                .replace(Regex("""\[TOOL:[^\]]+\]""", RegexOption.IGNORE_CASE), "")
-                .replace(Regex("""(?:SHOW_MAP|SEND_SMS|ADD_CALENDAR_EVENT|CREATE_CALENDAR_EVENT|CHECK_WEATHER|GET_CURRENT_WEATHER|SET_ALARM|TOGGLE_FLASHLIGHT|CALCULATE_HASH|SEND_EMAIL)\([^)]*\)""", RegexOption.IGNORE_CASE), "")
-                .trim()
-
-            if (toolMatch != null) {
-                val isAskingQuestion = cleanText.trim().endsWith("?") ||
-                    cleanText.lowercase().contains("what date") ||
-                    cleanText.lowercase().contains("which date") ||
-                    cleanText.lowercase().contains("what time") ||
-                    cleanText.lowercase().contains("which time") ||
-                    cleanText.lowercase().contains("specific date")
-
-                if (cleanText.isNotBlank()) {
-                    addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = cleanText))
-                }
-                if (!isAskingQuestion) {
-                    handleParsedToolCall(toolMatch, prompt)
-                }
-            } else {
-                if (cleanText.isNotBlank()) {
-                    addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = cleanText))
-                }
+            if (_messages.value.any { it.id == aiMsgId && (it as? AgentMessage.Text)?.text?.isBlank() == true }) {
+                _messages.value = _messages.value.filterNot { it.id == aiMsgId }
             }
         } else {
             // Model not loaded fallback: execute direct tool requests semantically

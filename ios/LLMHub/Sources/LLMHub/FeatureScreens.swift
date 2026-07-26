@@ -561,6 +561,12 @@ struct FeatureModelSettingsSheet: View {
                                 }
                             }
 
+                            if selectedModel?.supportsThinking == true {
+                                Toggle(settings.localized("enable_thinking"), isOn: $enableThinking)
+                                    .tint(ApolloPalette.accentStrong)
+                                    .foregroundColor(.white)
+                            }
+
                             if selectedModelSupportsVision {
                                 Toggle(settings.localized(visionToggleTitleKey), isOn: $enableVision)
                                     .tint(ApolloPalette.accentStrong)

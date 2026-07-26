@@ -85,6 +85,12 @@ public class AgentViewModel: ObservableObject {
                 if let modelToLoad = ModelData.allModels().first(where: { $0.name == savedName && ModelData.isModelFullyAvailableLocally($0) })
                     ?? ModelData.allModels().first(where: { ModelData.isModelFullyAvailableLocally($0) && !$0.isDependencyOnly && $0.category != .embedding && $0.category != .asr }) {
                     do {
+                        let savedMaxTokens = UserDefaults.standard.double(forKey: "agent_max_tokens")
+                        let maxTok = savedMaxTokens > 0 ? savedMaxTokens : 4096
+                        let modelContextCap = modelToLoad.contextWindowSize > 0 ? modelToLoad.contextWindowSize : 4096
+                        let effectiveContext = min(max(1, Int(maxTok)), modelContextCap)
+                        LLMBackend.shared.maxTokens = min(Int(maxTok), effectiveContext)
+                        LLMBackend.shared.contextWindow = effectiveContext
                         try await LLMBackend.shared.loadModel(modelToLoad)
                     } catch {
                         print("Agent lazy load failed: \(error.localizedDescription)")
@@ -97,43 +103,91 @@ public class AgentViewModel: ObservableObject {
         }
     }
 
-    private func processPromptWithTools(prompt: String) async {
-        if isWebSearchEnabled {
-            let toolId = UUID().uuidString
-            messages.append(.toolCall(id: toolId, name: "web_search", args: prompt, status: .running, result: nil))
-
-            let searchResult = await AgentTools.shared.webSearch(query: prompt)
-            updateToolCall(id: toolId, status: .success, result: searchResult)
-
-            if LLMBackend.shared.isLoaded {
-                let fullPrompt = "Web search results:\n\(searchResult)\n\nUser Question: \(prompt)"
-                var response = ""
-                do {
-                    try await LLMBackend.shared.generate(prompt: fullPrompt, onUpdate: { text, _, _ in
-                        response = text
-                    })
-                } catch {
-                    response = "Error: \(error.localizedDescription)"
-                }
-                messages.append(.text(id: UUID().uuidString, sender: .agent, content: response, timestamp: Date()))
-            } else {
-                messages.append(.text(id: UUID().uuidString, sender: .agent, content: "Search Results:\n\n\(searchResult)", timestamp: Date()))
+    private func updateTextMessage(id: String, newContent: String) {
+        if let idx = messages.firstIndex(where: { $0.id == id }) {
+            if case .text(_, let sender, _, let timestamp) = messages[idx] {
+                messages[idx] = .text(id: id, sender: sender, content: newContent, timestamp: timestamp)
             }
-            return
         }
+    }
 
-        guard LLMBackend.shared.isLoaded else {
-            // Model not loaded fallback: execute direct tool requests semantically
-            await executeToolOrFallback(prompt: prompt)
-            return
-        }
-
-        // Semantic LLM Generation & Function Calling System Prompt
+    private func processPromptWithTools(prompt: String) async {
         let todayStr: String = {
             let fmt = DateFormatter()
             fmt.dateFormat = "yyyy-MM-dd"
             return fmt.string(from: Date())
         }()
+
+        if isWebSearchEnabled {
+            let searchResults = await WebSearchService.shared.search(query: prompt, maxResults: 5)
+            
+            let resultsText = searchResults.enumerated().map { i, r in
+                "SOURCE: \(r.source)\nTITLE: \(r.title)\nURL: \(r.url)\nCONTENT: \(r.snippet)\n---"
+            }.joined(separator: "\n\n")
+
+            let systemPrompt = """
+            CURRENT WEB SEARCH RESULTS:
+            \(resultsText)
+
+            Based on the above current web search results, please answer the user's question: "\(prompt)"
+
+            IMPORTANT INSTRUCTIONS:
+            - Use ONLY the information from the web search results above
+            - If the search results contain the answer, provide a clear and specific response
+            - If the search results don't contain enough information, say so clearly
+            - For dates and events, be specific based on what you find in the results
+            - Do not make up information not found in the search results
+            - Cite factual claims with the provided source URLs when possible
+            """
+
+            let aiMsgId = UUID().uuidString
+            messages.append(.text(id: aiMsgId, sender: .agent, content: "", timestamp: Date()))
+
+            if LLMBackend.shared.isLoaded {
+                let savedMaxTokens = UserDefaults.standard.double(forKey: "agent_max_tokens")
+                let maxTok = savedMaxTokens > 0 ? savedMaxTokens : 4096
+                if let loadedName = LLMBackend.shared.currentlyLoadedModel,
+                   let model = ModelData.allModels().first(where: { $0.name == loadedName }) {
+                    let modelContextCap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+                    let effectiveContext = min(max(1, Int(maxTok)), modelContextCap)
+                    LLMBackend.shared.contextWindow = effectiveContext
+                    LLMBackend.shared.maxTokens = min(Int(maxTok), effectiveContext)
+                }
+                do {
+                    try await LLMBackend.shared.generate(prompt: prompt, systemPrompt: systemPrompt) { [weak self] text, _, _ in
+                        Task { @MainActor [weak self] in
+                            self?.updateTextMessage(id: aiMsgId, newContent: text)
+                        }
+                    }
+                } catch {
+                    updateTextMessage(id: aiMsgId, newContent: "Error: \(error.localizedDescription)")
+                }
+            } else {
+                updateTextMessage(id: aiMsgId, newContent: "Search Results:\n\n\(resultsText)")
+            }
+
+            // Yield to MainActor so all enqueued stream update tasks finish before appending sources
+            await Task.yield()
+
+            // Append Sources markdown list exactly like AI Chat
+            let uniqueSources = Dictionary(grouping: searchResults.filter { !$0.url.isEmpty }, by: \.url).compactMap { $0.value.first }
+            if !uniqueSources.isEmpty {
+                let sourcesText = uniqueSources.map { "- [\($0.title.isEmpty ? $0.source : $0.title)](\($0.url))" }.joined(separator: "\n")
+                if let idx = messages.firstIndex(where: { $0.id == aiMsgId }),
+                   case .text(let id, let sender, let content, let ts) = messages[idx] {
+                    let baseContent = content.components(separatedBy: "\n\n### Sources\n").first ?? content
+                    messages[idx] = .text(id: id, sender: sender, content: baseContent + "\n\n### Sources\n\(sourcesText)", timestamp: ts)
+                }
+            }
+            return
+        }
+
+        guard LLMBackend.shared.isLoaded else {
+            await executeToolOrFallback(prompt: prompt)
+            return
+        }
+
+        // Semantic LLM Generation & Function Calling System Prompt
         let systemPrompt = """
         You are an AI Agent equipped with device tools. Today's date is \(todayStr).
         - show_map(location: "place/venue query")
@@ -152,20 +206,38 @@ public class AgentViewModel: ObservableObject {
         User Request: \(prompt)
         """
 
-        var fullOutput = ""
-        do {
-            try await LLMBackend.shared.generate(prompt: systemPrompt, onUpdate: { text, _, _ in
-                fullOutput = text
-            })
-        } catch {
-            fullOutput = "Error: \(error.localizedDescription)"
+        let savedMaxTokens = UserDefaults.standard.double(forKey: "agent_max_tokens")
+        let maxTok = savedMaxTokens > 0 ? savedMaxTokens : 4096
+        if let loadedName = LLMBackend.shared.currentlyLoadedModel,
+           let model = ModelData.allModels().first(where: { $0.name == loadedName }) {
+            let modelContextCap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+            let effectiveContext = min(max(1, Int(maxTok)), modelContextCap)
+            LLMBackend.shared.contextWindow = effectiveContext
+            LLMBackend.shared.maxTokens = min(Int(maxTok), effectiveContext)
         }
 
-        // Check if LLM emitted a semantic tool call
-        if let toolMatch = parseToolCall(from: fullOutput) {
-            await handleParsedToolCall(toolMatch, originalPrompt: prompt)
-        } else {
-            messages.append(.text(id: UUID().uuidString, sender: .agent, content: fullOutput, timestamp: Date()))
+        let aiMsgId = UUID().uuidString
+        messages.append(.text(id: aiMsgId, sender: .agent, content: "", timestamp: Date()))
+
+        do {
+            try await LLMBackend.shared.generate(prompt: systemPrompt) { [weak self] text, _, _ in
+                Task { @MainActor [weak self] in
+                    guard let self = self else { return }
+                    if let toolMatch = self.parseToolCall(from: text) {
+                        self.messages.removeAll(where: { $0.id == aiMsgId })
+                        await self.handleParsedToolCall(toolMatch, originalPrompt: prompt)
+                    } else {
+                        self.updateTextMessage(id: aiMsgId, newContent: text)
+                    }
+                }
+            }
+        } catch {
+            updateTextMessage(id: aiMsgId, newContent: "Error: \(error.localizedDescription)")
+        }
+
+        if let idx = messages.firstIndex(where: { $0.id == aiMsgId }),
+           case .text(_, _, let content, _) = messages[idx], content.isEmpty {
+            messages.remove(at: idx)
         }
     }
 

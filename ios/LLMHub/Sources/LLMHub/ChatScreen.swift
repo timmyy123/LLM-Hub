@@ -16,14 +16,14 @@ import ImageIO
 
 // MARK: - Web Search Service
 
-private struct WebSearchResult {
+struct WebSearchResult {
     let title: String
     let snippet: String
     let url: String
     let source: String
 }
 
-private struct URLReaderResult {
+struct URLReaderResult {
     let title: String
     let url: String
     let text: String
@@ -31,7 +31,7 @@ private struct URLReaderResult {
     let truncated: Bool
 }
 
-private actor WebSearchService {
+actor WebSearchService {
     static let shared = WebSearchService()
 
     // Firefox mobile UA — same as Android build, avoids DuckDuckGo bot blocks
@@ -2699,7 +2699,7 @@ private struct MathView: UIViewRepresentable {
     }
 }
 
-private struct MarkdownTableView: View {
+struct MarkdownTableView: View {
     let rawTable: String
 
     var body: some View {
@@ -2751,7 +2751,7 @@ private struct MarkdownTableView: View {
     }
 }
 
-private struct MarkdownMessageText: View {
+struct MarkdownMessageText: View {
     let text: String
 
     var body: some View {

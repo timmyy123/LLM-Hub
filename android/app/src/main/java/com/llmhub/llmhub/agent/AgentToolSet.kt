@@ -18,6 +18,7 @@ import org.json.JSONArray
 import java.net.URL
 import java.net.URLEncoder
 import java.security.MessageDigest
+import com.llmhub.llmhub.websearch.DuckDuckGoSearchService
 
 /**
  * Complete ToolSet for the standalone Agent feature in LLM-Hub.
@@ -190,29 +191,22 @@ RULES:
 
     // ─── Web Search ───────────────────────────────────────────────────────────
 
+    private val webSearchService = DuckDuckGoSearchService()
+
     @Tool(description = "Perform a live web search using DuckDuckGo to get up-to-date facts or web snippets.")
     fun webSearch(
         @ToolParam(description = "Search query.") query: String
     ): Map<String, String> {
         return runBlocking(Dispatchers.IO) {
             try {
-                val encoded = URLEncoder.encode(query.trim(), "UTF-8")
-                val urlStr = "https://html.duckduckgo.com/html/?q=$encoded"
-                val conn = URL(urlStr).openConnection()
-                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
-                conn.connectTimeout = 8000
-                conn.readTimeout = 8000
-                val html = conn.getInputStream().bufferedReader().use { it.readText() }
+                val results = webSearchService.search(query.trim(), maxResults = 5)
+                val snippetText = results.mapNotNull { res ->
+                    val text = res.snippet.ifBlank { res.title }
+                    if (text.isNotBlank()) text else null
+                }.joinToString("\n---\n")
 
-                val snippets = Regex("""<a class="result__snippet[^">]*>(.*?)</a>""")
-                    .findAll(html)
-                    .take(3)
-                    .map { it.groupValues[1].replace(Regex("<.*?>"), "").trim() }
-                    .filter { it.isNotEmpty() }
-                    .joinToString("\n---\n")
-
-                if (snippets.isNotBlank()) {
-                    mapOf("result" to snippets, "status" to "succeeded")
+                if (snippetText.isNotBlank()) {
+                    mapOf("result" to snippetText, "status" to "succeeded")
                 } else {
                     mapOf("result" to "No search results found for query.", "status" to "succeeded")
                 }

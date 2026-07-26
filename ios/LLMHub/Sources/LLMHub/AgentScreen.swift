@@ -15,7 +15,7 @@ public struct AgentScreen: View {
     var onNavigateToModels: (() -> Void)? = nil
 
     @AppStorage("agent_model_name") private var agentModelName: String = ""
-    @AppStorage("agent_max_tokens") private var agentMaxTokens: Double = 2048
+    @AppStorage("agent_max_tokens") private var agentMaxTokens: Double = 4096
     @AppStorage("agent_enable_thinking") private var agentEnableThinking: Bool = true
     @AppStorage("agent_enable_vision") private var agentEnableVision: Bool = false
     @AppStorage("agent_enable_audio") private var agentEnableAudio: Bool = false
@@ -62,7 +62,15 @@ public struct AgentScreen: View {
                                         agentMessageBubble(for: msg)
                                     }
 
-                                    if vm.isGenerating {
+                                    let isStreamingAIResponse: Bool = {
+                                        guard let last = vm.messages.last else { return false }
+                                        if case .text(_, .agent, let content, _) = last {
+                                            return !content.isEmpty
+                                        }
+                                        return false
+                                    }()
+
+                                    if vm.isGenerating && !isStreamingAIResponse {
                                         HStack(spacing: 10) {
                                             ProgressView()
                                                 .tint(Color(hex: "A78BFA"))
@@ -296,6 +304,10 @@ public struct AgentScreen: View {
                     errorMessage = nil
                     if let model = ModelData.allModels().first(where: { $0.name == agentModelName }) {
                         do {
+                            let modelContextCap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+                            let effectiveContext = min(max(1, Int(agentMaxTokens)), modelContextCap)
+                            LLMBackend.shared.maxTokens = min(Int(agentMaxTokens), effectiveContext)
+                            LLMBackend.shared.contextWindow = effectiveContext
                             try await LLMBackend.shared.loadModel(model)
                             showSettings = false
                         } catch {
@@ -386,13 +398,26 @@ public struct AgentScreen: View {
                 }
                 .padding(.horizontal, 16)
             } else {
-                // AI Side (Greetings, Agent responses): FULL WIDTH, NO BUBBLE CONTAINER!
-                Text(content)
-                    .font(.body)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 4)
-                    .padding(.horizontal, 16)
+                // AI Side (Greetings, Agent responses): Markdown, Tables, LaTeX 1:1 matching AI Chat!
+                VStack(alignment: .leading, spacing: 8) {
+                    if content.contains("|") && content.contains("-|-") {
+                        MarkdownTableView(rawTable: content)
+                    } else {
+                        let isCurrentMsgGenerating = vm.isGenerating && msg.id == vm.messages.last?.id
+                        let selectedModel = ModelData.allModels().first(where: { $0.name == agentModelName })
+                        let modelSupportsThinking = selectedModel?.supportsThinking ?? false
+                        let preferThinking = modelSupportsThinking && agentEnableThinking
+                        ThinkingAwareResultContent(
+                            content: content,
+                            isGenerating: isCurrentMsgGenerating,
+                            preferThinkingWhileStreaming: preferThinking,
+                            useChatRenderer: true
+                        )
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 4)
+                .padding(.horizontal, 16)
             }
 
         case .toolCall(_, let name, let args, let status, let result):

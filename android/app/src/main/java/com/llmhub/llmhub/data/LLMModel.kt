@@ -14,6 +14,7 @@ data class LLMModel(
     val source: String,
     val supportsVision: Boolean,
     val supportsAudio: Boolean = false, // New: whether model supports audio input
+    val supportsThinking: Boolean = false,
     val supportsGpu: Boolean = false,
     val requirements: ModelRequirements,
     val contextWindowSize: Int = 2048, // Default context window size in tokens
