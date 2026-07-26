@@ -200,7 +200,10 @@ RULES:
     ): Map<String, String> {
         return runBlocking(Dispatchers.IO) {
             try {
-                val encoded = URLEncoder.encode(location.trim(), "UTF-8")
+                val clean = location.trim('(', ')', '"', '\'', ' ')
+                val lower = clean.lowercase()
+                val locQuery = if (lower.isBlank() || lower == "weather" || lower.contains("weather") || lower.contains("current location") || lower.contains("my location") || lower.contains("here") || lower.startsWith("location")) "" else clean
+                val encoded = URLEncoder.encode(locQuery, "UTF-8")
                 val urlStr = "https://wttr.in/$encoded?format=3"
                 val conn = URL(urlStr).openConnection()
                 conn.connectTimeout = 6000

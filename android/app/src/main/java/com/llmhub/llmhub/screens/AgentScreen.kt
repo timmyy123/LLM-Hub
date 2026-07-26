@@ -189,6 +189,12 @@ fun AgentScreen(
                                 is AgentMessage.Text -> AgentTextMessageBubble(msg)
                                 is AgentMessage.ToolCall -> AgentToolCallBubble(msg)
                                 is AgentMessage.MapLocation -> AgentMapCardBubble(msg, context)
+                                is AgentMessage.Audio -> com.llmhub.llmhub.components.AudioMessageCard(
+                                    audioPath = msg.audioPath,
+                                    fileName = "Voice message",
+                                    fileSize = runCatching { java.io.File(msg.audioPath).length() }.getOrNull(),
+                                    isFromUser = msg.sender == AgentMessage.Sender.USER
+                                )
                             }
                         }
 

@@ -45,6 +45,12 @@ sealed class AgentMessage(val id: String) {
         val latitude: Double,
         val longitude: Double
     ) : AgentMessage(locationId)
+
+    data class Audio(
+        val audioId: String = UUID.randomUUID().toString(),
+        val sender: Sender,
+        val audioPath: String
+    ) : AgentMessage(audioId)
 }
 
 enum class VoiceMode {
@@ -200,40 +206,69 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
         if (_isGenerating.value) return
         _isGenerating.value = true
 
+        val tmpAudioFile = java.io.File(context.cacheDir, "agent_voice_${System.currentTimeMillis()}.wav")
+        try {
+            tmpAudioFile.writeBytes(audioBytes)
+        } catch (e: Exception) {
+            Log.e("AgentViewModel", "Failed to write temp audio file: ${e.message}")
+        }
+        addMessage(AgentMessage.Audio(sender = AgentMessage.Sender.USER, audioPath = tmpAudioFile.absolutePath))
+
         viewModelScope.launch {
             try {
-                val whisperService = com.llmhub.llmhub.inference.WhisperKitService(context)
-                val pcm16Raw = if (audioBytes.size > 44 && audioBytes[0] == 'R'.code.toByte() && audioBytes[1] == 'I'.code.toByte() && audioBytes[2] == 'F'.code.toByte() && audioBytes[3] == 'F'.code.toByte()) {
-                    audioBytes.copyOfRange(44, audioBytes.size)
-                } else {
-                    audioBytes
-                }
-
-                if (!whisperService.isLoaded) {
-                    val asrModels = ModelAvailabilityProvider.loadAvailableModels(context, includeAsr = true)
-                        .filter { it.modelFormat.lowercase() == "whisperkit" || it.name.lowercase().contains("whisper") }
-                    val asrModel = asrModels.firstOrNull()
-                    if (asrModel != null) {
-                        val modelDirName = asrModel.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
-                        val modelDir = java.io.File(context.filesDir, "models/$modelDirName")
-                        if (modelDir.exists()) {
-                            whisperService.loadModel(modelDir.absolutePath)
-                        }
+                var loadedModel = inferenceService.getCurrentlyLoadedModel()
+                if (loadedModel == null) {
+                    val agentPrefs = getApplication<Application>().getSharedPreferences("agent_prefs", Context.MODE_PRIVATE)
+                    val savedName = agentPrefs.getString("selected_model_name", "") ?: ""
+                    val availableModels = ModelAvailabilityProvider.loadAvailableModels(getApplication())
+                    val modelToLoad = availableModels.find { it.name == savedName } ?: availableModels.firstOrNull {
+                        !it.name.lowercase().contains("vision projector") &&
+                        !it.name.lowercase().contains("mmproj") &&
+                        !it.name.lowercase().contains("projector")
+                    }
+                    if (modelToLoad != null) {
+                        loadModelSuspend(modelToLoad)
+                        loadedModel = inferenceService.getCurrentlyLoadedModel()
                     }
                 }
 
-                val transcribed = whisperService.transcribe(pcm16Raw)
-
-                _isGenerating.value = false
-                if (!transcribed.isNullOrBlank()) {
-                    sendMessage(transcribed)
+                if (loadedModel != null && (loadedModel.supportsAudio || loadedModel.name.contains("Gemma-4", ignoreCase = true))) {
+                    // Native Gemma Audio ingestion
+                    processPromptWithTools(prompt = "User spoken request", audioBytes = audioBytes)
                 } else {
-                    addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = "Could not transcribe recorded audio."))
+                    // Whisper ASR fallback
+                    val whisperService = com.llmhub.llmhub.inference.WhisperKitService(context)
+                    if (!whisperService.isLoaded) {
+                        val asrModels = ModelAvailabilityProvider.loadAvailableModels(context, includeAsr = true)
+                            .filter { it.modelFormat.lowercase() == "whisperkit" || it.name.lowercase().contains("whisper") }
+                        val asrModel = asrModels.firstOrNull()
+                        if (asrModel != null) {
+                            val modelDirName = asrModel.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
+                            val modelDir = java.io.File(context.filesDir, "models/$modelDirName")
+                            if (modelDir.exists()) {
+                                whisperService.loadModel(modelDir.absolutePath)
+                            }
+                        }
+                    }
+
+                    if (whisperService.isLoaded) {
+                        val pcm16Wav = AudioConversionUtils.float32WavToPcm16Wav(audioBytes)
+                        val pcm16Raw = if (pcm16Wav.size > 44) pcm16Wav.copyOfRange(44, pcm16Wav.size) else pcm16Wav
+                        val transcribed = whisperService.transcribe(pcm16Raw)
+                        if (!transcribed.isNullOrBlank()) {
+                            processPromptWithTools(transcribed)
+                        } else {
+                            addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = "Could not transcribe recorded audio."))
+                        }
+                    } else {
+                        addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = "Native audio input requires Gemma 4 Audio model or a downloaded Whisper ASR model."))
+                    }
                 }
             } catch (e: Exception) {
+                Log.e("AgentViewModel", "Failed to process audio input: ${e.message}", e)
+                addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = "Audio processing error: ${e.message}"))
+            } finally {
                 _isGenerating.value = false
-                Log.e("AgentViewModel", "Failed to transcribe audio input: ${e.message}", e)
-                addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = "Audio transcription error: ${e.message}"))
             }
         }
     }
@@ -242,7 +277,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
         _isWebSearchEnabled.value = !_isWebSearchEnabled.value
     }
 
-    private suspend fun processPromptWithTools(prompt: String) {
+    private suspend fun processPromptWithTools(prompt: String, audioBytes: ByteArray? = null) {
         if (_isWebSearchEnabled.value) {
             val toolId = UUID.randomUUID().toString()
             addMessage(AgentMessage.ToolCall(callId = toolId, toolName = "web_search", args = prompt, status = AgentMessage.ToolCall.Status.RUNNING))
@@ -282,7 +317,24 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                 User Request: $prompt
             """.trimIndent()
 
-            val response = inferenceService.generateResponse(systemPrompt, loadedModel)
+            val responseBuilder = StringBuilder()
+            if (audioBytes != null && (loadedModel.supportsAudio || loadedModel.name.contains("Gemma-4", ignoreCase = true))) {
+                inferenceService.generateResponseStreamWithSession(
+                    prompt = systemPrompt,
+                    model = loadedModel,
+                    chatId = "agent_session",
+                    images = emptyList(),
+                    audioData = audioBytes,
+                    webSearchEnabled = false,
+                    imagePaths = emptyList()
+                ).collect { chunk ->
+                    responseBuilder.append(chunk)
+                }
+            } else {
+                responseBuilder.append(inferenceService.generateResponse(systemPrompt, loadedModel))
+            }
+
+            val response = responseBuilder.toString()
             val toolMatch = parseToolCall(response)
             if (toolMatch != null) {
                 handleParsedToolCall(toolMatch, prompt)
@@ -319,8 +371,12 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
             return null
         }
 
-        if (name.equals("TOOL", ignoreCase = true)) {
-            return parseToolCall(argsStr)
+        val knownTools = setOf("show_map", "send_email", "send_sms", "add_calendar_event", "create_calendar_event", "check_weather", "get_current_weather", "set_alarm", "toggle_flashlight")
+        val lowerArgsPrefix = argsStr.substringBefore("(").trim().lowercase()
+
+        if (name.equals("TOOL", ignoreCase = true) || knownTools.contains(lowerArgsPrefix)) {
+            val inner = parseToolCall(argsStr)
+            if (inner != null) return inner
         }
 
         return ParsedTool(name.lowercase(), argsStr)
@@ -406,27 +462,53 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun extractArgValue(args: String, key: String): String? {
-        val regex = Regex("""$key\s*=\s*"([^"]+)"|$key\s*=\s*'([^']+)'|$key\s*=\s*([^,\s)]+)""", RegexOption.IGNORE_CASE)
-        val match = regex.find(args) ?: return null
-        val raw = match.value
-        val parts = raw.split("=", limit = 2)
-        return parts.getOrNull(1)?.trim('"', '\'', ' ')
+        val regex = Regex("""$key\s*(?:=\s*|\(\s*)"([^"]+)"|$key\s*(?:=\s*|\(\s*)'([^']+)'|$key\s*=\s*([^,\s)]+)""", RegexOption.IGNORE_CASE)
+        val match = regex.find(args)
+        val raw = match?.groupValues?.get(1)?.ifEmpty { null }
+            ?: match?.groupValues?.get(2)?.ifEmpty { null }
+            ?: match?.groupValues?.get(3)?.ifEmpty { null }
+
+        if (raw != null) {
+            val cleanVal = raw.trim('"', '\'', ' ')
+            val lower = cleanVal.lowercase()
+            if (key == "location" && (lower.contains("weather") || lower.contains("current location") || lower.contains("here") || lower.contains("my location"))) {
+                return "Melbourne"
+            }
+            return cleanVal
+        }
+
+        return null
     }
 
     private suspend fun executeToolOrFallback(prompt: String) {
+        val lower = prompt.lowercase()
         val toolId = UUID.randomUUID().toString()
-        addMessage(AgentMessage.ToolCall(callId = toolId, toolName = "show_map", args = prompt, status = AgentMessage.ToolCall.Status.RUNNING))
 
-        val resMap = toolSet.showMap(prompt)
-        val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
-        val result = resMap["result"] as? String ?: resMap["error"] as? String ?: "Map location for '$prompt'"
-        updateToolCall(toolId, status, result)
+        if (lower.contains("weather") || lower.contains("forecast") || lower.contains("temperature")) {
+            addMessage(AgentMessage.ToolCall(callId = toolId, toolName = "check_weather", args = "Melbourne", status = AgentMessage.ToolCall.Status.RUNNING))
+            val resMap = toolSet.getCurrentWeather("Melbourne")
+            val result = resMap["result"] as? String ?: resMap["error"] as? String ?: "Weather information."
+            val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
+            updateToolCall(toolId, status, result)
+            addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = result))
+        } else if (lower.contains("map") || lower.contains("where is") || lower.contains("find") || lower.contains("direction")) {
+            addMessage(AgentMessage.ToolCall(callId = toolId, toolName = "show_map", args = prompt, status = AgentMessage.ToolCall.Status.RUNNING))
+            val resMap = toolSet.showMap(prompt)
+            val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
+            val result = resMap["result"] as? String ?: resMap["error"] as? String ?: "Map location for '$prompt'"
+            updateToolCall(toolId, status, result)
 
-        if (resMap["status"] == "succeeded") {
-            val lat = (resMap["lat"] as? Double) ?: 37.422
-            val lon = (resMap["lon"] as? Double) ?: -122.084
-            val label = (resMap["label"] as? String) ?: prompt
-            addMessage(AgentMessage.MapLocation(label = label, latitude = lat, longitude = lon))
+            if (resMap["status"] == "succeeded") {
+                val lat = (resMap["lat"] as? Double) ?: 37.422
+                val lon = (resMap["lon"] as? Double) ?: -122.084
+                val label = (resMap["label"] as? String) ?: prompt
+                addMessage(AgentMessage.MapLocation(label = label, latitude = lat, longitude = lon))
+            } else {
+                addMessage(AgentMessage.Text(
+                    sender = AgentMessage.Sender.SYSTEM,
+                    text = getApplication<Application>().getString(R.string.agent_no_model_android)
+                ))
+            }
         } else {
             addMessage(AgentMessage.Text(
                 sender = AgentMessage.Sender.SYSTEM,

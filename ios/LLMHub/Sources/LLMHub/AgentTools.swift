@@ -374,10 +374,14 @@ public class AgentLocationHelper: NSObject, @preconcurrency CLLocationManagerDel
 
     @MainActor
     public func checkWeather(location: String) async -> String {
-        let clean = location.trimmingCharacters(in: CharacterSet(charactersIn: "()\"' \t\n\r"))
-        let lower = clean.lowercased()
+        var clean = location.trimmingCharacters(in: CharacterSet(charactersIn: "()\"' \t\n\r"))
+        if let firstQuote = clean.firstIndex(of: "\""), let lastQuote = clean.lastIndex(of: "\""), firstQuote < lastQuote {
+            clean = String(clean[clean.index(after: firstQuote)..<lastQuote])
+        }
+        
+        let lower = clean.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
         let queryLoc: String
-        if lower.isEmpty || lower.contains("current location") || lower.contains("my location") || lower.contains("here") || lower.hasPrefix("location") {
+        if lower.isEmpty || lower == "weather" || lower.contains("weather") || lower.contains("current location") || lower.contains("my location") || lower.contains("here") || lower.hasPrefix("location") {
             queryLoc = "Melbourne"
         } else {
             queryLoc = clean

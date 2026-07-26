@@ -199,8 +199,13 @@ public class AgentViewModel: ObservableObject {
             return nil
         }
 
-        if name.lowercased().hasPrefix("tool") {
-            return parseNameAndArgs(from: argsStr)
+        let knownTools: Set<String> = ["show_map", "send_email", "send_sms", "add_calendar_event", "create_calendar_event", "check_weather", "get_current_weather", "set_alarm", "toggle_flashlight"]
+        let lowerArgsPrefix = argsStr.components(separatedBy: "(").first?.trimmingCharacters(in: .whitespaces).lowercased() ?? ""
+
+        if name.lowercased().hasPrefix("tool") || knownTools.contains(lowerArgsPrefix) {
+            if let inner = parseNameAndArgs(from: argsStr) {
+                return inner
+            }
         }
 
         return ParsedTool(name: name, args: argsStr)
@@ -268,12 +273,24 @@ public class AgentViewModel: ObservableObject {
     }
 
     private func extractArgValue(from args: String, key: String) -> String? {
-        let pattern = "\(key)\\s*=\\s*\"([^\"]+)\"|\(key)\\s*=\\s*'([^']+)'|\(key)\\s*=\\s*([^,\\s)]+)"
+        let pattern = "\(key)\\s*(?:=\\s*|\\()\\s*\"([^\"]+)\"|\(key)\\s*(?:=\\s*|\\()\\s*'([^']+)'|\(key)\\s*=\\s*([^,\\s)]+)"
         if let range = args.range(of: pattern, options: [.regularExpression, .caseInsensitive]) {
             let matched = String(args[range])
-            if let eqIdx = matched.firstIndex(of: "=") {
-                return String(matched[matched.index(after: eqIdx)...]).trimmingCharacters(in: CharacterSet(charactersIn: "\"'\t\n\r "))
+            let cleanVal: String
+            if let firstQuote = matched.firstIndex(of: "\""), let lastQuote = matched.lastIndex(of: "\""), firstQuote < lastQuote {
+                cleanVal = String(matched[matched.index(after: firstQuote)..<lastQuote])
+            } else if let firstQuote = matched.firstIndex(of: "'"), let lastQuote = matched.lastIndex(of: "'"), firstQuote < lastQuote {
+                cleanVal = String(matched[matched.index(after: firstQuote)..<lastQuote])
+            } else {
+                let parts = matched.components(separatedBy: CharacterSet(charactersIn: "=("))
+                cleanVal = parts.count >= 2 ? parts[1].trimmingCharacters(in: CharacterSet(charactersIn: ")\"'] ")) : matched
             }
+
+            let lower = cleanVal.lowercased()
+            if key == "location" && (lower.contains("weather") || lower.contains("current location") || lower.contains("here") || lower.contains("my location")) {
+                return "Melbourne"
+            }
+            return cleanVal
         }
         return nil
     }
@@ -284,14 +301,24 @@ public class AgentViewModel: ObservableObject {
     }
 
     private func executeToolOrFallback(prompt: String) async {
+        let lower = prompt.lowercased()
         let toolId = UUID().uuidString
-        messages.append(.toolCall(id: toolId, name: "show_map", args: prompt, status: .running, result: nil))
 
-        if let (lat, lon, name) = await AgentTools.shared.geocodeLocation(prompt) {
-            updateToolCall(id: toolId, status: .success, result: "Location found: \(name)")
-            messages.append(.map(id: UUID().uuidString, label: name, latitude: lat, longitude: lon))
+        if lower.contains("weather") || lower.contains("forecast") || lower.contains("temperature") {
+            messages.append(.toolCall(id: toolId, name: "check_weather", args: "Melbourne", status: .running, result: nil))
+            let weatherResult = await AgentTools.shared.checkWeather(location: "Melbourne")
+            updateToolCall(id: toolId, status: .success, result: weatherResult)
+            messages.append(.text(id: UUID().uuidString, sender: .agent, content: weatherResult, timestamp: Date()))
+        } else if lower.contains("map") || lower.contains("where is") || lower.contains("find") || lower.contains("direction") {
+            messages.append(.toolCall(id: toolId, name: "show_map", args: prompt, status: .running, result: nil))
+            if let (lat, lon, name) = await AgentTools.shared.geocodeLocation(prompt) {
+                updateToolCall(id: toolId, status: .success, result: "Location found: \(name)")
+                messages.append(.map(id: UUID().uuidString, label: name, latitude: lat, longitude: lon))
+            } else {
+                updateToolCall(id: toolId, status: .failed, result: "Location not found")
+                messages.append(.text(id: UUID().uuidString, sender: .agent, content: AppSettings.shared.localized("agent_no_model_ios"), timestamp: Date()))
+            }
         } else {
-            updateToolCall(id: toolId, status: .failed, result: "Location not found")
             messages.append(.text(id: UUID().uuidString, sender: .agent, content: AppSettings.shared.localized("agent_no_model_ios"), timestamp: Date()))
         }
     }
