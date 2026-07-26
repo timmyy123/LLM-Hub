@@ -56,14 +56,41 @@ RULES:
     // ─── Show Map (Nominatim Geocoding + In-App Map Data) ─────────────────────
 
     fun getUserLocation(): Pair<Double, Double>? {
+        // 1. Try system LocationManager providers
         try {
             val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-            val loc = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-                ?: lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-            if (loc != null) return Pair(loc.latitude, loc.longitude)
+            val providers = listOf(
+                LocationManager.GPS_PROVIDER,
+                LocationManager.NETWORK_PROVIDER,
+                LocationManager.PASSIVE_PROVIDER,
+                "fused"
+            )
+            for (p in providers) {
+                try {
+                    val loc = lm.getLastKnownLocation(p)
+                    if (loc != null && loc.latitude != 0.0 && loc.longitude != 0.0) {
+                        return Pair(loc.latitude, loc.longitude)
+                    }
+                } catch (_: Exception) {}
+            }
         } catch (_: Exception) {}
 
-        return try {
+        // 2. Fallback to ip-api.com (fast, free IP geolocation)
+        try {
+            val conn = URL("http://ip-api.com/json").openConnection()
+            conn.connectTimeout = 3000
+            conn.readTimeout = 3000
+            val json = conn.getInputStream().bufferedReader().use { it.readText() }
+            val obj = org.json.JSONObject(json)
+            if (obj.optString("status") == "success") {
+                val lat = obj.optDouble("lat", Double.NaN)
+                val lon = obj.optDouble("lon", Double.NaN)
+                if (!lat.isNaN() && !lon.isNaN()) return Pair(lat, lon)
+            }
+        } catch (_: Exception) {}
+
+        // 3. Fallback to ipapi.co
+        try {
             val conn = URL("https://ipapi.co/json/").openConnection()
             conn.connectTimeout = 3000
             conn.readTimeout = 3000
@@ -71,10 +98,26 @@ RULES:
             val obj = org.json.JSONObject(json)
             val lat = obj.optDouble("latitude", Double.NaN)
             val lon = obj.optDouble("longitude", Double.NaN)
-            if (lat.isNaN() || lon.isNaN()) null else Pair(lat, lon)
-        } catch (_: Exception) {
-            null
-        }
+            if (!lat.isNaN() && !lon.isNaN()) return Pair(lat, lon)
+        } catch (_: Exception) {}
+
+        // 4. Fallback to ipinfo.io
+        try {
+            val conn = URL("https://ipinfo.io/json").openConnection()
+            conn.connectTimeout = 3000
+            conn.readTimeout = 3000
+            val json = conn.getInputStream().bufferedReader().use { it.readText() }
+            val obj = org.json.JSONObject(json)
+            val locStr = obj.optString("loc", "")
+            if (locStr.contains(",")) {
+                val parts = locStr.split(",")
+                val lat = parts[0].toDoubleOrNull()
+                val lon = parts[1].toDoubleOrNull()
+                if (lat != null && lon != null) return Pair(lat, lon)
+            }
+        } catch (_: Exception) {}
+
+        return null
     }
 
     private fun getCityNameFromCoords(lat: Double, lon: Double): String {
@@ -90,15 +133,15 @@ RULES:
             addr?.optString("city")?.ifEmpty { null }
                 ?: addr?.optString("town")?.ifEmpty { null }
                 ?: addr?.optString("suburb")?.ifEmpty { null }
-                ?: "Melbourne"
+                ?: ""
         } catch (_: Exception) {
-            "Melbourne"
+            ""
         }
     }
 
-    @Tool(description = "Find and show a place or address on an interactive map. Returns coordinates and place details.")
+    @Tool(description = "Find and show a place, venue, business, or address on an interactive map. Returns coordinates and place details.")
     fun showMap(
-        @ToolParam(description = "Location, landmark or address to find (e.g. 'Eiffel Tower', 'Times Square', 'bar').") location: String
+        @ToolParam(description = "Location, landmark, venue, or category to find (e.g. 'bar', 'Eiffel Tower', 'gas station').") location: String
     ): Map<String, Any> {
         return runBlocking(Dispatchers.IO) {
             try {
@@ -108,17 +151,84 @@ RULES:
                 }
 
                 val userLoc = getUserLocation()
-                val searchQuery = clean
+                val nearMeRegex = Regex("""(?:near\s*(?:me|by)|nearby)""", RegexOption.IGNORE_CASE)
+                val cleanQuery = clean.replace(nearMeRegex, "").trim().ifBlank { clean }
 
-                var urlStr = "https://nominatim.openstreetmap.org/search?q=${URLEncoder.encode(searchQuery, "UTF-8")}&format=json&limit=1"
                 if (userLoc != null) {
-                    urlStr += "&lat=${userLoc.first}&lon=${userLoc.second}"
+                    val lat = userLoc.first
+                    val lon = userLoc.second
+                    val cityName = getCityNameFromCoords(lat, lon)
+
+                    // Construct a 0.25-degree (~25km) viewbox around user coordinates
+                    val delta = 0.25
+                    val viewbox = "${lon - delta},${lat - delta},${lon + delta},${lat + delta}"
+
+                    // 1. Try Nominatim bounded viewbox search near user first
+                    val boundedUrl = "https://nominatim.openstreetmap.org/search?q=${URLEncoder.encode(cleanQuery, "UTF-8")}&format=json&limit=1&viewbox=${URLEncoder.encode(viewbox, "UTF-8")}&bounded=1"
+                    var conn = URL(boundedUrl).openConnection()
+                    conn.setRequestProperty("User-Agent", "LLMHub-Agent/1.0")
+                    conn.connectTimeout = 5000
+                    conn.readTimeout = 5000
+                    var raw = conn.getInputStream().bufferedReader().use { it.readText() }
+                    var jsonArr = JSONArray(raw)
+
+                    if (jsonArr.length() > 0) {
+                        val obj = jsonArr.getJSONObject(0)
+                        val resLat = obj.getDouble("lat")
+                        val resLon = obj.getDouble("lon")
+                        val displayName = obj.optString("display_name", clean)
+                        return@runBlocking mapOf(
+                            "type" to "map",
+                            "lat" to resLat,
+                            "lon" to resLon,
+                            "label" to displayName,
+                            "status" to "succeeded"
+                        )
+                    }
+
+                    // 2. Try query + city name search (e.g. "gay bar, Melbourne")
+                    if (cityName.isNotBlank()) {
+                        val cityQuery = "$cleanQuery, $cityName"
+                        val cityUrl = "https://nominatim.openstreetmap.org/search?q=${URLEncoder.encode(cityQuery, "UTF-8")}&format=json&limit=1"
+                        conn = URL(cityUrl).openConnection()
+                        conn.setRequestProperty("User-Agent", "LLMHub-Agent/1.0")
+                        conn.connectTimeout = 5000
+                        conn.readTimeout = 5000
+                        raw = conn.getInputStream().bufferedReader().use { it.readText() }
+                        jsonArr = JSONArray(raw)
+
+                        if (jsonArr.length() > 0) {
+                            val obj = jsonArr.getJSONObject(0)
+                            val resLat = obj.getDouble("lat")
+                            val resLon = obj.getDouble("lon")
+                            val displayName = obj.optString("display_name", clean)
+                            return@runBlocking mapOf(
+                                "type" to "map",
+                                "lat" to resLat,
+                                "lon" to resLon,
+                                "label" to displayName,
+                                "status" to "succeeded"
+                            )
+                        }
+                    }
+
+                    // 3. Fall back to user's exact GPS/IP location with the requested category label
+                    val labelStr = if (cityName.isNotBlank()) "$cleanQuery near $cityName" else "$cleanQuery near you"
+                    return@runBlocking mapOf(
+                        "type" to "map",
+                        "lat" to lat,
+                        "lon" to lon,
+                        "label" to labelStr,
+                        "status" to "succeeded"
+                    )
                 }
 
+                // Fallback when user location is completely unavailable
+                val urlStr = "https://nominatim.openstreetmap.org/search?q=${URLEncoder.encode(cleanQuery, "UTF-8")}&format=json&limit=1"
                 val conn = URL(urlStr).openConnection()
                 conn.setRequestProperty("User-Agent", "LLMHub-Agent/1.0")
-                conn.connectTimeout = 8000
-                conn.readTimeout = 8000
+                conn.connectTimeout = 6000
+                conn.readTimeout = 6000
                 val raw = conn.getInputStream().bufferedReader().use { it.readText() }
                 val jsonArr = JSONArray(raw)
 
@@ -126,7 +236,7 @@ RULES:
                     val obj = jsonArr.getJSONObject(0)
                     val lat = obj.getDouble("lat")
                     val lon = obj.getDouble("lon")
-                    val displayName = obj.optString("display_name", searchQuery)
+                    val displayName = obj.optString("display_name", clean)
                     mapOf(
                         "type" to "map",
                         "lat" to lat,
@@ -134,18 +244,10 @@ RULES:
                         "label" to displayName,
                         "status" to "succeeded"
                     )
-                } else if (userLoc != null) {
-                    mapOf(
-                        "type" to "map",
-                        "lat" to userLoc.first,
-                        "lon" to userLoc.second,
-                        "label" to clean,
-                        "status" to "succeeded"
-                    )
                 } else {
                     mapOf(
                         "type" to "map_error",
-                        "error" to "Could not find location: $searchQuery",
+                        "error" to "Could not find location: $clean",
                         "status" to "failed"
                     )
                 }

@@ -303,8 +303,6 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
         _isWebSearchEnabled.value = !_isWebSearchEnabled.value
     }
 
-
-
     private fun updateAgentTextMessage(id: String, newText: String) {
         _messages.value = _messages.value.map { msg ->
             if (msg is AgentMessage.Text && msg.id == id) {
@@ -348,16 +346,20 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
         val loadedModel = inferenceService.getCurrentlyLoadedModel()
         if (loadedModel != null) {
             val systemPrompt = """
-                You are an AI Agent equipped with device tools:
-                - show_map(location: "place/venue query")
-                - send_email(recipient: "email address or contact name", subject: "subject line", body: "email body text")
-                - send_sms(recipient: "contact name or phone number", body: "SMS text content")
-                - add_calendar_event(title: "event title", date: "event date/time")
-                - check_weather(location: "city/location")
-                - set_alarm(time: "time", label: "label")
-                - toggle_flashlight(enabled: "true" or "false")
+                You are an AI Agent equipped with device tools. Today's date is $todayStr.
+                Available Tools:
+                - show_map(location: "query"): Search for and display any place, venue, business category, address, or points of interest near the user (e.g. "bar near me", "coffee", "gas station", "Eiffel Tower").
+                - send_email(recipient: "email address or contact name", subject: "subject line", body: "email body text"): Open email app to compose an email.
+                - send_sms(recipient: "contact name or phone number", body: "SMS text content"): Open SMS app to send a text message.
+                - add_calendar_event(title: "event title", date: "event date/time"): Add an event to device calendar.
+                - check_weather(location: "city/location"): Look up weather forecast.
+                - set_alarm(time: "time e.g. 7:00 AM", label: "alarm label"): Set an alarm on device.
+                - toggle_flashlight(enabled: "true" or "false"): Turn flashlight ON or OFF.
 
-                To execute a tool call, output formatted exactly as:
+                Instructions:
+                - ALWAYS call a tool when the user asks to perform an action supported by the tools.
+                - For any request to find, show, search for, or locate a place, business, venue, address, or directions (e.g. "find bar near me"), YOU MUST call show_map.
+                - Output tool calls in this format ONLY:
                 [TOOL: tool_name(arguments)]
 
                 User Request: $prompt
@@ -484,7 +486,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                 updateToolCall(toolId, status, result)
                 addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = result))
             }
-            "add_calendar_event", "create_calendar_event", "add_calendar_event" -> {
+            "add_calendar_event", "create_calendar_event" -> {
                 val title = extractArgValue(tool.args, "title") ?: tool.args.split(",").firstOrNull()?.trim('"', '\'', ' ') ?: "New Event"
                 val loc = extractArgValue(tool.args, "location") ?: ""
                 val resMap = toolSet.createCalendarEvent(title, loc, "")

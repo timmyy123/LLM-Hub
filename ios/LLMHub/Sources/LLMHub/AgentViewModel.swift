@@ -192,17 +192,19 @@ public class AgentViewModel: ObservableObject {
         // Semantic LLM Generation & Function Calling System Prompt
         let systemPrompt = """
         You are an AI Agent equipped with device tools. Today's date is \(todayStr).
-        - show_map(location: "place/venue query")
-        - send_email(recipient: "email address or contact name", subject: "subject line", body: "email body text")
-        - send_sms(recipient: "contact name or phone number", body: "SMS text content")
-        - add_calendar_event(title: "event title", date: "event date/time")
-        - check_weather(location: "city/location")
-        - set_alarm(time: "time e.g. 9 PM", label: "label")
-        - toggle_flashlight(enabled: "true" or "false")
+        Available Tools:
+        - show_map(location: "query"): Search for and display any place, venue, business category, address, or points of interest near the user (e.g. "bar near me", "coffee", "gas station", "Eiffel Tower").
+        - send_email(recipient: "email address or contact name", subject: "subject line", body: "email body text"): Open email app to compose an email.
+        - send_sms(recipient: "contact name or phone number", body: "SMS text content"): Open SMS app to send a text message.
+        - add_calendar_event(title: "event title", date: "event date/time"): Add an event to device calendar.
+        - check_weather(location: "city/location"): Look up weather forecast.
+        - set_alarm(time: "time e.g. 7:00 AM", label: "alarm label"): Set an alarm on device.
+        - toggle_flashlight(enabled: "true" or "false"): Turn flashlight ON or OFF.
 
-        IMPORTANT: For alarm requests, ALWAYS use set_alarm — never add_calendar_event.
-
-        To execute a tool call, output formatted exactly as:
+        Instructions:
+        - ALWAYS call a tool when the user asks to perform an action supported by the tools.
+        - For any request to find, show, search for, or locate a place, business, venue, address, or directions (e.g. "find bar near me"), YOU MUST call show_map.
+        - Output tool calls in this format ONLY:
         [TOOL: tool_name(arguments)]
 
         User Request: \(prompt)

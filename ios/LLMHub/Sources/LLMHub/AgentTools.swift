@@ -403,6 +403,55 @@ public class AgentLocationHelper: NSObject, @preconcurrency CLLocationManagerDel
         return nil
     }
 
+    /// Search for a category (e.g. "bar", "cafe") near the user's current GPS location.
+    /// Uses MKLocalSearch with a 15km radius, falling back to Nominatim viewbox.
+    @MainActor
+    public func geocodeNearby(category: String) async -> (Double, Double, String)? {
+        guard let coord = AgentLocationHelper.shared.currentCoordinate else { return nil }
+        let query = category.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return nil }
+
+        // MKLocalSearch with tight 15 km region centred on user
+        let searchRequest = MKLocalSearch.Request()
+        searchRequest.naturalLanguageQuery = query
+        searchRequest.region = MKCoordinateRegion(center: coord, latitudinalMeters: 15000, longitudinalMeters: 15000)
+        let localSearch = MKLocalSearch(request: searchRequest)
+        if let response = try? await localSearch.start(), let firstItem = response.mapItems.first {
+            let c = firstItem.placemark.coordinate
+            let name = firstItem.name ?? firstItem.placemark.title ?? query
+            return (c.latitude, c.longitude, name)
+        }
+
+        // Nominatim viewbox ~15 km around user
+        let delta = 0.15
+        let minLon = coord.longitude - delta
+        let minLat = coord.latitude - delta
+        let maxLon = coord.longitude + delta
+        let maxLat = coord.latitude + delta
+        let viewbox = "\(minLon),\(minLat),\(maxLon),\(maxLat)"
+        let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
+        let vbEncoded = viewbox.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? viewbox
+        let urlStr = "https://nominatim.openstreetmap.org/search?q=\(encoded)&format=json&limit=1&bounded=1&viewbox=\(vbEncoded)"
+        guard let url = URL(string: urlStr) else { return nil }
+        var request = URLRequest(url: url)
+        request.setValue("LLMHub-App", forHTTPHeaderField: "User-Agent")
+        do {
+            let (data, _) = try await URLSession.shared.data(for: request)
+            if let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
+               let first = arr.first,
+               let latStr = first["lat"] as? String, let lat = Double(latStr),
+               let lonStr = first["lon"] as? String, let lon = Double(lonStr) {
+                let name = (first["display_name"] as? String) ?? query
+                return (lat, lon, name)
+            }
+        } catch {
+            print("geocodeNearby error: \(error)")
+        }
+
+        // Nothing found nearby — show user's location with the category as label
+        return (coord.latitude, coord.longitude, "\(query) near you")
+    }
+
     // MARK: - Calendar & Weather & Alarm Tools
 
     @MainActor
