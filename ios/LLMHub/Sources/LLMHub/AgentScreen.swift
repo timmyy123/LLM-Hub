@@ -306,6 +306,7 @@ public struct AgentScreen: View {
                         do {
                             let modelContextCap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
                             let effectiveContext = min(max(1, Int(agentMaxTokens)), modelContextCap)
+                            LLMBackend.shared.enableThinking = agentEnableThinking
                             LLMBackend.shared.maxTokens = min(Int(agentMaxTokens), effectiveContext)
                             LLMBackend.shared.contextWindow = effectiveContext
                             try await LLMBackend.shared.loadModel(model)

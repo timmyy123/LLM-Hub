@@ -146,6 +146,7 @@ fun FeatureModelSettingsSheet(
             val name = selectedModel?.name?.lowercase() ?: ""
             name.contains("thinking") || name.contains("reasoning") ||
                 name.contains("gpt-oss") || name.contains("gpt_oss") ||
+                name.contains("gemma-4") || name.contains("gemma 4") || name.contains("gemma_4") ||
                 selectedModel?.supportsThinking == true
         }
     }

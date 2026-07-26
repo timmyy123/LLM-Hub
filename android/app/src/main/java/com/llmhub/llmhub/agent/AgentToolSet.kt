@@ -98,7 +98,7 @@ RULES:
 
     @Tool(description = "Find and show a place or address on an interactive map. Returns coordinates and place details.")
     fun showMap(
-        @ToolParam(description = "Location, landmark or address to find (e.g. 'Eiffel Tower, Paris', 'Times Square, New York', 'Tokyo Tower').") location: String
+        @ToolParam(description = "Location, landmark or address to find (e.g. 'Eiffel Tower', 'Times Square', 'bar').") location: String
     ): Map<String, Any> {
         return runBlocking(Dispatchers.IO) {
             try {
@@ -109,6 +109,7 @@ RULES:
 
                 val userLoc = getUserLocation()
                 val searchQuery = clean
+
                 var urlStr = "https://nominatim.openstreetmap.org/search?q=${URLEncoder.encode(searchQuery, "UTF-8")}&format=json&limit=1"
                 if (userLoc != null) {
                     urlStr += "&lat=${userLoc.first}&lon=${userLoc.second}"
@@ -133,6 +134,14 @@ RULES:
                         "label" to displayName,
                         "status" to "succeeded"
                     )
+                } else if (userLoc != null) {
+                    mapOf(
+                        "type" to "map",
+                        "lat" to userLoc.first,
+                        "lon" to userLoc.second,
+                        "label" to clean,
+                        "status" to "succeeded"
+                    )
                 } else {
                     mapOf(
                         "type" to "map_error",
@@ -141,8 +150,11 @@ RULES:
                     )
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "Map geocoding failed for '$location': ${e.message}")
-                mapOf("type" to "map_error", "error" to "Geocoding failed: ${e.message}", "status" to "failed")
+                mapOf(
+                    "type" to "map_error",
+                    "error" to (e.localizedMessage ?: "Map lookup failed"),
+                    "status" to "failed"
+                )
             }
         }
     }

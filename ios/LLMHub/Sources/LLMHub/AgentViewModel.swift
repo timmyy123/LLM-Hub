@@ -144,6 +144,8 @@ public class AgentViewModel: ObservableObject {
             messages.append(.text(id: aiMsgId, sender: .agent, content: "", timestamp: Date()))
 
             if LLMBackend.shared.isLoaded {
+                let enableThinking = UserDefaults.standard.object(forKey: "agent_enable_thinking") as? Bool ?? true
+                LLMBackend.shared.enableThinking = enableThinking
                 let savedMaxTokens = UserDefaults.standard.double(forKey: "agent_max_tokens")
                 let maxTok = savedMaxTokens > 0 ? savedMaxTokens : 4096
                 if let loadedName = LLMBackend.shared.currentlyLoadedModel,
@@ -206,6 +208,8 @@ public class AgentViewModel: ObservableObject {
         User Request: \(prompt)
         """
 
+        let enableThinking = UserDefaults.standard.object(forKey: "agent_enable_thinking") as? Bool ?? true
+        LLMBackend.shared.enableThinking = enableThinking
         let savedMaxTokens = UserDefaults.standard.double(forKey: "agent_max_tokens")
         let maxTok = savedMaxTokens > 0 ? savedMaxTokens : 4096
         if let loadedName = LLMBackend.shared.currentlyLoadedModel,
@@ -219,11 +223,13 @@ public class AgentViewModel: ObservableObject {
         let aiMsgId = UUID().uuidString
         messages.append(.text(id: aiMsgId, sender: .agent, content: "", timestamp: Date()))
 
+        var executedTool = false
         do {
             try await LLMBackend.shared.generate(prompt: systemPrompt) { [weak self] text, _, _ in
                 Task { @MainActor [weak self] in
-                    guard let self = self else { return }
+                    guard let self = self, !executedTool else { return }
                     if let toolMatch = self.parseToolCall(from: text) {
+                        executedTool = true
                         self.messages.removeAll(where: { $0.id == aiMsgId })
                         await self.handleParsedToolCall(toolMatch, originalPrompt: prompt)
                     } else {
@@ -247,17 +253,30 @@ public class AgentViewModel: ObservableObject {
     }
 
     private func parseToolCall(from text: String) -> ParsedTool? {
-        let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        // Separators between words are optional to handle CamelCase LLM outputs
-        // e.g. ADDCalendarEvent, SetAlarm, ShowMap
-        let pattern = "(?:\\[|\\b)(TOOL:|SHOW[_./ ]?MAP|SEND[_./ ]?SMS|SEND[_./ ]?EMAIL|ADD[_./ ]?CALENDAR[_./ ]?EVENT|CREATE[_./ ]?CALENDAR[_./ ]?EVENT|CHECK[_./ ]?WEATHER|SET[_./ ]?ALARM|TOGGLE[_./ ]?FLASHLIGHT)[:\\(](.+)"
-        if let range = clean.range(of: pattern, options: [.regularExpression, .caseInsensitive]) {
-            let matched = String(clean[range])
-            return parseNameAndArgs(from: matched)
+        // Match [TOOL: any_tool_name(args)] or standalone tool_name(args) patterns
+        let pattern = "\\[?TOOL:\\s*([a-zA-Z0-9_]+)\\(([^)]+)\\)\\]?|\\b([a-zA-Z_]+(?:_map|_sms|_email|_weather|_alarm|_flashlight|_event|_hash))\\(([^)]+)\\)"
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else {
+            return nil
+        }
+        let nsText = text as NSString
+        let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: nsText.length))
+        guard let match = matches.first else {
+            return nil
         }
 
-        return nil
+        let rawName: String
+        let rawArgs: String
+        if match.numberOfRanges >= 3, match.range(at: 1).location != NSNotFound, match.range(at: 1).length > 0 {
+            rawName = nsText.substring(with: match.range(at: 1)).lowercased().replacingOccurrences(of: ".", with: "_")
+            rawArgs = nsText.substring(with: match.range(at: 2)).trimmingCharacters(in: CharacterSet(charactersIn: "\"'))] "))
+        } else if match.numberOfRanges >= 5, match.range(at: 3).location != NSNotFound, match.range(at: 3).length > 0 {
+            rawName = nsText.substring(with: match.range(at: 3)).lowercased().replacingOccurrences(of: ".", with: "_")
+            rawArgs = nsText.substring(with: match.range(at: 4)).trimmingCharacters(in: CharacterSet(charactersIn: "\"'))] "))
+        } else {
+            return nil
+        }
+
+        return ParsedTool(name: rawName, args: rawArgs)
     }
 
     private func parseNameAndArgs(from text: String) -> ParsedTool? {
@@ -298,7 +317,16 @@ public class AgentViewModel: ObservableObject {
     private func handleParsedToolCall(_ tool: ParsedTool, originalPrompt: String) async {
         let toolId = UUID().uuidString
         let isAlarmIntent = originalPrompt.lowercased().contains("alarm") || tool.args.lowercased().contains("alarm")
-        let effectiveToolName = (isAlarmIntent && (tool.name.contains("calendar") || tool.name.contains("event"))) ? "set_alarm" : tool.name.lowercased()
+        var effectiveToolName = (isAlarmIntent && (tool.name.contains("calendar") || tool.name.contains("event"))) ? "set_alarm" : tool.name.lowercased()
+
+        // Normalize tool name aliases — LiteRT-LM Gemma-4 may output open_map, find_map, display_map etc.
+        if effectiveToolName.contains("map") { effectiveToolName = "show_map" }
+        if effectiveToolName.contains("weather") { effectiveToolName = "check_weather" }
+        if effectiveToolName.contains("email") || effectiveToolName.contains("mail") { effectiveToolName = "send_email" }
+        if effectiveToolName.contains("sms") || effectiveToolName == "send_message" { effectiveToolName = "send_sms" }
+        if effectiveToolName.contains("flashlight") || effectiveToolName.contains("torch") { effectiveToolName = "toggle_flashlight" }
+        if effectiveToolName.contains("alarm") && effectiveToolName != "set_alarm" { effectiveToolName = "set_alarm" }
+        if effectiveToolName.contains("calendar") || effectiveToolName.contains("event") { effectiveToolName = "add_calendar_event" }
 
         messages.append(.toolCall(id: toolId, name: effectiveToolName, args: tool.args, status: .running, result: nil))
 

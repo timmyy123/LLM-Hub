@@ -68,13 +68,21 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
     private val _messages = MutableStateFlow<List<AgentMessage>>(emptyList())
     val messages: StateFlow<List<AgentMessage>> = _messages.asStateFlow()
 
+    private val agentPrefs by lazy {
+        getApplication<Application>().getSharedPreferences("agent_prefs", Context.MODE_PRIVATE)
+    }
+
     private val _isGenerating = MutableStateFlow(false)
     val isGenerating: StateFlow<Boolean> = _isGenerating.asStateFlow()
 
-    private val _voiceMode = MutableStateFlow(VoiceMode.GEMMA_AUDIO)
+    private val _voiceMode = MutableStateFlow(
+        if (getApplication<Application>().getSharedPreferences("agent_prefs", Context.MODE_PRIVATE).getBoolean("is_gemma_audio_enabled", false)) VoiceMode.GEMMA_AUDIO else VoiceMode.SYSTEM_STT
+    )
     val voiceMode: StateFlow<VoiceMode> = _voiceMode.asStateFlow()
 
-    private val _isGemmaAudioEnabled = MutableStateFlow(true)
+    private val _isGemmaAudioEnabled = MutableStateFlow(
+        getApplication<Application>().getSharedPreferences("agent_prefs", Context.MODE_PRIVATE).getBoolean("is_gemma_audio_enabled", false)
+    )
     val isGemmaAudioEnabled: StateFlow<Boolean> = _isGemmaAudioEnabled.asStateFlow()
 
     private val _isWebSearchEnabled = MutableStateFlow(false)
@@ -120,6 +128,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
     fun setGemmaAudioEnabled(enabled: Boolean) {
         _isGemmaAudioEnabled.value = enabled
         _voiceMode.value = if (enabled) VoiceMode.GEMMA_AUDIO else VoiceMode.SYSTEM_STT
+        agentPrefs.edit().putBoolean("is_gemma_audio_enabled", enabled).commit()
     }
 
     fun toggleTermux(enabled: Boolean) {
@@ -140,6 +149,18 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             loadModelSuspend(model, preferredBackend = preferredBackend, deviceId = deviceId)
         }
+    }
+
+    fun setGenerationParameters(maxTokens: Int? = null, enableThinking: Boolean? = null, contextWindow: Int? = null) {
+        inferenceService.setGenerationParameters(
+            maxTokens = maxTokens,
+            topK = null,
+            topP = null,
+            temperature = null,
+            nGpuLayers = null,
+            enableThinking = enableThinking,
+            contextWindow = contextWindow
+        )
     }
 
     fun unloadModel() {
@@ -296,6 +317,10 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
 
     private suspend fun processPromptWithTools(prompt: String, audioBytes: ByteArray? = null) {
         val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        val agentPrefs = getApplication<Application>().getSharedPreferences("agent_prefs", Context.MODE_PRIVATE)
+        val enableThinking = agentPrefs.getBoolean("agent_enable_thinking", true)
+        val maxTokens = agentPrefs.getInt("selected_max_tokens", 4096)
+        setGenerationParameters(maxTokens = maxTokens, enableThinking = enableThinking, contextWindow = maxTokens)
 
         if (_isWebSearchEnabled.value) {
             val loadedModel = inferenceService.getCurrentlyLoadedModel()
@@ -342,6 +367,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
             addMessage(AgentMessage.Text(messageId = aiMsgId, sender = AgentMessage.Sender.AGENT, text = ""))
 
             var responseText = ""
+            var executedTool = false
             inferenceService.generateResponseStreamWithSession(
                 prompt = systemPrompt,
                 model = loadedModel,
@@ -352,16 +378,19 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                 imagePaths = emptyList()
             ).collect { chunk ->
                 responseText += chunk
-                val toolMatch = parseToolCall(responseText)
-                if (toolMatch != null) {
-                    _messages.value = _messages.value.filterNot { it.id == aiMsgId }
-                    handleParsedToolCall(toolMatch, prompt)
-                } else {
-                    val cleanText = responseText
-                        .replace(Regex("""\[TOOL:[^\]]+\]""", RegexOption.IGNORE_CASE), "")
-                        .replace(Regex("""(?:SHOW_MAP|SEND_SMS|ADD_CALENDAR_EVENT|CREATE_CALENDAR_EVENT|CHECK_WEATHER|GET_CURRENT_WEATHER|SET_ALARM|TOGGLE_FLASHLIGHT|CALCULATE_HASH|SEND_EMAIL)\([^)]*\)""", RegexOption.IGNORE_CASE), "")
-                        .trim()
-                    updateAgentTextMessage(aiMsgId, cleanText)
+                if (!executedTool) {
+                    val toolMatch = parseToolCall(responseText)
+                    if (toolMatch != null) {
+                        executedTool = true
+                        _messages.value = _messages.value.filterNot { it.id == aiMsgId }
+                        handleParsedToolCall(toolMatch, prompt)
+                    } else {
+                        val cleanText = responseText
+                            .replace(Regex("""\[TOOL:[^\]]+\]""", RegexOption.IGNORE_CASE), "")
+                            .replace(Regex("""(?:SHOW_MAP|SEND_SMS|ADD_CALENDAR_EVENT|CREATE_CALENDAR_EVENT|CHECK_WEATHER|GET_CURRENT_WEATHER|SET_ALARM|TOGGLE_FLASHLIGHT|CALCULATE_HASH|SEND_EMAIL)\([^)]*\)""", RegexOption.IGNORE_CASE), "")
+                            .trim()
+                        updateAgentTextMessage(aiMsgId, cleanText)
+                    }
                 }
             }
 
@@ -391,37 +420,15 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun parseToolCall(text: String): ParsedTool? {
-        val clean = text.trim()
-        val regex = Regex("""(?:\[|\b)(TOOL:|SHOW_MAP|SEND_SMS|ADD[./_]CALENDAR[./_]EVENT|CREATE[./_]CALENDAR[./_]EVENT|CHECK[./_]WEATHER|GET[./_]CURRENT[./_]WEATHER|SET[./_]ALARM|TOGGLE[./_]FLASHLIGHT|CALCULATE[./_]HASH|SEND[./_]EMAIL)[:(](.+)[\])]?""", RegexOption.IGNORE_CASE)
-        val match = regex.find(clean) ?: return null
-        val fullMatch = match.groupValues[0].trim('[', ']', ' ')
-
-        val name: String
-        val argsStr: String
-
-        val colonIdx = fullMatch.indexOf(":")
-        val parenIdx = fullMatch.indexOf("(")
-
-        if (parenIdx != -1 && (colonIdx == -1 || parenIdx < colonIdx)) {
-            name = fullMatch.substring(0, parenIdx).trim()
-            argsStr = fullMatch.substring(parenIdx + 1).trim(')', ' ', ']', '"', '\'')
-        } else if (colonIdx != -1) {
-            name = fullMatch.substring(0, colonIdx).trim()
-            argsStr = fullMatch.substring(colonIdx + 1).trim()
-        } else {
-            return null
-        }
-
-        val knownTools = setOf("show_map", "send_email", "send_sms", "add_calendar_event", "create_calendar_event", "check_weather", "get_current_weather", "set_alarm", "toggle_flashlight")
-        val lowerArgsPrefix = argsStr.substringBefore("(").trim().lowercase()
-
-        if (name.equals("TOOL", ignoreCase = true) || knownTools.contains(lowerArgsPrefix)) {
-            val inner = parseToolCall(argsStr)
-            if (inner != null) return inner
-        }
-
-        val normalizedName = name.replace(".", "_").replace("/", "_").lowercase()
-        return ParsedTool(normalizedName, argsStr)
+        // Match [TOOL: any_tool_name(args)] or standalone known tool patterns
+        val regex = Regex("""\[?TOOL:\s*([a-zA-Z0-9._]+)\(([^)]+)\)\]?|\b([a-zA-Z_]+(?:_map|_sms|_email|_weather|_alarm|_flashlight|_event|_hash))\(([^)]+)\)""", RegexOption.IGNORE_CASE)
+        val match = regex.find(text) ?: return null
+        val groups = match.groupValues
+        val name = if (groups[1].isNotEmpty()) groups[1] else groups[3]
+        val args = if (groups[2].isNotEmpty()) groups[2] else groups[4]
+        val cleanName = name.replace(".", "_").replace("/", "_").lowercase()
+        val cleanArgs = args.trim('"', '\'', ' ', ')', ']')
+        return ParsedTool(cleanName, cleanArgs)
     }
 
     private suspend fun handleParsedToolCall(tool: ParsedTool, originalPrompt: String) {
@@ -430,7 +437,16 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
 
         // Reroute calendar tool calls to set_alarm if prompt or title specifies alarm
         val isAlarmIntent = originalPrompt.contains("alarm", ignoreCase = true) || tool.args.contains("alarm", ignoreCase = true)
-        val effectiveToolName = if (isAlarmIntent && (tool.name.contains("calendar") || tool.name.contains("event"))) "set_alarm" else tool.name.lowercase()
+        var effectiveToolName = if (isAlarmIntent && (tool.name.contains("calendar") || tool.name.contains("event"))) "set_alarm" else tool.name.lowercase()
+
+        // Normalize tool name aliases — LiteRT-LM Gemma-4 may output open_map, find_map, display_map etc.
+        if (effectiveToolName.contains("map")) effectiveToolName = "show_map"
+        if (effectiveToolName.contains("weather")) effectiveToolName = "check_weather"
+        if (effectiveToolName.contains("email") || effectiveToolName.contains("mail")) effectiveToolName = "send_email"
+        if (effectiveToolName.contains("sms") || effectiveToolName == "send_message") effectiveToolName = "send_sms"
+        if (effectiveToolName.contains("flashlight") || effectiveToolName.contains("torch")) effectiveToolName = "toggle_flashlight"
+        if (effectiveToolName.contains("alarm") && effectiveToolName != "set_alarm") effectiveToolName = "set_alarm"
+        if (effectiveToolName.contains("calendar") || effectiveToolName.contains("event")) effectiveToolName = "add_calendar_event"
 
         when (effectiveToolName) {
             "show_map" -> {

@@ -561,7 +561,12 @@ struct FeatureModelSettingsSheet: View {
                                 }
                             }
 
-                            if selectedModel?.supportsThinking == true {
+                            let isThinkingModel = selectedModel?.supportsThinking == true ||
+                                selectedModel?.name.lowercased().contains("gemma-4") == true ||
+                                selectedModel?.name.lowercased().contains("gemma 4") == true ||
+                                selectedModel?.name.lowercased().contains("gemma_4") == true
+
+                            if isThinkingModel {
                                 Toggle(settings.localized("enable_thinking"), isOn: $enableThinking)
                                     .tint(ApolloPalette.accentStrong)
                                     .foregroundColor(.white)

@@ -64,6 +64,8 @@ fun AgentScreen(
         value = ModelAvailabilityProvider.loadAvailableModels(context)
     }
     val availableModels = availableModelsState.value
+    val loadingModelName by viewModel.loadingModelName.collectAsState()
+    val activeModelName by viewModel.activeModelName.collectAsState()
 
     val listState = rememberLazyListState()
 
@@ -89,9 +91,6 @@ fun AgentScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    val loadingModelName by viewModel.loadingModelName.collectAsState()
-                    val activeModelName by viewModel.activeModelName.collectAsState()
-
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             text = stringResource(R.string.agent_title),
@@ -240,6 +239,17 @@ fun AgentScreen(
 
                 val isWebSearchEnabled by viewModel.isWebSearchEnabled.collectAsState()
 
+                val isGemmaAudioEnabled by viewModel.isGemmaAudioEnabled.collectAsState()
+                val loadedModel = availableModels.find { it.name == activeModelName }
+                val modelSupportsAudio = loadedModel?.let { model ->
+                    model.supportsAudio || model.name.contains("Gemma-4", ignoreCase = true) || model.name.contains("Gemma 4", ignoreCase = true)
+                } ?: true
+                val isAudioSupportedInAgent = if (loadedModel != null) {
+                    modelSupportsAudio && isGemmaAudioEnabled
+                } else {
+                    isGemmaAudioEnabled
+                }
+
                 // Input bar using standard AI Chat MessageInput component
                 Box(modifier = Modifier.imePadding()) {
                     MessageInput(
@@ -253,7 +263,7 @@ fun AgentScreen(
                         enabled = true,
                         supportsAttachments = true,
                         supportsVision = false,
-                        supportsAudio = true,
+                        supportsAudio = isAudioSupportedInAgent,
                         isLoading = isGenerating,
                         onCancelGeneration = if (isGenerating) { { } } else null,
                         isWebSearchEnabled = isWebSearchEnabled,
@@ -314,7 +324,7 @@ fun AgentScreen(
                         selectedMaxTokens = tokens
                         agentPrefs.edit().putInt("selected_max_tokens", tokens).apply()
                     },
-                    onLoadModel = { model, maxTokens, backend, deviceId, _, _ ->
+                    onLoadModel = { model, maxTokens, backend, deviceId, _, enableThinking ->
                         selectedModelName = model.name
                         selectedMaxTokens = maxTokens
                         selectedBackendName = backend?.name
@@ -322,9 +332,11 @@ fun AgentScreen(
                         agentPrefs.edit()
                             .putString("selected_model_name", model.name)
                             .putInt("selected_max_tokens", maxTokens)
+                            .putBoolean("agent_enable_thinking", enableThinking)
                             .putString("selected_backend", backend?.name)
                             .putString("selected_npu_device_id", deviceId)
                             .apply()
+                        viewModel.setGenerationParameters(maxTokens = maxTokens, enableThinking = enableThinking, contextWindow = maxTokens)
                         viewModel.loadModel(model, preferredBackend = backend, deviceId = deviceId)
                         showSettingsSheet = false
                     },
