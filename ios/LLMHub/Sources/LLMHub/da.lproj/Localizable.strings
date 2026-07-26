@@ -850,3 +850,6 @@
 "agent_welcome_message" = "Hej! Jeg er din AI-agent. Jeg kan søge på nettet, vise kort, administrere kalenderbegivenheder, tjekke vejret, indstille alarmer, sende beskeder og beregne hashes. Hvordan kan jeg hjælpe dig i dag?";
 "agent_no_model_android" = "Download venligst Gemma 4 E2/4B-modellen først for at bruge Agent";
 "agent_no_model_ios" = "Download venligst en model først for at bruge Agent";
+
+"open_maps" = "Åbn kort";
+"agent_processing_tool" = "Agent behandler værktøj...";

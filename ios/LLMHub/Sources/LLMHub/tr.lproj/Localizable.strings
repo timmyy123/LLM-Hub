@@ -842,3 +842,6 @@
 "agent_welcome_message" = "Merhaba! Ben sizin Yapay Zeka Ajanınızım. Web'de arama yapabilir, haritaları gösterebilir, takvim etkinliklerini yönetebilir, hava durumunu kontrol edebilir, alarmlar kurabilir, mesaj gönderebilir ve hash hesaplayabilirim. Bugün size nasıl yardımcı olabilirim?";
 "agent_no_model_android" = "Ajanı kullanmak için lütfen önce Gemma 4 E2/4B modelini indirin";
 "agent_no_model_ios" = "Ajanı kullanmak için lütfen önce bir model indirin";
+
+"open_maps" = "Haritaları Aç";
+"agent_processing_tool" = "Temsilci aracı işliyor...";

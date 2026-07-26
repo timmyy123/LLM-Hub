@@ -832,3 +832,6 @@
 "agent_welcome_message" = "Ciao! Sono il tuo Agente IA. Posso cercare sul web, mostrare mappe, gestire eventi del calendario, controllare il meteo, impostare sveglie, inviare messaggi e calcolare hash. Come posso aiutarti oggi?";
 "agent_no_model_android" = "Scarica prima il modello Gemma 4 E2/4B per utilizzare l'Agente";
 "agent_no_model_ios" = "Scarica prima un modello per utilizzare l'Agente";
+
+"open_maps" = "Apri mappe";
+"agent_processing_tool" = "L’agente sta elaborando lo strumento...";

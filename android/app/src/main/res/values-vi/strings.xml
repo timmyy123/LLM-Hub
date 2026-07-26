@@ -813,4 +813,6 @@
     <string name="agent_welcome_message">Xin chào! Tôi là Đại lý AI của bạn. Tôi có thể tìm kiếm trên web, hiển thị bản đồ, quản lý sự kiện lịch, kiểm tra thời tiết, đặt báo thức, gửi tin nhắn và tính toán hash. Tôi có thể giúp gì cho bạn hôm nay?</string>
     <string name="agent_no_model_android">Vui lòng tải xuống mô hình Gemma 4 E2/4B trước để sử dụng Đại lý</string>
     <string name="agent_no_model_ios">Vui lòng tải xuống mô hình trước để sử dụng Đại lý</string>
+    <string name="open_maps">Mở bản đồ</string>
+    <string name="agent_processing_tool">Tác nhân đang xử lý công cụ...</string>
 </resources>

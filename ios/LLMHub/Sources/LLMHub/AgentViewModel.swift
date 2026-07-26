@@ -132,7 +132,11 @@ public class AgentViewModel: ObservableObject {
         let systemPrompt = """
         You are an AI Agent equipped with device tools:
         - show_map(location: "place/venue query")
-        - send_sms(recipient: "contact name/phone", body: "message text")
+        - send_email(recipient: "email address or contact name", subject: "subject line", body: "email body text")
+        - send_sms(recipient: "contact name or phone number", body: "SMS text content")
+        - add_calendar_event(title: "event title", date: "event date/time")
+        - check_weather(location: "city/location")
+        - set_alarm(time: "time", label: "label")
         - toggle_flashlight(enabled: "true" or "false")
 
         To execute a tool call, output formatted exactly as:
@@ -166,7 +170,7 @@ public class AgentViewModel: ObservableObject {
     private func parseToolCall(from text: String) -> ParsedTool? {
         let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        let pattern = "(?:\\[|\\b)(TOOL:|SHOW_MAP|SEND_SMS|TOGGLE_FLASHLIGHT)[:\\(]([^\\]\\)]+)[\\]\\) ]?"
+        let pattern = "(?:\\[|\\b)(TOOL:|SHOW_MAP|SEND_SMS|SEND_EMAIL|ADD_CALENDAR_EVENT|CHECK_WEATHER|SET_ALARM|TOGGLE_FLASHLIGHT)[:\\(](.+)"
         if let range = clean.range(of: pattern, options: [.regularExpression, .caseInsensitive]) {
             let matched = String(clean[range])
             return parseNameAndArgs(from: matched)
@@ -181,13 +185,16 @@ public class AgentViewModel: ObservableObject {
         var name = ""
         var argsStr = ""
 
-        if let colonIdx = clean.firstIndex(of: ":") {
-            name = String(clean[..<colonIdx]).trimmingCharacters(in: .whitespaces)
-            argsStr = String(clean[clean.index(after: colonIdx)...]).trimmingCharacters(in: .whitespaces)
-        } else if let parenIdx = clean.firstIndex(of: "(") {
-            name = String(clean[..<parenIdx]).trimmingCharacters(in: .whitespaces)
-            argsStr = String(clean[clean.index(after: parenIdx)...])
+        let parenIdx = clean.firstIndex(of: "(")
+        let colonIdx = clean.firstIndex(of: ":")
+
+        if let pIdx = parenIdx, (colonIdx == nil || pIdx < colonIdx!) {
+            name = String(clean[..<pIdx]).trimmingCharacters(in: .whitespaces)
+            argsStr = String(clean[clean.index(after: pIdx)...])
                 .trimmingCharacters(in: CharacterSet(charactersIn: ")\"'] \t\n\r"))
+        } else if let cIdx = colonIdx {
+            name = String(clean[..<cIdx]).trimmingCharacters(in: .whitespaces)
+            argsStr = String(clean[clean.index(after: cIdx)...]).trimmingCharacters(in: .whitespaces)
         } else {
             return nil
         }
@@ -214,10 +221,38 @@ public class AgentViewModel: ObservableObject {
                 messages.append(.text(id: UUID().uuidString, sender: .agent, content: "Could not find '\(cleanLoc)' on the map.", timestamp: Date()))
             }
 
+        case "send_email", "compose_email":
+            let recipient = extractArgValue(from: tool.args, key: "recipient") ?? extractArgValue(from: tool.args, key: "to") ?? extractFirstPart(from: tool.args)
+            let body = extractArgValue(from: tool.args, key: "body") ?? extractArgValue(from: tool.args, key: "message") ?? originalPrompt
+            let subject = extractArgValue(from: tool.args, key: "subject") ?? "Hello"
+            let res = await AgentTools.shared.sendEmail(email: recipient, subject: subject, body: body)
+            updateToolCall(id: toolId, status: .success, result: res)
+            messages.append(.text(id: UUID().uuidString, sender: .agent, content: res, timestamp: Date()))
+
         case "send_sms":
             let recipient = extractArgValue(from: tool.args, key: "recipient") ?? extractArgValue(from: tool.args, key: "to") ?? extractFirstPart(from: tool.args)
             let body = extractArgValue(from: tool.args, key: "body") ?? extractArgValue(from: tool.args, key: "message") ?? originalPrompt
-            let res = await AgentTools.shared.sendSms(recipient: recipient, body: body)
+            let res = await AgentTools.shared.sendSms(phone: recipient, body: body)
+            updateToolCall(id: toolId, status: .success, result: res)
+            messages.append(.text(id: UUID().uuidString, sender: .agent, content: res, timestamp: Date()))
+
+        case "add_calendar_event":
+            let title = extractArgValue(from: tool.args, key: "title") ?? extractFirstPart(from: tool.args)
+            let dateStr = extractArgValue(from: tool.args, key: "date") ?? "tomorrow"
+            let res = await AgentTools.shared.addCalendarEvent(title: title, dateStr: dateStr)
+            updateToolCall(id: toolId, status: .success, result: res)
+            messages.append(.text(id: UUID().uuidString, sender: .agent, content: res, timestamp: Date()))
+
+        case "check_weather":
+            let loc = extractArgValue(from: tool.args, key: "location") ?? tool.args
+            let res = await AgentTools.shared.checkWeather(location: loc)
+            updateToolCall(id: toolId, status: .success, result: res)
+            messages.append(.text(id: UUID().uuidString, sender: .agent, content: res, timestamp: Date()))
+
+        case "set_alarm":
+            let time = extractArgValue(from: tool.args, key: "time") ?? tool.args
+            let label = extractArgValue(from: tool.args, key: "label") ?? "Alarm"
+            let res = await AgentTools.shared.setAlarm(time: time, label: label)
             updateToolCall(id: toolId, status: .success, result: res)
             messages.append(.text(id: UUID().uuidString, sender: .agent, content: res, timestamp: Date()))
 

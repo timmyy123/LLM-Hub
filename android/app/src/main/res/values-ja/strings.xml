@@ -903,4 +903,6 @@
     <string name="agent_welcome_message">こんにちは！私はあなたのAIエージェントです。Web検索、マップ表示、カレンダーの予定管理、天気予報の確認、アラーム設定、メッセージ送信、ハッシュ計算ができます。本日はどのようなご用件でしょうか？</string>
     <string name="agent_no_model_android">エージェントを使用するには、まずGemma 4 E2/4Bモデルをダウンロードしてください</string>
     <string name="agent_no_model_ios">エージェントを使用するには、まずモデルをダウンロードしてください</string>
+    <string name="open_maps">マップを開く</string>
+    <string name="agent_processing_tool">エージェントがツールを処理中...</string>
 </resources>

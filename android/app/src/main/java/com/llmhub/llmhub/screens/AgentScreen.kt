@@ -1,6 +1,8 @@
 package com.llmhub.llmhub.screens
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -77,6 +79,14 @@ fun AgentScreen(
         topBar = {
             TopAppBar(
                 title = {
+                    val loadingModelName by viewModel.loadingModelName.collectAsState()
+                    val activeModelName by viewModel.activeModelName.collectAsState()
+                    val subtitleText = when {
+                        loadingModelName != null -> stringResource(R.string.loading_model_format, loadingModelName!!)
+                        activeModelName != null -> activeModelName!!
+                        else -> stringResource(R.string.agent_subtitle)
+                    }
+
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             text = stringResource(R.string.agent_title),
@@ -86,7 +96,7 @@ fun AgentScreen(
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = stringResource(R.string.agent_subtitle),
+                            text = subtitleText,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
@@ -181,6 +191,12 @@ fun AgentScreen(
                                 is AgentMessage.MapLocation -> AgentMapCardBubble(msg, context)
                             }
                         }
+
+                        if (isGenerating) {
+                            item {
+                                AgentProcessingBubble()
+                            }
+                        }
                     }
                 }
 
@@ -189,9 +205,11 @@ fun AgentScreen(
                 // Input bar using standard AI Chat MessageInput component
                 Box(modifier = Modifier.imePadding()) {
                     MessageInput(
-                        onSendMessage = { text, _, _ ->
+                        onSendMessage = { text, _, audioData ->
                             if (text.isNotBlank()) {
                                 viewModel.sendMessage(text)
+                            } else if (audioData != null) {
+                                viewModel.sendAudioMessage(audioData, context)
                             }
                         },
                         enabled = !isGenerating,
@@ -415,6 +433,13 @@ fun AgentToolCallBubble(msg: AgentMessage.ToolCall) {
 
 @Composable
 fun AgentMapCardBubble(msg: AgentMessage.MapLocation, context: Context) {
+    val openMapAction = {
+        val uri = Uri.parse("geo:${msg.latitude},${msg.longitude}?q=${Uri.encode(msg.label)}")
+        val mapIntent = Intent(Intent.ACTION_VIEW, uri)
+        mapIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        runCatching { context.startActivity(mapIntent) }
+    }
+
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surfaceVariant,
@@ -437,6 +462,10 @@ fun AgentMapCardBubble(msg: AgentMessage.MapLocation, context: Context) {
                             position = point
                             title = msg.label
                             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                            setOnMarkerClickListener { _, _ ->
+                                openMapAction()
+                                true
+                            }
                         }
                         overlays.add(marker)
                     }
@@ -457,6 +486,57 @@ fun AgentMapCardBubble(msg: AgentMessage.MapLocation, context: Context) {
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                 )
             }
+
+            Surface(
+                color = MaterialTheme.colorScheme.primary,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .clickable { openMapAction() }
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "${stringResource(R.string.open_maps)} ↗",
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AgentProcessingBubble() {
+    Surface(
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        modifier = Modifier
+            .fillMaxWidth(0.85f)
+            .padding(vertical = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(18.dp),
+                strokeWidth = 2.dp,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = stringResource(R.string.agent_tool_running, "..."),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

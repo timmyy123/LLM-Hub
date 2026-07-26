@@ -814,3 +814,6 @@
 "agent_welcome_message" = "Hallo! Ich bin Ihr KI-Agent. Ich kann im Web suchen, Karten anzeigen, Kalendertermine verwalten, das Wetter prüfen, Wecker stellen, Nachrichten senden und Hashes berechnen. Wie kann ich Ihnen heute helfen?";
 "agent_no_model_android" = "Bitte laden Sie zuerst das Modell Gemma 4 E2/4B herunter, um Agent zu verwenden";
 "agent_no_model_ios" = "Bitte laden Sie zuerst ein Modell herunter, um Agent zu verwenden";
+
+"open_maps" = "Karten öffnen";
+"agent_processing_tool" = "Agent verarbeitet Werkzeug...";

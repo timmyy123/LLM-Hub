@@ -920,6 +920,8 @@
     <string name="agent_welcome_message">Hello! I am your AI Agent. I can search the web, display maps, manage calendar events, check weather, set alarms, send messages, and calculate hashes. How can I help you today?</string>
     <string name="agent_no_model_android">Please download Gemma 4 E2/4B model first to use Agent</string>
     <string name="agent_no_model_ios">Please download a model first to use Agent</string>
+    <string name="open_maps">Open Maps</string>
+    <string name="agent_processing_tool">Agent is processing tool…</string>
 </resources>
 
 

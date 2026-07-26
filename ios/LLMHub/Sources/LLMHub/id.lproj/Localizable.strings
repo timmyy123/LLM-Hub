@@ -842,3 +842,6 @@
 "agent_welcome_message" = "Halo! Saya Agen AI Anda. Saya dapat mencari di web, menampilkan peta, mengelola acara kalender, memeriksa cuaca, mengatur alarm, mengirim pesan, dan menghitung hash. Ada yang bisa saya bantu hari ini?";
 "agent_no_model_android" = "Silakan unduh model Gemma 4 E2/4B terlebih dahulu untuk menggunakan Agen";
 "agent_no_model_ios" = "Silakan unduh model terlebih dahulu untuk menggunakan Agen";
+
+"open_maps" = "Buka Peta";
+"agent_processing_tool" = "Agen sedang memproses alat...";

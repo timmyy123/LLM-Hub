@@ -842,3 +842,6 @@
 "agent_welcome_message" = "Cześć! Jestem Twoim Agentem AI. Mogę przeszukiwać sieć, wyświetlać mapy, zarządzać wydarzeniami w kalendarzu, sprawdzać pogodę, ustawiać alarmy, wysyłać wiadomości i obliczać hasze. Jak mogę Ci dzisiaj pomóc?";
 "agent_no_model_android" = "Pobierz najpierw model Gemma 4 E2/4B, aby korzystać z Agenta";
 "agent_no_model_ios" = "Pobierz najpierw model, aby korzystać z Agenta";
+
+"open_maps" = "Otwórz mapy";
+"agent_processing_tool" = "Agent przetwarza narzędzie...";

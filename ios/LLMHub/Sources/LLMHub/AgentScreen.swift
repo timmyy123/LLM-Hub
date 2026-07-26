@@ -61,6 +61,22 @@ public struct AgentScreen: View {
                                     ForEach(vm.messages) { msg in
                                         agentMessageBubble(for: msg)
                                     }
+
+                                    if vm.isGenerating {
+                                        HStack(spacing: 10) {
+                                            ProgressView()
+                                                .tint(Color(hex: "A78BFA"))
+                                            Text(settings.localized("agent_processing_tool"))
+                                                .font(.subheadline)
+                                                .foregroundColor(.white.opacity(0.85))
+                                            Spacer()
+                                        }
+                                        .padding(.horizontal, 14)
+                                        .padding(.vertical, 10)
+                                        .background(Color.white.opacity(0.08))
+                                        .cornerRadius(14)
+                                        .padding(.horizontal, 16)
+                                    }
                                 }
 
                                 Color.clear
@@ -474,6 +490,24 @@ struct AgentMapViewCell: View {
                     .font(.caption)
                     .bold()
                     .foregroundColor(.white)
+
+                Spacer()
+
+                Button {
+                    openExternalMap()
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(NSLocalizedString("open_maps", comment: ""))
+                            .font(.system(size: 11, weight: .semibold))
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 10, weight: .bold))
+                    }
+                    .foregroundColor(Color(hex: "A78BFA"))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.white.opacity(0.12))
+                    .cornerRadius(12)
+                }
             }
             .padding(.horizontal, 12)
             .padding(.top, 8)
@@ -481,9 +515,19 @@ struct AgentMapViewCell: View {
             MapViewRepresentable(coordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude), title: label)
                 .frame(height: 200)
                 .cornerRadius(12)
+                .onTapGesture {
+                    openExternalMap()
+                }
         }
         .background(Color.white.opacity(0.1))
         .cornerRadius(16)
+    }
+
+    private func openExternalMap() {
+        let query = label.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        if let url = URL(string: "http://maps.apple.com/?q=\(query)&ll=\(latitude),\(longitude)") {
+            UIApplication.shared.open(url)
+        }
     }
 }
 

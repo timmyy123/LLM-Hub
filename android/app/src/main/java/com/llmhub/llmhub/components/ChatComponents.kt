@@ -2385,37 +2385,66 @@ fun MessageInput(
                             }
                         }
                     } else {
-                        // Show send button when not loading
-                        IconButton(
-                            onClick = {
-                                if (textState.text.isNotBlank() || attachmentUri != null || recordedAudioData != null) {
-                                    // Aggressively hide keyboard using multiple methods
-                                    keyboardController?.hide()
-                                    focusManager.clearFocus()
-                                    onSendMessage(textState.text, attachmentUri, recordedAudioData)
-                                    textState = TextFieldValue("")
-                                    attachmentUri = null
-                                    attachmentInfo = null
-                                    recordedAudioData = null
+                        // Show send button and dedicated mic button when supportsAudio is enabled
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (supportsAudio && textState.text.isEmpty() && attachmentUri == null && recordedAudioData == null) {
+                                IconButton(
+                                    onClick = {
+                                        if (hasAudioPermission) {
+                                            isRecording = true
+                                        } else {
+                                            audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                        }
+                                    },
+                                    enabled = enabled
+                                ) {
+                                    Surface(
+                                        modifier = Modifier.size(32.dp),
+                                        shape = RoundedCornerShape(16.dp),
+                                        color = MaterialTheme.colorScheme.surfaceVariant
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Mic,
+                                            contentDescription = stringResource(R.string.audio_recording),
+                                            modifier = Modifier.padding(6.dp),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                 }
-                            },
-                            enabled = enabled && (textState.text.isNotBlank() || attachmentUri != null || recordedAudioData != null)
-                        ) {
-                            Surface(
-                                modifier = Modifier.size(32.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                color = if (enabled && (textState.text.isNotBlank() || attachmentUri != null || recordedAudioData != null)) 
-                                    MaterialTheme.colorScheme.primary 
-                                else MaterialTheme.colorScheme.surfaceVariant
+                                Spacer(modifier = Modifier.width(4.dp))
+                            }
+
+                            IconButton(
+                                onClick = {
+                                    if (textState.text.isNotBlank() || attachmentUri != null || recordedAudioData != null) {
+                                        // Aggressively hide keyboard using multiple methods
+                                        keyboardController?.hide()
+                                        focusManager.clearFocus()
+                                        onSendMessage(textState.text, attachmentUri, recordedAudioData)
+                                        textState = TextFieldValue("")
+                                        attachmentUri = null
+                                        attachmentInfo = null
+                                        recordedAudioData = null
+                                    }
+                                },
+                                enabled = enabled && (textState.text.isNotBlank() || attachmentUri != null || recordedAudioData != null)
                             ) {
-                                Icon(
-                                    Icons.Default.Send,
-                                    contentDescription = stringResource(R.string.send),
-                                    modifier = Modifier.padding(6.dp),
-                                    tint = if (enabled && (textState.text.isNotBlank() || attachmentUri != null || recordedAudioData != null)) 
-                                        MaterialTheme.colorScheme.onPrimary 
-                                    else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                Surface(
+                                    modifier = Modifier.size(32.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = if (enabled && (textState.text.isNotBlank() || attachmentUri != null || recordedAudioData != null)) 
+                                        MaterialTheme.colorScheme.primary 
+                                    else MaterialTheme.colorScheme.surfaceVariant
+                                ) {
+                                    Icon(
+                                        Icons.Default.Send,
+                                        contentDescription = stringResource(R.string.send),
+                                        modifier = Modifier.padding(6.dp),
+                                        tint = if (enabled && (textState.text.isNotBlank() || attachmentUri != null || recordedAudioData != null)) 
+                                            MaterialTheme.colorScheme.onPrimary 
+                                        else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
                     }

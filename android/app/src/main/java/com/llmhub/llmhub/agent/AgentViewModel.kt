@@ -2,6 +2,8 @@ package com.llmhub.llmhub.agent
 
 import android.app.Application
 import android.content.Context
+import android.util.Log
+import com.llmhub.llmhub.utils.AudioConversionUtils
 import android.speech.tts.TextToSpeech
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -71,6 +73,9 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
     private val _activeModelName = MutableStateFlow<String?>(null)
     val activeModelName: StateFlow<String?> = _activeModelName.asStateFlow()
 
+    private val _loadingModelName = MutableStateFlow<String?>(null)
+    val loadingModelName: StateFlow<String?> = _loadingModelName.asStateFlow()
+
     val toolSet = AgentToolSet(application.applicationContext)
     private val inferenceService: InferenceService = UnifiedInferenceService(application.applicationContext)
 
@@ -111,12 +116,18 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
         toolSet.isTermuxEnabled = enabled
     }
 
+    suspend fun loadModelSuspend(model: LLMModel, preferredBackend: LlmInference.Backend? = null, deviceId: String? = null) {
+        _isGenerating.value = true
+        _loadingModelName.value = model.name
+        inferenceService.loadModel(model, preferredBackend = preferredBackend, deviceId = deviceId)
+        _activeModelName.value = inferenceService.getCurrentlyLoadedModel()?.name
+        _loadingModelName.value = null
+        _isGenerating.value = false
+    }
+
     fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend? = null, deviceId: String? = null) {
         viewModelScope.launch {
-            _isGenerating.value = true
-            inferenceService.loadModel(model, preferredBackend = preferredBackend, deviceId = deviceId)
-            _activeModelName.value = inferenceService.getCurrentlyLoadedModel()?.name
-            _isGenerating.value = false
+            loadModelSuspend(model, preferredBackend = preferredBackend, deviceId = deviceId)
         }
     }
 
@@ -176,12 +187,54 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                     !it.name.lowercase().contains("projector")
                 }
                 if (modelToLoad != null) {
-                    loadModel(modelToLoad)
+                    loadModelSuspend(modelToLoad)
                 }
             }
 
             processPromptWithTools(userText)
             _isGenerating.value = false
+        }
+    }
+
+    fun sendAudioMessage(audioBytes: ByteArray, context: Context) {
+        if (_isGenerating.value) return
+        _isGenerating.value = true
+
+        viewModelScope.launch {
+            try {
+                val whisperService = com.llmhub.llmhub.inference.WhisperKitService(context)
+                val pcm16Raw = if (audioBytes.size > 44 && audioBytes[0] == 'R'.code.toByte() && audioBytes[1] == 'I'.code.toByte() && audioBytes[2] == 'F'.code.toByte() && audioBytes[3] == 'F'.code.toByte()) {
+                    audioBytes.copyOfRange(44, audioBytes.size)
+                } else {
+                    audioBytes
+                }
+
+                if (!whisperService.isLoaded) {
+                    val asrModels = ModelAvailabilityProvider.loadAvailableModels(context, includeAsr = true)
+                        .filter { it.modelFormat.lowercase() == "whisperkit" || it.name.lowercase().contains("whisper") }
+                    val asrModel = asrModels.firstOrNull()
+                    if (asrModel != null) {
+                        val modelDirName = asrModel.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
+                        val modelDir = java.io.File(context.filesDir, "models/$modelDirName")
+                        if (modelDir.exists()) {
+                            whisperService.loadModel(modelDir.absolutePath)
+                        }
+                    }
+                }
+
+                val transcribed = whisperService.transcribe(pcm16Raw)
+
+                _isGenerating.value = false
+                if (!transcribed.isNullOrBlank()) {
+                    sendMessage(transcribed)
+                } else {
+                    addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = "Could not transcribe recorded audio."))
+                }
+            } catch (e: Exception) {
+                _isGenerating.value = false
+                Log.e("AgentViewModel", "Failed to transcribe audio input: ${e.message}", e)
+                addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = "Audio transcription error: ${e.message}"))
+            }
         }
     }
 
@@ -216,7 +269,11 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
             val systemPrompt = """
                 You are an AI Agent equipped with device tools:
                 - show_map(location: "place/venue query")
-                - send_sms(recipient: "contact name/phone", body: "message text")
+                - send_email(recipient: "email address or contact name", subject: "subject line", body: "email body text")
+                - send_sms(recipient: "contact name or phone number", body: "SMS text content")
+                - add_calendar_event(title: "event title", date: "event date/time")
+                - check_weather(location: "city/location")
+                - set_alarm(time: "time", label: "label")
                 - toggle_flashlight(enabled: "true" or "false")
 
                 To execute a tool call, output formatted exactly as:
@@ -242,21 +299,22 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun parseToolCall(text: String): ParsedTool? {
         val clean = text.trim()
-        val regex = Regex("""(?:\[|\b)(TOOL:|SHOW_MAP|SEND_SMS|TOGGLE_FLASHLIGHT)[:(]([^\])]+)[\])]?""", RegexOption.IGNORE_CASE)
+        val regex = Regex("""(?:\[|\b)(TOOL:|SHOW_MAP|SEND_SMS|ADD_CALENDAR_EVENT|CREATE_CALENDAR_EVENT|CHECK_WEATHER|GET_CURRENT_WEATHER|SET_ALARM|TOGGLE_FLASHLIGHT|CALCULATE_HASH|SEND_EMAIL)[:(](.+)[\])]?""", RegexOption.IGNORE_CASE)
         val match = regex.find(clean) ?: return null
         val fullMatch = match.groupValues[0].trim('[', ']', ' ')
 
         val name: String
         val argsStr: String
 
-        if (fullMatch.contains(":")) {
-            val parts = fullMatch.split(":", limit = 2)
-            name = parts[0].trim()
-            argsStr = parts.getOrNull(1)?.trim() ?: ""
-        } else if (fullMatch.contains("(")) {
-            val parts = fullMatch.split("(", limit = 2)
-            name = parts[0].trim()
-            argsStr = parts.getOrNull(1)?.trim(')', ' ') ?: ""
+        val colonIdx = fullMatch.indexOf(":")
+        val parenIdx = fullMatch.indexOf("(")
+
+        if (parenIdx != -1 && (colonIdx == -1 || parenIdx < colonIdx)) {
+            name = fullMatch.substring(0, parenIdx).trim()
+            argsStr = fullMatch.substring(parenIdx + 1).trim(')', ' ', ']', '"', '\'')
+        } else if (colonIdx != -1) {
+            name = fullMatch.substring(0, colonIdx).trim()
+            argsStr = fullMatch.substring(colonIdx + 1).trim()
         } else {
             return null
         }
@@ -289,11 +347,46 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                     addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = result))
                 }
             }
+            "send_email" -> {
+                val recipient = extractArgValue(tool.args, "recipient") ?: extractArgValue(tool.args, "to") ?: tool.args.split(",").firstOrNull()?.trim('"', '\'', ' ') ?: "contact"
+                val body = extractArgValue(tool.args, "body") ?: extractArgValue(tool.args, "message") ?: originalPrompt
+                val subject = extractArgValue(tool.args, "subject") ?: "Hello"
+                val resMap = toolSet.sendEmail(recipient, subject, body)
+                val result = resMap["result"] as? String ?: resMap["error"] as? String ?: "Email app opened."
+                val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
+                updateToolCall(toolId, status, result)
+                addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = result))
+            }
             "send_sms" -> {
                 val recipient = extractArgValue(tool.args, "recipient") ?: extractArgValue(tool.args, "to") ?: tool.args.split(",").firstOrNull()?.trim('"', '\'', ' ') ?: "contact"
                 val body = extractArgValue(tool.args, "body") ?: extractArgValue(tool.args, "message") ?: originalPrompt
                 val resMap = toolSet.sendSms(recipient, body)
                 val result = resMap["result"] as? String ?: resMap["error"] as? String ?: "SMS app opened."
+                val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
+                updateToolCall(toolId, status, result)
+                addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = result))
+            }
+            "add_calendar_event", "create_calendar_event" -> {
+                val title = extractArgValue(tool.args, "title") ?: tool.args.split(",").firstOrNull()?.trim('"', '\'', ' ') ?: "New Event"
+                val loc = extractArgValue(tool.args, "location") ?: ""
+                val resMap = toolSet.createCalendarEvent(title, loc, "")
+                val result = resMap["result"] as? String ?: resMap["error"] as? String ?: "Calendar event created."
+                val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
+                updateToolCall(toolId, status, result)
+                addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = result))
+            }
+            "check_weather", "get_current_weather" -> {
+                val loc = extractArgValue(tool.args, "location") ?: tool.args.trim('"', '\'', ' ')
+                val resMap = toolSet.getCurrentWeather(loc)
+                val result = resMap["result"] as? String ?: resMap["error"] as? String ?: "Weather information."
+                val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
+                updateToolCall(toolId, status, result)
+                addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = result))
+            }
+            "set_alarm" -> {
+                val label = extractArgValue(tool.args, "label") ?: "Alarm"
+                val resMap = toolSet.setAlarm(8, 0, label)
+                val result = resMap["result"] as? String ?: resMap["error"] as? String ?: "Alarm set."
                 val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
                 updateToolCall(toolId, status, result)
                 addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = result))

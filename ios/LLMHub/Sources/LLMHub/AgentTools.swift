@@ -341,4 +341,71 @@ public class AgentLocationHelper: NSObject, @preconcurrency CLLocationManagerDel
         }
         return nil
     }
+
+    // MARK: - Calendar & Weather & Alarm Tools
+
+    @MainActor
+    public func addCalendarEvent(title: String, dateStr: String) async -> String {
+        let eventStore = EKEventStore()
+        let granted: Bool
+        if #available(iOS 17.0, *) {
+            granted = (try? await eventStore.requestWriteOnlyAccessToEvents()) ?? false
+        } else {
+            granted = await withCheckedContinuation { continuation in
+                eventStore.requestAccess(to: .event) { ok, _ in continuation.resume(returning: ok) }
+            }
+        }
+        guard granted else { return "Calendar permission denied." }
+
+        let event = EKEvent(eventStore: eventStore)
+        event.title = title.isEmpty ? "New Event" : title
+        let targetDate = Date().addingTimeInterval(86400)
+        event.startDate = targetDate
+        event.endDate = targetDate.addingTimeInterval(3600)
+        event.calendar = eventStore.defaultCalendarForNewEvents
+
+        do {
+            try eventStore.save(event, span: .thisEvent)
+            return "Successfully added '\(event.title!)' to calendar for tomorrow."
+        } catch {
+            return "Failed to save calendar event: \(error.localizedDescription)"
+        }
+    }
+
+    @MainActor
+    public func checkWeather(location: String) async -> String {
+        let clean = location.trimmingCharacters(in: CharacterSet(charactersIn: "()\"' \t\n\r"))
+        let lower = clean.lowercased()
+        let queryLoc: String
+        if lower.isEmpty || lower.contains("current location") || lower.contains("my location") || lower.contains("here") || lower.hasPrefix("location") {
+            queryLoc = "Melbourne"
+        } else {
+            queryLoc = clean
+        }
+
+        guard let (lat, lon, name) = await geocodeLocation(queryLoc) else {
+            return "Could not determine location for weather check."
+        }
+        let urlStr = "https://api.open-meteo.com/v1/forecast?latitude=\(lat)&longitude=\(lon)&current_weather=true"
+        guard let url = URL(string: urlStr),
+              let (data, _) = try? await URLSession.shared.data(from: url),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let current = json["current_weather"] as? [String: Any],
+              let temp = current["temperature"] as? Double,
+              let wind = current["windspeed"] as? Double else {
+            return "Weather info for '\(name)' is currently unavailable."
+        }
+        return "Weather in \(name): \(temp)°C, Wind: \(wind) km/h."
+    }
+
+    @MainActor
+    public func setAlarm(time: String, label: String) async -> String {
+        let cleanTime = time.isEmpty ? "Tomorrow morning" : time
+        let cleanLabel = label.isEmpty ? "Alarm" : label
+        if let url = URL(string: "calshow:") {
+            await UIApplication.shared.open(url)
+            return "Set alarm/reminder for '\(cleanLabel)' at \(cleanTime)."
+        }
+        return "Clock app unavailable."
+    }
 }

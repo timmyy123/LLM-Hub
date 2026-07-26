@@ -813,4 +813,6 @@
     <string name="agent_welcome_message">Hallo! Ik ben je AI-agent. Ik kan zoeken op het web, kaarten tonen, agenda-afspraken beheren, het weer bekijken, wekkers instellen, berichten sturen en hashes berekenen. Hoe kan ik je vandaag helpen?</string>
     <string name="agent_no_model_android">Download eerst het Gemma 4 E2/4B-model om Agent te gebruiken</string>
     <string name="agent_no_model_ios">Download eerst een model om Agent te gebruiken</string>
+    <string name="open_maps">Kaarten openen</string>
+    <string name="agent_processing_tool">Agent verwerkt hulpprogramma...</string>
 </resources>

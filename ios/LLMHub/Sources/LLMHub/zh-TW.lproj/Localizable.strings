@@ -850,3 +850,6 @@
 "agent_welcome_message" = "你好！我是您的 AI 助理。我可以搜尋網絡、顯示地圖、管理日曆事件、查看天氣、設定鬧鐘、傳送訊息和計算雜湊。今天我能為您提供什麼幫助？";
 "agent_no_model_android" = "請先下載 Gemma 4 E2/4B 模型以使用助理";
 "agent_no_model_ios" = "請先下載模型以使用助理";
+
+"open_maps" = "打開地圖";
+"agent_processing_tool" = "代理正在處理工具...";

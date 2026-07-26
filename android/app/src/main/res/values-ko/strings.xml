@@ -906,4 +906,6 @@
     <string name="agent_welcome_message">안녕하세요! 저는 당신의 AI 에이전트입니다. 웹 검색, 지도 표시, 일정 관리, 날씨 확인, 알람 설정, 메시지 전송 및 해시 계산을 수행할 수 있습니다. 오늘 어떤 도움이 필요하신가요?</string>
     <string name="agent_no_model_android">에이전트를 사용하려면 먼저 Gemma 4 E2/4B 모델을 다운로드하세요</string>
     <string name="agent_no_model_ios">에이전트를 사용하려면 먼저 모델을 다운로드하세요</string>
+    <string name="open_maps">지도 열기</string>
+    <string name="agent_processing_tool">에이전트가 도구를 처리 중...</string>
 </resources>

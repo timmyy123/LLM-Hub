@@ -904,4 +904,6 @@
     <string name="agent_welcome_message">Merhaba! Ben sizin Yapay Zeka Ajanınızım. Web\'de arama yapabilir, haritaları gösterebilir, takvim etkinliklerini yönetebilir, hava durumunu kontrol edebilir, alarmlar kurabilir, mesaj gönderebilir ve hash hesaplayabilirim. Bugün size nasıl yardımcı olabilirim?</string>
     <string name="agent_no_model_android">Ajanı kullanmak için lütfen önce Gemma 4 E2/4B modelini indirin</string>
     <string name="agent_no_model_ios">Ajanı kullanmak için lütfen önce bir model indirin</string>
+    <string name="open_maps">Haritaları Aç</string>
+    <string name="agent_processing_tool">Temsilci aracı işliyor...</string>
 </resources>

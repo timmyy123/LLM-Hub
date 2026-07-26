@@ -892,4 +892,6 @@
     <string name="agent_welcome_message">Bonjour ! Je suis votre Agent IA. Je peux rechercher sur le Web, afficher des cartes, gérer les événements du calendrier, consulter la météo, régler des alarmes, envoyer des messages et calculer des hachages. Comment puis-je vous aider aujourd\'hui ?</string>
     <string name="agent_no_model_android">Veuillez d\'abord télécharger le modèle Gemma 4 E2/4B pour utiliser l\'Agent</string>
     <string name="agent_no_model_ios">Veuillez d\'abord télécharger un modèle pour utiliser l\'Agent</string>
+    <string name="open_maps">Ouvrir les cartes</string>
+    <string name="agent_processing_tool">L’agent traite l’outil...</string>
 </resources>
