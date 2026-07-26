@@ -200,11 +200,13 @@ public class AgentViewModel: ObservableObject {
         - check_weather(location: "city or 'my location'"): Check weather forecast for a specified city or the user's current location (e.g. "my location", "Tokyo", "London").
         - set_alarm(time: "time e.g. 7:00 AM", label: "alarm label"): Set an alarm on device.
         - toggle_flashlight(enabled: "true" or "false"): Turn flashlight ON or OFF.
+        - calculate_hash(text: "text string", algorithm: "SHA-256 or MD5 or SHA-512"): Calculate cryptographic hash of input text.
 
         Instructions:
         - ALWAYS call a tool when the user asks to perform an action supported by the tools.
         - For any request to find, show, search for, or locate a place, business, venue, address, or directions (e.g. "find bar near me"), YOU MUST call show_map.
         - For any request about weather (e.g. "How's the weather", "Is it cold outside?"), YOU MUST call check_weather(location: "my location").
+        - For any request to calculate a hash or hash a text (e.g. "Calculate SHA-256 hash for 'Hello World'"), YOU MUST call calculate_hash(text: "Hello World", algorithm: "SHA-256").
         - Output tool calls in this format ONLY:
         [TOOL: tool_name(arguments)]
 
@@ -391,6 +393,14 @@ public class AgentViewModel: ObservableObject {
             updateToolCall(id: toolId, status: .success, result: res)
             messages.append(.text(id: UUID().uuidString, sender: .agent, content: res, timestamp: Date()))
 
+        case "calculate_hash":
+            let text = extractArgValue(from: tool.args, key: "text") ?? extractFirstPart(from: tool.args)
+            let algo = extractArgValue(from: tool.args, key: "algorithm") ?? "SHA-256"
+            let res = AgentTools.shared.calculateHash(text: text, algorithm: algo)
+            let resStr = "Hash (\(algo)) for '\(text)':\n\(res)"
+            updateToolCall(id: toolId, status: .success, result: resStr)
+            messages.append(.text(id: UUID().uuidString, sender: .agent, content: resStr, timestamp: Date()))
+
         default:
             updateToolCall(id: toolId, status: .failed, result: "Unknown tool")
         }
@@ -443,6 +453,24 @@ public class AgentViewModel: ObservableObject {
             let alarmResult = await AgentTools.shared.setAlarm(time: prompt, label: "Alarm")
             updateToolCall(id: toolId, status: .success, result: alarmResult)
             messages.append(.text(id: UUID().uuidString, sender: .agent, content: alarmResult, timestamp: Date()))
+        } else if lower.contains("hash") || lower.contains("sha") || lower.contains("md5") {
+            var algo = "SHA-256"
+            if lower.contains("md5") { algo = "MD5" }
+            else if lower.contains("sha-1") || lower.contains("sha1") { algo = "SHA-1" }
+            else if lower.contains("sha-512") || lower.contains("sha512") { algo = "SHA-512" }
+            
+            var textToHash = prompt
+            if let firstQuote = prompt.firstIndex(of: "'"), let lastQuote = prompt.lastIndex(of: "'"), firstQuote < lastQuote {
+                textToHash = String(prompt[prompt.index(after: firstQuote)..<lastQuote])
+            } else if let firstQuote = prompt.firstIndex(of: "\""), let lastQuote = prompt.lastIndex(of: "\""), firstQuote < lastQuote {
+                textToHash = String(prompt[prompt.index(after: firstQuote)..<lastQuote])
+            }
+            
+            messages.append(.toolCall(id: toolId, name: "calculate_hash", args: "text: \"\(textToHash)\", algorithm: \"\(algo)\"", status: .running, result: nil))
+            let hashResult = AgentTools.shared.calculateHash(text: textToHash, algorithm: algo)
+            let resStr = "Hash (\(algo)) for '\(textToHash)':\n\(hashResult)"
+            updateToolCall(id: toolId, status: .success, result: resStr)
+            messages.append(.text(id: UUID().uuidString, sender: .agent, content: resStr, timestamp: Date()))
         } else if lower.contains("map") || lower.contains("where is") || lower.contains("find") || lower.contains("direction") {
             messages.append(.toolCall(id: toolId, name: "show_map", args: prompt, status: .running, result: nil))
             if let (lat, lon, name) = await AgentTools.shared.geocodeLocation(prompt) {

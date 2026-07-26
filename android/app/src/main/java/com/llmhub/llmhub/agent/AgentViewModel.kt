@@ -522,6 +522,24 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                 updateToolCall(toolId, status, result)
                 addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = result))
             }
+            "calculate_hash" -> {
+                val text = extractArgValue(tool.args, "text") ?: tool.args.split(",").firstOrNull()?.trim('"', '\'', ' ') ?: originalPrompt
+                val algo = extractArgValue(tool.args, "algorithm") ?: "SHA-256"
+                val resMap = toolSet.calculateHash(text, algo)
+                val result = resMap["result"] as? String ?: resMap["error"] as? String ?: "Hash calculated."
+                val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
+                val displayResult = if (status == AgentMessage.ToolCall.Status.SUCCESS) "Hash (${resMap["algorithm"] ?: algo}) for '$text':\n$result" else result
+                updateToolCall(toolId, status, displayResult)
+                addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = displayResult))
+            }
+            "run_termux_command", "execute_termux_command" -> {
+                val cmd = extractArgValue(tool.args, "command") ?: tool.args.trim('"', '\'', ' ')
+                val resMap = toolSet.runTermuxCommand(cmd)
+                val result = resMap["result"] as? String ?: resMap["error"] as? String ?: "Termux command sent."
+                val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
+                updateToolCall(toolId, status, result)
+                addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = result))
+            }
             else -> {
                 updateToolCall(toolId, AgentMessage.ToolCall.Status.FAILED, "Unknown tool")
             }
@@ -567,6 +585,34 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
             addMessage(AgentMessage.ToolCall(callId = toolId, toolName = "set_alarm", args = prompt, status = AgentMessage.ToolCall.Status.RUNNING))
             val resMap = toolSet.setAlarm(h, m, "Alarm")
             val result = resMap["result"] as? String ?: resMap["error"] as? String ?: "Alarm set."
+            val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
+            updateToolCall(toolId, status, result)
+            addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = result))
+        } else if (lower.contains("hash") || lower.contains("sha") || lower.contains("md5")) {
+            var algo = "SHA-256"
+            if (lower.contains("md5")) algo = "MD5"
+            else if (lower.contains("sha-1") || lower.contains("sha1")) algo = "SHA-1"
+            else if (lower.contains("sha-512") || lower.contains("sha512")) algo = "SHA-512"
+
+            var textToHash = prompt
+            val firstQuote = prompt.indexOf("'")
+            val lastQuote = prompt.lastIndexOf("'")
+            if (firstQuote != -1 && lastQuote > firstQuote) {
+                textToHash = prompt.substring(firstQuote + 1, lastQuote)
+            }
+
+            addMessage(AgentMessage.ToolCall(callId = toolId, toolName = "calculate_hash", args = "text: \"$textToHash\", algorithm: \"$algo\"", status = AgentMessage.ToolCall.Status.RUNNING))
+            val resMap = toolSet.calculateHash(textToHash, algo)
+            val result = resMap["result"] as? String ?: resMap["error"] as? String ?: "Hash calculated."
+            val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
+            val displayResult = if (status == AgentMessage.ToolCall.Status.SUCCESS) "Hash (${resMap["algorithm"] ?: algo}) for '$textToHash':\n$result" else result
+            updateToolCall(toolId, status, displayResult)
+            addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = displayResult))
+        } else if (lower.contains("termux")) {
+            val cmd = prompt.substringAfter("termux", prompt).trim()
+            addMessage(AgentMessage.ToolCall(callId = toolId, toolName = "run_termux_command", args = cmd, status = AgentMessage.ToolCall.Status.RUNNING))
+            val resMap = toolSet.runTermuxCommand(cmd)
+            val result = resMap["result"] as? String ?: resMap["error"] as? String ?: "Termux command sent."
             val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
             updateToolCall(toolId, status, result)
             addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = result))

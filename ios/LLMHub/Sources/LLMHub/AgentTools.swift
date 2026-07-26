@@ -6,6 +6,7 @@ import AVFoundation
 import Contacts
 import CoreLocation
 import UserNotifications
+import CryptoKit
 #if canImport(AlarmKit)
 import AlarmKit
 import SwiftUI
@@ -240,6 +241,26 @@ public class AgentTools {
             return "Triggered Shortcut '\(name)'."
         }
         return "Shortcuts app not available."
+    }
+
+    // MARK: - Calculate Hash
+    
+    public func calculateHash(text: String, algorithm: String = "SHA-256") -> String {
+        let data = Data(text.utf8)
+        let algo = algorithm.uppercased()
+        if algo.contains("MD5") {
+            let digest = Insecure.MD5.hash(data: data)
+            return digest.map { String(format: "%02hhx", $0) }.joined()
+        } else if algo.contains("SHA1") || algo.contains("SHA-1") {
+            let digest = Insecure.SHA1.hash(data: data)
+            return digest.map { String(format: "%02hhx", $0) }.joined()
+        } else if algo.contains("512") {
+            let digest = SHA512.hash(data: data)
+            return digest.map { String(format: "%02hhx", $0) }.joined()
+        } else {
+            let digest = SHA256.hash(data: data)
+            return digest.map { String(format: "%02hhx", $0) }.joined()
+        }
     }
 
     // MARK: - Toggle Flashlight
