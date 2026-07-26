@@ -562,6 +562,14 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
             val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
             updateToolCall(toolId, status, result)
             addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = result))
+        } else if (lower.contains("alarm") || lower.contains("remind") || lower.contains("wake")) {
+            val (h, m) = parseAlarmTime(prompt)
+            addMessage(AgentMessage.ToolCall(callId = toolId, toolName = "set_alarm", args = prompt, status = AgentMessage.ToolCall.Status.RUNNING))
+            val resMap = toolSet.setAlarm(h, m, "Alarm")
+            val result = resMap["result"] as? String ?: resMap["error"] as? String ?: "Alarm set."
+            val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
+            updateToolCall(toolId, status, result)
+            addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = result))
         } else if (lower.contains("map") || lower.contains("where is") || lower.contains("find") || lower.contains("direction")) {
             addMessage(AgentMessage.ToolCall(callId = toolId, toolName = "show_map", args = prompt, status = AgentMessage.ToolCall.Status.RUNNING))
             val resMap = toolSet.showMap(prompt)

@@ -374,14 +374,11 @@ public class AgentViewModel: ObservableObject {
 
         case "set_alarm":
             var rawTime = extractArgValue(from: tool.args, key: "time") ?? extractArgValue(from: tool.args, key: "date") ?? tool.args
-            // If the LLM returned a full datetime string like "2023-09-01 21:00:00",
-            // strip the date portion and keep only the time part.
-            if let spaceIdx = rawTime.lastIndex(of: " ") {
-                let possibleTime = String(rawTime[rawTime.index(after: spaceIdx)...])
-                // Only use the suffix if it looks like HH:MM or HH:MM:SS
-                if possibleTime.contains(":") {
-                    rawTime = possibleTime
-                }
+            // If rawTime starts with a YYYY-MM-DD ISO date prefix, extract the time component
+            if let regex = try? NSRegularExpression(pattern: "^\\d{4}-\\d{2}-\\d{2}\\s+(.+)"),
+               let match = regex.firstMatch(in: rawTime, options: [], range: NSRange(location: 0, length: rawTime.utf16.count)),
+               let r = Range(match.range(at: 1), in: rawTime) {
+                rawTime = String(rawTime[r])
             }
             let label = extractArgValue(from: tool.args, key: "label") ?? extractArgValue(from: tool.args, key: "title") ?? "Alarm"
             let res = await AgentTools.shared.setAlarm(time: rawTime, label: label)
@@ -441,6 +438,11 @@ public class AgentViewModel: ObservableObject {
             let weatherResult = await AgentTools.shared.checkWeather(location: "my location")
             updateToolCall(id: toolId, status: .success, result: weatherResult)
             messages.append(.text(id: UUID().uuidString, sender: .agent, content: weatherResult, timestamp: Date()))
+        } else if lower.contains("alarm") || lower.contains("remind") || lower.contains("wake") {
+            messages.append(.toolCall(id: toolId, name: "set_alarm", args: prompt, status: .running, result: nil))
+            let alarmResult = await AgentTools.shared.setAlarm(time: prompt, label: "Alarm")
+            updateToolCall(id: toolId, status: .success, result: alarmResult)
+            messages.append(.text(id: UUID().uuidString, sender: .agent, content: alarmResult, timestamp: Date()))
         } else if lower.contains("map") || lower.contains("where is") || lower.contains("find") || lower.contains("direction") {
             messages.append(.toolCall(id: toolId, name: "show_map", args: prompt, status: .running, result: nil))
             if let (lat, lon, name) = await AgentTools.shared.geocodeLocation(prompt) {

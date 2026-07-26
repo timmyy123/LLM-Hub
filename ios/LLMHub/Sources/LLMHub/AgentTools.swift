@@ -647,6 +647,70 @@ public class AgentLocationHelper: NSObject, @preconcurrency CLLocationManagerDel
         return nil
     }
 
+    private func parseTargetDate(from text: String) -> (date: Date, timeStr: String, desc: String) {
+        let lower = text.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        let now = Date()
+        let calendar = Calendar.current
+
+        // 1. Check for relative minutes (e.g. "1 minute", "in 5 minutes", "10 mins", "1 minute from now")
+        if let minRegex = try? NSRegularExpression(pattern: "(\\d+)\\s*(?:min|minute)s?", options: .caseInsensitive),
+           let match = minRegex.firstMatch(in: lower, options: [], range: NSRange(location: 0, length: lower.utf16.count)),
+           let r = Range(match.range(at: 1), in: lower),
+           let mins = Double(lower[r]) {
+            let seconds = mins * 60
+            let targetDate = now.addingTimeInterval(seconds)
+            let formatter = DateFormatter()
+            formatter.timeStyle = .short
+            let timeStr = formatter.string(from: targetDate)
+            let desc = mins == 1 ? "1 minute from now" : "\(Int(mins)) minutes from now"
+            return (targetDate, timeStr, desc)
+        }
+
+        // 2. Check for relative seconds (e.g. "30 seconds", "in 45 secs")
+        if let secRegex = try? NSRegularExpression(pattern: "(\\d+)\\s*(?:sec|second)s?", options: .caseInsensitive),
+           let match = secRegex.firstMatch(in: lower, options: [], range: NSRange(location: 0, length: lower.utf16.count)),
+           let r = Range(match.range(at: 1), in: lower),
+           let secs = Double(lower[r]) {
+            let targetDate = now.addingTimeInterval(secs)
+            let formatter = DateFormatter()
+            formatter.timeStyle = .medium
+            let timeStr = formatter.string(from: targetDate)
+            return (targetDate, timeStr, "\(Int(secs)) seconds from now")
+        }
+
+        // 3. Check for relative hours (e.g. "1 hour", "in 2 hours")
+        if let hrRegex = try? NSRegularExpression(pattern: "(\\d+)\\s*(?:hr|hour)s?", options: .caseInsensitive),
+           let match = hrRegex.firstMatch(in: lower, options: [], range: NSRange(location: 0, length: lower.utf16.count)),
+           let r = Range(match.range(at: 1), in: lower),
+           let hrs = Double(lower[r]) {
+            let targetDate = now.addingTimeInterval(hrs * 3600)
+            let formatter = DateFormatter()
+            formatter.timeStyle = .short
+            let timeStr = formatter.string(from: targetDate)
+            return (targetDate, timeStr, "\(Int(hrs)) hours from now")
+        }
+
+        // 4. Absolute time (e.g. "7:00 AM", "19:30", "7:30")
+        let timeComponents = parseTimeComponents(from: lower)
+        let targetHour = timeComponents.hour ?? 21
+        let targetMinute = timeComponents.minute ?? 0
+        
+        var fullComponents = calendar.dateComponents([.year, .month, .day], from: now)
+        fullComponents.hour = targetHour
+        fullComponents.minute = targetMinute
+        fullComponents.second = 0
+        
+        var targetDate = calendar.date(from: fullComponents) ?? now.addingTimeInterval(60)
+        if targetDate <= now {
+            targetDate = calendar.date(byAdding: .day, value: 1, to: targetDate) ?? targetDate
+        }
+        
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        let timeStr = formatter.string(from: targetDate)
+        return (targetDate, timeStr, timeStr)
+    }
+
     private func parseTimeComponents(from text: String) -> DateComponents {
         let lower = text.lowercased()
         var dateComponents = DateComponents()
@@ -691,63 +755,11 @@ public class AgentLocationHelper: NSObject, @preconcurrency CLLocationManagerDel
 
     @MainActor
     public func setAlarm(time: String, label: String) async -> String {
-        let cleanTime = time.isEmpty ? "9:00 PM" : time
+        let cleanTime = time.isEmpty ? "1 minute" : time
         let cleanLabel = label.isEmpty ? "Alarm" : label
-        
-        let timeComponents = parseTimeComponents(from: cleanTime)
-        let targetHour = timeComponents.hour ?? 21
-        let targetMinute = timeComponents.minute ?? 0
-        let formattedTime = String(format: "%02d:%02d", targetHour, targetMinute)
 
-        #if canImport(AlarmKit)
-        if #available(iOS 26.0, *) {
-            do {
-                let alarmManager = AlarmManager.shared
-                let authState = try await alarmManager.requestAuthorization()
-                if authState == .authorized {
-                    let alarmTime = Alarm.Schedule.Relative.Time(hour: targetHour, minute: targetMinute)
-                    let schedule: Alarm.Schedule = .relative(.init(time: alarmTime, repeats: .never))
-
-                    let titleResource = LocalizedStringResource(stringLiteral: cleanLabel)
-                    let stopBtnResource = LocalizedStringResource(stringLiteral: "Stop")
-                    let stopButton = AlarmButton(text: stopBtnResource, textColor: .red, systemImageName: "stop.circle")
-                    let alertContent = AlarmPresentation.Alert(
-                        title: titleResource,
-                        stopButton: stopButton
-                    )
-                    let presentation = AlarmPresentation(alert: alertContent)
-                    let attributes = AlarmAttributes<AgentAlarmMetadata>(presentation: presentation, metadata: AgentAlarmMetadata(), tintColor: .blue)
-
-                    let alarmID = UUID()
-                    let configuration = AlarmManager.AlarmConfiguration<AgentAlarmMetadata>(
-                        schedule: schedule,
-                        attributes: attributes
-                    )
-
-                    _ = try await alarmManager.schedule(id: alarmID, configuration: configuration)
-                    return "Alarm '\(cleanLabel)' set for \(formattedTime)."
-                }
-            } catch {
-                print("AlarmKit request failed (\(error.localizedDescription)), using notification fallback.")
-            }
-        }
-        #endif
-
-        let calendar = Calendar.current
-        let now = Date()
-        var fullComponents = calendar.dateComponents([.year, .month, .day], from: now)
-        fullComponents.hour = targetHour
-        fullComponents.minute = targetMinute
-        fullComponents.second = 0
-        
-        if let candidate = calendar.date(from: fullComponents), candidate <= now {
-            if let tomorrow = calendar.date(byAdding: .day, value: 1, to: now) {
-                let tmrw = calendar.dateComponents([.year, .month, .day], from: tomorrow)
-                fullComponents.year = tmrw.year
-                fullComponents.month = tmrw.month
-                fullComponents.day = tmrw.day
-            }
-        }
+        let (targetDate, timeStr, desc) = parseTargetDate(from: cleanTime)
+        let interval = max(1.0, targetDate.timeIntervalSinceNow)
 
         let center = UNUserNotificationCenter.current()
         let options: UNAuthorizationOptions = [.alert, .sound, .badge]
@@ -756,19 +768,21 @@ public class AgentLocationHelper: NSObject, @preconcurrency CLLocationManagerDel
         if granted {
             let content = UNMutableNotificationContent()
             content.title = "⏰ \(cleanLabel)"
-            content.body = "Alarm: \(formattedTime)"
+            content.body = "Alarm set for \(timeStr) (\(desc))"
             content.sound = UNNotificationSound.defaultCriticalSound(withAudioVolume: 1.0)
             content.interruptionLevel = .timeSensitive
-            
-            let trigger = UNCalendarNotificationTrigger(dateMatching: fullComponents, repeats: false)
+
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
             let request = UNNotificationRequest(identifier: "alarm-\(UUID().uuidString)", content: content, trigger: trigger)
             try? await center.add(request)
+            return "Alarm '\(cleanLabel)' scheduled for \(timeStr) (\(desc)). Notification sound will alert you."
         }
 
         if let clockUrl = URL(string: "clock-alarm:"), UIApplication.shared.canOpenURL(clockUrl) {
             await UIApplication.shared.open(clockUrl)
+            return "Opened Clock app. Please set alarm for \(timeStr)."
         }
-        
-        return "Alarm '\(cleanLabel)' set for \(formattedTime)."
+
+        return "Alarm notification permission denied. Enable notifications in iOS Settings."
     }
 }
