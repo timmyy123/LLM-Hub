@@ -123,12 +123,13 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     suspend fun loadModelSuspend(model: LLMModel, preferredBackend: LlmInference.Backend? = null, deviceId: String? = null) {
-        _isGenerating.value = true
         _loadingModelName.value = model.name
-        inferenceService.loadModel(model, preferredBackend = preferredBackend, deviceId = deviceId)
-        _activeModelName.value = inferenceService.getCurrentlyLoadedModel()?.name
-        _loadingModelName.value = null
-        _isGenerating.value = false
+        try {
+            inferenceService.loadModel(model, preferredBackend = preferredBackend, deviceId = deviceId)
+            _activeModelName.value = inferenceService.getCurrentlyLoadedModel()?.name
+        } finally {
+            _loadingModelName.value = null
+        }
     }
 
     fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend? = null, deviceId: String? = null) {

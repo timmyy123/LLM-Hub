@@ -81,11 +81,6 @@ fun AgentScreen(
                 title = {
                     val loadingModelName by viewModel.loadingModelName.collectAsState()
                     val activeModelName by viewModel.activeModelName.collectAsState()
-                    val subtitleText = when {
-                        loadingModelName != null -> stringResource(R.string.loading_model_format, loadingModelName!!)
-                        activeModelName != null -> activeModelName!!
-                        else -> stringResource(R.string.agent_subtitle)
-                    }
 
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
@@ -95,13 +90,35 @@ fun AgentScreen(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                        Text(
-                            text = subtitleText,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        if (loadingModelName != null) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(top = 2.dp)
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(12.dp),
+                                    strokeWidth = 1.5.dp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = stringResource(R.string.loading_model_format, loadingModelName!!),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Medium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        } else {
+                            Text(
+                                text = activeModelName ?: stringResource(R.string.agent_subtitle),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                 },
                 navigationIcon = {
@@ -218,7 +235,7 @@ fun AgentScreen(
                                 viewModel.sendAudioMessage(audioData, context)
                             }
                         },
-                        enabled = !isGenerating,
+                        enabled = true,
                         supportsAttachments = true,
                         supportsVision = false,
                         supportsAudio = true,

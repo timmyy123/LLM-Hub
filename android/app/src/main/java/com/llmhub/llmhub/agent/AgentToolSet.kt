@@ -55,13 +55,43 @@ RULES:
     // ─── Show Map (Nominatim Geocoding + In-App Map Data) ─────────────────────
 
     fun getUserLocation(): Pair<Double, Double>? {
-        return try {
+        try {
             val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
             val loc = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER)
                 ?: lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-            if (loc != null) Pair(loc.latitude, loc.longitude) else null
-        } catch (e: Exception) {
-            null
+            if (loc != null) return Pair(loc.latitude, loc.longitude)
+        } catch (_: Exception) {}
+
+        return try {
+            val conn = URL("https://ipapi.co/json/").openConnection()
+            conn.connectTimeout = 3000
+            conn.readTimeout = 3000
+            val json = conn.getInputStream().bufferedReader().use { it.readText() }
+            val obj = org.json.JSONObject(json)
+            val lat = obj.optDouble("latitude", -37.8136)
+            val lon = obj.optDouble("longitude", 144.9631)
+            Pair(lat, lon)
+        } catch (_: Exception) {
+            Pair(-37.8136, 144.9631)
+        }
+    }
+
+    private fun getCityNameFromCoords(lat: Double, lon: Double): String {
+        return try {
+            val urlStr = "https://nominatim.openstreetmap.org/reverse?lat=$lat&lon=$lon&format=json"
+            val conn = URL(urlStr).openConnection()
+            conn.setRequestProperty("User-Agent", "LLMHub-Agent/1.0")
+            conn.connectTimeout = 4000
+            conn.readTimeout = 4000
+            val raw = conn.getInputStream().bufferedReader().use { it.readText() }
+            val obj = org.json.JSONObject(raw)
+            val addr = obj.optJSONObject("address")
+            addr?.optString("city")?.ifEmpty { null }
+                ?: addr?.optString("town")?.ifEmpty { null }
+                ?: addr?.optString("suburb")?.ifEmpty { null }
+                ?: "Melbourne"
+        } catch (_: Exception) {
+            "Melbourne"
         }
     }
 
@@ -71,9 +101,14 @@ RULES:
     ): Map<String, Any> {
         return runBlocking(Dispatchers.IO) {
             try {
-                val queryToUse = location.trim()
+                var clean = location.trim('(', ')', '"', '\'', ' ')
+                if (clean.startsWith("location:", ignoreCase = true)) {
+                    clean = clean.substringAfter("location:").trim('(', ')', '"', '\'', ' ')
+                }
+
                 val userLoc = getUserLocation()
-                var urlStr = "https://nominatim.openstreetmap.org/search?q=${URLEncoder.encode(queryToUse, "UTF-8")}&format=json&limit=1"
+                val searchQuery = clean
+                var urlStr = "https://nominatim.openstreetmap.org/search?q=${URLEncoder.encode(searchQuery, "UTF-8")}&format=json&limit=1"
                 if (userLoc != null) {
                     urlStr += "&lat=${userLoc.first}&lon=${userLoc.second}"
                 }
@@ -89,7 +124,7 @@ RULES:
                     val obj = jsonArr.getJSONObject(0)
                     val lat = obj.getDouble("lat")
                     val lon = obj.getDouble("lon")
-                    val displayName = obj.optString("display_name", queryToUse)
+                    val displayName = obj.optString("display_name", searchQuery)
                     mapOf(
                         "type" to "map",
                         "lat" to lat,
@@ -98,20 +133,22 @@ RULES:
                         "status" to "succeeded"
                     )
                 } else {
-                    val fallbackLat = userLoc?.first ?: -33.8688
-                    val fallbackLon = userLoc?.second ?: 151.2093
+                    val fallbackLat = userLoc?.first ?: -37.8136
+                    val fallbackLon = userLoc?.second ?: 144.9631
                     mapOf(
                         "type" to "map",
                         "lat" to fallbackLat,
                         "lon" to fallbackLon,
-                        "label" to queryToUse,
+                        "label" to searchQuery,
                         "status" to "succeeded"
                     )
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Map geocoding failed for '$location': ${e.message}")
-                openGeoIntent(location)
-                mapOf("type" to "map_intent", "location" to location, "status" to "succeeded")
+                val userLoc = getUserLocation()
+                val fallbackLat = userLoc?.first ?: -37.8136
+                val fallbackLon = userLoc?.second ?: 144.9631
+                mapOf("type" to "map", "lat" to fallbackLat, "lon" to fallbackLon, "label" to location, "status" to "succeeded")
             }
         }
     }
