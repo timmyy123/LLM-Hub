@@ -370,13 +370,15 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                 - check_weather(location: "city or 'my location'"): Check weather forecast for a specified city or the user's current location (e.g. "my location", "Tokyo", "London").
                 - set_alarm(time: "time e.g. 7:00 AM", label: "alarm label"): Set an alarm on device.
                 - toggle_flashlight(enabled: "true" or "false"): Turn flashlight ON or OFF.
-                - calculate_hash(text: "text string", algorithm: "SHA-256 or MD5 or SHA-512"): Calculate cryptographic hash of input text.$termuxToolDef
+                - calculate_hash(text: "text string", algorithm: "SHA-256 or MD5 or SHA-512"): Calculate cryptographic hash of input text.
+                - calculate_math(expression: "math expression string"): Calculate mathematical expression (e.g. "1+1", "15 * 8", "100 / 4").$termuxToolDef
 
                 Instructions:
                 - ALWAYS call a tool when the user asks to perform an action supported by the tools.
                 - For any request to find, show, search for, or locate a place, business, venue, address, or directions (e.g. "find bar near me"), YOU MUST call show_map.
                 - For any request about weather (e.g. "How's the weather", "Is it cold outside?"), YOU MUST call check_weather(location: "my location").
                 - For any request to calculate a hash or hash a text (e.g. "Calculate SHA-256 hash for 'Hello World'"), YOU MUST call calculate_hash(text: "Hello World", algorithm: "SHA-256").
+                - For any request to evaluate or solve a math expression or calculation (e.g. "1+1", "What's 15*8"), YOU MUST call calculate_math(expression: "expression string").
                 - For any request to run, execute, or perform terminal/shell commands, list files (ls), install packages, or run scripts, YOU MUST call run_termux_command(command: "command string").
                 - Output tool calls in this format ONLY:
                 [TOOL: tool_name(arguments)]
@@ -408,8 +410,8 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                         handleParsedToolCall(toolMatch, prompt)
                     } else {
                         val cleanText = responseText
-                            .replace(Regex("""\[TOOL:[^\]]+\]""", RegexOption.IGNORE_CASE), "")
-                            .replace(Regex("""(?:SHOW_MAP|SEND_SMS|ADD_CALENDAR_EVENT|CREATE_CALENDAR_EVENT|CHECK_WEATHER|GET_CURRENT_WEATHER|SET_ALARM|TOGGLE_FLASHLIGHT|CALCULATE_HASH|SEND_EMAIL|RUN_TERMUX_COMMAND|EXECUTE_TERMUX_COMMAND)\([^)]*\)""", RegexOption.IGNORE_CASE), "")
+                            .replace(Regex("""\[?\s*(?:TOOL|calc|calculator|math):?[^\]]*\]?""", RegexOption.IGNORE_CASE), "")
+                            .replace(Regex("""(?:SHOW_MAP|SEND_SMS|ADD_CALENDAR_EVENT|CREATE_CALENDAR_EVENT|CHECK_WEATHER|GET_CURRENT_WEATHER|SET_ALARM|TOGGLE_FLASHLIGHT|CALCULATE_HASH|SEND_EMAIL|RUN_TERMUX_COMMAND|EXECUTE_TERMUX_COMMAND|CALCULATE_MATH|CALCULATE)\([^)]*\)""", RegexOption.IGNORE_CASE), "")
                             .trim()
                         updateAgentTextMessage(aiMsgId, cleanText)
                     }
@@ -444,14 +446,16 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun parseToolCall(text: String): ParsedTool? {
-        // Match [TOOL: any_tool_name(args)] or standalone known tool patterns
-        val regex = Regex("""\[?TOOL:\s*([a-zA-Z0-9._]+)\(([^)]*)\)\]?|\b([a-zA-Z_]+(?:_map|_sms|_email|_weather|_alarm|_flashlight|_event|_hash|_termux|_command))\(([^)]*)\)""", RegexOption.IGNORE_CASE)
+        val regex = Regex("""\[?\s*(?:TOOL:)?\s*([a-zA-Z0-9._]+)\s*\(([^)]*)\)\s*\]?""", RegexOption.IGNORE_CASE)
         val match = regex.find(text) ?: return null
         val groups = match.groupValues
-        val name = if (groups[1].isNotEmpty()) groups[1] else groups[3]
-        val args = if (groups[2].isNotEmpty()) groups[2] else groups[4]
-        val cleanName = name.replace(".", "_").replace("/", "_").lowercase()
-        val cleanArgs = args.trim('"', '\'', ' ', ')', ']')
+        val name = groups[1]
+        val args = groups[2]
+        var cleanName = name.replace(".", "_").replace("/", "_").lowercase()
+        val cleanArgs = args.trim('"', '\'', ' ', ')', ']', '[')
+        if (cleanName == "c" || cleanName == "calc" || cleanName == "math" || cleanName == "calculate") {
+            cleanName = "calculate_math"
+        }
         return ParsedTool(cleanName, cleanArgs)
     }
 
@@ -471,6 +475,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
         if (effectiveToolName.contains("flashlight") || effectiveToolName.contains("torch")) effectiveToolName = "toggle_flashlight"
         if (effectiveToolName.contains("alarm") && effectiveToolName != "set_alarm") effectiveToolName = "set_alarm"
         if (effectiveToolName.contains("calendar") || effectiveToolName.contains("event")) effectiveToolName = "add_calendar_event"
+        if (effectiveToolName.contains("math") || effectiveToolName.contains("calc")) effectiveToolName = "calculate_math"
 
         when (effectiveToolName) {
             "show_map" -> {
@@ -552,6 +557,14 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                 val displayResult = if (status == AgentMessage.ToolCall.Status.SUCCESS) "Hash (${resMap["algorithm"] ?: algo}) for '$text':\n$result" else result
                 updateToolCall(toolId, status, displayResult)
                 addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = displayResult))
+            }
+            "calculate_math", "math", "calc", "calculate" -> {
+                val expr = extractArgValue(tool.args, "expression") ?: extractArgValue(tool.args, "calc") ?: tool.args.ifEmpty { originalPrompt }
+                val resMap = toolSet.calculateMath(expr)
+                val result = resMap["result"] as? String ?: resMap["error"] as? String ?: "Calculation error."
+                val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
+                updateToolCall(toolId, status, result)
+                addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = result))
             }
             "run_termux_command", "execute_termux_command" -> {
                 val cmd = extractArgValue(tool.args, "command") ?: tool.args.trim('"', '\'', ' ')

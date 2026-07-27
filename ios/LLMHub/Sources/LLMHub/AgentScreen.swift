@@ -106,25 +106,24 @@ public struct AgentScreen: View {
                             .padding(.vertical, 12)
                             .padding(.bottom, 12)
                         }
-                        .safeAreaPadding(.bottom, 130)
+                        .safeAreaPadding(.bottom, 150)
                         .scrollDismissesKeyboard(.interactively)
                         .onTapGesture {
                             isComposerFocused = false
                         }
                         .onChange(of: vm.messages.count) { _, _ in
-                            if let last = vm.messages.last {
-                                withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
-                            }
+                            withAnimation { proxy.scrollTo("bottom_sentinel", anchor: .bottom) }
                         }
                         .onChange(of: lastMessageContent) { _, _ in
-                            if let last = vm.messages.last {
-                                proxy.scrollTo(last.id, anchor: .bottom)
-                            }
+                            proxy.scrollTo("bottom_sentinel", anchor: .bottom)
+                        }
+                        .onChange(of: vm.isGenerating) { _, _ in
+                            withAnimation { proxy.scrollTo("bottom_sentinel", anchor: .bottom) }
                         }
                         .onChange(of: isComposerFocused) { _, focused in
-                            if focused, let last = vm.messages.last {
+                            if focused {
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                                    withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
+                                    withAnimation { proxy.scrollTo("bottom_sentinel", anchor: .bottom) }
                                 }
                             }
                         }

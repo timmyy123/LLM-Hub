@@ -742,4 +742,81 @@ RULES:
             mapOf("status" to "failed", "error" to "Flashlight error: ${e.message}")
         }
     }
+
+    // ─── Math Calculation ───────────────────────────────────────────────────
+
+    @Tool(description = "Calculate a mathematical expression e.g. 1+1, 15 * 8, 100 / 4.")
+    fun calculateMath(
+        @ToolParam(description = "Mathematical expression string.") expression: String
+    ): Map<String, Any> {
+        return try {
+            var clean = expression.replace("x", "*").replace("X", "*").replace("=", "").trim()
+            // Extract numbers and math operators if text contains leading/trailing non-math words (e.g. "answer 1+1")
+            val mathMatch = Regex("""([\d.\s+\-*/()]+)""").findAll(clean).firstOrNull { m -> m.value.any { it.isDigit() } }
+            if (mathMatch != null) {
+                clean = mathMatch.value.trim()
+            }
+            val result = evaluateMathExpression(clean)
+            val formattedResult = if (result % 1.0 == 0.0) result.toLong().toString() else result.toString()
+            mapOf("status" to "succeeded", "result" to "$clean = $formattedResult", "value" to formattedResult)
+        } catch (e: Exception) {
+            mapOf("status" to "failed", "error" to "Invalid math expression: '$expression'")
+        }
+    }
+
+    private fun evaluateMathExpression(expr: String): Double {
+        return object : Any() {
+            var pos = -1
+            var ch = 0
+            fun nextChar() {
+                ch = if (++pos < expr.length) expr[pos].code else -1
+            }
+            fun eat(charToEat: Int): Boolean {
+                while (ch == ' '.code) nextChar()
+                if (ch == charToEat) {
+                    nextChar()
+                    return true
+                }
+                return false
+            }
+            fun parse(): Double {
+                nextChar()
+                val x = parseExpression()
+                if (pos < expr.length) throw RuntimeException("Unexpected char: " + ch.toChar())
+                return x
+            }
+            fun parseExpression(): Double {
+                var x = parseTerm()
+                while (true) {
+                    if (eat('+'.code)) x += parseTerm()
+                    else if (eat('-'.code)) x -= parseTerm()
+                    else return x
+                }
+            }
+            fun parseTerm(): Double {
+                var x = parseFactor()
+                while (true) {
+                    if (eat('*'.code)) x *= parseFactor()
+                    else if (eat('/'.code)) x /= parseFactor()
+                    else return x
+                }
+            }
+            fun parseFactor(): Double {
+                if (eat('+'.code)) return parseFactor()
+                if (eat('-'.code)) return -parseFactor()
+                var x: Double
+                val startPos = pos
+                if (eat('('.code)) {
+                    x = parseExpression()
+                    eat(')'.code)
+                } else if (ch in '0'.code..'9'.code || ch == '.'.code) {
+                    while (ch in '0'.code..'9'.code || ch == '.'.code) nextChar()
+                    x = expr.substring(startPos, pos).toDouble()
+                } else {
+                    throw RuntimeException("Unexpected char: " + ch.toChar())
+                }
+                return x
+            }
+        }.parse()
+    }
 }

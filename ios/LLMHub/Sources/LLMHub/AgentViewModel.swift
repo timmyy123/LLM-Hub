@@ -202,12 +202,14 @@ public class AgentViewModel: ObservableObject {
         - set_alarm(time: "time e.g. 7:00 AM", label: "alarm label"): Set an alarm on device.
         - toggle_flashlight(enabled: "true" or "false"): Turn flashlight ON or OFF.
         - calculate_hash(text: "text string", algorithm: "SHA-256 or MD5 or SHA-512"): Calculate cryptographic hash of input text.
+        - calculate_math(expression: "math expression string"): Calculate mathematical expression (e.g. "1+1", "15 * 8", "100 / 4").
 
         Instructions:
         - ALWAYS call a tool when the user asks to perform an action supported by the tools.
         - For any request to find, show, search for, or locate a place, business, venue, address, or directions (e.g. "find bar near me"), YOU MUST call show_map.
         - For any request about weather (e.g. "How's the weather", "Is it cold outside?"), YOU MUST call check_weather(location: "my location").
         - For any request to calculate a hash or hash a text (e.g. "Calculate SHA-256 hash for 'Hello World'"), YOU MUST call calculate_hash(text: "Hello World", algorithm: "SHA-256").
+        - For any request to evaluate or solve a math expression or calculation (e.g. "1+1", "What's 15*8"), YOU MUST call calculate_math(expression: "expression string").
         - Output tool calls in this format ONLY:
         [TOOL: tool_name(arguments)]
 
@@ -239,7 +241,10 @@ public class AgentViewModel: ObservableObject {
                         self.messages.removeAll(where: { $0.id == aiMsgId })
                         await self.handleParsedToolCall(toolMatch, originalPrompt: prompt)
                     } else {
-                        self.updateTextMessage(id: aiMsgId, newContent: text)
+                        let cleanText = text
+                            .replacingOccurrences(of: "\\[?\\s*(?:TOOL|calc|calculator|math):?[^\\]]*\\]?", with: "", options: .regularExpression)
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                        self.updateTextMessage(id: aiMsgId, newContent: cleanText)
                     }
                 }
             }
@@ -259,8 +264,7 @@ public class AgentViewModel: ObservableObject {
     }
 
     private func parseToolCall(from text: String) -> ParsedTool? {
-        // Match [TOOL: any_tool_name(args)] or standalone tool_name(args) patterns
-        let pattern = "\\[?TOOL:\\s*([a-zA-Z0-9_]+)\\(([^)]+)\\)\\]?|\\b([a-zA-Z_]+(?:_map|_sms|_email|_weather|_alarm|_flashlight|_event|_hash))\\(([^)]+)\\)"
+        let pattern = "\\[?\\s*(?:TOOL:)?\\s*([a-zA-Z0-9._]+)\\s*\\(([^)]*)\\)\\s*\\]?"
         guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else {
             return nil
         }
@@ -270,16 +274,11 @@ public class AgentViewModel: ObservableObject {
             return nil
         }
 
-        let rawName: String
-        let rawArgs: String
-        if match.numberOfRanges >= 3, match.range(at: 1).location != NSNotFound, match.range(at: 1).length > 0 {
-            rawName = nsText.substring(with: match.range(at: 1)).lowercased().replacingOccurrences(of: ".", with: "_")
-            rawArgs = nsText.substring(with: match.range(at: 2)).trimmingCharacters(in: CharacterSet(charactersIn: "\"'))] "))
-        } else if match.numberOfRanges >= 5, match.range(at: 3).location != NSNotFound, match.range(at: 3).length > 0 {
-            rawName = nsText.substring(with: match.range(at: 3)).lowercased().replacingOccurrences(of: ".", with: "_")
-            rawArgs = nsText.substring(with: match.range(at: 4)).trimmingCharacters(in: CharacterSet(charactersIn: "\"'))] "))
-        } else {
-            return nil
+        var rawName = nsText.substring(with: match.range(at: 1)).lowercased().replacingOccurrences(of: ".", with: "_")
+        let rawArgs = nsText.substring(with: match.range(at: 2)).trimmingCharacters(in: CharacterSet(charactersIn: "\"'))] "))
+
+        if rawName == "c" || rawName == "calc" || rawName == "math" || rawName == "calculate" {
+            rawName = "calculate_math"
         }
 
         return ParsedTool(name: rawName, args: rawArgs)
@@ -305,18 +304,17 @@ public class AgentViewModel: ObservableObject {
             return nil
         }
 
-        let knownTools: Set<String> = ["show_map", "send_email", "send_sms", "add_calendar_event", "create_calendar_event", "check_weather", "get_current_weather", "set_alarm", "toggle_flashlight"]
+        let knownTools: Set<String> = ["show_map", "send_email", "send_sms", "add_calendar_event", "create_calendar_event", "check_weather", "get_current_weather", "set_alarm", "toggle_flashlight", "calculate_math"]
         let lowerArgsPrefix = argsStr.components(separatedBy: "(").first?.trimmingCharacters(in: .whitespaces).lowercased() ?? ""
 
-        if name.lowercased().hasPrefix("tool") || knownTools.contains(lowerArgsPrefix) {
-            if let inner = parseNameAndArgs(from: argsStr) {
-                return inner
+        var normalizedName = name.lowercased().replacingOccurrences(of: ".", with: "_")
+        if knownTools.contains(lowerArgsPrefix) {
+            normalizedName = lowerArgsPrefix
+            if let pIdx = argsStr.firstIndex(of: "(") {
+                argsStr = String(argsStr[argsStr.index(after: pIdx)...]).trimmingCharacters(in: CharacterSet(charactersIn: ")\"'] \t\n\r"))
             }
         }
 
-        let normalizedName = name.replacingOccurrences(of: ".", with: "_")
-            .replacingOccurrences(of: "/", with: "_")
-            .lowercased()
         return ParsedTool(name: normalizedName, args: argsStr)
     }
 
@@ -333,6 +331,7 @@ public class AgentViewModel: ObservableObject {
         if effectiveToolName.contains("flashlight") || effectiveToolName.contains("torch") { effectiveToolName = "toggle_flashlight" }
         if effectiveToolName.contains("alarm") && effectiveToolName != "set_alarm" { effectiveToolName = "set_alarm" }
         if effectiveToolName.contains("calendar") || effectiveToolName.contains("event") { effectiveToolName = "add_calendar_event" }
+        if effectiveToolName.contains("math") || effectiveToolName.contains("calc") { effectiveToolName = "calculate_math" }
 
         messages.append(.toolCall(id: toolId, name: effectiveToolName, args: tool.args, status: .running, result: nil))
 
@@ -401,6 +400,12 @@ public class AgentViewModel: ObservableObject {
             let resStr = "Hash (\(algo)) for '\(text)':\n\(res)"
             updateToolCall(id: toolId, status: .success, result: resStr)
             messages.append(.text(id: UUID().uuidString, sender: .agent, content: resStr, timestamp: Date()))
+
+        case "calculate_math", "math", "calc", "calculate":
+            let expr = extractArgValue(from: tool.args, key: "expression") ?? extractArgValue(from: tool.args, key: "calc") ?? (tool.args.isEmpty ? originalPrompt : tool.args)
+            let res = AgentTools.shared.calculateMath(expression: expr)
+            updateToolCall(id: toolId, status: .success, result: res)
+            messages.append(.text(id: UUID().uuidString, sender: .agent, content: res, timestamp: Date()))
 
         default:
             updateToolCall(id: toolId, status: .failed, result: "Unknown tool")

@@ -263,6 +263,37 @@ public class AgentTools {
         }
     }
 
+    // MARK: - Calculate Math Expression
+
+    public func calculateMath(expression: String) -> String {
+        var cleanExpr = expression
+            .replacingOccurrences(of: "x", with: "*")
+            .replacingOccurrences(of: "X", with: "*")
+            .replacingOccurrences(of: "=", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Extract numbers and math operators if text contains leading/trailing non-math words (e.g. "answer 1+1")
+        if let regex = try? NSRegularExpression(pattern: "([\\d\\.\\s\\+\\-\\*/\\(\\)]+)"),
+           let match = regex.matches(in: cleanExpr, options: [], range: NSRange(location: 0, length: (cleanExpr as NSString).length)).first(where: { (cleanExpr as NSString).substring(with: $0.range).contains(where: { $0.isNumber }) }) {
+            cleanExpr = (cleanExpr as NSString).substring(with: match.range).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        guard !cleanExpr.isEmpty else { return "Invalid math expression: '\(expression)'" }
+
+        do {
+            let expr = NSExpression(format: cleanExpr)
+            if let result = expr.expressionValue(with: nil, context: nil) as? NSNumber {
+                let doubleVal = result.doubleValue
+                if doubleVal.truncatingRemainder(dividingBy: 1.0) == 0 {
+                    return "\(cleanExpr) = \(Int64(doubleVal))"
+                } else {
+                    return "\(cleanExpr) = \(doubleVal)"
+                }
+            }
+        } catch {}
+        return "Invalid math expression: '\(expression)'"
+    }
+
     // MARK: - Toggle Flashlight
 
     @MainActor

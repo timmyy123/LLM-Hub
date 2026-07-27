@@ -228,7 +228,7 @@ fun AgentScreen(
                             .weight(1f)
                             .padding(horizontal = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
-                        contentPadding = PaddingValues(vertical = 16.dp)
+                        contentPadding = PaddingValues(top = 16.dp, bottom = 120.dp)
                     ) {
                         itemsIndexed(messages, key = { index, msg -> "${msg.id}_$index" }) { _, msg ->
                             when (msg) {
