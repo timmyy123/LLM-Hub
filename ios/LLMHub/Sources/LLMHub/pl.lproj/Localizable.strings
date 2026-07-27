@@ -70,7 +70,7 @@
 "ai_thinking" = "AI myśli...";
 "thinking_label" = "Myślenie";
 "thinking_tokens" = "Myślenie (%1$d tokenów)";
-"version_number" = "Wersja 3.8.6";
+"version_number" = "Wersja 4.0.0";
 "app_version" = "Wersja Aplikacji";
 "terms_of_service" = "Warunki Usługi";
 "tos_last_updated" = "Ostatnia aktualizacja: 16 lipca 2025";
@@ -814,3 +814,39 @@
 "on_device_ai_engine" = "LOKALNY SILNIK AI";
 "secure_private" = "BEZPIECZNE I PRYWATNE";
 "language_chinese_traditional" = "繁體中文";
+
+// MARK: - Agent Feature
+"feature_agent" = "Agent";
+"feature_agent_desc" = "Asystent AI z narzędziami i akcjami";
+"premium_feature_agent" = "Agent – IA z narzędziami i akcjami urządzenia";
+"agent_title" = "Agent";
+"agent_subtitle" = "Zapytaj mnie o cokolwiek — potrafię szukać, mapować, planować i więcej";
+"agent_input_placeholder" = "Zapytaj agenta…";
+"agent_voice_mode_system" = "System";
+"agent_voice_mode_whisper" = "Whisper";
+"agent_voice_mode_gemma" = "Gemma";
+"agent_tool_running" = "Uruchamianie: %@";
+"agent_tool_success" = "Gotowe";
+"agent_tool_failed" = "Nie powiodło się";
+"agent_tool_confirm_title" = "Zezwolić na akcję?";
+"agent_tool_confirm_body" = "Agent chce: %@";
+"agent_tool_approve" = "Zezwól";
+"agent_tool_deny" = "Odmów";
+"agent_no_model" = "Pobierz model, aby używać Agenta";
+"agent_map_expand" = "Pokaż pełną mapę";
+"agent_settings_voice_mode" = "Tryb wejścia głosowego";
+"agent_settings_tools" = "Włączone narzędzia";
+"agent_shortcut_confirm" = "Uruchom skrót: %@";
+"agent_calendar_confirm" = "Utwórz wydarzenie: %@";
+
+"agent_welcome_message" = "Cześć! Jestem Twoim Agentem AI. Mogę przeszukiwać sieć, wyświetlać mapy, zarządzać wydarzeniami w kalendarzu, sprawdzać pogodę, ustawiać alarmy, wysyłać wiadomości i obliczać hasze. Jak mogę Ci dzisiaj pomóc?";
+"agent_no_model_android" = "Pobierz najpierw model Gemma 4 E2/4B, aby korzystać z Agenta";
+"agent_no_model_ios" = "Pobierz najpierw model, aby korzystać z Agenta";
+
+"open_maps" = "Otwórz mapy";
+"agent_processing_tool" = "Agent przetwarza narzędzie...";
+
+"premium_feature_vibevoice" = "VibeVoice – AI mowy i głosu";
+"premium_feature_vibecoder" = "VibeCode – Kreator kodu AI";
+"premium_feature_image_generator" = "Generator obrazów – Sztuka AI na urządzeniu";
+"premium_feature_video_generator" = "Generator wideo – Tworzenie wideo AI";

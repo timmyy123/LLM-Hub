@@ -215,11 +215,17 @@ fun PremiumScreen(
                                 text = stringResource(R.string.premium_feature_memory)
                             )
                             PremiumFeatureRow(
+                                icon = Icons.Default.SmartToy,
+                                tint = Color(0xFFA78BFA),
+                                text = stringResource(R.string.premium_feature_agent)
+                            )
+                            PremiumFeatureRow(
                                 icon = Icons.Default.AutoAwesome,
                                 tint = Color(0xFF00BCD4),
                                 text = stringResource(R.string.premium_feature_future),
                                 isLast = true
                             )
+
                         }
                     }
 

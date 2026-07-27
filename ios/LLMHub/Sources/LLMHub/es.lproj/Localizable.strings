@@ -69,7 +69,7 @@
 "ai_thinking" = "La IA está pensando...";
 "thinking_label" = "Pensamiento";
 "thinking_tokens" = "Pensamiento (%1$d tokens)";
-"version_number" = "Versión 3.8.6";
+"version_number" = "Versión 4.0.0";
 "app_version" = "Versión de la App";
 "terms_of_service" = "Términos de Servicio";
 "tos_last_updated" = "Última actualización: 16 de julio de 2025";
@@ -785,3 +785,38 @@
 "on_device_ai_engine" = "MOTOR DE IA EN EL DISPOSITIVO";
 "secure_private" = "SEGURO Y PRIVADO";
 "language_chinese_traditional" = "繁體中文";
+
+// MARK: - Agent Feature
+"feature_agent" = "Agente";
+"feature_agent_desc" = "Asistente IA con herramientas y acciones";
+"premium_feature_agent" = "Agente – IA con herramientas y acciones";
+"agent_title" = "Agente";
+"agent_subtitle" = "Pregúntame cualquier cosa — puedo buscar, mapear, agendar y más";
+"agent_input_placeholder" = "Pregunta a tu agente…";
+"agent_voice_mode_system" = "Sistema";
+"agent_voice_mode_whisper" = "Whisper";
+"agent_voice_mode_gemma" = "Gemma";
+"agent_tool_running" = "Ejecutando: %@";
+"agent_tool_success" = "Listo";
+"agent_tool_failed" = "Fallido";
+"agent_tool_confirm_title" = "¿Permitir acción?";
+"agent_tool_confirm_body" = "El agente quiere: %@";
+"agent_tool_approve" = "Permitir";
+"agent_tool_deny" = "Denegar";
+"agent_no_model" = "Descargue un modelo para usar el Agente";
+"agent_map_expand" = "Ver mapa completo";
+"agent_settings_voice_mode" = "Modo entrada de voz";
+"agent_settings_tools" = "Herramientas habilitadas";
+"agent_shortcut_confirm" = "Ejecutar acceso directo: %@";
+"agent_calendar_confirm" = "Crear evento: %@";
+"agent_welcome_message" = "¡Hola! Soy tu Agente de IA. Puedo buscar en la web, mostrar mapas, gestionar eventos del calendario, consultar el tiempo, configurar alarmas, enviar mensajes y calcular hashes. ¿Cómo puedo ayudarte hoy?";
+"agent_no_model_android" = "Descargue primero el modelo Gemma 4 E2/4B para usar el Agente";
+"agent_no_model_ios" = "Descargue primero un modelo para usar el Agente";
+
+"open_maps" = "Abrir mapas";
+"agent_processing_tool" = "El agente está procesando la herramienta...";
+
+"premium_feature_vibevoice" = "VibeVoice – IA de voz y habla";
+"premium_feature_vibecoder" = "VibeCode – Creador de código con IA";
+"premium_feature_image_generator" = "Generador de imágenes – Arte IA en el dispositivo";
+"premium_feature_video_generator" = "Generador de video – Creación de video con IA";

@@ -78,7 +78,7 @@
     <string name="ai_thinking">الذكاء الاصطناعي يفكر...</string>
     <string name="thinking_label">التفكير</string>
     <string name="thinking_tokens">التفكير (%1$d رموز)</string>
-    <string name="version_number">الإصدار 3.8.6</string>
+    <string name="version_number">الإصدار 4.0.0</string>
     <string name="app_version">إصدار التطبيق</string>
 
     <!-- Terms of Service -->
@@ -710,7 +710,7 @@
     <string name="chat_title">عنوان الدردشة</string>
     <string name="more_options">المزيد من الخيارات</string>
     <string name="dialog_delete_creator_title">حذف الشخصية؟</string>
-    <string name="dialog_delete_creator_message">حذف الشخصية &quot;%1&quot;؟</string>
+    <string name="dialog_delete_creator_message">حذف الشخصية \"%1\"؟</string>
     <string name="action_rename">إعادة التسمية</string>
 
     <!-- Vibe Coder Feature -->
@@ -878,7 +878,41 @@
     <string name="gemma_voice_option">Gemma</string>
         <string name="asr_model_backend"></string>
     <string name="llm_model_backend">الواجهة الخلفية لنموذج LLM</string>
+    <!-- Agent Feature -->
+    <string name="feature_agent">وكيل</string>
+    <string name="feature_agent_desc">مساعد ذكاء اصطناعي بأدوات وإجراءات</string>
+    <string name="premium_feature_agent">الوكيل – ذكاء اصطناعي بأدوات وإجراءات</string>
+    <string name="agent_title">وكيل</string>
+    <string name="agent_subtitle">اسألني عن أي شيء — أستطيع البحث والتعيين على الخريطة وإدارة التقويم والمزيد</string>
+    <string name="agent_input_placeholder">اسأل وكيلك…</string>
+    <string name="agent_voice_mode_system">النظام</string>
+    <string name="agent_voice_mode_whisper">Whisper</string>
+    <string name="agent_voice_mode_gemma">Gemma</string>
+    <string name="agent_tool_running">جارٍ التشغيل: %1$s</string>
+    <string name="agent_tool_success">تم</string>
+    <string name="agent_tool_failed">فشل</string>
+    <string name="agent_tool_confirm_title">السماح بالإجراء؟</string>
+    <string name="agent_tool_confirm_body">يريد الوكيل: %1$s</string>
+    <string name="agent_tool_approve">سماح</string>
+    <string name="agent_tool_deny">رفض</string>
+    <string name="agent_no_model">يرجى تنزيل نموذج لاستخدام الوكيل</string>
+    <string name="agent_map_expand">عرض الخريطة الكاملة</string>
+    <string name="agent_settings_voice_mode">وضع الإدخال الصوتي</string>
+    <string name="agent_settings_tools">الأدوات المفعّلة</string>
+    <string name="agent_termux_toggle">تفعيل أوامر Termux (متقدم)</string>
+    <string name="agent_termux_confirm">تشغيل الأمر: %1$s</string>
+    <string name="agent_calendar_confirm">إنشاء حدث: %1$s</string>
+    <string name="agent_shortcut_confirm">تشغيل الاختصار: %1$s</string>
+    <string name="agent_welcome_message">مرحباً! أنا وكيل الذكاء الاصطناعي الخاص بك. يمكنني البحث في الويب وعرض الخرائط وإدارة أحداث التقويم والتحقق من الطقس وضبط المنبهات وإرسال الرسائل وحساب التجزئة. كيف يمكنني مساعدتك اليوم؟</string>
+    <string name="agent_no_model_android">يرجى تنزيل نموذج Gemma 4 E2/4B أولاً لاستخدام الوكيل</string>
+    <string name="agent_no_model_ios">يرجى تنزيل نموذج أولاً لاستخدام الوكيل</string>
+    <string name="open_maps">فتح الخرائط</string>
+    <string name="agent_processing_tool">الوكيل يربط الأداة...</string>
+    <string name="agent_termux_guide_title">دليل إعداد Termux</string>
+    <string name="agent_termux_guide_desc">في Termux، قم بتفعيل إذن تشغيل التطبيقات الخارجية:</string>
+    <string name="agent_termux_cmd_copied">تم نسخ الأمر إلى الحافظة</string>
+    <string name="agent_termux_pending_approval">يتطلب الموافقة</string>
+    <string name="agent_termux_run_cmd">تشغيل الأمر</string>
+    <string name="agent_termux_cancel_cmd">إلغاء</string>
+    <string name="agent_termux_cancelled">تم الإلغاء بواسطة المستخدم</string>
 </resources>
-
-
-

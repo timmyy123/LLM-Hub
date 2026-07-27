@@ -70,7 +70,7 @@
 "ai_thinking" = "ה-AI חושב…";
 "thinking_label" = "חשיבה";
 "thinking_tokens" = "חשיבה (%1$d אסימונים)";
-"version_number" = "גרסה 3.8.6";
+"version_number" = "גרסה 4.0.0";
 "app_version" = "גרסת אפליקציה";
 "terms_of_service" = "תנאי שימוש";
 "tos_last_updated" = "עודכן לאחרונה: 16 ביולי 2025";
@@ -814,3 +814,39 @@
 "on_device_ai_engine" = "מנוע בינה מלאכותית על המכשיר";
 "secure_private" = "מאובטח ופרטי";
 "language_chinese_traditional" = "繁體中文";
+
+// MARK: - Agent Feature
+"feature_agent" = "סוכן";
+"feature_agent_desc" = "עוזר בינה מלאכותית עם כלים ופעולות";
+"premium_feature_agent" = "סוכן – בינה מלאכותית עם כלים ופעולות";
+"agent_title" = "סוכן";
+"agent_subtitle" = "שאל אותי כל שאלה — אני יכול לחפש, למפות, לתזמן ועוד";
+"agent_input_placeholder" = "שאל את הסוכן שלך…";
+"agent_voice_mode_system" = "מערכת";
+"agent_voice_mode_whisper" = "Whisper";
+"agent_voice_mode_gemma" = "Gemma";
+"agent_tool_running" = "מבצע: %@";
+"agent_tool_success" = "הושלם";
+"agent_tool_failed" = "נכשל";
+"agent_tool_confirm_title" = "לאפשר את הפעולה?";
+"agent_tool_confirm_body" = "הסוכן רוצה: %@";
+"agent_tool_approve" = "אפשר";
+"agent_tool_deny" = "דחה";
+"agent_no_model" = "אנא הורד מודל כדי להשתמש בסוכן";
+"agent_map_expand" = "הצג מפה מלאה";
+"agent_settings_voice_mode" = "מצב קלט קולי";
+"agent_settings_tools" = "כלים מופעלים";
+"agent_shortcut_confirm" = "הפעל קיצור דרך: %@";
+"agent_calendar_confirm" = "צור אירוע: %@";
+
+"agent_welcome_message" = "שלום! אני סוכן ה-AI שלך. אני יכול לחפש באינטרנט, להציג מפות, לנהל אירועי לוח שנה, לבדוק מזג אוויר, להגדיר שעונים מעוררים, לשלוח הודעות ולחשב האשים. איך אני יכול לעזור לך היום?";
+"agent_no_model_android" = "אנא הורד תחילה את דגם Gemma 4 E2/4B כדי להשתמש בסוכן";
+"agent_no_model_ios" = "אנא הורד תחילה דגם כדי להשתמש בסוכן";
+
+"open_maps" = "פתח מפות";
+"agent_processing_tool" = "הסוכן מעבד את הכלי...";
+
+"premium_feature_vibevoice" = "VibeVoice – בינה מלאכותית לקול ודיבור";
+"premium_feature_vibecoder" = "VibeCode – בונה קוד בבינה מלאכותית";
+"premium_feature_image_generator" = "מחולל תמונות – אמנות בינה מלאכותית במכשיר";
+"premium_feature_video_generator" = "מחולל וידאו – יצירת וידאו בבינה מלאכותית";

@@ -69,7 +69,7 @@
 "ai_thinking" = "L\'IA réfléchit...";
 "thinking_label" = "Réflexion";
 "thinking_tokens" = "Réflexion (%1$d jetons)";
-"version_number" = "Version 3.8.6";
+"version_number" = "Version 4.0.0";
 "app_version" = "Version de l\'App";
 "terms_of_service" = "Conditions d\'Utilisation";
 "tos_last_updated" = "Dernière mise à jour : 16 juillet 2025";
@@ -801,3 +801,39 @@
 "on_device_ai_engine" = "MOTEUR D'IA SUR L'APPAREIL";
 "secure_private" = "SÉCURISÉ & PRIVÉ";
 "language_chinese_traditional" = "繁體中文";
+
+// MARK: - Agent Feature
+"feature_agent" = "Agent";
+"feature_agent_desc" = "Assistant IA avec outils et actions";
+"premium_feature_agent" = "Agent – IA avec outils et actions";
+"agent_title" = "Agent";
+"agent_subtitle" = "Demandez-moi n'importe quoi — je peux chercher, cartographier, planifier et plus";
+"agent_input_placeholder" = "Demandez à votre agent…";
+"agent_voice_mode_system" = "Système";
+"agent_voice_mode_whisper" = "Whisper";
+"agent_voice_mode_gemma" = "Gemma";
+"agent_tool_running" = "En cours: %@";
+"agent_tool_success" = "Terminé";
+"agent_tool_failed" = "Échoué";
+"agent_tool_confirm_title" = "Autoriser l'action ?";
+"agent_tool_confirm_body" = "L'agent veut: %@";
+"agent_tool_approve" = "Autoriser";
+"agent_tool_deny" = "Refuser";
+"agent_no_model" = "Veuillez télécharger un modèle pour utiliser l'Agent";
+"agent_map_expand" = "Voir la carte complète";
+"agent_settings_voice_mode" = "Mode saisie vocale";
+"agent_settings_tools" = "Outils activés";
+"agent_shortcut_confirm" = "Exécuter le raccourci: %@";
+"agent_calendar_confirm" = "Créer un événement: %@";
+
+"agent_welcome_message" = "Bonjour ! Je suis votre Agent IA. Je peux rechercher sur le Web, afficher des cartes, gérer les événements du calendrier, consulter la météo, régler des alarmes, envoyer des messages et calculer des hachages. Comment puis-je vous aider aujourd'hui ?";
+"agent_no_model_android" = "Veuillez d'abord télécharger le modèle Gemma 4 E2/4B pour utiliser l'Agent";
+"agent_no_model_ios" = "Veuillez d'abord télécharger un modèle pour utiliser l'Agent";
+
+"open_maps" = "Ouvrir les cartes";
+"agent_processing_tool" = "L’agent traite l’outil...";
+
+"premium_feature_vibevoice" = "VibeVoice – IA vocale & parole";
+"premium_feature_vibecoder" = "VibeCode – Générateur de code IA";
+"premium_feature_image_generator" = "Générateur d'images – Art IA sur l'appareil";
+"premium_feature_video_generator" = "Générateur de vidéo – Création vidéo par IA";

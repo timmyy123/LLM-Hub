@@ -2,6 +2,7 @@ package com.llmhub.llmhub.inference
 
 import android.content.Context
 import android.content.Intent
+import android.hardware.camera2.CameraManager
 import android.net.Uri
 import android.util.Log
 import com.google.ai.edge.litertlm.Tool
@@ -43,6 +44,7 @@ You are a helpful AI assistant. You have access to the following tools:
 - send-email: Compose and open an email using the device's email app.
 - send-sms: Compose and open an SMS message using the device's messaging app.
 - open-map: Open a location in the device's map app.
+- toggle-flashlight: Turn the device flashlight (camera torch) ON or OFF.
 
 RULES:
 1. For factual questions, always use query-wikipedia first to ground your answer.
@@ -173,6 +175,28 @@ RULES:
         } catch (e: Exception) {
             Log.w(TAG, "openMap failed: ${e.message}")
             mapOf("error" to "Could not open map app: ${e.message}", "status" to "failed")
+        }
+    }
+
+    // ─── Flashlight ───────────────────────────────────────────────────────────
+
+    @Tool(description = "Turn the device flashlight (camera torch) ON or OFF.")
+    fun toggleFlashlight(
+        @ToolParam(description = "Set to 'true' to turn flashlight ON, or 'false' to turn flashlight OFF.") enabled: String
+    ): Map<String, String> {
+        val isEnabled = enabled.lowercase() == "true" || enabled.lowercase() == "on" || enabled == "1"
+        return try {
+            val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
+            val cameraId = cameraManager.cameraIdList.firstOrNull()
+            if (cameraId != null) {
+                cameraManager.setTorchMode(cameraId, isEnabled)
+                mapOf("result" to "Flashlight turned ${if (isEnabled) "on" else "off"}.", "status" to "succeeded")
+            } else {
+                mapOf("error" to "No camera available for flashlight.", "status" to "failed")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "toggleFlashlight failed: ${e.message}")
+            mapOf("error" to "Flashlight error: ${e.message}", "status" to "failed")
         }
     }
 }

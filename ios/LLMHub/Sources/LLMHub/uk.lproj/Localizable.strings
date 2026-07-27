@@ -70,7 +70,7 @@
 "ai_thinking" = "AI думає…";
 "thinking_label" = "Міркування";
 "thinking_tokens" = "Міркування (%1$d токенів)";
-"version_number" = "Версія 3.8.6";
+"version_number" = "Версія 4.0.0";
 "app_version" = "Версія застосунку";
 "terms_of_service" = "Умови надання послуг";
 "tos_last_updated" = "Останнє оновлення: 16 липня 2025";
@@ -814,3 +814,39 @@
 "on_device_ai_engine" = "ЛОКАЛЬНИЙ ІІ-ДВИГУН";
 "secure_private" = "БЕЗПЕЧНО ТА КОНФІДЕНЦІЙНО";
 "language_chinese_traditional" = "繁體中文";
+
+// MARK: - Agent Feature
+"feature_agent" = "Агент";
+"feature_agent_desc" = "ІІ-асистент з інструментами та діями";
+"premium_feature_agent" = "Агент – ІІ з інструментами та діями";
+"agent_title" = "Агент";
+"agent_subtitle" = "Питай мене про що завгодно — я можу шукати, картографувати, планувати та більше";
+"agent_input_placeholder" = "Запитай агента…";
+"agent_voice_mode_system" = "Системний";
+"agent_voice_mode_whisper" = "Whisper";
+"agent_voice_mode_gemma" = "Gemma";
+"agent_tool_running" = "Виконується: %@";
+"agent_tool_success" = "Готово";
+"agent_tool_failed" = "Не вдалося";
+"agent_tool_confirm_title" = "Дозволити дію?";
+"agent_tool_confirm_body" = "Агент хоче: %@";
+"agent_tool_approve" = "Дозволити";
+"agent_tool_deny" = "Відхилити";
+"agent_no_model" = "Завантажте модель для використання Агента";
+"agent_map_expand" = "Відкрити повну карту";
+"agent_settings_voice_mode" = "Режим голосового введення";
+"agent_settings_tools" = "Увімкнені інструменти";
+"agent_shortcut_confirm" = "Запустити ярлик: %@";
+"agent_calendar_confirm" = "Створити подію: %@";
+
+"agent_welcome_message" = "Привіт! Я ваш ШІ-агент. Я можу шукати в Інтернеті, показувати карти, керувати подіями в календарі, перевіряти погоду, встановлювати будильники, надсилати повідомлення та обчислювати хеші. Чим я можу допомогти вам сьогодні?";
+"agent_no_model_android" = "Будь ласка, спочатку завантажте модель Gemma 4 E2/4B, щоб використовувати Агента";
+"agent_no_model_ios" = "Будь ласка, спочатку завантажте модель, щоб використовувати Агента";
+
+"open_maps" = "Відкрити карти";
+"agent_processing_tool" = "Агент обробляє інструмент...";
+
+"premium_feature_vibevoice" = "VibeVoice – ШІ мовлення та голосу";
+"premium_feature_vibecoder" = "VibeCode – ШІ-конструктор коду";
+"premium_feature_image_generator" = "Генератор зображень – ШІ-арт на пристрої";
+"premium_feature_video_generator" = "Генератор відео – Створення відео з ШІ";

@@ -33,6 +33,7 @@
 | Tool | Description |
 |------|-------------|
 | **💬 Chat** | Multi-turn conversations with RAG memory, web search, TTS auto-readout, and multimodal input |
+| **🤖 AI Agent** | **[NEW]** Autonomous device agent with function calling, interactive maps, device tools, and Termux terminal command generation on Android |
 | **🤖 creAItor** | **[NEW]** Design custom AI personas with specialized system prompts (PCTF) in seconds |
 | **💻 Vibe Coder** | **[NEW]** Explain your app idea and watch it be built in real-time with live HTML/JS preview |
 | **✍️ Writing Aid** | Summarize, expand, rewrite, improve grammar, or generate code from descriptions |
@@ -43,6 +44,14 @@
 | **🎙️ Transcriber** | Convert speech to text with on-device processing using Whisper models |
 | **🛡️ Scam Detector** | Analyze messages and images for phishing with risk assessment |
 | **🗣️ VibeVoice** | **[NEW]** Hands-free AI voice chat |
+
+### 🤖 AI Agent & Termux Terminal Command Generation
+The **AI Agent** turns on-device LLMs into autonomous assistants with device function calling capabilities:
+- **Device Actions & Function Calling**: Embedded interactive maps (OpenStreetMap), calendar management, alarm setup, flashlight toggle, SMS & Email composition, cryptographic hashing (SHA-256/MD5), and math calculation.
+- **Termux Command Generation (Android)**: Automatically drafts shell/CLI commands targeting Termux environment execution (`RUN_COMMAND_SERVICE` intent interface).
+- **Interactive Pre-Execution Editing**: Users can inspect and edit AI-generated shell commands before execution.
+- **Live Dark Terminal Container**: Formats and streams live command outputs (`stdout`/`stderr`) in a dark monospace terminal UI block.
+- **AI Error Auto-Correction Loop**: When a shell command fails or encounters permission/syntax errors, the agent automatically feeds the error logs back into the LLM for self-diagnostics and auto-generates fix commands.
 
 ### 🎙️ Supported ASR Models (Android)
 The offline **Transcriber** feature on Android supports on-device Whisper models for high-accuracy local speech-to-text.

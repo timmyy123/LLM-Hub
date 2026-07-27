@@ -49,7 +49,8 @@ data class FeatureCard(
 
 
 /** Routes that require a Premium subscription. */
-private val PREMIUM_ROUTES = setOf("image_generator", "vibe_coder")
+private val PREMIUM_ROUTES = setOf("image_generator", "vibe_coder", "agent")
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -147,6 +148,14 @@ fun HomeScreen(
                 gradient = Pair(Color(0xFF7BC6CC), Color(0xFF8A82FB)),
                 darkColor = Color(0xFF263F4A),
                 route = "vibevoice"
+            ),
+            FeatureCard(
+                title = R.string.feature_agent,
+                description = R.string.feature_agent_desc,
+                icon = Icons.Filled.SmartToy,
+                gradient = Pair(Color(0xFFA78BFA), Color(0xFFEC4899)),
+                darkColor = Color(0xFF3B1E54),
+                route = "agent"
             )
         )
     }

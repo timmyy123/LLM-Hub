@@ -156,9 +156,15 @@ struct PremiumScreen: View {
 
             // Feature list card
             VStack(spacing: 0) {
-                PremiumFeatureRow(icon: "square.and.arrow.up.fill", tint: Color(hex: "FFC107"), textKey: "premium_feature_import_models")
-                PremiumFeatureRow(icon: "sparkles",                 tint: Color(hex: "00BCD4"), textKey: "premium_feature_future", isLast: true)
+                PremiumFeatureRow(icon: "square.and.arrow.up.fill",        tint: Color(hex: "FFC107"), textKey: "premium_feature_import_models")
+                PremiumFeatureRow(icon: "cpu.fill",                        tint: Color(hex: "A78BFA"), textKey: "premium_feature_agent")
+                PremiumFeatureRow(icon: "waveform.circle.fill",           tint: Color(hex: "89D3F7"), textKey: "premium_feature_vibevoice")
+                PremiumFeatureRow(icon: "chevron.left.slash.chevron.right",tint: Color(hex: "A8BCFF"), textKey: "premium_feature_vibecoder")
+                PremiumFeatureRow(icon: "paintpalette.fill",              tint: Color(hex: "9CC3FF"), textKey: "premium_feature_image_generator")
+                PremiumFeatureRow(icon: "video.fill",                     tint: Color(hex: "FF99C8"), textKey: "premium_feature_video_generator")
+                PremiumFeatureRow(icon: "sparkles",                        tint: Color(hex: "00BCD4"), textKey: "premium_feature_future", isLast: true)
             }
+
             .padding(20)
             .background(.ultraThinMaterial)
             .clipShape(RoundedRectangle(cornerRadius: 20))

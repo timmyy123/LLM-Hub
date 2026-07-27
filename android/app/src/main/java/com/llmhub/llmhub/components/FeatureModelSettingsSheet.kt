@@ -145,7 +145,9 @@ fun FeatureModelSettingsSheet(
         derivedStateOf {
             val name = selectedModel?.name?.lowercase() ?: ""
             name.contains("thinking") || name.contains("reasoning") ||
-                name.contains("gpt-oss") || name.contains("gpt_oss")
+                name.contains("gpt-oss") || name.contains("gpt_oss") ||
+                name.contains("gemma-4") || name.contains("gemma 4") || name.contains("gemma_4") ||
+                selectedModel?.supportsThinking == true
         }
     }
 
@@ -568,6 +570,7 @@ fun FeatureModelSettingsSheet(
                                     onCheckedChange = { enableThinking = it }
                                 )
                             }
+                            Spacer(modifier = Modifier.height(16.dp))
                         }
 
                         extraModelConfigsContent?.invoke(this)

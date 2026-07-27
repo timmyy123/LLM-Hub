@@ -77,7 +77,7 @@
     <string name="ai_thinking">ה-AI חושב…</string>
     <string name="thinking_label">חשיבה</string>
     <string name="thinking_tokens">חשיבה (%1$d אסימונים)</string>
-    <string name="version_number">גרסה 3.8.6</string>
+    <string name="version_number">גרסה 4.0.0</string>
     <string name="app_version">גרסת אפליקציה</string>
 
     <!-- Terms of Service -->
@@ -877,7 +877,41 @@
     <string name="gemma_voice_option">Gemma</string>
         <string name="asr_model_backend"></string>
     <string name="llm_model_backend">בקאנד של מודל LLM</string>
+    <!-- Agent Feature -->
+    <string name="feature_agent">סוכן</string>
+    <string name="feature_agent_desc">עוזר בינה מלאכותית עם כלים ופעולות</string>
+    <string name="premium_feature_agent">סוכן – בינה מלאכותית עם כלים ופעולות</string>
+    <string name="agent_title">סוכן</string>
+    <string name="agent_subtitle">שאל אותי כל שאלה — אני יכול לחפש, למפות, לתזמן ועוד</string>
+    <string name="agent_input_placeholder">שאל את הסוכן שלך…</string>
+    <string name="agent_voice_mode_system">מערכת</string>
+    <string name="agent_voice_mode_whisper">Whisper</string>
+    <string name="agent_voice_mode_gemma">Gemma</string>
+    <string name="agent_tool_running">מבצע: %1$s</string>
+    <string name="agent_tool_success">הושלם</string>
+    <string name="agent_tool_failed">נכשל</string>
+    <string name="agent_tool_confirm_title">לאפשר את הפעולה?</string>
+    <string name="agent_tool_confirm_body">הסוכן רוצה: %1$s</string>
+    <string name="agent_tool_approve">אפשר</string>
+    <string name="agent_tool_deny">דחה</string>
+    <string name="agent_no_model">אנא הורד מודל כדי להשתמש בסוכן</string>
+    <string name="agent_map_expand">הצג מפה מלאה</string>
+    <string name="agent_settings_voice_mode">מצב קלט קולי</string>
+    <string name="agent_settings_tools">כלים מופעלים</string>
+    <string name="agent_termux_toggle">הפעל פקודות Termux (מתקדם)</string>
+    <string name="agent_termux_confirm">הפעל פקודה: %1$s</string>
+    <string name="agent_calendar_confirm">צור אירוע: %1$s</string>
+    <string name="agent_shortcut_confirm">הפעל קיצור דרך: %1$s</string>
+    <string name="agent_welcome_message">שלום! אני סוכן ה-AI שלך. אני יכול לחפש באינטרנט, להציג מפות, לנהל אירועי לוח שנה, לבדוק מזג אוויר, להגדיר שעונים מעוררים, לשלוח הודעות ולחשב האשים. איך אני יכול לעזור לך היום?</string>
+    <string name="agent_no_model_android">אנא הורד תחילה את דגם Gemma 4 E2/4B כדי להשתמש בסוכן</string>
+    <string name="agent_no_model_ios">אנא הורד תחילה דגם כדי להשתמש בסוכן</string>
+    <string name="open_maps">פתח מפות</string>
+    <string name="agent_processing_tool">הסוכן מעבד את הכלי...</string>
+    <string name="agent_termux_guide_title">מדריך הגדרת Termux</string>
+    <string name="agent_termux_guide_desc">ב-Termux, הפעל הרשאות הרצת אפליקציות צד שלישי:</string>
+    <string name="agent_termux_cmd_copied">הפקודה הועתקה ללוח</string>
+    <string name="agent_termux_pending_approval">נדרש אישור</string>
+    <string name="agent_termux_run_cmd">הפעל פקודה</string>
+    <string name="agent_termux_cancel_cmd">ביטול</string>
+    <string name="agent_termux_cancelled">בוטל על ידי המשתמש</string>
 </resources>
-
-
-

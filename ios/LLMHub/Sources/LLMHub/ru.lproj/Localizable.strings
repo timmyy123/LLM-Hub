@@ -118,7 +118,7 @@
 "acknowledgments_text" = "Особая благодарность Google, Meta, Microsoft, IBM, и сообществу HuggingFace за предоставление невероятных LLM-моделей, которые питают это приложение. Этот проект также опирается на удивительную работу сообщества разработчиков Android и экосистемы открытого исходного кода.";
 "sd_models_credit" = "Модели генерации изображений работают на основе реализаций Stable Diffusion от xororz с использованием бэкендов Qualcomm QNN (NPU) и Alibaba MNN (CPU).";
 "nexa_sdk_credit" = "Вывод моделей GGUF работает на основе Nexa SDK.";
-"version_number" = "Версия 3.8.6";
+"version_number" = "Версия 4.0.0";
 "ai_thinking" = "ИИ думает...";
 "thinking_label" = "Размышление";
 "thinking_tokens" = "Размышление (%1$d токенов)";
@@ -786,3 +786,39 @@
 "on_device_ai_engine" = "ЛОКАЛЬНЫЙ ИИ-ДВИЖОК";
 "secure_private" = "БЕЗОПАСНО И КОНФИДЕНЦИАЛЬНО";
 "language_chinese_traditional" = "繁體中文";
+
+// MARK: - Agent Feature
+"feature_agent" = "Агент";
+"feature_agent_desc" = "ИИ-ассистент с инструментами и действиями";
+"premium_feature_agent" = "Агент – ИИ с инструментами и действиями";
+"agent_title" = "Агент";
+"agent_subtitle" = "Спроси меня что угодно — я умею искать, строить карты, планировать и многое другое";
+"agent_input_placeholder" = "Спроси агента…";
+"agent_voice_mode_system" = "Системный";
+"agent_voice_mode_whisper" = "Whisper";
+"agent_voice_mode_gemma" = "Gemma";
+"agent_tool_running" = "Выполняется: %@";
+"agent_tool_success" = "Готово";
+"agent_tool_failed" = "Не удалось";
+"agent_tool_confirm_title" = "Разрешить действие?";
+"agent_tool_confirm_body" = "Агент хочет: %@";
+"agent_tool_approve" = "Разрешить";
+"agent_tool_deny" = "Отклонить";
+"agent_no_model" = "Загрузите модель для использования Агента";
+"agent_map_expand" = "Открыть полную карту";
+"agent_settings_voice_mode" = "Режим голосового ввода";
+"agent_settings_tools" = "Включённые инструменты";
+"agent_shortcut_confirm" = "Запустить ярлык: %@";
+"agent_calendar_confirm" = "Создать событие: %@";
+
+"agent_welcome_message" = "Здравствуйте! Я ваш ИИ-агент. Я могу искать в Интернете, показывать карты, управлять событиями в календаре, проверять погоду, устанавливать будильники, отправлять сообщения и вычислять хэши. Чем я могу помочь вам сегодня?";
+"agent_no_model_android" = "Пожалуйста, сначала скачайте модель Gemma 4 E2/4B, чтобы использовать Агента";
+"agent_no_model_ios" = "Пожалуйста, сначала скачайте модель, чтобы использовать Агента";
+
+"open_maps" = "Открыть карты";
+"agent_processing_tool" = "Агент обрабатывает инструмент...";
+
+"premium_feature_vibevoice" = "VibeVoice – ИИ речи и голоса";
+"premium_feature_vibecoder" = "VibeCode – ИИ-конструктор кода";
+"premium_feature_image_generator" = "Генератор изображений – ИИ-арт на устройстве";
+"premium_feature_video_generator" = "Генератор видео – Создание видео с ИИ";

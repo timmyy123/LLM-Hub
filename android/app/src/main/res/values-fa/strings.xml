@@ -77,7 +77,7 @@
     <string name="ai_thinking">هوش مصنوعی در حال فکر کردن…</string>
     <string name="thinking_label">تفکر</string>
     <string name="thinking_tokens">تفکر (%1$d توکن)</string>
-    <string name="version_number">نسخه 3.8.6</string>
+    <string name="version_number">نسخه 4.0.0</string>
     <string name="app_version">نسخه برنامه</string>
 
     <!-- Terms of Service (Short titles translated; body kept concise translation) -->
@@ -878,7 +878,41 @@
     <string name="gemma_voice_option">Gemma</string>
         <string name="asr_model_backend"></string>
     <string name="llm_model_backend">بک‌اند مدل LLM</string>
+    <!-- Agent Feature -->
+    <string name="feature_agent">دستیار</string>
+    <string name="feature_agent_desc">دستیار هوش مصنوعی با ابزارها و اقدامات</string>
+    <string name="premium_feature_agent">دستیار – هوش مصنوعی با ابزارها و اقدامات</string>
+    <string name="agent_title">دستیار</string>
+    <string name="agent_subtitle">از من هر چیزی بپرس — می‌توانم جستجو، نقشه‌کشی، تقویم و بیشتر انجام دهم</string>
+    <string name="agent_input_placeholder">از دستیارت بپرس…</string>
+    <string name="agent_voice_mode_system">سیستم</string>
+    <string name="agent_voice_mode_whisper">Whisper</string>
+    <string name="agent_voice_mode_gemma">Gemma</string>
+    <string name="agent_tool_running">در حال اجرا: %1$s</string>
+    <string name="agent_tool_success">انجام شد</string>
+    <string name="agent_tool_failed">ناموفق</string>
+    <string name="agent_tool_confirm_title">اجازه به اقدام؟</string>
+    <string name="agent_tool_confirm_body">دستیار می‌خواهد: %1$s</string>
+    <string name="agent_tool_approve">اجازه</string>
+    <string name="agent_tool_deny">رد</string>
+    <string name="agent_no_model">لطفاً یک مدل دانلود کنید تا از دستیار استفاده کنید</string>
+    <string name="agent_map_expand">نمایش نقشه کامل</string>
+    <string name="agent_settings_voice_mode">حالت ورودی صوتی</string>
+    <string name="agent_settings_tools">ابزارهای فعال</string>
+    <string name="agent_termux_toggle">فعال‌سازی دستورات Termux (پیشرفته)</string>
+    <string name="agent_termux_confirm">اجرای دستور: %1$s</string>
+    <string name="agent_calendar_confirm">ایجاد رویداد: %1$s</string>
+    <string name="agent_shortcut_confirm">اجرای میانبر: %1$s</string>
+    <string name="agent_welcome_message">سلام! من عامل هوش مصنوعی شما هستم. می‌توانم در وب جستجو کنم، نقشه‌ها را نشان دهم، رویدادهای تقویم را مدیریت کنم، آب و هوا را بررسی کنم، هشدارها را تنظیم کنم، پیام بفرستم و هش‌ها را محاسبه کنم. امروز چگونه می‌توانم به شما کمک کنم؟</string>
+    <string name="agent_no_model_android">لطفاً ابتدا مدل Gemma 4 E2/4B را دانلود کنید تا از عامل استفاده کنید</string>
+    <string name="agent_no_model_ios">لطفاً ابتدا یک مدل دانلود کنید تا از عامل استفاده کنید</string>
+    <string name="open_maps">باز کردن نقشه</string>
+    <string name="agent_processing_tool">عامل در حال پردازش ابزار است...</string>
+    <string name="agent_termux_guide_title">راهنمای تنظیمات Termux</string>
+    <string name="agent_termux_guide_desc">در Termux، مجوز اجرای برنامه شخص ثالث را فعال کنید:</string>
+    <string name="agent_termux_cmd_copied">دستور در حافظه پنهان کپی شد</string>
+    <string name="agent_termux_pending_approval">نیازمند تایید</string>
+    <string name="agent_termux_run_cmd">اجرای دستور</string>
+    <string name="agent_termux_cancel_cmd">لغو</string>
+    <string name="agent_termux_cancelled">توسط کاربر لغو شد</string>
 </resources>
-
-
-

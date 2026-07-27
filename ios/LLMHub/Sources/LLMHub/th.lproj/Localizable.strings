@@ -72,7 +72,7 @@
 "thinking_tokens" = "กำลังคิด (%1$dโทเค็น)";
 "enable_thinking" = "เปิดใช้งานการคิด";
 "thinking_toggle_label" = "เปิดใช้งานการคิด";
-"version_number" = "เวอร์ชัน 3.8.6";
+"version_number" = "เวอร์ชัน 4.0.0";
 "app_version" = "เวอร์ชันของแอป";
 "terms_of_service" = "ข้อกำหนดในการให้บริการ";
 "tos_last_updated" = "อัปเดตล่าสุด: 16 กรกฎาคม 2025";
@@ -822,3 +822,39 @@
 "on_device_ai_engine" = "เครื่องยนต์ AI บนอุปกรณ์";
 "secure_private" = "ปลอดภัยและเป็นส่วนตัว";
 "language_chinese_traditional" = "繁體中文";
+
+// MARK: - Agent Feature
+"feature_agent" = "เอเจนต์";
+"feature_agent_desc" = "ผู้ช่วย AI พร้อมเครื่องมือและการดำเนินการ";
+"premium_feature_agent" = "เอเจนต์ – AI พร้อมเครื่องมือและการดำเนินการในอุปกรณ์";
+"agent_title" = "เอเจนต์";
+"agent_subtitle" = "ถามฉันได้ทุกอย่าง — ค้นหา แผนที่ ปฏิทิน และอื่นๆ";
+"agent_input_placeholder" = "ถามเอเจนต์ของคุณ…";
+"agent_voice_mode_system" = "ระบบ";
+"agent_voice_mode_whisper" = "Whisper";
+"agent_voice_mode_gemma" = "Gemma";
+"agent_tool_running" = "กำลังรัน: %@";
+"agent_tool_success" = "สำเร็จ";
+"agent_tool_failed" = "ล้มเหลว";
+"agent_tool_confirm_title" = "อนุญาตการกระทำนี้?";
+"agent_tool_confirm_body" = "เอเจนต์ต้องการ: %@";
+"agent_tool_approve" = "อนุญาต";
+"agent_tool_deny" = "ปฏิเสธ";
+"agent_no_model" = "กรุณาดาวน์โหลดโมเดลเพื่อใช้งานเอเจนต์";
+"agent_map_expand" = "ดูแผนที่แบบเต็ม";
+"agent_settings_voice_mode" = "โหมดการป้อนเสียง";
+"agent_settings_tools" = "เครื่องมือที่เปิดใช้งาน";
+"agent_shortcut_confirm" = "เรียกใช้ทางลัด: %@";
+"agent_calendar_confirm" = "สร้างกิจกรรม: %@";
+
+"agent_welcome_message" = "สวัสดี! ฉันคือเอเจนต์ AI ของคุณ ฉันสามารถค้นหาเว็บ แสดงแผนที่ จัดการกิจกรรมในปฏิทิน ตรวจสอบสภาพอากาศ ตั้งปลุก ส่งข้อความ และคำนวณแฮชได้ วันนี้มีอะไรให้ฉันช่วยไหม?";
+"agent_no_model_android" = "โปรดดาวน์โหลดโมเดล Gemma 4 E2/4B ก่อนเพื่อใช้งานเอเจนต์";
+"agent_no_model_ios" = "โปรดดาวน์โหลดโมเดลก่อนเพื่อใช้งานเอเจนต์";
+
+"open_maps" = "เปิดแผนที่";
+"agent_processing_tool" = "แอปพลิเคชันกำลังประมวลผลเครื่องมือ...";
+
+"premium_feature_vibevoice" = "VibeVoice – AI เสียงและพูด";
+"premium_feature_vibecoder" = "VibeCode – เครื่องมือสร้างโค้ด AI";
+"premium_feature_image_generator" = "เครื่องสร้างรูปภาพ – ศิลปะ AI บนอุปกรณ์";
+"premium_feature_video_generator" = "เครื่องสร้างวิดีโอ – การสร้างวิดีโอ AI";

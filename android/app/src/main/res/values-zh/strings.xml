@@ -78,7 +78,7 @@
     <string name="ai_thinking">AI 思考中...</string>
     <string name="thinking_label">深度思考</string>
     <string name="thinking_tokens">思考 (%1$d tokens)</string>
-    <string name="version_number">版本号 3.8.6</string>
+    <string name="version_number">版本号 4.0.0</string>
     <string name="app_version">应用版本</string>
     
     <!-- Terms of Service -->
@@ -886,4 +886,41 @@
     <string name="gemma_voice_option">Gemma</string>
         <string name="asr_model_backend"></string>
     <string name="llm_model_backend">LLM 模型后端</string>
+    <!-- Agent Feature -->
+    <string name="feature_agent">智能代理</string>
+    <string name="feature_agent_desc">具備工具與動作的 AI 助手</string>
+    <string name="premium_feature_agent">智能代理 – 具備工具與裝置動作的 AI</string>
+    <string name="agent_title">智能代理</string>
+    <string name="agent_subtitle">問我任何事 — 我可以搜尋、地圖、行事曆等</string>
+    <string name="agent_input_placeholder">詢問您的代理…</string>
+    <string name="agent_voice_mode_system">系統</string>
+    <string name="agent_voice_mode_whisper">Whisper</string>
+    <string name="agent_voice_mode_gemma">Gemma</string>
+    <string name="agent_tool_running">執行中：%1$s</string>
+    <string name="agent_tool_success">完成</string>
+    <string name="agent_tool_failed">失敗</string>
+    <string name="agent_tool_confirm_title">允許此動作？</string>
+    <string name="agent_tool_confirm_body">代理想要：%1$s</string>
+    <string name="agent_tool_approve">允許</string>
+    <string name="agent_tool_deny">拒絕</string>
+    <string name="agent_no_model">請下載模型以使用智能代理</string>
+    <string name="agent_map_expand">查看完整地圖</string>
+    <string name="agent_settings_voice_mode">語音輸入模式</string>
+    <string name="agent_settings_tools">已啟用工具</string>
+    <string name="agent_termux_toggle">啟用 Termux 命令（進階）</string>
+    <string name="agent_termux_confirm">執行命令：%1$s</string>
+    <string name="agent_calendar_confirm">建立活動：%1$s</string>
+    <string name="agent_shortcut_confirm">執行捷徑：%1$s</string>
+    <string name="agent_welcome_message">你好！我是您的 AI 助理。我可以搜尋網絡、顯示地圖、管理日曆事件、查看天氣、設定鬧鐘、傳送訊息和計算雜湊。今天我能為您提供什麼幫助？</string>
+    <string name="agent_no_model_android">請先下載 Gemma 4 E2/4B 模型以使用助理</string>
+    <string name="agent_no_model_ios">請先下載模型以使用助理</string>
+    <string name="open_maps">Open Maps</string>
+    <string name="agent_processing_tool">Agent is processing tool...</string>
+    <string name="agent_termux_guide_title">Termux 設定指南</string>
+    <string name="agent_termux_guide_desc">在 Termux 中，啟用第三方應用程式執行權限：</string>
+    <string name="agent_termux_cmd_copied">命令已複製到剪貼簿</string>
+    <string name="agent_termux_pending_approval">需要核准</string>
+    <string name="agent_termux_run_cmd">執行命令</string>
+    <string name="agent_termux_cancel_cmd">取消</string>
+    <string name="agent_termux_cancelled">使用者已取消</string>
 </resources>

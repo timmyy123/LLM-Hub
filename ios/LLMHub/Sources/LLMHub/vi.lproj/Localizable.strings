@@ -72,7 +72,7 @@
 "thinking_tokens" = "Suy nghĩ (%1$dmã thông báo)";
 "enable_thinking" = "Kích hoạt tư duy";
 "thinking_toggle_label" = "Kích hoạt tư duy";
-"version_number" = "Phiên bản 3.8.6";
+"version_number" = "Phiên bản 4.0.0";
 "app_version" = "Phiên bản ứng dụng";
 "terms_of_service" = "Điều khoản dịch vụ";
 "tos_last_updated" = "Cập nhật lần cuối: Ngày 16 tháng 7 năm 2025";
@@ -822,3 +822,39 @@
 "on_device_ai_engine" = "ĐỘNG CƠ AI TRÊN THIẾT BỊ";
 "secure_private" = "AN TOÀN & RIÊNG TƯ";
 "language_chinese_traditional" = "繁體中文";
+
+// MARK: - Agent Feature
+"feature_agent" = "Tác nhân";
+"feature_agent_desc" = "Trợ lý AI với công cụ và hành động";
+"premium_feature_agent" = "Tác nhân – AI với công cụ và hành động thiết bị";
+"agent_title" = "Tác nhân";
+"agent_subtitle" = "Hỏi tôi bất cứ điều gì — tôi có thể tìm kiếm, bản đồ, lịch và nhiều hơn";
+"agent_input_placeholder" = "Hỏi tác nhân của bạn…";
+"agent_voice_mode_system" = "Hệ thống";
+"agent_voice_mode_whisper" = "Whisper";
+"agent_voice_mode_gemma" = "Gemma";
+"agent_tool_running" = "Đang chạy: %@";
+"agent_tool_success" = "Xong";
+"agent_tool_failed" = "Thất bại";
+"agent_tool_confirm_title" = "Cho phép hành động?";
+"agent_tool_confirm_body" = "Tác nhân muốn: %@";
+"agent_tool_approve" = "Cho phép";
+"agent_tool_deny" = "Từ chối";
+"agent_no_model" = "Vui lòng tải mô hình để sử dụng Tác nhân";
+"agent_map_expand" = "Xem bản đồ đầy đủ";
+"agent_settings_voice_mode" = "Chế độ nhập giọng nói";
+"agent_settings_tools" = "Công cụ được bật";
+"agent_shortcut_confirm" = "Chạy phím tắt: %@";
+"agent_calendar_confirm" = "Tạo sự kiện: %@";
+
+"agent_welcome_message" = "Xin chào! Tôi là Đại lý AI của bạn. Tôi có thể tìm kiếm trên web, hiển thị bản đồ, quản lý sự kiện lịch, kiểm tra thời tiết, đặt báo thức, gửi tin nhắn và tính toán hash. Tôi có thể giúp gì cho bạn hôm nay?";
+"agent_no_model_android" = "Vui lòng tải xuống mô hình Gemma 4 E2/4B trước để sử dụng Đại lý";
+"agent_no_model_ios" = "Vui lòng tải xuống mô hình trước để sử dụng Đại lý";
+
+"open_maps" = "Mở bản đồ";
+"agent_processing_tool" = "Tác nhân đang xử lý công cụ...";
+
+"premium_feature_vibevoice" = "VibeVoice – AI Giọng nói & Speech";
+"premium_feature_vibecoder" = "VibeCode – Trình tạo mã AI";
+"premium_feature_image_generator" = "Trình tạo hình ảnh – Nghệ thuật AI trên thiết bị";
+"premium_feature_video_generator" = "Trình tạo video – Tạo video bằng AI";

@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5B3D51C9690D4FC0AD7649BF /* AgentScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 639A98878F3E415495148409 /* AgentScreen.swift */; };
+		519D6CF4E16444179C7C5903 /* AgentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A161C7E902C4A77ABC84BC4 /* AgentViewModel.swift */; };
+		4805DAC855214DF2936F0FD5 /* AgentTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0C36C1D16AF4675BEDB54C5 /* AgentTools.swift */; };
 		1AE5E42ED85BEFE5C3ED1D2A /* LocalizationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BBFF4AA65F0EF6FF1DB93D /* LocalizationManager.swift */; };
 		1D92A835955F48E1AA4AEEEF /* EmbeddingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59683F4EC0364144B429B48B /* EmbeddingService.swift */; };
 		1F3A9E5C7B2E4D6F8A1B2C3D /* ApolloTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E4B5F6A7C8D9E0F1A2B3C4D /* ApolloTheme.swift */; };
@@ -58,6 +61,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		639A98878F3E415495148409 /* AgentScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentScreen.swift; sourceTree = "<group>"; };
+		9A161C7E902C4A77ABC84BC4 /* AgentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentViewModel.swift; sourceTree = "<group>"; };
+		D0C36C1D16AF4675BEDB54C5 /* AgentTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentTools.swift; sourceTree = "<group>"; };
 		05BF91E2CF47146ED081A0A8 /* ModelDownloader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelDownloader.swift; sourceTree = "<group>"; };
 		0805DB9589154E465145E2DB /* ChatModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatModels.swift; sourceTree = "<group>"; };
 		223C0ACCB98929BFEDBB0B16 /* it */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = it; path = it.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -176,6 +182,9 @@
 				4F7A456876803C1FBBE0A211 /* ContentView.swift */,
 				B2A92FE9D6B44A3156E987C2 /* FeatureScreens.swift */,
 				A6D5DEA8384F9DDFC69C359C /* HomeScreen.swift */,
+				639A98878F3E415495148409 /* AgentScreen.swift */,
+				9A161C7E902C4A77ABC84BC4 /* AgentViewModel.swift */,
+				D0C36C1D16AF4675BEDB54C5 /* AgentTools.swift */,
 				368DEEF34DE54ABD87FE0EF3 /* Assets.xcassets */,
 				F841EEA264BDE0E6E2A1BC18 /* Icon.png */,
 				ECD7AAE029AF6E8F7EA01B3D /* LLMBackend.swift */,
@@ -347,6 +356,9 @@
 				CBC2016A51F62C4A68987D57 /* ContentView.swift in Sources */,
 				3DAB449A0AE3C67F8D2F39B1 /* FeatureScreens.swift in Sources */,
 				2A3672DC476297C35298841D /* HomeScreen.swift in Sources */,
+				5B3D51C9690D4FC0AD7649BF /* AgentScreen.swift in Sources */,
+				519D6CF4E16444179C7C5903 /* AgentViewModel.swift in Sources */,
+				4805DAC855214DF2936F0FD5 /* AgentTools.swift in Sources */,
 				53F6C1EA0149E74AC5BB3E22 /* LLMBackend.swift in Sources */,
 				F1A2B3C4D5E6F708192A3B50 /* LiteRTLMBackend.swift in Sources */,
 				BBEFB76ECA4FB739E947BF5D /* LLMHubApp.swift in Sources */,
@@ -477,7 +489,7 @@
 				CODE_SIGN_ENTITLEMENTS = LLMHub.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 48;
+				CURRENT_PROJECT_VERSION = 49;
 				DEAD_CODE_STRIPPING = NO;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
@@ -488,7 +500,10 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "LLMHub-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = LLMHub;
+				INFOPLIST_KEY_NSContactsUsageDescription = "LLM Hub needs permission to access your contacts to send SMS messages to contacts you specify.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "LLM Hub needs permission to access your location to display nearby places and maps.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "LLM Hub uses your microphone to transcribe speech on-device.";
+				INFOPLIST_KEY_NSAlarmKitUsageDescription = "LLM Hub schedules alarms you create with the AI Agent.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "LLM Hub needs permission to save generated videos and images to your Photo Library.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "LLM Hub needs permission to access your Photo Library to select and save media.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "LLM Hub uses speech recognition to transcribe your audio on-device.";
@@ -502,7 +517,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.8;
+				MARKETING_VERSION = 1.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.llmhub.llmhub;
 				PRODUCT_NAME = LLMHub;
 				SDKROOT = iphoneos;
@@ -520,12 +535,15 @@
 				CODE_SIGN_ENTITLEMENTS = LLMHub.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 48;
+				CURRENT_PROJECT_VERSION = 49;
 				DEVELOPMENT_TEAM = 76K65T869A;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "LLMHub-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = LLMHub;
+				INFOPLIST_KEY_NSContactsUsageDescription = "LLM Hub needs permission to access your contacts to send SMS messages to contacts you specify.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "LLM Hub needs permission to access your location to display nearby places and maps.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "LLM Hub uses your microphone to transcribe speech on-device.";
+				INFOPLIST_KEY_NSAlarmKitUsageDescription = "LLM Hub schedules alarms you create with the AI Agent.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "LLM Hub needs permission to save generated videos and images to your Photo Library.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "LLM Hub needs permission to access your Photo Library to select and save media.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "LLM Hub uses speech recognition to transcribe your audio on-device.";
@@ -539,7 +557,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.8;
+				MARKETING_VERSION = 1.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.llmhub.llmhub;
 				PRODUCT_NAME = LLMHub;
 				SDKROOT = iphoneos;

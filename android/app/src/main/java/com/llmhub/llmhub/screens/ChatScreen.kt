@@ -425,7 +425,7 @@ fun ChatScreen(
                         focusManager.clearFocus()
                         viewModel.sendMessage(context, text, attachmentUri, audioData)
                     },
-                    enabled = !isLoading && !isLoadingModel && currentChat != null,
+                    enabled = currentChat != null,
                     supportsAttachments = true, // Enable attachments for all models
                     supportsVision = viewModel.currentModelSupportsVision(), // Only show images for vision models
                     supportsAudio = viewModel.currentModelSupportsAudio(), // Only show audio for audio models

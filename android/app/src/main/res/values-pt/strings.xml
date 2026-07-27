@@ -78,7 +78,7 @@
     <string name="ai_thinking">A IA está pensando...</string>
     <string name="thinking_label">Pensamento</string>
     <string name="thinking_tokens">Pensamento (%1$d tokens)</string>
-    <string name="version_number">Versão 3.8.6</string>
+    <string name="version_number">Versão 4.0.0</string>
     <string name="app_version">Versão do App</string>
     
     <!-- Navigation -->
@@ -831,4 +831,41 @@
     <string name="gemma_voice_option">Gemma</string>
         <string name="asr_model_backend"></string>
     <string name="llm_model_backend">Backend do modelo LLM</string>
+    <!-- Agent Feature -->
+    <string name="feature_agent">Agente</string>
+    <string name="feature_agent_desc">Assistente IA com ferramentas e ações</string>
+    <string name="premium_feature_agent">Agente – IA com ferramentas e ações</string>
+    <string name="agent_title">Agente</string>
+    <string name="agent_subtitle">Pergunte-me qualquer coisa — posso pesquisar, mapear, agendar e mais</string>
+    <string name="agent_input_placeholder">Pergunte ao seu agente…</string>
+    <string name="agent_voice_mode_system">Sistema</string>
+    <string name="agent_voice_mode_whisper">Whisper</string>
+    <string name="agent_voice_mode_gemma">Gemma</string>
+    <string name="agent_tool_running">Executando: %1$s</string>
+    <string name="agent_tool_success">Concluído</string>
+    <string name="agent_tool_failed">Falhou</string>
+    <string name="agent_tool_confirm_title">Permitir ação?</string>
+    <string name="agent_tool_confirm_body">O agente quer: %1$s</string>
+    <string name="agent_tool_approve">Permitir</string>
+    <string name="agent_tool_deny">Negar</string>
+    <string name="agent_no_model">Faça download de um modelo para usar o Agente</string>
+    <string name="agent_map_expand">Ver mapa completo</string>
+    <string name="agent_settings_voice_mode">Modo de entrada de voz</string>
+    <string name="agent_settings_tools">Ferramentas ativadas</string>
+    <string name="agent_termux_toggle">Ativar comandos Termux (avançado)</string>
+    <string name="agent_termux_confirm">Executar comando: %1$s</string>
+    <string name="agent_calendar_confirm">Criar evento: %1$s</string>
+    <string name="agent_shortcut_confirm">Executar atalho: %1$s</string>
+    <string name="agent_welcome_message">Olá! Sou o seu Agente de IA. Posso pesquisar na web, mostrar mapas, gerir eventos do calendário, ver o tempo, definir alarmes, enviar mensagens e calcular hashes. Como posso ajudar hoje?</string>
+    <string name="agent_no_model_android">Faça o download do modelo Gemma 4 E2/4B primeiro para usar o Agente</string>
+    <string name="agent_no_model_ios">Faça o download de um modelo primeiro para usar o Agente</string>
+    <string name="open_maps">Abrir mapas</string>
+    <string name="agent_processing_tool">Agente processando ferramenta...</string>
+    <string name="agent_termux_guide_title">Guia de Configuração do Termux</string>
+    <string name="agent_termux_guide_desc">No Termux, ative as permissões para execução de apps de terceiros:</string>
+    <string name="agent_termux_cmd_copied">Comando copiado para a área de transferência</string>
+    <string name="agent_termux_pending_approval">Aprovação necessária</string>
+    <string name="agent_termux_run_cmd">Executar comando</string>
+    <string name="agent_termux_cancel_cmd">Cancelar</string>
+    <string name="agent_termux_cancelled">Cancelado pelo usuário</string>
 </resources>
