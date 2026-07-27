@@ -880,4 +880,11 @@
     <string name="agent_no_model_ios">Пожалуйста, сначала скачайте модель, чтобы использовать Агента</string>
     <string name="open_maps">Открыть карты</string>
     <string name="agent_processing_tool">Агент обрабатывает инструмент...</string>
+    <string name="agent_termux_guide_title">Руководство по настройке Termux</string>
+    <string name="agent_termux_guide_desc">В Termux включите разрешение на запуск сторонних приложений:</string>
+    <string name="agent_termux_cmd_copied">Команда скопирована в буфер обмена</string>
+    <string name="agent_termux_pending_approval">Требуется подтверждение</string>
+    <string name="agent_termux_run_cmd">Выполнить команду</string>
+    <string name="agent_termux_cancel_cmd">Отмена</string>
+    <string name="agent_termux_cancelled">Отменено пользователем</string>
 </resources>

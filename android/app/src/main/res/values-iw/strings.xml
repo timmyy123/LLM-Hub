@@ -908,4 +908,11 @@
     <string name="agent_no_model_ios">Please download a model first to use Agent</string>
     <string name="open_maps">Open Maps</string>
     <string name="agent_processing_tool">Agent is processing tool...</string>
+    <string name="agent_termux_guide_title">מדריך הגדרת Termux</string>
+    <string name="agent_termux_guide_desc">ב-Termux, הפעל הרשאות הרצת אפליקציות צד שלישי:</string>
+    <string name="agent_termux_cmd_copied">הפקודה הועתקה ללוח</string>
+    <string name="agent_termux_pending_approval">נדרש אישור</string>
+    <string name="agent_termux_run_cmd">הפעל פקודה</string>
+    <string name="agent_termux_cancel_cmd">ביטול</string>
+    <string name="agent_termux_cancelled">בוטל על ידי המשתמש</string>
 </resources>

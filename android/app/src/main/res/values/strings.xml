@@ -922,6 +922,13 @@
     <string name="agent_no_model_ios">Please download a model first to use Agent</string>
     <string name="open_maps">Open Maps</string>
     <string name="agent_processing_tool">Agent is processing tool…</string>
+    <string name="agent_termux_guide_title">Termux Setup Guide</string>
+    <string name="agent_termux_guide_desc">In Termux, enable third-party app execution permissions:</string>
+    <string name="agent_termux_cmd_copied">Command copied to clipboard</string>
+    <string name="agent_termux_pending_approval">Approval Required</string>
+    <string name="agent_termux_run_cmd">Run Command</string>
+    <string name="agent_termux_cancel_cmd">Cancel</string>
+    <string name="agent_termux_cancelled">Cancelled by user</string>
 </resources>
 
 

@@ -908,4 +908,11 @@
     <string name="agent_no_model_ios">Будь ласка, спочатку завантажте модель, щоб використовувати Агента</string>
     <string name="open_maps">Відкрити карти</string>
     <string name="agent_processing_tool">Агент обробляє інструмент...</string>
+    <string name="agent_termux_guide_title">Посібник із налаштування Termux</string>
+    <string name="agent_termux_guide_desc">У Termux увімкніть дозвіл на запуск сторонніх програм:</string>
+    <string name="agent_termux_cmd_copied">Команду скопійовано в буфер обміну</string>
+    <string name="agent_termux_pending_approval">Потрібне підтвердження</string>
+    <string name="agent_termux_run_cmd">Виконати команду</string>
+    <string name="agent_termux_cancel_cmd">Скасувати</string>
+    <string name="agent_termux_cancelled">Скасовано користувачем</string>
 </resources>

@@ -815,4 +815,11 @@
     <string name="agent_no_model_ios">Download eerst een model om Agent te gebruiken</string>
     <string name="open_maps">Kaarten openen</string>
     <string name="agent_processing_tool">Agent verwerkt hulpprogramma...</string>
+    <string name="agent_termux_guide_title">Termux-instellingsgids</string>
+    <string name="agent_termux_guide_desc">Schakel in Termux machtigingen voor apps van derden in:</string>
+    <string name="agent_termux_cmd_copied">Opdracht gekopieerd naar klembord</string>
+    <string name="agent_termux_pending_approval">Goedkeuring vereist</string>
+    <string name="agent_termux_run_cmd">Opdracht uitvoeren</string>
+    <string name="agent_termux_cancel_cmd">Annuleren</string>
+    <string name="agent_termux_cancelled">Geannuleerd door gebruiker</string>
 </resources>

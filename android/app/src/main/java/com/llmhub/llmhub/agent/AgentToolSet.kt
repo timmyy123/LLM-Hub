@@ -669,18 +669,52 @@ RULES:
             return mapOf("error" to "Termux commands are currently disabled in Agent settings.", "status" to "failed")
         }
         return try {
-            val intent = Intent().apply {
-                setClassName("com.termux", "com.termux.app.RunCommandService")
-                action = "com.termux.RUN_COMMAND"
-                putExtra("com.termux.RUN_COMMAND_PATH", "/data/data/com.termux/files/usr/bin/bash")
-                putExtra("com.termux.RUN_COMMAND_ARGUMENTS", arrayOf("-c", command))
-                putExtra("com.termux.RUN_COMMAND_BACKGROUND", true)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            val termuxBash = "/data/data/com.termux/files/usr/bin/bash"
+            val hasTermuxBash = java.io.File(termuxBash).exists()
+            val termuxEnv = if (hasTermuxBash) {
+                arrayOf(
+                    "PATH=/data/data/com.termux/files/usr/bin:/data/data/com.termux/files/usr/bin/applets:/system/bin:/system/xbin",
+                    "HOME=/data/data/com.termux/files/home",
+                    "PREFIX=/data/data/com.termux/files/usr",
+                    "TMPDIR=/data/data/com.termux/files/usr/tmp"
+                )
+            } else null
+
+            val workingDir = if (hasTermuxBash) java.io.File("/data/data/com.termux/files/home") else null
+
+            val process = if (hasTermuxBash) {
+                Runtime.getRuntime().exec(arrayOf(termuxBash, "-c", command), termuxEnv, workingDir)
+            } else {
+                Runtime.getRuntime().exec(arrayOf("sh", "-c", command))
             }
-            context.startService(intent)
-            mapOf("result" to "Sent command to Termux: '$command'", "status" to "succeeded")
+
+            val stdout = process.inputStream.bufferedReader().readText()
+            val stderr = process.errorStream.bufferedReader().readText()
+            process.waitFor()
+
+            val combinedOutput = (stdout + if (stderr.isNotBlank()) "\n[stderr]\n$stderr" else "").trim()
+
+            try {
+                val intent = Intent().apply {
+                    setClassName("com.termux", "com.termux.app.RunCommandService")
+                    action = "com.termux.RUN_COMMAND"
+                    putExtra("com.termux.RUN_COMMAND_PATH", if (hasTermuxBash) termuxBash else "/system/bin/sh")
+                    putExtra("com.termux.RUN_COMMAND_ARGUMENTS", arrayOf("-c", command))
+                    putExtra("com.termux.RUN_COMMAND_BACKGROUND", true)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startService(intent)
+            } catch (_: Exception) {}
+
+            val finalResult = if (combinedOutput.isNotBlank()) {
+                combinedOutput
+            } else {
+                "Command executed cleanly (exit code ${process.exitValue()})."
+            }
+
+            mapOf("result" to finalResult, "status" to "succeeded")
         } catch (e: Exception) {
-            mapOf("error" to "Termux execution failed: ${e.message}", "status" to "failed")
+            mapOf("error" to "Termux execution error: ${e.message}", "status" to "failed")
         }
     }
 

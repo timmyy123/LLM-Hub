@@ -861,4 +861,11 @@
     <string name="agent_no_model_ios">Faça o download de um modelo primeiro para usar o Agente</string>
     <string name="open_maps">Abrir mapas</string>
     <string name="agent_processing_tool">Agente processando ferramenta...</string>
+    <string name="agent_termux_guide_title">Guia de Configuração do Termux</string>
+    <string name="agent_termux_guide_desc">No Termux, ative as permissões para execução de apps de terceiros:</string>
+    <string name="agent_termux_cmd_copied">Comando copiado para a área de transferência</string>
+    <string name="agent_termux_pending_approval">Aprovação necessária</string>
+    <string name="agent_termux_run_cmd">Executar comando</string>
+    <string name="agent_termux_cancel_cmd">Cancelar</string>
+    <string name="agent_termux_cancelled">Cancelado pelo usuário</string>
 </resources>

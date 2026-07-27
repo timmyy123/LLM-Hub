@@ -815,4 +815,11 @@
     <string name="agent_no_model_ios">โปรดดาวน์โหลดโมเดลก่อนเพื่อใช้งานเอเจนต์</string>
     <string name="open_maps">เปิดแผนที่</string>
     <string name="agent_processing_tool">แอปพลิเคชันกำลังประมวลผลเครื่องมือ...</string>
+    <string name="agent_termux_guide_title">คู่มือการตั้งค่า Termux</string>
+    <string name="agent_termux_guide_desc">ใน Termux ให้เปิดใช้งานสิทธิ์เรียกใช้แอปภายนอก:</string>
+    <string name="agent_termux_cmd_copied">คัดลอกคำสั่งไปยังคลิปบอร์ดแล้ว</string>
+    <string name="agent_termux_pending_approval">ต้องได้รับการอนุมัติ</string>
+    <string name="agent_termux_run_cmd">รันคำสั่ง</string>
+    <string name="agent_termux_cancel_cmd">ยกเลิก</string>
+    <string name="agent_termux_cancelled">ยกเลิกโดยผู้ใช้</string>
 </resources>

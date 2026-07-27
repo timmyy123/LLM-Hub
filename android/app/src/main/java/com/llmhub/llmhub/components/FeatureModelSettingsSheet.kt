@@ -570,6 +570,7 @@ fun FeatureModelSettingsSheet(
                                     onCheckedChange = { enableThinking = it }
                                 )
                             }
+                            Spacer(modifier = Modifier.height(16.dp))
                         }
 
                         extraModelConfigsContent?.invoke(this)

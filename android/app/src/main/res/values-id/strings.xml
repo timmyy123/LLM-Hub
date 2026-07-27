@@ -910,4 +910,11 @@
     <string name="agent_no_model_ios">Silakan unduh model terlebih dahulu untuk menggunakan Agen</string>
     <string name="open_maps">Buka Peta</string>
     <string name="agent_processing_tool">Agen sedang memproses alat...</string>
+    <string name="agent_termux_guide_title">Panduan Penyiapan Termux</string>
+    <string name="agent_termux_guide_desc">Di Termux, aktifkan izin eksekusi aplikasi pihak ketiga:</string>
+    <string name="agent_termux_cmd_copied">Perintah disalin ke papan klip</string>
+    <string name="agent_termux_pending_approval">Persetujuan Diperlukan</string>
+    <string name="agent_termux_run_cmd">Jalankan Perintah</string>
+    <string name="agent_termux_cancel_cmd">Batal</string>
+    <string name="agent_termux_cancelled">Dibatalkan oleh pengguna</string>
 </resources>

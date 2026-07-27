@@ -908,4 +908,11 @@
     <string name="agent_no_model_ios">에이전트를 사용하려면 먼저 모델을 다운로드하세요</string>
     <string name="open_maps">지도 열기</string>
     <string name="agent_processing_tool">에이전트가 도구를 처리 중...</string>
+    <string name="agent_termux_guide_title">Termux 설정 가이드</string>
+    <string name="agent_termux_guide_desc">Termux에서 타사 앱 실행 권한을 활성화하세요:</string>
+    <string name="agent_termux_cmd_copied">명령어가 클립보드에 복사되었습니다</string>
+    <string name="agent_termux_pending_approval">승인 필요</string>
+    <string name="agent_termux_run_cmd">명령어 실행</string>
+    <string name="agent_termux_cancel_cmd">취소</string>
+    <string name="agent_termux_cancelled">사용자에 의해 취소됨</string>
 </resources>

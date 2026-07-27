@@ -908,4 +908,11 @@
     <string name="agent_no_model_ios">يرجى تنزيل نموذج أولاً لاستخدام الوكيل</string>
     <string name="open_maps">فتح الخرائط</string>
     <string name="agent_processing_tool">الوكيل يربط الأداة...</string>
+    <string name="agent_termux_guide_title">دليل إعداد Termux</string>
+    <string name="agent_termux_guide_desc">في Termux، قم بتفعيل إذن تشغيل التطبيقات الخارجية:</string>
+    <string name="agent_termux_cmd_copied">تم نسخ الأمر إلى الحافظة</string>
+    <string name="agent_termux_pending_approval">يتطلب الموافقة</string>
+    <string name="agent_termux_run_cmd">تشغيل الأمر</string>
+    <string name="agent_termux_cancel_cmd">إلغاء</string>
+    <string name="agent_termux_cancelled">تم الإلغاء بواسطة المستخدم</string>
 </resources>

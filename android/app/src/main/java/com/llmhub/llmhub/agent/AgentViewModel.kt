@@ -13,6 +13,7 @@ import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.ModelAvailabilityProvider
 import com.llmhub.llmhub.inference.InferenceService
 import com.llmhub.llmhub.inference.UnifiedInferenceService
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -40,7 +41,7 @@ sealed class AgentMessage(val id: String) {
         val status: Status,
         val result: String? = null
     ) : AgentMessage(callId) {
-        enum class Status { RUNNING, SUCCESS, FAILED }
+        enum class Status { PENDING_APPROVAL, RUNNING, SUCCESS, FAILED, CANCELLED }
     }
 
     data class MapLocation(
@@ -94,6 +95,11 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
     private val _loadingModelName = MutableStateFlow<String?>(null)
     val loadingModelName: StateFlow<String?> = _loadingModelName.asStateFlow()
 
+    private val _isTermuxEnabled = MutableStateFlow(
+        getApplication<Application>().getSharedPreferences("agent_prefs", Context.MODE_PRIVATE).getBoolean("is_termux_enabled", false)
+    )
+    val isTermuxEnabled: StateFlow<Boolean> = _isTermuxEnabled.asStateFlow()
+
     val toolSet = AgentToolSet(application.applicationContext)
     private val inferenceService: InferenceService = UnifiedInferenceService(application.applicationContext)
 
@@ -104,6 +110,9 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
     val pendingConfirmation: StateFlow<Pair<String, () -> Unit>?> = _pendingConfirmation.asStateFlow()
 
     init {
+        val termuxSaved = agentPrefs.getBoolean("is_termux_enabled", false)
+        toolSet.isTermuxEnabled = termuxSaved
+        _isTermuxEnabled.value = termuxSaved
         _activeModelName.value = inferenceService.getCurrentlyLoadedModel()?.name
     }
 
@@ -133,6 +142,8 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
 
     fun toggleTermux(enabled: Boolean) {
         toolSet.isTermuxEnabled = enabled
+        _isTermuxEnabled.value = enabled
+        agentPrefs.edit().putBoolean("is_termux_enabled", enabled).apply()
     }
 
     suspend fun loadModelSuspend(model: LLMModel, preferredBackend: LlmInference.Backend? = null, deviceId: String? = null) {
@@ -345,6 +356,10 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
 
         val loadedModel = inferenceService.getCurrentlyLoadedModel()
         if (loadedModel != null) {
+            val termuxToolDef = if (_isTermuxEnabled.value) {
+                "\n- run_termux_command(command: \"shell command\"): Run terminal or shell commands in Termux (e.g. \"ls\", \"pkg install git\", \"uname -a\", \"python script.py\")."
+            } else "\n- run_termux_command(command: \"shell command\"): Run terminal or shell commands in Termux (e.g. \"ls\", \"pkg install git\")."
+
             val systemPrompt = """
                 You are an AI Agent equipped with device tools. Today's date is $todayStr.
                 Available Tools:
@@ -355,11 +370,14 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                 - check_weather(location: "city or 'my location'"): Check weather forecast for a specified city or the user's current location (e.g. "my location", "Tokyo", "London").
                 - set_alarm(time: "time e.g. 7:00 AM", label: "alarm label"): Set an alarm on device.
                 - toggle_flashlight(enabled: "true" or "false"): Turn flashlight ON or OFF.
+                - calculate_hash(text: "text string", algorithm: "SHA-256 or MD5 or SHA-512"): Calculate cryptographic hash of input text.$termuxToolDef
 
                 Instructions:
                 - ALWAYS call a tool when the user asks to perform an action supported by the tools.
                 - For any request to find, show, search for, or locate a place, business, venue, address, or directions (e.g. "find bar near me"), YOU MUST call show_map.
                 - For any request about weather (e.g. "How's the weather", "Is it cold outside?"), YOU MUST call check_weather(location: "my location").
+                - For any request to calculate a hash or hash a text (e.g. "Calculate SHA-256 hash for 'Hello World'"), YOU MUST call calculate_hash(text: "Hello World", algorithm: "SHA-256").
+                - For any request to run, execute, or perform terminal/shell commands, list files (ls), install packages, or run scripts, YOU MUST call run_termux_command(command: "command string").
                 - Output tool calls in this format ONLY:
                 [TOOL: tool_name(arguments)]
 
@@ -371,17 +389,18 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
 
             var responseText = ""
             var executedTool = false
-            inferenceService.generateResponseStreamWithSession(
-                prompt = systemPrompt,
-                model = loadedModel,
-                chatId = "agent_session",
-                images = emptyList(),
-                audioData = audioBytes,
-                webSearchEnabled = false,
-                imagePaths = emptyList()
-            ).collect { chunk ->
-                responseText += chunk
-                if (!executedTool) {
+            try {
+                inferenceService.generateResponseStreamWithSession(
+                    prompt = systemPrompt,
+                    model = loadedModel,
+                    chatId = "agent_session",
+                    images = emptyList(),
+                    audioData = audioBytes,
+                    webSearchEnabled = false,
+                    imagePaths = emptyList()
+                ).collect { chunk ->
+                    if (executedTool) return@collect
+                    responseText += chunk
                     val toolMatch = parseToolCall(responseText)
                     if (toolMatch != null) {
                         executedTool = true
@@ -390,11 +409,13 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                     } else {
                         val cleanText = responseText
                             .replace(Regex("""\[TOOL:[^\]]+\]""", RegexOption.IGNORE_CASE), "")
-                            .replace(Regex("""(?:SHOW_MAP|SEND_SMS|ADD_CALENDAR_EVENT|CREATE_CALENDAR_EVENT|CHECK_WEATHER|GET_CURRENT_WEATHER|SET_ALARM|TOGGLE_FLASHLIGHT|CALCULATE_HASH|SEND_EMAIL)\([^)]*\)""", RegexOption.IGNORE_CASE), "")
+                            .replace(Regex("""(?:SHOW_MAP|SEND_SMS|ADD_CALENDAR_EVENT|CREATE_CALENDAR_EVENT|CHECK_WEATHER|GET_CURRENT_WEATHER|SET_ALARM|TOGGLE_FLASHLIGHT|CALCULATE_HASH|SEND_EMAIL|RUN_TERMUX_COMMAND|EXECUTE_TERMUX_COMMAND)\([^)]*\)""", RegexOption.IGNORE_CASE), "")
                             .trim()
                         updateAgentTextMessage(aiMsgId, cleanText)
                     }
                 }
+            } catch (e: Exception) {
+                Log.e("AgentViewModel", "Stream error: ${e.message}")
             }
 
             if (_messages.value.any { it.id == aiMsgId && (it as? AgentMessage.Text)?.text?.isBlank() == true }) {
@@ -424,7 +445,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun parseToolCall(text: String): ParsedTool? {
         // Match [TOOL: any_tool_name(args)] or standalone known tool patterns
-        val regex = Regex("""\[?TOOL:\s*([a-zA-Z0-9._]+)\(([^)]+)\)\]?|\b([a-zA-Z_]+(?:_map|_sms|_email|_weather|_alarm|_flashlight|_event|_hash))\(([^)]+)\)""", RegexOption.IGNORE_CASE)
+        val regex = Regex("""\[?TOOL:\s*([a-zA-Z0-9._]+)\(([^)]*)\)\]?|\b([a-zA-Z_]+(?:_map|_sms|_email|_weather|_alarm|_flashlight|_event|_hash|_termux|_command))\(([^)]*)\)""", RegexOption.IGNORE_CASE)
         val match = regex.find(text) ?: return null
         val groups = match.groupValues
         val name = if (groups[1].isNotEmpty()) groups[1] else groups[3]
@@ -534,11 +555,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
             }
             "run_termux_command", "execute_termux_command" -> {
                 val cmd = extractArgValue(tool.args, "command") ?: tool.args.trim('"', '\'', ' ')
-                val resMap = toolSet.runTermuxCommand(cmd)
-                val result = resMap["result"] as? String ?: resMap["error"] as? String ?: "Termux command sent."
-                val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
-                updateToolCall(toolId, status, result)
-                addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = result))
+                addMessage(AgentMessage.ToolCall(callId = toolId, toolName = "run_termux_command", args = cmd, status = AgentMessage.ToolCall.Status.PENDING_APPROVAL))
             }
             else -> {
                 updateToolCall(toolId, AgentMessage.ToolCall.Status.FAILED, "Unknown tool")
@@ -608,14 +625,21 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
             val displayResult = if (status == AgentMessage.ToolCall.Status.SUCCESS) "Hash (${resMap["algorithm"] ?: algo}) for '$textToHash':\n$result" else result
             updateToolCall(toolId, status, displayResult)
             addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = displayResult))
-        } else if (lower.contains("termux")) {
-            val cmd = prompt.substringAfter("termux", prompt).trim()
-            addMessage(AgentMessage.ToolCall(callId = toolId, toolName = "run_termux_command", args = cmd, status = AgentMessage.ToolCall.Status.RUNNING))
-            val resMap = toolSet.runTermuxCommand(cmd)
-            val result = resMap["result"] as? String ?: resMap["error"] as? String ?: "Termux command sent."
-            val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
-            updateToolCall(toolId, status, result)
-            addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = result))
+        } else if (lower.contains("termux") || lower.contains("shell") || lower.contains("ls") || lower.contains("pkg ")) {
+            var cmd = prompt
+            if (lower.contains("termux")) {
+                cmd = prompt.substringAfter("termux", prompt).trim()
+            } else if (lower.startsWith("run ") || lower.startsWith("execute ")) {
+                cmd = prompt.substringAfter(" ").trim()
+                if (cmd.lowercase().startsWith("a ") || cmd.lowercase().startsWith("an ")) {
+                    cmd = cmd.substringAfter(" ").trim()
+                }
+                if (cmd.lowercase().endsWith(" command")) {
+                    cmd = cmd.substring(0, cmd.length - 8).trim()
+                }
+            }
+            if (cmd.isBlank()) cmd = "ls"
+            addMessage(AgentMessage.ToolCall(callId = toolId, toolName = "run_termux_command", args = cmd, status = AgentMessage.ToolCall.Status.PENDING_APPROVAL))
         } else if (lower.contains("map") || lower.contains("where is") || lower.contains("find") || lower.contains("direction")) {
             addMessage(AgentMessage.ToolCall(callId = toolId, toolName = "show_map", args = prompt, status = AgentMessage.ToolCall.Status.RUNNING))
             val resMap = toolSet.showMap(prompt)
@@ -643,7 +667,22 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun addMessage(msg: AgentMessage) {
-        _messages.value = _messages.value + msg
+        _messages.value = _messages.value.filterNot { it.id == msg.id } + msg
+    }
+
+    fun approveAndExecuteTermuxCommand(callId: String, command: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            updateToolCall(callId, AgentMessage.ToolCall.Status.RUNNING, "Executing command in Termux...")
+            val resMap = toolSet.runTermuxCommand(command)
+            val result = resMap["result"] as? String ?: resMap["error"] as? String ?: "Execution error."
+            val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
+            updateToolCall(callId, status, result)
+        }
+    }
+
+    fun cancelTermuxCommand(callId: String) {
+        val cancelledText = getApplication<Application>().getString(R.string.agent_termux_cancelled)
+        updateToolCall(callId, AgentMessage.ToolCall.Status.CANCELLED, cancelledText)
     }
 
     private fun updateToolCall(callId: String, status: AgentMessage.ToolCall.Status, result: String) {

@@ -815,4 +815,11 @@
     <string name="agent_no_model_ios">Vui lòng tải xuống mô hình trước để sử dụng Đại lý</string>
     <string name="open_maps">Mở bản đồ</string>
     <string name="agent_processing_tool">Tác nhân đang xử lý công cụ...</string>
+    <string name="agent_termux_guide_title">Hướng dẫn thiết lập Termux</string>
+    <string name="agent_termux_guide_desc">Trong Termux, bật quyền thực thi ứng dụng bên thứ ba:</string>
+    <string name="agent_termux_cmd_copied">Đã sao chép lệnh vào bộ nhớ tạm</string>
+    <string name="agent_termux_pending_approval">Yêu cầu phê duyệt</string>
+    <string name="agent_termux_run_cmd">Chạy lệnh</string>
+    <string name="agent_termux_cancel_cmd">Hủy</string>
+    <string name="agent_termux_cancelled">Đã hủy bởi người dùng</string>
 </resources>

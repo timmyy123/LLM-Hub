@@ -907,4 +907,11 @@
     <string name="agent_no_model_ios">אנא הורד תחילה דגם כדי להשתמש בסוכן</string>
     <string name="open_maps">פתח מפות</string>
     <string name="agent_processing_tool">הסוכן מעבד את הכלי...</string>
+    <string name="agent_termux_guide_title">מדריך הגדרת Termux</string>
+    <string name="agent_termux_guide_desc">ב-Termux, הפעל הרשאות הרצת אפליקציות צד שלישי:</string>
+    <string name="agent_termux_cmd_copied">הפקודה הועתקה ללוח</string>
+    <string name="agent_termux_pending_approval">נדרש אישור</string>
+    <string name="agent_termux_run_cmd">הפעל פקודה</string>
+    <string name="agent_termux_cancel_cmd">ביטול</string>
+    <string name="agent_termux_cancelled">בוטל על ידי המשתמש</string>
 </resources>

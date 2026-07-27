@@ -3,12 +3,15 @@ package com.llmhub.llmhub.screens
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,8 +23,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -215,10 +221,14 @@ fun AgentScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         contentPadding = PaddingValues(vertical = 16.dp)
                     ) {
-                        items(messages, key = { it.id }) { msg ->
+                        itemsIndexed(messages, key = { index, msg -> "${msg.id}_$index" }) { _, msg ->
                             when (msg) {
                                 is AgentMessage.Text -> AgentTextMessageBubble(msg)
-                                is AgentMessage.ToolCall -> AgentToolCallBubble(msg)
+                                is AgentMessage.ToolCall -> AgentToolCallBubble(
+                                    msg = msg,
+                                    onExecuteCommand = { callId, cmd -> viewModel.approveAndExecuteTermuxCommand(callId, cmd) },
+                                    onCancelCommand = { callId -> viewModel.cancelTermuxCommand(callId) }
+                                )
                                 is AgentMessage.MapLocation -> AgentMapCardBubble(msg, context)
                                 is AgentMessage.Audio -> com.llmhub.llmhub.components.AudioMessageCard(
                                     audioPath = msg.audioPath,
@@ -345,6 +355,7 @@ fun AgentScreen(
                     },
                     onDismiss = { showSettingsSheet = false },
                     extraModelConfigsContent = {
+                        val isTermuxEnabled by viewModel.isTermuxEnabled.collectAsState()
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
@@ -360,7 +371,7 @@ fun AgentScreen(
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -372,9 +383,77 @@ fun AgentScreen(
                                 modifier = Modifier.weight(1f)
                             )
                             Switch(
-                                checked = viewModel.toolSet.isTermuxEnabled,
+                                checked = isTermuxEnabled,
                                 onCheckedChange = { viewModel.toggleTermux(it) }
                             )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+                        val clipboardManager = LocalClipboardManager.current
+                        val context = LocalContext.current
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Terminal,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.agent_termux_guide_title),
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = stringResource(R.string.agent_termux_guide_desc),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                val termuxCmd = "mkdir -p ~/.termux/ && echo \"allow-external-apps = true\" >> ~/.termux/termux.properties"
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = MaterialTheme.colorScheme.surface,
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            clipboardManager.setText(AnnotatedString(termuxCmd))
+                                            Toast.makeText(context, context.getString(R.string.agent_termux_cmd_copied), Toast.LENGTH_SHORT).show()
+                                        }
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = termuxCmd,
+                                            style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                                            color = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Icon(
+                                            imageVector = Icons.Default.ContentCopy,
+                                            contentDescription = stringResource(R.string.copy),
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 )
@@ -430,62 +509,233 @@ fun AgentTextMessageBubble(msg: AgentMessage.Text) {
 }
 
 @Composable
-fun AgentToolCallBubble(msg: AgentMessage.ToolCall) {
-    Surface(
-        shape = RoundedCornerShape(14.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+fun AgentToolCallBubble(
+    msg: AgentMessage.ToolCall,
+    onExecuteCommand: ((String, String) -> Unit)? = null,
+    onCancelCommand: ((String) -> Unit)? = null
+) {
+    if (msg.toolName.contains("termux", ignoreCase = true) || msg.status == AgentMessage.ToolCall.Status.PENDING_APPROVAL) {
+        val clipboardManager = LocalClipboardManager.current
+        val context = LocalContext.current
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+            border = BorderStroke(
+                1.dp,
+                when (msg.status) {
+                    AgentMessage.ToolCall.Status.PENDING_APPROVAL -> Color(0xFFF59E0B)
+                    AgentMessage.ToolCall.Status.RUNNING -> Color(0xFF3B82F6)
+                    AgentMessage.ToolCall.Status.SUCCESS -> Color(0xFF10B981)
+                    AgentMessage.ToolCall.Status.FAILED -> Color(0xFFEF4444)
+                    AgentMessage.ToolCall.Status.CANCELLED -> MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                }
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 6.dp)
         ) {
-            Icon(
-                imageVector = when (msg.status) {
-                    AgentMessage.ToolCall.Status.RUNNING -> Icons.Default.Build
-                    AgentMessage.ToolCall.Status.SUCCESS -> Icons.Default.CheckCircle
-                    AgentMessage.ToolCall.Status.FAILED -> Icons.Default.Error
-                },
-                contentDescription = null,
-                tint = when (msg.status) {
-                    AgentMessage.ToolCall.Status.RUNNING -> Color(0xFFFBBF24)
-                    AgentMessage.ToolCall.Status.SUCCESS -> Color(0xFF34D399)
-                    AgentMessage.ToolCall.Status.FAILED -> Color(0xFFF87171)
-                },
-                modifier = Modifier.size(20.dp)
-            )
+            Column(modifier = Modifier.padding(14.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Terminal,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = "Termux Shell Command",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
 
-            Spacer(modifier = Modifier.width(10.dp))
+                    val statusText = when (msg.status) {
+                        AgentMessage.ToolCall.Status.PENDING_APPROVAL -> stringResource(R.string.agent_termux_pending_approval)
+                        AgentMessage.ToolCall.Status.RUNNING -> stringResource(R.string.agent_tool_running, "")
+                        AgentMessage.ToolCall.Status.SUCCESS -> stringResource(R.string.agent_tool_success)
+                        AgentMessage.ToolCall.Status.FAILED -> stringResource(R.string.agent_tool_failed)
+                        AgentMessage.ToolCall.Status.CANCELLED -> stringResource(R.string.agent_termux_cancelled)
+                    }
 
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "${msg.toolName}(${msg.args})",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                    val statusColor = when (msg.status) {
+                        AgentMessage.ToolCall.Status.PENDING_APPROVAL -> Color(0xFFF59E0B)
+                        AgentMessage.ToolCall.Status.RUNNING -> Color(0xFF3B82F6)
+                        AgentMessage.ToolCall.Status.SUCCESS -> Color(0xFF10B981)
+                        AgentMessage.ToolCall.Status.FAILED -> Color(0xFFEF4444)
+                        AgentMessage.ToolCall.Status.CANCELLED -> MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = statusColor.copy(alpha = 0.15f)
+                    ) {
+                        Text(
+                            text = statusText,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = statusColor,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = msg.args,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(
+                            onClick = {
+                                clipboardManager.setText(AnnotatedString(msg.args))
+                                Toast.makeText(context, context.getString(R.string.agent_termux_cmd_copied), Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ContentCopy,
+                                contentDescription = stringResource(R.string.copy),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+
                 if (msg.result != null) {
-                    Text(
-                        text = msg.result,
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2
-                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFF0F172A),
+                        border = BorderStroke(1.dp, Color(0xFF334155)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Text(
+                                text = "STDOUT / OUTPUT",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF64748B)
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = msg.result,
+                                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                                color = Color(0xFF38BDF8)
+                            )
+                        }
+                    }
+                }
+
+                if (msg.status == AgentMessage.ToolCall.Status.PENDING_APPROVAL) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = { onExecuteCommand?.invoke(msg.callId, msg.args) },
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
+                        ) {
+                            Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(stringResource(R.string.agent_termux_run_cmd), fontWeight = FontWeight.Bold)
+                        }
+                        OutlinedButton(
+                            onClick = { onCancelCommand?.invoke(msg.callId) },
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(stringResource(R.string.agent_termux_cancel_cmd))
+                        }
+                    }
                 }
             }
+        }
+    } else {
+        Surface(
+            shape = RoundedCornerShape(14.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = when (msg.status) {
+                        AgentMessage.ToolCall.Status.PENDING_APPROVAL, AgentMessage.ToolCall.Status.RUNNING -> Icons.Default.Build
+                        AgentMessage.ToolCall.Status.SUCCESS -> Icons.Default.CheckCircle
+                        AgentMessage.ToolCall.Status.FAILED, AgentMessage.ToolCall.Status.CANCELLED -> Icons.Default.Error
+                    },
+                    contentDescription = null,
+                    tint = when (msg.status) {
+                        AgentMessage.ToolCall.Status.PENDING_APPROVAL, AgentMessage.ToolCall.Status.RUNNING -> Color(0xFFFBBF24)
+                        AgentMessage.ToolCall.Status.SUCCESS -> Color(0xFF34D399)
+                        AgentMessage.ToolCall.Status.FAILED, AgentMessage.ToolCall.Status.CANCELLED -> Color(0xFFF87171)
+                    },
+                    modifier = Modifier.size(20.dp)
+                )
 
-            Text(
-                text = when (msg.status) {
-                    AgentMessage.ToolCall.Status.RUNNING -> stringResource(R.string.agent_tool_running, "")
-                    AgentMessage.ToolCall.Status.SUCCESS -> stringResource(R.string.agent_tool_success)
-                    AgentMessage.ToolCall.Status.FAILED -> stringResource(R.string.agent_tool_failed)
-                },
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "${msg.toolName}(${msg.args})",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    if (msg.result != null) {
+                        Text(
+                            text = msg.result,
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2
+                        )
+                    }
+                }
+
+                Text(
+                    text = when (msg.status) {
+                        AgentMessage.ToolCall.Status.PENDING_APPROVAL -> stringResource(R.string.agent_termux_pending_approval)
+                        AgentMessage.ToolCall.Status.RUNNING -> stringResource(R.string.agent_tool_running, "")
+                        AgentMessage.ToolCall.Status.SUCCESS -> stringResource(R.string.agent_tool_success)
+                        AgentMessage.ToolCall.Status.FAILED -> stringResource(R.string.agent_tool_failed)
+                        AgentMessage.ToolCall.Status.CANCELLED -> stringResource(R.string.agent_termux_cancelled)
+                    },
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

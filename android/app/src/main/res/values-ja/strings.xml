@@ -905,4 +905,11 @@
     <string name="agent_no_model_ios">エージェントを使用するには、まずモデルをダウンロードしてください</string>
     <string name="open_maps">マップを開く</string>
     <string name="agent_processing_tool">エージェントがツールを処理中...</string>
+    <string name="agent_termux_guide_title">Termux設定ガイド</string>
+    <string name="agent_termux_guide_desc">Termuxでサードパーティアプリの実行権限を有効にします:</string>
+    <string name="agent_termux_cmd_copied">コマンドをクリップボードにコピーしました</string>
+    <string name="agent_termux_pending_approval">承認が必要です</string>
+    <string name="agent_termux_run_cmd">コマンドを実行</string>
+    <string name="agent_termux_cancel_cmd">キャンセル</string>
+    <string name="agent_termux_cancelled">ユーザーによってキャンセルされました</string>
 </resources>

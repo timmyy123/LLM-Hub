@@ -908,4 +908,11 @@
     <string name="agent_no_model_ios">لطفاً ابتدا یک مدل دانلود کنید تا از عامل استفاده کنید</string>
     <string name="open_maps">باز کردن نقشه</string>
     <string name="agent_processing_tool">عامل در حال پردازش ابزار است...</string>
+    <string name="agent_termux_guide_title">راهنمای تنظیمات Termux</string>
+    <string name="agent_termux_guide_desc">در Termux، مجوز اجرای برنامه شخص ثالث را فعال کنید:</string>
+    <string name="agent_termux_cmd_copied">دستور در حافظه پنهان کپی شد</string>
+    <string name="agent_termux_pending_approval">نیازمند تایید</string>
+    <string name="agent_termux_run_cmd">اجرای دستور</string>
+    <string name="agent_termux_cancel_cmd">لغو</string>
+    <string name="agent_termux_cancelled">توسط کاربر لغو شد</string>
 </resources>

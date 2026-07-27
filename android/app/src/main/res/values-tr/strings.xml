@@ -906,4 +906,11 @@
     <string name="agent_no_model_ios">Ajanı kullanmak için lütfen önce bir model indirin</string>
     <string name="open_maps">Haritaları Aç</string>
     <string name="agent_processing_tool">Temsilci aracı işliyor...</string>
+    <string name="agent_termux_guide_title">Termux Kurulum Kılavuzu</string>
+    <string name="agent_termux_guide_desc">Termux\'ta üçüncü taraf uygulama çalıştırma izinlerini etkinleştirin:</string>
+    <string name="agent_termux_cmd_copied">Komut panoya kopyalandı</string>
+    <string name="agent_termux_pending_approval">Onay Gerekli</string>
+    <string name="agent_termux_run_cmd">Komutu Çalıştır</string>
+    <string name="agent_termux_cancel_cmd">İptal</string>
+    <string name="agent_termux_cancelled">Kullanıcı tarafından iptal edildi</string>
 </resources>

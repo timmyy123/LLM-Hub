@@ -916,4 +916,11 @@
     <string name="agent_no_model_ios">請先下載模型以使用助理</string>
     <string name="open_maps">Open Maps</string>
     <string name="agent_processing_tool">Agent is processing tool...</string>
+    <string name="agent_termux_guide_title">Termux 設定指南</string>
+    <string name="agent_termux_guide_desc">在 Termux 中，啟用第三方應用程式執行權限：</string>
+    <string name="agent_termux_cmd_copied">命令已複製到剪貼簿</string>
+    <string name="agent_termux_pending_approval">需要核准</string>
+    <string name="agent_termux_run_cmd">執行命令</string>
+    <string name="agent_termux_cancel_cmd">取消</string>
+    <string name="agent_termux_cancelled">使用者已取消</string>
 </resources>

@@ -876,4 +876,11 @@ Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
     <string name="agent_no_model_ios">Download venligst en model først for at bruge Agent</string>
     <string name="open_maps">Åbn kort</string>
     <string name="agent_processing_tool">Agent behandler værktøj...</string>
+    <string name="agent_termux_guide_title">Vejledning til Termux-opsætning</string>
+    <string name="agent_termux_guide_desc">Aktiver tilladelser til kørsel af tredjepartsapps i Termux:</string>
+    <string name="agent_termux_cmd_copied">Kommando kopieret til udklipsholder</string>
+    <string name="agent_termux_pending_approval">Godkendelse kræves</string>
+    <string name="agent_termux_run_cmd">Kør kommando</string>
+    <string name="agent_termux_cancel_cmd">Annuller</string>
+    <string name="agent_termux_cancelled">Annulleret af bruger</string>
 </resources>
