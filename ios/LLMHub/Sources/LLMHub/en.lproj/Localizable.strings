@@ -858,3 +858,8 @@
 "agent_no_model_ios" = "Please download a model first to use Agent";
 "open_maps" = "Open Maps";
 "agent_processing_tool" = "Agent is processing tool...";
+
+"premium_feature_vibevoice" = "VibeVoice – Speech & voice AI";
+"premium_feature_vibecoder" = "VibeCode – AI code builder";
+"premium_feature_image_generator" = "Image Generator – On-device AI art";
+"premium_feature_video_generator" = "Video Generator – AI video creation";

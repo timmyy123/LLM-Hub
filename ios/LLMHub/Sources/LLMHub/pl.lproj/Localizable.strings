@@ -845,3 +845,8 @@
 
 "open_maps" = "Otwórz mapy";
 "agent_processing_tool" = "Agent przetwarza narzędzie...";
+
+"premium_feature_vibevoice" = "VibeVoice – AI mowy i głosu";
+"premium_feature_vibecoder" = "VibeCode – Kreator kodu AI";
+"premium_feature_image_generator" = "Generator obrazów – Sztuka AI na urządzeniu";
+"premium_feature_video_generator" = "Generator wideo – Tworzenie wideo AI";

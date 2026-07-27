@@ -832,3 +832,8 @@
 
 "open_maps" = "Ouvrir les cartes";
 "agent_processing_tool" = "L’agent traite l’outil...";
+
+"premium_feature_vibevoice" = "VibeVoice – IA vocale & parole";
+"premium_feature_vibecoder" = "VibeCode – Générateur de code IA";
+"premium_feature_image_generator" = "Générateur d'images – Art IA sur l'appareil";
+"premium_feature_video_generator" = "Générateur de vidéo – Création vidéo par IA";

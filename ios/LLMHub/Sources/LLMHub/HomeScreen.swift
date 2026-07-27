@@ -174,9 +174,14 @@ struct HomeScreen: View {
                             
                             LazyVGrid(columns: toolsColumns, spacing: spacing) {
                                 ForEach(toolsFeatures + utilityFeatures, id: \.route) { feature in
-                                    let isLocked = !purchases.isPremium && feature.route == "agent"
+                                    let lockedRoutes: Set<String> = ["agent", "vibe_voice", "vibe_coder", "image_generator", "video_generator"]
+                                    let isLocked = !purchases.isPremium && lockedRoutes.contains(feature.route)
                                     Button {
-                                        onNavigateToRoute(feature.route)
+                                        if isLocked {
+                                            showPremium = true
+                                        } else {
+                                            onNavigateToRoute(feature.route)
+                                        }
                                     } label: {
                                         SmallFeatureCardView(feature: feature, isLocked: isLocked)
                                             .frame(height: cardHeight)

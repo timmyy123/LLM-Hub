@@ -845,3 +845,8 @@
 
 "open_maps" = "マップを開く";
 "agent_processing_tool" = "エージェントがツールを処理中...";
+
+"premium_feature_vibevoice" = "VibeVoice – 音声・スピーチAI";
+"premium_feature_vibecoder" = "VibeCode – AIコードビルダー";
+"premium_feature_image_generator" = "画像生成 – デバイス上のAIアート";
+"premium_feature_video_generator" = "動画生成 – AI動画作成";

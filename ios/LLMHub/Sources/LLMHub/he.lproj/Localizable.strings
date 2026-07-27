@@ -845,3 +845,8 @@
 
 "open_maps" = "פתח מפות";
 "agent_processing_tool" = "הסוכן מעבד את הכלי...";
+
+"premium_feature_vibevoice" = "VibeVoice – בינה מלאכותית לקול ודיבור";
+"premium_feature_vibecoder" = "VibeCode – בונה קוד בבינה מלאכותית";
+"premium_feature_image_generator" = "מחולל תמונות – אמנות בינה מלאכותית במכשיר";
+"premium_feature_video_generator" = "מחולל וידאו – יצירת וידאו בבינה מלאכותית";

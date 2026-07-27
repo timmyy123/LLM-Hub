@@ -845,3 +845,8 @@
 
 "open_maps" = "Відкрити карти";
 "agent_processing_tool" = "Агент обробляє інструмент...";
+
+"premium_feature_vibevoice" = "VibeVoice – ШІ мовлення та голосу";
+"premium_feature_vibecoder" = "VibeCode – ШІ-конструктор коду";
+"premium_feature_image_generator" = "Генератор зображень – ШІ-арт на пристрої";
+"premium_feature_video_generator" = "Генератор відео – Створення відео з ШІ";

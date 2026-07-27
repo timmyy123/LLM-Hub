@@ -817,3 +817,8 @@
 
 "open_maps" = "Karten öffnen";
 "agent_processing_tool" = "Agent verarbeitet Werkzeug...";
+
+"premium_feature_vibevoice" = "VibeVoice – Sprach- & Stimmen-KI";
+"premium_feature_vibecoder" = "VibeCode – KI-Codebuilder";
+"premium_feature_image_generator" = "Bildgenerator – KI-Kunst auf dem Gerät";
+"premium_feature_video_generator" = "Videogenerator – KI-Videoerstellung";

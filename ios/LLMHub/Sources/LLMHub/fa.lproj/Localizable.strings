@@ -845,3 +845,8 @@
 
 "open_maps" = "باز کردن نقشه";
 "agent_processing_tool" = "عامل در حال پردازش ابزار است...";
+
+"premium_feature_vibevoice" = "VibeVoice – هوش مصنوعی گفتار و صدا";
+"premium_feature_vibecoder" = "VibeCode – سازنده کد هوش مصنوعی";
+"premium_feature_image_generator" = "مولد تصویر – هنر هوش مصنوعی روی دستگاه";
+"premium_feature_video_generator" = "مولد ویدیو – ساخت ویدیو با هوش مصنوعی";

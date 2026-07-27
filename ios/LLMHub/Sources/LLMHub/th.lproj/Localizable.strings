@@ -853,3 +853,8 @@
 
 "open_maps" = "เปิดแผนที่";
 "agent_processing_tool" = "แอปพลิเคชันกำลังประมวลผลเครื่องมือ...";
+
+"premium_feature_vibevoice" = "VibeVoice – AI เสียงและพูด";
+"premium_feature_vibecoder" = "VibeCode – เครื่องมือสร้างโค้ด AI";
+"premium_feature_image_generator" = "เครื่องสร้างรูปภาพ – ศิลปะ AI บนอุปกรณ์";
+"premium_feature_video_generator" = "เครื่องสร้างวิดีโอ – การสร้างวิดีโอ AI";

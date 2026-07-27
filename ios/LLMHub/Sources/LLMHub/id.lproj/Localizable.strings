@@ -845,3 +845,8 @@
 
 "open_maps" = "Buka Peta";
 "agent_processing_tool" = "Agen sedang memproses alat...";
+
+"premium_feature_vibevoice" = "VibeVoice – AI Suara & Ucapan";
+"premium_feature_vibecoder" = "VibeCode – Pembuat Kode AI";
+"premium_feature_image_generator" = "Generator Gambar – Seni AI di Perangkat";
+"premium_feature_video_generator" = "Generator Video – Pembuatan Video AI";

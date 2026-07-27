@@ -802,3 +802,8 @@
 
 "open_maps" = "Abrir mapas";
 "agent_processing_tool" = "Agente processando ferramenta...";
+
+"premium_feature_vibevoice" = "VibeVoice – IA de voz e fala";
+"premium_feature_vibecoder" = "VibeCode – Criador de código com IA";
+"premium_feature_image_generator" = "Gerador de Imagens – Arte de IA no dispositivo";
+"premium_feature_video_generator" = "Gerador de Vídeo – Criação de vídeo com IA";

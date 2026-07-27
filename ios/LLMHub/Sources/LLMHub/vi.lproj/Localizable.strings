@@ -853,3 +853,8 @@
 
 "open_maps" = "Mở bản đồ";
 "agent_processing_tool" = "Tác nhân đang xử lý công cụ...";
+
+"premium_feature_vibevoice" = "VibeVoice – AI Giọng nói & Speech";
+"premium_feature_vibecoder" = "VibeCode – Trình tạo mã AI";
+"premium_feature_image_generator" = "Trình tạo hình ảnh – Nghệ thuật AI trên thiết bị";
+"premium_feature_video_generator" = "Trình tạo video – Tạo video bằng AI";

@@ -845,3 +845,8 @@
 
 "open_maps" = "فتح الخرائط";
 "agent_processing_tool" = "الوكيل يربط الأداة...";
+
+"premium_feature_vibevoice" = "VibeVoice – الذكاء الاصطناعي للصوت والحديث";
+"premium_feature_vibecoder" = "VibeCode – منشئ الأكواد بالذكاء الاصطناعي";
+"premium_feature_image_generator" = "مولد الصور – فن الذكاء الاصطناعي على الجهاز";
+"premium_feature_video_generator" = "مولد الفيديو – إنشاء الفيديو بالذكاء الاصطناعي";

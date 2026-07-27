@@ -853,3 +853,8 @@
 
 "open_maps" = "Åbn kort";
 "agent_processing_tool" = "Agent behandler værktøj...";
+
+"premium_feature_vibevoice" = "VibeVoice – Tale & stemme-AI";
+"premium_feature_vibecoder" = "VibeCode – AI-kodebygger";
+"premium_feature_image_generator" = "Billedgenerator – AI-kunst på enheden";
+"premium_feature_video_generator" = "Videogenerator – AI-videooprettelse";

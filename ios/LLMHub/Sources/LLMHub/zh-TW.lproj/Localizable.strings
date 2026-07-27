@@ -853,3 +853,8 @@
 
 "open_maps" = "打開地圖";
 "agent_processing_tool" = "代理正在處理工具...";
+
+"premium_feature_vibevoice" = "VibeVoice – 語音與對話 AI";
+"premium_feature_vibecoder" = "VibeCode – AI 程式碼生成器";
+"premium_feature_image_generator" = "圖片生成器 – 裝置端 AI 繪圖";
+"premium_feature_video_generator" = "影片生成器 – AI 影片創作";

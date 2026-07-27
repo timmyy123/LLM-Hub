@@ -845,3 +845,8 @@
 
 "open_maps" = "Haritaları Aç";
 "agent_processing_tool" = "Temsilci aracı işliyor...";
+
+"premium_feature_vibevoice" = "VibeVoice – Ses ve Konuşma AI";
+"premium_feature_vibecoder" = "VibeCode – AI Kod Oluşturucu";
+"premium_feature_image_generator" = "Görsel Oluşturucu – Cihaz İçi AI Sanatı";
+"premium_feature_video_generator" = "Video Oluşturucu – AI Video Oluşturma";

@@ -845,3 +845,8 @@
 
 "open_maps" = "지도 열기";
 "agent_processing_tool" = "에이전트가 도구를 처리 중...";
+
+"premium_feature_vibevoice" = "VibeVoice – 음성 및 스피치 AI";
+"premium_feature_vibecoder" = "VibeCode – AI 코드 빌더";
+"premium_feature_image_generator" = "이미지 생성기 – 기기 내 AI 아트";
+"premium_feature_video_generator" = "비디오 생성기 – AI 비디오 제작";

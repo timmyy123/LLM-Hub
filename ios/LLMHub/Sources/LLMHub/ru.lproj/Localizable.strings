@@ -817,3 +817,8 @@
 
 "open_maps" = "Открыть карты";
 "agent_processing_tool" = "Агент обрабатывает инструмент...";
+
+"premium_feature_vibevoice" = "VibeVoice – ИИ речи и голоса";
+"premium_feature_vibecoder" = "VibeCode – ИИ-конструктор кода";
+"premium_feature_image_generator" = "Генератор изображений – ИИ-арт на устройстве";
+"premium_feature_video_generator" = "Генератор видео – Создание видео с ИИ";

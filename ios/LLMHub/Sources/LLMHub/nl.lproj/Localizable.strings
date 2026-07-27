@@ -853,3 +853,8 @@
 
 "open_maps" = "Kaarten openen";
 "agent_processing_tool" = "Agent verwerkt hulpprogramma...";
+
+"premium_feature_vibevoice" = "VibeVoice – Spraak- & stem-AI";
+"premium_feature_vibecoder" = "VibeCode – AI-codebouwer";
+"premium_feature_image_generator" = "Afbeeldingsgenerator – AI-kunst op het apparaat";
+"premium_feature_video_generator" = "Videogenerator – AI-videocreatie";
