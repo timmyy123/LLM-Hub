@@ -48,6 +48,18 @@ public struct AgentScreen: View {
         !downloadedModels.isEmpty
     }
 
+    private var lastMessageContent: String {
+        guard let last = vm.messages.last else { return "" }
+        switch last {
+        case .text(_, _, let text, _):
+            return text
+        case .toolCall(_, let toolName, let args, let status, let result):
+            return "\(toolName)_\(args)_\(status)_\(result ?? "")"
+        case .map(_, let label, _, _):
+            return label
+        }
+    }
+
     public var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .bottom) {
@@ -102,6 +114,18 @@ public struct AgentScreen: View {
                         .onChange(of: vm.messages.count) { _, _ in
                             if let last = vm.messages.last {
                                 withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
+                            }
+                        }
+                        .onChange(of: lastMessageContent) { _, _ in
+                            if let last = vm.messages.last {
+                                proxy.scrollTo(last.id, anchor: .bottom)
+                            }
+                        }
+                        .onChange(of: isComposerFocused) { _, focused in
+                            if focused, let last = vm.messages.last {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                                    withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
+                                }
                             }
                         }
                     }
@@ -338,8 +362,9 @@ public struct AgentScreen: View {
     private func sendCurrentPrompt() {
         let text = vm.inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         if !text.isEmpty {
-            vm.sendMessage(text)
             vm.inputText = ""
+            micTranscriber.liveText = ""
+            vm.sendMessage(text)
         }
     }
 

@@ -76,6 +76,7 @@ public class AgentViewModel: ObservableObject {
             timestamp: Date()
         )
         messages.append(userMsg)
+        inputText = ""
         isGenerating = true
 
         Task {

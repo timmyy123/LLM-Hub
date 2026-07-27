@@ -75,7 +75,16 @@ fun AgentScreen(
 
     val listState = rememberLazyListState()
 
-    LaunchedEffect(messages.size) {
+    val lastMessageContent = remember(messages) {
+        val last = messages.lastOrNull()
+        when (last) {
+            is AgentMessage.Text -> last.text
+            is AgentMessage.ToolCall -> "${last.status}_${last.args}_${last.result}"
+            else -> last?.id ?: ""
+        }
+    }
+
+    LaunchedEffect(messages.size, lastMessageContent) {
         if (messages.isNotEmpty()) {
             listState.animateScrollToItem(messages.size - 1)
         }
