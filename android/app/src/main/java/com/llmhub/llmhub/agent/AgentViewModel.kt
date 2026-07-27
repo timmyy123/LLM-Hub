@@ -625,9 +625,13 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
             val displayResult = if (status == AgentMessage.ToolCall.Status.SUCCESS) "Hash (${resMap["algorithm"] ?: algo}) for '$textToHash':\n$result" else result
             updateToolCall(toolId, status, displayResult)
             addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = displayResult))
-        } else if (lower.contains("termux") || lower.contains("shell") || lower.contains("ls") || lower.contains("pkg ")) {
+        } else if (lower.contains("termux") || lower.contains("shell") || lower.contains("ls") || lower.contains("pkg ") || lower.contains("folder") || lower.contains("directory")) {
             var cmd = prompt
-            if (lower.contains("termux")) {
+            if (lower.contains("root")) {
+                cmd = "ls /"
+            } else if (lower.contains("phone") || lower.contains("storage") || lower.contains("sdcard")) {
+                cmd = "ls /sdcard"
+            } else if (lower.contains("termux")) {
                 cmd = prompt.substringAfter("termux", prompt).trim()
             } else if (lower.startsWith("run ") || lower.startsWith("execute ")) {
                 cmd = prompt.substringAfter(" ").trim()
@@ -638,7 +642,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                     cmd = cmd.substring(0, cmd.length - 8).trim()
                 }
             }
-            if (cmd.isBlank()) cmd = "ls"
+            if (cmd.isBlank()) cmd = "ls /sdcard"
             addMessage(AgentMessage.ToolCall(callId = toolId, toolName = "run_termux_command", args = cmd, status = AgentMessage.ToolCall.Status.PENDING_APPROVAL))
         } else if (lower.contains("map") || lower.contains("where is") || lower.contains("find") || lower.contains("direction")) {
             addMessage(AgentMessage.ToolCall(callId = toolId, toolName = "show_map", args = prompt, status = AgentMessage.ToolCall.Status.RUNNING))
@@ -677,6 +681,11 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
             val result = resMap["result"] as? String ?: resMap["error"] as? String ?: "Execution error."
             val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
             updateToolCall(callId, status, result)
+
+            if (status == AgentMessage.ToolCall.Status.FAILED || result.contains("Permission denied", ignoreCase = true) || result.contains("error", ignoreCase = true)) {
+                val fixFeedbackPrompt = "The terminal command '$command' resulted in an error:\n```\n$result\n```\nPlease analyze this failure output and generate a corrected command or solution."
+                processPromptWithTools(fixFeedbackPrompt)
+            }
         }
     }
 

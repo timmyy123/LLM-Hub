@@ -669,52 +669,56 @@ RULES:
             return mapOf("error" to "Termux commands are currently disabled in Agent settings.", "status" to "failed")
         }
         return try {
-            val termuxBash = "/data/data/com.termux/files/usr/bin/bash"
-            val hasTermuxBash = java.io.File(termuxBash).exists()
-            val termuxEnv = if (hasTermuxBash) {
-                arrayOf(
-                    "PATH=/data/data/com.termux/files/usr/bin:/data/data/com.termux/files/usr/bin/applets:/system/bin:/system/xbin",
-                    "HOME=/data/data/com.termux/files/home",
-                    "PREFIX=/data/data/com.termux/files/usr",
-                    "TMPDIR=/data/data/com.termux/files/usr/tmp"
-                )
-            } else null
-
-            val workingDir = if (hasTermuxBash) java.io.File("/data/data/com.termux/files/home") else null
-
-            val process = if (hasTermuxBash) {
-                Runtime.getRuntime().exec(arrayOf(termuxBash, "-c", command), termuxEnv, workingDir)
-            } else {
-                Runtime.getRuntime().exec(arrayOf("sh", "-c", command))
-            }
-
-            val stdout = process.inputStream.bufferedReader().readText()
-            val stderr = process.errorStream.bufferedReader().readText()
-            process.waitFor()
-
-            val combinedOutput = (stdout + if (stderr.isNotBlank()) "\n[stderr]\n$stderr" else "").trim()
+            val resultDir = context.getExternalFilesDir("termux_results") ?: context.filesDir
+            val resultFile = java.io.File(resultDir, "termux_out_${System.currentTimeMillis()}.txt")
 
             try {
                 val intent = Intent().apply {
                     setClassName("com.termux", "com.termux.app.RunCommandService")
                     action = "com.termux.RUN_COMMAND"
-                    putExtra("com.termux.RUN_COMMAND_PATH", if (hasTermuxBash) termuxBash else "/system/bin/sh")
+                    putExtra("com.termux.RUN_COMMAND_PATH", "/data/data/com.termux/files/usr/bin/bash")
                     putExtra("com.termux.RUN_COMMAND_ARGUMENTS", arrayOf("-c", command))
+                    putExtra("com.termux.RUN_COMMAND_WORKDIR", "/data/data/com.termux/files/home")
                     putExtra("com.termux.RUN_COMMAND_BACKGROUND", true)
+                    putExtra("com.termux.RUN_COMMAND_RESULT_DIRECTORY", resultDir.absolutePath)
+                    putExtra("com.termux.RUN_COMMAND_RESULT_FILE_BASENAME", resultFile.name)
+                    putExtra("com.termux.RUN_COMMAND_RESULT_SINGLE_FILE", true)
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 context.startService(intent)
             } catch (_: Exception) {}
 
-            val finalResult = if (combinedOutput.isNotBlank()) {
-                combinedOutput
-            } else {
-                "Command executed cleanly (exit code ${process.exitValue()})."
+            var termuxOutput: String? = null
+            val startTime = System.currentTimeMillis()
+            while (System.currentTimeMillis() - startTime < 2500) {
+                if (resultFile.exists() && resultFile.length() > 0) {
+                    termuxOutput = resultFile.readText().trim()
+                    resultFile.delete()
+                    break
+                }
+                Thread.sleep(100)
             }
 
-            mapOf("result" to finalResult, "status" to "succeeded")
+            val finalOutput = if (!termuxOutput.isNullOrBlank()) {
+                termuxOutput
+            } else {
+                val sdcardDir = java.io.File("/sdcard")
+                val workDir = if (sdcardDir.exists() && sdcardDir.canRead()) sdcardDir else context.filesDir
+                val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", command), null, workDir)
+                val stdout = process.inputStream.bufferedReader().readText()
+                val stderr = process.errorStream.bufferedReader().readText()
+                process.waitFor()
+                val combined = (stdout + if (stderr.isNotBlank()) "\n[stderr]\n$stderr" else "").trim()
+                if (combined.isNotBlank()) combined else "Command executed cleanly (exit code ${process.exitValue()})."
+            }
+
+            val isError = finalOutput.contains("Permission denied", ignoreCase = true) ||
+                          finalOutput.contains("command not found", ignoreCase = true) ||
+                          finalOutput.startsWith("error:", ignoreCase = true)
+
+            mapOf("result" to finalOutput, "status" to if (isError) "failed" else "succeeded")
         } catch (e: Exception) {
-            mapOf("error" to "Termux execution error: ${e.message}", "status" to "failed")
+            mapOf("error" to "Execution error: ${e.message}", "status" to "failed")
         }
     }
 

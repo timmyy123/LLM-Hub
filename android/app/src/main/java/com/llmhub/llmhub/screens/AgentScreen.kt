@@ -517,6 +517,8 @@ fun AgentToolCallBubble(
     if (msg.toolName.contains("termux", ignoreCase = true) || msg.status == AgentMessage.ToolCall.Status.PENDING_APPROVAL) {
         val clipboardManager = LocalClipboardManager.current
         val context = LocalContext.current
+        var editedCommand by remember(msg.callId, msg.args) { mutableStateOf(msg.args) }
+
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
@@ -600,15 +602,32 @@ fun AgentToolCallBubble(
                         modifier = Modifier.padding(10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = msg.args,
-                            style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.weight(1f)
-                        )
+                        if (msg.status == AgentMessage.ToolCall.Status.PENDING_APPROVAL) {
+                            androidx.compose.foundation.text.BasicTextField(
+                                value = editedCommand,
+                                onValueChange = { editedCommand = it },
+                                textStyle = MaterialTheme.typography.bodyMedium.copy(
+                                    fontFamily = FontFamily.Monospace,
+                                    color = MaterialTheme.colorScheme.primary
+                                ),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(vertical = 4.dp),
+                                singleLine = false
+                            )
+                        } else {
+                            Text(
+                                text = msg.args,
+                                style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
                         IconButton(
                             onClick = {
-                                clipboardManager.setText(AnnotatedString(msg.args))
+                                val textToCopy = if (msg.status == AgentMessage.ToolCall.Status.PENDING_APPROVAL) editedCommand else msg.args
+                                clipboardManager.setText(AnnotatedString(textToCopy))
                                 Toast.makeText(context, context.getString(R.string.agent_termux_cmd_copied), Toast.LENGTH_SHORT).show()
                             },
                             modifier = Modifier.size(28.dp)
@@ -655,7 +674,7 @@ fun AgentToolCallBubble(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Button(
-                            onClick = { onExecuteCommand?.invoke(msg.callId, msg.args) },
+                            onClick = { onExecuteCommand?.invoke(msg.callId, editedCommand) },
                             shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
