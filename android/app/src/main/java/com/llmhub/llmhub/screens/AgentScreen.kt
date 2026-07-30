@@ -221,6 +221,9 @@ fun AgentScreen(
                         val last = messages.lastOrNull()
                         last is AgentMessage.Text && last.sender == AgentMessage.Sender.AGENT && last.text.isNotEmpty()
                     }
+                    val hasActiveToolCard = remember(messages) {
+                        messages.any { it is AgentMessage.ToolCall && (it.status == AgentMessage.ToolCall.Status.PENDING_APPROVAL || it.status == AgentMessage.ToolCall.Status.RUNNING) }
+                    }
 
                     LazyColumn(
                         state = listState,
@@ -248,7 +251,7 @@ fun AgentScreen(
                             }
                         }
 
-                        if (isGenerating && !isStreamingAIResponse) {
+                        if (isGenerating && !isStreamingAIResponse && !hasActiveToolCard) {
                             item {
                                 AgentProcessingBubble()
                             }
@@ -284,7 +287,7 @@ fun AgentScreen(
                         supportsVision = false,
                         supportsAudio = isAudioSupportedInAgent,
                         isLoading = isGenerating,
-                        onCancelGeneration = if (isGenerating) { { } } else null,
+                        onCancelGeneration = if (isGenerating) { { viewModel.stopGeneration() } } else null,
                         isWebSearchEnabled = isWebSearchEnabled,
                         onToggleWebSearch = { viewModel.toggleWebSearch() }
                     )

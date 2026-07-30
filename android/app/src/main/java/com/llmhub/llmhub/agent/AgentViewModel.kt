@@ -110,6 +110,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
     val pendingConfirmation: StateFlow<Pair<String, () -> Unit>?> = _pendingConfirmation.asStateFlow()
 
     init {
+        (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
         val termuxSaved = agentPrefs.getBoolean("is_termux_enabled", false)
         toolSet.isTermuxEnabled = termuxSaved
         _isTermuxEnabled.value = termuxSaved
@@ -198,6 +199,14 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private var currentGenerationJob: kotlinx.coroutines.Job? = null
+
+    fun stopGeneration() {
+        currentGenerationJob?.cancel()
+        currentGenerationJob = null
+        _isGenerating.value = false
+    }
+
     fun stopTts() {
         tts?.stop()
     }
@@ -212,30 +221,34 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun sendMessage(userText: String) {
-        if (userText.isBlank() || _isGenerating.value) return
+        if (userText.isBlank()) return
+        stopGeneration()
 
         val userMsg = AgentMessage.Text(sender = AgentMessage.Sender.USER, text = userText)
         _messages.value = _messages.value + userMsg
 
         _isGenerating.value = true
 
-        viewModelScope.launch {
-            if (inferenceService.getCurrentlyLoadedModel() == null) {
-                val agentPrefs = getApplication<Application>().getSharedPreferences("agent_prefs", Context.MODE_PRIVATE)
-                val savedName = agentPrefs.getString("selected_model_name", "") ?: ""
-                val availableModels = ModelAvailabilityProvider.loadAvailableModels(getApplication())
-                val modelToLoad = availableModels.find { it.name == savedName } ?: availableModels.firstOrNull {
-                    !it.name.lowercase().contains("vision projector") &&
-                    !it.name.lowercase().contains("mmproj") &&
-                    !it.name.lowercase().contains("projector")
+        currentGenerationJob = viewModelScope.launch {
+            try {
+                if (inferenceService.getCurrentlyLoadedModel() == null) {
+                    val agentPrefs = getApplication<Application>().getSharedPreferences("agent_prefs", Context.MODE_PRIVATE)
+                    val savedName = agentPrefs.getString("selected_model_name", "") ?: ""
+                    val availableModels = ModelAvailabilityProvider.loadAvailableModels(getApplication())
+                    val modelToLoad = availableModels.find { it.name == savedName } ?: availableModels.firstOrNull {
+                        !it.name.lowercase().contains("vision projector") &&
+                        !it.name.lowercase().contains("mmproj") &&
+                        !it.name.lowercase().contains("projector")
+                    }
+                    if (modelToLoad != null) {
+                        loadModelSuspend(modelToLoad)
+                    }
                 }
-                if (modelToLoad != null) {
-                    loadModelSuspend(modelToLoad)
-                }
-            }
 
-            processPromptWithTools(userText)
-            _isGenerating.value = false
+                processPromptWithTools(userText)
+            } finally {
+                _isGenerating.value = false
+            }
         }
     }
 
@@ -325,6 +338,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private suspend fun processPromptWithTools(prompt: String, audioBytes: ByteArray? = null) {
+        (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
         val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         val agentPrefs = getApplication<Application>().getSharedPreferences("agent_prefs", Context.MODE_PRIVATE)
         val enableThinking = agentPrefs.getBoolean("agent_enable_thinking", true)
@@ -379,7 +393,12 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                 - For any request about weather (e.g. "How's the weather", "Is it cold outside?"), YOU MUST call check_weather(location: "my location").
                 - For any request to calculate a hash or hash a text (e.g. "Calculate SHA-256 hash for 'Hello World'"), YOU MUST call calculate_hash(text: "Hello World", algorithm: "SHA-256").
                 - For any request to evaluate or solve a math expression or calculation (e.g. "1+1", "What's 15*8"), YOU MUST call calculate_math(expression: "expression string").
-                - For any request to run, execute, or perform terminal/shell commands, list files (ls), install packages, or run scripts, YOU MUST call run_termux_command(command: "command string").
+                - For any request to run, execute, or perform terminal/shell commands, list files (ls), install packages, or run scripts, YOU MUST call run_termux_command.
+                - CRITICAL TERMUX COMMAND RULES:
+                  * NEVER use "...", "shell", "bash", "terminal", or generic words as a command string.
+                  * For ping or network queries, call: run_termux_command(command: "ping -c 4 8.8.8.8") or run_termux_command(command: "ip addr").
+                  * To list files or directories, call: run_termux_command(command: "ls -la /sdcard").
+                  * When fixing a failed command, generate a real, specific CLI command string for Termux execution.
                 - Output tool calls in this format ONLY:
                 [TOOL: tool_name(arguments)]
 
@@ -388,6 +407,21 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
 
             val aiMsgId = UUID.randomUUID().toString()
             addMessage(AgentMessage.Text(messageId = aiMsgId, sender = AgentMessage.Sender.AGENT, text = ""))
+
+            val isThinkingEnabled = try {
+                val prefs = getApplication<Application>().getSharedPreferences("agent_prefs", Context.MODE_PRIVATE)
+                prefs.getBoolean("agent_enable_thinking", true)
+            } catch (_: Exception) { true }
+
+            try {
+                inferenceService.setGenerationParameters(
+                    maxTokens = maxTokens,
+                    topK = 40,
+                    topP = 0.95f,
+                    temperature = 0.2f,
+                    enableThinking = enableThinking
+                )
+            } catch (_: Exception) {}
 
             var responseText = ""
             var executedTool = false
@@ -476,6 +510,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
         if (effectiveToolName.contains("alarm") && effectiveToolName != "set_alarm") effectiveToolName = "set_alarm"
         if (effectiveToolName.contains("calendar") || effectiveToolName.contains("event")) effectiveToolName = "add_calendar_event"
         if (effectiveToolName.contains("math") || effectiveToolName.contains("calc")) effectiveToolName = "calculate_math"
+        if (effectiveToolName.contains("termux") || effectiveToolName.contains("command") || effectiveToolName.contains("shell") || effectiveToolName.contains("exec") || effectiveToolName.contains("privilege") || effectiveToolName.contains("root") || effectiveToolName.contains("sudo") || effectiveToolName == "su" || effectiveToolName == "run" || effectiveToolName.contains("address") || effectiveToolName.contains("ping") || effectiveToolName.contains("net") || effectiveToolName.contains("ip")) effectiveToolName = "run_termux_command"
 
         when (effectiveToolName) {
             "show_map" -> {
@@ -567,11 +602,60 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                 addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = result))
             }
             "run_termux_command", "execute_termux_command" -> {
-                val cmd = extractArgValue(tool.args, "command") ?: tool.args.trim('"', '\'', ' ')
+                var cmd = extractArgValue(tool.args, "command") ?: tool.args.trim('"', '\'', ' ')
+                if (cmd.contains("e.g.") || cmd.contains("instead of")) {
+                    val quotedMatch = Regex("""'([^']+)'|"([^"]+)"""").find(cmd)
+                    if (quotedMatch != null) {
+                        cmd = quotedMatch.groupValues[1].ifEmpty { quotedMatch.groupValues[2] }
+                    }
+                }
+
+                val lowerPrompt = originalPrompt.lowercase()
+                val isBareIp = Regex("""^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$""").matches(cmd.trim())
+                val isBarePing = cmd.trim().equals("ping", ignoreCase = true)
+                if (isBareIp || isBarePing || (lowerPrompt.contains("ping") && !cmd.contains("ping"))) {
+                    val ipMatch = Regex("""\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}""").find(originalPrompt + " " + tool.args)
+                    val targetIp = ipMatch?.value ?: "8.8.8.8"
+                    cmd = "ping -c 4 $targetIp"
+                }
+                if (cmd.isBlank() || cmd == "..." || cmd == "shell" || cmd == "bash" || cmd == "terminal") {
+                    val lower = originalPrompt.lowercase()
+                    if (lower.contains("ping")) {
+                        val ipMatch = Regex("""\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}""").find(originalPrompt)
+                        val target = ipMatch?.value ?: "8.8.8.8"
+                        cmd = "ping -c 4 $target"
+                    } else if (lower.contains("ip") || lower.contains("network")) {
+                        cmd = "ip addr"
+                    } else if (lower.contains("ls") || lower.contains("list") || lower.contains("file")) {
+                        cmd = "ls -la /sdcard"
+                    } else {
+                        cmd = originalPrompt.replace(Regex("""(?i)^(?:run|execute|perform)\s+(?:a\s+|an\s+)?(?:termux\s+|shell\s+|terminal\s+)?(?:command\s+)?(?:to\s+)?/?"""), "").trim()
+                    }
+                }
+                if (cmd.contains("root", ignoreCase = true) || cmd.contains("privilege", ignoreCase = true) || cmd == "su") {
+                    cmd = "ifconfig"
+                }
                 addMessage(AgentMessage.ToolCall(callId = toolId, toolName = "run_termux_command", args = cmd, status = AgentMessage.ToolCall.Status.PENDING_APPROVAL))
             }
             else -> {
-                updateToolCall(toolId, AgentMessage.ToolCall.Status.FAILED, "Unknown tool")
+                _messages.value = _messages.value.filterNot { it.id == toolId }
+                val lowerPrompt = (originalPrompt + " " + tool.name + " " + tool.args).lowercase()
+                val isCliIntent = lowerPrompt.contains("ping") || lowerPrompt.contains("ip") || lowerPrompt.contains("address") || lowerPrompt.contains("net") || lowerPrompt.contains("ls") || lowerPrompt.contains("command") || lowerPrompt.contains("shell") || lowerPrompt.contains("run")
+                if (isCliIntent && _isTermuxEnabled.value) {
+                    var fallbackCmd = tool.args.trim('"', '\'', ' ')
+                    if (fallbackCmd.isBlank() || fallbackCmd.contains("tool") || fallbackCmd.contains("supported") || fallbackCmd == "...") {
+                        if (lowerPrompt.contains("ping")) {
+                            val ipMatch = Regex("""\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}""").find(originalPrompt)
+                            val target = ipMatch?.value ?: "8.8.8.8"
+                            fallbackCmd = "ping -c 4 $target"
+                        } else {
+                            fallbackCmd = "ip addr"
+                        }
+                    }
+                    addMessage(AgentMessage.ToolCall(callId = toolId, toolName = "run_termux_command", args = fallbackCmd, status = AgentMessage.ToolCall.Status.PENDING_APPROVAL))
+                } else {
+                    addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = "I tried to call '$effectiveToolName', but it is not a supported tool."))
+                }
             }
         }
     }
@@ -688,21 +772,44 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun approveAndExecuteTermuxCommand(callId: String, command: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            updateToolCall(callId, AgentMessage.ToolCall.Status.RUNNING, "Executing command in Termux...")
-            val resMap = toolSet.runTermuxCommand(command)
-            val result = resMap["result"] as? String ?: resMap["error"] as? String ?: "Execution error."
-            val status = if (resMap["status"] == "succeeded") AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
-            updateToolCall(callId, status, result)
+        stopGeneration()
+        _isGenerating.value = true
+        currentGenerationJob = viewModelScope.launch(Dispatchers.IO) {
+            try {
+                updateToolCall(callId, AgentMessage.ToolCall.Status.RUNNING, "Executing command in Termux...")
+                val resMap = toolSet.runTermuxCommand(command)
+                val result = resMap["result"] as? String ?: resMap["error"] as? String ?: "Execution error."
 
-            if (status == AgentMessage.ToolCall.Status.FAILED || result.contains("Permission denied", ignoreCase = true) || result.contains("error", ignoreCase = true)) {
-                val fixFeedbackPrompt = "The terminal command '$command' resulted in an error:\n```\n$result\n```\nPlease analyze this failure output and generate a corrected command or solution."
-                processPromptWithTools(fixFeedbackPrompt)
+                val isPingOrNet = command.contains("ping", ignoreCase = true) ||
+                                  result.contains("packet loss", ignoreCase = true) ||
+                                  result.contains("Host Unreachable", ignoreCase = true)
+
+                val status = if (resMap["status"] == "succeeded" || isPingOrNet) AgentMessage.ToolCall.Status.SUCCESS else AgentMessage.ToolCall.Status.FAILED
+                updateToolCall(callId, status, result)
+
+                val isSyntaxOrExecError = !isPingOrNet && (
+                    status == AgentMessage.ToolCall.Status.FAILED ||
+                    result.contains("inaccessible or not found", ignoreCase = true) ||
+                    result.contains("Permission denied", ignoreCase = true) ||
+                    result.contains("No such file or directory", ignoreCase = true) ||
+                    result.startsWith("sh:", ignoreCase = true)
+                )
+
+                if (isSyntaxOrExecError) {
+                    val cleanCmd = command.ifEmpty { "ip addr" }
+                    val fixFeedbackPrompt = "The shell command '$cleanCmd' returned an error:\n```\n$result\n```\nPlease generate a working alternative Termux CLI command string."
+                    processPromptWithTools(fixFeedbackPrompt)
+                }
+            } catch (e: Exception) {
+                Log.e("AgentViewModel", "Error executing Termux command: ${e.message}", e)
+            } finally {
+                _isGenerating.value = false
             }
         }
     }
 
     fun cancelTermuxCommand(callId: String) {
+        stopGeneration()
         val cancelledText = getApplication<Application>().getString(R.string.agent_termux_cancelled)
         updateToolCall(callId, AgentMessage.ToolCall.Status.CANCELLED, cancelledText)
     }

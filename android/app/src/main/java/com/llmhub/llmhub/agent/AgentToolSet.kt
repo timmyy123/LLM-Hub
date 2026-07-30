@@ -712,9 +712,13 @@ RULES:
                 if (combined.isNotBlank()) combined else "Command executed cleanly (exit code ${process.exitValue()})."
             }
 
-            val isError = finalOutput.contains("Permission denied", ignoreCase = true) ||
-                          finalOutput.contains("command not found", ignoreCase = true) ||
-                          finalOutput.startsWith("error:", ignoreCase = true)
+            val isError = finalOutput.contains("[stderr]") ||
+                          finalOutput.contains("inaccessible or not found", ignoreCase = true) ||
+                          finalOutput.contains("not found", ignoreCase = true) ||
+                          finalOutput.contains("Permission denied", ignoreCase = true) ||
+                          finalOutput.contains("No such file or directory", ignoreCase = true) ||
+                          finalOutput.contains("error", ignoreCase = true) ||
+                          finalOutput.startsWith("sh:", ignoreCase = true)
 
             mapOf("result" to finalOutput, "status" to if (isError) "failed" else "succeeded")
         } catch (e: Exception) {
