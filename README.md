@@ -22,10 +22,15 @@
 
 ## 📸 Demo & Screenshots
 
-| Vibe Coder Demo on iOS | Image Generation on Android | AI Agent Termux Execution on Android |
-| :-: | :-: | :-: |
-| <img src="vibecode_demo.gif" width="280" style="border-radius:8px;" /> | <img src="android_image_generation_demo.gif" width="280" style="border-radius:8px;" /> | <img src="android_agent_termux_demo.png" width="280" style="border-radius:8px;" /> |
-| Vibe Coder using Gemma 4 model on iPhone (HTML preview) | Stable Diffusion image generation on Android | AI Agent running Termux shell commands (`ping`) on Android |
+| Vibe Coder Demo on iOS | Image Generation on Android |
+| :-: | :-: |
+| <img src="vibecode_demo.gif" width="300" style="border-radius:8px;" /> | <img src="android_image_generation_demo.gif" width="300" style="border-radius:8px;" /> |
+| Vibe Coder using Gemma 4 model on iPhone (HTML preview) | Stable Diffusion image generation on Android |
+
+| AI Agent Termux Command Execution on Android |
+| :-: |
+| <img src="android_agent_termux_demo.png" width="340" style="border-radius:8px;" /> |
+| Autonomous AI Agent running Termux shell commands (`ping`) with live terminal output on Android |
 
 ## 🚀 Features
 
