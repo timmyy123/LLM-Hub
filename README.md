@@ -22,10 +22,10 @@
 
 ## 📸 Demo & Screenshots
 
-| Vibe Coder Demo on iOS | Image Generation on Android |
-| :-: | :-: |
-| <img src="vibecode_demo.gif" width="300" style="border-radius:8px;" /> | <img src="android_image_generation_demo.gif" width="300" style="border-radius:8px;" /> |
-| Vibe Coder using Gemma 4 model on iPhone (HTML preview) | Stable Diffusion image generation on Android |
+| Vibe Coder Demo on iOS | Image Generation on Android | AI Agent Termux Execution on Android |
+| :-: | :-: | :-: |
+| <img src="vibecode_demo.gif" width="280" style="border-radius:8px;" /> | <img src="android_image_generation_demo.gif" width="280" style="border-radius:8px;" /> | <img src="android_agent_termux_demo.png" width="280" style="border-radius:8px;" /> |
+| Vibe Coder using Gemma 4 model on iPhone (HTML preview) | Stable Diffusion image generation on Android | AI Agent running Termux shell commands (`ping`) on Android |
 
 ## 🚀 Features
 
@@ -47,6 +47,11 @@
 
 ### 🤖 AI Agent & Termux Terminal Command Generation
 The **AI Agent** turns on-device LLMs into autonomous assistants with device function calling capabilities:
+
+<p align="center">
+  <img src="android_agent_termux_demo.png" width="360" style="border-radius:10px; margin: 12px 0;" alt="AI Agent Termux Command Execution on Android" />
+</p>
+
 - **Device Actions & Function Calling**: Embedded interactive maps (OpenStreetMap), calendar management, alarm setup, flashlight toggle, SMS & Email composition, cryptographic hashing (SHA-256/MD5), and math calculation.
 - **Termux Command Generation (Android)**: Automatically drafts shell/CLI commands targeting Termux environment execution (`RUN_COMMAND_SERVICE` intent interface).
 - **Interactive Pre-Execution Editing**: Users can inspect and edit AI-generated shell commands before execution.
