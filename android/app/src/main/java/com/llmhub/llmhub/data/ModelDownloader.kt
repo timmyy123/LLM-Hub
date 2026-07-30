@@ -74,6 +74,9 @@ class ModelDownloader(
 
                 val url = URL(fileUrl)
                 val connection = (url.openConnection() as HttpURLConnection).apply {
+                    if (this is javax.net.ssl.HttpsURLConnection) {
+                        com.llmhub.llmhub.utils.SslUtils.configureHttpsConnection(this)
+                    }
                     requestMethod = "HEAD"
                     connectTimeout = 10_000
                     readTimeout = 10_000
@@ -164,6 +167,9 @@ class ModelDownloader(
         while (redirectCount < maxRedirects) {
             val url = URL(currentUrl)
             val connection = (url.openConnection() as HttpURLConnection).apply {
+                if (this is javax.net.ssl.HttpsURLConnection) {
+                    com.llmhub.llmhub.utils.SslUtils.configureHttpsConnection(this)
+                }
                 requestMethod = "GET"
                 connectTimeout = 15_000
                 readTimeout = 60_000

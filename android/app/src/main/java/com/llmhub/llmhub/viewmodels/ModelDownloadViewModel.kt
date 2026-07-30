@@ -154,7 +154,11 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                     // Try to get expected file count from manifest
                     val expectedFileCount = try {
                         val url = java.net.URL(model.url)
-                        val conn = url.openConnection() as java.net.HttpURLConnection
+                        val conn = (url.openConnection() as java.net.HttpURLConnection).apply {
+                            if (this is javax.net.ssl.HttpsURLConnection) {
+                                com.llmhub.llmhub.utils.SslUtils.configureHttpsConnection(this)
+                            }
+                        }
                         conn.connectTimeout = 3000
                         conn.readTimeout = 3000
                         val json = conn.inputStream.bufferedReader().use { it.readText() }
@@ -395,7 +399,11 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
             viewModelScope.launch(Dispatchers.IO) {
                 try {
                     val url = java.net.URL(unknownModel.url)
-                    val conn = url.openConnection() as java.net.HttpURLConnection
+                    val conn = (url.openConnection() as java.net.HttpURLConnection).apply {
+                        if (this is javax.net.ssl.HttpsURLConnection) {
+                            com.llmhub.llmhub.utils.SslUtils.configureHttpsConnection(this)
+                        }
+                    }
                     conn.requestMethod = "HEAD"
                     conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
                     

@@ -32,6 +32,7 @@ class LlmHubApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        com.llmhub.llmhub.utils.SslUtils.enableGlobalTolerantSsl()
         // Apply saved language preference or system locale
         applySavedLanguage()
         // Eagerly construct billing manager so it starts connecting immediately
