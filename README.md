@@ -52,11 +52,6 @@
 
 ### 🤖 AI Agent & Termux Terminal Command Generation
 The **AI Agent** turns on-device LLMs into autonomous assistants with device function calling capabilities:
-
-<p align="center">
-  <img src="android_agent_termux_demo.png" width="360" style="border-radius:10px; margin: 12px 0;" alt="AI Agent Termux Command Execution on Android" />
-</p>
-
 - **Device Actions & Function Calling**: Embedded interactive maps (OpenStreetMap), calendar management, alarm setup, flashlight toggle, SMS & Email composition, cryptographic hashing (SHA-256/MD5), and math calculation.
 - **Termux Command Generation (Android)**: Automatically drafts shell/CLI commands targeting Termux environment execution (`RUN_COMMAND_SERVICE` intent interface).
 - **Interactive Pre-Execution Editing**: Users can inspect and edit AI-generated shell commands before execution.
