@@ -29,8 +29,8 @@
 
 | AI Agent Termux Command Execution on Android |
 | :-: |
-| <img src="android_agent_termux_demo.png" width="340" style="border-radius:8px;" /> |
-| Autonomous AI Agent running Termux shell commands (`ping`) with live terminal output on Android |
+| <img src="android_agent_termux_demo.gif" width="340" style="border-radius:8px;" /> |
+| Autonomous AI Agent executing Termux shell commands (`ls` list files) with live terminal output on Android |
 
 ## 🚀 Features
 
