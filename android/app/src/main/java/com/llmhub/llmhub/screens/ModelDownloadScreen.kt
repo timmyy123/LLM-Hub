@@ -1115,7 +1115,7 @@ private fun ImportExternalModelDialog(
     var supportsAudio by remember { mutableStateOf(false) }
     var supportsGpu by remember { mutableStateOf(false) }
     var supportsMtp by remember { mutableStateOf(false) }
-    var modelFormat by remember { mutableStateOf(ModelFormat.TASK) }
+    var modelFormat by remember { mutableStateOf(ModelFormat.GGUF) }
     var contextWindowSize by remember { mutableStateOf("2048") }
     var huggingFaceQuery by remember { mutableStateOf("") }
     var huggingFaceResults by remember { mutableStateOf<List<com.llmhub.llmhub.viewmodels.HuggingFaceModelFile>>(emptyList()) }
