@@ -1215,8 +1215,8 @@ struct ImportExternalModelSheet: View {
 
     @ViewBuilder
     private var visionSection: some View {
-        // Only GGUF models use a separate vision projector.
-        if modelFormat == .gguf { glassRow {
+        // Feature toggles for all model formats
+        glassRow {
             Text(settings.localized("supports_vision"))
                 .font(.subheadline)
                 .foregroundColor(.white)
@@ -1224,9 +1224,9 @@ struct ImportExternalModelSheet: View {
             Toggle("", isOn: $supportsVision)
                 .labelsHidden()
                 .tint(ApolloPalette.accentStrong)
-        } }
+        }
 
-        // Vision projector picker
+        // Vision projector file picker (only GGUF needs a separate mmproj file)
         if modelFormat == .gguf && supportsVision {
             importField(label: "Vision Projector") {
                 Button { showProjectorPicker = true } label: {
@@ -1251,8 +1251,10 @@ struct ImportExternalModelSheet: View {
             .fileImporter(isPresented: $showProjectorPicker, allowedContentTypes: [UTType.data], allowsMultipleSelection: false) { result in
                 handleProjectorSelected(result: result)
             }
+        }
 
-            let selectedRepo = selectedHuggingFaceModel?.repo
+        // Show HF projectors when a GGUF model is selected (auto-enables vision on pick)
+        if modelFormat == .gguf, let selectedRepo = selectedHuggingFaceModel?.repo {
             let projectorFiles = hfFiles.filter { $0.isProjector && $0.repo == selectedRepo }
             if !projectorFiles.isEmpty {
                 ForEach(projectorFiles) { file in
@@ -1260,6 +1262,7 @@ struct ImportExternalModelSheet: View {
                         selectedHuggingFaceProjector = file
                         projectorFileURL = nil
                         projectorFileName = file.path
+                        supportsVision = true
                     } label: {
                         Text(file.path).lineLimit(1)
                     }

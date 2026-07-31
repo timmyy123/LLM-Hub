@@ -1349,10 +1349,13 @@ private fun ImportExternalModelDialog(
                         }
                     }
 
-                    if (modelFormat == ModelFormat.GGUF && supportsVision) {
+                    if (modelFormat == ModelFormat.GGUF && selectedHuggingFaceModel != null) {
                         huggingFaceResults.filter { it.isProjector && it.repo == selectedHuggingFaceModel?.repo }.forEach { file ->
                             item {
-                                TextButton(onClick = { selectedHuggingFaceProjector = file }, modifier = Modifier.fillMaxWidth()) {
+                                TextButton(onClick = {
+                                    selectedHuggingFaceProjector = file
+                                    supportsVision = true
+                                }, modifier = Modifier.fillMaxWidth()) {
                                     Text(stringResource(R.string.download_vision_projector) + ": " + file.path, maxLines = 1)
                                 }
                             }
