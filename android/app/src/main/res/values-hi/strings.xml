@@ -78,7 +78,7 @@
     <string name="ai_thinking">AI सोच रहा है...</string>
     <string name="thinking_label">सोच रहा है</string>
     <string name="thinking_tokens">सोच रहा है (%1$d टोकन)</string>
-    <string name="version_number">संस्करण 4.0.0</string>
+    <string name="version_number">संस्करण 4.1.0</string>
     <string name="app_version">ऐप संस्करण</string>
     
     <!-- Terms of Service -->
