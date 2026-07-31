@@ -368,22 +368,31 @@ fun AgentScreen(
                     onDismiss = { showSettingsSheet = false },
                     extraModelConfigsContent = {
                         val isTermuxEnabled by viewModel.isTermuxEnabled.collectAsState()
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = stringResource(R.string.enable_audio),
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.weight(1f)
-                            )
-                            Switch(
-                                checked = isGemmaAudioEnabled,
-                                onCheckedChange = { viewModel.setGemmaAudioEnabled(it) }
-                            )
+                        val isGemma4AudioCompatible = remember(selectedModel) {
+                            selectedModel?.modelFormat == "litertlm" &&
+                            selectedModel.name.contains("Gemma", ignoreCase = true) &&
+                            selectedModel.name.contains("4", ignoreCase = true) &&
+                            (selectedModel.name.contains("2B", ignoreCase = true) || selectedModel.name.contains("4B", ignoreCase = true) || selectedModel.name.contains("E2", ignoreCase = true) || selectedModel.name.contains("E4", ignoreCase = true))
                         }
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        if (isGemma4AudioCompatible) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.enable_audio),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Switch(
+                                    checked = isGemmaAudioEnabled,
+                                    onCheckedChange = { viewModel.setGemmaAudioEnabled(it) }
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
