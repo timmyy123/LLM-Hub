@@ -156,6 +156,14 @@ fun HomeScreen(
                 gradient = Pair(Color(0xFFA78BFA), Color(0xFFEC4899)),
                 darkColor = Color(0xFF3B1E54),
                 route = "agent"
+            ),
+            FeatureCard(
+                title = R.string.feature_text_to_speech,
+                description = R.string.feature_text_to_speech_desc,
+                icon = Icons.Filled.VolumeUp,
+                gradient = Pair(Color(0xFFF093FB), Color(0xFFF5576C)),
+                darkColor = Color(0xFF5E2B48),
+                route = "text_to_speech"
             )
         )
     }

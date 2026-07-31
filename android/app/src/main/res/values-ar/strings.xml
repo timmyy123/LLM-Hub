@@ -915,4 +915,22 @@
     <string name="agent_termux_run_cmd">تشغيل الأمر</string>
     <string name="agent_termux_cancel_cmd">إلغاء</string>
     <string name="agent_termux_cancelled">تم الإلغاء بواسطة المستخدم</string>
+
+    <!-- Text to Speech Feature -->
+    <string name="feature_text_to_speech">تحويل النص إلى كلام</string>
+    <string name="feature_text_to_speech_desc">قراءة النصوص بصوت عالٍ باستخدام محرك النظام أو أصوات Kokoro</string>
+    <string name="tts_feature_title">تحويل النص إلى كلام</string>
+    <string name="tts_feature_subtitle">انسخ والصق النص لقراءته بصوت عالٍ باستخدام محرك تحويل النص إلى كلام وإعدادات الصوت المحددة.</string>
+    <string name="tts_input_hint">أدخل أو ألصق النص هنا...</string>
+    <string name="tts_speak_button">قراءة بصوت عالٍ</string>
+    <string name="tts_stop_button">إيقاف القراءة</string>
+    <string name="tts_paste_button">لصق النص</string>
+    <string name="tts_clear_button">مسح</string>
+    <string name="tts_speaking_status">جاري القراءة بصوت عالٍ…</string>
+    <string name="tts_idle_status">جاهز للقراءة</string>
+    <string name="tts_empty_input_warning">يرجى إدخال أو لصق نص للقراءة.</string>
+    <string name="tts_engine_system">تحويل النص إلى كلام الافتراضي للنظام</string>
+    <string name="tts_engine_kokoro">Kokoro TTS</string>
+    <string name="tts_current_voice">الصوت: %1$s</string>
+    <string name="tts_word_count">%1$d كلمة</string>
 </resources>

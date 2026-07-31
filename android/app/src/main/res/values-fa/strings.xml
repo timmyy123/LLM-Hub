@@ -914,5 +914,23 @@
     <string name="agent_termux_pending_approval">نیازمند تایید</string>
     <string name="agent_termux_run_cmd">اجرای دستور</string>
     <string name="agent_termux_cancel_cmd">لغو</string>
-    <string name="agent_termux_cancelled">توسط کاربر لغو شد</string>
+    <string name="agent_termux_cancelled">لغو شده توسط کاربر</string>
+
+    <!-- Text to Speech Feature -->
+    <string name="feature_text_to_speech">تبدیل متن به گفتار</string>
+    <string name="feature_text_to_speech_desc">خواند متن با صدای بلند با استفاده از سیستم یا صداهای Kokoro TTS</string>
+    <string name="tts_feature_title">تبدیل متن به گفتار</string>
+    <string name="tts_feature_subtitle">متن را کپی و پیست کنید تا با موتور گفتار و تنظیمات صدای انتخابی شما خوانده شود.</string>
+    <string name="tts_input_hint">متن را اینجا وارد یا پیست کنید...</string>
+    <string name="tts_speak_button">بخوان</string>
+    <string name="tts_stop_button">توقف خواندن</string>
+    <string name="tts_paste_button">جای‌گذاری متن</string>
+    <string name="tts_clear_button">پاک‌سازی</string>
+    <string name="tts_speaking_status">در حال خواندن با صدای بلند…</string>
+    <string name="tts_idle_status">آماده برای خواندن</string>
+    <string name="tts_empty_input_warning">لطفاً ابتدا متنی را وارد یا جای‌گذاری کنید.</string>
+    <string name="tts_engine_system">گفتار پیش‌فرض سیستم</string>
+    <string name="tts_engine_kokoro">Kokoro TTS</string>
+    <string name="tts_current_voice">صدا: %1$s</string>
+    <string name="tts_word_count">%1$d کلمه</string>
 </resources>

@@ -914,4 +914,22 @@
     <string name="agent_termux_run_cmd">הפעל פקודה</string>
     <string name="agent_termux_cancel_cmd">ביטול</string>
     <string name="agent_termux_cancelled">בוטל על ידי המשתמש</string>
+
+    <!-- Text to Speech Feature -->
+    <string name="feature_text_to_speech">הקראת טקסט (TTS)</string>
+    <string name="feature_text_to_speech_desc">קריאת טקסט בקול רם באמצעות מנגנון המערכת או קולות Kokoro</string>
+    <string name="tts_feature_title">הקראת טקסט (TTS)</string>
+    <string name="tts_feature_subtitle">העתק והדבק טקסט כדי להקריא אותו בקול רם באמצעות מנוע ה-TTS שהוגדר.</string>
+    <string name="tts_input_hint">הזן או הדבק טקסט כאן...</string>
+    <string name="tts_speak_button">הקרא בקול</string>
+    <string name="tts_stop_button">עצור הקראה</string>
+    <string name="tts_paste_button">הדבק טקסט</string>
+    <string name="tts_clear_button">נקה</string>
+    <string name="tts_speaking_status">מקריא בקול רם…</string>
+    <string name="tts_idle_status">מוכן להקראה</string>
+    <string name="tts_empty_input_warning">אנא הזן או הדבק טקסט להקראה.</string>
+    <string name="tts_engine_system">ברירת מחדל של המערכת</string>
+    <string name="tts_engine_kokoro">Kokoro TTS</string>
+    <string name="tts_current_voice">קול: %1$s</string>
+    <string name="tts_word_count">%1$d מילים</string>
 </resources>

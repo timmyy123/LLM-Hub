@@ -929,6 +929,24 @@
     <string name="agent_termux_run_cmd">Run Command</string>
     <string name="agent_termux_cancel_cmd">Cancel</string>
     <string name="agent_termux_cancelled">Cancelled by user</string>
+
+    <!-- Text to Speech Feature -->
+    <string name="feature_text_to_speech">Text to Speech</string>
+    <string name="feature_text_to_speech_desc">Read text aloud using system or Kokoro TTS voices</string>
+    <string name="tts_feature_title">Text to Speech</string>
+    <string name="tts_feature_subtitle">Copy and paste text to read it aloud using your configured TTS engine and voice settings.</string>
+    <string name="tts_input_hint">Enter or paste text here...</string>
+    <string name="tts_speak_button">Read Aloud</string>
+    <string name="tts_stop_button">Stop Reading</string>
+    <string name="tts_paste_button">Paste Text</string>
+    <string name="tts_clear_button">Clear</string>
+    <string name="tts_speaking_status">Reading aloud…</string>
+    <string name="tts_idle_status">Ready to read</string>
+    <string name="tts_empty_input_warning">Please enter or paste text to read.</string>
+    <string name="tts_engine_system">System Default TTS</string>
+    <string name="tts_engine_kokoro">Kokoro TTS</string>
+    <string name="tts_current_voice">Voice: %1$s</string>
+    <string name="tts_word_count">%1$d words</string>
 </resources>
 
 

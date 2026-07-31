@@ -822,4 +822,22 @@
     <string name="agent_termux_run_cmd">รันคำสั่ง</string>
     <string name="agent_termux_cancel_cmd">ยกเลิก</string>
     <string name="agent_termux_cancelled">ยกเลิกโดยผู้ใช้</string>
+
+    <!-- Text to Speech Feature -->
+    <string name="feature_text_to_speech">ข้อความเป็นเสียงพูด</string>
+    <string name="feature_text_to_speech_desc">อ่านข้อความเสียงดังโดยใช้เสียงจากระบบหรือ Kokoro TTS</string>
+    <string name="tts_feature_title">ข้อความเป็นเสียงพูด</string>
+    <string name="tts_feature_subtitle">คัดลอกและวางข้อความผู้อ่านออกเสียงโดยใช้เครื่องมือ TTS ที่คุณตั้งค่าไว้</string>
+    <string name="tts_input_hint">ป้อนหรือวางข้อความที่นี่...</string>
+    <string name="tts_speak_button">อ่านออกเสียง</string>
+    <string name="tts_stop_button">หยุดอ่าน</string>
+    <string name="tts_paste_button">วางข้อความ</string>
+    <string name="tts_clear_button">ล้าง</string>
+    <string name="tts_speaking_status">กำลังอ่านออกเสียง…</string>
+    <string name="tts_idle_status">พร้อมอ่าน</string>
+    <string name="tts_empty_input_warning">โปรดป้อนหรือวางข้อความเพื่อให้อ่าน</string>
+    <string name="tts_engine_system">TTS เริ่มต้นของระบบ</string>
+    <string name="tts_engine_kokoro">Kokoro TTS</string>
+    <string name="tts_current_voice">เสียง: %1$s</string>
+    <string name="tts_word_count">%1$d คำ</string>
 </resources>

@@ -915,4 +915,22 @@
     <string name="agent_termux_run_cmd">명령어 실행</string>
     <string name="agent_termux_cancel_cmd">취소</string>
     <string name="agent_termux_cancelled">사용자에 의해 취소됨</string>
+
+    <!-- Text to Speech Feature -->
+    <string name="feature_text_to_speech">텍스트 음성 변환</string>
+    <string name="feature_text_to_speech_desc">시스템 또는 Kokoro TTS 음성으로 텍스트를 소리 내어 읽기</string>
+    <string name="tts_feature_title">텍스트 음성 변환</string>
+    <string name="tts_feature_subtitle">텍스트를 복사하여 붙여넣고 설정된 TTS 엔진으로 읽으세요.</string>
+    <string name="tts_input_hint">여기에 텍스트를 입력하거나 붙여넣으세요...</string>
+    <string name="tts_speak_button">소리 내어 읽기</string>
+    <string name="tts_stop_button">읽기 중지</string>
+    <string name="tts_paste_button">텍스트 붙여넣기</string>
+    <string name="tts_clear_button">지우기</string>
+    <string name="tts_speaking_status">소리 내어 읽는 중…</string>
+    <string name="tts_idle_status">읽기 준비 완료</string>
+    <string name="tts_empty_input_warning">읽을 텍스트를 입력하거나 붙여넣으세요.</string>
+    <string name="tts_engine_system">시스템 기본 TTS</string>
+    <string name="tts_engine_kokoro">Kokoro TTS</string>
+    <string name="tts_current_voice">음성: %1$s</string>
+    <string name="tts_word_count">%1$d 단어</string>
 </resources>

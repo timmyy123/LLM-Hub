@@ -883,4 +883,22 @@ Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
     <string name="agent_termux_run_cmd">Kør kommando</string>
     <string name="agent_termux_cancel_cmd">Annuller</string>
     <string name="agent_termux_cancelled">Annulleret af bruger</string>
+
+    <!-- Text to Speech Feature -->
+    <string name="feature_text_to_speech">Tekst til tale</string>
+    <string name="feature_text_to_speech_desc">Læs tekst højt ved hjælp af systemets eller Kokoro TTS-stemmer</string>
+    <string name="tts_feature_title">Tekst til tale</string>
+    <string name="tts_feature_subtitle">Kopiér og indsæt tekst for at få den læst højt med din konfigurerede TTS-motor og stemmeindstillinger.</string>
+    <string name="tts_input_hint">Indtast eller indsæt tekst her...</string>
+    <string name="tts_speak_button">Læs højt</string>
+    <string name="tts_stop_button">Stop oplæsning</string>
+    <string name="tts_paste_button">Indsæt tekst</string>
+    <string name="tts_clear_button">Ryd</string>
+    <string name="tts_speaking_status">Læser højt…</string>
+    <string name="tts_idle_status">Klar til oplæsning</string>
+    <string name="tts_empty_input_warning">Indtast eller indsæt venligst tekst, der skal læses højt.</string>
+    <string name="tts_engine_system">Systemstandard TTS</string>
+    <string name="tts_engine_kokoro">Kokoro TTS</string>
+    <string name="tts_current_voice">Stemme: %1$s</string>
+    <string name="tts_word_count">%1$d ord</string>
 </resources>

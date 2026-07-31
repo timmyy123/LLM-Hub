@@ -887,4 +887,22 @@
     <string name="agent_termux_run_cmd">Выполнить команду</string>
     <string name="agent_termux_cancel_cmd">Отмена</string>
     <string name="agent_termux_cancelled">Отменено пользователем</string>
+
+    <!-- Text to Speech Feature -->
+    <string name="feature_text_to_speech">Озвучивание текста</string>
+    <string name="feature_text_to_speech_desc">Чтение текста вслух с помощью системного TTS или голосов Kokoro</string>
+    <string name="tts_feature_title">Озвучивание текста</string>
+    <string name="tts_feature_subtitle">Вставьте текст, чтобы прослушать его с помощью выбранного движка TTS.</string>
+    <string name="tts_input_hint">Введите или вставьте текст здесь...</string>
+    <string name="tts_speak_button">Читать вслух</string>
+    <string name="tts_stop_button">Остановить чтение</string>
+    <string name="tts_paste_button">Вставить текст</string>
+    <string name="tts_clear_button">Очистить</string>
+    <string name="tts_speaking_status">Чтение вслух…</string>
+    <string name="tts_idle_status">Готово к чтению</string>
+    <string name="tts_empty_input_warning">Пожалуйста, введите или вставьте текст для чтения.</string>
+    <string name="tts_engine_system">Системный TTS по умолчанию</string>
+    <string name="tts_engine_kokoro">Kokoro TTS</string>
+    <string name="tts_current_voice">Голос: %1$s</string>
+    <string name="tts_word_count">%1$d слов</string>
 </resources>

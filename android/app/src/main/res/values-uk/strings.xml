@@ -915,4 +915,22 @@
     <string name="agent_termux_run_cmd">Виконати команду</string>
     <string name="agent_termux_cancel_cmd">Скасувати</string>
     <string name="agent_termux_cancelled">Скасовано користувачем</string>
+
+    <!-- Text to Speech Feature -->
+    <string name="feature_text_to_speech">Озвучення тексту</string>
+    <string name="feature_text_to_speech_desc">Читання тексту вголос за допомогою системного TTS або голосів Kokoro</string>
+    <string name="tts_feature_title">Озвучення тексту</string>
+    <string name="tts_feature_subtitle">Вставте текст, щоб прослухати його за допомогою вибраного движка TTS.</string>
+    <string name="tts_input_hint">Введіть або вставте текст сюди...</string>
+    <string name="tts_speak_button">Читати вголос</string>
+    <string name="tts_stop_button">Зупинити читання</string>
+    <string name="tts_paste_button">Вставити текст</string>
+    <string name="tts_clear_button">Очистити</string>
+    <string name="tts_speaking_status">Читання вголос…</string>
+    <string name="tts_idle_status">Готово до читання</string>
+    <string name="tts_empty_input_warning">Будь ласка, введіть або вставте текст для читання.</string>
+    <string name="tts_engine_system">Системний TTS за замовчуванням</string>
+    <string name="tts_engine_kokoro">Kokoro TTS</string>
+    <string name="tts_current_voice">Голос: %1$s</string>
+    <string name="tts_word_count">%1$d слів</string>
 </resources>

@@ -822,4 +822,22 @@
     <string name="agent_termux_run_cmd">Chạy lệnh</string>
     <string name="agent_termux_cancel_cmd">Hủy</string>
     <string name="agent_termux_cancelled">Đã hủy bởi người dùng</string>
+
+    <!-- Text to Speech Feature -->
+    <string name="feature_text_to_speech">Văn bản thành giọng nói</string>
+    <string name="feature_text_to_speech_desc">Đọc to văn bản bằng giọng nói hệ thống hoặc Kokoro TTS</string>
+    <string name="tts_feature_title">Văn bản thành giọng nói</string>
+    <string name="tts_feature_subtitle">Sao chép và dán văn bản để đọc to bằng công cụ TTS đã cấu hình.</string>
+    <string name="tts_input_hint">Nhập hoặc dán văn bản vào đây...</string>
+    <string name="tts_speak_button">Đọc to</string>
+    <string name="tts_stop_button">Dừng đọc</string>
+    <string name="tts_paste_button">Dán văn bản</string>
+    <string name="tts_clear_button">Xóa</string>
+    <string name="tts_speaking_status">Đang đọc to…</string>
+    <string name="tts_idle_status">Sẵn sàng đọc</string>
+    <string name="tts_empty_input_warning">Vui lòng nhập hoặc dán văn bản để đọc.</string>
+    <string name="tts_engine_system">TTS Mặc định của Hệ thống</string>
+    <string name="tts_engine_kokoro">Kokoro TTS</string>
+    <string name="tts_current_voice">Giọng nói: %1$s</string>
+    <string name="tts_word_count">%1$d từ</string>
 </resources>

@@ -922,5 +922,23 @@
     <string name="agent_termux_pending_approval">需要核准</string>
     <string name="agent_termux_run_cmd">執行命令</string>
     <string name="agent_termux_cancel_cmd">取消</string>
-    <string name="agent_termux_cancelled">使用者已取消</string>
+    <string name="agent_termux_cancelled">已由用户取消</string>
+
+    <!-- Text to Speech Feature -->
+    <string name="feature_text_to_speech">文本朗读</string>
+    <string name="feature_text_to_speech_desc">使用系统或Kokoro TTS语音朗读文本</string>
+    <string name="tts_feature_title">文本朗读</string>
+    <string name="tts_feature_subtitle">复制并粘贴文本，使用您配置的TTS引擎朗读。</string>
+    <string name="tts_input_hint">在此输入或粘贴文本...</string>
+    <string name="tts_speak_button">朗读</string>
+    <string name="tts_stop_button">停止朗读</string>
+    <string name="tts_paste_button">粘贴文本</string>
+    <string name="tts_clear_button">清空</string>
+    <string name="tts_speaking_status">正在朗读…</string>
+    <string name="tts_idle_status">准备朗读</string>
+    <string name="tts_empty_input_warning">请先输入或粘贴要朗读的文本。</string>
+    <string name="tts_engine_system">系统默认TTS</string>
+    <string name="tts_engine_kokoro">Kokoro TTS</string>
+    <string name="tts_current_voice">语音: %1$s</string>
+    <string name="tts_word_count">%1$d 个字</string>
 </resources>

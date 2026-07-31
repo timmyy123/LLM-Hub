@@ -881,5 +881,23 @@
     <string name="agent_termux_run_cmd">Befehl ausführen</string>
     <string name="agent_termux_cancel_cmd">Abbrechen</string>
     <string name="agent_termux_cancelled">Vom Benutzer abgebrochen</string>
+
+    <!-- Text to Speech Feature -->
+    <string name="feature_text_to_speech">Text-in-Sprache</string>
+    <string name="feature_text_to_speech_desc">Text laut vorlesen mit System- oder Kokoro-TTS-Stimmen</string>
+    <string name="tts_feature_title">Text-in-Sprache</string>
+    <string name="tts_feature_subtitle">Kopieren Sie Text und fügen Sie ihn ein, um ihn mit der eingestellten TTS-Engine vorlesen zu lassen.</string>
+    <string name="tts_input_hint">Text hier eingeben oder einfügen...</string>
+    <string name="tts_speak_button">Vorlesen</string>
+    <string name="tts_stop_button">Stoppen</string>
+    <string name="tts_paste_button">Text einfügen</string>
+    <string name="tts_clear_button">Löschen</string>
+    <string name="tts_speaking_status">Liest vor…</string>
+    <string name="tts_idle_status">Bereit zum Vorlesen</string>
+    <string name="tts_empty_input_warning">Bitte geben Sie Text ein oder fügen Sie Text ein.</string>
+    <string name="tts_engine_system">System-Standard TTS</string>
+    <string name="tts_engine_kokoro">Kokoro TTS</string>
+    <string name="tts_current_voice">Stimme: %1$s</string>
+    <string name="tts_word_count">%1$d Wörter</string>
 </resources>
 

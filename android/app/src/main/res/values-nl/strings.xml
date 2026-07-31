@@ -822,4 +822,22 @@
     <string name="agent_termux_run_cmd">Opdracht uitvoeren</string>
     <string name="agent_termux_cancel_cmd">Annuleren</string>
     <string name="agent_termux_cancelled">Geannuleerd door gebruiker</string>
+
+    <!-- Text to Speech Feature -->
+    <string name="feature_text_to_speech">Tekst-naar-spraak</string>
+    <string name="feature_text_to_speech_desc">Lees tekst hardop voor met systeem- of Kokoro TTS-stemmen</string>
+    <string name="tts_feature_title">Tekst-naar-spraak</string>
+    <string name="tts_feature_subtitle">Kopieer en plak tekst om deze hardop voor te laten lezen met jouw TTS-instellingen.</string>
+    <string name="tts_input_hint">Voer hier tekst in of plak tekst...</string>
+    <string name="tts_speak_button">Hardop voorlezen</string>
+    <string name="tts_stop_button">Stop voorlezen</string>
+    <string name="tts_paste_button">Tekst plakken</string>
+    <string name="tts_clear_button">Wissen</string>
+    <string name="tts_speaking_status">Hardop voorlezen…</string>
+    <string name="tts_idle_status">Klaar om voor te lezen</string>
+    <string name="tts_empty_input_warning">Voer tekst in of plak tekst om voor te lezen.</string>
+    <string name="tts_engine_system">Systeemstandaard TTS</string>
+    <string name="tts_engine_kokoro">Kokoro TTS</string>
+    <string name="tts_current_voice">Stem: %1$s</string>
+    <string name="tts_word_count">%1$d woorden</string>
 </resources>

@@ -49,6 +49,7 @@ sealed class Screen(val route: String) {
     object CreatorGeneration : Screen("creator_generation")
     object Premium : Screen("premium")
     object Agent : Screen("agent")
+    object TextToSpeech : Screen("text_to_speech")
 }
 
 @Composable
@@ -108,6 +109,7 @@ fun LlmHubNavigation(
                         "vibevoice" -> navController.navigate(Screen.VibeVoice.route)
                         "image_upscale" -> navController.navigate(Screen.ImageUpscale.route)
                         "agent" -> navigateIfPremium(Screen.Agent.route)
+                        "text_to_speech" -> navController.navigate(Screen.TextToSpeech.route)
                     }
                 },
                 onNavigateToSettings = {
@@ -334,6 +336,13 @@ fun LlmHubNavigation(
             AgentScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToModels = { navController.navigate(Screen.Models.route) }
+            )
+        }
+
+        composable(Screen.TextToSpeech.route) {
+            TextToSpeechScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToSettings = { navController.navigate(Screen.Settings.route) }
             )
         }
     }

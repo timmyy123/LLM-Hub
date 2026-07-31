@@ -919,4 +919,22 @@
     <string name="agent_termux_run_cmd">Uruchom polecenie</string>
     <string name="agent_termux_cancel_cmd">Anuluj</string>
     <string name="agent_termux_cancelled">Anulowano przez użytkownika</string>
+
+    <!-- Text to Speech Feature -->
+    <string name="feature_text_to_speech">Synteza mowy</string>
+    <string name="feature_text_to_speech_desc">Czytaj tekst na głos za pomocą systemu lub głosów Kokoro TTS</string>
+    <string name="tts_feature_title">Synteza mowy</string>
+    <string name="tts_feature_subtitle">Kopiuj i wklejaj tekst, aby przeczytać go na głos przy użyciu wybranego silnika TTS.</string>
+    <string name="tts_input_hint">Wprowadź lub wklej tekst tutaj...</string>
+    <string name="tts_speak_button">Czytaj na głos</string>
+    <string name="tts_stop_button">Zatrzymaj czytanie</string>
+    <string name="tts_paste_button">Wklej tekst</string>
+    <string name="tts_clear_button">Wyczyść</string>
+    <string name="tts_speaking_status">Czytanie na głos…</string>
+    <string name="tts_idle_status">Gotowy do czytania</string>
+    <string name="tts_empty_input_warning">Wprowadź lub wklej tekst do przeczytania.</string>
+    <string name="tts_engine_system">Domyślny TTS systemu</string>
+    <string name="tts_engine_kokoro">Kokoro TTS</string>
+    <string name="tts_current_voice">Głos: %1$s</string>
+    <string name="tts_word_count">%1$d słów</string>
 </resources>

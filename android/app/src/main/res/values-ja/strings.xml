@@ -911,5 +911,23 @@
     <string name="agent_termux_pending_approval">承認が必要です</string>
     <string name="agent_termux_run_cmd">コマンドを実行</string>
     <string name="agent_termux_cancel_cmd">キャンセル</string>
-    <string name="agent_termux_cancelled">ユーザーによってキャンセルされました</string>
+    <string name="agent_termux_cancelled">ユーザーによりキャンセルされました</string>
+
+    <!-- Text to Speech Feature -->
+    <string name="feature_text_to_speech">テキスト読み上げ</string>
+    <string name="feature_text_to_speech_desc">システムまたはKokoro TTS音声でテキストを読み上げます</string>
+    <string name="tts_feature_title">テキスト読み上げ</string>
+    <string name="tts_feature_subtitle">テキストをコピー＆ペーストして、設定したTTSエンジンで読み上げます。</string>
+    <string name="tts_input_hint">ここにテキストを入力または貼り付け...</string>
+    <string name="tts_speak_button">読み上げる</string>
+    <string name="tts_stop_button">読み上げ停止</string>
+    <string name="tts_paste_button">テキストを貼り付け</string>
+    <string name="tts_clear_button">消去</string>
+    <string name="tts_speaking_status">読み上げ中…</string>
+    <string name="tts_idle_status">読み上げ準備完了</string>
+    <string name="tts_empty_input_warning">読み上げるテキストを入力または貼り付けてください。</string>
+    <string name="tts_engine_system">システム標準TTS</string>
+    <string name="tts_engine_kokoro">Kokoro TTS</string>
+    <string name="tts_current_voice">音声: %1$s</string>
+    <string name="tts_word_count">%1$d 単語</string>
 </resources>

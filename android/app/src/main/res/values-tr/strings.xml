@@ -913,4 +913,22 @@
     <string name="agent_termux_run_cmd">Komutu Çalıştır</string>
     <string name="agent_termux_cancel_cmd">İptal</string>
     <string name="agent_termux_cancelled">Kullanıcı tarafından iptal edildi</string>
+
+    <!-- Text to Speech Feature -->
+    <string name="feature_text_to_speech">Metinden Sese</string>
+    <string name="feature_text_to_speech_desc">Sistem veya Kokoro TTS seslerini kullanarak metni yüksek sesle okuyun</string>
+    <string name="tts_feature_title">Metinden Sese</string>
+    <string name="tts_feature_subtitle">Yapılandırılmış TTS motorunuzu kullanarak metni yüksek sesle okumak için kopyalayıp yapıştırın.</string>
+    <string name="tts_input_hint">Metni buraya girin veya yapıştırın...</string>
+    <string name="tts_speak_button">Sesli Oku</string>
+    <string name="tts_stop_button">Okumayı Durdur</string>
+    <string name="tts_paste_button">Metni Yapıştır</string>
+    <string name="tts_clear_button">Temizle</string>
+    <string name="tts_speaking_status">Sesli okunuyor…</string>
+    <string name="tts_idle_status">Okumaya hazır</string>
+    <string name="tts_empty_input_warning">Lütfen okunacak bir metin girin veya yapıştırın.</string>
+    <string name="tts_engine_system">Sistem Varsayılan TTS</string>
+    <string name="tts_engine_kokoro">Kokoro TTS</string>
+    <string name="tts_current_voice">Ses: %1$s</string>
+    <string name="tts_word_count">%1$d kelime</string>
 </resources>
