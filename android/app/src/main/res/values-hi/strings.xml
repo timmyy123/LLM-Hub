@@ -1,0 +1,973 @@
+<resources>
+    <string name="app_name">LLM Hub</string>
+    
+    <!-- Common -->
+    <string name="ok">ठीक है</string>
+    <string name="cancel">रद्द करें</string>
+    <string name="close">बंद करें</string>
+    <string name="save">सहेजें</string>
+    <string name="delete">हटाएं</string>
+    <string name="send">भेजें</string>
+    <string name="copy">कॉपी करें</string>
+    <string name="loading">लोड हो रहा है...</string>
+    <string name="error">त्रुटि</string>
+    <string name="retry">पुनः प्रयास करें</string>
+    <string name="download">डाउनलोड करें</string>
+    <string name="vision">विज़न</string>
+    
+    <!-- Chat -->
+    <string name="welcome_to_llm_hub">LLM Hub में आपका स्वागत है!</string>
+    <string name="no_models_downloaded">अभी तक कोई मॉडल डाउनलोड नहीं हुआ</string>
+    <!-- Displayed when there are no saved global memories for RAG -->
+    <string name="no_memories">अभी तक कोई यादें नहीं हैं</string>
+    <string name="download_a_model">एक मॉडल डाउनलोड करें</string>
+    <string name="ready_to_chat">चैट करने के लिए तैयार! कृपया ऊपर एक मॉडल चुनें।</string>
+    <string name="start_chatting">नीचे संदेश टाइप करके चैट करना शुरू करें!</string>
+    <string name="type_a_message">संदेश टाइप करें...</string>
+    <string name="loading_model_format">%1$s लोड हो रहा है</string>
+    <string name="please_wait_model_initialize">कृपया प्रतीक्षा करें जब तक मॉडल प्रारंभ हो रहा है...</string>
+    <string name="initializing_neural_network">तंत्रिका नेटवर्क (Neural Network) प्रारंभ हो रहा है...</string>
+    <string name="attached_image">संलग्न छवि</string>
+    <string name="shared_a_file">एक फ़ाइल साझा की गई</string>
+    <string name="copy_message">संदेश कॉपी करें</string>
+    <string name="regenerate_response">उत्तर पुनः उत्पन्न करें</string>
+    <string name="cancel_generation">जनरेशन रद्द करें</string>
+    <string name="image_attachment">छवि संलग्नक</string>
+    <string name="save_image">छवि सहेजें</string>
+    <string name="tap_image_toggle_controls">नियंत्रण बदलने के लिए छवि पर टैप करें</string>
+    <string name="vision_enabled">विज़न सक्षम है</string>
+    <string name="message_copied">संदेश कॉपी किया गया</string>
+    <string name="tokens_per_second_format">%1$d टोकन • %2$.1f टोकन/सेकंड</string>
+    <string name="context_multimodal_format">%1$dk कॉन्टेक्स्ट • %2$s</string>
+    <string name="multimodal_format">%1$s मल्टीमॉडल</string>
+    <string name="multimodal">मल्टीमॉडल</string>
+    <string name="text_only">केवल पाठ</string>
+    <string name="currently_loaded">वर्तमान में लोड</string>
+    <string name="select_model">मॉडल चुनें</string>
+    <string name="unload_model">मॉडल अनलोड करें</string>
+    <string name="reload_model">मॉडल पुनः लोड करें</string>
+    
+    <!-- About Screen -->
+    <string name="about_llm_hub">LLM Hub के बारे में</string>
+    <string name="about_description">LLM Hub एक ओपन-सोर्स एप्लिकेशन है जो बड़े भाषा मॉडल की शक्ति को सीधे आपके मोबाइल डिवाइस पर लाता है। Gemma, Llama और Phi जैसे अत्याधुनिक मॉडल के साथ AI बातचीत का अनुभव करें - अधिकतम गोपनीयता और ऑफ़लाइन पहुंच के लिए सभी स्थानीय रूप से आपके फोन पर चल रहे हैं।</string>
+    <string name="key_features">मुख्य विशेषताएं</string>
+    <string name="feature_multiple_models">कई LLM मॉडल: Gemma-3, Llama-3.2, Phi-4, और Gemma-3n</string>
+    <string name="feature_on_device">ऑन-डिवाइस प्रोसेसिंग: पूर्ण गोपनीयता, इंटरनेट की आवश्यकता नहीं</string>
+    <string name="feature_vision_support">विज़न सपोर्ट: छवियों को समझने वाले मल्टीमॉडल मॉडल</string>
+    <string name="feature_gpu_acceleration">GPU त्वरण: समर्थित उपकरणों पर अनुकूलित प्रदर्शन</string>
+    <string name="feature_offline_usage">ऑफ़लाइन उपयोग: इंटरनेट कनेक्शन के बिना चैट करें</string>
+    <string name="feature_privacy_first">गोपनीयता प्रथम: आपकी बातचीत कभी भी आपके डिवाइस से बाहर नहीं जाती</string>
+    <string name="feature_modern_ui">आधुनिक UI: स्वच्छ, सहज मटीरियल डिज़ाइन इंटरफ़ेस</string>
+    <string name="developer_info">डेवलपर जानकारी</string>
+    <string name="about_developer_info">यह प्रोजेक्ट सभी के लिए AI तकनीक को अधिक सुलभ बनाने के प्रति उत्साही डेवलपर द्वारा विकसित किया गया है। आपकी प्रतिक्रिया और योगदान का हमेशा स्वागत है!</string>
+    <string name="tech_stack">टेक स्टैक</string>
+    <string name="about_tech_stack">LLM Hub को कुशल ऑन-डिवाइस इंफरेंस के लिए Swift, SwiftUI और llama.cpp लाइब्रेरी का उपयोग करके बनाया गया है।</string>
+    <string name="tech_kotlin_compose">Kotlin और Jetpack Compose से निर्मित</string>
+    <string name="tech_mediapipe_litert">MediaPipe और LiteRT द्वारा संचालित</string>
+    <string name="tech_quantization">INT4/INT8 क्वांटाइजेशन के साथ अनुकूलित</string>
+    <string name="tech_gpu_acceleration">LiteRT XNNPACK के माध्यम से GPU त्वरण</string>
+    <string name="tech_models_source">HuggingFace और Google से मॉडल</string>
+    <string name="contact_support">संपर्क और सहायता</string>
+    <string name="contact_email">संपर्क ईमेल:</string>
+    <string name="source_code">स्रोत कोड:</string>
+    <string name="github_repository">GitHub रिपॉजिटरी</string>
+    <string name="acknowledgments">आभार</string>
+    <string name="acknowledgments_text">इस एप्लिकेशन को संचालित करने वाले अविश्वसनीय LLM मॉडल प्रदान करने के लिए गूगल, मेटा, माइक्रोसॉफ्ट, आईबीएम और HuggingFace समुदाय को विशेष धन्यवाद। यह प्रोजेक्ट एंड्रॉइड डेवलपमेंट कम्युनिटी और ओपन-सोर्स इकोसिस्टम के अद्भुत कार्यों पर भी आधारित है।</string>
+    <string name="sd_models_credit">इमेज जनरेशन मॉडल Qualcomm QNN (NPU) और Alibaba MNN (CPU) बैकएंड का उपयोग करके xororz के Stable Diffusion इम्प्लीमेंटेशन द्वारा संचालित हैं।</string>
+    <string name="nexa_sdk_credit">GGUF मॉडल इंफरेंस Nexa SDK द्वारा संचालित है।</string>
+    <string name="ai_thinking">AI सोच रहा है...</string>
+    <string name="thinking_label">सोच रहा है</string>
+    <string name="thinking_tokens">सोच रहा है (%1$d टोकन)</string>
+    <string name="version_number">संस्करण 4.0.0</string>
+    <string name="app_version">ऐप संस्करण</string>
+    
+    <!-- Terms of Service -->
+    <string name="terms_of_service">सेवा की शर्तें</string>
+    <string name="tos_last_updated">अंतिम अपडेट: 16 जुलाई, 2025</string>
+    <string name="tos_welcome_text">LLM Hub में आपका स्वागत है। हमारे एप्लिकेशन का उपयोग करके, आप इन सेवा की शर्तों से बाध्य होने के लिए सहमत होते हैं। कृपया इन्हें ध्यान से पढ़ें।</string>
+    <string name="tos_welcome">LLM Hub में आपका स्वागत है। हमारे एप्लिकेशन का उपयोग करके, आप इन सेवा की शर्तों से बाध्य होने के लिए सहमत होते हैं। कृपया इन्हें ध्यान से पढ़ें।</string>
+    <string name="tos_acceptance_title">1. शर्तों की स्वीकृति</string>
+    <string name="tos_acceptance_text">LLM Hub को डाउनलोड, इंस्टॉल या उपयोग करके, आप स्वीकार करते हैं कि आपने इन सेवा की शर्तों को पढ़ और समझ लिया है तथा इनसे बाध्य होने के लिए सहमत हैं। यदि आप इन शर्तों से सहमत नहीं हैं, तो कृपया एप्लिकेशन का उपयोग न करें।</string>
+    <string name="tos_app_description_title">2. एप्लिकेशन विवरण</string>
+    <string name="tos_app_description_text">LLM Hub एक ओपन-सोर्स एप्लिकेशन है जो ऑन-डिवाइस AI बातचीत के लिए बड़े भाषा मॉडल (LLMs) तक पहुंच प्रदान करता है। ऐप आपके डिवाइस पर स्थानीय रूप से सभी डेटा को प्रोसेस करता है और बाहरी सर्वरों पर व्यक्तिगत जानकारी प्रसारित नहीं करता है।</string>
+    <string name="tos_user_responsibilities_title">3. उपयोगकर्ता की जिम्मेदारियां</string>
+    <string name="tos_user_responsibilities_text">आप LLM Hub का उपयोग जिम्मेदारी से और लागू कानूनों के अनुसार करने के लिए सहमत हैं। आप इसके लिए जिम्मेदार हैं:
+
+• केवल वैध उद्देश्यों के लिए एप्लिकेशन का उपयोग करना
+• एप्लिकेशन को रिवर्स इंजीनियर या संशोधित करने का प्रयास न करना
+• हानिकारक, अवैध या आपत्तिजनक सामग्री उत्पन्न करने के लिए एप्लिकेशन का उपयोग न करना
+• तीसरे पक्षों के बौद्धिक संपदा अधिकारों का सम्मान करना
+• यह सुनिश्चित करना कि आपका डिवाइस उचित संचालन के लिए न्यूनतम आवश्यकताओं को पूरा करता है</string>
+    <string name="tos_privacy_data_title">4. गोपनीयता और डेटा</string>
+    <string name="tos_privacy_data_text">LLM Hub को गोपनीयता को ध्यान में रखकर डिज़ाइन किया गया है:
+
+• सभी बातचीत और डेटा प्रोसेसिंग आपके डिवाइस पर स्थानीय रूप से होती है
+• कोई भी व्यक्तिगत डेटा बाहरी सर्वरों पर नहीं भेजा जाता है
+• चैट इतिहास स्थानीय रूप से संग्रहीत होता है और इसे किसी भी समय हटाया जा सकता है
+• मॉडल डाउनलोड सीधे आधिकारिक रिपॉजिटरी (HuggingFace, Google) से किए जाते हैं
+• एप्लिकेशन एनालिटिक्स या उपयोग डेटा एकत्र नहीं करता है</string>
+    <string name="tos_disclaimer_title">5. वारंटियों का अस्वीकरण</string>
+    <string name="tos_disclaimer_text">LLM Hub बिना किसी भी प्रकार की वारंटी के "जैसा है" प्रदान किया जाता है। हम एप्लिकेशन या इसकी उत्पन्न सामग्री की सटीकता, विश्वसनीयता या उपलब्धता की गारंटी नहीं देते हैं। AI मॉडल के उपयोग से अप्रत्याशित परिणाम उत्पन्न हो सकते हैं।</string>
+    <string name="tos_limitation_liability_title">6. दायित्व की सीमा</string>
+    <string name="tos_limitation_liability_text">किसी भी स्थिति में डेवलपर्स LLM Hub के उपयोग से उत्पन्न होने वाले किसी भी अप्रत्यक्ष, आकस्मिक या परिणामी नुकसान के लिए उत्तरदायी नहीं होंगे। एप्लिकेशन का उपयोग आपके अपने जोखिम पर है।</string>
+    <string name="tos_model_usage_title">7. मॉडल उपयोग और लाइसेंसिंग</string>
+    <string name="tos_model_usage_text">LLM Hub के माध्यम से उपलब्ध AI मॉडल उनके संबंधित लाइसेंस और उपयोग की शर्तों के अधीन हैं। डाउनलोड किए गए मॉडल का उपयोग करते समय उपयोगकर्ता मॉडल-विशिष्ट लाइसेंसिंग आवश्यकताओं का पालन करने के लिए जिम्मेदार हैं।</string>
+    <string name="tos_open_source_title">8. ओपन सोर्स लाइसेंस</string>
+    <string name="tos_open_source_text">LLM Hub ओपन-सोर्स सॉफ्टवेयर है। स्रोत कोड गैर-व्यावसायिक लाइसेंस के तहत उपलब्ध है, जो लाइसेंस की शर्तों के अधीन उपयोग, संशोधन और वितरण की अनुमति देता है।</string>
+    <string name="tos_changes_title">9. शर्तों में बदलाव</string>
+    <string name="tos_changes_text">हम समय-समय पर इन सेवा की शर्तों को अपडेट कर सकते हैं। ऐप अपडेट के माध्यम से उपयोगकर्ताओं को महत्वपूर्ण परिवर्तनों की सूचना दी जाएगी। परिवर्तनों के बाद एप्लिकेशन का निरंतर उपयोग नई शर्तों की स्वीकृति माना जाएगा।</string>
+    <string name="tos_contact_title">10. संपर्क जानकारी</string>
+    <string name="tos_contact_text">इन सेवा की शर्तों के बारे में प्रश्नों के लिए, कृपया timmy@llm-hub.app पर हमसे संपर्क करें।</string>
+    
+    <!-- Navigation -->
+    <string name="chat">चैट</string>
+    <string name="models">मॉडल</string>
+    <string name="settings">सेटिंग्स</string>
+    <string name="about">के बारे में</string>
+    
+    <!-- Settings -->
+    <string name="appearance">उपस्थिति</string>
+    <string name="features">विशेषताएं</string>
+    <string name="information">जानकारी</string>
+    <string name="source_code_section">स्रोत कोड</string>
+    <string name="download_models">मॉडल डाउनलोड करें</string>
+    <string name="browse_download_models">LLM मॉडल ब्राउज़ करें और डाउनलोड करें</string>
+    <string name="embedding_model">एम्बेडिंग मॉडल</string>
+    <string name="select_embedding_model">एम्बेडिंग मॉडल चुनें</string>
+    <string name="no_embedding_model_selected">कोई एम्बेडिंग मॉडल चुना नहीं गया है</string>
+    <string name="disable_embeddings">एम्बेडिंग अक्षम करें</string>
+    <string name="embedding_settings_changed_title">एम्बेडिंग सेटिंग्स बदली गईं</string>
+    <string name="embedding_settings_changed_message">एम्बेडिंग परिवर्तनों को प्रभावी करने के लिए कृपया अपने मॉडल अनलोड और पुनः लोड करें।</string>
+    <string name="reload_models">मॉडल पुनः लोड करें</string>
+    <string name="dismiss">खारिज करें</string>
+    <string name="reload_models_notice">प्रभावी होने के लिए मॉडल पुनः लोड करने की आवश्यकता है</string>
+    <string name="embedding_enabled">एम्बेडिंग सक्षम हैं</string>
+    <string name="embedding_disabled">एम्बेडिंग अक्षम हैं</string>
+    <string name="embedding_status_enabled">एम्बेडिंग स्थिति: सक्षम</string>
+    <string name="embedding_status_disabled">एम्बेडिंग स्थिति: अक्षम</string>
+    <string name="rag_enabled">RAG सक्षम है</string>
+    <string name="web_search">वेब खोज</string>
+    <string name="web_search_enabled">वेब से वर्तमान जानकारी प्राप्त करें</string>
+    <string name="web_search_disabled">केवल ऑफ़लाइन ज्ञान का उपयोग करें</string>
+    <string name="web_search_description_enabled">वेब से वर्तमान जानकारी प्राप्त करें</string>
+    <string name="web_search_description_disabled">केवल ऑफ़लाइन ज्ञान का उपयोग करें</string>
+    <string name="theme">थीम</string>
+    <string name="language">भाषा</string>
+    <string name="light_theme">लाइट</string>
+    <string name="dark_theme">डार्क</string>
+    <string name="system_default_theme">सिस्टम डिफ़ॉल्ट</string>
+    <string name="theme_light">लाइट</string>
+    <string name="theme_dark">डार्क</string>
+    <string name="theme_system">सिस्टम डिफ़ॉल्ट</string>
+    <string name="system_default_language">सिस्टम डिफ़ॉल्ट</string>
+    <string name="system_default">सिस्टम डिफ़ॉल्ट</string>
+    <string name="choose_theme">थीम चुनें</string>
+    <string name="choose_language">भाषा चुनें</string>
+    <string name="select_language">भाषा चुनें</string>
+    <string name="app_information_contact">ऐप जानकारी और संपर्क</string>
+    <string name="app_info_contact">ऐप जानकारी और संपर्क</string>
+    <string name="legal_terms_conditions">कानूनी शर्तें और स्थितियां</string>
+    <string name="github_repository_desc">स्रोत कोड देखें और योगदान दें</string>
+    <string name="view_source_contribute">स्रोत कोड देखें और योगदान दें</string>
+    <string name="back">वापस</string>
+    
+    <!-- Language Names -->
+    <string name="language_english">English</string>
+    <string name="language_spanish">Español</string>
+    <string name="language_portuguese">Português</string>
+    <string name="language_german">Deutsch</string>
+    <string name="language_french">Français</string>
+    <string name="language_russian">Русский</string>
+    <string name="language_italian">Italiano</string>
+    <string name="language_turkish">Türkçe</string>
+    <string name="language_polish">Polski</string>
+    <string name="language_arabic">العربية</string>
+    <string name="language_japanese">日本語</string>
+    <string name="language_indonesian">Indonesia</string>
+    <string name="language_korean">한국어</string>
+    <string name="language_persian">فارسی</string>
+    <string name="language_ukrainian">Українська</string>
+    <string name="language_hebrew">עברית</string>
+    <string name="language_chinese_simplified">简体中文</string>
+    <string name="language_dutch">Nederlands</string>
+    <string name="language_danish">Dansk</string>
+    <string name="language_thai">ไทย</string>
+    <string name="language_vietnamese">Tiếng Việt</string>
+    
+    <!-- Errors and Messages -->
+    <string name="failed_to_load_image">छवि लोड करने में विफल</string>
+    <string name="model_loading_error">मॉडल लोड करने में त्रुटि</string>
+    <string name="message_send_error">संदेश भेजने में त्रुटि</string>
+    <string name="file_save_error">फ़ाइल सहेजने में त्रुटि</string>
+    <string name="file_save_success">फ़ाइल सफलतापूर्वक सहेजी गई</string>
+    
+    <!-- Accessibility -->
+    <string name="content_description_ai_bot">AI Bot</string>
+    <string name="content_description_smart_toy">Smart Toy</string>
+    <string name="content_description_email">Email</string>
+    <string name="content_description_code">Source Code</string>
+    <string name="content_description_image">Image</string>
+    <string name="content_description_download">Download</string>
+    <string name="content_description_stop">Stop</string>
+    <string name="content_description_refresh">Refresh</string>
+    <string name="content_description_copy">Copy</string>
+    <string name="content_description_speed">Speed</string>
+    <string name="content_description_check">Check</string>
+    <string name="content_description_eye">Vision enabled</string>
+    <string name="content_description_attach_image">Attach image</string>
+    <string name="content_description_back">Back</string>
+    
+    <!-- Model Information -->
+    <string name="no_model_selected">कोई मॉडल चुना नहीं गया</string>
+    <string name="no_model_downloaded">कोई मॉडल डाउनलोड नहीं हुआ</string>
+    <string name="model_supports_vision">विज़न सपोर्ट करता है</string>
+    <string name="model_supports_multimodal">मल्टीमॉडल सपोर्ट करता है</string>
+    <string name="model_text_only">केवल पाठ</string>
+    <string name="not_loaded">लोड नहीं किया गया</string>
+    
+    <!-- Chat Drawer -->
+    <string name="drawer_title">LLM Hub</string>
+    <string name="drawer_new_chat">नई चैट</string>
+    <string name="drawer_recent_chats">हाल की चैट</string>
+    <string name="drawer_no_chats">अभी तक कोई चैट नहीं है</string>
+    <string name="drawer_download_models">मॉडल डाउनलोड करें</string>
+    <string name="drawer_clear_all_chats">सभी चैट साफ़ करें</string>
+    <string name="drawer_settings">सेटिंग्स</string>
+    
+    <!-- Chat Management -->
+    <string name="dialog_rename_chat_title">चैट का नाम बदलें</string>
+    <string name="chat_title">चैट शीर्षक</string>
+    <string name="more_options">अधिक विकल्प</string>
+    <string name="dialog_delete_all_chats_title">सभी चैट हटाएं?</string>
+    <string name="dialog_delete_all_chats_message">यह सारा बातचीत इतिहास स्थायी रूप से हटा देगा। यह क्रिया वापस नहीं ली जा सकती।</string>
+    <string name="dialog_delete_chat_title">चैट हटाएं?</string>
+    <string name="dialog_delete_chat_message">क्या आप बातचीत "%1$s" हटाना चाहते हैं?</string>
+    <string name="dialog_delete_creator_title">creAItor हटाएं?</string>
+    <string name="dialog_delete_creator_message">क्या आप creAItor "%1$s" हटाना चाहते हैं?</string>
+    <string name="action_delete_all">सभी हटाएं</string>
+    <string name="action_delete">हटाएं</string>
+    <string name="action_rename">नाम बदलें</string>
+    <string name="action_cancel">रद्द करें</string>
+    <string name="content_description_delete_chat">चैट हटाएं</string>
+    
+    <!-- Time Formatting -->
+    <string name="time_yesterday">कल</string>
+    <string name="time_hours_ago">%1$d घंटे पहले</string>
+    <string name="time_minutes_ago">%1$d मिनट पहले</string>
+    <string name="time_just_now">अभी-अभी</string>
+    
+    <!-- Model Download Screen -->
+    <string name="ai_models">AI मॉडल</string>
+    <string name="download_ai_models">AI मॉडल डाउनलोड करें</string>
+    <string name="choose_text_multimodal_models">केवल-टेक्स्ट या मल्टीमॉडल मॉडल में से चुनें</string>
+    <string name="text_models">टेक्स्ट मॉडल</string>
+    <string name="text_models_description">टेक्स्ट जनरेशन और बातचीत के लिए अनुकूलित मॉडल</string>
+    <string name="vision_models">मल्टीमॉडल मॉडल</string>
+    <string name="vision_models_description">पाठ, छवियों और ऑडियो को समझने वाले मॉडल</string>
+    <string name="embedding_models">एम्बेडिंग मॉडल</string>
+    <string name="embedding_models_description">टेक्स्ट एम्बेडिंग और सिमेंटिक खोज के लिए मॉडल</string>
+    <string name="gpu">GPU</string>
+    <string name="variant">वेरिएंट</string>
+    <string name="variants">वेरिएंट</string>
+    <string name="expand">विस्तार करें</string>
+    <string name="collapse">संक्षिप्त करें</string>
+    <string name="downloaded">डाउनलोड किया गया</string>
+    <string name="downloading">डाउनलोड हो रहा है...</string>
+    <string name="extracting">एक्सट्रेक्ट हो रहा है...</string>
+    <string name="extracting_model">मॉडल एक्सट्रेक्ट हो रहा है...</string>
+    <string name="not_downloaded">डाउनलोड नहीं हुआ</string>
+    <string name="partial">आंशिक</string>
+    <string name="paused">रोका गया</string>
+    <string name="paused_downloaded_format">रोका गया: %1$s डाउनलोड हुआ</string>
+    <string name="partial_downloaded_format">आंशिक: %1$s डाउनलोड हुआ</string>
+    <string name="continue_download">जारी रखें</string>
+    <string name="pause_download">रोकें</string>
+    <string name="resume_download">पुनः शुरू करें</string>
+    <string name="clear">साफ़ करें</string>
+    <string name="ram_requirement_format">%1$dGB RAM</string>
+    
+    <!-- File Attachments -->
+    <string name="attach_file">फ़ाइल संलग्न करें</string>
+    <string name="attach_image">छवि संलग्न करें</string>
+    <string name="attach_document">दस्तावेज़ संलग्न करें</string>
+    <string name="attach_text_file">टेक्स्ट फ़ाइल संलग्न करें</string>
+    <string name="file_attachment">फ़ाइल संलग्नक</string>
+    <string name="file_too_large">फ़ाइल बहुत बड़ी है</string>
+    <string name="unsupported_file_type">असमर्थित फ़ाइल प्रकार</string>
+    <string name="file_processing_error">फ़ाइल प्रोसेसिंग त्रुटि</string>
+    <string name="could_not_read_file">फ़ाइल पढ़ी नहीं जा सकी</string>
+    <string name="file_preview">फ़ाइल पूर्वावलोकन</string>
+    <string name="remove_attachment">हटाएं</string>
+    <string name="keep_attachment">रखें</string>
+    <string name="preview_not_available">पूर्वावलोकन उपलब्ध नहीं है</string>
+    
+    <!-- File Type Categories -->
+    <string name="images">छवियां</string>
+    <string name="documents">दस्तावेज़</string>
+    <string name="text_files">टेक्स्ट फ़ाइलें</string>
+    <string name="images_description">JPG, PNG, GIF, WebP</string>
+    <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
+    <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
+    <string name="text_file">टेक्स्ट फ़ाइल</string>
+    <string name="tap_to_preview">पूर्वावलोकन के लिए टैप करें</string>
+    <string name="text_file_tap_to_preview">टेक्स्ट फ़ाइल • पूर्वावलोकन के लिए टैप करें</string>
+    <string name="read_this">इसे पढ़ें</string>
+    
+    
+    <!-- Audio Input -->
+    <string name="audio_recording">ऑडियो रिकॉर्डिंग</string>
+    <string name="audio_description">आवाज़ संदेश रिकॉर्ड करें</string>
+    <string name="record_voice_message">आवाज़ संदेश रिकॉर्ड करें</string>
+    <string name="recording">रिकॉर्डिंग हो रही है...</string>
+    <string name="audio_recorded">ऑडियो रिकॉर्ड किया गया</string>
+    <string name="ready_to_send">भेजने के लिए तैयार</string>
+    <string name="tap_to_stop">रोकने के लिए टैप करें</string>
+    <string name="stop_recording">रिकॉर्डिंग बंद करें</string>
+    <string name="remove_audio">ऑडियो हटाएं</string>
+    <string name="audio_enabled">ऑडियो सक्षम है</string>
+    <string name="audio">ऑडियो</string>
+    <string name="audio_file">ऑडियो फ़ाइल</string>
+    <string name="tap_to_play">चलाने के लिए टैप करें</string>
+    <string name="max_recording_reached">अधिकतम रिकॉर्डिंग अवधि पूरी हुई (30 सेकंड)</string>
+    <string name="remaining">शेष</string>
+    
+    <!-- Image actions -->
+    <string name="image_copied_clipboard">चैट से छवि कॉपी की गई</string>
+    <string name="image_copied_to_clipboard">छवि क्लिपबोर्ड में कॉपी की गई</string>
+    <string name="failed_to_copy_image">छवि कॉपी करने में विफल</string>
+    <string name="failed_to_copy_image_with_error">छवि कॉपी करने में विफल: %1$s</string>
+    <string name="image_saved_to_gallery">छवि गैलरी में सहेजी गई</string>
+    <string name="failed_to_save_image">छवि सहेजने में विफल</string>
+    <string name="failed_to_save_image_with_error">छवि सहेजने में विफल: %1$s</string>
+    
+    <!-- RAG (Document Chat) -->
+    <string name="searching_documents">दस्तावेज़ों में खोज जारी है...</string>
+    <string name="using_document_context_format">%1$d दस्तावेज़ अनुभागों से संदर्भ का उपयोग किया जा रहा है</string>
+    <string name="documents_available_format">%1$d दस्तावेज़ उपलब्ध हैं</string>
+    <string name="ai_can_reference_documents">AI उत्तरों में आपके दस्तावेज़ों का संदर्भ दे सकता है</string>
+    <string name="document_chat_enabled">दस्तावेज़ चैट सक्षम है</string>
+    <string name="semantic_search_active">सिमेंटिक खोज सक्रिय है</string>
+    <string name="memory">मेमोरी (ग्लोबल कॉन्टेक्स्ट)</string>
+    <string name="memory_description_enabled">AI को RAG के माध्यम से आपकी अपलोड की गई ग्लोबल मेमोरी का संदर्भ देने की अनुमति दें</string>
+    <string name="memory_requires_rag">RAG/एम्बेडिंग सक्षम होना आवश्यक है</string>
+    <string name="manage_memory">मेमोरी प्रबंधित करें</string>
+    <string name="manage_memory_subtitle">ग्लोबल मेमोरी में दस्तावेज़ अपलोड या पेस्ट करें</string>
+    <string name="paste_or_upload_to_memory">ग्लोबल मेमोरी में जोड़ने के लिए पाठ पेस्ट करें या दस्तावेज़ अपलोड करें।</string>
+    <string name="paste_memory_placeholder">अपने नोट्स, दस्तावेज़ या ज्ञान यहाँ पेस्ट करें...</string>
+    <string name="upload_file">अपलोड करें</string>
+    <string name="save_to_memory">सहेजें</string>
+    <string name="import_chat_history">चैट इतिहास इम्पोर्ट करें</string>
+    <string name="select_chats_to_import">मेमोरी में इम्पोर्ट करने के लिए चैट चुनें</string>
+    <string name="import_selected_chats">चुनिंदा चैट इम्पोर्ट करें</string>
+    <string name="chat_imported_to_memory">चैट इतिहास मेमोरी में इम्पोर्ट किया गया</string>
+    <string name="no_chats_selected">कोई चैट नहीं चुनी गई</string>
+    <string name="edit_memory">मेमोरी संपादित करें</string>
+    <string name="memory_content">मेमोरी सामग्री</string>
+    <string name="save_changes">परिवर्तन सहेजें</string>
+    <string name="done">संपन्न</string>
+    <string name="global_memory_uploaded_by">ग्लोबल मेमोरी में अपलोड किया गया</string>
+    <string name="global_memory_pasted_by">ग्लोबल मेमोरी में पेस्ट किया गया</string>
+    <string name="memory_upload_success">फ़ाइल ग्लोबल मेमोरी में सहेजी गई</string>
+    <string name="memory_upload_failed">फ़ाइल मेमोरी में सहेजने में विफल (RAG अक्षम हो सकता है)</string>
+    <string name="memory_upload_unsupported_type">मेमोरी के लिए फ़ाइल प्रकार समर्थित नहीं है। केवल टेक्स्ट दस्तावेज़ (PDF, DOC, TXT आदि) जोड़े जा सकते हैं।</string>
+    <string name="memory_save_success">पाठ ग्लोबल मेमोरी में सहेजा गया</string>
+    <string name="memory_save_failed">पाठ मेमोरी में सहेजने में विफल (RAG अक्षम हो सकता है)</string>
+    <string name="saved_memories">सहेजी गई यादें</string>
+    <string name="clear_all">सभी साफ़ करें</string>
+    
+    <!-- Text-to-Speech -->
+    <string name="auto_readout">ऑटो रीडआउट</string>
+    <string name="auto_readout_description">प्रॉम्प्ट भेजने के बाद AI के उत्तर स्वचालित रूप से बोलकर पढ़ें</string>
+    
+    <string name="memory_cleared">सभी यादें मिटा दी गईं</string>
+    <string name="confirm_replace_memory_title">मौजूदा मेमोरी बदलें?</string>
+    <string name="confirm_replace_memory_message">आपके पास पहले से ही एक ग्लोबल मेमोरी है। इसे बदलने से मौजूदा मेमोरी और इसके एम्बेडिंग हट जाएंगे। जारी रखें?</string>
+    <string name="confirm_replace_action">बदलें</string>
+    <string name="memory_processing">मेमोरी प्रोसेस हो रही है...</string>
+    <string name="reembedding_memory_in_progress">नए एम्बेडिंग मॉडल के लिए ग्लोबल मेमोरी का पुनः एम्बेडिंग हो रहा है...</string>
+    <string name="reembedding_memory_done">ग्लोबल मेमोरी पुनः एम्बेड हो गई</string>
+    
+    <!-- Gemma-3n specific GPU requirements -->
+    <string name="gemma3n_e2b_gpu_requires_6gb">GPU के लिए कम से कम 6GB RAM आवश्यक है</string>
+    <string name="gemma3n_e4b_gpu_requires_8gb">8GB या उससे कम RAM वाले डिवाइस इस मॉडल को GPU से लोड नहीं कर सकते</string>
+    <string name="audio_support">ऑडियो सपोर्ट</string>
+    <string name="vision_audio_text">विज़न+ऑडियो+टेक्स्ट</string>
+    <string name="vision_text">विज़न+टेक्स्ट</string>
+    <string name="audio_text">ऑडियो+टेक्स्ट</string>
+    <string name="shared_file">एक फ़ाइल साझा की गई</string>
+    <string name="audio_message">ऑडियो संदेश</string>
+    <string name="image_message">छवि संदेश</string>
+    <string name="model_configs_title">मॉडल कॉन्फ़िगरेशन</string>
+    <string name="reset_to_defaults">रीसेट करें</string>
+    <string name="max_tokens">Max tokens</string>
+    <string name="top_k">TopK</string>
+    <string name="top_p">TopP</string>
+    <string name="temperature">Temperature</string>
+    <string name="model_system_prompt_label">सिस्टम प्रॉम्प्ट (प्रति मॉडल)</string>
+    <string name="model_system_prompt_hint">जब यह मॉडल उत्तर उत्पन्न करता है तो स्वचालित रूप से लागू होता है।</string>
+    <string name="choose_accelerator">त्वरक (Accelerator) चुनें</string>
+    <string name="max">अधिकतम</string>
+    
+    <!-- GPU with Vision+Audio Disabled for Gemma-3n E4B -->
+    <string name="gpu_vision_disabled_title">विज़न+ऑडियो अक्षम के साथ GPU</string>
+    <string name="gpu_vision_disabled_description">RAM सीमाओं के कारण, GPU त्वरण सक्षम करने के लिए विज़न और ऑडियो सुविधाएं अक्षम कर दी जाएंगी</string>
+    <string name="gpu_with_vision_disabled">GPU (विज़न+ऑडियो अक्षम)</string>
+    <string name="gemma3n_e4b_gpu_vision_warning">7-8GB RAM वाले उपकरणों के लिए, GPU त्वरण के लिए विज़न और ऑडियो सुविधाएं अक्षम करना आवश्यक है। छवि संलग्नक और ऑडियो इनपुट उपलब्ध नहीं होंगे।</string>
+    <string name="vision_disabled_for_gpu">GPU त्वरण के लिए विज़न और ऑडियो अक्षम किया गया</string>
+    <string name="vision_disabled_no_images">इस मॉडल कॉन्फ़िगरेशन के लिए विज़न और ऑडियो सुविधाएं अक्षम हैं। छवि संलग्नक और ऑडियो इनपुट उपलब्ध नहीं हैं।</string>
+    <string name="ram_limit_gpu_vision_disabled">RAM सीमा (%.1fGB) के कारण, GPU का उपयोग करने के लिए विज़न और ऑडियो अक्षम होना चाहिए</string>
+    
+    <!-- GPU with Audio Only Disabled for Gemma-3n E4B on 8GB devices -->
+    <string name="gpu_with_audio_disabled">GPU (ऑडियो अक्षम)</string>
+    <string name="agent_tools_label">टूल्स</string>
+    <string name="agent_tools_description">एआई एजेंट कौशल सक्षम करें: विकिपीडिया खोज, हैश कैलकुलेटर, ईमेल भेजना, एसएमएस भेजना और नक्शा खोलना।</string>
+    <string name="gemma3n_e4b_gpu_audio_warning">7-8GB RAM वाले उपकरणों के लिए, GPU त्वरण के लिए ऑडियो सुविधाएं अक्षम करना आवश्यक है। ऑडियो इनपुट उपलब्ध नहीं होगा, लेकिन छवि संलग्नक समर्थित हैं।</string>
+    <string name="audio_disabled_for_gpu">GPU त्वरण के लिए ऑडियो अक्षम किया गया</string>
+    <string name="audio_disabled_no_audio">इस मॉडल कॉन्फ़िगरेशन के लिए ऑडियो सुविधाएं अक्षम हैं। ऑडियो इनपुट उपलब्ध नहीं है, लेकिन छवि संलग्नक समर्थित हैं।</string>
+    
+    <!-- Separate modality toggles -->
+    <string name="modality_options">मोडैलिटी विकल्प</string>
+    <string name="enable_vision">विज़न सक्षम करें (छवि सहायता)</string>
+    <string name="enable_audio">ऑडियो सक्षम करें (आवाज़ इनपुट)</string>
+    <string name="enable_thinking">सोचना सक्षम करें</string>
+    <string name="gemma3n_e4b_modality_suggestion">💡 7-8GB उपकरणों पर स्थिर प्रदर्शन के लिए, GPU मेमोरी बचाने के लिए ऑडियो को अक्षम करने पर विचार करें। विज़न आम तौर पर अधिक स्थिर है।</string>
+    
+    <!-- General performance tip for all devices -->
+    <string name="gemma3n_performance_tip">💡 यदि आप RAM सीमाओं के कारण क्रैश या कम प्रदर्शन का अनुभव करते हैं, तो CPU बैकएंड पर स्विच करने या विज़न/ऑडियो सुविधाओं को अक्षम करने का प्रयास करें।</string>
+    
+    <!-- External Model Import -->
+    <string name="import_external_model">बाहरी मॉडल इम्पोर्ट करें</string>
+    <string name="model_name">मॉडल का नाम</string>
+    <string name="select">चुनें</string>
+    <string name="select_model_file">मॉडल फ़ाइल चुनें</string>
+
+    <string name="supports_vision">विज़न सपोर्ट</string>
+    <string name="supports_audio">ऑडियो सपोर्ट</string>
+    <string name="supports_gpu">GPU सपोर्ट</string>
+    <string name="supports_mtp">MTP सपोर्ट</string>
+    <string name="model_format">मॉडल प्रारूप</string>
+    <string name="context_window_size">कॉन्टेक्स्ट विंडो आकार</string>
+    <string name="import_model">मॉडल इम्पोर्ट करें</string>
+    <string name="model_name_required">मॉडल का नाम आवश्यक है</string>
+    <string name="model_name_already_exists">"%1$s" नाम का मॉडल पहले से मौजूद है। कृपया दूसरा नाम उपयोग करें या पहले मौजूद मॉडल हटाएं।</string>
+    <string name="context_window_size_invalid">कृपया एक मान्य कॉन्टेक्स्ट विंडो आकार दर्ज करें</string>
+    <string name="please_fix_errors">कृपया ऊपर दी गई त्रुटियों को ठीक करें</string>
+    <string name="remove">हटाएं</string>
+    <string name="ready_to_use">उपयोग के लिए तैयार</string>
+    <string name="unsupported_file_format">असमर्थित फ़ाइल प्रारूप। कृपया .task, .litertlm या .zip फ़ाइल चुनें।</string>
+    <string name="download_models_from_litert_community">आप अनुकूल LLM मॉडल यहाँ से डाउनलोड कर सकते हैं:</string>
+    <string name="litert_community_link">Hugging Face पर LiteRT कम्युनिटी</string>
+    <string name="download_image_models_from">आप अनुकूल छवि मॉडल यहाँ से डाउनलोड कर सकते हैं:</string>
+    <string name="sd_models_link">Hugging Face पर Stable Diffusion मॉडल</string>
+    <string name="supports_npu">NPU सपोर्ट</string>
+    <string name="import_model_warning">⚠️ महत्वपूर्ण: इम्पोर्ट करने से पहले Hugging Face पर मॉडल की README पढ़ें। मॉडल दस्तावेज़ में निर्दिष्ट अनुसार सही क्षमताएं (विज़न, ऑडियो, GPU) और कॉन्टेक्स्ट विंडो आकार दर्ज करें। गलत सेटिंग्स के कारण मॉडल ठीक से काम नहीं कर सकता है। महत्वपूर्ण: विज़न GGUF मॉडल को विज़न प्रोजेक्टर (mmproj) की आवश्यकता होती है। छवि इनपुट सक्षम करने के लिए प्रोजेक्टर फ़ाइल इम्पोर्ट करें।</string>
+    
+    <!-- Home Screen -->
+    <string name="home_welcome">LLM Hub में आपका स्वागत है</string>
+    <string name="home_subtitle">अपनी जेब में AI की शक्ति को अनलॉक करें — निजी, तेज़ और ऑफ़लाइन!</string>
+    
+    <!-- Feature Cards -->
+    <string name="feature_ai_chat">AI चैट</string>
+    <string name="feature_ai_chat_desc">AI मॉडल के साथ बहु-स्तरीय बातचीत</string>
+    <string name="feature_writing_aid">राइटिंग एड (लेखन सहायक)</string>
+    <string name="feature_writing_aid_desc">व्याकरण, शैली, पैराफ़्रेज़ और टोन समायोजन</string>
+    <string name="feature_translator">अनुवादक</string>
+    <string name="feature_translator_desc">मल्टीमॉडल मॉडल के साथ निजी रूप से पाठ का अनुवाद करें</string>
+    <string name="feature_transcriber">ट्रांसक्राइबर</string>
+    <string name="feature_transcriber_desc">आवाज़ या ऑडियो को ऑफ़लाइन पाठ में ट्रांसक्राइब करें</string>
+    <string name="feature_scam_detector">स्कैम डिटेक्टर</string>
+    <string name="feature_scam_detector_desc">संभावित स्कैम के लिए पाठ, छवियों या URL का विश्लेषण करें</string>
+    <string name="feature_image_generator">छवि जनरेटर</string>
+    <string name="feature_image_generator_desc">AI के साथ टेक्स्ट प्रॉम्प्ट से छवियां बनाएं</string>
+    <string name="feature_vibe_coder">Vibecode</string>
+    <string name="feature_vibe_coder_desc">AI के साथ HTML, JavaScript और Python कोड बनाएं</string>
+    <string name="feature_creator_generation">creAItors</string>
+    <string name="feature_creator_generation_desc">अपने खुद के कस्टम AI पर्सोना बनाएं</string>
+    <string name="drawer_my_creators">मेरे creAItors</string>
+
+    <!-- Premium / IAP -->
+    <string name="premium_title">LLM Hub प्रीमियम लाइफटाइम</string>
+    <string name="premium_subtitle">सभी सुविधाओं और मॉडलों को अनलॉक करें</string>
+    <string name="premium_feature_vibe_coder">VibeCoder – एआई कोड बिल्डर</string>
+    <string name="premium_feature_image_gen">छवि जनरेटर – ऑन-डिवाइस एआई आर्ट</string>
+    <string name="premium_feature_tts">पाठ से वाक् (TTS) ऑटो रीडआउट</string>
+    <string name="premium_feature_import_models">बाहरी मॉडल इम्पोर्ट करें</string>
+    <string name="premium_feature_web_search">वेब खोज – लाइव इंटरनेट परिणाम</string>
+    <string name="premium_feature_memory">मेमोरी – ग्लोबल कॉन्टेक्स्ट यादें</string>
+    <string name="premium_feature_future">सभी भावी प्रीमियम सुविधाएं</string>
+    <string name="premium_button_unlock">प्रीमियम अनलॉक करें</string>
+    <string name="premium_button_restore">खरीदारी पुनर्स्थापित करें</string>
+    <string name="premium_button_later">शायद बाद में</string>
+    <string name="premium_price_loading">कीमत लोड हो रही है...</string>
+    <string name="premium_payment_note">गूगल प्ले द्वारा एकमुश्त खरीदारी। कोई सदस्यता नहीं।</string>
+    <string name="premium_active_title">आप प्रीमियम हैं!</string>
+    <string name="premium_active_subtitle">सभी सुविधाएं अनलॉक कर दी गई हैं। आपके समर्थन के लिए धन्यवाद!</string>
+    <string name="premium_locked_feature">प्रीमियम सुविधा</string>
+    <string name="premium_tap_to_unlock">प्रीमियम से अनलॉक करने के लिए टैप करें</string>
+    <string name="premium_restore_success">खरीदारी सफलतापूर्वक पुनर्स्थापित हुई!</string>
+    <string name="premium_restore_nothing">कोई पिछली खरीदारी नहीं मिली।</string>
+    <string name="premium_go_premium">प्रीमियम पाएं</string>
+    
+    <!-- Vibe Coder Screen -->
+    <string name="vibe_coder_title">Vibecode</string>
+    <string name="vibe_coder_prompt_label">आप क्या कोड बनाना चाहते हैं?</string>
+    <string name="vibe_coder_prompt_hint">जो कोड आप बनाना चाहते हैं उसका विवरण लिखें...</string>
+    <string name="vibe_coder_generate">कोड उत्पन्न करें</string>
+    <string name="vibe_coder_generating">कोड उत्पन्न हो रहा है...</string>
+    <string name="vibe_coder_generated_code">उत्पन्न कोड</string>
+    <string name="vibe_coder_copy">कॉपी करें</string>
+    <string name="vibe_coder_preview">कोड पूर्वावलोकन</string>
+    <string name="vibe_coder_no_model">कोई मॉडल लोड नहीं हुआ है। कृपया पहले एक मॉडल डाउनलोड और चुनें।</string>
+    <string name="vibe_coder_settings">सेटिंग्स</string>
+    <string name="vibe_coder_backend_select">बैकएंड चुनें</string>
+    <string name="vibe_coder_modification_mode">संशोधन मोड</string>
+    <string name="vibe_coder_refine">कोड सुधारें</string>
+    <string name="vibe_coder_clear">नया प्रोजेक्ट / कॉन्टेक्स्ट साफ़ करें</string>
+    <string name="vibe_coder_planning">आर्किटेक्चर की योजना बनाई जा रही है...</string>
+    <string name="vibe_coder_revising">कोड संशोधित किया जा रहा है...</string>
+    <string name="vibe_coder_select_folder_title">पहले एक प्रोजेक्ट फ़ोल्डर चुनें</string>
+    <string name="vibe_coder_select_folder_desc">मल्टी-फ़ाइल स्कैफोल्ड और इन-फ़ोल्डर फ़ाइल निर्माण सक्षम करने के लिए फ़ोल्डर खोलें।</string>
+    <string name="vibe_coder_open_folder">फ़ोल्डर खोलें</string>
+    <string name="vibe_coder_show_chat">चैट दिखाएं</string>
+    <string name="vibe_coder_ai_chat">AI चैट</string>
+    <string name="vibe_coder_hide_chat">चैट छिपाएं</string>
+    <string name="vibe_coder_clear_chat">चैट साफ़ करें</string>
+    <string name="vibe_coder_new_chat">नई चैट</string>
+    <string name="vibe_coder_delete_chat_cd">चैट हटाएं</string>
+    <string name="vibe_coder_message_you">आप</string>
+    <string name="vibe_coder_message_ai">AI</string>
+    <string name="vibe_coder_edit_resend_prompt">प्रॉम्प्ट संपादित करें और पुनः भेजें</string>
+    <string name="vibe_coder_resend">पुनः भेजें</string>
+    <string name="vibe_coder_ask_ai_edit">AI को यह फ़ाइल संपादित करने के लिए कहें...</string>
+    <string name="vibe_coder_create_open_file_hint">पहले एक फ़ाइल बनाएं/खोलें (.py, .js, .ts, …)</string>
+    <string name="vibe_coder_stop_generation">जनरेशन रोकें</string>
+    <string name="vibe_coder_code_editor">कोड एडिटर</string>
+    <string name="vibe_coder_new_file">नई फ़ाइल</string>
+    <string name="vibe_coder_save_file">फ़ाइल सहेजें</string>
+    <string name="vibe_coder_copy_code">कोड कॉपी करें</string>
+    <string name="vibe_coder_delete_file_cd">फ़ाइल हटाएं</string>
+    <string name="vibe_coder_open_or_create_file">संपादन शुरू करने के लिए फ़ाइल खोलें या बनाएं।</string>
+    <string name="vibe_coder_ai_editing">AI कोड संपादित कर रहा है...</string>
+    <string name="vibe_coder_write_code_hint">यहाँ कोड लिखें या चैट में AI से पूछें...</string>
+    <string name="vibe_coder_discard">अस्वीकार करें</string>
+    <string name="vibe_coder_create_file_title">वर्कस्पेस में फ़ाइल बनाएं</string>
+    <string name="vibe_coder_file_name_placeholder">example.py या app.js</string>
+    <string name="vibe_coder_file_name_label">एक्सटेंशन के साथ फ़ाइल का नाम</string>
+    <string name="vibe_coder_file_name_error">एक्सटेंशन के साथ मान्य फ़ाइल नाम दर्ज करें, उदा. main.py</string>
+    <string name="vibe_coder_create">बनाएं</string>
+    <string name="vibe_coder_delete_chat_title">चैट हटाएं?</string>
+    <string name="vibe_coder_delete_chat_message">यह इस चैट सत्र को स्थायी रूप से हटा देगा।</string>
+    <string name="vibe_coder_delete_file_title">फ़ाइल हटाएं?</string>
+    <string name="vibe_coder_delete_file_message">क्या इस फ़ोल्डर से \'%1$s\' हटाएं?</string>
+    <string name="vibe_coder_no_file_selected_error">कोई फ़ाइल नहीं चुनी गई। पहले वर्कस्पेस फ़ोल्डर से फ़ाइल बनाएं या खोलें।</string>
+    <string name="vibe_coder_delete_file_error">फ़ाइल हटाने में विफल</string>
+    <string name="vibe_coder_autosave_failed">ऑटो-सेव विफल रहा। सहेजें पर फिर से टैप करें या फ़ाइल पुनः खोलें।</string>
+
+    <!-- Creator Generation Screen -->
+    <string name="creator_screen_title">नया creAItor</string>
+    <string name="creator_bring_to_life">AI को जीवंत करें</string>
+    <string name="creator_description">आपके पास एक कस्टम AI creAItor को जीवंत करने की शक्ति है। बस बताएं कि आपका creAItor किसी भी इनपुट या विचार का उत्तर कैसे देगा। एक बार उत्पन्न होने पर, आप इसे चैट में उपयोग कर पाएंगे।</string>
+    <string name="creator_prompt_label">अपने creAItor का विवरण दें...</string>
+    <string name="creator_prompt_placeholder">उदा., 10 पंक्तियों से कम की तुकबंदी वाली कविता के रूप में किसी भी विषय का सारांश दें</string>
+    <string name="creator_brewing">जादू रचा जा रहा है...</string>
+    <string name="creator_generate_persona">पर्सोना उत्पन्न करें</string>
+    <string name="creator_load_model_first">कृपया पहले एक मॉडल लोड करें।</string>
+    <string name="creator_result_heading">यह आपका नया creAItor है!</string>
+    <string name="creator_system_prompt_label">सिस्टम प्रॉम्प्ट (PCTF):</string>
+    <string name="creator_save_and_chat">सहेजें और चैट करें</string>
+
+    <!-- Kid Mode -->
+    <string name="kid_mode_title">किड मोड (बाल सुरक्षा)</string>
+    <string name="kid_mode_enabled_status">सक्षम - सुरक्षा गार्डरेल सक्रिय हैं</string>
+    <string name="kid_mode_disabled_status">अक्षम</string>
+    <string name="kid_mode_incorrect_pin">गलत पिन (PIN)</string>
+    <string name="kid_mode_set_pin_title">किड मोड पिन सेट करें</string>
+    <string name="kid_mode_set_pin_body">किड मोड सक्षम करने के लिए 4-अंकों का पिन दर्ज करें। बाद में इसे अक्षम करने के लिए आपको इस पिन की आवश्यकता होगी।</string>
+    <string name="kid_mode_pin_label">4-अंकों का पिन</string>
+    <string name="kid_mode_pin_error">पिन 4 अंकों का होना चाहिए</string>
+    <string name="kid_mode_enable">सक्षम करें</string>
+    <string name="kid_mode_disable_title">किड मोड अक्षम करें</string>
+    <string name="kid_mode_verify_body">किड मोड अक्षम करने के लिए अपना 4-अंकों का पिन दर्ज करें।</string>
+    <string name="kid_mode_disable">अक्षम करें</string>
+
+    <!-- Writing Aid Screen -->
+    <string name="writing_aid_title">राइटिंग एड (लेखन सहायक)</string>
+    <string name="writing_aid_input_label">अपना पाठ दर्ज करें</string>
+    <string name="writing_aid_input_hint">सुधारने या पुनः लिखने के लिए पाठ दर्ज करें...</string>
+    <string name="writing_aid_input_hint_no_model">शुरू करने के लिए मॉडल लोड करें</string>
+    <string name="writing_aid_mode_grammar">व्याकरण जांच</string>
+    <string name="writing_aid_mode_paraphrase">पैराफ़्रेज़ (पुनः लिखें)</string>
+    <string name="writing_aid_mode_tone">टोन समायोजित करें</string>
+    <string name="writing_aid_mode_email">ईमेल उत्तर</string>
+    <string name="writing_aid_mode_sms">एसएमएस उत्तर</string>
+    <string name="writing_aid_tone_friendly">मित्रवत (Friendly)</string>
+    <string name="writing_aid_tone_professional">पेशेवर (Professional)</string>
+    <string name="writing_aid_tone_concise">संक्षिप्त (Concise)</string>
+    <string name="writing_aid_select_mode">टोन चुनें</string>
+    <string name="writing_aid_process">प्रोसेस करें</string>
+    <string name="processing_tap_to_cancel">प्रोसेस हो रहा है (रद्द करने के लिए टैप करें)</string>
+    <string name="writing_aid_result">परिणाम</string>
+    <string name="writing_aid_no_model">कोई मॉडल लोड नहीं हुआ है। कृपया पहले एक मॉडल डाउनलोड और चुनें।</string>
+    
+    <!-- Translator Screen -->
+    <string name="translator_title">ऑफ़लाइन अनुवादक</string>
+    <string name="translator_input_label">अनुवाद के लिए पाठ</string>
+    <string name="translator_input_hint">अनुवाद करने के लिए पाठ दर्ज करें...</string>
+    <string name="load_model_to_start">शुरू करने के लिए एक मॉडल लोड करें</string>
+    <string name="translator_source_lang">मूल भाषा (Source Language)</string>
+    <string name="translator_target_lang">लक्ष्य भाषा (Target Language)</string>
+    <string name="translator_auto_detect">ऑटो पहचान (Auto Detect)</string>
+    <string name="translator_translate">अनुवाद करें</string>
+    <string name="translator_result">अनुवाद परिणाम</string>
+    <string name="translator_requires_gemma3n">इस सुविधा के लिए Gemma 4 मॉडल की आवश्यकता है। कृपया मॉडल स्क्रीन से एक डाउनलोड करें।</string>
+    
+    <!-- Transcriber Screen -->
+    <string name="transcriber_title">ऑफ़लाइन ट्रांसक्राइबर</string>
+    <string name="transcriber_record">ऑडियो रिकॉर्ड करें</string>
+    <string name="transcriber_upload">ऑडियो अपलोड करें</string>
+    <string name="transcriber_transcribe">ट्रांसक्राइब करें</string>
+    <string name="transcriber_result">प्रतिलेखन परिणाम</string>
+    <string name="transcriber_recording">रिकॉर्डिंग हो रही है...</string>
+    <string name="transcriber_stop">रिकॉर्डिंग बंद करें</string>
+    <string name="transcriber_requires_gemma3n">इस सुविधा के लिए ऑडियो सपोर्ट वाले Translate Gemma मॉडल की आवश्यकता है। कृपया मॉडल स्क्रीन से एक डाउनलोड करें।</string>
+    <string name="asr_models">ASR मॉडल</string>
+    <string name="asr_models_description">ऑफ़लाइन ट्रांसक्रिप्शन के लिए Whisper वाक् पहचान मॉडल</string>
+    
+    <!-- Scam Detector Screen -->
+    <string name="scam_detector_title">स्कैम डिटेक्टर (धोखाधड़ी पहचान)</string>
+    <string name="scam_detector_input_label">विश्लेषण के लिए सामग्री दर्ज करें</string>
+    <string name="scam_detector_input_hint">स्कैम की जांच के लिए पाठ पेस्ट करें, छवि अपलोड करें या URL दर्ज करें...</string>
+    <string name="scam_detector_url_hint">विश्लेषण के लिए URL दर्ज करें</string>
+    <string name="scam_detector_analyze">विश्लेषण करें</string>
+    <string name="scam_detector_analyzing">विश्लेषण हो रहा है (रद्द करने के लिए टैप करें)</string>
+    <string name="scam_detector_result">विश्लेषण परिणाम</string>
+    <string name="scam_detector_no_model">कोई मॉडल लोड नहीं हुआ है। कृपया पहले एक मॉडल डाउनलोड और चुनें।</string>
+    <string name="scam_detector_load_model">मॉडल लोड करें</string>
+    <string name="scam_detector_load_model_desc">सामग्री का विश्लेषण शुरू करने के लिए कृपया एक मॉडल लोड करें</string>
+    <string name="scam_detector_enable_vision">विज़न सक्षम करें</string>
+    <string name="scam_detector_vision_desc">स्कैम के लिए छवियों का विश्लेषण करें</string>
+    <string name="scam_detector_fetching_url">URL सामग्री प्राप्त की जा रही है...</string>
+    
+    <!-- Image Generator Screen -->
+    <string name="image_generator_title">छवि जनरेटर</string>
+    <string name="image_generator_subtitle">Absolute Reality SD1.5 का उपयोग करके टेक्स्ट प्रॉम्प्ट से छवियां बनाएं</string>
+    <string name="image_generator_prompt_label">छवि विवरण</string>
+    <string name="image_generator_prompt_hint">जो छवि आप बनाना चाहते हैं उसका विवरण लिखें...</string>
+    <string name="image_generator_generate">छवि उत्पन्न करें</string>
+    <string name="image_generator_generating">छवि उत्पन्न हो रही है...</string>
+    <string name="image_generator_iterations">चरण (Steps)</string>
+    <string name="image_generator_seed">सीड (Seed)</string>
+    <string name="image_generator_random_seed">रैंडम सीड</string>
+    <string name="image_generator_save">छवि सहेजें</string>
+    <string name="image_generator_download_model">पहले मॉडल डाउनलोड करें</string>
+    <string name="image_generator_download_model_desc">छवियां बनाना शुरू करने के लिए मॉडल स्क्रीन से Stable Diffusion मॉडल डाउनलोड करें।</string>
+    <string name="image_generator_model_not_available">छवि जनरेशन मॉडल उपलब्ध नहीं है</string>
+    <string name="image_generator_error">छवि उत्पन्न करने में विफल</string>
+    <string name="image_generation_models">इमेज जनरेशन मॉडल</string>
+    <string name="image_generation_models_description">टेक्स्ट से छवि जनरेशन के लिए Stable Diffusion मॉडल</string>
+    <string name="image_generator_success">छवि सफलतापूर्वक उत्पन्न हुई</string>
+    <string name="image_generator_saved">छवि गैलरी में सहेजी गई</string>
+    <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
+    <string name="image_generation_model">इमेज जनरेशन मॉडल</string>
+    <string name="image_generator_load_model_title">शुरू करने के लिए मॉडल लोड करें</string>
+    <string name="image_generator_load_model_desc">छवियां बनाना शुरू करने के लिए कृपया एक Stable Diffusion मॉडल लोड करें।</string>
+    <string name="image_generator_no_models">कोई मॉडल उपलब्ध नहीं हैं</string>
+    <string name="image_generator_load_model">मॉडल लोड करें</string>
+    <string name="image_generator_loading_model">लोड हो रहा है...</string>
+    <string name="image_generator_failed_load">मॉडल लोड करने में विफल</string>
+    <string name="image_generator_variation">विविधता %1$d उत्पन्न की जा रही है...</string>
+    <string name="image_generator_swipe_more">और जनरेट करने के लिए यहाँ स्वाइप करें</string>
+    <string name="image_generator_info">इमेज जनरेशन ऑन-डिवाइस चलने वाले Stable Diffusion v1.5 मॉडल का उपयोग करता है। आपके डिवाइस के आधार पर जनरेशन में 1-2 मिनट लग सकते हैं।</string>
+    <string name="image_generator_img2img">इमेज-टू-इमेज</string>
+    <string name="image_generator_img2img_desc">किसी मौजूदा छवि को रूपांतरित करें</string>
+    <string name="image_generator_select_image">इनपुट छवि चुनें</string>
+    <string name="image_generator_change_image">इनपुट छवि बदलें</string>
+    <string name="image_generator_denoise_strength">डीनोइस स्ट्रेंथ: %.2f</string>
+    <string name="image_generator_denoise_strength_desc">अधिक मान = इनपुट छवि में अधिक परिवर्तन</string>
+    <string name="image_generator_input_image">इनपुट छवि</string>
+    <string name="image_generator_use_gpu">GPU का उपयोग करें</string>
+    <string name="image_generator_use_gpu_desc">त्वरित जनरेशन के लिए GPU त्वरण सक्षम करें</string>
+    <string name="image_generator_width">चौड़ाई</string>
+    <string name="image_generator_height">ऊंचाई</string>
+    
+    <!-- Common Feature Strings -->
+    <string name="feature_no_model_title">कोई मॉडल उपलब्ध नहीं है</string>
+    <string name="feature_download_model">मॉडल डाउनलोड करें</string>
+    <string name="feature_processing">प्रोसेस हो रहा है...</string>
+    <string name="feature_error">एक त्रुटि उत्पन्न हुई</string>
+    <string name="feature_copy_result">परिणाम कॉपी करें</string>
+    <string name="feature_share_result">परिणाम साझा करें</string>
+    <string name="feature_clear">साफ़ करें</string>
+    
+    <!-- Language Names for Translator (Gemma-3n Supported Languages) - Alphabetically Ordered -->
+    <string name="lang_english">अंग्रेज़ी (English)</string>
+    <string name="lang_afrikaans">अफ्रीकांस</string>
+    <string name="lang_amharic">अम्हारिक</string>
+    <string name="lang_arabic">अरबी (Arabic)</string>
+    <string name="lang_armenian">आर्मेनियन</string>
+    <string name="lang_azerbaijani">अज़रबैजानी</string>
+    <string name="lang_basque">बास्क</string>
+    <string name="lang_bengali">बंगाली</string>
+    <string name="lang_bulgarian">बुल्गारियाई</string>
+    <string name="lang_burmese">बर्मी</string>
+    <string name="lang_catalan">कातालान</string>
+    <string name="lang_chinese">चीनी (सरलीकृत)</string>
+    <string name="lang_chinese_traditional">चीनी (पारंपरिक)</string>
+    <string name="lang_croatian">क्रोएशियाई</string>
+    <string name="lang_czech">चेक</string>
+    <string name="lang_danish">डैनिश</string>
+    <string name="lang_dutch">डच</string>
+    <string name="lang_estonian">एस्टोनियाई</string>
+    <string name="lang_filipino">फिलीपिनो (तागालोग)</string>
+    <string name="lang_finnish">फिनिश</string>
+    <string name="lang_french">फ्रेंच</string>
+    <string name="lang_galician">गैलिशियन</string>
+    <string name="lang_georgian">जॉर्जियाई</string>
+    <string name="lang_german">जर्मन</string>
+    <string name="lang_greek">ग्रीक</string>
+    <string name="lang_gujarati">गुजराती</string>
+    <string name="lang_hausa">हौसा</string>
+    <string name="lang_hebrew">हिब्रू</string>
+    <string name="lang_hindi">हिन्दी</string>
+    <string name="lang_hungarian">हंगेरियन</string>
+    <string name="lang_icelandic">आिसलैंडिक</string>
+    <string name="lang_igbo">इग्बो</string>
+    <string name="lang_indonesian">इंडोनेशियाई</string>
+    <string name="lang_italian">इतालवी (Italian)</string>
+    <string name="lang_japanese">जापानी</string>
+    <string name="lang_kannada">कन्नड़</string>
+    <string name="lang_kazakh">कज़ाख</string>
+    <string name="lang_khmer">खमेर</string>
+    <string name="lang_korean">कोरियाई</string>
+    <string name="lang_lao">लाओ</string>
+    <string name="lang_latvian">लातवियाई</string>
+    <string name="lang_lithuanian">लिथुआनियाई</string>
+    <string name="lang_malay">मलय</string>
+    <string name="lang_malayalam">मल्यालम</string>
+    <string name="lang_marathi">मराठी</string>
+    <string name="lang_nepali">नेपाली</string>
+    <string name="lang_norwegian">नॉर्वेजियन</string>
+    <string name="lang_pashto">पश्तो</string>
+    <string name="lang_persian">फ़ारसी (Persian)</string>
+    <string name="lang_polish">पोलिश</string>
+    <string name="lang_portuguese">पुर्तगाली</string>
+    <string name="lang_punjabi">पंजाबी</string>
+    <string name="lang_romanian">रोमानियाई</string>
+    <string name="lang_russian">रूसी (Russian)</string>
+    <string name="lang_serbian">सर्बियाई</string>
+    <string name="lang_sindhi">सिंधी</string>
+    <string name="lang_sinhala">सिंहली</string>
+    <string name="lang_slovak">स्लोवाक</string>
+    <string name="lang_slovenian">स्लोवेनियाई</string>
+    <string name="lang_somali">सोमाली</string>
+    <string name="lang_spanish">स्पैनिश (Spanish)</string>
+    <string name="lang_swahili">स्वाहिली</string>
+    <string name="lang_swedish">स्वीडिश</string>
+    <string name="lang_tamil">तमिल</string>
+    <string name="lang_telugu">तेलुगु</string>
+    <string name="lang_thai">थाई</string>
+    <string name="lang_turkish">तुर्की</string>
+    <string name="lang_ukrainian">यूक्रेनी</string>
+    <string name="lang_urdu">उर्दू</string>
+    <string name="lang_uzbek">उज़बेक</string>
+    <string name="lang_vietnamese">वियतनामी</string>
+    <string name="lang_yoruba">योरूबा</string>
+    <string name="lang_zulu">ज़ूलू</string>
+    
+    <!-- Model Selection -->
+    <string name="feature_settings_title">सेटिंग्स</string>
+    <string name="select_model_title">मॉडल चुनें</string>
+    <string name="no_models_available">कोई मॉडल उपलब्ध नहीं हैं</string>
+    <string name="download_models_first">कृपया पहले मॉडल डाउनलोड करें</string>
+    <string name="select_backend">बैकएंड चुनें</string>
+    <string name="backend_cpu">CPU</string>
+    <string name="backend_gpu">GPU</string>
+    <string name="backend_npu">NPU (Hexagon)</string>
+    <string name="gpu_layers_label">GPU लेयर्स: %1$d</string>
+    <string name="gpu_layers_hint">GPU/NPU पर ऑफलोड की गई लेयर्स। 0 = केवल CPU, 999 = सभी लेयर्स</string>
+    <string name="thinking_toggle_label">सोचना सक्षम करें</string>
+    <string name="gpu_not_supported">इस मॉडल द्वारा GPU समर्थित नहीं है</string>
+    <string name="load_model">मॉडल लोड करें</string>
+    <string name="model_loaded">मॉडल सफलतापूर्वक लोड हुआ</string>
+    <string name="model_loading">मॉडल लोड हो रहा है</string>
+    <string name="model_load_failed">मॉडल लोड करने में विफल</string>
+    <string name="multimodal_models_only">केवल मल्टीमॉडल (Translate Gemma) मॉडल समर्थित हैं</string>
+    <string name="text_models_only">केवल टेक्स्ट मॉडल समर्थित हैं</string>
+    
+    <!-- Audio Features -->
+    <string name="enable_audio_input">ऑडियो इनपुट सक्षम करें</string>
+    <string name="audio_input_enabled">ऑडियो इनपुट सक्षम है</string>
+    <string name="audio_input_disabled">ऑडियो इनपुट अक्षम है</string>
+    <string name="record_audio">ऑडियो रिकॉर्ड करें</string>
+    
+    <!-- Auto-detect Language -->
+    <string name="lang_auto_detect">ऑटो पहचान (Auto-detect)</string>
+    <string name="auto_detecting_language">भाषा की पहचान की जा रही है...</string>
+    <string name="language_detected">पहचानी गई भाषा: %1$s</string>
+    
+    <!-- Feature-specific Processing -->
+    <string name="processing">प्रोसेस हो रहा है...</string>
+    <string name="translating">अनुवाद हो रहा है...</string>
+    <string name="translating_tap_to_cancel">अनुवाद हो रहा है (रद्द करने के लिए टैप करें)</string>
+    <string name="transcribing">ट्रांसक्राइब हो रहा है...</string>
+    <string name="transcribing_tap_to_cancel">ट्रांसक्राइब हो रहा है (रद्द करने के लिए टैप करें)</string>
+    <string name="analyzing_code">कोड का विश्लेषण हो रहा है...</string>
+    <string name="processing_text">पाठ प्रोसेस हो रहा है...</string>
+    
+    <!-- Vision Features -->
+    <string name="input_options">इनपुट विकल्प</string>
+    <string name="enable_vision_input">विज़न इनपुट सक्षम करें</string>
+    <string name="translate_from_image">छवि से पाठ का अनुवाद करें</string>
+    <string name="speak_to_translate">अनुवाद करने के लिए बोलें</string>
+    <string name="select_image">छवि चुनें</string>
+    <string name="change_image">छवि बदलें</string>
+    <string name="transcription_result">प्रतिलेखन</string>
+    
+    <!-- Translator Settings -->
+    <string name="translator_enable_vision">विज़न सक्षम करें</string>
+    <string name="translator_vision_description">छवियों से पाठ का अनुवाद करें</string>
+    <string name="translator_enable_audio">ऑडियो सक्षम करें</string>
+    <string name="translator_audio_description">ऑडियो रिकॉर्डिंग का अनुवाद करें</string>
+    
+    <!-- Backend Selection -->
+    <string name="choose_backend_for_gemma">Gemma मॉडल के लिए प्रोसेसिंग बैकएंड चुनें</string>
+    <string name="gpu_backend">GPU (अनुशंसित)</string>
+    <string name="cpu_backend">CPU (वैकल्पिक)</string>
+    <string name="gpu_backend_description">डिवाइस GPU का उपयोग करके तेज़ प्रोसेसिंग</string>
+    <string name="cpu_backend_description">धीमी लेकिन अधिक स्थिर प्रोसेसिंग</string>
+    <string name="backend_selection_hint">यदि ऐप GPU के साथ क्रैश होता है या ठीक से काम नहीं करता है, तो CPU बैकएंड का प्रयास करें</string>
+    <string name="not_available">उपलब्ध नहीं है</string>
+    <string name="gpu_disabled_low_memory">%1$dGB या उससे कम RAM वाले उपकरणों पर इस मॉडल के लिए GPU उपलब्ध नहीं है</string>
+    
+    <!-- Web Search Messages -->
+    <string name="web_searching">🔍 वेब खोज जारी है...</string>
+    <string name="web_search_found_results">✅ %1$d परिणाम मिले। विश्लेषण किया जा रहा है...</string>
+    <string name="web_search_no_results">❌ कोई वर्तमान खोज परिणाम नहीं मिले। प्रशिक्षण डेटा के आधार पर उत्तर दिया जा रहा है...</string>
+    <string name="web_search_failed">❌ वेब खोज विफल रही: %1$s। प्रशिक्षण डेटा के आधार पर उत्तर दिया जा रहा है...</string>
+    
+    <!-- Vision Model Error Messages -->
+    <string name="vision_chat_cannot_open">🚫 **यह चैट नहीं खोली जा सकती**\n\nइस बातचीत में छवियां शामिल हैं, लेकिन आपके पास वर्तमान में एक **केवल-टेक्स्ट मॉडल** लोड है:\n\n📱 **वर्तमान मॉडल:** %1$s\n🖼️ **यह चैट:** छवियां शामिल हैं\n\n---\n\n## 🎯 इसे कैसे ठीक करें:\n\n1. **📥 विज़न मॉडल डाउनलोड करें**\n   - "मॉडल डाउनलोड करें" पर जाएं\n   - 🖼️ या "Vision+Text" के रूप में चिह्नित मॉडल खोजें\n   - प्रयास करें: **Translate Gemma E2B (Vision+Text)**\n\n2. **🔄 विज़न मॉडल पर स्विच करें**\n   - आपके द्वारा डाउनलोड किया गया विज़न मॉडल लोड करें\n   - विज़न मॉडल पाठ और छवियों दोनों को संभाल सकते हैं\n\n3. **✅ इस चैट पर वापस आएं**\n   - एक बार विज़न मॉडल लोड हो जाने के बाद, यह चैट पूरी तरह से काम करेगी!\n\n---\n\n💡 **प्रो टिप:** विज़न मॉडल वे सब कुछ कर सकते हैं जो टेक्स्ट मॉडल कर सकते हैं, साथ ही छवियों को भी संभाल सकते हैं!</string>
+    <string name="vision_image_cannot_send">🖼️ **छवियां नहीं भेजी जा सकतीं**\n\nआप एक छवि भेजने का प्रयास कर रहे हैं, लेकिन वर्तमान मॉडल **केवल-टेक्स्ट** है:\n\n📱 **वर्तमान मॉडल:** %1$s\n\n---\n\n## 🎯 छवियां भेजने के लिए:\n\n1. **📥 विज़न मॉडल डाउनलोड करें**\n   - मेनू पर टैप करें → "मॉडल डाउनलोड करें"\n   - 🖼️ **Vision+Text** मॉडल खोजें\n   - अनुशंसित: **Translate Gemma E2B (Vision+Text)**\n\n2. **🔄 मॉडल स्विच करें**\n   - आपके द्वारा डाउनलोड किया गया विज़न मॉडल लोड करें\n   - विज़न मॉडल पाठ और छवियों दोनों को संभालते हैं\n\n3. **✅ फिर से प्रयास करें**\n   - एक बार लोड होने के बाद, आप स्वतंत्र रूप से छवियां भेज सकते हैं!\n\n---\n\n💡 **प्रो टिप:** विज़न मॉडल वे सब कुछ कर सकते हैं जो टेक्स्ट मॉडल कर सकते हैं, साथ ही छवियों को भी समझ सकते हैं!</string>
+    
+    <!-- Model Error Messages -->
+    <string name="please_download_model">बातचीत शुरू करने के लिए कृपया एक मॉडल डाउनलोड करें।</string>
+    <string name="model_not_loaded">मॉडल ठीक से लोड नहीं हुआ है। कृपया किसी अन्य मॉडल पर स्विच करने का प्रयास करें या ऐप को पुनरारंभ करें।</string>
+    <string name="no_response_produced">कोई उत्तर उत्पन्न नहीं हुआ। (संभवतः: टोकन सीमा या सत्र रीसेट)। पुनः उत्पन्न करें पर टैप करें।</string>
+    <string name="prompt_too_long">प्रॉम्प्ट बहुत लंबा है। कृपया अपना संदेश छोटा करें और पुनः प्रयास करें।</string>
+    <string name="export">निर्यात करें (Export)</string>
+    <string name="home_section_tools">टूल्स</string>
+    <string name="home_section_utilities">उपयोगिताएँ (Utilities)</string>
+    <string name="feature_vibevoice">VibeVoice</string>
+    <string name="feature_vibevoice_desc">स्थानीय रूप से AI के साथ आवाज़ से चैट करें</string>
+    <string name="chat_now">अभी चैट करें</string>
+
+    <!-- Image Upscale Feature -->
+    <string name="feature_image_upscale">इमेज अपस्केल</string>
+    <string name="feature_image_upscale_desc">एआई-संचालित छवि रिज़ॉल्यूशन बढ़ाएं</string>
+    <string name="image_upscale_title">इमेज अपस्केल</string>
+    <string name="image_upscale_download_model">अपस्केल मॉडल डाउनलोड करें</string>
+    <string name="image_upscale_download_model_desc">AI के साथ अपनी छवियों को बेहतर बनाने के लिए एक अपस्केल मॉडल डाउनलोड करें</string>
+    <string name="image_upscale_load_model_title">अपस्केल मॉडल चुनें</string>
+    <string name="image_upscale_load_model_desc">अपस्केल मॉडल चुनने और लोड करने के लिए सेटिंग्स पर टैप करें</string>
+    <string name="image_upscale_select_image">छवि चुनने के लिए टैप करें</string>
+    <string name="image_upscale_button">छवि अपस्केल करें</string>
+    <string name="image_upscale_upscaling">अपस्केल हो रहा है...</string>
+    <string name="image_upscale_save">गैलरी में सहेजें</string>
+    <string name="image_upscale_models_title">इमेज अपस्केल मॉडल</string>
+    <string name="image_upscale_models_description">छवि रिज़ॉल्यूशन को 4x तक बढ़ाने और सुधारने के लिए QNN-त्वरित एआई मॉडल</string>
+    <string name="tts_models">TTS मॉडल</string>
+    <string name="tts_models_description">स्थानीय आवाज़ संश्लेषण के लिए पाठ से वाक् मॉडल</string>
+    <string name="tts_model_setting">TTS मॉडल</string>
+    <string name="tts_model_setting_desc">कस्टम डाउनलोड किया गया TTS मॉडल या सिस्टम डिफ़ॉल्ट चुनें</string>
+    <string name="system_default_tts">सिस्टम डिफ़ॉल्ट TTS</string>
+    <string name="tts_device_setting">TTS डिवाइस</string>
+    <string name="tts_device_setting_desc">पाठ से वाक् मॉडल के लिए CPU या GPU चुनें</string>
+    <string name="stt_device_setting">STT डिवाइस</string>
+    <string name="stt_device_setting_desc">वाक् से पाठ मॉडल के लिए CPU या GPU चुनें</string>
+
+    <string name="tts_voice_setting">TTS आवाज़</string>
+    <string name="tts_please_download_voice">कृपया एक आवाज़ डाउनलोड करें</string>
+    <string name="tts_voice_en">अंग्रेज़ी (Sky)</string>
+    <string name="tts_voice_ja">जापानी (Alpha)</string>
+    <string name="tts_voice_es">स्पैनिश (Dora)</string>
+    <string name="tts_voice_fr">फ्रेंच (Siwis)</string>
+    <string name="tts_voice_it">इतालवी (Sara)</string>
+    <string name="tts_voice_pt">पुर्तगाली (Dora)</string>
+    <string name="tts_voice_zh">चीनी (महिला)</string>
+    <string name="vibevoice_requires_models">इस सुविधा के लिए ऐसी Gemma मॉडल की आवश्यकता है जो आवाज़ का समर्थन करता हो, या ASR मॉडल वाला कोई भी LLM मॉडल। कृपया मॉडल स्क्रीन से आवश्यक मॉडल डाउनलोड करें।</string>
+    <string name="vibevoice_load_model">VibeVoice मॉडल लोड करें</string>
+    <string name="vibevoice_load_model_desc">चैटिंग शुरू करने के लिए कृपया एक आवाज़-अनुकूल मॉडल कॉन्फ़िगरेशन लोड करें</string>
+    <string name="llm_model">LLM मॉडल</string>
+    <string name="voice_model">वॉइस मॉडल</string>
+    <string name="gemma_voice_option">Gemma</string>
+    <string name="llm_model_backend">LLM मॉडल बैकएंड</string>
+    <string name="asr_model_backend">ASR बैकएंड</string>
+
+    <!-- Agent Feature -->
+    <string name="feature_agent">एजेंट</string>
+    <string name="feature_agent_desc">टूल्स और एक्शन वाला एआई सहायक</string>
+    <string name="premium_feature_agent">एजेंट – टूल्स एवं डिवाइस कार्यों के साथ एआई</string>
+    <string name="agent_title">एजेंट</string>
+    <string name="agent_subtitle">मुझसे कुछ भी पूछें — मैं खोज, नक्शा, कैलेंडर और बहुत कुछ कर सकता हूँ</string>
+    <string name="agent_input_placeholder">अपने एजेंट से पूछें...</string>
+    <string name="agent_voice_mode_system">सिस्टम</string>
+    <string name="agent_voice_mode_whisper">Whisper</string>
+    <string name="agent_voice_mode_gemma">Gemma</string>
+    <string name="whisper_model_label">Whisper मॉडल</string>
+    <string name="agent_tool_running">चल रहा है: %@</string>
+    <string name="agent_tool_success">संपन्न</string>
+    <string name="agent_tool_failed">विफल</string>
+    <string name="agent_tool_confirm_title">कार्रवाई की अनुमति दें?</string>
+    <string name="agent_tool_confirm_body">एजेंट चाहता है: %@</string>
+    <string name="agent_tool_approve">अनुमति दें</string>
+    <string name="agent_tool_deny">अस्वीकार करें</string>
+    <string name="agent_no_model">एजेंट का उपयोग करने के लिए कृपया एक मॉडल डाउनलोड करें</string>
+    <string name="agent_map_expand">पूरा नक्शा देखें</string>
+    <string name="agent_settings_voice_mode">आवाज़ इनपुट मोड</string>
+    <string name="agent_settings_tools">सक्षम किए गए टूल्स</string>
+    <string name="agent_enable_gemma_audio">Gemma ऑडियो (वाइब वॉइस मोड) सक्षम करें</string>
+    <string name="agent_termux_toggle">Termux कमांड सक्षम करें (उन्नत)</string>
+    <string name="agent_termux_confirm">टर्मिनल कमांड चलाएं: %1$s</string>
+    <string name="agent_calendar_confirm">कैलेंडर ईवेंट बनाएं: %@</string>
+    <string name="agent_shortcut_confirm">शॉर्टकट चलाएं: %@</string>
+    <string name="agent_welcome_message">नमस्ते! मैं आपका AI एजेंट हूँ। मैं वेब खोज, नक्शा दिखाना, कैलेंडर ईवेंट, मौसम, अलार्म, संदेश और हैश की गणना कर सकता हूँ। आज मैं आपकी क्या सहायता कर सकता हूँ?</string>
+    <string name="agent_no_model_android">एजेंट का उपयोग करने के लिए पहले Gemma 4 E2/4B मॉडल डाउनलोड करें</string>
+    <string name="agent_no_model_ios">एजेंट का उपयोग करने के लिए पहले एक मॉडल डाउनलोड करें</string>
+    <string name="open_maps">नक्शा खोलें</string>
+    <string name="agent_processing_tool">एजेंट टूल प्रोसेस कर रहा है...</string>
+    <string name="agent_termux_guide_title">Termux सेटअप गाइड</string>
+    <string name="agent_termux_guide_desc">Termux में, तृतीय-पक्ष ऐप निष्पादित अनुमतियां सक्षम करें:</string>
+    <string name="agent_termux_cmd_copied">कमांड क्लिपबोर्ड में कॉपी की गई</string>
+    <string name="agent_termux_pending_approval">अनुमोदन आवश्यक है</string>
+    <string name="agent_termux_run_cmd">कमांड चलाएं</string>
+    <string name="agent_termux_cancel_cmd">रद्द करें</string>
+    <string name="agent_termux_cancelled">उपयोगकर्ता द्वारा रद्द किया गया</string>
+
+    <!-- Text to Speech Feature -->
+    <string name="feature_text_to_speech">पाठ से वाक् (TTS)</string>
+    <string name="feature_text_to_speech_desc">सिस्टम या Kokoro TTS आवाज़ों का उपयोग करके पाठ बोलकर पढ़ें</string>
+    <string name="tts_feature_title">पाठ से वाक् (TTS)</string>
+    <string name="tts_feature_subtitle">अपने कॉन्फ़िगर किए गए TTS इंजन और आवाज़ सेटिंग्स का उपयोग करके पाठ को बोलकर पढ़ने के लिए कॉपी-पेस्ट करें।</string>
+    <string name="tts_input_hint">यहाँ पाठ दर्ज करें या पेस्ट करें...</string>
+    <string name="tts_speak_button">बोलकर पढ़ें</string>
+    <string name="tts_stop_button">पढ़ना रोकें</string>
+    <string name="tts_paste_button">पाठ पेस्ट करें</string>
+    <string name="tts_clear_button">साफ़ करें</string>
+    <string name="tts_speaking_status">बोलकर पढ़ा जा रहा है...</string>
+    <string name="tts_idle_status">पढ़ने के लिए तैयार</string>
+    <string name="tts_empty_input_warning">कृपया पढ़ने के लिए पाठ दर्ज करें या पेस्ट करें।</string>
+    <string name="tts_engine_system">सिस्टम डिफ़ॉल्ट TTS</string>
+    <string name="tts_engine_kokoro">Kokoro TTS</string>
+    <string name="tts_current_voice">आवाज़: %1$s</string>
+    <string name="tts_word_count">%1$d शब्द</string>
+    <string name="search_huggingface">Hugging Face खोजें</string>
+    <string name="search_huggingface_placeholder">GGUF या LiteRT-LM मॉडल खोजें</string>
+    <string name="huggingface_results">Hugging Face परिणाम</string>
+    <string name="download_vision_projector">विज़न प्रोजेक्टर डाउनलोड करें</string>
+    <string name="huggingface_search_failed">Hugging Face खोज विफल रही</string>
+    <string name="language_hindi">हिन्दी</string>
+</resources>
+
+
+
+

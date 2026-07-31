@@ -947,4 +947,5 @@
     <string name="huggingface_results">Hugging Face 结果</string>
     <string name="download_vision_projector">下载视觉投影器</string>
     <string name="huggingface_search_failed">Hugging Face 搜索失败</string>
+    <string name="language_hindi">हिन्दी</string>
 </resources>

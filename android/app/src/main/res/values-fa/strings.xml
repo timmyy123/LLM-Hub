@@ -939,4 +939,5 @@
     <string name="huggingface_results">نتایج Hugging Face</string>
     <string name="download_vision_projector">دانلود پروژکتور بینایی</string>
     <string name="huggingface_search_failed">جستجوی Hugging Face ناموفق بود</string>
+    <string name="language_hindi">हिन्दी</string>
 </resources>

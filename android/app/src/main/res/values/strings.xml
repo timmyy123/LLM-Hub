@@ -953,6 +953,7 @@
     <string name="huggingface_results">Hugging Face results</string>
     <string name="download_vision_projector">Download vision projector</string>
     <string name="huggingface_search_failed">Hugging Face search failed</string>
+    <string name="language_hindi">हिन्दी</string>
 </resources>
 
 

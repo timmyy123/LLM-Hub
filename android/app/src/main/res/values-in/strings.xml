@@ -941,4 +941,5 @@
     <string name="huggingface_results">Hasil Hugging Face</string>
     <string name="download_vision_projector">Unduh proyektor visi</string>
     <string name="huggingface_search_failed">Pencarian Hugging Face gagal</string>
+    <string name="language_hindi">हिन्दी</string>
 </resources>

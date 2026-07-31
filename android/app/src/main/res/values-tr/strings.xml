@@ -937,4 +937,5 @@
     <string name="huggingface_results">Hugging Face sonuçları</string>
     <string name="download_vision_projector">Görüntü projektörünü indir</string>
     <string name="huggingface_search_failed">Hugging Face araması başarısız</string>
+    <string name="language_hindi">हिन्दी</string>
 </resources>

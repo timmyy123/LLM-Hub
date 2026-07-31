@@ -939,4 +939,5 @@
     <string name="huggingface_results">Hugging Face 결과</string>
     <string name="download_vision_projector">비전 프로젝터 다운로드</string>
     <string name="huggingface_search_failed">Hugging Face 검색에 실패했습니다</string>
+    <string name="language_hindi">हिन्दी</string>
 </resources>

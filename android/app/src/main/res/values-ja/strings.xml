@@ -936,4 +936,5 @@
     <string name="huggingface_results">Hugging Face の結果</string>
     <string name="download_vision_projector">ビジョンプロジェクターをダウンロード</string>
     <string name="huggingface_search_failed">Hugging Face の検索に失敗しました</string>
+    <string name="language_hindi">हिन्दी</string>
 </resources>

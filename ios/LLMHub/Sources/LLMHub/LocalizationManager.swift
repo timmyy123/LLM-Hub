@@ -16,6 +16,7 @@ enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
     case persian = "fa"
     case french = "fr"
     case hebrew = "he"
+    case hindi = "hi"
     case indonesian = "id"
     case italian = "it"
     case japanese = "ja"
@@ -43,6 +44,7 @@ enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
         case .persian: return "language_persian"
         case .french: return "language_french"
         case .hebrew: return "language_hebrew"
+        case .hindi: return "language_hindi"
         case .indonesian: return "language_indonesian"
         case .italian: return "language_italian"
         case .japanese: return "language_japanese"
@@ -371,6 +373,8 @@ final class OnDeviceTtsManager: NSObject, ObservableObject, AVSpeechSynthesizerD
             return ["fr-FR", "fr-CA", "fr"]
         case .hebrew:
             return ["he-IL", "he"]
+        case .hindi:
+            return ["hi-IN", "hi"]
         case .indonesian:
             return ["id-ID", "id"]
         case .italian:

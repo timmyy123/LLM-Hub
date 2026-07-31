@@ -905,4 +905,5 @@
     <string name="huggingface_results">Hugging-Face-Ergebnisse</string>
     <string name="download_vision_projector">Vision-Projektor herunterladen</string>
     <string name="huggingface_search_failed">Hugging-Face-Suche fehlgeschlagen</string>
+    <string name="language_hindi">हिन्दी</string>
 </resources>

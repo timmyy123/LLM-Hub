@@ -21,6 +21,7 @@
     <locale android:name="ko"/>
     <locale android:name="fa"/>
     <locale android:name="he"/>
+    <locale android:name="hi"/>
     <locale android:name="uk"/>
     <locale android:name="zh"/>
     <locale android:name="nl"/>

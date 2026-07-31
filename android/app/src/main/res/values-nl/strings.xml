@@ -846,4 +846,5 @@
     <string name="huggingface_results">Hugging Face-resultaten</string>
     <string name="download_vision_projector">Vision-projector downloaden</string>
     <string name="huggingface_search_failed">Zoeken op Hugging Face mislukt</string>
+    <string name="language_hindi">हिन्दी</string>
 </resources>

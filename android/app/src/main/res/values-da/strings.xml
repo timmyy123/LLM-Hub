@@ -907,4 +907,5 @@ Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
     <string name="huggingface_results">Hugging Face-resultater</string>
     <string name="download_vision_projector">Download visionsprojektor</string>
     <string name="huggingface_search_failed">Hugging Face-søgning mislykkedes</string>
+    <string name="language_hindi">हिन्दी</string>
 </resources>
