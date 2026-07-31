@@ -41,6 +41,7 @@ private let translatorLanguageEnglishNames: [String: String] = [
     "bg": "Bulgarian",
     "my": "Burmese",
     "ca": "Catalan",
+    "zh-CN": "Chinese (Simplified)",
     "zh-TW": "Chinese (Traditional)",
     "hr": "Croatian",
     "cs": "Czech",
@@ -116,6 +117,7 @@ private let translatorLanguages: [TranslatorLanguage] = [
     TranslatorLanguage(code: "bg", localizationKey: "lang_bulgarian"),
     TranslatorLanguage(code: "my", localizationKey: "lang_burmese"),
     TranslatorLanguage(code: "ca", localizationKey: "lang_catalan"),
+    TranslatorLanguage(code: "zh-CN", localizationKey: "lang_chinese"),
     TranslatorLanguage(code: "zh-TW", localizationKey: "lang_chinese_traditional"),
     TranslatorLanguage(code: "hr", localizationKey: "lang_croatian"),
     TranslatorLanguage(code: "cs", localizationKey: "lang_czech"),
@@ -3978,16 +3980,17 @@ struct TranslatorScreen: View {
         let hasAudio = selectedAudioURL != nil && canUseAudioInput
         let hasImage = selectedImageURL != nil && enableVision && !hasAudio
 
+        let rawPromptText: String
+
         if hasAudio {
             if let source = source {
                 let sourceName = englishName(for: source)
                 let sourceCode = source.code.replacingOccurrences(of: "_", with: "-")
-                return "Transcribe the spoken audio in \(sourceName) (\(sourceCode)) and translate it into \(targetName) (\(targetCode)). Respond ONLY with the translated \(targetName) text and no commentary."
+                rawPromptText = "Transcribe the spoken audio in \(sourceName) (\(sourceCode)) and translate it into \(targetName) (\(targetCode)). Respond ONLY with the translated \(targetName) text and no commentary."
+            } else {
+                rawPromptText = "Transcribe the spoken audio and translate it into \(targetName) (\(targetCode)). Respond ONLY with the translated \(targetName) text and no commentary."
             }
-            return "Transcribe the spoken audio and translate it into \(targetName) (\(targetCode)). Respond ONLY with the translated \(targetName) text and no commentary."
-        }
-
-        if hasImage {
+        } else if hasImage {
             let srcPart: String
             if let source = source {
                 let srcName = englishName(for: source)
@@ -3997,20 +4000,26 @@ struct TranslatorScreen: View {
                 srcPart = "You are a professional translator. Your goal is to accurately convey the meaning and nuances of the original text while adhering to \(targetName) grammar, vocabulary, and cultural sensitivities.\nPlease translate the text in the provided image into \(targetName). Produce only the \(targetName) translation, without any additional explanations, alternatives or commentary. Focus only on the text, do not output where the text is located, surrounding objects or any other explanation about the picture. Ignore symbols, pictogram, and arrows!"
             }
             let extra = trimmedInput.isEmpty ? "" : "\n\(trimmedInput)"
-            return srcPart + extra
-        }
-
-        if !isTranslateGemma {
+            rawPromptText = srcPart + extra
+        } else if !isTranslateGemma {
             if let source = source {
                 let sourceName = englishName(for: source)
                 let sourceCode = source.code.replacingOccurrences(of: "_", with: "-")
-                return "You are a professional translator. Translate the following \(sourceName) (\(sourceCode)) text into \(targetName) (\(targetCode)). Preserve meaning and nuance. Respond with only the translated \(targetName) text and no commentary.\n\n\(trimmedInput)"
+                rawPromptText = "You are a professional translator. Translate the following \(sourceName) (\(sourceCode)) text into \(targetName) (\(targetCode)). Preserve meaning and nuance. Respond with only the translated \(targetName) text and no commentary.\n\n\(trimmedInput)"
+            } else {
+                rawPromptText = "You are a professional translator. Detect the source language and translate the following text into \(targetName) (\(targetCode)). Preserve meaning and nuance. Respond with only the translated \(targetName) text and no commentary.\n\n\(trimmedInput)"
             }
-
-            return "You are a professional translator. Detect the source language and translate the following text into \(targetName) (\(targetCode)). Preserve meaning and nuance. Respond with only the translated \(targetName) text and no commentary.\n\n\(trimmedInput)"
+        } else {
+            rawPromptText = rawTranslateGemmaPrompt(source: source, target: targetLanguage, text: trimmedInput)
         }
 
-        return rawTranslateGemmaPrompt(source: source, target: targetLanguage, text: trimmedInput)
+        if let model = selectedModel, (model.modelFormat == .gguf || model.name.localizedCaseInsensitiveContains("gemma")) {
+            if !rawPromptText.contains("<start_of_turn>") {
+                return "<start_of_turn>user\n\(rawPromptText)<end_of_turn>\n<start_of_turn>model\n"
+            }
+        }
+
+        return rawPromptText
     }
 
     private func ensureModelLoaded(force: Bool) async {
@@ -4044,6 +4053,41 @@ struct TranslatorScreen: View {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func sanitizeTranslatorOutput(_ text: String) -> String {
+        let base = sanitizeModelOutputText(text)
+        let markers = [
+            "\nuser:",
+            "\nassistant:",
+            "\nUser:",
+            "\nAssistant:",
+            "\n\nuser:",
+            "\n\nassistant:",
+            "\n\nUser:",
+            "\n\nAssistant:",
+            "<start_of_turn>",
+            "<end_of_turn>",
+            "<|turn|>",
+            "<|im_start|>",
+            "<|im_end|>"
+        ]
+        var result = base
+        for marker in markers {
+            if let range = result.range(of: marker) {
+                result = String(result[..<range.lowerBound])
+            }
+        }
+        if result.hasPrefix("assistant:\n") {
+            result = String(result.dropFirst("assistant:\n".count))
+        } else if result.hasPrefix("Assistant:\n") {
+            result = String(result.dropFirst("Assistant:\n".count))
+        } else if result.hasPrefix("assistant:") {
+            result = String(result.dropFirst("assistant:".count))
+        } else if result.hasPrefix("Assistant:") {
+            result = String(result.dropFirst("Assistant:".count))
+        }
+        return result.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private func toggleTranslate() {
@@ -4089,11 +4133,14 @@ struct TranslatorScreen: View {
                         "<end_of_turn>",
                         "<start_of_turn>",
                         "<|im_start|>",
-                        "<|im_end|>"
+                        "<|im_end|>",
+                        "<|eot_id|>",
+                        "</s>",
+                        "<eos>"
                     ]
                 ) { text, _, _ in
                     Task { @MainActor in
-                        outputText = sanitizeModelOutputText(text)
+                        outputText = sanitizeTranslatorOutput(text)
                     }
                 }
             } catch is CancellationError {
