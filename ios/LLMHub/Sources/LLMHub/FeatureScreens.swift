@@ -692,6 +692,11 @@ struct FeatureModelSettingsSheet: View {
         if let modelFilter {
             loaded = ModelData.allModels().filter { model in
                 guard !model.isDependencyOnly else { return false }
+                let cat = model.category
+                guard cat != .embedding && cat != .imageGeneration && cat != .videoGeneration && cat != .imageUpscale else { return false }
+                guard model.name.lowercased().contains("vision projector") == false,
+                      model.name.lowercased().contains("mmproj") == false,
+                      model.name.lowercased().contains("projector") == false else { return false }
                 guard ModelData.isModelFullyAvailableLocally(model) else { return false }
                 return modelFilter(model)
             }

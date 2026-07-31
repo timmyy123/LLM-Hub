@@ -351,6 +351,9 @@ public struct AgentScreen: View {
         .onAppear {
             vm.setupWelcomeMessage(settings: settings, isDownloaded: isAnyModelDownloaded)
         }
+        .onDisappear {
+            LLMBackend.shared.unloadModel()
+        }
         .onChange(of: micTranscriber.liveText) { _, newText in
             if !newText.isEmpty {
                 vm.inputText = newText

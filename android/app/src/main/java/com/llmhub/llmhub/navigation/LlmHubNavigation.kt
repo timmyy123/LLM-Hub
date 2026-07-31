@@ -63,11 +63,11 @@ fun LlmHubNavigation(
         DrawerState(DrawerValue.Closed)
     }
 
-    // Unload chat model only when leaving Chat route (e.g. to Home). Don't unload when switching chat/123 -> chat/new.
+    // Unload model when leaving Chat or Agent route (e.g. to Home).
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    val isOnChatRoute = currentRoute == Screen.Chat.route
-    var wasOnChatRoute by remember { mutableStateOf(isOnChatRoute) }
+    val isMainFeatureRoute = currentRoute == Screen.Chat.route || currentRoute?.startsWith(Screen.Agent.route) == true
+    var wasInMainFeatureRoute by remember { mutableStateOf(isMainFeatureRoute) }
     val context = LocalContext.current
     val activity = context as? ComponentActivity
 
@@ -75,12 +75,12 @@ fun LlmHubNavigation(
     val billingManager = (context.applicationContext as LlmHubApplication).billingManager
     val isPremium by billingManager.isPremium.collectAsState()
 
-    LaunchedEffect(isOnChatRoute) {
-        if (wasOnChatRoute && !isOnChatRoute) {
+    LaunchedEffect(isMainFeatureRoute) {
+        if (wasInMainFeatureRoute && !isMainFeatureRoute) {
             (context.applicationContext as? LlmHubApplication)?.inferenceService?.unloadModel()
             com.llmhub.llmhub.embedding.RagServiceManager.getInstance(context.applicationContext).cleanup()
         }
-        wasOnChatRoute = isOnChatRoute
+        wasInMainFeatureRoute = isMainFeatureRoute
     }
 
     // Helper: navigate to premium or the real destination
