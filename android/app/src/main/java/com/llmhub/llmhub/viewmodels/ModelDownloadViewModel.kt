@@ -100,9 +100,8 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
             return connection.inputStream.bufferedReader().use { it.readText() }.also { connection.disconnect() }
         }
         val encoded = java.net.URLEncoder.encode(query, "UTF-8")
-        val safePage = page.coerceIn(0, 9)
         val libraryFilter = if (format == "litertlm") "litert-lm" else format
-        val repos = JsonParser.parseString(request("https://huggingface.co/api/models?search=$encoded&filter=$libraryFilter&limit=10&offset=${safePage * 10}"))
+        val repos = JsonParser.parseString(request("https://huggingface.co/api/models?search=$encoded&filter=$libraryFilter&limit=20"))
             .asJsonArray.mapNotNull { it.asJsonObject.get("id")?.asString }
         repos.flatMap { repo ->
             runCatching {
@@ -115,7 +114,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                         HuggingFaceModelFile(repo, path, item.get("size")?.asLong ?: 0L)
                     }
             }.getOrDefault(emptyList())
-        }.sortedBy { it.sizeBytes }.take(10)
+        }.sortedBy { it.sizeBytes }
     }
 
     fun downloadHuggingFaceImport(
@@ -129,7 +128,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         val additionalFiles = if (supportsVision && projector != null) listOf(projector.downloadUrl) else emptyList()
         val model = LLMModel(
             name = name, description = "Hugging Face $format model", url = main.downloadUrl,
-            category = if (supportsVision) "multimodal" else "text", sizeBytes = main.sizeBytes, source = "Custom",
+            category = if (supportsVision) "multimodal" else "text", sizeBytes = main.sizeBytes + (if (supportsVision && projector != null) projector.sizeBytes else 0), source = "Custom",
             supportsVision = supportsVision, supportsAudio = false, supportsGpu = true,
             requirements = com.llmhub.llmhub.data.ModelRequirements(4, 8), contextWindowSize = contextWindowSize,
             modelFormat = format.lowercase(), additionalFiles = additionalFiles,

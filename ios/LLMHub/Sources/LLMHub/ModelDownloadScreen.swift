@@ -1428,7 +1428,7 @@ struct ImportExternalModelSheet: View {
                 description: "Imported \(modelFormat == .gguf ? "GGUF" : "LiteRT-LM") model",
                 url: remoteModel.downloadURL.absoluteString,
                 category: supportsVision ? .multimodal : .text,
-                sizeBytes: remoteModel.size,
+                sizeBytes: remoteModel.size + (selectedHuggingFaceProjector?.size ?? 0),
                 source: "Custom",
                 supportsVision: supportsVision,
                 supportsAudio: false,
@@ -1628,7 +1628,7 @@ private enum HuggingFaceImportClient {
     private struct TreeEntry: Decodable { let path: String; let size: Int64?; let type: String? }
     static func search(query: String, format: ModelFormat, token: String?) async throws -> [HuggingFaceImportFile] {
         let libraryFilter = format == .litertlm ? "litert-lm" : format.rawValue
-        var request = URLRequest(url: URL(string: "https://huggingface.co/api/models?search=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query)&filter=\(libraryFilter)&limit=10")!)
+        var request = URLRequest(url: URL(string: "https://huggingface.co/api/models?search=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query)&filter=\(libraryFilter)&limit=20")!)
         if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else { throw URLError(.badServerResponse) }

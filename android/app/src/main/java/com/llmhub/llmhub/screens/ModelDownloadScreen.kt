@@ -1253,7 +1253,7 @@ private fun ImportExternalModelDialog(
                                         huggingFacePage = 0
                                         selectedHuggingFaceModel = null
                                         selectedHuggingFaceProjector = null
-                                        huggingFaceResults = onSearchHuggingFace(huggingFaceQuery, modelFormat.name.lowercase(), huggingFacePage)
+                                        huggingFaceResults = onSearchHuggingFace(huggingFaceQuery, modelFormat.name.lowercase(), 0)
                                     }
                                     catch (e: Exception) { showError = true; errorMessage = e.message ?: context.getString(R.string.huggingface_search_failed) }
                                     isSearchingHuggingFace = false
@@ -1268,7 +1268,10 @@ private fun ImportExternalModelDialog(
 
                 if (modelFormat == ModelFormat.GGUF || modelFormat == ModelFormat.LITERTLM) {
                 val nonProjectorResults = huggingFaceResults.filter { !it.isProjector }
-                nonProjectorResults.take(10).forEach { file ->
+                val pageSize = 10
+                val totalPages = ((nonProjectorResults.size + pageSize - 1) / pageSize).coerceAtLeast(1)
+                val pagedResults = nonProjectorResults.drop(huggingFacePage * pageSize).take(pageSize)
+                pagedResults.forEach { file ->
                     item {
                         TextButton(onClick = {
                             selectedHuggingFaceModel = file
@@ -1278,39 +1281,26 @@ private fun ImportExternalModelDialog(
                         }, modifier = Modifier.fillMaxWidth()) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Text("${file.repo}/${file.path}", maxLines = 1, modifier = Modifier.weight(1f))
-                                val sizeStr = android.text.format.Formatter.formatShortFileSize(androidx.compose.ui.platform.LocalContext.current, file.sizeBytes)
+                                val sizeStr = android.text.format.Formatter.formatShortFileSize(context, file.sizeBytes)
                                 Text(sizeStr, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(start = 8.dp))
                             }
                         }
                     }
                 }
-                val hasNextPage = nonProjectorResults.size >= 10
-                if (nonProjectorResults.isNotEmpty()) item {
+                if (totalPages > 1) item {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         TextButton(
-                            onClick = {
-                                if (huggingFacePage > 0) coroutineScope.launch {
-                                    isSearchingHuggingFace = true
-                                    huggingFacePage -= 1
-                                    huggingFaceResults = onSearchHuggingFace(huggingFaceQuery, modelFormat.name.lowercase(), huggingFacePage)
-                                    isSearchingHuggingFace = false
-                                }
-                            }, enabled = huggingFacePage > 0 && !isSearchingHuggingFace
+                            onClick = { huggingFacePage -= 1 },
+                            enabled = huggingFacePage > 0
                         ) { Text("‹") }
-                        Text("${huggingFacePage + 1}", style = MaterialTheme.typography.labelMedium)
+                        Text("${huggingFacePage + 1} / $totalPages", style = MaterialTheme.typography.labelMedium)
                         TextButton(
-                            onClick = {
-                                if (huggingFacePage < 9) coroutineScope.launch {
-                                    isSearchingHuggingFace = true
-                                    huggingFacePage += 1
-                                    huggingFaceResults = onSearchHuggingFace(huggingFaceQuery, modelFormat.name.lowercase(), huggingFacePage)
-                                    isSearchingHuggingFace = false
-                                }
-                            }, enabled = huggingFacePage < 9 && !isSearchingHuggingFace && hasNextPage
+                            onClick = { huggingFacePage += 1 },
+                            enabled = huggingFacePage < totalPages - 1
                         ) { Text("›") }
                     }
                 }
