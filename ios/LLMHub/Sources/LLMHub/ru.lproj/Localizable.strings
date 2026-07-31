@@ -822,3 +822,8 @@
 "premium_feature_vibecoder" = "VibeCode – ИИ-конструктор кода";
 "premium_feature_image_generator" = "Генератор изображений – ИИ-арт на устройстве";
 "premium_feature_video_generator" = "Генератор видео – Создание видео с ИИ";
+"search_huggingface" = "Поиск в Hugging Face";
+"search_huggingface_placeholder" = "Поиск моделей GGUF или LiteRT-LM";
+"huggingface_results" = "Результаты Hugging Face";
+"download_vision_projector" = "Скачать проектор зрения";
+"huggingface_search_failed" = "Ошибка поиска Hugging Face";

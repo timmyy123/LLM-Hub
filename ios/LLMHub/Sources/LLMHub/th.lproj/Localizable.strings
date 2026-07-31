@@ -858,3 +858,8 @@
 "premium_feature_vibecoder" = "VibeCode – เครื่องมือสร้างโค้ด AI";
 "premium_feature_image_generator" = "เครื่องสร้างรูปภาพ – ศิลปะ AI บนอุปกรณ์";
 "premium_feature_video_generator" = "เครื่องสร้างวิดีโอ – การสร้างวิดีโอ AI";
+"search_huggingface" = "ค้นหา Hugging Face";
+"search_huggingface_placeholder" = "ค้นหาโมเดล GGUF หรือ LiteRT-LM";
+"huggingface_results" = "ผลลัพธ์ Hugging Face";
+"download_vision_projector" = "ดาวน์โหลดโปรเจคเตอร์วิชัน";
+"huggingface_search_failed" = "ค้นหา Hugging Face ไม่สำเร็จ";

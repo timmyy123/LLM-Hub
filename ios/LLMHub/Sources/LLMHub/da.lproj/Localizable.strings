@@ -858,3 +858,8 @@
 "premium_feature_vibecoder" = "VibeCode – AI-kodebygger";
 "premium_feature_image_generator" = "Billedgenerator – AI-kunst på enheden";
 "premium_feature_video_generator" = "Videogenerator – AI-videooprettelse";
+"search_huggingface" = "Søg i Hugging Face";
+"search_huggingface_placeholder" = "Søg efter GGUF- eller LiteRT-LM-modeller";
+"huggingface_results" = "Hugging Face-resultater";
+"download_vision_projector" = "Download visionsprojektor";
+"huggingface_search_failed" = "Hugging Face-søgning mislykkedes";

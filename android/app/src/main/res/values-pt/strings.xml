@@ -886,4 +886,9 @@
     <string name="tts_engine_kokoro">Kokoro TTS</string>
     <string name="tts_current_voice">Voz: %1$s</string>
     <string name="tts_word_count">%1$d palavras</string>
+    <string name="search_huggingface">Pesquisar no Hugging Face</string>
+    <string name="search_huggingface_placeholder">Pesquisar modelos GGUF ou LiteRT-LM</string>
+    <string name="huggingface_results">Resultados do Hugging Face</string>
+    <string name="download_vision_projector">Baixar projetor de visão</string>
+    <string name="huggingface_search_failed">Falha na pesquisa do Hugging Face</string>
 </resources>

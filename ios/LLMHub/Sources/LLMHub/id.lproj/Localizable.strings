@@ -850,3 +850,8 @@
 "premium_feature_vibecoder" = "VibeCode – Pembuat Kode AI";
 "premium_feature_image_generator" = "Generator Gambar – Seni AI di Perangkat";
 "premium_feature_video_generator" = "Generator Video – Pembuatan Video AI";
+"search_huggingface" = "Cari Hugging Face";
+"search_huggingface_placeholder" = "Cari model GGUF atau LiteRT-LM";
+"huggingface_results" = "Hasil Hugging Face";
+"download_vision_projector" = "Unduh proyektor visi";
+"huggingface_search_failed" = "Pencarian Hugging Face gagal";

@@ -850,3 +850,8 @@
 "premium_feature_vibecoder" = "VibeCode – בונה קוד בבינה מלאכותית";
 "premium_feature_image_generator" = "מחולל תמונות – אמנות בינה מלאכותית במכשיר";
 "premium_feature_video_generator" = "מחולל וידאו – יצירת וידאו בבינה מלאכותית";
+"search_huggingface" = "חיפוש ב-Hugging Face";
+"search_huggingface_placeholder" = "חיפוש מודלי GGUF או LiteRT-LM";
+"huggingface_results" = "תוצאות Hugging Face";
+"download_vision_projector" = "הורדת מקרן ראייה";
+"huggingface_search_failed" = "חיפוש Hugging Face נכשל";

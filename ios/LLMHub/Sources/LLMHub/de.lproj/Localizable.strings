@@ -822,3 +822,8 @@
 "premium_feature_vibecoder" = "VibeCode – KI-Codebuilder";
 "premium_feature_image_generator" = "Bildgenerator – KI-Kunst auf dem Gerät";
 "premium_feature_video_generator" = "Videogenerator – KI-Videoerstellung";
+"search_huggingface" = "Hugging Face durchsuchen";
+"search_huggingface_placeholder" = "GGUF- oder LiteRT-LM-Modelle suchen";
+"huggingface_results" = "Hugging-Face-Ergebnisse";
+"download_vision_projector" = "Vision-Projektor herunterladen";
+"huggingface_search_failed" = "Hugging-Face-Suche fehlgeschlagen";

@@ -858,3 +858,8 @@
 "premium_feature_vibecoder" = "VibeCode – AI 程式碼生成器";
 "premium_feature_image_generator" = "圖片生成器 – 裝置端 AI 繪圖";
 "premium_feature_video_generator" = "影片生成器 – AI 影片創作";
+"search_huggingface" = "搜尋 Hugging Face";
+"search_huggingface_placeholder" = "搜尋 GGUF 或 LiteRT-LM 模型";
+"huggingface_results" = "Hugging Face 結果";
+"download_vision_projector" = "下載視覺投影器";
+"huggingface_search_failed" = "Hugging Face 搜尋失敗";

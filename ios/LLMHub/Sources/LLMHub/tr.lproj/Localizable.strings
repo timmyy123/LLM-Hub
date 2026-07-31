@@ -850,3 +850,8 @@
 "premium_feature_vibecoder" = "VibeCode – AI Kod Oluşturucu";
 "premium_feature_image_generator" = "Görsel Oluşturucu – Cihaz İçi AI Sanatı";
 "premium_feature_video_generator" = "Video Oluşturucu – AI Video Oluşturma";
+"search_huggingface" = "Hugging Face'te ara";
+"search_huggingface_placeholder" = "GGUF veya LiteRT-LM modellerini ara";
+"huggingface_results" = "Hugging Face sonuçları";
+"download_vision_projector" = "Görüntü projektörünü indir";
+"huggingface_search_failed" = "Hugging Face araması başarısız";

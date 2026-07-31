@@ -850,3 +850,8 @@
 "premium_feature_vibecoder" = "VibeCode – منشئ الأكواد بالذكاء الاصطناعي";
 "premium_feature_image_generator" = "مولد الصور – فن الذكاء الاصطناعي على الجهاز";
 "premium_feature_video_generator" = "مولد الفيديو – إنشاء الفيديو بالذكاء الاصطناعي";
+"search_huggingface" = "ابحث في Hugging Face";
+"search_huggingface_placeholder" = "ابحث عن نماذج GGUF أو LiteRT-LM";
+"huggingface_results" = "نتائج Hugging Face";
+"download_vision_projector" = "تنزيل مسقط الرؤية";
+"huggingface_search_failed" = "فشل البحث في Hugging Face";

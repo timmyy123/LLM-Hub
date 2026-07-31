@@ -20,12 +20,25 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import java.io.File
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.llmhub.llmhub.data.localFileName
 import android.content.Context
 import com.llmhub.llmhub.BuildConfig
 import com.llmhub.llmhub.data.isModelFileValid
 import com.google.gson.Gson
 import android.net.Uri
+import com.google.gson.JsonParser
+import java.net.HttpURLConnection
+import java.net.URL
+
+data class HuggingFaceModelFile(
+    val repo: String,
+    val path: String,
+    val sizeBytes: Long
+) {
+    val isProjector: Boolean get() = path.contains("mmproj", true) || path.contains("projector", true)
+    val downloadUrl: String get() = "https://huggingface.co/$repo/resolve/main/${path.replace(" ", "%20")}" // Direct HF resolve endpoint.
+}
 
 class ModelDownloadViewModel(application: Application) : AndroidViewModel(application) {
     private val _models = MutableStateFlow<List<LLMModel>>(emptyList())
@@ -73,6 +86,58 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         
         // Recreate ModelDownloader with new token
         modelDownloader = ModelDownloader(ktorClient, context, token)
+    }
+
+    /** Searches Hugging Face repositories and exposes only files the app can import directly. */
+    suspend fun searchHuggingFaceFiles(query: String, format: String, page: Int = 0): List<HuggingFaceModelFile> = withContext(Dispatchers.IO) {
+        fun request(url: String): String {
+            val connection = (URL(url).openConnection() as HttpURLConnection).apply {
+                connectTimeout = 15_000
+                readTimeout = 20_000
+                setRequestProperty("Accept", "application/json")
+                _hfToken.value?.takeIf { it.isNotBlank() }?.let { setRequestProperty("Authorization", "Bearer $it") }
+            }
+            return connection.inputStream.bufferedReader().use { it.readText() }.also { connection.disconnect() }
+        }
+        val encoded = java.net.URLEncoder.encode(query, "UTF-8")
+        val safePage = page.coerceIn(0, 9)
+        val libraryFilter = if (format == "litertlm") "litert-lm" else format
+        val repos = JsonParser.parseString(request("https://huggingface.co/api/models?search=$encoded&filter=$libraryFilter&limit=10&offset=${safePage * 10}"))
+            .asJsonArray.mapNotNull { it.asJsonObject.get("id")?.asString }
+        repos.flatMap { repo ->
+            runCatching {
+                val encodedRepo = repo.split("/").joinToString("/") { java.net.URLEncoder.encode(it, "UTF-8") }
+                JsonParser.parseString(request("https://huggingface.co/api/models/$encodedRepo/tree/main?recursive=true&expand=true"))
+                    .asJsonArray.mapNotNull { entry ->
+                        val item = entry.asJsonObject
+                        val path = item.get("path")?.asString ?: return@mapNotNull null
+                        if (item.get("type")?.asString != "file" || !path.endsWith(".$format", true)) return@mapNotNull null
+                        HuggingFaceModelFile(repo, path, item.get("size")?.asLong ?: 0L)
+                    }
+            }.getOrDefault(emptyList())
+        }.sortedBy { it.sizeBytes }.take(10)
+    }
+
+    fun downloadHuggingFaceImport(
+        name: String,
+        format: String,
+        main: HuggingFaceModelFile,
+        projector: HuggingFaceModelFile? = null,
+        supportsVision: Boolean = false,
+        contextWindowSize: Int = 4096
+    ) {
+        val additionalFiles = if (supportsVision && projector != null) listOf(projector.downloadUrl) else emptyList()
+        val model = LLMModel(
+            name = name, description = "Hugging Face $format model", url = main.downloadUrl,
+            category = if (supportsVision) "multimodal" else "text", sizeBytes = main.sizeBytes, source = "Custom",
+            supportsVision = supportsVision, supportsAudio = false, supportsGpu = true,
+            requirements = com.llmhub.llmhub.data.ModelRequirements(4, 8), contextWindowSize = contextWindowSize,
+            modelFormat = format.lowercase(), additionalFiles = additionalFiles,
+            isDownloaded = false, isDownloading = false, downloadProgress = 0f
+        )
+        if (addExternalModel(model)) {
+            downloadModel(model)
+        }
     }
 
     private fun loadModels() {

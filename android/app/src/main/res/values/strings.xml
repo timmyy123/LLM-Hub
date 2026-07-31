@@ -947,8 +947,12 @@
     <string name="tts_engine_kokoro">Kokoro TTS</string>
     <string name="tts_current_voice">Voice: %1$s</string>
     <string name="tts_word_count">%1$d words</string>
+    <string name="search_huggingface">Search Hugging Face</string>
+    <string name="search_huggingface_placeholder">Search GGUF or LiteRT-LM models</string>
+    <string name="huggingface_results">Hugging Face results</string>
+    <string name="download_vision_projector">Download vision projector</string>
+    <string name="huggingface_search_failed">Hugging Face search failed</string>
 </resources>
-
 
 
 

@@ -4,6 +4,8 @@
 <dict>
 	<key>BYPASS_PREMIUM_UNLOCK</key>
 	<string>$(BYPASS_PREMIUM_UNLOCK)</string>
+	<key>HF_TOKEN</key>
+	<string>$(HF_TOKEN)</string>
 	<key>NSContactsUsageDescription</key>
 	<string>LLM Hub needs permission to access your contacts to send SMS messages to contacts you specify.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

@@ -850,3 +850,8 @@
 "premium_feature_vibecoder" = "VibeCode – AI 코드 빌더";
 "premium_feature_image_generator" = "이미지 생성기 – 기기 내 AI 아트";
 "premium_feature_video_generator" = "비디오 생성기 – AI 비디오 제작";
+"search_huggingface" = "Hugging Face 검색";
+"search_huggingface_placeholder" = "GGUF 또는 LiteRT-LM 모델 검색";
+"huggingface_results" = "Hugging Face 결과";
+"download_vision_projector" = "비전 프로젝터 다운로드";
+"huggingface_search_failed" = "Hugging Face 검색에 실패했습니다";

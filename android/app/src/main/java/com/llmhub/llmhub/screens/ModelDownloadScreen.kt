@@ -395,6 +395,11 @@ fun ModelDownloadScreen(
         if (showImportDialog) {
             ImportExternalModelDialog(
                 onDismiss = { showImportDialog = false },
+                onSearchHuggingFace = { query, format, page -> downloadViewModel.searchHuggingFaceFiles(query, format, page) },
+                onDownloadHuggingFace = { name, format, main, projector, vision, contextSize ->
+                    downloadViewModel.downloadHuggingFaceImport(name, format, main, projector, vision, contextSize)
+                    showImportDialog = false
+                },
                 onImport = { externalModel, projectorUri ->
                     val success = downloadViewModel.addExternalModel(externalModel)
                     if (success) {
@@ -1096,6 +1101,8 @@ private fun getModelDisplayName(model: LLMModel, context: Context): String {
 @Composable
 private fun ImportExternalModelDialog(
     onDismiss: () -> Unit,
+    onSearchHuggingFace: suspend (String, String, Int) -> List<com.llmhub.llmhub.viewmodels.HuggingFaceModelFile>,
+    onDownloadHuggingFace: (String, String, com.llmhub.llmhub.viewmodels.HuggingFaceModelFile, com.llmhub.llmhub.viewmodels.HuggingFaceModelFile?, Boolean, Int) -> Unit,
     onImport: (LLMModel, Uri?) -> Boolean
 ) {
     val context = LocalContext.current
@@ -1109,6 +1116,13 @@ private fun ImportExternalModelDialog(
     var supportsGpu by remember { mutableStateOf(false) }
     var modelFormat by remember { mutableStateOf(ModelFormat.TASK) }
     var contextWindowSize by remember { mutableStateOf("2048") }
+    var huggingFaceQuery by remember { mutableStateOf("") }
+    var huggingFaceResults by remember { mutableStateOf<List<com.llmhub.llmhub.viewmodels.HuggingFaceModelFile>>(emptyList()) }
+    var selectedHuggingFaceModel by remember { mutableStateOf<com.llmhub.llmhub.viewmodels.HuggingFaceModelFile?>(null) }
+    var selectedHuggingFaceProjector by remember { mutableStateOf<com.llmhub.llmhub.viewmodels.HuggingFaceModelFile?>(null) }
+    var isSearchingHuggingFace by remember { mutableStateOf(false) }
+    var huggingFacePage by remember { mutableStateOf(0) }
+    val coroutineScope = rememberCoroutineScope()
     
     var showError by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
@@ -1225,6 +1239,82 @@ private fun ImportExternalModelDialog(
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
+
+                if (modelFormat == ModelFormat.GGUF || modelFormat == ModelFormat.LITERTLM) item {
+                    OutlinedTextField(
+                        value = huggingFaceQuery,
+                        onValueChange = { huggingFaceQuery = it },
+                        label = { Text(stringResource(R.string.search_huggingface)) },
+                        trailingIcon = {
+                            IconButton(onClick = {
+                                coroutineScope.launch {
+                                    isSearchingHuggingFace = true
+                                    try {
+                                        huggingFacePage = 0
+                                        selectedHuggingFaceModel = null
+                                        selectedHuggingFaceProjector = null
+                                        huggingFaceResults = onSearchHuggingFace(huggingFaceQuery, modelFormat.name.lowercase(), huggingFacePage)
+                                    }
+                                    catch (e: Exception) { showError = true; errorMessage = e.message ?: context.getString(R.string.huggingface_search_failed) }
+                                    isSearchingHuggingFace = false
+                                }
+                            }, enabled = huggingFaceQuery.isNotBlank() && !isSearchingHuggingFace) {
+                                if (isSearchingHuggingFace) CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                                else Icon(Icons.Default.Search, contentDescription = stringResource(R.string.search_huggingface))
+                            }
+                        }, modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                if (modelFormat == ModelFormat.GGUF || modelFormat == ModelFormat.LITERTLM) {
+                val nonProjectorResults = huggingFaceResults.filter { !it.isProjector }
+                nonProjectorResults.take(10).forEach { file ->
+                    item {
+                        TextButton(onClick = {
+                            selectedHuggingFaceModel = file
+                            selectedFileUri = null
+                            selectedFileName = file.path
+                            modelName = file.path.substringAfterLast('/').substringBeforeLast('.')
+                        }, modifier = Modifier.fillMaxWidth()) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("${file.repo}/${file.path}", maxLines = 1, modifier = Modifier.weight(1f))
+                                val sizeStr = android.text.format.Formatter.formatShortFileSize(androidx.compose.ui.platform.LocalContext.current, file.sizeBytes)
+                                Text(sizeStr, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(start = 8.dp))
+                            }
+                        }
+                    }
+                }
+                val hasNextPage = nonProjectorResults.size >= 10
+                if (nonProjectorResults.isNotEmpty()) item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextButton(
+                            onClick = {
+                                if (huggingFacePage > 0) coroutineScope.launch {
+                                    isSearchingHuggingFace = true
+                                    huggingFacePage -= 1
+                                    huggingFaceResults = onSearchHuggingFace(huggingFaceQuery, modelFormat.name.lowercase(), huggingFacePage)
+                                    isSearchingHuggingFace = false
+                                }
+                            }, enabled = huggingFacePage > 0 && !isSearchingHuggingFace
+                        ) { Text("‹") }
+                        Text("${huggingFacePage + 1}", style = MaterialTheme.typography.labelMedium)
+                        TextButton(
+                            onClick = {
+                                if (huggingFacePage < 9) coroutineScope.launch {
+                                    isSearchingHuggingFace = true
+                                    huggingFacePage += 1
+                                    huggingFaceResults = onSearchHuggingFace(huggingFaceQuery, modelFormat.name.lowercase(), huggingFacePage)
+                                    isSearchingHuggingFace = false
+                                }
+                            }, enabled = huggingFacePage < 9 && !isSearchingHuggingFace && hasNextPage
+                        ) { Text("›") }
+                    }
+                }
+                }
                 
                     item {
                         Button(
@@ -1245,7 +1335,7 @@ private fun ImportExternalModelDialog(
                     }
 
                     // If user enabled Supports Vision, show a file selector for the Vision Projector
-                    if (supportsVision) {
+                    if (modelFormat == ModelFormat.GGUF && supportsVision) {
                         item {
                             Spacer(modifier = Modifier.height(6.dp))
                             Button(
@@ -1266,6 +1356,16 @@ private fun ImportExternalModelDialog(
                             }
 
 
+                        }
+                    }
+
+                    if (modelFormat == ModelFormat.GGUF && supportsVision) {
+                        huggingFaceResults.filter { it.isProjector && it.repo == selectedHuggingFaceModel?.repo }.forEach { file ->
+                            item {
+                                TextButton(onClick = { selectedHuggingFaceProjector = file }, modifier = Modifier.fillMaxWidth()) {
+                                    Text(stringResource(R.string.download_vision_projector) + ": " + file.path, maxLines = 1)
+                                }
+                            }
                         }
                     }
                     
@@ -1440,7 +1540,14 @@ private fun ImportExternalModelDialog(
                                     DropdownMenuItem(
                                         text = { Text(format.name.lowercase()) },
                                         onClick = {
-                                            modelFormat = format
+                                        modelFormat = format
+                                        huggingFaceResults = emptyList()
+                                        huggingFacePage = 0
+                                        if (format != ModelFormat.GGUF) {
+                                            supportsVision = false
+                                            selectedVisionProjectorUri = null
+                                            selectedHuggingFaceProjector = null
+                                        }
                                             showFormatMenu = false
                                         }
                                     )
@@ -1472,6 +1579,12 @@ private fun ImportExternalModelDialog(
         confirmButton = {
             Button(
                 onClick = {
+                    selectedHuggingFaceModel?.let { remote ->
+                        if (modelName.isNotBlank()) {
+                            onDownloadHuggingFace(modelName, modelFormat.name.lowercase(), remote, selectedHuggingFaceProjector, supportsVision, contextWindowSize.toIntOrNull() ?: 4096)
+                        }
+                        return@Button
+                    }
                     // Validate inputs
                     val nameValid = modelName.isNotBlank()
                     val fileValid = selectedFileUri != null
@@ -1573,7 +1686,7 @@ private fun ImportExternalModelDialog(
                         }
                     }
                 },
-                enabled = modelName.isNotBlank() && selectedFileUri != null
+                enabled = modelName.isNotBlank() && (selectedFileUri != null || selectedHuggingFaceModel != null)
             ) {
                 Text(stringResource(R.string.import_model))
             }

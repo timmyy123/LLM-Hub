@@ -932,4 +932,9 @@
     <string name="tts_engine_kokoro">Kokoro TTS</string>
     <string name="tts_current_voice">קול: %1$s</string>
     <string name="tts_word_count">%1$d מילים</string>
+    <string name="search_huggingface">חיפוש ב-Hugging Face</string>
+    <string name="search_huggingface_placeholder">חיפוש מודלי GGUF או LiteRT-LM</string>
+    <string name="huggingface_results">תוצאות Hugging Face</string>
+    <string name="download_vision_projector">הורדת מקרן ראייה</string>
+    <string name="huggingface_search_failed">חיפוש Hugging Face נכשל</string>
 </resources>

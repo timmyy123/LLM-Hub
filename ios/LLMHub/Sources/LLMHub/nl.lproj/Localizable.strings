@@ -858,3 +858,8 @@
 "premium_feature_vibecoder" = "VibeCode – AI-codebouwer";
 "premium_feature_image_generator" = "Afbeeldingsgenerator – AI-kunst op het apparaat";
 "premium_feature_video_generator" = "Videogenerator – AI-videocreatie";
+"search_huggingface" = "Zoek Hugging Face";
+"search_huggingface_placeholder" = "Zoek GGUF- of LiteRT-LM-modellen";
+"huggingface_results" = "Hugging Face-resultaten";
+"download_vision_projector" = "Vision-projector downloaden";
+"huggingface_search_failed" = "Zoeken op Hugging Face mislukt";

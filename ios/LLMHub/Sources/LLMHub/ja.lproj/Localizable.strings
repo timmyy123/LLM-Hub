@@ -850,3 +850,8 @@
 "premium_feature_vibecoder" = "VibeCode – AIコードビルダー";
 "premium_feature_image_generator" = "画像生成 – デバイス上のAIアート";
 "premium_feature_video_generator" = "動画生成 – AI動画作成";
+"search_huggingface" = "Hugging Face を検索";
+"search_huggingface_placeholder" = "GGUF または LiteRT-LM モデルを検索";
+"huggingface_results" = "Hugging Face の結果";
+"download_vision_projector" = "ビジョンプロジェクターをダウンロード";
+"huggingface_search_failed" = "Hugging Face の検索に失敗しました";

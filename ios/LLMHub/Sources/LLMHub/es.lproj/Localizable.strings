@@ -820,3 +820,8 @@
 "premium_feature_vibecoder" = "VibeCode – Creador de código con IA";
 "premium_feature_image_generator" = "Generador de imágenes – Arte IA en el dispositivo";
 "premium_feature_video_generator" = "Generador de video – Creación de video con IA";
+"search_huggingface" = "Buscar en Hugging Face";
+"search_huggingface_placeholder" = "Buscar modelos GGUF o LiteRT-LM";
+"huggingface_results" = "Resultados de Hugging Face";
+"download_vision_projector" = "Descargar proyector de visión";
+"huggingface_search_failed" = "Error en la búsqueda de Hugging Face";

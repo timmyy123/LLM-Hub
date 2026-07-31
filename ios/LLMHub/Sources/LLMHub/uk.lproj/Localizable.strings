@@ -850,3 +850,8 @@
 "premium_feature_vibecoder" = "VibeCode – ШІ-конструктор коду";
 "premium_feature_image_generator" = "Генератор зображень – ШІ-арт на пристрої";
 "premium_feature_video_generator" = "Генератор відео – Створення відео з ШІ";
+"search_huggingface" = "Пошук у Hugging Face";
+"search_huggingface_placeholder" = "Пошук моделей GGUF або LiteRT-LM";
+"huggingface_results" = "Результати Hugging Face";
+"download_vision_projector" = "Завантажити проєктор зору";
+"huggingface_search_failed" = "Пошук Hugging Face не вдався";

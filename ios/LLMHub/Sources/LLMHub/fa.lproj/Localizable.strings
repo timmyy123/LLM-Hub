@@ -850,3 +850,8 @@
 "premium_feature_vibecoder" = "VibeCode – سازنده کد هوش مصنوعی";
 "premium_feature_image_generator" = "مولد تصویر – هنر هوش مصنوعی روی دستگاه";
 "premium_feature_video_generator" = "مولد ویدیو – ساخت ویدیو با هوش مصنوعی";
+"search_huggingface" = "جستجو در Hugging Face";
+"search_huggingface_placeholder" = "جستجوی مدل‌های GGUF یا LiteRT-LM";
+"huggingface_results" = "نتایج Hugging Face";
+"download_vision_projector" = "دانلود پروژکتور بینایی";
+"huggingface_search_failed" = "جستجوی Hugging Face ناموفق بود";

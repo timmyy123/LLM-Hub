@@ -858,3 +858,8 @@
 "premium_feature_vibecoder" = "VibeCode – Trình tạo mã AI";
 "premium_feature_image_generator" = "Trình tạo hình ảnh – Nghệ thuật AI trên thiết bị";
 "premium_feature_video_generator" = "Trình tạo video – Tạo video bằng AI";
+"search_huggingface" = "Tìm kiếm Hugging Face";
+"search_huggingface_placeholder" = "Tìm mô hình GGUF hoặc LiteRT-LM";
+"huggingface_results" = "Kết quả Hugging Face";
+"download_vision_projector" = "Tải bộ chiếu thị giác";
+"huggingface_search_failed" = "Tìm kiếm Hugging Face thất bại";
