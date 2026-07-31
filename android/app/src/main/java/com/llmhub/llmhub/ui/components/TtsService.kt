@@ -229,8 +229,7 @@ class TtsService(private val context: Context, private val isTranslationFeature:
                         isCustomTts = true
                         isInitialized = true
                         currentModelDir = modelDir
-                        Log.d(TAG, "Custom Kokoro ONNX TTS initialized successfully with model: $selectedModel")
-                        // Preload CMU dict in background so first sentence has no dict-load stall
+                        initializeSystemTts()
                         startAudioTrackPlayback()
                         startSynthesisWorker()
                         flushPendingQueue()
@@ -479,6 +478,19 @@ class TtsService(private val context: Context, private val isTranslationFeature:
                     continue
                 }
 
+                val isChineseOrJapanese = voice.startsWith("zf") || voice.startsWith("zm") ||
+                        voice.startsWith("jf") || voice.startsWith("jm") ||
+                        sentence.any { it in '\u4E00'..'\u9FFF' || it in '\u3040'..'\u30FF' }
+
+                if (isChineseOrJapanese && tts != null) {
+                    Log.i(TAG, "Routing Chinese/Japanese sentence to System TTS for native speech")
+                    updateSystemTtsLanguage(sentence, voice)
+                    tts?.speak(sentence, TextToSpeech.QUEUE_ADD, null, "utterance_${utteranceId++}")
+                    val rem = activeJobsCount.decrementAndGet().coerceAtLeast(0)
+                    if (rem == 0) _isSpeaking.value = false
+                    continue
+                }
+
                 val phonemes = textToPhonemes(sentence, voice)
                 val tokens = mutableListOf<Int>()
                 tokens.add(0)
@@ -707,6 +719,7 @@ class TtsService(private val context: Context, private val isTranslationFeature:
 
     fun stop() {
         synchronized(pendingSpeakQueue) { pendingSpeakQueue.clear() }
+        try { tts?.stop() } catch (_: Exception) {}
         if (isCustomTts) {
             synthesisScope.coroutineContext[Job]?.cancelChildren()
             stopAudioTrack()
@@ -719,7 +732,6 @@ class TtsService(private val context: Context, private val isTranslationFeature:
             _isSpeaking.value = false
             _currentText.value = ""
         } else {
-            tts?.stop()
             textBuffer.clear()
             inFlightUtterances.set(0)
             _isSpeaking.value = false
@@ -728,21 +740,17 @@ class TtsService(private val context: Context, private val isTranslationFeature:
     }
 
     fun pause() {
+        try { tts?.stop() } catch (_: Exception) {}
         if (isCustomTts) {
             try { audioTrack?.pause() } catch (_: Exception) {}
             _isSpeaking.value = false
         } else {
-            tts?.stop()
             _isSpeaking.value = false
         }
     }
 
     fun isSpeaking(): Boolean {
-        return if (isCustomTts) {
-            _isSpeaking.value
-        } else {
-            tts?.isSpeaking == true
-        }
+        return _isSpeaking.value || tts?.isSpeaking == true
     }
 
     fun setSpeechRate(rate: Float) {
@@ -999,15 +1007,15 @@ class TtsService(private val context: Context, private val isTranslationFeature:
         val isKorean = text.any { it in '\uAC00'..'\uD7A3' || it in '\u1100'..'\u11FF' }
 
         return when {
-            isJapanese || voice?.startsWith("jf") == true || voice?.startsWith("jm") == true -> Locale.JAPANESE
+            isJapanese || voice?.startsWith("jf") == true || voice?.startsWith("jm") == true -> Locale.JAPAN
             isDevanagari || voice?.startsWith("hf") == true || voice?.startsWith("hm") == true -> Locale("hi", "IN")
-            isChinese -> Locale.CHINESE
-            isKorean -> Locale.KOREAN
+            isChinese -> Locale.SIMPLIFIED_CHINESE
+            isKorean -> Locale.KOREA
             voice?.startsWith("ef") == true || voice?.startsWith("em") == true -> Locale("es", "ES")
-            voice?.startsWith("ff") == true || voice?.startsWith("fm") == true -> Locale.FRENCH
-            voice?.startsWith("if") == true || voice?.startsWith("im") == true -> Locale.ITALIAN
+            voice?.startsWith("ff") == true || voice?.startsWith("fm") == true -> Locale.FRANCE
+            voice?.startsWith("if") == true || voice?.startsWith("im") == true -> Locale.ITALY
             voice?.startsWith("pf") == true || voice?.startsWith("pm") == true -> Locale("pt", "PT")
-            voice?.startsWith("gf") == true || voice?.startsWith("gm") == true -> Locale.GERMAN
+            voice?.startsWith("gf") == true || voice?.startsWith("gm") == true -> Locale.GERMANY
             else -> Locale.getDefault()
         }
     }
@@ -1149,16 +1157,48 @@ class TtsService(private val context: Context, private val isTranslationFeature:
     private fun chineseToPhonemes(text: String): String {
         val validChars = TOKEN_MAP.keys.toSet()
         val result = StringBuilder()
+
+        val pinyinMap = mapOf(
+            '没' to "mei", '问' to "wen", '题' to "ti", '主' to "zhu", '要' to "yao",
+            '在' to "zai", '于' to "yu", '机' to "ji", '器' to "qi", '人' to "ren",
+            '有' to "you", '更' to "geng", '新' to "xin", '其' to "qi", '内' to "nei",
+            '部' to "bu", '状' to "zhuang", '态' to "tai", '因' to "yin", '此' to "ci",
+            '即' to "ji", '便' to "bian", '获' to "huo", '取' to "qu", '了' to "le",
+            '出' to "chu", '发' to "fa", '地' to "di", '目' to "mu", '的' to "de",
+            '和' to "he", '乘' to "cheng", '客' to "ke", '信' to "xin", '息' to "xi",
+            '它' to "ta", '也' to "ye", '能' to "neng", '将' to "jiang", '这' to "zhe",
+            '些' to "xie", '锁' to "suo", '定' to "ding", '随' to "sui", '后' to "hou",
+            '不' to "bu", '断' to "duan", '误' to "wu", '听' to "ting", '日' to "ri",
+            '期' to "qi", '导' to "dao", '致' to "zhi", '相' to "xiang", '同' to "tong",
+            '提' to "ti", '示' to "shi", '环' to "huan", '节' to "jie", '反' to "fan",
+            '复' to "fu", '循' to "xun", '无' to "wu", '法' to "fa", '继' to "ji",
+            '续' to "xu", '进' to "jin", '行' to "xing", '下' to "xia", '一' to "yi",
+            '步' to "bu", '你' to "ni", '好' to "hao", '我' to "wo", '是' to "shi",
+            '中' to "zhong", '国' to "guo", '文' to "wen", '字' to "zi", '转' to "zhuan",
+            '语' to "yu", '音' to "yin", '大' to "da", '小' to "xiao", '多' to "duo",
+            '少' to "shao", '高' to "gao", '兴' to "xing", '看' to "kan", '到' to "dao"
+        )
+
         for (ch in text) {
-            if (ch.isWhitespace()) {
-                if (result.isNotEmpty() && result.last() != ' ') result.append(' ')
-            } else if (ch in SENTENCE_DELIMITERS) {
-                result.append(ch)
-            } else if (ch in validChars) {
-                result.append(ch)
+            when {
+                ch.isWhitespace() -> {
+                    if (result.isNotEmpty() && result.last() != ' ') result.append(' ')
+                }
+                ch in SENTENCE_DELIMITERS -> {
+                    if (ch in validChars) result.append(ch)
+                }
+                ch in pinyinMap.keys -> {
+                    pinyinMap[ch]?.let { str -> for (c in str) if (c in validChars) result.append(c) }
+                    result.append(' ')
+                }
+                ch in validChars -> {
+                    result.append(ch)
+                }
             }
         }
-        return result.toString().replace(Regex(" +"), " ").trim()
+        val resStr = result.toString().replace(Regex(" +"), " ").trim()
+        Log.d(TAG, "chineseToPhonemes: '$text' -> '$resStr'")
+        return resStr
     }
 
     private fun devanagariToPhonemes(text: String): String {
