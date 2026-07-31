@@ -65,7 +65,7 @@
 "github_repository" = "مخزن GitHub";
 "acknowledgments" = "قدردانی";
 "acknowledgments_text" = "از Google، Meta، Microsoft، IBM و جامعه HuggingFace برای ارائه مدل‌های شگفت‌انگیز LLM که این برنامه را قدرت می‌بخشند، به‌طور ویژه قدردانی می‌شود. این پروژه همچنین بر کار فوق‌العاده جامعه توسعه‌دهندگان اندروید و اکوسیستم متن‌باز تکیه دارد.";
-"sd_models_credit" = "مدل‌های تولید تصویر توسط پیاده‌سازی‌های Stable Diffusion از xororz با استفاده از بکندهای Qualcomm QNN (NPU) و Alibaba MNN (CPU) نیرو می‌گیرند.";
+"sd_models_credit" = "مدل‌های تولید تصویر توسط پیاده‌سازی‌های Stable Diffusion از xororz با استفاده از بکندهای Qualcomm QNN (NPU) و CPU نیرو می‌گیرند.";
 "nexa_sdk_credit" = "استنتاج مدل‌های GGUF توسط Nexa SDK نیرو می‌گیرد.";
 "ai_thinking" = "هوش مصنوعی در حال فکر کردن…";
 "thinking_label" = "تفکر";

@@ -65,7 +65,7 @@
 "github_repository" = "GitHub Deposu";
 "acknowledgments" = "Teşekkürler";
 "acknowledgments_text" = "Bu uygulamayı destekleyen inanılmaz LLM modellerini sağladıkları için Google, Meta, Microsoft, IBM ve HuggingFace topluluğuna özel teşekkürler. Bu proje ayrıca Android geliştirme topluluğunun ve açık kaynak ekosisteminin harika çalışmalarına dayanmaktadır.";
-"sd_models_credit" = "Görüntü oluşturma modelleri, Qualcomm QNN (NPU) ve Alibaba MNN (CPU) arka uçlarını kullanan xororz\'un Stable Diffusion uygulamaları tarafından desteklenmektedir.";
+"sd_models_credit" = "Görüntü oluşturma modelleri, Qualcomm QNN (NPU) ve CPU arka uçlarını kullanan xororz\'un Stable Diffusion uygulamaları tarafından desteklenmektedir.";
 "nexa_sdk_credit" = "GGUF model çıkarımı Nexa SDK tarafından desteklenmektedir.";
 "ai_thinking" = "Yapay zeka düşünüyor...";
 "thinking_label" = "Düşünme";

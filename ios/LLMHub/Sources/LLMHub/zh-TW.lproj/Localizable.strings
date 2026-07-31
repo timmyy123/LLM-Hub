@@ -65,7 +65,7 @@
 "github_repository" = "GitHub Repository";
 "acknowledgments" = "鳴謝";
 "acknowledgments_text" = "特別感謝谷歌、Meta、微軟、IBM 以及 HuggingFace 社群提供驅動本應用的卓越大型語言模型。本專案同時依託於安卓開發者社群和開源生態系統的傑出貢獻。";
-"sd_models_credit" = "影象生成模型基於 xororz 的 Stable Diffusion 實現方案，採用高通 QNN（NPU）和阿里巴巴 MNN（CPU）後端支援。";
+"sd_models_credit" = "影象生成模型基於 xororz 的 Stable Diffusion 實現方案，採用高通 QNN（NPU）和CPU後端支援。";
 "nexa_sdk_credit" = "GGUF 模型推理由 Nexa SDK 提供支援。";
 "ai_thinking" = "AI 思考中...";
 "thinking_label" = "深度思考";

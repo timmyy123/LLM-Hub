@@ -65,7 +65,7 @@
 "github_repository" = "พื้นที่เก็บข้อมูล GitHub";
 "acknowledgments" = "รับทราบ";
 "acknowledgments_text" = "ขอขอบคุณเป็นพิเศษสำหรับ Google, Meta, Microsoft, IBM และชุมชน HuggingFace สำหรับการจัดหาโมเดล LLM อันน่าทึ่งที่ขับเคลื่อนแอปพลิเคชันนี้ โครงการนี้ยังอาศัยผลงานที่น่าทึ่งของชุมชนการพัฒนา Android และระบบนิเวศโอเพ่นซอร์ส";
-"sd_models_credit" = "โมเดลการสร้างภาพขับเคลื่อนโดยการใช้งาน Stable Diffusion ของ xororz โดยใช้แบ็กเอนด์ Qualcomm QNN (NPU) และ Alibaba MNN (CPU)";
+"sd_models_credit" = "โมเดลการสร้างภาพขับเคลื่อนโดยการใช้งาน Stable Diffusion ของ xororz โดยใช้แบ็กเอนด์ Qualcomm QNN (NPU) และ CPU";
 "nexa_sdk_credit" = "การอนุมานโมเดล GGUF ขับเคลื่อนโดย Nexa SDK";
 "ai_thinking" = "AI กำลังคิด...";
 "thinking_label" = "คิดถึง";

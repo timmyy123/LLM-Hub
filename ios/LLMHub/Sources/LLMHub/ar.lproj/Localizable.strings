@@ -65,7 +65,7 @@
 "github_repository" = "مستودع GitHub";
 "acknowledgments" = "شكر وتقدير";
 "acknowledgments_text" = "شكر خاص إلى Google وMeta وMicrosoft وIBM ومجتمع HuggingFace لتقديم نماذج LLM المذهلة التي تدعم هذا التطبيق. يعتمد هذا المشروع أيضًا على عمل مجتمع مطوري أندرويد ونظام المصادر المفتوحة الرائع.";
-"sd_models_credit" = "تعمل نماذج إنشاء الصور بواسطة تطبيقات Stable Diffusion من xororz باستخدام واجهات Qualcomm QNN (NPU) وAlibaba MNN (CPU).";
+"sd_models_credit" = "تعمل نماذج إنشاء الصور بواسطة تطبيقات Stable Diffusion من xororz باستخدام واجهات Qualcomm QNN (NPU) وCPU.";
 "nexa_sdk_credit" = "يتم تشغيل استدلال نماذج GGUF بواسطة Nexa SDK.";
 "ai_thinking" = "الذكاء الاصطناعي يفكر...";
 "thinking_label" = "التفكير";

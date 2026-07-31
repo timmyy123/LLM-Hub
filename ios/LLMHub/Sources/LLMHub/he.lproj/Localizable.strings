@@ -65,7 +65,7 @@
 "github_repository" = "מאגר GitHub";
 "acknowledgments" = "תודות";
 "acknowledgments_text" = "תודה מיוחדת ל-Google, ‏Meta, ‏Microsoft, IBM וקהילת HuggingFace על המודלים המדהימים שמפעילים את האפליקציה הזו. הפרויקט נשען גם על עבודת קהילת המפתחים לאנדרואיד ועל קוד פתוח.";
-"sd_models_credit" = "מודלים ליצירת תמונות מופעלים על ידי מימושי Stable Diffusion של xororz באמצעות backends של Qualcomm QNN (NPU) ו-Alibaba MNN (CPU).";
+"sd_models_credit" = "מודלים ליצירת תמונות מופעלים על ידי מימושי Stable Diffusion של xororz באמצעות backends של Qualcomm QNN (NPU) ו-CPU.";
 "nexa_sdk_credit" = "הסקת מודלים GGUF מופעלת על ידי Nexa SDK.";
 "ai_thinking" = "ה-AI חושב…";
 "thinking_label" = "חשיבה";

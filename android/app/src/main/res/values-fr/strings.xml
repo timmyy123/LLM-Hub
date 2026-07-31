@@ -73,7 +73,7 @@
     <string name="github_repository">Dépôt GitHub</string>
     <string name="acknowledgments">Remerciements</string>
     <string name="acknowledgments_text">Remerciements spéciaux à Google, Meta, Microsoft, IBM, et à la communauté HuggingFace.</string>
-    <string name="sd_models_credit">Les modèles de génération d\'images sont alimentés par les implémentations Stable Diffusion de xororz utilisant les backends Qualcomm QNN (NPU) et Alibaba MNN (CPU).</string>
+    <string name="sd_models_credit">Les modèles de génération d\'images sont alimentés par les implémentations Stable Diffusion de xororz utilisant les backends Qualcomm QNN (NPU) et CPU.</string>
     <string name="nexa_sdk_credit">L\'inférence des modèles GGUF est fournie par Nexa SDK.</string>
     <string name="ai_thinking">L\'IA réfléchit...</string>
     <string name="thinking_label">Réflexion</string>

@@ -64,7 +64,7 @@
 "github_repository" = "GitHub-Repository";
 "acknowledgments" = "Danksagungen";
 "acknowledgments_text" = "Besonderen Dank an Google, Meta, Microsoft, IBM und die HuggingFace-Community für die Bereitstellung der unglaublichen LLM-Modelle, die diese Anwendung antreiben. Dieses Projekt stützt sich auch auf die erstaunliche Arbeit der Android-Entwicklergemeinschaft und des Open-Source-Ökosystems.";
-"sd_models_credit" = "Bildgenerierungsmodelle werden von xororz\'s Stable Diffusion-Implementierungen mit Qualcomm QNN (NPU) und Alibaba MNN (CPU) Backends betrieben.";
+"sd_models_credit" = "Bildgenerierungsmodelle werden von xororz\'s Stable Diffusion-Implementierungen mit Qualcomm QNN (NPU) und CPU Backends betrieben.";
 "nexa_sdk_credit" = "GGUF-Modellinferenz wird von Nexa SDK bereitgestellt.";
 "ai_thinking" = "KI denkt nach...";
 "thinking_label" = "Denken";

@@ -65,7 +65,7 @@
 "github_repository" = "Репозиторій GitHub";
 "acknowledgments" = "Подяки";
 "acknowledgments_text" = "Окрема подяка компаніям Google, Meta, Microsoft, IBM та спільноті HuggingFace за неймовірні LLM-моделі, що живлять цей застосунок. Проєкт також спирається на чудову роботу спільноти Android-розробників і екосистему відкритого коду.";
-"sd_models_credit" = "Моделі генерації зображень працюють на основі реалізацій Stable Diffusion від xororz з використанням бекендів Qualcomm QNN (NPU) та Alibaba MNN (CPU).";
+"sd_models_credit" = "Моделі генерації зображень працюють на основі реалізацій Stable Diffusion від xororz з використанням бекендів Qualcomm QNN (NPU) та CPU.";
 "nexa_sdk_credit" = "Виведення моделей GGUF працює на основі Nexa SDK.";
 "ai_thinking" = "AI думає…";
 "thinking_label" = "Міркування";

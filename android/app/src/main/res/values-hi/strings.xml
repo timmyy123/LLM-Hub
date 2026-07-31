@@ -73,7 +73,7 @@
     <string name="github_repository">GitHub रिपॉजिटरी</string>
     <string name="acknowledgments">आभार</string>
     <string name="acknowledgments_text">इस एप्लिकेशन को संचालित करने वाले अविश्वसनीय LLM मॉडल प्रदान करने के लिए गूगल, मेटा, माइक्रोसॉफ्ट, आईबीएम और HuggingFace समुदाय को विशेष धन्यवाद। यह प्रोजेक्ट एंड्रॉइड डेवलपमेंट कम्युनिटी और ओपन-सोर्स इकोसिस्टम के अद्भुत कार्यों पर भी आधारित है।</string>
-    <string name="sd_models_credit">इमेज जनरेशन मॉडल Qualcomm QNN (NPU) और Alibaba MNN (CPU) बैकएंड का उपयोग करके xororz के Stable Diffusion इम्प्लीमेंटेशन द्वारा संचालित हैं।</string>
+    <string name="sd_models_credit">इमेज जनरेशन मॉडल Qualcomm QNN (NPU) और CPU बैकएंड का उपयोग करके xororz के Stable Diffusion इम्प्लीमेंटेशन द्वारा संचालित हैं।</string>
     <string name="nexa_sdk_credit">GGUF मॉडल इंफरेंस Nexa SDK द्वारा संचालित है।</string>
     <string name="ai_thinking">AI सोच रहा है...</string>
     <string name="thinking_label">सोच रहा है</string>

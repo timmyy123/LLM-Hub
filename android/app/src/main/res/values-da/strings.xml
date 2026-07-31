@@ -67,7 +67,7 @@
     <string name="github_repository">GitHub Repository</string>
     <string name="acknowledgments">Kvitteringer</string>
     <string name="acknowledgments_text">Særlig tak til Google, Meta, Microsoft, IBM og HuggingFace-fællesskabet for at levere de utrolige LLM-modeller, der driver denne applikation. Dette projekt er også afhængig af det fantastiske arbejde fra Android-udviklingsfællesskabet og open source-økosystemet.</string>
-    <string name="sd_models_credit">Billedgenereringsmodeller er drevet af xororz\'s stabile diffusionsimplementeringer ved hjælp af Qualcomm QNN (NPU) og Alibaba MNN (CPU) backends.</string>
+    <string name="sd_models_credit">Billedgenereringsmodeller er drevet af xororz\'s stabile diffusionsimplementeringer ved hjælp af Qualcomm QNN (NPU) og CPU backends.</string>
     <string name="nexa_sdk_credit">GGUF modelinferens er drevet af GenieX SDK.</string>
     <string name="ai_thinking">AI tænker...</string>
     <string name="thinking_label">Tænker</string>

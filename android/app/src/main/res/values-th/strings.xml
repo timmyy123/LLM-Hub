@@ -67,7 +67,7 @@
     <string name="github_repository">พื้นที่เก็บข้อมูล GitHub</string>
     <string name="acknowledgments">รับทราบ</string>
     <string name="acknowledgments_text">ขอขอบคุณเป็นพิเศษสำหรับ Google, Meta, Microsoft, IBM และชุมชน HuggingFace สำหรับการจัดหาโมเดล LLM อันน่าทึ่งที่ขับเคลื่อนแอปพลิเคชันนี้ โครงการนี้ยังอาศัยผลงานที่น่าทึ่งของชุมชนการพัฒนา Android และระบบนิเวศโอเพ่นซอร์ส</string>
-    <string name="sd_models_credit">โมเดลการสร้างภาพขับเคลื่อนโดยการใช้งาน Stable Diffusion ของ xororz โดยใช้แบ็กเอนด์ Qualcomm QNN (NPU) และ Alibaba MNN (CPU)</string>
+    <string name="sd_models_credit">โมเดลการสร้างภาพขับเคลื่อนโดยการใช้งาน Stable Diffusion ของ xororz โดยใช้แบ็กเอนด์ Qualcomm QNN (NPU) และ CPU</string>
     <string name="nexa_sdk_credit">การอนุมานแบบจำลอง GGUF ขับเคลื่อนโดย GenieX SDK</string>
     <string name="ai_thinking">AI กำลังคิด...</string>
     <string name="thinking_label">กำลังคิด</string>

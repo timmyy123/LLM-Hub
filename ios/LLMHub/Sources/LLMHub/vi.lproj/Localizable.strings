@@ -65,7 +65,7 @@
 "github_repository" = "Kho lưu trữ GitHub";
 "acknowledgments" = "Lời cảm ơn";
 "acknowledgments_text" = "Đặc biệt cảm ơn Google, Meta, Microsoft, IBM và cộng đồng HuggingFace đã cung cấp các mô hình LLM đáng kinh ngạc hỗ trợ ứng dụng này. Dự án này cũng dựa vào thành quả tuyệt vời của cộng đồng phát triển Android và hệ sinh thái nguồn mở.";
-"sd_models_credit" = "Các mô hình tạo hình ảnh được hỗ trợ bởi triển khai Khuếch tán ổn định của xororz bằng cách sử dụng các chương trình phụ trợ Qualcomm QNN (NPU) và Alibaba MNN (CPU).";
+"sd_models_credit" = "Các mô hình tạo hình ảnh được hỗ trợ bởi triển khai Khuếch tán ổn định của xororz bằng cách sử dụng các chương trình phụ trợ Qualcomm QNN (NPU) và CPU.";
 "nexa_sdk_credit" = "Suy luận mô hình GGUF được cung cấp bởi Nexa SDK.";
 "ai_thinking" = "AI đang suy nghĩ...";
 "thinking_label" = "Suy nghĩ";

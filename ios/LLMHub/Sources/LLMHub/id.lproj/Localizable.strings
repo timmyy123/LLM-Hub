@@ -65,7 +65,7 @@
 "github_repository" = "Repositori GitHub";
 "acknowledgments" = "Ucapan Terima Kasih";
 "acknowledgments_text" = "Terima kasih khusus kepada Google, Meta, Microsoft, IBM, dan komunitas HuggingFace karena telah menyediakan model LLM luar biasa yang menggerakkan aplikasi ini. Proyek ini juga bergantung pada karya luar biasa dari komunitas pengembang Android dan ekosistem sumber terbuka.";
-"sd_models_credit" = "Model generasi gambar didukung oleh implementasi Stable Diffusion xororz menggunakan backend Qualcomm QNN (NPU) dan Alibaba MNN (CPU).";
+"sd_models_credit" = "Model generasi gambar didukung oleh implementasi Stable Diffusion xororz menggunakan backend Qualcomm QNN (NPU) dan CPU.";
 "nexa_sdk_credit" = "Inferensi model GGUF didukung oleh Nexa SDK.";
 "ai_thinking" = "AI sedang berpikir...";
 "thinking_label" = "Pemikiran";
