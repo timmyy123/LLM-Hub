@@ -372,6 +372,7 @@
 "supports_vision" = "Understøtter Vision";
 "supports_audio" = "Understøtter lyd";
 "supports_gpu" = "Understøtter GPU";
+"supports_mtp" = "Understøtter MTP";
 "model_format" = "Model Format";
 "context_window_size" = "Kontekstvinduesstørrelse";
 "import_model" = "Importmodel";

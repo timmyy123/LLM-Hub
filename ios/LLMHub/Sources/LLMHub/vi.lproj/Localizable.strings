@@ -372,6 +372,7 @@
 "supports_vision" = "Hỗ trợ tầm nhìn";
 "supports_audio" = "Hỗ trợ âm thanh";
 "supports_gpu" = "Hỗ trợ GPU";
+"supports_mtp" = "Hỗ trợ MTP";
 "model_format" = "Định dạng mẫu";
 "context_window_size" = "Kích thước cửa sổ ngữ cảnh";
 "import_model" = "Nhập khẩu mẫu";

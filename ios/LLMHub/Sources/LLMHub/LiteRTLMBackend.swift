@@ -45,8 +45,8 @@ final class LiteRTLMBackend {
 
     // MARK: - Model Lifecycle
 
-    /// Load a .litertlm model file from disk, initialise GPU engine with MTP.
-    func loadModel(at path: String, supportsVision: Bool, supportsAudio: Bool, maxTokens: Int?) async throws {
+    /// Load a .litertlm model file from disk.
+    func loadModel(at path: String, supportsVision: Bool, supportsAudio: Bool, supportsGpu: Bool = true, supportsMtp: Bool = true, maxTokens: Int?) async throws {
         guard FileManager.default.fileExists(atPath: path) else {
             throw LiteRTLMError.modelFileNotFound(path)
         }
@@ -58,12 +58,12 @@ final class LiteRTLMBackend {
 
         let isGemma4_12B = path.lowercased().hasSuffix(".litertlm") && (path.lowercased().contains("gemma-4-12b") || path.lowercased().contains("gemma4_12b"))
         ExperimentalFlags.optIntoExperimentalAPIs()
-        ExperimentalFlags.enableSpeculativeDecoding = !isGemma4_12B
+        ExperimentalFlags.enableSpeculativeDecoding = supportsMtp && !isGemma4_12B
         ExperimentalFlags.enableBenchmark = true
 
         let config = try EngineConfig(
             modelPath: path,
-            backend: .gpu,
+            backend: supportsGpu ? .gpu : .cpu(),
             visionBackend: (supportsVision && !isGemma4_12B) ? .cpu() : nil,
             audioBackend: (supportsAudio && !isGemma4_12B) ? .cpu() : nil,
             maxNumTokens: maxTokens,

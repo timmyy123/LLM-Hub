@@ -358,6 +358,7 @@
 "supports_vision" = "Obsługuje Wizję";
 "supports_audio" = "Obsługuje Dźwięk";
 "supports_gpu" = "Obsługuje GPU";
+"supports_mtp" = "Obsługuje MTP";
 "model_format" = "Format Modelu";
 "context_window_size" = "Rozmiar Okna Kontekstowego";
 "import_model" = "Importuj Model";

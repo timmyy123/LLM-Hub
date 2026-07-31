@@ -361,6 +361,7 @@
 "supports_vision" = "תומך בראייה";
 "supports_audio" = "תומך באודיו";
 "supports_gpu" = "תומך ב-GPU";
+"supports_mtp" = "תומך ב-MTP";
 "model_format" = "פורמט המודל";
 "context_window_size" = "גודל חלון ההקשר";
 "import_model" = "ייבא מודל";

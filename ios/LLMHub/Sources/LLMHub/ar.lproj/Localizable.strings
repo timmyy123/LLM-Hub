@@ -358,6 +358,7 @@
 "supports_vision" = "يدعم الرؤية";
 "supports_audio" = "يدعم الصوت";
 "supports_gpu" = "يدعم GPU";
+"supports_mtp" = "يدعم MTP";
 "model_format" = "صيغة النموذج";
 "context_window_size" = "حجم نافذة السياق";
 "import_model" = "استيراد النموذج";

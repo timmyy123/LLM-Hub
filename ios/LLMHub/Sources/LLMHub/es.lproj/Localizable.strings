@@ -340,6 +340,7 @@
 "supports_vision" = "Soporta Visión";
 "supports_audio" = "Soporta Audio";
 "supports_gpu" = "Soporta GPU";
+"supports_mtp" = "Soporta MTP";
 "model_format" = "Formato del Modelo";
 "context_window_size" = "Tamaño de Ventana de Contexto";
 "import_model" = "Importar Modelo";

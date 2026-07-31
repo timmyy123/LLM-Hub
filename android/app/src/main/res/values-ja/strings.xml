@@ -407,6 +407,7 @@
     <string name="supports_vision">ビジョンをサポート</string>
     <string name="supports_audio">音声をサポート</string>
     <string name="supports_gpu">GPUをサポート</string>
+    <string name="supports_mtp">MTPをサポート</string>
     <string name="model_format">モデルフォーマット</string>
     <string name="context_window_size">コンテキストウィンドウサイズ</string>
     <string name="import_model">モデルをインポート</string>

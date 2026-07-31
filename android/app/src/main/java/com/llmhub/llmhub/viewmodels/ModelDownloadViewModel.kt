@@ -123,13 +123,15 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         main: HuggingFaceModelFile,
         projector: HuggingFaceModelFile? = null,
         supportsVision: Boolean = false,
-        contextWindowSize: Int = 4096
+        contextWindowSize: Int = 4096,
+        supportsMtp: Boolean = true
     ) {
         val additionalFiles = if (supportsVision && projector != null) listOf(projector.downloadUrl) else emptyList()
         val model = LLMModel(
             name = name, description = "Hugging Face $format model", url = main.downloadUrl,
             category = if (supportsVision) "multimodal" else "text", sizeBytes = main.sizeBytes + (if (supportsVision && projector != null) projector.sizeBytes else 0), source = "Custom",
             supportsVision = supportsVision, supportsAudio = false, supportsGpu = true,
+            supportsMtp = supportsMtp,
             requirements = com.llmhub.llmhub.data.ModelRequirements(4, 8), contextWindowSize = contextWindowSize,
             modelFormat = format.lowercase(), additionalFiles = additionalFiles,
             isDownloaded = false, isDownloading = false, downloadProgress = 0f

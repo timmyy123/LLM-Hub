@@ -424,6 +424,7 @@
     <string name="supports_vision">支持视觉</string>
     <string name="supports_audio">支持音频</string>
     <string name="supports_gpu">支持显卡加速</string>
+    <string name="supports_mtp">支持MTP</string>
     <string name="model_format">模型格式</string>
     <string name="context_window_size">上下文窗口大小</string>
     <string name="import_model">导入模型</string>

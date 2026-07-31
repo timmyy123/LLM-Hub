@@ -358,6 +358,7 @@
 "supports_vision" = "Mendukung Visi";
 "supports_audio" = "Mendukung Audio";
 "supports_gpu" = "Mendukung GPU";
+"supports_mtp" = "Mendukung MTP";
 "model_format" = "Format Model";
 "context_window_size" = "Ukuran Jendela Konteks";
 "import_model" = "Impor Model";

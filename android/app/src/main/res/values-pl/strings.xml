@@ -410,6 +410,7 @@
     <string name="supports_vision">Obsługuje Wizję</string>
     <string name="supports_audio">Obsługuje Dźwięk</string>
     <string name="supports_gpu">Obsługuje GPU</string>
+    <string name="supports_mtp">Obsługuje MTP</string>
     <string name="model_format">Format Modelu</string>
     <string name="context_window_size">Rozmiar Okna Kontekstowego</string>
     <string name="import_model">Importuj Model</string>

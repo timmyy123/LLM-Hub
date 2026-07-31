@@ -981,6 +981,8 @@ class LLMBackend: ObservableObject {
                 at: filePath,
                 supportsVision: model.supportsVision && enableVision,
                 supportsAudio: model.supportsAudio && enableAudio,
+                supportsGpu: model.supportsGpu,
+                supportsMtp: model.supportsMtp,
                 maxTokens: effectiveContext
             )
             isLoaded = true

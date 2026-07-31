@@ -411,6 +411,7 @@
     <string name="supports_vision">Soporta Visión</string>
     <string name="supports_audio">Soporta Audio</string>
     <string name="supports_gpu">Soporta GPU</string>
+    <string name="supports_mtp">Soporta MTP</string>
     <string name="model_format">Formato del Modelo</string>
     <string name="context_window_size">Tamaño de Ventana de Contexto</string>
     <string name="import_model">Importar Modelo</string>

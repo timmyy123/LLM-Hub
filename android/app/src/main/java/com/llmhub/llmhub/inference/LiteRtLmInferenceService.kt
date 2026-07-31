@@ -208,7 +208,7 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
             currentBackendIsGpu = backend is Backend.GPU
 
             // Enable Multi-Token Prediction (MTP) via speculative decoding when running on GPU, except for Gemma-4 12B
-            ExperimentalFlags.enableSpeculativeDecoding = currentBackendIsGpu && !isGemma4_12B
+            ExperimentalFlags.enableSpeculativeDecoding = model.supportsMtp && currentBackendIsGpu && !isGemma4_12B
 
             val engineConfig = EngineConfig(
                 modelPath = modelFile.absolutePath,

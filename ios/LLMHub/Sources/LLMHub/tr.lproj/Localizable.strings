@@ -358,6 +358,7 @@
 "supports_vision" = "Görseli Destekler";
 "supports_audio" = "Sesi Destekler";
 "supports_gpu" = "GPU\'yu Destekler";
+"supports_mtp" = "MTP'yi Destekler";
 "model_format" = "Model Formatı";
 "context_window_size" = "Bağlam Penceresi Boyutu";
 "import_model" = "Modeli İçe Aktar";

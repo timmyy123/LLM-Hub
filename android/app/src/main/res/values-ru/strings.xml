@@ -391,6 +391,7 @@
     <string name="supports_vision">Поддерживает Зрение</string>
     <string name="supports_audio">Поддерживает Аудио</string>
     <string name="supports_gpu">Поддерживает ГПУ</string>
+    <string name="supports_mtp">Поддерживает MTP</string>
     <string name="model_format">Формат Модели</string>
     <string name="context_window_size">Размер Контекстного Окна</string>
     <string name="import_model">Импортировать Модель</string>

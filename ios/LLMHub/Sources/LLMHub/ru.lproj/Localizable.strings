@@ -341,6 +341,7 @@
 "supports_vision" = "Поддерживает Зрение";
 "supports_audio" = "Поддерживает Аудио";
 "supports_gpu" = "Поддерживает ГПУ";
+"supports_mtp" = "Поддерживает MTP";
 "model_format" = "Формат Модели";
 "context_window_size" = "Размер Контекстного Окна";
 "import_model" = "Импортировать Модель";

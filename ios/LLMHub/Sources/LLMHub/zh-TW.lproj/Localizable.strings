@@ -371,6 +371,7 @@
 "supports_vision" = "支援視覺";
 "supports_audio" = "支援音訊";
 "supports_gpu" = "支援顯示卡加速";
+"supports_mtp" = "支持MTP";
 "model_format" = "模型格式";
 "context_window_size" = "上下文視窗大小";
 "import_model" = "匯入模型";

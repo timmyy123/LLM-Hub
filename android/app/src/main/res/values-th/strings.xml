@@ -377,6 +377,7 @@
     <string name="supports_vision">รองรับการมองเห็น</string>
     <string name="supports_audio">รองรับเสียง</string>
     <string name="supports_gpu">รองรับ GPU</string>
+    <string name="supports_mtp">รองรับ MTP</string>
     <string name="model_format">รูปแบบโมเดล</string>
     <string name="context_window_size">ขนาดหน้าต่างบริบท</string>
     <string name="import_model">นำเข้าโมเดล</string>

@@ -203,7 +203,7 @@ class ModelDownloadViewModel: ObservableObject {
             url: destinationModelURL.path, category: model.category, sizeBytes: model.sizeBytes,
             source: model.source, supportsVision: model.supportsVision,
             supportsAudio: model.supportsAudio, supportsThinking: model.supportsThinking,
-            supportsGpu: model.supportsGpu, requirements: model.requirements,
+            supportsGpu: model.supportsGpu, supportsMtp: model.supportsMtp, requirements: model.requirements,
             contextWindowSize: model.contextWindowSize, modelFormat: model.modelFormat,
             additionalFiles: migratedAdditional
         )
@@ -266,7 +266,7 @@ class ModelDownloadViewModel: ObservableObject {
             url: model.url, category: model.category, sizeBytes: model.sizeBytes,
             source: model.source, supportsVision: model.supportsVision,
             supportsAudio: model.supportsAudio, supportsThinking: model.supportsThinking,
-            supportsGpu: model.supportsGpu, requirements: model.requirements,
+            supportsGpu: model.supportsGpu, supportsMtp: model.supportsMtp, requirements: model.requirements,
             contextWindowSize: model.contextWindowSize, modelFormat: model.modelFormat,
             additionalFiles: files, promptTemplate: model.promptTemplate
         )
@@ -301,7 +301,7 @@ class ModelDownloadViewModel: ObservableObject {
             url: fixedURL, category: model.category, sizeBytes: model.sizeBytes,
             source: model.source, supportsVision: model.supportsVision,
             supportsAudio: model.supportsAudio, supportsThinking: model.supportsThinking,
-            supportsGpu: model.supportsGpu, requirements: model.requirements,
+            supportsGpu: model.supportsGpu, supportsMtp: model.supportsMtp, requirements: model.requirements,
             contextWindowSize: model.contextWindowSize, modelFormat: model.modelFormat,
             additionalFiles: fixedAdditional
         )
@@ -1116,6 +1116,8 @@ struct ImportExternalModelSheet: View {
     @State private var selectedFileName = ""
     @State private var selectedFileURL: URL? = nil
     @State private var supportsVision = false
+    @State private var supportsGpu = true
+    @State private var supportsMtp = false
     @State private var projectorFileName = ""
     @State private var projectorFileURL: URL? = nil
     @State private var contextWindowSize = "4096"
@@ -1224,6 +1226,27 @@ struct ImportExternalModelSheet: View {
             Toggle("", isOn: $supportsVision)
                 .labelsHidden()
                 .tint(ApolloPalette.accentStrong)
+        }
+
+        if modelFormat == .litertlm {
+            glassRow {
+                Text(settings.localized("supports_gpu"))
+                    .font(.subheadline)
+                    .foregroundColor(.white)
+                Spacer()
+                Toggle("", isOn: $supportsGpu)
+                    .labelsHidden()
+                    .tint(ApolloPalette.accentStrong)
+            }
+            glassRow {
+                Text(settings.localized("supports_mtp"))
+                    .font(.subheadline)
+                    .foregroundColor(.white)
+                Spacer()
+                Toggle("", isOn: $supportsMtp)
+                    .labelsHidden()
+                    .tint(ApolloPalette.accentStrong)
+            }
         }
 
         // Vision projector file picker (only GGUF needs a separate mmproj file)
@@ -1436,7 +1459,8 @@ struct ImportExternalModelSheet: View {
                 supportsVision: supportsVision,
                 supportsAudio: false,
                 supportsThinking: false,
-                supportsGpu: true,
+                supportsGpu: supportsGpu,
+                supportsMtp: modelFormat == .litertlm ? supportsMtp : true,
                 requirements: ModelRequirements(minRamGB: max(2, Int(remoteModel.size / 1_073_741_824) + 1), recommendedRamGB: max(4, Int(remoteModel.size / 1_073_741_824) + 2)),
                 contextWindowSize: contextSize,
                 modelFormat: modelFormat,
@@ -1491,7 +1515,8 @@ struct ImportExternalModelSheet: View {
                 supportsVision: supportsVision,
                 supportsAudio: false,
                 supportsThinking: false,
-                supportsGpu: true,
+                supportsGpu: supportsGpu,
+                supportsMtp: modelFormat == .litertlm ? supportsMtp : true,
                 requirements: ModelRequirements(minRamGB: max(2, Int(fileSize / 1_073_741_824) + 1), recommendedRamGB: max(4, Int(fileSize / 1_073_741_824) + 2)),
                 contextWindowSize: contextSize,
                 modelFormat: modelFormat,

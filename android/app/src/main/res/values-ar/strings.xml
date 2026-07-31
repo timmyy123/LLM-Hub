@@ -409,6 +409,7 @@
     <string name="supports_vision">يدعم الرؤية</string>
     <string name="supports_audio">يدعم الصوت</string>
     <string name="supports_gpu">يدعم GPU</string>
+    <string name="supports_mtp">يدعم MTP</string>
     <string name="model_format">صيغة النموذج</string>
     <string name="context_window_size">حجم نافذة السياق</string>
     <string name="import_model">استيراد النموذج</string>

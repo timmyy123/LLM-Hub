@@ -686,8 +686,15 @@ struct FeatureModelSettingsSheet: View {
         if !models.isEmpty { return }
         isRefreshingModels = true
         try? RunAnywhere.initialize(environment: .development)
-        let loaded = downloadableFeatureModels().filter { model in
-            modelFilter?(model) ?? true
+        let loaded: [AIModel]
+        if let modelFilter {
+            loaded = ModelData.allModels().filter { model in
+                guard !model.isDependencyOnly else { return false }
+                guard ModelData.isModelFullyAvailableLocally(model) else { return false }
+                return modelFilter(model)
+            }
+        } else {
+            loaded = downloadableFeatureModels()
         }
         models = loaded
         if selectedModelName.isEmpty || !loaded.contains(where: { $0.name == selectedModelName }) {

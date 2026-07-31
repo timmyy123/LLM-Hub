@@ -389,6 +389,7 @@
     <string name="supports_vision">Understøtter Vision</string>
     <string name="supports_audio">Understøtter lyd</string>
     <string name="supports_gpu">Understøtter GPU</string>
+    <string name="supports_mtp">Understøtter MTP</string>
     <string name="model_format">Model Format</string>
     <string name="context_window_size">Kontekstvinduesstørrelse</string>
     <string name="import_model">Importmodel</string>

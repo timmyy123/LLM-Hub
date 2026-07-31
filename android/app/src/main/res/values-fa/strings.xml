@@ -411,6 +411,7 @@
     <string name="supports_vision">پشتیبانی از بینایی</string>
     <string name="supports_audio">پشتیبانی از صوت</string>
     <string name="supports_gpu">پشتیبانی از GPU</string>
+    <string name="supports_mtp">پشتیبانی از MTP</string>
     <string name="model_format">قالب مدل</string>
     <string name="context_window_size">اندازه پنجره زمینه</string>
     <string name="import_model">وارد کردن مدل</string>

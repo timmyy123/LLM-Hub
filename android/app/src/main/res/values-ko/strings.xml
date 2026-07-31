@@ -410,6 +410,7 @@
     <string name="supports_vision">비전 지원</string>
     <string name="supports_audio">오디오 지원</string>
     <string name="supports_gpu">GPU 지원</string>
+    <string name="supports_mtp">MTP 지원</string>
     <string name="model_format">모델 형식</string>
     <string name="context_window_size">컨텍스트 창 크기</string>
     <string name="import_model">모델 가져오기</string>

@@ -372,6 +372,7 @@
 "supports_vision" = "รองรับการมองเห็น";
 "supports_audio" = "รองรับเสียง";
 "supports_gpu" = "รองรับ GPU";
+"supports_mtp" = "รองรับ MTP";
 "model_format" = "รูปแบบโมเดล";
 "context_window_size" = "ขนาดหน้าต่างบริบท";
 "import_model" = "นำเข้าโมเดล";

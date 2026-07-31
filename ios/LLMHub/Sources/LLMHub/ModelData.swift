@@ -83,6 +83,7 @@ public struct AIModel: Identifiable, Codable, Sendable {
     public let supportsAudio: Bool
     public let supportsThinking: Bool
     public let supportsGpu: Bool
+    public let supportsMtp: Bool
     public let requirements: ModelRequirements
     public let contextWindowSize: Int
     public let modelFormat: ModelFormat
@@ -101,6 +102,7 @@ public struct AIModel: Identifiable, Codable, Sendable {
         supportsAudio: Bool = false,
         supportsThinking: Bool = false,
         supportsGpu: Bool = true,
+        supportsMtp: Bool = true,
         requirements: ModelRequirements,
         contextWindowSize: Int = 2048,
         modelFormat: ModelFormat = .gguf,
@@ -118,11 +120,33 @@ public struct AIModel: Identifiable, Codable, Sendable {
         self.supportsAudio = supportsAudio
         self.supportsThinking = supportsThinking
         self.supportsGpu = supportsGpu
+        self.supportsMtp = supportsMtp
         self.requirements = requirements
         self.contextWindowSize = contextWindowSize
         self.modelFormat = modelFormat
         self.additionalFiles = additionalFiles
         self.promptTemplate = promptTemplate
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        description = try container.decode(String.self, forKey: .description)
+        url = try container.decode(String.self, forKey: .url)
+        category = try container.decode(ModelCategory.self, forKey: .category)
+        sizeBytes = try container.decode(Int64.self, forKey: .sizeBytes)
+        source = try container.decode(String.self, forKey: .source)
+        supportsVision = try container.decodeIfPresent(Bool.self, forKey: .supportsVision) ?? false
+        supportsAudio = try container.decodeIfPresent(Bool.self, forKey: .supportsAudio) ?? false
+        supportsThinking = try container.decodeIfPresent(Bool.self, forKey: .supportsThinking) ?? false
+        supportsGpu = try container.decodeIfPresent(Bool.self, forKey: .supportsGpu) ?? true
+        supportsMtp = try container.decodeIfPresent(Bool.self, forKey: .supportsMtp) ?? true
+        requirements = try container.decode(ModelRequirements.self, forKey: .requirements)
+        contextWindowSize = try container.decodeIfPresent(Int.self, forKey: .contextWindowSize) ?? 2048
+        modelFormat = try container.decodeIfPresent(ModelFormat.self, forKey: .modelFormat) ?? .gguf
+        additionalFiles = try container.decodeIfPresent([String].self, forKey: .additionalFiles) ?? []
+        promptTemplate = try container.decodeIfPresent(String.self, forKey: .promptTemplate)
     }
 
     public var sizeLabel: String {
@@ -309,7 +333,7 @@ public struct ModelData {
             url: fixedURL, category: model.category, sizeBytes: model.sizeBytes,
             source: model.source, supportsVision: model.supportsVision,
             supportsAudio: model.supportsAudio, supportsThinking: model.supportsThinking,
-            supportsGpu: model.supportsGpu, requirements: model.requirements,
+            supportsGpu: model.supportsGpu, supportsMtp: model.supportsMtp, requirements: model.requirements,
             contextWindowSize: model.contextWindowSize, modelFormat: model.modelFormat,
             additionalFiles: fixedAdditional
         )
@@ -336,17 +360,30 @@ public struct ModelData {
 
         if model.source == "Custom" {
             let normalized = normalizeCustomModel(model)
-            guard FileManager.default.fileExists(atPath: normalized.url),
-                  !normalized.url.lowercased().contains("mmproj") else {
-                return false
+            // For locally-imported models, check the stored path directly
+            if !normalized.url.hasPrefix("http") {
+                guard FileManager.default.fileExists(atPath: normalized.url),
+                      !normalized.url.lowercased().contains("mmproj") else {
+                    return false
+                }
+                if normalized.supportsVision {
+                    return normalized.additionalFiles.contains {
+                        let lower = $0.lowercased()
+                        return lower.contains("mmproj") && FileManager.default.fileExists(atPath: $0)
+                    }
+                }
+                return true
             }
-            if normalized.supportsVision {
-                return normalized.additionalFiles.contains {
-                    let lower = $0.lowercased()
-                    return lower.contains("mmproj") && FileManager.default.fileExists(atPath: $0)
+            // For HF-downloaded custom models, check the RunAnywhere/model directory
+            if let dir = try? SimplifiedFileManager.shared.getModelFolderURL(
+                modelId: model.id, framework: model.inferenceFramework
+            ), FileManager.default.fileExists(atPath: dir.path) {
+                let status = localFileStatus(in: dir, for: model)
+                if status.allExist && status.totalBytes > 0 {
+                    return true
                 }
             }
-            return true
+            return false
         }
 
         if let runAnywhereDir = try? SimplifiedFileManager.shared.getModelFolderURL(

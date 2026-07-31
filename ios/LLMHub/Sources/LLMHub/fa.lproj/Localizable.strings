@@ -361,6 +361,7 @@
 "supports_vision" = "پشتیبانی از بینایی";
 "supports_audio" = "پشتیبانی از صوت";
 "supports_gpu" = "پشتیبانی از GPU";
+"supports_mtp" = "پشتیبانی از MTP";
 "model_format" = "قالب مدل";
 "context_window_size" = "اندازه پنجره زمینه";
 "import_model" = "وارد کردن مدل";

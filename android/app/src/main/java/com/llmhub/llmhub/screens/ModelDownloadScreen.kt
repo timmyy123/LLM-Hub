@@ -396,8 +396,8 @@ fun ModelDownloadScreen(
             ImportExternalModelDialog(
                 onDismiss = { showImportDialog = false },
                 onSearchHuggingFace = { query, format, page -> downloadViewModel.searchHuggingFaceFiles(query, format, page) },
-                onDownloadHuggingFace = { name, format, main, projector, vision, contextSize ->
-                    downloadViewModel.downloadHuggingFaceImport(name, format, main, projector, vision, contextSize)
+                onDownloadHuggingFace = { name, format, main, projector, vision, contextSize, mtp ->
+                    downloadViewModel.downloadHuggingFaceImport(name, format, main, projector, vision, contextSize, mtp)
                     showImportDialog = false
                 },
                 onImport = { externalModel, projectorUri ->
@@ -1102,7 +1102,7 @@ private fun getModelDisplayName(model: LLMModel, context: Context): String {
 private fun ImportExternalModelDialog(
     onDismiss: () -> Unit,
     onSearchHuggingFace: suspend (String, String, Int) -> List<com.llmhub.llmhub.viewmodels.HuggingFaceModelFile>,
-    onDownloadHuggingFace: (String, String, com.llmhub.llmhub.viewmodels.HuggingFaceModelFile, com.llmhub.llmhub.viewmodels.HuggingFaceModelFile?, Boolean, Int) -> Unit,
+    onDownloadHuggingFace: (String, String, com.llmhub.llmhub.viewmodels.HuggingFaceModelFile, com.llmhub.llmhub.viewmodels.HuggingFaceModelFile?, Boolean, Int, Boolean) -> Unit,
     onImport: (LLMModel, Uri?) -> Boolean
 ) {
     val context = LocalContext.current
@@ -1114,6 +1114,7 @@ private fun ImportExternalModelDialog(
     var supportsVision by remember { mutableStateOf(false) }
     var supportsAudio by remember { mutableStateOf(false) }
     var supportsGpu by remember { mutableStateOf(false) }
+    var supportsMtp by remember { mutableStateOf(false) }
     var modelFormat by remember { mutableStateOf(ModelFormat.TASK) }
     var contextWindowSize by remember { mutableStateOf("2048") }
     var huggingFaceQuery by remember { mutableStateOf("") }
@@ -1493,6 +1494,25 @@ private fun ImportExternalModelDialog(
                             )
                         }
                     }
+
+                    if (modelFormat == ModelFormat.LITERTLM) {
+                        item {
+                            Row(
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.supports_mtp),
+                                    modifier = Modifier.clickable { supportsMtp = !supportsMtp }
+                                )
+                                RadioButton(
+                                    selected = supportsMtp,
+                                    onClick = { supportsMtp = !supportsMtp }
+                                )
+                            }
+                        }
+                    }
                 }
                 
                 item {
@@ -1574,7 +1594,7 @@ private fun ImportExternalModelDialog(
                 onClick = {
                     selectedHuggingFaceModel?.let { remote ->
                         if (modelName.isNotBlank()) {
-                            onDownloadHuggingFace(modelName, modelFormat.name.lowercase(), remote, selectedHuggingFaceProjector, supportsVision, contextWindowSize.toIntOrNull() ?: 4096)
+                            onDownloadHuggingFace(modelName, modelFormat.name.lowercase(), remote, selectedHuggingFaceProjector, supportsVision, contextWindowSize.toIntOrNull() ?: 4096, supportsMtp)
                         }
                         return@Button
                     }
@@ -1659,6 +1679,7 @@ private fun ImportExternalModelDialog(
                             supportsVision = actualSupportsVision,
                             supportsAudio = actualSupportsAudio,
                             supportsGpu = actualSupportsGpu,
+                            supportsMtp = if (modelFormat == ModelFormat.LITERTLM) supportsMtp else true,
                             requirements = ModelRequirements(
                                 minRamGB = 4,
                                 recommendedRamGB = 8

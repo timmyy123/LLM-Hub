@@ -372,6 +372,7 @@
 "supports_vision" = "Ondersteunt visie";
 "supports_audio" = "Ondersteunt audio";
 "supports_gpu" = "Ondersteunt GPU";
+"supports_mtp" = "Ondersteunt MTP";
 "model_format" = "Modelformaat";
 "context_window_size" = "Grootte contextvenster";
 "import_model" = "Importmodel";

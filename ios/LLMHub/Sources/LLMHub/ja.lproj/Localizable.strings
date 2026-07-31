@@ -358,6 +358,7 @@
 "supports_vision" = "ビジョンをサポート";
 "supports_audio" = "音声をサポート";
 "supports_gpu" = "GPUをサポート";
+"supports_mtp" = "MTPをサポート";
 "model_format" = "モデルフォーマット";
 "context_window_size" = "コンテキストウィンドウサイズ";
 "import_model" = "モデルをインポート";

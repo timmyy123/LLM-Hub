@@ -361,6 +361,7 @@
 "supports_vision" = "Підтримує зір";
 "supports_audio" = "Підтримує аудіо";
 "supports_gpu" = "Підтримує GPU";
+"supports_mtp" = "Підтримує MTP";
 "model_format" = "Формат моделі";
 "context_window_size" = "Розмір вікна контексту";
 "import_model" = "Імпортувати модель";
