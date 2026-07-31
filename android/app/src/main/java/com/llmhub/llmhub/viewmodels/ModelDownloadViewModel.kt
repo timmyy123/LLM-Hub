@@ -1258,6 +1258,10 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
 
             currentModels[modelIndex] = updatedModel
             _models.value = currentModels
+
+            if (updatedModel.source == "Custom" && updatedModel.isDownloaded) {
+                saveImportedModels()
+            }
         }
     }
 }
