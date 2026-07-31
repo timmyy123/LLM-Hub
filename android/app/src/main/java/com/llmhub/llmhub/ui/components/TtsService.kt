@@ -1375,17 +1375,79 @@ class TtsService(private val context: Context, private val isTranslationFeature:
                 token.isBlank() -> result.append(' ')
                 token.matches(Regex("[.,!?;:\"]")) -> result.append(token)
                 else -> {
-                    val cleaned = token.lowercase()
-                        .replace("á", "a").replace("â", "a").replace("ã", "a").replace("à", "a")
-                        .replace("é", "e").replace("ê", "e").replace("í", "i").replace("ó", "o").replace("ô", "o").replace("õ", "o").replace("ú", "u")
-                        .replace("lh", "ʎ").replace("nh", "ɲ").replace("ch", "ʃ").replace("ç", "s")
-                    for (ch in cleaned) {
+                    for (ch in portugueseWordToPhonemes(token)) {
                         if (ch in validChars) result.append(ch)
                     }
                 }
             }
         }
-        return result.toString().replace(Regex(" +"), " ").trim()
+        val phonemes = result.toString().replace(Regex(" +"), " ").trim()
+        Log.d(TAG, "portugueseToPhonemes: '$text' -> '$phonemes'")
+        return phonemes
+    }
+
+    /**
+     * Lightweight Brazilian Portuguese G2P for Kokoro's pf_/pm_ voices.
+     *
+     * Kokoro's Portuguese pack is trained for pt-BR phonemes. The former
+     * letter-for-letter converter discarded distinctions such as é/ê, ó/ô,
+     * nh/lh, soft g, and Brazilian final vowels, which made Portuguese sound
+     * Spanish. This keeps the conversion on the custom Kokoro path while
+     * preserving the phonetic distinctions its voice pack expects.
+     */
+    private fun portugueseWordToPhonemes(word: String): String {
+        var value = word.lowercase(Locale.ROOT)
+            // Common Brazilian nasal diphthongs must be processed before accents.
+            .replace("ões", "ojʃ")
+            .replace("ão", "ɐw")
+            .replace("ãe", "ɐj")
+            .replace("õe", "oj")
+            .replace(Regex("am$"), "ɐw")
+            .replace(Regex("em$"), "ej")
+            // Keep Portuguese open/closed vowels instead of flattening them.
+            .replace("á", "a").replace("à", "a")
+            .replace("â", "ɐ").replace("ã", "ɐ")
+            .replace("é", "ɛ").replace("ê", "e")
+            .replace("í", "i")
+            .replace("ó", "ɔ").replace("ô", "o").replace("õ", "o")
+            .replace("ú", "u")
+            .replace("ç", "s")
+            .replace("ch", "ʃ")
+            .replace("lh", "ʎ")
+            .replace("nh", "ɲ")
+            .replace("rr", "ʁ")
+            .replace("qu", "k")
+            .replace("gu", "g")
+
+        val output = StringBuilder()
+        fun isVowel(char: Char?): Boolean = char != null && char in "aeiouɛɔɐ"
+
+        for (index in value.indices) {
+            val char = value[index]
+            val previous = value.getOrNull(index - 1)
+            val next = value.getOrNull(index + 1)
+            val phoneme = when (char) {
+                'c' -> if (next == 'e' || next == 'i' || next == 'ɛ') "s" else "k"
+                'g' -> if (next == 'e' || next == 'i' || next == 'ɛ') "ʒ" else "g"
+                'j' -> "ʒ"
+                'x' -> "ʃ"
+                'r' -> if (index == 0 || previous == 'ʁ' || next == null) "ʁ" else "ɾ"
+                's' -> if (isVowel(previous) && isVowel(next)) "z" else "s"
+                'z' -> "z"
+                'd' -> if (next == 'i') "dʒ" else "d"
+                't' -> if (next == 'i') "tʃ" else "t"
+                // Brazilian Portuguese commonly reduces word-final e/o to i/u.
+                'e' -> if (next == null) "i" else "e"
+                'o' -> if (next == null) "u" else "o"
+                // In coda position, m/n nasalise the preceding vowel rather than
+                // sounding as a separate Spanish-style consonant.
+                'm', 'n' -> if (next == null || !isVowel(next)) "" else char.toString()
+                'h' -> ""
+                else -> char.toString()
+            }
+            output.append(phoneme)
+        }
+        return output.toString()
     }
 
     private fun englishToPhonemes(text: String): String {
