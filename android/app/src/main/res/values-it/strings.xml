@@ -899,7 +899,7 @@
     <string name="agent_calendar_confirm">Crea evento: %1$s</string>
     <string name="agent_shortcut_confirm">Esegui collegamento: %1$s</string>
     <string name="agent_welcome_message">Ciao! Sono il tuo Agente IA. Posso cercare sul web, mostrare mappe, gestire eventi del calendario, controllare il meteo, impostare sveglie, inviare messaggi e calcolare hash. Come posso aiutarti oggi?</string>
-    <string name="agent_no_model_android">Scarica prima il modello Gemma 4 E2/4B per utilizzare l\'Agente</string>
+    <string name="agent_no_model_android">Scarica prima un modello LiteRT-LM per utilizzare l\'Agente</string>
     <string name="agent_no_model_ios">Scarica prima un modello per utilizzare l\'Agente</string>
     <string name="open_maps">Apri mappe</string>
     <string name="agent_processing_tool">L’agente sta elaborando lo strumento...</string>

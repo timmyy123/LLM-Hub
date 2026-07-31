@@ -907,7 +907,7 @@
     <string name="agent_calendar_confirm">Buat acara: %1$s</string>
     <string name="agent_shortcut_confirm">Jalankan pintasan: %1$s</string>
     <string name="agent_welcome_message">Halo! Saya Agen AI Anda. Saya dapat mencari di web, menampilkan peta, mengelola acara kalender, memeriksa cuaca, mengatur alarm, mengirim pesan, dan menghitung hash. Ada yang bisa saya bantu hari ini?</string>
-    <string name="agent_no_model_android">Silakan unduh model Gemma 4 E2/4B terlebih dahulu untuk menggunakan Agen</string>
+    <string name="agent_no_model_android">Silakan unduh model LiteRT-LM terlebih dahulu untuk menggunakan Agen</string>
     <string name="agent_no_model_ios">Silakan unduh model terlebih dahulu untuk menggunakan Agen</string>
     <string name="open_maps">Buka Peta</string>
     <string name="agent_processing_tool">Agen sedang memproses alat...</string>

@@ -905,7 +905,7 @@
     <string name="agent_calendar_confirm">ایجاد رویداد: %1$s</string>
     <string name="agent_shortcut_confirm">اجرای میانبر: %1$s</string>
     <string name="agent_welcome_message">سلام! من عامل هوش مصنوعی شما هستم. می‌توانم در وب جستجو کنم، نقشه‌ها را نشان دهم، رویدادهای تقویم را مدیریت کنم، آب و هوا را بررسی کنم، هشدارها را تنظیم کنم، پیام بفرستم و هش‌ها را محاسبه کنم. امروز چگونه می‌توانم به شما کمک کنم؟</string>
-    <string name="agent_no_model_android">لطفاً ابتدا مدل Gemma 4 E2/4B را دانلود کنید تا از عامل استفاده کنید</string>
+    <string name="agent_no_model_android">لطفاً ابتدا یک مدل LiteRT-LM را دانلود کنید تا از عامل استفاده کنید</string>
     <string name="agent_no_model_ios">لطفاً ابتدا یک مدل دانلود کنید تا از عامل استفاده کنید</string>
     <string name="open_maps">باز کردن نقشه</string>
     <string name="agent_processing_tool">عامل در حال پردازش ابزار است...</string>

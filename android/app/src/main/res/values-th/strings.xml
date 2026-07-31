@@ -812,7 +812,7 @@
     <string name="agent_calendar_confirm">สร้างกิจกรรม: %1$s</string>
     <string name="agent_shortcut_confirm">เรียกใช้ทางลัด: %1$s</string>
     <string name="agent_welcome_message">สวัสดี! ฉันคือเอเจนต์ AI ของคุณ ฉันสามารถค้นหาเว็บ แสดงแผนที่ จัดการกิจกรรมในปฏิทิน ตรวจสอบสภาพอากาศ ตั้งปลุก ส่งข้อความ และคำนวณแฮชได้ วันนี้มีอะไรให้ฉันช่วยไหม?</string>
-    <string name="agent_no_model_android">โปรดดาวน์โหลดโมเดล Gemma 4 E2/4B ก่อนเพื่อใช้งานเอเจนต์</string>
+    <string name="agent_no_model_android">โปรดดาวน์โหลดโมเดล LiteRT-LM ก่อนเพื่อใช้งานเอเจนต์</string>
     <string name="agent_no_model_ios">โปรดดาวน์โหลดโมเดลก่อนเพื่อใช้งานเอเจนต์</string>
     <string name="open_maps">เปิดแผนที่</string>
     <string name="agent_processing_tool">แอปพลิเคชันกำลังประมวลผลเครื่องมือ...</string>

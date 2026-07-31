@@ -20,7 +20,10 @@ object ModelAvailabilityProvider {
                 model.category != "imageGeneration" &&
                 model.category != "videoGeneration" &&
                 model.category != "imageUpscale" &&
+                model.category != "tts" &&
+                model.category != "textToSpeech" &&
                 (includeAsr || model.category != "asr") &&
+                !model.name.contains("Kokoro", ignoreCase = true) &&
                 // Exclude GGUF vision projectors and dependency files (mmproj files are not LLMs)
                 !model.name.contains("mmproj", ignoreCase = true) &&
                 !model.name.contains("Vision Projector", ignoreCase = true) &&

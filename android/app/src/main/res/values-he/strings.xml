@@ -904,7 +904,7 @@
     <string name="agent_calendar_confirm">צור אירוע: %1$s</string>
     <string name="agent_shortcut_confirm">הפעל קיצור דרך: %1$s</string>
     <string name="agent_welcome_message">שלום! אני סוכן ה-AI שלך. אני יכול לחפש באינטרנט, להציג מפות, לנהל אירועי לוח שנה, לבדוק מזג אוויר, להגדיר שעונים מעוררים, לשלוח הודעות ולחשב האשים. איך אני יכול לעזור לך היום?</string>
-    <string name="agent_no_model_android">אנא הורד תחילה את דגם Gemma 4 E2/4B כדי להשתמש בסוכן</string>
+    <string name="agent_no_model_android">אנא הורד תחילה דגם LiteRT-LM כדי להשתמש בסוכן</string>
     <string name="agent_no_model_ios">אנא הורד תחילה דגם כדי להשתמש בסוכן</string>
     <string name="open_maps">פתח מפות</string>
     <string name="agent_processing_tool">הסוכן מעבד את הכלי...</string>

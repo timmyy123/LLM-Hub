@@ -871,7 +871,7 @@
     <string name="agent_calendar_confirm">Kalendereintrag erstellen: %1$s</string>
     <string name="agent_shortcut_confirm">Verknüpfung ausführen: %1$s</string>
     <string name="agent_welcome_message">Hallo! Ich bin Ihr KI-Agent. Ich kann im Web suchen, Karten anzeigen, Kalendertermine verwalten, das Wetter prüfen, Wecker stellen, Nachrichten senden und Hashes berechnen. Wie kann ich Ihnen heute helfen?</string>
-    <string name="agent_no_model_android">Bitte laden Sie zuerst das Modell Gemma 4 E2/4B herunter, um Agent zu verwenden</string>
+    <string name="agent_no_model_android">Bitte laden Sie zuerst ein LiteRT-LM-Modell herunter, um den Agenten zu verwenden</string>
     <string name="agent_no_model_ios">Bitte laden Sie zuerst ein Modell herunter, um Agent zu verwenden</string>
     <string name="open_maps">Karten öffnen</string>
     <string name="agent_processing_tool">Agent verarbeitet Werkzeug...</string>

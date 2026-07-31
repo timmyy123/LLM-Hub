@@ -905,7 +905,7 @@
     <string name="agent_calendar_confirm">إنشاء حدث: %1$s</string>
     <string name="agent_shortcut_confirm">تشغيل الاختصار: %1$s</string>
     <string name="agent_welcome_message">مرحباً! أنا وكيل الذكاء الاصطناعي الخاص بك. يمكنني البحث في الويب وعرض الخرائط وإدارة أحداث التقويم والتحقق من الطقس وضبط المنبهات وإرسال الرسائل وحساب التجزئة. كيف يمكنني مساعدتك اليوم؟</string>
-    <string name="agent_no_model_android">يرجى تنزيل نموذج Gemma 4 E2/4B أولاً لاستخدام الوكيل</string>
+    <string name="agent_no_model_android">يرجى تنزيل نموذج LiteRT-LM أولاً لاستخدام الوكيل</string>
     <string name="agent_no_model_ios">يرجى تنزيل نموذج أولاً لاستخدام الوكيل</string>
     <string name="open_maps">فتح الخرائط</string>
     <string name="agent_processing_tool">الوكيل يربط الأداة...</string>

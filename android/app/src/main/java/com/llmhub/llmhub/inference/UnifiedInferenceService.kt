@@ -199,7 +199,7 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
     }
 
     private fun updateAgentTools(model: LLMModel) {
-        if (agentToolsEnabled && model.modelFormat == "litertlm" && model.name.contains("Gemma-4", ignoreCase = true)) {
+        if (agentToolsEnabled && model.modelFormat == "litertlm") {
             liteRtLmService.setAgentTools(ChatAgentSkillsTools(context))
         } else {
             liteRtLmService.setAgentTools(null)

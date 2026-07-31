@@ -909,7 +909,7 @@
     <string name="agent_calendar_confirm">Utwórz wydarzenie: %1$s</string>
     <string name="agent_shortcut_confirm">Uruchom skrót: %1$s</string>
     <string name="agent_welcome_message">Cześć! Jestem Twoim Agentem AI. Mogę przeszukiwać sieć, wyświetlać mapy, zarządzać wydarzeniami w kalendarzu, sprawdzać pogodę, ustawiać alarmy, wysyłać wiadomości i obliczać hasze. Jak mogę Ci dzisiaj pomóc?</string>
-    <string name="agent_no_model_android">Pobierz najpierw model Gemma 4 E2/4B, aby korzystać z Agenta</string>
+    <string name="agent_no_model_android">Pobierz najpierw model LiteRT-LM, aby korzystać z Agenta</string>
     <string name="agent_no_model_ios">Pobierz najpierw model, aby korzystać z Agenta</string>
     <string name="open_maps">Otwórz mapy</string>
     <string name="agent_processing_tool">Agent przetwarza narzędzie...</string>

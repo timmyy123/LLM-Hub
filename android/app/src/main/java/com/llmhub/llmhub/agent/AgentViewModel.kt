@@ -234,12 +234,8 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                 if (inferenceService.getCurrentlyLoadedModel() == null) {
                     val agentPrefs = getApplication<Application>().getSharedPreferences("agent_prefs", Context.MODE_PRIVATE)
                     val savedName = agentPrefs.getString("selected_model_name", "") ?: ""
-                    val availableModels = ModelAvailabilityProvider.loadAvailableModels(getApplication())
-                    val modelToLoad = availableModels.find { it.name == savedName } ?: availableModels.firstOrNull {
-                        !it.name.lowercase().contains("vision projector") &&
-                        !it.name.lowercase().contains("mmproj") &&
-                        !it.name.lowercase().contains("projector")
-                    }
+                    val availableModels = ModelAvailabilityProvider.loadAvailableModels(getApplication()).filter { it.modelFormat == "litertlm" }
+                    val modelToLoad = availableModels.find { it.name == savedName } ?: availableModels.firstOrNull()
                     if (modelToLoad != null) {
                         loadModelSuspend(modelToLoad)
                     }
@@ -270,12 +266,8 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                 if (loadedModel == null) {
                     val agentPrefs = getApplication<Application>().getSharedPreferences("agent_prefs", Context.MODE_PRIVATE)
                     val savedName = agentPrefs.getString("selected_model_name", "") ?: ""
-                    val availableModels = ModelAvailabilityProvider.loadAvailableModels(getApplication())
-                    val modelToLoad = availableModels.find { it.name == savedName } ?: availableModels.firstOrNull {
-                        !it.name.lowercase().contains("vision projector") &&
-                        !it.name.lowercase().contains("mmproj") &&
-                        !it.name.lowercase().contains("projector")
-                    }
+                    val availableModels = ModelAvailabilityProvider.loadAvailableModels(getApplication()).filter { it.modelFormat == "litertlm" }
+                    val modelToLoad = availableModels.find { it.name == savedName } ?: availableModels.firstOrNull()
                     if (modelToLoad != null) {
                         loadModelSuspend(modelToLoad)
                         loadedModel = inferenceService.getCurrentlyLoadedModel()

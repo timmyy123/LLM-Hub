@@ -65,9 +65,9 @@ fun AgentScreen(
     val isGenerating by viewModel.isGenerating.collectAsState()
     val isGemmaAudioEnabled by viewModel.isGemmaAudioEnabled.collectAsState()
     var showSettingsSheet by remember { mutableStateOf(false) }
-    // LLM models only (no mmproj/ASR/embedding) — used for empty-state check
+    // LiteRT-LM models only for AI Agent feature
     val availableModelsState = produceState<List<LLMModel>>(initialValue = emptyList(), context) {
-        value = ModelAvailabilityProvider.loadAvailableModels(context)
+        value = ModelAvailabilityProvider.loadAvailableModels(context).filter { it.modelFormat == "litertlm" }
     }
     val availableModels = availableModelsState.value
     val loadingModelName by viewModel.loadingModelName.collectAsState()
