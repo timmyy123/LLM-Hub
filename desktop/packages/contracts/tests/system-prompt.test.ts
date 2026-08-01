@@ -1,0 +1,210 @@
+import { describe, expect, it } from 'vitest';
+
+import { composeSystemPrompt } from '../src/prompts/system.js';
+import { DISCOVERY_AND_PHILOSOPHY } from '../src/prompts/discovery.js';
+
+// Guard: the contracts copy of DISCOVERY_AND_PHILOSOPHY must have the same
+// cap removal as apps/daemon/src/prompts/discovery.ts. The web app imports
+// composeSystemPrompt from @open-design/contracts, so only testing the daemon
+// copy leaves the web-originated chat path unguarded.
+describe('DISCOVERY_AND_PHILOSOPHY (contracts copy) — TodoWrite plan item count', () => {
+  it('does not cap the plan at 10 items via "5–10" wording', () => {
+    expect(DISCOVERY_AND_PHILOSOPHY).not.toMatch(/5[–\-]10\s+short\s+imperative/);
+  });
+
+  it('does not cap the plan at 10 items via "5 to 10" wording', () => {
+    expect(DISCOVERY_AND_PHILOSOPHY).not.toMatch(/5 to 10\s+(?:short\s+)?items/i);
+  });
+
+  it('does not re-introduce a numeric cap via "at most / maximum / no more than" phrasing', () => {
+    expect(DISCOVERY_AND_PHILOSOPHY).not.toMatch(
+      /(?:at most|maximum|no more than)\s+1[0-9]\s+(?:todo|plan|step|item)/i,
+    );
+  });
+
+  it('still instructs the agent to write a TodoWrite plan', () => {
+    expect(DISCOVERY_AND_PHILOSOPHY).toContain('TodoWrite');
+    expect(DISCOVERY_AND_PHILOSOPHY).toContain('RULE 3');
+  });
+
+  it('also absent from the composed system prompt', () => {
+    const prompt = composeSystemPrompt({});
+    expect(prompt).not.toMatch(/5[–\-]10\s+short\s+imperative/);
+  });
+
+  it('uses a bare, self-contained Ask mode override that drops the discovery layer and charter', () => {
+    const prompt = composeSystemPrompt({ sessionMode: 'chat' });
+
+    expect(prompt).toContain('# Ask mode — bare conversation');
+    expect(prompt).toContain('https://github.com/nexu-io/open-design');
+    expect(prompt).toContain('https://open-design.ai/');
+    expect(prompt).toContain('https://discord.gg/mHAjSMV6gz');
+    expect(prompt).toContain('Do not emit a default discovery `<question-form>`');
+    // Ask mode is deliberately light: neither the ~3k-token discovery layer nor
+    // the full designer charter is composed in. That omission IS the feature —
+    // it is what makes Ask cheaper than Design/Plan.
+    expect(prompt).not.toContain(DISCOVERY_AND_PHILOSOPHY);
+    expect(prompt).not.toContain('# Identity and workflow charter (background)');
+  });
+
+  it('uses a top-level Plan mode override that suppresses artifact discovery forms', () => {
+    const prompt = composeSystemPrompt({ sessionMode: 'plan', metadata: { kind: 'prototype' } as any });
+
+    expect(prompt).toContain('# Plan mode — editable document first');
+    expect(prompt).toContain('do NOT emit `<question-form id="discovery">`');
+    expect(prompt).toContain('`<question-form id="task-type">`');
+    expect(prompt).toContain('Quick brief — 30 seconds');
+    expect(prompt).toContain('<question-form id="plan-brief">');
+    expect(prompt).toContain('substantial plan-document work still starts with a real TodoWrite/task-list tool call');
+    expect(prompt).toContain('show progress through the Todo card');
+    expect(prompt.indexOf('# Plan mode — editable document first')).toBeLessThan(
+      prompt.indexOf(DISCOVERY_AND_PHILOSOPHY),
+    );
+  });
+});
+
+describe('DISCOVERY_AND_PHILOSOPHY (contracts copy) — prompt routing parity', () => {
+  it('keeps clarification on demand and leaves task-type routing to od-default', () => {
+    expect(DISCOVERY_AND_PHILOSOPHY).toContain(
+      'A first turn, a new project, a discovery stage, or an unfilled metadata field does not by itself require a form.',
+    );
+    expect(DISCOVERY_AND_PHILOSOPHY).toContain(
+      'It owns the conditional `task-type` form',
+    );
+    expect(DISCOVERY_AND_PHILOSOPHY).not.toContain('<question-form id="task-type"');
+  });
+
+  it('keeps historical task-type answers compatible with the discovery path', () => {
+    expect(DISCOVERY_AND_PHILOSOPHY).toMatch(
+      /\[form answers — discovery\][^.]*\[form answers — task-type\]/,
+    );
+    expect(DISCOVERY_AND_PHILOSOPHY).toContain(
+      'Historical `[form answers — task-type]` replies remain valid input to RULE 2.',
+    );
+  });
+
+  it('keeps artifact emission conditional on writing a new canonical HTML file', () => {
+    expect(DISCOVERY_AND_PHILOSOPHY).toContain('## Artifact emission is conditional');
+    expect(DISCOVERY_AND_PHILOSOPHY).toContain(
+      'only when this turn wrote a new canonical HTML file',
+    );
+    expect(DISCOVERY_AND_PHILOSOPHY).toContain(
+      'If this turn only edited an existing HTML file',
+    );
+  });
+
+  it('defaults generated deliverables to semantic filenames after active skills', () => {
+    const prompt = composeSystemPrompt({
+      skillName: 'simple-deck',
+      skillBody: 'Copy assets/template.html to index.html, then fill the deck.',
+    });
+
+    expect(prompt).toContain('## Semantic output file names');
+    expect(prompt).toContain('Do not call every new artifact `index.html`');
+    expect(prompt).toContain('adapt the destination to a semantic filename');
+    expect(prompt.indexOf('## Semantic output file names')).toBeGreaterThan(
+      prompt.indexOf('## Active skill — simple-deck'),
+    );
+  });
+
+  it('does not make index.html the fixed deck-framework destination', () => {
+    const prompt = composeSystemPrompt({ skillMode: 'deck' });
+
+    expect(prompt).not.toContain('Copy the canonical skeleton below as index.html');
+    expect(prompt).toContain('semantically named deck HTML file');
+  });
+
+  it('pins the data chart discipline inside the deck framework (#907)', () => {
+    const prompt = composeSystemPrompt({ skillMode: 'deck' });
+
+    expect(prompt).toContain('## Data chart discipline');
+    expect(prompt).toContain('calc(var(--v) / var(--max)');
+    expect(prompt).toContain('visible category label AND value label');
+    expect(prompt).toContain('Mentally spot-check two bars');
+  });
+
+  it('pins the mermaid theme discipline inside the deck framework (dark decks)', () => {
+    const prompt = composeSystemPrompt({ skillMode: 'deck' });
+
+    expect(prompt).toContain('## Mermaid diagram theme discipline');
+    expect(prompt).toContain("theme: 'dark'");
+    expect(prompt).toContain('themeVariables');
+    expect(prompt).toContain('no dark-on-dark labels');
+  });
+
+  it('injects nested-diagram discipline through every contracts deck path only', () => {
+    const heading = '## Nested / concentric diagram discipline';
+
+    expect(composeSystemPrompt({ skillMode: 'deck' })).toContain(heading);
+    expect(composeSystemPrompt({ metadata: { kind: 'deck' } as any })).toContain(heading);
+    expect(composeSystemPrompt({})).toContain(heading);
+    expect(composeSystemPrompt({ metadata: { kind: 'prototype' } as any })).not.toContain(heading);
+  });
+});
+
+describe('composeSystemPrompt', () => {
+  it('injects Chinese quick brief guidance when the UI locale is zh-CN', () => {
+    const prompt = composeSystemPrompt({ locale: 'zh-CN' });
+
+    expect(prompt).toContain('# UI locale override');
+    expect(prompt).toContain('`zh-CN` (Simplified Chinese)');
+    expect(prompt).toContain('快速简报 — 30 秒');
+    expect(prompt).toContain('目标用户');
+    expect(prompt).toContain('视觉调性');
+    expect(prompt).toContain('Keep machine-readable ids and object option `value` fields exact and unlocalized');
+  });
+
+  it('does not inject a task-type form through the zh-CN locale override', () => {
+    const prompt = composeSystemPrompt({ locale: 'zh-CN' });
+
+    expect(prompt).not.toContain('<question-form id="task-type"');
+    expect(prompt).not.toContain('keep the `taskType` option labels');
+  });
+
+  it('does not inject a task-type form through the zh-TW locale override', () => {
+    const prompt = composeSystemPrompt({ locale: 'zh-TW' });
+
+    expect(prompt).toContain('# UI locale override');
+    expect(prompt).toContain('`zh-TW` (Traditional Chinese)');
+    expect(prompt).not.toContain('<question-form id="task-type"');
+    expect(prompt).not.toContain('keep the `taskType` option labels');
+    expect(prompt).not.toContain('快速简报 — 30 秒');
+  });
+
+  it('treats an active design system as the visual direction', () => {
+    const prompt = composeSystemPrompt({
+      designSystemTitle: 'ComfyUI',
+      designSystemBody: '# ComfyUI\n\n--accent: #ffd500',
+      metadata: { kind: 'prototype' } as any,
+      activeStageBlocks: [
+        '\n\n## Active stage: plan\n\n### direction-picker\n\nAsk for 3-5 directions.',
+      ],
+    });
+
+    expect(prompt).toContain('## Active design system — ComfyUI');
+    expect(prompt).toContain('Active design system exception');
+    expect(prompt).toContain(
+      'the active design system is the visual direction for this project',
+    );
+    expect(prompt).toContain('Do not ask the user to pick a separate theme color');
+    expect(prompt).toContain('Do not emit a direction question-form');
+    expect(prompt).not.toContain('<question-form id="direction"');
+    expect(prompt.indexOf('## Active design system visual direction')).toBeGreaterThan(
+      prompt.indexOf('### direction-picker'),
+    );
+  });
+
+  it('does not include the HTML discovery layer for media surfaces', () => {
+    const prompt = composeSystemPrompt({
+      metadata: {
+        kind: 'image',
+        imageModel: 'fal/imagen4',
+        imageAspect: '16:9',
+      } as any,
+    });
+
+    expect(prompt).not.toContain('# OD core directives');
+    expect(prompt).not.toContain('<question-form id="discovery"');
+    expect(prompt).toContain('## Media generation contract');
+  });
+});

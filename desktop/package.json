@@ -1,39 +1,69 @@
 {
-  "name": "grok-build-desktop",
-  "version": "1.0.0",
-  "description": "Cross-platform Desktop GUI for Grok Build with Ollama Local Models Backend",
-  "main": "electron/main.js",
+  "name": "open-design",
+  "version": "0.16.1",
+  "private": true,
+  "packageManager": "pnpm@10.33.2",
   "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "electron:start": "electron .",
-    "app": "npx concurrently \"npm run dev\" \"npx wait-on http://localhost:5173 && npm run electron:start\""
+  "description": "Local-first design product: detects your installed code-agent CLI, runs design skills + design systems, streams artifacts into a sandboxed preview.",
+  "license": "Apache-2.0",
+  "bin": {
+    "od": "./apps/daemon/bin/od.mjs"
   },
-  "dependencies": {
-    "@monaco-editor/react": "^4.7.0",
-    "axios": "^1.6.8",
-    "clsx": "^2.1.0",
-    "lucide-react": "^0.359.0",
-    "marked": "^18.0.7",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "tailwind-merge": "^2.2.2"
+  "scripts": {
+    "postinstall": "node ./scripts/postinstall.mjs",
+    "bootstrap": "node ./scripts/postinstall.mjs",
+    "tools-dev": "pnpm exec tools-dev",
+    "tools-pack": "pnpm exec tools-pack",
+    "tools-release": "pnpm exec tools-release",
+    "tools-serve": "pnpm exec tools-serve",
+    "nix:update-hash": "node --experimental-strip-types ./scripts/update-nix-pnpm-deps-hash.ts",
+    "guard": "tsx ./scripts/guard.ts",
+    "lint:craft": "tsx ./scripts/lint-craft-references.ts",
+    "i18n:check": "tsx ./scripts/i18n-check.ts",
+    "i18n:coverage": "tsx ./scripts/i18n-coverage-report.ts",
+    "sync:community-pets": "node --experimental-strip-types scripts/sync-community-pets.ts",
+    "bake:community-pets": "node --experimental-strip-types scripts/bake-community-pets.ts",
+    "seed:test-projects": "node --experimental-strip-types scripts/seed-test-projects.ts",
+    "seed:curated-design-skills": "node --experimental-strip-types scripts/seed-curated-design-skills.ts",
+    "backfill:failed-runs": "node --experimental-strip-types scripts/backfill-failed-runs-with-artifacts.ts",
+    "typecheck": "pnpm -r --workspace-concurrency=4 --if-present run typecheck && tsc -p scripts/tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@types/react": "^18.2.66",
-    "@types/react-dom": "^18.2.22",
-    "@vitejs/plugin-react": "^4.2.1",
-    "autoprefixer": "^10.4.19",
-    "concurrently": "^8.2.2",
-    "electron": "^29.1.5",
-    "postcss": "^8.4.38",
-    "tailwindcss": "^3.4.1",
-    "vite": "^5.1.6",
-    "wait-on": "^7.2.0"
+    "@open-design/components": "workspace:*",
+    "@open-design/daemon": "workspace:*",
+    "@open-design/tools-dev": "workspace:*",
+    "@open-design/tools-pack": "workspace:*",
+    "@open-design/tools-release": "workspace:*",
+    "@open-design/tools-serve": "workspace:*",
+    "@types/node": "20.19.39",
+    "tsx": "4.22.3",
+    "typescript": "5.9.3"
   },
-  "optionalDependencies": {
-    "@anthropic-ai/claude-code": "^2.1.220"
+  "engines": {
+    "node": "~24",
+    "pnpm": ">=10.33.2 <11"
+  },
+  "pnpm": {
+    "overrides": {
+      "brace-expansion": "5.0.6",
+      "devalue": "5.8.1",
+      "fast-uri": "3.1.2",
+      "hono": "4.12.19",
+      "ip-address": "10.2.0",
+      "postcss": "8.5.15",
+      "protobufjs": "8.4.0",
+      "qs": "6.15.2",
+      "tmp": "0.2.7",
+      "yaml": "2.9.0"
+    },
+    "onlyBuiltDependencies": [
+      "better-sqlite3",
+      "core-js",
+      "electron",
+      "electron-winstaller",
+      "esbuild",
+      "protobufjs",
+      "sharp"
+    ]
   }
 }
