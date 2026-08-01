@@ -1011,22 +1011,7 @@ export function NextStepActions({
                   <span className={styles.toolboxRowTitle}>{t('nextStep.download')}</span>
                 </button>
               ) : null}
-              {canContribute ? (
-                <button
-                  type="button"
-                  className={styles.flyoutRow}
-                  data-testid="next-step-share-contribute"
-                  disabled={shareToOpenDesignBusy}
-                  onClick={handleContribute}
-                >
-                  <Icon
-                    name={shareToOpenDesignBusy ? 'spinner' : 'globe'}
-                    size={14}
-                    className={shareToOpenDesignBusy ? 'icon-spin' : styles.toolboxRowIcon}
-                  />
-                  <span className={styles.toolboxRowTitle}>{t('nextStep.contribute')}</span>
-                </button>
-              ) : null}
+
             </div>,
             document.body,
           )

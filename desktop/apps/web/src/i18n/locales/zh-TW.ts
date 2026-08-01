@@ -3,28 +3,28 @@ import type { Dict } from "../types";
 export const zhTW: Dict = {
   "chat.amrCard.switchTitle": "模型呼叫失敗，目前任務已暫停",
   "chat.amrCard.switchBody":
-    "可切換到 Open Design Cloud 官方模型服務，無需設定 API Key。完成登入、授權與儲值後，將自動重試目前任務。",
+    "可切換到 LLM Hub Studio Cloud 官方模型服務，無需設定 API Key。完成登入、授權與儲值後，將自動重試目前任務。",
   "chat.amrCard.chipOfficial": "官方代管",
   "chat.amrCard.chipNoKey": "無需 API Key",
   "chat.amrCard.chipAutoRetry": "授權後自動重試",
-  "chat.amrCard.switchCta": "切換到 Open Design Cloud 並重試",
+  "chat.amrCard.switchCta": "切換到 LLM Hub Studio Cloud 並重試",
   "chat.amrError.authMessage":
-    "Open Design Cloud 帳號尚未授權。完成授權後將自動重試目前任務。",
+    "LLM Hub Studio Cloud 帳號尚未授權。完成授權後將自動重試目前任務。",
   "chat.amrError.balanceMessage":
-    "Open Design Cloud 帳戶餘額不足。儲值後即可繼續執行目前任務。",
+    "LLM Hub Studio Cloud 帳戶餘額不足。儲值後即可繼續執行目前任務。",
   "chat.amrError.authorizeCta": "授權並重試",
-  "chat.amrError.rechargeCta": "為 Open Design Cloud 儲值",
+  "chat.amrError.rechargeCta": "為 LLM Hub Studio Cloud 儲值",
   "chat.amrBalanceGate.title": "升級方案，繼續創作",
   "chat.amrBalanceGate.message": "餘額不足（目前 {balance}），升級方案或儲值後，任務馬上就能開始。",
-  "chat.amrBalanceGate.benefitsTitle": "Open Design Cloud 為你提供",
+  "chat.amrBalanceGate.benefitsTitle": "LLM Hub Studio Cloud 為你提供",
   "chat.amrBalanceGate.benefit1": "無需 API Key，海量模型任選",
   "chat.amrBalanceGate.benefit2": "自帶 SOTA Design Agent，零設定",
   "chat.amrBalanceGate.benefit3": "官方服務，穩定有保障",
   "chat.amrBalanceGate.benefit4": "持續升級：一鍵部署、多模態、團隊版等",
   "chat.amrBalanceGate.laterCta": "暫不需要",
   "chat.amrBalanceGate.plansCta": "升級方案",
-  "chat.amrBalanceGate.signedOutTitle": "登入 Open Design Cloud，開始創作",
-  "chat.amrBalanceGate.signedOutMessage": "目前使用的是 Open Design Cloud 智能體，登入後這個任務馬上就能開始。",
+  "chat.amrBalanceGate.signedOutTitle": "登入 LLM Hub Studio Cloud，開始創作",
+  "chat.amrBalanceGate.signedOutMessage": "目前使用的是 LLM Hub Studio Cloud 智能體，登入後這個任務馬上就能開始。",
   "chat.amrBalanceGate.signInCta": "立即登入",
   "chat.amrBalanceGate.watchingWallet": "儲值到帳後將自動繼續。",
   "chat.amrLowBalance.title": "餘額不多了",
@@ -58,9 +58,9 @@ export const zhTW: Dict = {
   "chat.runError.title.generic": "任務執行失敗",
   "chat.runError.title.artifactMissing": "未產生檔案產物",
   "chat.runError.signInMessage.amr":
-    "Open Design Cloud 智慧體尚未登入，前往登入即可正常使用",
+    "LLM Hub Studio Cloud 智慧體尚未登入，前往登入即可正常使用",
   "chat.runError.signInMessage.other":
-    "{agent}尚未登入，請在本機檢查登入狀態。推薦使用 Open Design Cloud 智慧體，更穩定划算",
+    "{agent}尚未登入，請在本機檢查登入狀態。推薦使用 LLM Hub Studio Cloud 智慧體，更穩定划算",
   "chat.runError.agentFallback": "智慧體",
   "chat.runError.sourceLabel": "查看錯誤詳情",
   "chat.runError.sourceExpandAria": "展開錯誤原始碼",
@@ -93,7 +93,25 @@ export const zhTW: Dict = {
   "chat.runError.emptyOutputMessage": "智能體本次結束時沒有產生任何輸出。這通常是暫時的，重試即可再次執行。",
   "chat.runError.sessionExpiredMessage": "要恢復的工作階段已過期，已為你重置。重試即可開始一次全新執行。",
   "chat.runError.gitBashMissingMessage": "在 Windows 上執行此智能體需要 Git Bash，但找不到。請安裝 Git for Windows 後重試。",
-  "chat.runError.cpuUnsupportedMessage": "此智能體的執行時需要此裝置處理器不支援的指令集（AVX2），因此無法啟動。請將 Open Design 更新到最新版本，新版本附帶相容的執行時。",
+  "chat.runError.cpuUnsupportedMessage": "此智能體的執行時需要此裝置處理器不支援的指令集（AVX2），因此無法啟動。請將 LLM Hub Studio 更新到最新版本，新版本附帶相容的執行時。",
+  "modelDownloader.title": "本地模型下載器",
+  "modelDownloader.subtitle": "在您的裝置上下載和管理 Ollama 模型",
+  "modelDownloader.pullAnyModel": "拉取任意模型",
+  "modelDownloader.pullPlaceholder": "輸入任意 Ollama 模型標籤，例如 llama3:8b, mistral:latest…",
+  "modelDownloader.pull": "拉取",
+  "modelDownloader.downloading": "下載中",
+  "modelDownloader.cancel": "取消",
+  "modelDownloader.gemma4Section": "Gemma 4",
+  "modelDownloader.installedSection": "已安裝模型",
+  "modelDownloader.installedBadge": "已安裝 ✓",
+  "modelDownloader.download": "下載",
+  'modelDownloader.delete': '刪除',
+  'modelDownloader.deleteSuccess': '✓ 已刪除',
+  "modelDownloader.noModels": "http://localhost:11434 上尚未安裝任何模型",
+  "modelDownloader.ollamaOffline": "Ollama 在 http://localhost:11434 無回應",
+  "modelDownloader.successPrefix": "✓ 已下載",
+  "modelDownloader.cancelledPrefix": "已取消 —",
+  "modelDownloader.errorPrefix": "錯誤：",
   "common.cancel": "取消",
   "chat.selectFromLibrary": "從資源庫匯入",
   "chat.importFigma": "從 Figma 匯入",
@@ -119,7 +137,7 @@ export const zhTW: Dict = {
   "chat.referenceProject.loadFailed": "無法載入專案。請確認 daemon 正在執行後再試一次。",
   "chat.referenceProject.confirm": "引用專案",
   "chat.contextPrompt.referenceProject":
-    "請把 Open Design 專案「{name}」作為參考上下文。它的本機路徑是：{path}。在設計或修改前，如有幫助請先搜尋並讀取這個目錄。",
+    "請把 LLM Hub Studio 專案「{name}」作為參考上下文。它的本機路徑是：{path}。在設計或修改前，如有幫助請先搜尋並讀取這個目錄。",
   "chat.contextPrompt.localCode":
     "請把本機程式碼目錄「{name}」作為程式碼參考。它的絕對路徑是：{path}。如有幫助請先讀取相關檔案，並與既有實作保持一致。",
   "chat.figmaHelp.title": "如何下載 .fig 檔案",
@@ -202,22 +220,22 @@ export const zhTW: Dict = {
   "plugins.actions.openSource": "開啟原始碼",
   "plugins.actions.openHomepage": "開啟專案首頁",
   "plugins.actions.openMarketplace": "在外掛市場開啟",
-  "app.brand": "Open Design",
+  "app.brand": "LLM Hub Studio",
   "app.brandPill": "研究預覽版",
   "app.brandSubtitle": "由 Nexu Labs 出品",
   "app.welcomeLoading": "正在載入工作區…",
   "settings.welcomeKicker": "",
-  "settings.welcomeTitle": "歡迎使用 Open Design",
+  "settings.welcomeTitle": "歡迎使用 LLM Hub Studio",
   "settings.welcomeSubtitle": "",
   "settings.onboardingCreateTitle": "從一句需求開始",
   "settings.onboardingCreateBody":
-    "描述你想做的網站、應用、Deck、圖片或影片，Open Design 會建立專案，並保留可繼續編輯的產出。",
+    "描述你想做的網站、應用、Deck、圖片或影片，LLM Hub Studio 會建立專案，並保留可繼續編輯的產出。",
   "settings.onboardingMemoryTitle": "保存工作上下文",
   "settings.onboardingMemoryBody":
     "把偏好、專案事實和長期規則寫入 Memory，後續對話會自動帶上正確背景。",
   "settings.onboardingMemoryCalloutTitle": "已儲存到你的記憶",
   "settings.onboardingMemoryCalloutBody":
-    "這些回答會構成你的記憶檔案。Open Design 會在每個任務中重複使用它，並在你工作時持續學習。",
+    "這些回答會構成你的記憶檔案。LLM Hub Studio 會在每個任務中重複使用它，並在你工作時持續學習。",
   "settings.onboardingMemoryBenefitIntent": "從一句簡短需求就能理解你的意圖",
   "settings.onboardingMemoryBenefitFewerQuestions": "跳過重複的設定提問",
   "settings.onboardingMemoryBenefitPersonalized":
@@ -236,7 +254,7 @@ export const zhTW: Dict = {
   "settings.onboardingAmrCloudUpcomingImageVideo": "生圖/影片",
   "settings.onboardingAmrCloudUpcomingSkills": "海量 Skills",
   "settings.onboardingAmrCloudUpcomingRouting": "智慧路由",
-  "settings.onboardingAmrModelSourceLabel": "Open Design Cloud",
+  "settings.onboardingAmrModelSourceLabel": "LLM Hub Studio Cloud",
   "settings.onboardingAmrCloudAuthorizeAction": "授權使用",
   "settings.onboardingAmrCloudAuthorizedAction": "已授權",
   "settings.onboardingStepConnect": "連接",
@@ -248,10 +266,10 @@ export const zhTW: Dict = {
     "在信箱裡收到產品更新、新模版、設計系統與大使活動。選填——可以跳過。",
   "settings.onboardingConnectTitle": "選擇執行方式",
   "settings.onboardingConnectBody": "",
-  "settings.onboardingCloudTitle": "登入 Open Design",
+  "settings.onboardingCloudTitle": "登入 LLM Hub Studio",
   "settings.onboardingCloudBody":
     "登入後可直接用雲端 AI 開始設計，無需任何複雜設定。",
-  "settings.onboardingCloudSignIn": "登入 Open Design 雲端",
+  "settings.onboardingCloudSignIn": "登入 LLM Hub Studio 雲端",
   "settings.onboardingCloudContinue": "繼續（已登入）",
   "settings.onboardingCloudAlternative": "使用本機 CLI 或自己的 API Key",
   "settings.onboardingCloudRights": "保留所有權利。",
@@ -259,7 +277,7 @@ export const zhTW: Dict = {
   "settings.onboardingGateTooltipNoRuntime":
     "後續流程由 AI 執行，請先選擇一種執行方式。",
   "settings.onboardingGateTooltipAmr":
-    "後續流程由 AI 執行，請先登入 Open Design Cloud。",
+    "後續流程由 AI 執行，請先登入 LLM Hub Studio Cloud。",
   "settings.onboardingGateTooltipLocal":
     "後續流程由 AI 執行，請先選擇一個可用的本機 CLI。",
   "settings.onboardingGateTooltipByok":
@@ -393,11 +411,11 @@ export const zhTW: Dict = {
   "settings.agentInstall.install": "安裝",
   "settings.agentInstall.docs": "文件",
   "settings.agentInstall.pathHint":
-    "如果你透過 npm 或 Homebrew 安裝了 CLI，但仍顯示為未安裝，請確認該工具的 bin 目錄已加入 Open Design daemon 繼承的 PATH（在 macOS 上，Terminal 與 GUI 應用的 PATH 可能不同）。請參閱 QUICKSTART.md（「Local agent CLI and PATH」章節）。",
+    "如果你透過 npm 或 Homebrew 安裝了 CLI，但仍顯示為未安裝，請確認該工具的 bin 目錄已加入 LLM Hub Studio daemon 繼承的 PATH（在 macOS 上，Terminal 與 GUI 應用的 PATH 可能不同）。請參閱 QUICKSTART.md（「Local agent CLI and PATH」章節）。",
   "settings.agentInstall.stepOpenLinks":
     "在目標代理卡片上開啟「安裝」或「文件」連結。",
   "settings.agentInstall.stepAuth":
-    "返回 Open Design 前，請先在對應 CLI 完成驗證（登入或新增 API 憑證）。",
+    "返回 LLM Hub Studio 前，請先在對應 CLI 完成驗證（登入或新增 API 憑證）。",
   "settings.agentInstall.stepRescan": "在此區域點擊「重新掃描」。",
   "settings.agentInstall.stepSelect": "當代理顯示為已安裝後，選擇該代理卡片。",
   "settings.noAgentsDetected":
@@ -406,7 +424,7 @@ export const zhTW: Dict = {
   "settings.agentInstallGroup": "可安裝（{count}）",
   "settings.agentAuthRequired": "需要認證",
   "settings.agentAuthUnknown": "認證狀態未知",
-  "settings.amrCloud": "Open Design Cloud",
+  "settings.amrCloud": "LLM Hub Studio Cloud",
   "settings.amrAuthorize": "授權",
   "settings.amrBenefitOfficial": "官方維護",
   "settings.amrBenefitLowerPrice": "價格更低",
@@ -420,7 +438,7 @@ export const zhTW: Dict = {
   "settings.amrWalletUpdatedAt": "更新於 {time}",
   "settings.amrWalletCached": "快取",
   "settings.amrWalletRefresh": "重新整理",
-  "settings.amrWalletRefreshTitle": "重新整理 Open Design Cloud 錢包餘額",
+  "settings.amrWalletRefreshTitle": "重新整理 LLM Hub Studio Cloud 錢包餘額",
   "settings.amrNotSignedIn": "未授權",
   "settings.amrSigningIn": "登入中…",
   "settings.amrActivationHint": "沒有彈出登入頁?點擊下方按鈕重新喚起",
@@ -428,9 +446,9 @@ export const zhTW: Dict = {
     "無法自動開啟瀏覽器,請開啟下方的登入頁繼續。",
   "settings.amrActivationOpen": "開啟登入頁",
   "settings.amrCancelSignIn": "取消登入",
-  "settings.amrAccountStatus": "Open Design Cloud 帳戶狀態",
+  "settings.amrAccountStatus": "LLM Hub Studio Cloud 帳戶狀態",
   "settings.amrConsole": "管理",
-  "settings.amrLoginErrorCompact": "Open Design Cloud 登入失敗。",
+  "settings.amrLoginErrorCompact": "LLM Hub Studio Cloud 登入失敗。",
   "settings.advanced": "進階",
   "settings.amrLogin": "登入",
   "settings.amrLogout": "登出",
@@ -554,7 +572,7 @@ export const zhTW: Dict = {
     "圖片、影片、音訊生成的 API key。存於本機並同步到本地守護程序。",
   "settings.mcpServerTitle": "MCP 伺服器",
   "settings.mcpServerHint":
-    "將 Open Design 作為 MCP 伺服器暴露給你的編碼代理。",
+    "將 LLM Hub Studio 作為 MCP 伺服器暴露給你的編碼代理。",
   "settings.externalMcpTitle": "外部 MCP",
   "settings.externalMcpHint":
     "接入外部服務的 MCP 工具（Higgsfield、GitHub 等）。",
@@ -582,9 +600,9 @@ export const zhTW: Dict = {
   "settings.privacyGuaranteeSubtitle": "完全的本地資料主權",
   "settings.privacyGuaranteeStatement": "我們絕不收集亦無興趣獲取任何使用者資料。",
   "settings.privacyGuaranteeBody": "所有程式碼、提示詞、聊天訊息和模型權重嚴格保存在您的本地裝置上並處於離線狀態。",
-  "settings.privacyConsentKicker": "協助我們改進 Open Design",
+  "settings.privacyConsentKicker": "協助我們改進 LLM Hub Studio",
   "settings.privacyConsentLead":
-    "分享使用資料後，我們能更了解 Open Design 在真實工作流裡的表現，並優先改進真正影響體驗的地方。",
+    "分享使用資料後，我們能更了解 LLM Hub Studio 在真實工作流裡的表現，並優先改進真正影響體驗的地方。",
   "settings.privacyConsentFooter": "你可以隨時在 設定 → 隱私 中修改這些選項。",
   "settings.privacyConsentShare": "分享",
   "settings.privacyConsentDecline": "不分享",
@@ -619,9 +637,9 @@ export const zhTW: Dict = {
   "settings.alreadyLatest": "目前已是最新版本",
   "settings.mcpTitle": "MCP server",
   "settings.mcpHint":
-    "讓其他專案中的程式碼代理（Claude Code、Cursor、VS Code、Antigravity、Zed、Windsurf）讀取您的 Open Design 專案。您可以直接將設計匯入應用程式，無需先匯出 zip。",
+    "讓其他專案中的程式碼代理（Claude Code、Cursor、VS Code、Antigravity、Zed、Windsurf）讀取您的 LLM Hub Studio 專案。您可以直接將設計匯入應用程式，無需先匯出 zip。",
   "settings.mcpDaemonError":
-    "無法連線到本地守護程序以解析安裝路徑（{error}）。請確認 Open Design 正在執行，然後重新開啟此面板。",
+    "無法連線到本地守護程序以解析安裝路徑（{error}）。請確認 LLM Hub Studio 正在執行，然後重新開啟此面板。",
   "settings.mcpBuildDaemon": "請先建置守護行程。",
   "settings.mcpNodeMissing": "缺少 Node 執行檔。",
   "settings.mcpBuildHint":
@@ -670,9 +688,9 @@ export const zhTW: Dict = {
   "settings.mcpCapabilityPull":
     "透過單一呼叫拉取設計套件：包含進入點檔案以及所有引用的 CSS 變數、元件與字型。",
   "settings.mcpCapabilityDefault":
-    "預設使用您在 Open Design 中開啟的專案與檔案，因此您可以說「在我的應用程式中建置這個」，無需重新說明是哪個設計。",
+    "預設使用您在 LLM Hub Studio 中開啟的專案與檔案，因此您可以說「在我的應用程式中建置這個」，無需重新說明是哪個設計。",
   "settings.mcpRunningNote":
-    "Open Design 必須正在執行，MCP 工具呼叫才能成功。如果您在開啟 Open Design 之前就已啟動 coding agent，請重新啟動 agent，使其能夠連線到正在執行的守護行程。",
+    "LLM Hub Studio 必須正在執行，MCP 工具呼叫才能成功。如果您在開啟 LLM Hub Studio 之前就已啟動 coding agent，請重新啟動 agent，使其能夠連線到正在執行的守護行程。",
   "entry.tabDesigns": "我的設計",
   "entry.tabTemplates": "範本",
   "entry.tabDesignSystems": "設計系統",
@@ -680,15 +698,15 @@ export const zhTW: Dict = {
   "entry.openSettingsTitle": "設定",
   "entry.openSettingsAria": "開啟設定",
   "entry.discordLabel": "加入 Discord",
-  "entry.discordAria": "加入 Open Design Discord",
-  "entry.discordAriaWithOnline": "加入 Open Design Discord - {online}",
+  "entry.discordAria": "加入 LLM Hub Studio Discord",
+  "entry.discordAriaWithOnline": "加入 LLM Hub Studio Discord - {online}",
   "entry.discordOnlineLabel": "{count} 在線",
   "entry.followXLabel": "在 X 上追蹤 @OpenDesignHQ",
-  "entry.followThreadsLabel": "Follow Open Design on Threads",
+  "entry.followThreadsLabel": "Follow LLM Hub Studio on Threads",
   "entry.followInstagramLabel": "在 Instagram 上追蹤 @opendesign.ai",
-  "entry.followLinkedinLabel": "在 LinkedIn 上追蹤 Open Design",
-  "entry.followXiaohongshuLabel": "在小紅書上追蹤 Open Design",
-  "entry.youtubeLabel": "Open Design on YouTube",
+  "entry.followLinkedinLabel": "在 LinkedIn 上追蹤 LLM Hub Studio",
+  "entry.followXiaohongshuLabel": "在小紅書上追蹤 LLM Hub Studio",
+  "entry.youtubeLabel": "LLM Hub Studio on YouTube",
   "entry.resizeAria": "調整側邊欄寬度",
   "entry.loadingWorkspace": "正在載入工作區…",
   "entry.useEverywhereTitle": "隨處使用",
@@ -709,7 +727,7 @@ export const zhTW: Dict = {
   "messageCenter.openAria": "開啟消息中心",
   "messageCenter.unreadCount": "{count} 則未讀",
   "messageCenter.title": "消息中心",
-  "messageCenter.subtitle": "Open Design 更新、平台公告和權益提醒",
+  "messageCenter.subtitle": "LLM Hub Studio 更新、平台公告和權益提醒",
   "messageCenter.filterAll": "全部",
   "messageCenter.filterUnread": "未讀",
   "messageCenter.filterRead": "已讀",
@@ -820,7 +838,7 @@ export const zhTW: Dict = {
   "homeHero.chip.createBrandKitHint":
     "從網站擷取一個品牌套件，然後在任意對話中套用它。",
   "homeHero.chip.createPluginHint":
-    "編寫可重複使用的 Open Design 外掛並將其加入「我的外掛」。",
+    "編寫可重複使用的 LLM Hub Studio 外掛並將其加入「我的外掛」。",
   "homeHero.chip.figmaHint": "將 Figma 畫格遷移至使用中的設計系統。",
   "homeHero.chip.folderHint": "匯入現有的本機資料夾並繼續編輯。",
   "homeHero.chip.templateHint": "從內建範本開始。",
@@ -897,13 +915,13 @@ export const zhTW: Dict = {
   "handoff.frameworkPrompt.solid": "SolidJS",
   "handoff.frameworkPrompt.next": "Next.js / React",
   "handoff.frameworkPrompt.vanilla": "原生 JavaScript、HTML 和 CSS",
-  "handoff.amrWebsite": "開啟 Open Design Cloud 官網",
+  "handoff.amrWebsite": "開啟 LLM Hub Studio Cloud 官網",
   "handoff.copyPrompt": "複製提示詞",
   "handoff.copyPromptForTarget": "複製給 {target} 的提示詞",
   "handoff.copied": "已複製",
   "handoff.projectPathUnavailable": "尚未取得專案本機路徑，請稍後再試。",
   "handoff.copyFailed": "瀏覽器拒絕寫入剪貼簿，請稍後再試。",
-  "handoff.promptIntro": "請基於這個 Open Design 專案的本機資料夾繼續實作：",
+  "handoff.promptIntro": "請基於這個 LLM Hub Studio 專案的本機資料夾繼續實作：",
   "handoff.promptTarget": "目標",
   "handoff.promptCli": "CLI",
   "handoff.promptStepsLead": "你現在是在 {cli} 中接手，請：",
@@ -941,12 +959,12 @@ export const zhTW: Dict = {
   "recentProjects.empty": "尚無專案 — 輸入提示以開始建立一個。",
   "pluginsHome.title": "社群",
   "pluginsHome.subtitle":
-    "隨附於此執行環境、可立即使用的 Open Design 工作流程。挑選一個以載入起始提示，或瀏覽登錄檔取得更多。",
+    "隨附於此執行環境、可立即使用的 LLM Hub Studio 工作流程。挑選一個以載入起始提示，或瀏覽登錄檔取得更多。",
   "pluginsHome.browseRegistry": "瀏覽登錄檔",
   "pluginsHome.count": "{total} 個中的 {filtered} 個",
   "pluginsHome.loadingCatalog": "正在載入目錄…",
   "pluginsHome.emptyCatalog":
-    "目錄是空的。內建外掛隨 Open Design 一同提供，應會自動出現在此處 — 若問題持續發生，請嘗試重新啟動 daemon。",
+    "目錄是空的。內建外掛隨 LLM Hub Studio 一同提供，應會自動出現在此處 — 若問題持續發生，請嘗試重新啟動 daemon。",
   "pluginsHome.emptyFiltered": "沒有符合目前篩選條件的外掛程式。",
   "pluginsHome.clearFilters": "清除篩選條件",
   "pluginsHome.modeAria": "外掛程式模式",
@@ -1090,14 +1108,14 @@ export const zhTW: Dict = {
   "pluginCard.shareAria": "分享 {title}",
   "pluginCard.publishAria": "將 {title} 發布為 GitHub 儲存庫",
   "pluginCard.publishTitle": "將外掛發布為 GitHub 儲存庫",
-  "pluginCard.contributeAria": "將 {title} 貢獻至 Open Design",
-  "pluginCard.contributeTitle": "透過 pull request 將外掛貢獻至 Open Design",
+  "pluginCard.contributeAria": "將 {title} 貢獻至 LLM Hub Studio",
+  "pluginCard.contributeTitle": "透過 pull request 將外掛貢獻至 LLM Hub Studio",
   "skillPluginCandidate.createForMe": "建立外掛/範本",
   "skillPluginCandidate.contributeToMain": "貢獻到 open-design",
   "skillPluginCandidate.repoDescription": "這個倉庫看起來可以做成外掛。",
   "integrations.kicker": "整合",
   "integrations.lede":
-    "連接外部系統，把 MCP 工具帶入智能體迴圈，並在其他 IDE、腳本與自動化流程中使用 Open Design。",
+    "連接外部系統，把 MCP 工具帶入智能體迴圈，並在其他 IDE、腳本與自動化流程中使用 LLM Hub Studio。",
   "integrations.agentReady": "智能體就緒",
   "integrations.areasAria": "整合區域",
   "integrations.tabLabel.mcp": "MCP 伺服器",
@@ -1117,12 +1135,12 @@ export const zhTW: Dict = {
   "mcpClient.saveChanges": "儲存變更",
   "mcpClient.storedAt": "儲存於",
   "mcpClient.daemonError":
-    "無法連線到本機 daemon。請確認 Open Design 正在執行，然後重新開啟此面板。",
+    "無法連線到本機 daemon。請確認 LLM Hub Studio 正在執行，然後重新開啟此面板。",
   "mcpClient.saveFailed": "儲存失敗。請確認 daemon 正在執行後再試一次。",
-  "useEverywhere.modalAria": "隨處使用 Open Design",
-  "useEverywhere.modalTitle": "隨處使用 Open Design",
+  "useEverywhere.modalAria": "隨處使用 LLM Hub Studio",
+  "useEverywhere.modalTitle": "隨處使用 LLM Hub Studio",
   "useEverywhere.modalSubtitle":
-    "將 Open Design 接入任何 IDE、Agent 或指令碼 — CLI、HTTP、MCP 及 Skills。使用「複製 Agent 指南」並貼到 Claude Code、Codex、Cursor、openclaw 或 hermes 中，即可設定一切。",
+    "將 LLM Hub Studio 接入任何 IDE、Agent 或指令碼 — CLI、HTTP、MCP 及 Skills。使用「複製 Agent 指南」並貼到 Claude Code、Codex、Cursor、openclaw 或 hermes 中，即可設定一切。",
   "useEverywhere.closeAria": "關閉隨處使用",
   "useEverywhere.closeTitle": "關閉 (Esc)",
   "useEverywhere.tabsAria": "整合介面",
@@ -1137,17 +1155,17 @@ export const zhTW: Dict = {
   "useEverywhere.copySnippetAria": "複製程式碼片段：{label}",
   "useEverywhere.section.overview.tab": "總覽",
   "useEverywhere.section.overview.heading":
-    "你的 Agent 在哪裡運作，Open Design 就在哪裡運作",
+    "你的 Agent 在哪裡運作，LLM Hub Studio 就在哪裡運作",
   "useEverywhere.section.overview.intro":
-    "Open Design 不只是一個視窗 — 它是一個本機特權 daemon（`od`），外加一個 Skills + Design-Systems + Atoms 登錄。一旦它在您的機器上執行，任何程式碼 Agent（Claude Code、Codex、Cursor、OpenCode/openclaw、Hermes、您自己的指令碼）都能透過四個可互換的介面來驅動產生作業、檢視專案並產出設計成品。",
+    "LLM Hub Studio 不只是一個視窗 — 它是一個本機特權 daemon（`od`），外加一個 Skills + Design-Systems + Atoms 登錄。一旦它在您的機器上執行，任何程式碼 Agent（Claude Code、Codex、Cursor、OpenCode/openclaw、Hermes、您自己的指令碼）都能透過四個可互換的介面來驅動產生作業、檢視專案並產出設計成品。",
   "useEverywhere.section.overview.bullet1":
     "CLI — 以 `od <command>` 用於無頭指令碼、CI 及 shell 自動化。",
   "useEverywhere.section.overview.bullet2":
-    "MCP server — 將 Open Design 接成 Model Context Protocol 伺服器，讓任何支援 MCP 的 Agent 都能列出技能、執行情境並讀取成品。",
+    "MCP server — 將 LLM Hub Studio 接成 Model Context Protocol 伺服器，讓任何支援 MCP 的 Agent 都能列出技能、執行情境並讀取成品。",
   "useEverywhere.section.overview.bullet3":
     "HTTP API — `http://127.0.0.1:7456/api/*` REST + SSE 端點；與網頁 UI 使用的介面相同。",
   "useEverywhere.section.overview.bullet4":
-    "Skills — 隨插即用的 `SKILL.md` 套件（相容於 Claude），任何已在您 PATH 上的 Agent 完全無需 Open Design 即可調用。",
+    "Skills — 隨插即用的 `SKILL.md` 套件（相容於 Claude），任何已在您 PATH 上的 Agent 完全無需 LLM Hub Studio 即可調用。",
   "useEverywhere.section.overview.bullet5":
     "標準成品 — 在 daemon 啟動前，從 Skills、內建預設外掛及社群外掛範例中產生真實的 HTML 專案。",
   "useEverywhere.section.overview.snippet1": "在本機啟動 daemon（與 web UI）",
@@ -1156,7 +1174,7 @@ export const zhTW: Dict = {
   "useEverywhere.section.overview.footer":
     "daemon 預設會寫入 `./.od/`（專案本機）。設定 `OD_DATA_DIR=~/.open-design` 即可在多個專案間共用資料。",
   "useEverywhere.section.cli.tab": "CLI · od",
-  "useEverywhere.section.cli.heading": "從任何 shell 操作 Open Design",
+  "useEverywhere.section.cli.heading": "從任何 shell 操作 LLM Hub Studio",
   "useEverywhere.section.cli.intro":
     "`od` 執行檔隨 daemon 一起發佈，與 Claude Code / Codex 執行產生作業時所用的是同一個二進位檔。多數子指令都是精簡的用戶端，會 POST 至本機 daemon，因此無論你是透過 `pnpm tools-dev` 啟動，還是以打包後的應用程式執行，運作方式都相同。",
   "useEverywhere.section.cli.bullet1":
@@ -1182,9 +1200,9 @@ export const zhTW: Dict = {
     "所有子指令都接受 `--daemon-url http://127.0.0.1:<port>`，以指定某個正在執行的 daemon — 在執行沙箱化的第二個執行個體進行測試時很有用。",
   "useEverywhere.section.mcp.tab": "MCP 伺服器",
   "useEverywhere.section.mcp.heading":
-    "將 Open Design 以 MCP 伺服器形式開放給任何程式設計 Agent",
+    "將 LLM Hub Studio 以 MCP 伺服器形式開放給任何程式設計 Agent",
   "useEverywhere.section.mcp.intro":
-    "Open Design 隨附一個 Model Context Protocol 伺服器（`od mcp`），讓任何支援 MCP 的用戶端 — Cursor、Claude Code、Antigravity、VS Code Copilot Chat、openclaw、hermes — 都能探索 Open Design 工具（列出技能、算繪預覽、產生媒體、執行外掛），而無需手動使用 shell。daemon 透過 `GET /api/mcp/install-info` 為每個主要用戶端發布可直接貼上的安裝程式碼片段。",
+    "LLM Hub Studio 隨附一個 Model Context Protocol 伺服器（`od mcp`），讓任何支援 MCP 的用戶端 — Cursor、Claude Code、Antigravity、VS Code Copilot Chat、openclaw、hermes — 都能探索 LLM Hub Studio 工具（列出技能、算繪預覽、產生媒體、執行外掛），而無需手動使用 shell。daemon 透過 `GET /api/mcp/install-info` 為每個主要用戶端發布可直接貼上的安裝程式碼片段。",
   "useEverywhere.section.mcp.bullet1":
     "Stdio 傳輸 — 不需額外連接埠，用戶端直接產生 `od mcp` 程序。",
   "useEverywhere.section.mcp.bullet2":
@@ -1200,7 +1218,7 @@ export const zhTW: Dict = {
   "useEverywhere.section.mcp.snippet3":
     "即時看板 MCP 變體（讀取並重新整理儀表板）",
   "useEverywhere.section.mcp.footer":
-    "在 Open Design 應用程式中，開啟「設定 → 整合」即可複製特定用戶端的安裝指令（Cursor、Claude Code、Antigravity、VS Code），而無需手動編輯 JSON。",
+    "在 LLM Hub Studio 應用程式中，開啟「設定 → 整合」即可複製特定用戶端的安裝指令（Cursor、Claude Code、Antigravity、VS Code），而無需手動編輯 JSON。",
   "useEverywhere.section.http.tab": "HTTP API",
   "useEverywhere.section.http.heading": "與 web UI 所用相同的 REST + SSE 介面",
   "useEverywhere.section.http.intro":
@@ -1226,9 +1244,9 @@ export const zhTW: Dict = {
     "每個請求／回應的純 TypeScript 型別都位於 `@open-design/contracts` 中 — 在您的指令碼中匯入它們，即可享有完整的自動完成，而無需接上產生器。",
   "useEverywhere.section.skills.tab": "技能與無頭模式",
   "useEverywhere.section.skills.heading":
-    "適用於任何 Agent 的隨插即用 Skills — 即使 Open Design 未在執行也行",
+    "適用於任何 Agent 的隨插即用 Skills — 即使 LLM Hub Studio 未在執行也行",
   "useEverywhere.section.skills.intro":
-    "Skill 是一個包含相容於 Claude 的 `SKILL.md`（YAML 前置資料 + 內文）的目錄。Open Design 以 `od:` 命名空間（`mode`、`preview`、`design_system`、`inputs`、…）擴充此格式，因此同一個成品既能在 Open Design 內使用，也能被像 Claude Code、Codex、openclaw 或 hermes 這類原生 Agent 使用。探索作業遵循一條優先順序鏈，因此專案可覆寫自己的技能。",
+    "Skill 是一個包含相容於 Claude 的 `SKILL.md`（YAML 前置資料 + 內文）的目錄。LLM Hub Studio 以 `od:` 命名空間（`mode`、`preview`、`design_system`、`inputs`、…）擴充此格式，因此同一個成品既能在 LLM Hub Studio 內使用，也能被像 Claude Code、Codex、openclaw 或 hermes 這類原生 Agent 使用。探索作業遵循一條優先順序鏈，因此專案可覆寫自己的技能。",
   "useEverywhere.section.skills.bullet1":
     "探索：`./.claude/skills/` → `./skills/` → `~/.claude/skills/`（專案優先）。",
   "useEverywhere.section.skills.bullet2":
@@ -1240,7 +1258,7 @@ export const zhTW: Dict = {
   "useEverywhere.section.skills.bullet5":
     "`pnpm seed:test-projects` 會以預設外掛範例與社群外掛範例演練相同的成品結構，接著將產生的 `index.html` 專案儲存為可重複使用的測試資料。",
   "useEverywhere.section.skills.snippet1":
-    "最精簡的 SKILL.md（Claude 相容的前置資料 + Open Design 額外設定）",
+    "最精簡的 SKILL.md（Claude 相容的前置資料 + LLM Hub Studio 額外設定）",
   "useEverywhere.section.skills.snippet2":
     "將共用 skill 以符號連結方式加入專案（cc-switch 風格）",
   "useEverywhere.section.skills.snippet3":
@@ -1456,7 +1474,7 @@ export const zhTW: Dict = {
   "entry.helpDownloadDesktop": "下載桌面端",
   "entry.githubStarLabel": "星標",
   "entry.githubStarTitle": "在 GitHub 為我們點亮 Star",
-  "entry.githubStarAria": "在 GitHub 為 Open Design 點亮 Star",
+  "entry.githubStarAria": "在 GitHub 為 LLM Hub Studio 點亮 Star",
   "entry.tabImageTemplates": "圖片範本",
   "entry.tabVideoTemplates": "影片範本",
   "promptTemplates.searchPlaceholder": "搜尋範本…",
@@ -1641,7 +1659,7 @@ export const zhTW: Dict = {
   "newproj.filePlural": "個檔案",
   "newproj.create": "建立",
   "newproj.locationLabel": "儲存到",
-  "newproj.locationDefault": "Open Design 專案",
+  "newproj.locationDefault": "LLM Hub Studio 專案",
   "newproj.locationExternalBase": "外部基目錄",
   "newproj.createLiveArtifact": "建立即時看板",
   "newproj.createFromTemplate": "基於範本建立",
@@ -1838,7 +1856,7 @@ export const zhTW: Dict = {
   "avatar.useApi": "使用 API · BYOK",
   "avatar.codeAgent": "程式碼代理",
   "avatar.rescan": "重新掃描 PATH",
-  "avatar.amrConsole": "Open Design Cloud 帳戶",
+  "avatar.amrConsole": "LLM Hub Studio Cloud 帳戶",
   "avatar.amrConsoleMeta": "餘額與儲值",
   "avatar.settings": "設定",
   "avatar.backToProjects": "返回專案列表",
@@ -1851,19 +1869,19 @@ export const zhTW: Dict = {
   "avatar.reasoningLabel": "推理",
   "avatar.serviceTierLabel": "服務層級",
   "avatar.customSuffix": "（自訂）",
-  "socialShare.openDesignSection": "分享 Open Design",
-  "socialShare.openDesignTitle": "GitHub 上的 Open Design",
+  "socialShare.openDesignSection": "分享 LLM Hub Studio",
+  "socialShare.openDesignTitle": "GitHub 上的 LLM Hub Studio",
   "socialShare.openDesignText":
-    "Open Design 是開源的設計智慧工作區，可以生成、編輯、部署並交付設計產物。",
+    "LLM Hub Studio 是開源的設計智慧工作區，可以生成、編輯、部署並交付設計產物。",
   "socialShare.openDesignCopyText": "{text}\n{url}",
   "socialShare.projectSection": "社群分享",
   "socialShare.publishPageTitle": "發布分享頁",
   "socialShare.publishPageSubtitle": "發布目前預覽，以便分享到社群平台。",
-  "socialShare.projectTitle": "{title} · Open Design",
+  "socialShare.projectTitle": "{title} · LLM Hub Studio",
   "socialShare.projectText":
-    "我用 Open Design 做了 {title}。查看已部署產物，也推薦收藏倉庫：{repo}",
+    "我用 LLM Hub Studio 做了 {title}。查看已部署產物，也推薦收藏倉庫：{repo}",
   "socialShare.projectCopyText":
-    "我用 Open Design 做了 {title}\n{url}\nOpen Design 倉庫：{repo}",
+    "我用 LLM Hub Studio 做了 {title}\n{url}\nLLM Hub Studio 倉庫：{repo}",
   "socialShare.deployFirst": "先部署，再分享到社群…",
   "socialShare.copied": "已複製",
   "socialShare.platform.x": "X",
@@ -1982,14 +2000,14 @@ export const zhTW: Dict = {
   "chat.startTitle": "開始一個對話",
   "chat.startHint": "描述你想生成的內容，或從下面的範例開始：",
   "chat.brandBrowserAssistDesktopOnly":
-    "瀏覽器輔助需要桌面應用，Open Design 才能讀取即時瀏覽器頁面。",
+    "瀏覽器輔助需要桌面應用，LLM Hub Studio 才能讀取即時瀏覽器頁面。",
   "chat.brandBrowserAssistReadFailed":
     "無法讀取瀏覽器頁面。請確認品牌網站已開啟並完整載入。",
   "chat.brandBrowserAssistMessage":
-    "Open Design 需要瀏覽器輔助才能完成這次品牌擷取。請先在 Browser 分頁清除頁面攔截，然後在下方確認。",
+    "LLM Hub Studio 需要瀏覽器輔助才能完成這次品牌擷取。請先在 Browser 分頁清除頁面攔截，然後在下方確認。",
   "brandEnrichment.title": "AI 優化",
   "brandEnrichment.body":
-    "Open Design 會在背景執行更深度的抽取，自動套用合適的設計系統 skills，並就地更新這個系統。通常需要 10-20 分鐘，你可以繼續做其他事。",
+    "LLM Hub Studio 會在背景執行更深度的抽取，自動套用合適的設計系統 skills，並就地更新這個系統。通常需要 10-20 分鐘，你可以繼續做其他事。",
   "brandEnrichment.cta": "AI 優化",
   "brandEnrichment.busy": "正在啟動 AI 優化...",
   "brandExtractionTranscript.sourceDesignMd": "貼上的 DESIGN.md",
@@ -2013,7 +2031,7 @@ export const zhTW: Dict = {
   "chat.inspect.commentHint": "在預覽中選擇文字或區域進行評論。",
   "chat.composerPlaceholder": "描述你想生成的內容…",
   "chat.activeFileEditingLabel": "編輯中",
-  "chat.activeFilePlaceholder": "讓 Open Design 修改 {file}...",
+  "chat.activeFilePlaceholder": "讓 LLM Hub Studio 修改 {file}...",
   "chat.designArtifactsShowMore": "再顯示 {count} 個設計檔案",
   "chat.mode.chat.label": "詢問",
   "chat.mode.chat.title": "Ask 模式",
@@ -2038,7 +2056,7 @@ export const zhTW: Dict = {
   "chat.mode.design.summary":
     "適合建立或修改具體設計產物，例如網頁、原型、即時看板、投影片、圖片、影片、HyperFrames、音訊、資料看板和專案檔案。",
   "chat.mode.design.solves":
-    "當你希望 Open Design 產生檔案、更新 workspace，或把需求變成多模態可交付結果時使用。",
+    "當你希望 LLM Hub Studio 產生檔案、更新 workspace，或把需求變成多模態可交付結果時使用。",
   "chat.mode.design.query1":
     "根據這段需求做一個產品發布落地頁和 HyperFrames 原型。",
   "chat.mode.design.query2": "做一份 10 頁投資人 Deck，並附上講稿備註。",
@@ -2164,7 +2182,7 @@ export const zhTW: Dict = {
   "designBrowser.inspect.saving": "正在保存...",
   "designBrowser.inspect.saveHtml": "保存 HTML",
   "designBrowser.inspect.liveOnly": "仅实时预览",
-  "designBrowser.reference.kicker": "Open Design 浏览器",
+  "designBrowser.reference.kicker": "LLM Hub Studio 浏览器",
   "designBrowser.reference.title": "参考看板",
   "designBrowser.reference.subtitle": "精选灵感、真实产品 UI、动效、色彩、字体、素材和设计系统参考。打开任意站点即可边浏览边收集下一个产物所需的设计语言。",
   "designBrowser.reference.categoryAria": "参考分类",
@@ -2648,7 +2666,7 @@ export const zhTW: Dict = {
   "preview.shareExportGroup": "匯出檔案",
   "preview.shareCopied": "已複製",
   "preview.shareCopyFailed": "複製失敗",
-  "preview.shareTextDefault": "Open Design 模板：{title}",
+  "preview.shareTextDefault": "LLM Hub Studio 模板：{title}",
   "preview.openInNewTab": "在新分頁中開啟",
   "preview.exit": "⤓ 離開",
   "preview.fullscreen": "⤢ 全螢幕",
@@ -2656,7 +2674,7 @@ export const zhTW: Dict = {
   "preview.loading": "正在載入{label}…",
   "preview.errorTitle": "無法載入此範例。",
   "preview.errorBody":
-    "範例 HTML 載入失敗。請確認 Open Design 正在執行後重試。",
+    "範例 HTML 載入失敗。請確認 LLM Hub Studio 正在執行後重試。",
   "preview.retry": "重試",
   "preview.unavailableTitle": "{noun}尚未附帶預覽範例。",
   "preview.unavailableBody": "請在對話中執行此 Prompt 來產生 {kind} 產物。",
@@ -2737,12 +2755,12 @@ export const zhTW: Dict = {
   "designFiles.documentTemplate.titleFallback": "文件",
   "designFiles.documentTemplate.goalHeading": "目標",
   "designFiles.documentTemplate.goalBody":
-    "說明希望 Open Design 基於這份文件生成、修改或判斷什麼。",
+    "說明希望 LLM Hub Studio 基於這份文件生成、修改或判斷什麼。",
   "designFiles.documentTemplate.capabilitiesHeading": "如何使用這份文件",
   "designFiles.documentTemplate.capabilityMarkdown":
     "可以自由使用 Markdown：標題、表格、清單、連結、引用、程式碼區塊和圖片。",
   "designFiles.documentTemplate.capabilityAgent":
-    "Open Design agent 可以讀取、編輯這份檔案，並把它作為專案上下文。",
+    "LLM Hub Studio agent 可以讀取、編輯這份檔案，並把它作為專案上下文。",
   "designFiles.documentTemplate.capabilityImages":
     "可以貼上圖片，或把圖片拖到編輯器裡；上傳後的圖片會插入到目前游標位置。",
   "designFiles.documentTemplate.scenarioHeading": "場景說明",
@@ -2772,7 +2790,7 @@ export const zhTW: Dict = {
     "描述受眾、交付物、必要內容、參考、約束，以及什麼狀態算完成。",
   "designFiles.documentTemplate.nextHeading": "下一步",
   "designFiles.documentTemplate.nextBody":
-    "檢查並編輯這份文件，然後讓 Open Design 基於它生成、修改或執行操作。",
+    "檢查並編輯這份文件，然後讓 LLM Hub Studio 基於它生成、修改或執行操作。",
   "designFiles.previewOpen": "開啟",
   "designFiles.previewClose": "關閉預覽",
   "designFiles.modified": "修改於 {time} · {size}",
@@ -2866,11 +2884,11 @@ export const zhTW: Dict = {
   "designFiles.usefulInfoTip17":
     "在 Instagram 上追蹤 @opendesign.ai，獲取設計靈感。",
   "designFiles.usefulInfoTip18":
-    "在 YouTube 上訂閱 Open Design，觀看教學和示範。",
+    "在 YouTube 上訂閱 LLM Hub Studio，觀看教學和示範。",
   "designFiles.usefulInfoTip19":
-    "在 LinkedIn 上追蹤 Open Design，了解產品動態。",
+    "在 LinkedIn 上追蹤 LLM Hub Studio，了解產品動態。",
   "designFiles.usefulInfoTip20":
-    "在小紅書上追蹤 Open Design，獲取技巧和靈感。",
+    "在小紅書上追蹤 LLM Hub Studio，獲取技巧和靈感。",
   "quickSwitcher.placeholder": "開啟分頁或檔案…",
   "quickSwitcher.empty": "此專案中沒有檔案",
   "quickSwitcher.noMatches": "無符合項目",
@@ -3346,7 +3364,7 @@ export const zhTW: Dict = {
   "assistant.copyMarkdown": "複製回覆 Markdown",
   "assistant.forkConversation": "從這裡分叉",
   "assistant.forkingConversation": "正在分叉…",
-  "assistant.shareToOpenDesign": "分享到 Open Design",
+  "assistant.shareToOpenDesign": "分享到 LLM Hub Studio",
   "assistant.shareToOpenDesignBusy": "正在準備投稿…",
   "assistant.feedbackPrompt": "意見回饋",
   "assistant.feedbackPositive": "有幫助",
@@ -3524,7 +3542,7 @@ export const zhTW: Dict = {
   "pet.navTitle": "寵物",
   "pet.navHint": "領養與自訂",
   "pet.tabBuiltIn": "內建",
-  "pet.tabBuiltInHint": "Open Design 內建的精選寵物 — 一鍵領養。",
+  "pet.tabBuiltInHint": "LLM Hub Studio 內建的精選寵物 — 一鍵領養。",
   "pet.builtInEmpty":
     "目前無法載入內建寵物。等本地服務恢復後,重新整理「社群」頁籤再試。",
   "pet.tabCustom": "自訂",
@@ -3652,7 +3670,7 @@ export const zhTW: Dict = {
   "pet.communitySyncDone": "已同步 {wrote} 個新寵物（共 {total} 個）。",
   "pet.communitySyncFailed": "同步失敗：{error}",
   "pet.codexBundled": "內建",
-  "pet.codexBundledTitle": "Open Design 內建寵物，無需下載。",
+  "pet.codexBundledTitle": "LLM Hub Studio 內建寵物，無需下載。",
   "settings.notifications": "通知",
   "settings.notificationsHint": "任務完成時的音效和桌面通知",
   "settings.notifyCompletionSound": "完成提示音",
@@ -3728,7 +3746,7 @@ export const zhTW: Dict = {
   "settings.projectLocations": "專案位置",
   "settings.projectLocationsHint": "工作區儲存根目錄",
   "settings.projectLocationsDescription":
-    "新增可包含多個 Open Design 專案資料夾的工作基目錄。新專案會儲存為所選基目錄中的一個資料夾。",
+    "新增可包含多個 LLM Hub Studio 專案資料夾的工作基目錄。新專案會儲存為所選基目錄中的一個資料夾。",
   "settings.projectLocationsSaveError":
     "無法儲存專案位置。請確認每個路徑都是可存取的資料夾。",
   "settings.projectLocationsSaved": "專案位置已儲存。",
@@ -3794,7 +3812,7 @@ export const zhTW: Dict = {
   "settings.memoryHint": "從對話中自動沉澱的個人化資訊",
   "settings.customInstructionsTitle": "全域規則",
   "settings.customInstructionsHint":
-    "Open Design 在每次聊天中都應遵循的固定指示。將事實、偏好與專案脈絡儲存為記憶。",
+    "LLM Hub Studio 在每次聊天中都應遵循的固定指示。將事實、偏好與專案脈絡儲存為記憶。",
   "settings.customInstructionsPlaceholder":
     "例如「一律使用 TypeScript。優先採用函式型元件。回覆保持簡潔。」",
   "settings.memoryDescription":
@@ -3826,7 +3844,7 @@ export const zhTW: Dict = {
     "- 主題：預設深色\n- 正文字號：≥ 18px\n- 資訊密度：留白多一些，一屏不要塞太多東西\n\n為什麼：長時間使用眼睛不容易累。\n何時適用：讓你畫 UI、網頁、PPT 時都按這個走。",
   "settings.memoryStarterProjectName": "當前專案",
   "settings.memoryStarterProjectDesc":
-    "Open Design v0.5 — 聊天驅動的設計編輯器",
+    "LLM Hub Studio v0.5 — 聊天驅動的設計編輯器",
   "settings.memoryStarterProjectBody":
     "- 目標：本季交付聊天驅動的編輯體驗\n- 優先級：串流渲染、本地多模態、離線優先\n- 技術棧：Next.js 16、Express daemon、SQLite\n\n何時適用：與本專案相關的所有對話。",
   "settings.memorySaveHint": "不會自動儲存 — 點擊「建立」/「儲存」才會生效。",
@@ -3917,7 +3935,7 @@ export const zhTW: Dict = {
   "artifact.odCardBrandAssistDone": "已確認瀏覽器輔助",
   "artifact.odCardBrandAssistKicker": "需要瀏覽器輔助：{reason}",
   "artifact.odCardBrandAssistBody":
-    "在瀏覽器中開啟品牌網站，讓 Open Design 繼續擷取此設計體系。",
+    "在瀏覽器中開啟品牌網站，讓 LLM Hub Studio 繼續擷取此設計體系。",
   "artifact.odCardBrandAssistError": "無法啟動瀏覽器輔助，請重試。",
   "artifact.odCardBrandAssistWorking": "正在啟動...",
   "artifact.odCardBrandAssistConfirm": "開啟瀏覽器輔助",
@@ -3976,11 +3994,11 @@ export const zhTW: Dict = {
   "notify.successBody": "一輪回答已經寫完。",
   "notify.failureBody": "本輪任務出錯，請查看錯誤訊息。",
   "updater.available": "有可用更新",
-  "updater.activeRunsTitle": "Open Design 仍在執行任務",
+  "updater.activeRunsTitle": "LLM Hub Studio 仍在執行任務",
   "updater.activeRunsBody": "仍有 {count} 個任務正在執行。現在重新啟動會中斷這些任務。",
-  "updater.activeRunsUnknownBody": "Open Design 無法確認是否仍有任務執行。現在重新啟動可能會中斷進行中的工作。",
+  "updater.activeRunsUnknownBody": "LLM Hub Studio 無法確認是否仍有任務執行。現在重新啟動可能會中斷進行中的工作。",
   "updater.availableBody":
-    "Open Design {version} 可用。下載完成後即可開啟安裝器。",
+    "LLM Hub Studio {version} 可用。下載完成後即可開啟安裝器。",
   "updater.checking": "正在檢查更新",
   "updater.download": "下載更新",
   "updater.downloading": "正在下載更新",
@@ -3988,7 +4006,7 @@ export const zhTW: Dict = {
   "updater.done": "完成",
   "updater.failed": "更新失敗",
   "updater.installerOpenBody":
-    "安裝器已開啟。Open Design 正在結束，以便你完成更新。",
+    "安裝器已開啟。LLM Hub Studio 正在結束，以便你完成更新。",
   "updater.installerOpened": "安裝器已開啟",
   "updater.later": "稍後",
   "updater.allowSilentUpdates": "允許以後自動安裝應用內更新",
@@ -4007,24 +4025,24 @@ export const zhTW: Dict = {
   "updater.dialogUnsupported":
     "目前環境不支援應用程式內更新。\n可前往發布頁面手動下載。",
   "updater.payloadReadyGeneric":
-    "A new Open Design update is ready. Open Design will close and restart automatically.",
+    "A new LLM Hub Studio update is ready. LLM Hub Studio will close and restart automatically.",
   "updater.payloadReadyVersion":
-    "Open Design {version} is ready. Open Design will close and restart automatically.",
-  "updater.quitButton": "結束 Open Design",
+    "LLM Hub Studio {version} is ready. LLM Hub Studio will close and restart automatically.",
+  "updater.quitButton": "結束 LLM Hub Studio",
   "updater.quitFailedBody":
-    "安裝器已開啟，但 Open Design 無法結束。替換應用程式前請先結束 Open Design。",
+    "安裝器已開啟，但 LLM Hub Studio 無法結束。替換應用程式前請先結束 LLM Hub Studio。",
   "updater.quitFailedTitle": "無法結束",
   "updater.quitting": "正在結束…",
   "updater.ready": "更新已就緒",
-  "updater.readyGeneric": "新版本已就緒。Open Design 會關閉並開啟安裝器。",
+  "updater.readyGeneric": "新版本已就緒。LLM Hub Studio 會關閉並開啟安裝器。",
   "updater.readyVersion":
-    "Open Design {version} 已就緒。Open Design 會關閉並開啟安裝器。",
+    "LLM Hub Studio {version} 已就緒。LLM Hub Studio 會關閉並開啟安裝器。",
   "updater.upToDate": "您已經是最新版本啦",
   "updater.viewVersionFeatures": "查看新版本特色",
   "updater.manualDownload": "手動下載",
   "updater.reinstallLearnMore": "了解詳情",
-  "updater.reinstallReadyGeneric": "此更新需要完整重新安裝。Open Design 將關閉並開啟安裝程式。",
-  "updater.reinstallReadyVersion": "Open Design {version} 需要完整重新安裝。Open Design 將關閉並開啟安裝程式。",
+  "updater.reinstallReadyGeneric": "此更新需要完整重新安裝。LLM Hub Studio 將關閉並開啟安裝程式。",
+  "updater.reinstallReadyVersion": "LLM Hub Studio {version} 需要完整重新安裝。LLM Hub Studio 將關閉並開啟安裝程式。",
   "updater.restartAnyway": "仍然重新啟動",
 
   "whatsNew.cta": "看看有什麼新功能",
@@ -4059,7 +4077,7 @@ export const zhTW: Dict = {
   'settings.updateRetry': '重試',
   'settings.updateViewReleases': '查看發佈記錄',
   'settings.updateActionFailed': '無法完成更新操作。',
-  'settings.updateQuitFailed': '安裝程式已開啟，但 Open Design 未能自動結束。',
+  'settings.updateQuitFailed': '安裝程式已開啟，但 LLM Hub Studio 未能自動結束。',
   'settings.updateStatusNotChecked': '未檢查更新',
   'settings.updateStatusDevelopment': '開發環境不支援應用程式內更新。',
   'settings.updateStatusUnsupported': '目前環境不支援應用程式內更新。',
@@ -4364,7 +4382,7 @@ export const zhTW: Dict = {
   "dsManager.filterDraft": "草稿",
   "dsManager.createTitle": "新增設計體系",
   "dsManager.createBody":
-    "把你的品牌、產品、程式碼、素材與設計參考教給 Open Design。",
+    "把你的品牌、產品、程式碼、素材與設計參考教給 LLM Hub Studio。",
   "dsManager.createAction": "建立",
   "dsManager.emptyMine":
     "還沒有設計體系。從真實的產品脈絡建立一個，審閱草稿後再發佈，供日後的專案使用。",
@@ -4399,7 +4417,7 @@ export const zhTW: Dict = {
   "settings.instructionsSubtitle": "助手應始終遵循的固定行為",
   "settings.instructionsNavSub": "固定的助手行為",
   "settings.customInstructionsDesc":
-    "Open Design 在每次對話中都會遵循的固定指令。它們不是儲存的記憶；事實、偏好與專案脈絡請使用「記憶」。",
+    "LLM Hub Studio 在每次對話中都會遵循的固定指令。它們不是儲存的記憶；事實、偏好與專案脈絡請使用「記憶」。",
   "mcpClient.forwardedToLabel": "已轉發給：",
   "mcpClient.notForwardedToLabel": "未轉發給：",
   "mcpClient.forwardedAcpNote":
@@ -4410,7 +4428,7 @@ export const zhTW: Dict = {
   // Brands library + extraction
   "brand.libraryTitle": "品牌套件",
   "brand.librarySubtitle":
-    "把你的品牌套件教給 Open Design——從網站擷取一個品牌套件，然後在任意對話中套用它。",
+    "把你的品牌套件教給 LLM Hub Studio——從網站擷取一個品牌套件，然後在任意對話中套用它。",
   "brand.newBrand": "新增品牌套件",
   "brand.searchPlaceholder": "搜尋你的品牌套件…",
   "brand.empty": "還沒有品牌套件。從一個網站擷取一個品牌套件即可開始。",
@@ -4483,7 +4501,7 @@ export const zhTW: Dict = {
   "onboarding.brandDone": "設計系統已擷取",
   "onboarding.buildTitle": "一次建立,處處沿用",
   "onboarding.buildBody":
-    "Open Design 將你的品牌沉澱為可重用的設計系統,讓你之後打造的一切都保持品牌一致。",
+    "LLM Hub Studio 將你的品牌沉澱為可重用的設計系統,讓你之後打造的一切都保持品牌一致。",
   "onboarding.buildBenefitMemoryTitle": "一份品牌記憶",
   "onboarding.buildBenefitMemoryBody":
     "色彩、字體、間距、元件和語氣會沉澱成可重用的 DESIGN.md。",
@@ -4511,7 +4529,7 @@ export const zhTW: Dict = {
   "dsCreate.embeddedBody": "先加入網站或品牌參考，再補充你已有的來源檔案。",
   "dsCreate.sourceSectionTitle": "從 GitHub、網站或來源素材擷取",
   "dsCreate.sourceSectionBody":
-    "從 GitHub repo、網站、DESIGN.md 或能體現風格的檔案開始。Open Design 會先快速建立一套可用系統，之後 AI 可在專案中繼續細化。",
+    "從 GitHub repo、網站、DESIGN.md 或能體現風格的檔案開始。LLM Hub Studio 會先快速建立一套可用系統，之後 AI 可在專案中繼續細化。",
   "dsCreate.githubWebsiteLabel": "GitHub 或網站",
   "dsCreate.add": "加入",
   "dsCreate.startFromBrand": "從品牌開始",
@@ -4658,7 +4676,7 @@ export const zhTW: Dict = {
   "ds.publish": "发布",
   "ds.extractionRunningTitle": "正在擷取設計體系",
   "ds.extractionCompleteTitle": "擷取完成",
-  "ds.extractionRunningBody": "Open Design 正在就地更新此體系。",
+  "ds.extractionRunningBody": "LLM Hub Studio 正在就地更新此體系。",
   "ds.extractionCompleteBody": "已擷取的模組如下所示；空段落會保持為空。",
   "ds.publishCardPublished": "團隊的新專案預設可以使用此設計體系作為上下文。",
   "ds.publishCardDraft":
@@ -4711,7 +4729,7 @@ export const zhTW: Dict = {
   "ds.sectionActivityReadFiles": "已讀取 {files}",
   "ds.sectionActivityPhaseFiles": "{phase}：{files}",
   "ds.sectionRunningReadingContext":
-    "Open Design 正在讀取 {title} 的段落上下文。",
+    "LLM Hub Studio 正在讀取 {title} 的段落上下文。",
   "ds.sectionRunningNow": "{phase}中。",
   "ds.reviewLastReviewed": "上次審閱 {time}",
   "ds.agentFeedbackQueued": "回饋已儲存。當前執行結束後，agent 會繼續處理。",
@@ -4728,7 +4746,7 @@ export const zhTW: Dict = {
   "ds.repoConnectedBody": "重新匯入此儲存庫，把檔案拉入你的設計體系。",
   "ds.repoImportButton": "匯入儲存庫",
   "ds.repoConnectBannerBody":
-    "連接 GitHub 後，Open Design 可以讀取你的儲存庫，並把顏色、字體和元件擷取到此設計體系中。",
+    "連接 GitHub 後，LLM Hub Studio 可以讀取你的儲存庫，並把顏色、字體和元件擷取到此設計體系中。",
   "ds.repoConnectCardBody": "從儲存庫中擷取顏色、字體和元件到此設計體系。",
   "ds.repoConnectButton": "連接 GitHub",
   "newproj.startFromLabel": "起點",

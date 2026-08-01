@@ -766,7 +766,7 @@ function AssistantMessageImpl({
     hasEmptyResponse ||
     !!copyMarkdown ||
     canFork;
-  const canShowOpenDesignSubmission = !!onShareToOpenDesign && showFeedback && runSucceeded;
+  const canShowOpenDesignSubmission = false;
   const showOpenDesignSubmission =
     canShowOpenDesignSubmission && (!!isLast || shareToOpenDesignBusy);
   const effectiveNextStepVariant: NextStepActionsVariant =

@@ -30,6 +30,25 @@ export const LOCALE_LABEL: Record<Locale, string> = {
 // flat (not deeply nested) so missing-key TS errors point straight at the
 // offending string instead of a generic object mismatch.
 export interface Dict {
+  // Model Downloader
+  'modelDownloader.title': string;
+  'modelDownloader.subtitle': string;
+  'modelDownloader.pullAnyModel': string;
+  'modelDownloader.pullPlaceholder': string;
+  'modelDownloader.pull': string;
+  'modelDownloader.downloading': string;
+  'modelDownloader.cancel': string;
+  'modelDownloader.gemma4Section': string;
+  'modelDownloader.installedSection': string;
+  'modelDownloader.installedBadge': string;
+  'modelDownloader.download': string;
+  'modelDownloader.delete': string;
+  'modelDownloader.deleteSuccess': string;
+  'modelDownloader.noModels': string;
+  'modelDownloader.ollamaOffline': string;
+  'modelDownloader.successPrefix': string;
+  'modelDownloader.cancelledPrefix': string;
+  'modelDownloader.errorPrefix': string;
   // Common
   'common.cancel': string;
   'chat.selectFromLibrary': string;

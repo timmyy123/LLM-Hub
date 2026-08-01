@@ -334,7 +334,9 @@ code {
    dark mode. Consumers set their own size and placement. */
 .od-brand-glyph {
   display: inline-block;
-  background-color: var(--text-strong);
-  -webkit-mask: url(/brand-icon.svg) center / contain no-repeat;
-  mask: url(/brand-icon.svg) center / contain no-repeat;
+  background: url(/logo.png) center / contain no-repeat;
+}
+[data-theme='dark'] .od-brand-glyph,
+.dark .od-brand-glyph {
+  filter: invert(1) hue-rotate(180deg);
 }

@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
+import { useI18n } from '../i18n';
 
 interface ModelDownloaderModalProps {
   isOpen: boolean;
@@ -12,42 +13,13 @@ interface InstalledModel {
   modified_at: string;
 }
 
-const FEATURED_MODELS = [
-  {
-    family: 'Gemma 4',
-    provider: 'Google DeepMind',
-    tag: 'gemma4:latest',
-    description: 'Multimodal Gemma 4 series optimized for code & vision',
-    tags: ['gemma4:latest', 'gemma4:26b', 'gemma4:e4b', 'gemma4:e2b'],
-  },
-  {
-    family: 'Ministral 3',
-    provider: 'Mistral AI',
-    tag: 'ministral-3:latest',
-    description: 'Edge-optimized fast reasoning and agentic model family',
-    tags: ['ministral-3:latest', 'ministral-3:8b', 'ministral-3:3b', 'ministral-3:14b'],
-  },
-  {
-    family: 'LFM2 24B',
-    provider: 'Liquid AI',
-    tag: 'lfm2:24b-a2b',
-    description: 'Liquid AI Hybrid SSM-Transformer 24B architecture',
-    tags: ['lfm2:24b-a2b', 'lfm2:latest'],
-  },
-  {
-    family: 'Llama 3',
-    provider: 'Meta AI',
-    tag: 'llama3:latest',
-    description: 'General purpose 8B open model for fast local inference',
-    tags: ['llama3:latest', 'llama3:70b'],
-  },
-  {
-    family: 'Qwen 2.5 Coder',
-    provider: 'Alibaba',
-    tag: 'qwen2.5-coder:latest',
-    description: 'State-of-the-art open code generation & editing model',
-    tags: ['qwen2.5-coder:latest', 'qwen2.5-coder:7b', 'qwen2.5-coder:14b'],
-  },
+const GEMMA4_VARIANTS = [
+  { tag: 'gemma4:latest', desc: 'Default · 9B · General purpose' },
+  { tag: 'gemma4:e2b',    desc: '2B · Ultra-fast, low memory' },
+  { tag: 'gemma4:e4b',    desc: '4B · Balanced for laptops' },
+  { tag: 'gemma4:12b',    desc: '12B · Multimodal & agentic' },
+  { tag: 'gemma4:26b',    desc: '26B · MoE, high performance' },
+  { tag: 'gemma4:31b',    desc: '31B · Dense, complex reasoning' },
 ];
 
 export function ModelDownloaderModal({ isOpen, onClose }: ModelDownloaderModalProps) {
@@ -56,8 +28,10 @@ export function ModelDownloaderModal({ isOpen, onClose }: ModelDownloaderModalPr
   const [pullingTag, setPullingTag] = useState<string | null>(null);
   const [pullProgress, setPullProgress] = useState<string>('');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const { t } = useI18n();
 
-  const fetchInstalledModels = async () => {
+  const fetchInstalled = async () => {
     try {
       const res = await fetch('http://localhost:11434/api/tags');
       if (res.ok) {
@@ -65,297 +39,234 @@ export function ModelDownloaderModal({ isOpen, onClose }: ModelDownloaderModalPr
         setInstalledModels(data.models || []);
       }
     } catch {
-      setStatusMessage('Ollama service offline or not responding on http://localhost:11434');
+      setStatusMessage(t('modelDownloader.ollamaOffline'));
     }
   };
 
   useEffect(() => {
     if (isOpen) {
-      void fetchInstalledModels();
+      void fetchInstalled();
       setStatusMessage(null);
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const handlePull = async (modelTag: string) => {
-    if (!modelTag.trim()) return;
-    const tag = modelTag.trim();
+  const handlePull = async (tag: string) => {
+    tag = tag.trim();
+    if (!tag || pullingTag) return;
     setPullingTag(tag);
-    setPullProgress('Starting download...');
+    setPullProgress('Starting…');
     setStatusMessage(null);
-
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
     try {
       const res = await fetch('http://localhost:11434/api/pull', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: tag, stream: true }),
+        signal: ctrl.signal,
       });
-
-      if (!res.ok || !res.body) {
-        throw new Error(`Failed to pull model ${tag}`);
-      }
-
+      if (!res.ok || !res.body) throw new Error(`Pull failed for "${tag}"`);
       const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-
+      const dec = new TextDecoder();
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        const text = decoder.decode(value);
-        const lines = text.split('\n').filter(Boolean);
-        for (const line of lines) {
+        for (const line of dec.decode(value).split('\n').filter(Boolean)) {
           try {
-            const parsed = JSON.parse(line);
-            if (parsed.status) {
-              if (parsed.total && parsed.completed) {
-                const pct = Math.round((parsed.completed / parsed.total) * 100);
-                setPullProgress(`${parsed.status} (${pct}%)`);
-              } else {
-                setPullProgress(parsed.status);
-              }
+            const p = JSON.parse(line);
+            if (p.status) {
+              setPullProgress(
+                p.total && p.completed
+                  ? `${p.status} (${Math.round((p.completed / p.total) * 100)}%)`
+                  : p.status
+              );
             }
-          } catch {
-            // ignore non-json chunk lines
-          }
+          } catch { /* ignore */ }
         }
       }
-
-      setStatusMessage(`Successfully downloaded ${tag}!`);
-      void fetchInstalledModels();
+      setStatusMessage(`${t('modelDownloader.successPrefix')} ${tag}`);
+      void fetchInstalled();
     } catch (err) {
-      setStatusMessage(`Error downloading ${tag}: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setStatusMessage(
+        err instanceof Error && err.name === 'AbortError'
+          ? `${t('modelDownloader.cancelledPrefix')} ${tag}`
+          : `${t('modelDownloader.errorPrefix')} ${err instanceof Error ? err.message : String(err)}`
+      );
     } finally {
       setPullingTag(null);
       setPullProgress('');
+      abortRef.current = null;
     }
   };
 
+  const handleDelete = async (tag: string) => {
+    try {
+      const res = await fetch('http://localhost:11434/api/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: tag }),
+      });
+      if (!res.ok) throw new Error(`Delete failed for "${tag}"`);
+      setStatusMessage(`${t('modelDownloader.deleteSuccess')} ${tag}`);
+      void fetchInstalled();
+    } catch (err) {
+      setStatusMessage(`${t('modelDownloader.errorPrefix')} ${err instanceof Error ? err.message : String(err)}`);
+    }
+  };
+
+  const isInstalled = (tag: string) => installedModels.some((m) => m.name === tag);
+
+  // shared style tokens
+  const card: React.CSSProperties = {
+    padding: '10px 12px',
+    borderRadius: '10px',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    boxSizing: 'border-box',
+    width: '100%',
+  };
+
+  const sectionLabel: React.CSSProperties = {
+    fontSize: '11px',
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.07em',
+    color: '#52525b',
+    fontWeight: 600,
+    marginBottom: '8px',
+  };
+
+  const dlBtn = (installed: boolean, disabled: boolean): React.CSSProperties => ({
+    flexShrink: 0,
+    padding: '4px 12px',
+    borderRadius: '6px',
+    fontSize: '12px',
+    fontWeight: 600,
+    border: installed ? '1px solid rgba(239,68,68,0.3)' : 'none',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    opacity: disabled ? 0.5 : 1,
+    backgroundColor: installed ? 'rgba(239,68,68,0.15)' : '#2563eb',
+    color: installed ? '#fca5a5' : '#fff',
+    whiteSpace: 'nowrap' as const,
+  });
+
+
   return (
     <div
-      className="dialog-backdrop"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-        backdropFilter: 'blur(8px)',
-        zIndex: 9999,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '24px',
-      }}
+      style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}
       onClick={onClose}
     >
       <div
-        className="dialog-content"
-        style={{
-          width: '100%',
-          maxWidth: '720px',
-          maxHeight: '85vh',
-          backgroundColor: 'var(--color-bg-subtle, #18181b)',
-          border: '1px solid var(--color-border-subtle, #27272a)',
-          borderRadius: '16px',
-          display: 'flex',
-          flexDirection: 'column',
-          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
-          overflow: 'hidden',
-          color: 'var(--color-text, #f4f4f5)',
-        }}
+        style={{ width: '100%', maxWidth: '640px', maxHeight: '88vh', backgroundColor: '#18181b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', display: 'flex', flexDirection: 'column', boxShadow: '0 32px 64px rgba(0,0,0,0.7)', overflow: 'hidden', color: '#f4f4f5', boxSizing: 'border-box' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <header
-          style={{
-            padding: '20px 24px',
-            borderBottom: '1px solid var(--color-border-subtle, #27272a)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '10px',
-                backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Icon name="download" size={20} />
-            </div>
-            <div>
-              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>Local Model Downloader</h2>
-              <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#a1a1aa' }}>
-                Download & manage Ollama models directly on your machine
-              </p>
-            </div>
+        {/* Header */}
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+          <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Icon name="download" size={16} />
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#a1a1aa',
-              cursor: 'pointer',
-              padding: '8px',
-              borderRadius: '8px',
-            }}
-          >
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 700, fontSize: '16px', lineHeight: 1.2 }}>{t('modelDownloader.title')}</div>
+            <div style={{ fontSize: '12px', color: '#71717a', marginTop: '1px' }}>{t('modelDownloader.subtitle')}</div>
+          </div>
+          <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', color: '#71717a', cursor: 'pointer', padding: '4px', borderRadius: '6px', lineHeight: 0, flexShrink: 0 }}>
             <Icon name="close" size={18} />
           </button>
-        </header>
+        </div>
 
-        <div style={{ padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        {/* Scrollable body */}
+        <div style={{ padding: '18px 20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '18px', boxSizing: 'border-box' }}>
+
+          {/* Status */}
           {statusMessage && (
-            <div
-              style={{
-                padding: '12px 16px',
-                borderRadius: '8px',
-                backgroundColor: statusMessage.startsWith('Error')
-                  ? 'rgba(239, 68, 68, 0.15)'
-                  : 'rgba(34, 197, 94, 0.15)',
-                border: statusMessage.startsWith('Error')
-                  ? '1px solid rgba(239, 68, 68, 0.3)'
-                  : '1px solid rgba(34, 197, 94, 0.3)',
-                fontSize: '13px',
-              }}
-            >
+            <div style={{
+              padding: '9px 14px', borderRadius: '8px', fontSize: '13px',
+              backgroundColor: statusMessage.startsWith('Error') ? 'rgba(239,68,68,0.12)' : statusMessage.startsWith('Cancelled') ? 'rgba(234,179,8,0.12)' : 'rgba(34,197,94,0.12)',
+              border: `1px solid ${statusMessage.startsWith('Error') ? 'rgba(239,68,68,0.3)' : statusMessage.startsWith('Cancelled') ? 'rgba(234,179,8,0.3)' : 'rgba(34,197,94,0.3)'}`,
+            }}>
               {statusMessage}
             </div>
           )}
 
-          {/* Custom Download Input */}
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <input
-              type="text"
-              placeholder="Enter model tag (e.g. gemma4:latest, ministral-3:8b, lfm2:24b-a2b)..."
-              value={customTag}
-              onChange={(e) => setCustomTag(e.target.value)}
-              style={{
-                flex: 1,
-                padding: '10px 14px',
-                borderRadius: '8px',
-                backgroundColor: 'rgba(0,0,0,0.2)',
-                border: '1px solid var(--color-border-subtle, #3f3f46)',
-                color: '#fff',
-                fontSize: '14px',
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') void handlePull(customTag);
-              }}
-            />
-            <button
-              type="button"
-              disabled={!customTag.trim() || !!pullingTag}
-              onClick={() => void handlePull(customTag)}
-              style={{
-                padding: '10px 20px',
-                borderRadius: '8px',
-                backgroundColor: 'var(--color-accent, #2563eb)',
-                color: '#fff',
-                border: 'none',
-                fontWeight: 600,
-                cursor: customTag.trim() && !pullingTag ? 'pointer' : 'not-allowed',
-                opacity: customTag.trim() && !pullingTag ? 1 : 0.5,
-              }}
-            >
-              {pullingTag === customTag ? 'Downloading...' : 'Pull Model'}
-            </button>
-          </div>
-
+          {/* Active download */}
           {pullingTag && (
-            <div
-              style={{
-                padding: '14px 18px',
-                borderRadius: '10px',
-                backgroundColor: 'rgba(37, 99, 235, 0.15)',
-                border: '1px solid rgba(37, 99, 235, 0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-              }}
-            >
-              <Icon name="refresh" size={18} className="animate-spin" />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, fontSize: '14px' }}>Downloading {pullingTag}</div>
-                <div style={{ fontSize: '13px', color: '#93c5fd', marginTop: '2px' }}>{pullProgress}</div>
+            <div style={{ ...card, backgroundColor: 'rgba(37,99,235,0.1)', border: '1px solid rgba(37,99,235,0.3)' }}>
+              <Icon name="refresh" size={16} className="animate-spin" />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600, fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {t('modelDownloader.downloading')} {pullingTag}
+                </div>
+                <div style={{ fontSize: '12px', color: '#93c5fd', marginTop: '1px' }}>{pullProgress}</div>
               </div>
+              <button
+                type="button"
+                onClick={() => abortRef.current?.abort()}
+                style={{ flexShrink: 0, padding: '4px 12px', borderRadius: '6px', backgroundColor: 'rgba(239,68,68,0.15)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.3)', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+              >
+                {t('modelDownloader.cancel')}
+              </button>
             </div>
           )}
 
-          {/* Featured Models Section */}
+          {/* Pull any model */}
           <div>
-            <h3 style={{ fontSize: '14px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#a1a1aa', margin: '0 0 12px' }}>
-              Featured Local Families
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {FEATURED_MODELS.map((m) => {
-                const isInstalled = installedModels.some((inst) => inst.name === m.tag);
+            <div style={sectionLabel}>{t('modelDownloader.pullAnyModel')}</div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input
+                type="text"
+                placeholder={t('modelDownloader.pullPlaceholder')}
+                value={customTag}
+                onChange={(e) => setCustomTag(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') void handlePull(customTag); }}
+                style={{ flex: 1, minWidth: 0, padding: '8px 12px', borderRadius: '8px', backgroundColor: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
+              />
+              <button
+                type="button"
+                disabled={!customTag.trim() || !!pullingTag}
+                onClick={() => void handlePull(customTag)}
+                style={{ flexShrink: 0, padding: '8px 18px', borderRadius: '8px', backgroundColor: '#2563eb', color: '#fff', border: 'none', fontSize: '13px', fontWeight: 600, cursor: customTag.trim() && !pullingTag ? 'pointer' : 'not-allowed', opacity: customTag.trim() && !pullingTag ? 1 : 0.5 }}
+              >
+                {t('modelDownloader.pull')}
+              </button>
+            </div>
+          </div>
+
+          {/* Gemma 4 variants */}
+          <div>
+            <div style={sectionLabel}>
+              {t('modelDownloader.gemma4Section')} <span style={{ color: '#3f3f46', textTransform: 'none', fontWeight: 400, letterSpacing: 0 }}>by Google DeepMind</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {GEMMA4_VARIANTS.map((v) => {
+                const inst = isInstalled(v.tag);
                 return (
-                  <div
-                    key={m.family}
-                    style={{
-                      padding: '16px',
-                      borderRadius: '12px',
-                      backgroundColor: 'rgba(255,255,255,0.03)',
-                      border: '1px solid rgba(255,255,255,0.08)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: '16px',
-                    }}
-                  >
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontWeight: 600, fontSize: '15px' }}>{m.family}</span>
-                        <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', backgroundColor: 'rgba(255,255,255,0.1)', color: '#a1a1aa' }}>
-                          {m.provider}
-                        </span>
-                      </div>
-                      <p style={{ margin: '4px 0 8px', fontSize: '13px', color: '#a1a1aa' }}>{m.description}</p>
-                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                        {m.tags.map((t) => (
-                          <button
-                            key={t}
-                            type="button"
-                            onClick={() => void handlePull(t)}
-                            style={{
-                              padding: '2px 8px',
-                              borderRadius: '6px',
-                              fontSize: '12px',
-                              backgroundColor: 'rgba(255,255,255,0.06)',
-                              border: '1px solid rgba(255,255,255,0.1)',
-                              color: '#d4d4d8',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            {t}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                  <div key={v.tag} style={{ ...card }}>
+                    {/* Tag */}
+                    <code style={{ flexShrink: 0, fontSize: '12px', fontFamily: 'ui-monospace,monospace', backgroundColor: 'rgba(255,255,255,0.07)', padding: '2px 8px', borderRadius: '5px', color: '#e4e4e7', whiteSpace: 'nowrap' }}>
+                      {v.tag}
+                    </code>
+                    {/* Description */}
+                    <span style={{ flex: 1, minWidth: 0, fontSize: '13px', color: '#71717a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {v.desc}
+                    </span>
+                    {/* Installed badge */}
+                    {inst && (
+                      <span style={{ flexShrink: 0, fontSize: '11px', padding: '2px 7px', borderRadius: '8px', backgroundColor: 'rgba(34,197,94,0.12)', color: '#4ade80', fontWeight: 600, border: '1px solid rgba(34,197,94,0.2)', whiteSpace: 'nowrap' }}>
+                        {t('modelDownloader.installedBadge')}
+                      </span>
+                    )}
+                    {/* Button: Delete if installed, Download if not */}
                     <button
                       type="button"
                       disabled={!!pullingTag}
-                      onClick={() => void handlePull(m.tag)}
-                      style={{
-                        padding: '8px 16px',
-                        borderRadius: '8px',
-                        backgroundColor: isInstalled ? 'rgba(34, 197, 94, 0.2)' : 'var(--color-accent, #2563eb)',
-                        color: isInstalled ? '#4ade80' : '#fff',
-                        border: isInstalled ? '1px solid rgba(34, 197, 94, 0.4)' : 'none',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                        cursor: pullingTag ? 'not-allowed' : 'pointer',
-                        whiteSpace: 'nowrap',
-                      }}
+                      onClick={() => inst ? void handleDelete(v.tag) : void handlePull(v.tag)}
+                      style={dlBtn(inst, !!pullingTag)}
                     >
-                      {isInstalled ? 'Installed ✓' : 'Download'}
+                      {inst ? t('modelDownloader.delete') : t('modelDownloader.download')}
                     </button>
                   </div>
                 );
@@ -363,40 +274,23 @@ export function ModelDownloaderModal({ isOpen, onClose }: ModelDownloaderModalPr
             </div>
           </div>
 
-          {/* Installed Models Section */}
+          {/* Installed models */}
           <div>
-            <h3 style={{ fontSize: '14px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#a1a1aa', margin: '0 0 12px' }}>
-              Installed Models ({installedModels.length})
-            </h3>
+            <div style={sectionLabel}>{t('modelDownloader.installedSection')} ({installedModels.length})</div>
             {installedModels.length === 0 ? (
-              <div style={{ fontSize: '13px', color: '#71717a', fontStyle: 'italic' }}>
-                No models installed yet on http://localhost:11434
-              </div>
+              <div style={{ fontSize: '13px', color: '#52525b', fontStyle: 'italic' }}>{t('modelDownloader.noModels')}</div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '6px' }}>
                 {installedModels.map((m) => (
-                  <div
-                    key={m.name}
-                    style={{
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      backgroundColor: 'rgba(255,255,255,0.04)',
-                      border: '1px solid rgba(255,255,255,0.08)',
-                      fontSize: '13px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                    }}
-                  >
-                    <span style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {m.name}
-                    </span>
-                    <span style={{ fontSize: '11px', color: '#4ade80', marginLeft: '6px' }}>✓</span>
+                  <div key={m.name} style={{ padding: '7px 12px', borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#d4d4d8' }}>{m.name}</span>
+                    <span style={{ color: '#4ade80', flexShrink: 0 }}>✓</span>
                   </div>
                 ))}
               </div>
             )}
           </div>
+
         </div>
       </div>
     </div>

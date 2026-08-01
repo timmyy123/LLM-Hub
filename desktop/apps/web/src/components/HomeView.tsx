@@ -2237,23 +2237,6 @@ export function HomeView({
         {...(onRenameProject ? { onRename: onRenameProject } : {})}
       />
 
-      <HomeTemplatesReveal
-        enabled={!projectsLoading && projects.length === 0}
-      >
-        <PluginsHomeSection
-          plugins={plugins}
-          loading={pluginsLoading}
-          activePluginId={active?.record.id ?? null}
-          pendingApplyId={pendingApplyId}
-          pendingDuplicateId={pendingDuplicatePluginId}
-          onUse={(record, action) => void routePluginUse(record, action)}
-          onDuplicate={(record) => void duplicateExamplePlugin(record)}
-          onOpenDetails={handleCommunityOpenDetails}
-          onBrowseRegistry={onBrowseRegistry}
-          preferDefaultFacet
-          cardLayout="gallery"
-        />
-      </HomeTemplatesReveal>
 
       <AnimatePresence>
         {detailsRecord ? (

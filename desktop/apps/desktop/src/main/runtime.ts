@@ -31,7 +31,7 @@ import { renderDeckSlides } from "./deck-capture.js";
 import { openValidatedDirectory } from "./open-path.js";
 import { exportArtifact as exportArtifactFromHtml } from "./artifact-export.js";
 import { createElectronPdfTarget, exportPdfFromHtml, savePrintReadyDocumentAsPdf } from "./pdf-export.js";
-import { SPLASH_VIDEO_DATA_URL } from "./splash-video.js";
+import { SPLASH_LOGO_DATA_URL } from "./splash-video.js";
 import { RendererCrashLoopBreaker } from "./renderer-crash-loop.js";
 import type { PrintReadyPdfOptions } from "./pdf-export.js";
 import type { DesktopUpdater } from "./updater.js";
@@ -262,7 +262,7 @@ const MIN_SPLASH_MS = 2000;
 // While the splash is up, the real web app loads in a hidden main window. We
 // reveal it only once the web bundle reports it has actually mounted (it sets
 // `data-od-app-mounted="1"` on first paint of the real UI), so the user never
-// sees the web's own "Loading Open Design…" shell flash between the splash and
+// sees the web's own "Loading LLM Hub Studio…" shell flash between the splash and
 // the app. Poll cadence + a hard ceiling so a missing mount signal can never
 // strand the user on the splash forever.
 const WEB_MOUNT_POLL_MS = 80;
@@ -859,7 +859,7 @@ function createPendingHtml(): string {
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Open Design</title>
+    <title>LLM Hub Studio</title>
     <style>
       html,
       body {
@@ -932,14 +932,11 @@ function createPendingHtml(): string {
     </style>
   </head>
   <body>
-    <video
-      id="splash"
-      autoplay
-      muted
-      playsinline
-      disablepictureinpicture
-      src="${SPLASH_VIDEO_DATA_URL}"
-    ></video>
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; margin-bottom: 60px;">
+      <img src="${SPLASH_LOGO_DATA_URL}" style="width: 140px; height: 140px; object-fit: contain; border-radius: 28px; overflow: hidden;" alt="LLM Hub Studio" />
+      <div style="font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; font-size: 28px; font-weight: 700; color: #18181b; letter-spacing: -0.02em;">LLM Hub Studio</div>
+      <div style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 14px; color: #71717a;">The open-source AI studio</div>
+    </div>
     <div class="boot-progress" aria-hidden="true">
       <div class="boot-progress-fill" id="boot-progress-fill" data-pct="${initialPct}" style="width: ${initialPct}%;"></div>
     </div>
@@ -1067,7 +1064,7 @@ function buildCrashReportUrl(ctx: RendererCrashScreenContext): string {
   const title = `Desktop app keeps crashing (renderer ${ctx.reason})`;
   const body = [
     "**What happened**",
-    "The Open Design desktop window crashed several times in a row and showed the recovery screen.",
+    "The LLM Hub Studio desktop window crashed several times in a row and showed the recovery screen.",
     "",
     "**What I was doing when it started** (please add any detail):",
     "",
@@ -1086,9 +1083,9 @@ function buildCrashReportUrl(ctx: RendererCrashScreenContext): string {
 // Prefilled mailto for the "Email us" action — same auto-filled diagnostics as
 // the issue, for users who'd rather email than open a GitHub account.
 function buildCrashMailtoUrl(ctx: RendererCrashScreenContext): string {
-  const subject = `Open Design keeps crashing (renderer ${ctx.reason})`;
+  const subject = `LLM Hub Studio keeps crashing (renderer ${ctx.reason})`;
   const body = [
-    "The Open Design desktop app crashed several times in a row on my device.",
+    "The LLM Hub Studio desktop app crashed several times in a row on my device.",
     "",
     "(If possible, attach the diagnostics file you saved with the “Save logs…” button.)",
     "",
@@ -1106,7 +1103,7 @@ function createRendererCrashHtml(ctx: RendererCrashScreenContext): string {
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Open Design</title>
+    <title>LLM Hub Studio</title>
     <style>
       /* Palette mirrors the app's neutral design tokens (apps/web tokens.css):
          warm off-white + near-black, no accent color — matching the black/white
@@ -1202,7 +1199,7 @@ function createRendererCrashHtml(ctx: RendererCrashScreenContext): string {
   </head>
   <body>
     <div class="panel">
-      <p class="title">Open Design keeps closing on this device</p>
+      <p class="title">LLM Hub Studio keeps closing on this device</p>
       <p class="body">The app window crashed several times in a row, so it has paused to avoid getting stuck reloading.</p>
       <p class="body">It will try to recover on its own in a few minutes.</p>
       <div class="actions">
@@ -1212,7 +1209,7 @@ function createRendererCrashHtml(ctx: RendererCrashScreenContext): string {
       <p class="hint" id="diag-note">Saved logs include a crash memory snapshot so we can find the cause. Nothing is sent unless you choose to share it.</p>
       <p class="status" id="status" aria-live="polite"></p>
       <p class="email" id="email-line">Prefer email? <a href="#" id="email">Contact ${SUPPORT_EMAIL}</a></p>
-      <p class="hint">If this keeps happening, quitting and reinstalling Open Design usually resolves it.</p>
+      <p class="hint">If this keeps happening, quitting and reinstalling LLM Hub Studio usually resolves it.</p>
     </div>
     <script>
       (function () {
@@ -1300,7 +1297,7 @@ const SPLASH_STAGE_SEQUENCE: readonly SplashBootStage[] = [
 ];
 
 const SPLASH_STAGE_LABELS: Record<SplashBootStage, string> = {
-  starting: "Starting Open Design",
+  starting: "Starting LLM Hub Studio",
   engine: "Starting the local engine",
   engineReady: "Local engine ready",
   interface: "Preparing the interface",
@@ -1420,7 +1417,7 @@ export function createSplashWindow(): SplashWindowHandle {
     height: 900,
     resizable: false,
     show: true,
-    title: "Open Design",
+    title: "LLM Hub Studio",
     width: 1280,
     webPreferences: {
       contextIsolation: true,
@@ -2116,7 +2113,7 @@ export async function createDesktopRuntime(options: DesktopRuntimeOptions): Prom
 
   const consoleEntries: DesktopConsoleEntry[] = [];
   const petWindow = createDesktopPetWindow(preloadPath, options.osLocale);
-  const windowTitle = options.windowTitle ?? "Open Design";
+  const windowTitle = options.windowTitle ?? "LLM Hub Studio";
   const window = new BrowserWindow({
     height: 900,
     icon: resolveDesktopIconPath(),
@@ -2129,7 +2126,7 @@ export async function createDesktopRuntime(options: DesktopRuntimeOptions): Prom
     // Starts hidden: the splash window is what the user sees while the real web
     // app loads in here. We reveal this window only once the app has actually
     // mounted (see `revealWhenReady` below), so there is never a flash of the
-    // web's own "Loading Open Design…" shell.
+    // web's own "Loading LLM Hub Studio…" shell.
     show: false,
     title: windowTitle,
     autoHideMenuBar: true,
@@ -2283,7 +2280,7 @@ export async function createDesktopRuntime(options: DesktopRuntimeOptions): Prom
   const unsubscribeUpdater = options.updater?.subscribe(() => sendUpdaterStatus()) ?? (() => undefined);
   const requireMainWindowSender = (event: Electron.IpcMainInvokeEvent): void => {
     if (event.sender !== window.webContents) {
-      throw new Error("host IPC is only available to the main Open Design window");
+      throw new Error("host IPC is only available to the main LLM Hub Studio window");
     }
   };
   const discoverUpdateDaemonBaseUrl = async (): Promise<string> => {
@@ -2614,7 +2611,7 @@ export async function createDesktopRuntime(options: DesktopRuntimeOptions): Prom
 
   // Hold the splash until BOTH (a) the web bundle reports it has mounted — it
   // sets `data-od-app-mounted="1"` on first paint of the real UI — so we never
-  // reveal the web's own dark "Loading Open Design…" shell, and (b) the splash
+  // reveal the web's own dark "Loading LLM Hub Studio…" shell, and (b) the splash
   // has been up at least MIN_SPLASH_MS so the brand clip plays through. A hard
   // ceiling guarantees the user is never stranded on the splash if the mount
   // signal never arrives.
