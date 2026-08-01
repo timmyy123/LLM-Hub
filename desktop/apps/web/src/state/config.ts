@@ -125,44 +125,6 @@ export const KNOWN_PROVIDERS: KnownProvider[] = [
     preferredModels: ['claude-sonnet-4-5', 'claude-opus-4-5', 'claude-haiku-4-5'],
   },
   {
-    label: 'DeepSeek — Anthropic',
-    protocol: 'anthropic',
-    baseUrl: 'https://api.deepseek.com/anthropic',
-    preferredModels: [
-      'deepseek-v4-flash',
-      'deepseek-v4-pro',
-    ],
-    retiredModels: ['deepseek-chat', 'deepseek-reasoner'],
-  },
-  {
-    label: 'MiniMax — Anthropic',
-    protocol: 'anthropic',
-    baseUrl: 'https://api.minimax.io/anthropic',
-    preferredModels: [
-      'MiniMax-M2.7-highspeed',
-      'MiniMax-M2.7',
-      'MiniMax-M2.5-highspeed',
-      'MiniMax-M2.5',
-      'MiniMax-M2.1-highspeed',
-      'MiniMax-M2.1',
-      'MiniMax-M2',
-    ],
-  },
-  {
-    label: 'MiniMax — Anthropic (CN)',
-    protocol: 'anthropic',
-    baseUrl: 'https://api.minimaxi.com/anthropic',
-    preferredModels: [
-      'MiniMax-M2.7-highspeed',
-      'MiniMax-M2.7',
-      'MiniMax-M2.5-highspeed',
-      'MiniMax-M2.5',
-      'MiniMax-M2.1-highspeed',
-      'MiniMax-M2.1',
-      'MiniMax-M2',
-    ],
-  },
-  {
     label: 'OpenAI',
     protocol: 'openai',
     baseUrl: 'https://api.openai.com/v1',
@@ -173,11 +135,6 @@ export const KNOWN_PROVIDERS: KnownProvider[] = [
     protocol: 'openai',
     baseUrl: 'https://api.atlascloud.ai/v1',
     preferredModels: [
-      'qwen/qwen3.5-flash',
-      'qwen/qwen3.5-plus',
-      'qwen/qwen3.7-plus',
-      'deepseek-ai/deepseek-v4-flash',
-      'deepseek-ai/deepseek-v4-pro',
       'google/gemini-3.5-flash',
     ],
     apiKeyConsoleLink: {
@@ -196,8 +153,6 @@ export const KNOWN_PROVIDERS: KnownProvider[] = [
       'google/gemini-2.5-pro',
       'openai/gpt-4o',
       'openai/o3-mini',
-      'deepseek/deepseek-chat',
-      'deepseek/deepseek-r1',
     ],
   },
   {
@@ -221,32 +176,6 @@ export const KNOWN_PROVIDERS: KnownProvider[] = [
     ],
   },
   {
-    label: 'SiliconFlow (CN)',
-    protocol: 'openai',
-    baseUrl: 'https://api.siliconflow.cn/v1',
-    preferredModels: [
-      'deepseek-ai/DeepSeek-V3.1',
-      'deepseek-ai/DeepSeek-R1',
-      'Qwen/Qwen3-Coder-480B-A35B-Instruct',
-    ],
-  },
-  {
-    label: 'SiliconFlow (Global)',
-    protocol: 'openai',
-    baseUrl: 'https://api.siliconflow.com/v1',
-    preferredModels: [
-      'deepseek-ai/DeepSeek-V3.1',
-      'deepseek-ai/DeepSeek-R1',
-      'Qwen/Qwen3-Coder-480B-A35B-Instruct',
-    ],
-  },
-  {
-    label: 'PPIO',
-    protocol: 'openai',
-    baseUrl: 'https://api.ppinfra.com/v3/openai',
-    preferredModels: ['deepseek/deepseek-v3.1', 'deepseek/deepseek-r1'],
-  },
-  {
     label: 'NVIDIA',
     protocol: 'openai',
     baseUrl: 'https://integrate.api.nvidia.com/v1',
@@ -255,22 +184,6 @@ export const KNOWN_PROVIDERS: KnownProvider[] = [
       'meta/llama-3.1-405b-instruct',
       'nvidia/llama-3.1-nemotron-70b-instruct',
     ],
-  },
-  {
-    label: 'StepFun',
-    protocol: 'openai',
-    baseUrl: 'https://api.stepfun.ai/v1',
-    preferredModels: ['step-2-mini', 'step-1-8k', 'step-1-32k'],
-  },
-  {
-    label: 'DeepSeek — OpenAI',
-    protocol: 'openai',
-    baseUrl: 'https://api.deepseek.com',
-    preferredModels: [
-      'deepseek-v4-flash',
-      'deepseek-v4-pro',
-    ],
-    retiredModels: ['deepseek-chat', 'deepseek-reasoner'],
   },
   {
     label: 'Mistral AI',
@@ -291,7 +204,6 @@ export const KNOWN_PROVIDERS: KnownProvider[] = [
     preferredModels: [
       'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',
       'meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo',
-      'Qwen/Qwen2.5-Coder-32B-Instruct',
     ],
   },
   {
@@ -300,75 +212,15 @@ export const KNOWN_PROVIDERS: KnownProvider[] = [
     baseUrl: 'https://router.huggingface.co/v1',
     preferredModels: [
       'openai/gpt-oss-120b',
-      'Qwen/Qwen3-Coder-480B-A35B-Instruct',
       'meta-llama/Llama-3.1-8B-Instruct',
     ],
-  },
-  {
-    label: 'Qwen',
-    protocol: 'openai',
-    baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-    preferredModels: ['qwen-plus', 'qwen-turbo', 'qwen-max', 'qwen3-coder-plus'],
-  },
-  {
-    label: 'Volcengine Ark',
-    protocol: 'openai',
-    baseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
-    preferredModels: ['doubao-seed-1-6', 'doubao-seed-1-6-thinking', 'deepseek-v3'],
-  },
-  {
-    label: 'Baidu Qianfan',
-    protocol: 'openai',
-    baseUrl: 'https://qianfan.baidubce.com/v2',
-    preferredModels: ['ernie-4.5-turbo-128k', 'ernie-4.5-8k-preview'],
   },
   {
     label: 'vLLM',
     protocol: 'openai',
     baseUrl: 'http://127.0.0.1:8000/v1',
-    preferredModels: ['model', 'llama3', 'qwen3'],
+    preferredModels: ['model', 'llama3'],
     requiresApiKey: false,
-  },
-  {
-    label: 'MiniMax — OpenAI',
-    protocol: 'openai',
-    baseUrl: 'https://api.minimax.io/v1',
-    preferredModels: [
-      'MiniMax-M2.7-highspeed',
-      'MiniMax-M2.7',
-      'MiniMax-M2.5-highspeed',
-      'MiniMax-M2.5',
-      'MiniMax-M2.1-highspeed',
-      'MiniMax-M2.1',
-      'MiniMax-M2',
-    ],
-  },
-  {
-    label: 'MiMo (Xiaomi) — OpenAI',
-    protocol: 'openai',
-    baseUrl: 'https://token-plan-cn.xiaomimimo.com/v1',
-    preferredModels: ['mimo-v2.5-pro'],
-  },
-  {
-    label: 'Moonshot',
-    protocol: 'openai',
-    baseUrl: 'https://api.moonshot.cn/v1',
-    preferredModels: [
-      'kimi-k2.6',
-      'kimi-k2.7-code',
-      'kimi-k2.7-code-highspeed',
-      'kimi-k2.5',
-      'moonshot-v1-8k',
-      'moonshot-v1-32k',
-      'moonshot-v1-128k',
-    ],
-    retiredModels: ['kimi-k2-0711-preview'],
-  },
-  {
-    label: 'Zhipu',
-    protocol: 'openai',
-    baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
-    preferredModels: ['glm-4.6', 'glm-4-plus', 'glm-4-air'],
   },
   {
     label: 'Ollama Cloud (managed)',
@@ -376,34 +228,13 @@ export const KNOWN_PROVIDERS: KnownProvider[] = [
     baseUrl: 'https://ollama.com',
     preferredModels: [
       'gpt-oss:120b',
-      'cogito-2.1:671b',
-      'deepseek-v3.1:671b',
-      'deepseek-v3.2',
-      'deepseek-v4-flash',
-      'deepseek-v4-pro',
-      'devstral-2:123b',
-      'devstral-small-2:24b',
-      'gemini-3-flash-preview',
+      'gpt-oss:20b',
       'gemma3:4b',
       'gemma3:12b',
       'gemma3:27b',
       'gemma4:31b',
-      'glm-4.6',
-      'glm-4.7',
-      'glm-5',
-      'glm-5.1',
-      'glm-5.2',
-      'gpt-oss:20b',
-      'kimi-k2:1t',
-      'kimi-k2-thinking',
-      'kimi-k2.5',
-      'kimi-k2.6',
-      'kimi-k2.7-code',
-      'minimax-m2',
-      'minimax-m2.1',
-      'minimax-m2.5',
-      'minimax-m2.7',
-      'minimax-m3',
+      'devstral-2:123b',
+      'devstral-small-2:24b',
       'ministral-3:3b',
       'ministral-3:8b',
       'ministral-3:14b',
@@ -411,58 +242,16 @@ export const KNOWN_PROVIDERS: KnownProvider[] = [
       'nemotron-3-nano:30b',
       'nemotron-3-super',
       'nemotron-3-ultra',
-      'qwen3-coder:480b',
-      'qwen3-coder-next',
-      'qwen3-next:80b',
-      'qwen3-vl:235b',
-      'qwen3-vl:235b-instruct',
-      'qwen3.5:397b',
-      'rnj-1:8b',
+      'lfm2:24b-a2b',
+      'llama-3.3:70b',
     ],
   },
   {
     label: 'Ollama Self-hosted (local)',
     protocol: 'ollama',
     baseUrl: 'http://localhost:11434',
-    preferredModels: ['gemma3:4b', 'gemma3:12b', 'gemma3:27b', 'gpt-oss:20b'],
+    preferredModels: ['gpt-oss:20b', 'gemma4:latest', 'ministral-3:latest', 'lfm2:24b-a2b', 'llama3:latest'],
     requiresApiKey: false,
-  },
-  {
-    label: 'MiMo (Xiaomi) — Anthropic',
-    protocol: 'anthropic',
-    baseUrl: 'https://token-plan-cn.xiaomimimo.com/anthropic',
-    preferredModels: ['mimo-v2.5-pro'],
-  },
-  {
-    label: 'SenseAudio',
-    protocol: 'senseaudio',
-    baseUrl: 'https://api.senseaudio.cn',
-    preferredModels: [
-      'senseaudio-s2',
-      'senseaudio-s2-flash',
-      'deepseek-v4-flash',
-      'deepseek-v4-pro',
-      'glm-5.1',
-      'kimi-k2.6',
-      'MiniMax-M2.7-highspeed',
-      'MiniMax-M2.7',
-    ],
-  },
-  {
-    label: 'AIHubMix',
-    protocol: 'aihubmix',
-    baseUrl: 'https://aihubmix.com/v1',
-    preferredModels: [
-      'gpt-5.5',
-      'gpt-4o',
-      'gpt-4o-mini',
-      'claude-opus-4-8',
-      'claude-sonnet-4-5',
-      'claude-haiku-4-5',
-      'gemini-2.0-flash',
-      'deepseek-chat',
-      'deepseek-reasoner',
-    ],
   },
 ];
 
@@ -487,29 +276,13 @@ const BYOK_PROVIDER_PRESET_SPECS = [
   { id: 'google-ai-studio', title: 'Google Gemini', providerLabel: 'Google Gemini' },
   { id: 'ollama', title: 'Ollama Cloud', providerLabel: 'Ollama Cloud (managed)' },
   { id: 'azure', title: 'Azure OpenAI', providerLabel: 'Azure OpenAI' },
-  { id: 'siliconflow-cn', title: 'SiliconFlow (CN)', providerLabel: 'SiliconFlow (CN)' },
-  {
-    id: 'siliconflow-global',
-    title: 'SiliconFlow (Global)',
-    providerLabel: 'SiliconFlow (Global)',
-  },
-  { id: 'ppio', title: 'PPIO', providerLabel: 'PPIO' },
   { id: 'nvidia', title: 'NVIDIA', providerLabel: 'NVIDIA' },
-  { id: 'stepfun', title: 'StepFun', providerLabel: 'StepFun' },
-  { id: 'deepseek', title: 'DeepSeek', providerLabel: 'DeepSeek — OpenAI' },
   { id: 'openrouter', title: 'OpenRouter', providerLabel: 'OpenRouter' },
   { id: 'mistral', title: 'Mistral AI', providerLabel: 'Mistral AI' },
   { id: 'xai', title: 'xAI', providerLabel: 'xAI' },
   { id: 'together', title: 'Together AI', providerLabel: 'Together AI' },
   { id: 'huggingface', title: 'Hugging Face', providerLabel: 'Hugging Face' },
-  { id: 'qwen', title: 'Qwen', providerLabel: 'Qwen' },
-  { id: 'volcengine', title: 'Volcengine Ark', providerLabel: 'Volcengine Ark' },
-  { id: 'qianfan', title: 'Baidu Qianfan', providerLabel: 'Baidu Qianfan' },
   { id: 'vllm', title: 'vLLM', providerLabel: 'vLLM' },
-  { id: 'mimo', title: 'Xiaomi MiMo', providerLabel: 'MiMo (Xiaomi) — OpenAI' },
-  { id: 'minimax', title: 'MiniMax', providerLabel: 'MiniMax — Anthropic (CN)' },
-  { id: 'moonshot', title: 'Moonshot', providerLabel: 'Moonshot' },
-  { id: 'zhipu', title: 'Zhipu AI', providerLabel: 'Zhipu' },
 ] as const;
 
 export const BYOK_PROVIDER_PRESETS: ReadonlyArray<ByokProviderPresetConfig> =
@@ -596,14 +369,6 @@ function inferApiProtocol(model: string, baseUrl: string): ApiProtocol {
     // protocol so both chat and the connection test hit the native Ollama
     // proxy instead of the Anthropic or OpenAI paths.
     if (normalized.includes('ollama.com')) return 'ollama';
-    // SenseAudio host gets routed to its own proxy so the daemon log line
-    // and the BYOK tab UI stay consistent with the protocol the user
-    // picked — even though the on-wire shape is OpenAI-compatible.
-    if (normalized.includes('senseaudio.cn')) return 'senseaudio';
-    // AIHubMix host routes to its own proxy so the daemon injects the
-    // APP-Code attribution header even though the wire shape is
-    // OpenAI-compatible.
-    if (normalized.includes('aihubmix.com')) return 'aihubmix';
     return isOpenAICompatible(model, baseUrl) ? 'openai' : 'anthropic';
   } catch {
     // Preserve the rest of the user's settings even if an old saved base URL is

@@ -206,7 +206,7 @@ export function ModelDownloaderModal({ isOpen, onClose }: ModelDownloaderModalPr
               borderRadius: '8px',
             }}
           >
-            <Icon name="x" size={18} />
+            <Icon name="close" size={18} />
           </button>
         </header>
 
@@ -280,7 +280,7 @@ export function ModelDownloaderModal({ isOpen, onClose }: ModelDownloaderModalPr
                 gap: '12px',
               }}
             >
-              <Icon name="loader" size={18} className="animate-spin" />
+              <Icon name="refresh" size={18} className="animate-spin" />
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 600, fontSize: '14px' }}>Downloading {pullingTag}</div>
                 <div style={{ fontSize: '13px', color: '#93c5fd', marginTop: '2px' }}>{pullProgress}</div>

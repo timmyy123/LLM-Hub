@@ -2660,27 +2660,7 @@ function AppInner() {
       )}
       <TooltipLayer />
       <UpdateDialog />
-      <AmrArtifactUpgradeGate
-        homeVisible={route.kind === 'home' && route.view === 'home'}
-        activeProjectId={route.kind === 'project' ? route.projectId : null}
-        activeConversationId={
-          route.kind === 'project' ? route.conversationId ?? null : null
-        }
-        activeFileName={route.kind === 'project' ? route.fileName : null}
-        plan={resolvedAmrPlan}
-        planResolved={
-          amrLoginStatus !== null
-          && (amrLoginStatus.loggedIn === false || resolvedAmrPlan !== null)
-        }
-        profile={amrLoginStatus?.profile ?? null}
-        metricsConsent={config.telemetry?.metrics === true}
-        installationId={config.installationId}
-        onHomeOfferChange={
-          amrArtifactUpgradeHomeMock
-            ? undefined
-            : setAmrArtifactUpgradeHomeOffer
-        }
-      />
+      <AmrArtifactUpgradeGate />
       <AnimatePresence>
       {settingsOpen ? (
         <SettingsDialog
@@ -2776,17 +2756,7 @@ function AppInner() {
           exit={{ opacity: 0, y: 10, scale: 0.97 }}
           transition={{ type: 'spring', stiffness: 400, damping: 28 }}
         >
-        <PrivacyConsentModal
-          onShare={() => {
-            // The banner owns only the privacy decision; it does not drive
-            // navigation. Choosing Share keeps the current anonymous identity
-            // when one already exists and enables the telemetry surface.
-            handlePrivacyConsentChoice(true);
-          }}
-          onDecline={() => {
-            handlePrivacyConsentChoice(false);
-          }}
-        />
+        <PrivacyConsentModal />
       </motion.div>
       ) : null}
       </AnimatePresence>

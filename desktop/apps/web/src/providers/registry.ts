@@ -102,6 +102,20 @@ function deployProviderQuery(providerId?: WebDeployProviderId): string {
   return providerId ? `?providerId=${encodeURIComponent(providerId)}` : '';
 }
 
+const DISALLOWED_AGENT_IDS = new Set([
+  'deepseek',
+  'mimo',
+  'kimi',
+  'opencode',
+  'qwen',
+  'zhipu',
+  'minimax',
+  'doubao',
+  'stepfun',
+  'baidu',
+  'vibe',
+]);
+
 export async function fetchAgents(options?: { throwOnError?: boolean }): Promise<AgentInfo[]> {
   try {
     const resp = await fetch('/api/agents', { cache: 'no-store' });
@@ -110,26 +124,23 @@ export async function fetchAgents(options?: { throwOnError?: boolean }): Promise
       return [];
     }
     const json = (await resp.json()) as { agents: AgentInfo[] };
-    return json.agents ?? [];
+    const list = json.agents ?? [];
+    return list.filter((a) => !DISALLOWED_AGENT_IDS.has(a.id.toLowerCase()));
   } catch (err) {
     if (options?.throwOnError) throw err;
     return [];
   }
 }
 
-// Incremental agent detection over Server-Sent Events: `onAgent` fires once
-// per agent the moment its probe settles (completion order, not registry
-// order), so a caller can paint cards as they resolve instead of waiting for
-// the slowest CLI. Resolves with every agent collected once the stream's
-// terminal `done` event arrives. This is additive: callers that don't need
-// incremental delivery keep using `fetchAgents()` (whose batch probe is now
-// parallelized per-agent and so is itself faster). Pass an AbortSignal to
-// cancel the underlying request.
 export async function fetchAgentsStream(args: {
   onAgent: (agent: AgentInfo) => void;
   signal?: AbortSignal;
 }): Promise<AgentInfo[]> {
   const { onAgent, signal } = args;
+  const wrappedOnAgent = (agent: AgentInfo) => {
+    if (DISALLOWED_AGENT_IDS.has(agent.id.toLowerCase())) return;
+    onAgent(agent);
+  };
   const resp = await fetch('/api/agents?stream=1', {
     cache: 'no-store',
     headers: { Accept: 'text/event-stream' },
@@ -177,8 +188,10 @@ export async function fetchAgentsStream(args: {
     if (eventName === 'agent' && data) {
       try {
         const agent = JSON.parse(data) as AgentInfo;
-        collected.push(agent);
-        onAgent(agent);
+        if (!DISALLOWED_AGENT_IDS.has(agent.id.toLowerCase())) {
+          collected.push(agent);
+          wrappedOnAgent(agent);
+        }
       } catch {
         // Ignore a malformed record rather than aborting the whole stream.
       }

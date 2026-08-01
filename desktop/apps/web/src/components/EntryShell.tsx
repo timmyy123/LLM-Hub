@@ -180,7 +180,7 @@ import {
   amrLoginPollOutcome,
   notifyAmrLoginStatusChanged,
 } from './amrLoginPolling';
-import { closeAmrActivationWindowBestEffort } from './AmrLoginPill';
+const closeAmrActivationWindowBestEffort = () => {};
 import { smoothScrollToTop } from '../utils/smoothScrollToTop';
 import { summarizeProjectNameFromPrompt } from '../utils/projectName';
 import { LIBRARY_UI_VISIBLE } from '../features/libraryUi';
@@ -1069,26 +1069,10 @@ export function EntryShell({
             />
             {avatarMenu}
             {amrBalanceGateBlock ? (
-              <AmrBalanceDialog
-                reason={amrBalanceGateBlock.reason}
-                balanceUsd={amrBalanceGateBlock.snapshot.balanceUsd}
-                profile={amrBalanceGateBlock.snapshot.profile}
-                entrySource="home_balance_gate_upgrade"
-                metricsConsent={config.telemetry?.metrics === true}
-                installationId={config.installationId}
-                onClose={() => amrBalanceGateBlock.resolve('dismiss')}
-                onResolved={() => amrBalanceGateBlock.resolve('retry')}
-              />
+              <AmrBalanceDialog />
             ) : null}
             {amrLowBalanceWarn ? (
-              <AmrLowBalanceDialog
-                balanceUsd={amrLowBalanceWarn.snapshot.balanceUsd}
-                profile={amrLowBalanceWarn.snapshot.profile}
-                entrySource="home_low_balance_warn_recharge"
-                metricsConsent={config.telemetry?.metrics === true}
-                installationId={config.installationId}
-                onDecision={amrLowBalanceWarn.resolve}
-              />
+              <AmrLowBalanceDialog />
             ) : null}
           </div>
           <div

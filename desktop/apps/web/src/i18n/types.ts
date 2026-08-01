@@ -505,6 +505,10 @@ export interface Dict {
   'settings.mediaProviderComingSoonHint': string;
   'settings.privacy': string;
   'settings.privacyHint': string;
+  'settings.privacyGuaranteeTitle': string;
+  'settings.privacyGuaranteeSubtitle': string;
+  'settings.privacyGuaranteeStatement': string;
+  'settings.privacyGuaranteeBody': string;
   'settings.privacyConsentKicker': string;
   'settings.privacyConsentLead': string;
   'settings.privacyConsentFooter': string;

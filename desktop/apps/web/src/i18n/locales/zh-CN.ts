@@ -575,7 +575,11 @@ export const zhCN: Dict = {
   "settings.mediaProviderComingSoonHint":
     "我们在路线图中跟踪这些提供方；守护进程尚未提供客户端，因此暂无可配置项。",
   "settings.privacy": "隐私",
-  "settings.privacyHint": "与 Open Design 团队共享哪些数据",
+  "settings.privacyHint": "零数据收集政策",
+  "settings.privacyGuaranteeTitle": "隐私与数据保障",
+  "settings.privacyGuaranteeSubtitle": "完全的本地数据主权",
+  "settings.privacyGuaranteeStatement": "我们绝不收集亦无兴趣获取任何用户数据。",
+  "settings.privacyGuaranteeBody": "所有代码、提示词、聊天消息和模型权重严格保存在您的本地设备上并处于离线状态。",
   "settings.privacyConsentKicker": "帮助我们改进 Open Design",
   "settings.privacyConsentLead":
     "分享使用数据后，我们能更了解 Open Design 在真实工作流里的表现，并优先改进真正影响体验的地方。",

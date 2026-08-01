@@ -577,7 +577,11 @@ export const zhTW: Dict = {
   "settings.mediaProviderComingSoonHint":
     "我們在路線圖中追蹤這些提供者；守護程式尚未提供客戶端，因此暫無可配置項。",
   "settings.privacy": "隱私",
-  "settings.privacyHint": "與 Open Design 團隊共享哪些資料",
+  "settings.privacyHint": "零資料收集政策",
+  "settings.privacyGuaranteeTitle": "隱私與資料保障",
+  "settings.privacyGuaranteeSubtitle": "完全的本地資料主權",
+  "settings.privacyGuaranteeStatement": "我們絕不收集亦無興趣獲取任何使用者資料。",
+  "settings.privacyGuaranteeBody": "所有程式碼、提示詞、聊天訊息和模型權重嚴格保存在您的本地裝置上並處於離線狀態。",
   "settings.privacyConsentKicker": "協助我們改進 Open Design",
   "settings.privacyConsentLead":
     "分享使用資料後，我們能更了解 Open Design 在真實工作流裡的表現，並優先改進真正影響體驗的地方。",
