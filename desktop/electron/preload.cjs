@@ -24,7 +24,9 @@ contextBridge.exposeInMainWorld('api', {
 
   // Agent Execution IPCs
   runGrokPrompt: ({ messages, model, workspacePath }) =>
-    ipcRenderer.invoke('grok:run-prompt', { messages, model, workspacePath }),
+    ipcRenderer.invoke('claude:run-prompt', { messages, model, workspacePath }),
+  runClaudePrompt: ({ messages, model, workspacePath }) =>
+    ipcRenderer.invoke('claude:run-prompt', { messages, model, workspacePath }),
   cancelGrok: () => ipcRenderer.invoke('grok:cancel'),
   onGrokStream: (callback) => {
     const listener = (_event, value) => callback(value);

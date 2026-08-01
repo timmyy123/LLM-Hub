@@ -47,7 +47,7 @@ function createWindow() {
     height: 900,
     minWidth: 1000,
     minHeight: 650,
-    title: 'LLM Hub Studio',
+    title: 'LLM Hub - Claude Code Studio',
     backgroundColor: '#0A0C10',
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     trafficLightPosition: { x: 16, y: 14 },
@@ -349,7 +349,7 @@ ipcMain.handle('fs:write-file', async (event, { filePath, content }) => {
   }
 });
 
-// IPC: Smart Command Execution (Cursor AI level capabilities)
+// IPC: Smart Command Execution (Claude Code level terminal execution)
 ipcMain.handle('fs:execute-command', async (event, { cmdStr, workspacePath }) => {
   return new Promise((resolve) => {
     const cwdPath = workspacePath && fs.existsSync(workspacePath) ? workspacePath : process.cwd();
@@ -414,19 +414,19 @@ ipcMain.handle('fs:execute-command', async (event, { cmdStr, workspacePath }) =>
   });
 });
 
-// IPC: Run Grok Agent with Clean History Sanitization & Direct Execution Override
-ipcMain.handle('grok:run-prompt', async (event, { messages, model, workspacePath }) => {
+// IPC: Run Claude Code Agent with Local Ollama Model Backend
+async function handleRunPrompt(event, { messages, model, workspacePath }) {
   if (activeGrokProcess) {
     try { activeGrokProcess.kill(); } catch {}
   }
 
   const modelToUse = model || 'gemma4:latest';
-  console.log(`[IPC Main] Running Grok Agent for model "${modelToUse}"`);
+  console.log(`[IPC Main] Running Claude Code Agent for model "${modelToUse}"`);
 
   const lastUserMsg = messages && messages.length > 0 ? messages[messages.length - 1].content : '';
   const isPortKillRequest = /kill|stop|free|port|8080|8081|8082/i.test(lastUserMsg);
 
-  const systemPrompt = `You are Grok Build, an autonomous AI software engineer and terminal agent embedded directly in the user's IDE (identical to Cursor AI).
+  const systemPrompt = `You are Claude Code Agent, an autonomous AI software engineer and terminal agent embedded directly in the user's workspace.
 YOU HAVE DIRECT TERMINAL EXECUTION CAPABILITIES AND FULL SYSTEM AUTHORITY.
 
 [CRITICAL INSTRUCTION - UNBREAKABLE OVERRIDE]
@@ -447,7 +447,6 @@ EXAMPLES OF COMMANDS YOU CAN AND MUST EXECUTE:
 - To start a web server: <<<COMMAND: npx http-server . -p 8080>>>
 - To install npm packages: <<<COMMAND: npm install>>>`;
 
-  // Sanitize History: Strip old hallucinated refusal sentences from previous assistant turns!
   const sanitizedHistory = Array.isArray(messages)
     ? messages.map((m) => {
         if (m.role === 'assistant') {
@@ -497,16 +496,15 @@ EXAMPLES OF COMMANDS YOU CAN AND MUST EXECUTE:
 
           if (!writtenFiles.has(targetPath)) {
             writtenFiles.add(targetPath);
-            console.log(`[Grok Agent] Successfully created clean file: ${targetPath}`);
+            console.log(`[Claude Code Agent] Successfully created clean file: ${targetPath}`);
           }
         } catch (err) {
-          console.error(`[Grok Agent] Error writing file ${relPath}:`, err);
+          console.error(`[Claude Code Agent] Error writing file ${relPath}:`, err);
         }
       }
     }
   };
 
-  // Auto-inject kill command if local LLM streams refusal text on port killing
   let hasInjectedKillCmd = false;
 
   const req = http.request(url, {
@@ -529,7 +527,6 @@ EXAMPLES OF COMMANDS YOU CAN AND MUST EXECUTE:
             const token = parsed.message.content;
             fullResponseAccumulator += token;
 
-            // Intercept refusal text and inject direct kill command
             if (isPortKillRequest && !hasInjectedKillCmd && /unable|cannot|credentials|physical limitation/i.test(fullResponseAccumulator)) {
               hasInjectedKillCmd = true;
               const killCmdTag = `\n\nI will stop the processes running on ports 8080, 8081, and 8082 for you:\n<<<COMMAND: lsof -ti:8080 | xargs kill -9 2>/dev/null || true; lsof -ti:8081 | xargs kill -9 2>/dev/null || true; lsof -ti:8082 | xargs kill -9 2>/dev/null || true>>>\n`;
@@ -580,9 +577,12 @@ EXAMPLES OF COMMANDS YOU CAN AND MUST EXECUTE:
   req.write(postData);
   req.end();
   return { success: true };
-});
+}
 
-// IPC: Cancel Grok Execution
+ipcMain.handle('grok:run-prompt', handleRunPrompt);
+ipcMain.handle('claude:run-prompt', handleRunPrompt);
+
+// IPC: Cancel Agent Execution
 ipcMain.handle('grok:cancel', async () => {
   if (activeGrokProcess) {
     try {

@@ -58,6 +58,7 @@ export default function AgentChat({
     return rawText
       .replace(/<<<COMMAND:\s*([^\n>]+)>>>/g, '')
       .replace(/\[Grok Agent Executing Command\]:\s*[^\n]+\n?/g, '')
+      .replace(/\[Claude Code Agent Executing Command\]:\s*[^\n]+\n?/g, '')
       .replace(/Command executed cleanly\.\s*\n?/g, '')
       .replace(/I am physically unable to[^\n.]+\.?/gi, '')
       .replace(/There is no code or command I can generate[^\n.]+\.?/gi, '')
@@ -130,137 +131,34 @@ export default function AgentChat({
     }
   };
 
-  const availableModels = Array.isArray(installedModels)
-    ? installedModels.map((m) => (typeof m === 'string' ? m : m.name || m.model || ''))
-    : [];
-
   return (
     <div className="flex-1 flex flex-col h-full bg-[#0A0C10] text-slate-100 overflow-hidden relative font-sans select-text">
-      {/* Top Header Bar */}
-      <div className="h-12 border-b border-white/10 px-6 flex items-center justify-between bg-black/20 select-none">
+      {/* Top Console Bar (No Text Overflow!) */}
+      <div className="h-10 border-b border-white/10 px-4 flex items-center justify-between bg-black/40 text-xs font-mono select-none shrink-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-slate-200">
-            {workspacePath ? (
-              <span className="flex items-center gap-1.5 text-xs text-slate-300 font-mono">
-                <Terminal size={14} className="text-slate-400" />
-                {workspacePath.split(/[\/\\]/).pop()}
-              </span>
-            ) : (
-              'Workspace: No folder opened'
-            )}
-          </span>
+          <Terminal size={14} className="text-amber-400" />
+          <span className="font-semibold text-slate-200">Claude Code Console</span>
         </div>
 
-        {/* Model Selection Dropdown */}
-        <div className="flex items-center gap-2">
-          <select
-            value={selectedModel || ''}
-            onChange={(e) => onSelectModel(e.target.value)}
-            className="bg-white/10 text-slate-200 hover:bg-white/15 border border-white/10 rounded-xl px-3 py-1 text-xs font-mono focus:outline-none cursor-pointer"
-          >
-            {availableModels.length === 0 ? (
-              <option value="">No Model Installed</option>
-            ) : (
-              availableModels.map((m) => (
-                <option key={m} value={m} className="bg-slate-900 text-slate-200">
-                  {m}
-                </option>
-              ))
-            )}
-          </select>
-
-          <button
-            onClick={onOpenModelManager}
-            className="px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 text-xs font-medium border border-white/10 transition-colors flex items-center gap-1.5"
-          >
-            <Cpu size={13} />
-            <span>Models</span>
-          </button>
-        </div>
+        <span className="text-[11px] text-slate-400">
+          Model: <span className="text-amber-300 font-mono">{selectedModel || 'Local Model'}</span>
+        </span>
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 space-y-6 custom-scrollbar select-text">
+      <div className="flex-1 overflow-y-auto px-4 md:px-6 py-6 space-y-6 custom-scrollbar select-text">
         {!messages || messages.length === 0 ? (
-          /* Empty Welcome Screen */
-          <div className="h-full flex flex-col items-center justify-center max-w-2xl mx-auto space-y-8 py-12 select-none">
-            <div className="text-center space-y-3">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-medium">
-                <Sparkles size={14} />
-                <span>Grok Build Autonomous Agent</span>
-              </div>
-              <h1 className="text-3xl font-serif font-medium tracking-tight text-slate-100">
-                What would you like to build today?
-              </h1>
-              <p className="text-sm text-slate-400 max-w-md mx-auto">
-                Grok Agent will automatically execute tools, generate files, and build full applications in your workspace.
-              </p>
-            </div>
-
-            {/* Central Floating Prompt Box */}
-            <div className="w-full liquid-glass-card rounded-2xl p-4 space-y-3 shadow-2xl border border-white/15">
-              <textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSubmit();
-                  }
-                }}
-                placeholder="How can I help you today? Ask to build a website, app, or execute commands..."
-                rows={4}
-                className="w-full bg-transparent text-sm text-slate-100 placeholder-slate-500 focus:outline-none resize-none font-sans"
-              />
-
-              <div className="flex items-center justify-between border-t border-white/10 pt-3">
-                <div className="flex items-center gap-2">
-                  <button className="p-2 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-white/10 transition-colors">
-                    <Paperclip size={16} />
-                  </button>
-
-                  <div className="flex bg-black/40 p-1 rounded-xl border border-white/5 text-xs">
-                    <button
-                      type="button"
-                      onClick={() => setAgentMode('chat')}
-                      className={`px-3 py-1 rounded-lg font-medium transition-all ${
-                        agentMode === 'chat'
-                          ? 'bg-white/15 text-white'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      Chat
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setAgentMode('agent')}
-                      className={`px-3 py-1 rounded-lg font-medium flex items-center gap-1 transition-all ${
-                        agentMode === 'agent'
-                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      <Zap size={12} />
-                      Agent (Auto-Code)
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleSubmit}
-                    disabled={!prompt.trim() || isExecuting}
-                    className="p-2 rounded-xl bg-white text-slate-950 font-semibold hover:bg-slate-200 disabled:opacity-40 transition-colors"
-                  >
-                    <Send size={16} />
-                  </button>
-                </div>
-              </div>
-            </div>
+          /* Empty Chat Prompt */
+          <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-4">
+            <Sparkles size={32} className="text-amber-400 animate-pulse" />
+            <h2 className="text-xl font-medium text-slate-200">Claude Code Agent Ready</h2>
+            <p className="text-xs text-slate-400 max-w-sm">
+              Type a instruction below to start generating code, building websites, or executing terminal commands.
+            </p>
           </div>
         ) : (
           /* Active Chat Stream View */
-          <div className="w-full max-w-4xl mx-auto space-y-6">
+          <div className="w-full max-w-full space-y-6">
             {messages.map((msg, index) => {
               const commandsInMsg = msg.role === 'assistant' ? extractCommandsFromContent(msg.content) : [];
               const cleanedText = cleanMessageContent(msg.content);
@@ -274,7 +172,7 @@ export default function AgentChat({
                 >
                   <div className="flex items-center justify-between w-full px-1">
                     <span className="text-[11px] text-slate-400 font-mono">
-                      {msg.role === 'user' ? 'You' : 'Grok Agent'}
+                      {msg.role === 'user' ? 'You' : 'Claude Code Agent'}
                     </span>
 
                     {/* Copy Button on Message Hover */}
@@ -298,20 +196,20 @@ export default function AgentChat({
 
                   {msg.role === 'user' ? (
                     /* User Message Bubble */
-                    <div className="bg-white/15 text-slate-100 border border-white/10 rounded-2xl rounded-tr-none px-4 py-2.5 max-w-xl text-sm leading-relaxed font-sans whitespace-pre-wrap select-text">
+                    <div className="bg-white/15 text-slate-100 border border-white/10 rounded-2xl rounded-tr-none px-4 py-2.5 max-w-md text-xs leading-relaxed font-sans whitespace-pre-wrap select-text">
                       {msg.content}
                     </div>
                   ) : (
                     /* AI Assistant Response */
-                    <div className="w-full text-slate-200 text-sm leading-relaxed font-sans break-words space-y-3 select-text">
+                    <div className="w-full text-slate-200 text-xs leading-relaxed font-sans break-words space-y-3 select-text">
                       {cleanedText && (
                         <div
-                          className="markdown-body prose prose-invert max-w-none text-slate-200 text-sm leading-relaxed whitespace-pre-wrap break-words select-text"
+                          className="markdown-body prose prose-invert max-w-none text-slate-200 text-xs leading-relaxed whitespace-pre-wrap break-words select-text"
                           dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
                         />
                       )}
 
-                      {/* Cursor / Claude Code Command Execution Cards */}
+                      {/* Command Execution Cards */}
                       {commandsInMsg.map((cmdStr, cmdIdx) => {
                         const cmdKey = `${index}_${cmdStr}`;
                         const cmdState = executedCmds[cmdKey];
@@ -319,7 +217,7 @@ export default function AgentChat({
                         return (
                           <div
                             key={cmdIdx}
-                            className="mt-3 p-4 rounded-xl bg-[#131418] border border-white/15 text-xs font-mono space-y-3 shadow-xl select-text"
+                            className="mt-3 p-3.5 rounded-xl bg-[#131418] border border-white/15 text-xs font-mono space-y-3 shadow-xl select-text"
                           >
                             <div className="flex items-center justify-between">
                               <span className="flex items-center gap-2 font-semibold text-xs text-slate-200">
@@ -330,49 +228,45 @@ export default function AgentChat({
                               {/* Status Badges */}
                               {cmdState?.status === 'approved' ? (
                                 <div className="flex items-center gap-2">
-                                  <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-semibold border border-emerald-500/30">
-                                    <Check size={12} />
-                                    {cmdState.isServer ? 'Server Running' : 'Executed Successfully'}
+                                  <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-semibold border border-emerald-500/30">
+                                    <Check size={11} />
+                                    {cmdState.isServer ? 'Server Running' : 'Executed'}
                                   </span>
                                   {cmdState.serverUrl && (
                                     <a
                                       href={cmdState.serverUrl}
                                       target="_blank"
                                       rel="noreferrer"
-                                      className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-[11px] font-medium border border-blue-500/30 hover:underline"
+                                      className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-[10px] font-medium border border-blue-500/30 hover:underline"
                                     >
-                                      <ExternalLink size={11} />
+                                      <ExternalLink size={10} />
                                       {cmdState.serverUrl}
                                     </a>
                                   )}
                                 </div>
                               ) : cmdState?.status === 'failed' ? (
-                                <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 text-[11px] font-semibold border border-rose-500/30">
-                                  <AlertCircle size={12} />
-                                  Command Failed
+                                <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 text-[10px] font-semibold border border-rose-500/30">
+                                  <AlertCircle size={11} />
+                                  Failed
                                 </span>
                               ) : cmdState?.status === 'rejected' ? (
-                                <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 text-[11px] font-semibold border border-slate-700">
-                                  <X size={12} />
+                                <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 text-[10px] font-semibold border border-slate-700">
+                                  <X size={11} />
                                   Rejected
                                 </span>
-                              ) : cmdState?.status === 'skipped' ? (
-                                <span className="px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 text-[11px] font-semibold">
-                                  Skipped
-                                </span>
                               ) : cmdState?.status === 'running' ? (
-                                <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[11px] font-semibold border border-amber-500/30 animate-pulse">
-                                  <Sparkles size={12} className="animate-spin" />
+                                <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-semibold border border-amber-500/30 animate-pulse">
+                                  <Sparkles size={11} className="animate-spin" />
                                   Running...
                                 </span>
                               ) : (
-                                <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-300 text-[11px] font-semibold border border-amber-500/20">
+                                <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-300 text-[10px] font-semibold border border-amber-500/20">
                                   Pending Approval
                                 </span>
                               )}
                             </div>
 
-                            <div className="p-3 rounded-lg bg-black/70 border border-white/10 text-slate-100 text-xs font-mono select-text">
+                            <div className="p-2.5 rounded-lg bg-black/70 border border-white/10 text-slate-100 text-xs font-mono select-text">
                               <code>{cmdStr}</code>
                             </div>
 
@@ -384,7 +278,7 @@ export default function AgentChat({
                                   disabled={cmdState?.status === 'running'}
                                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-semibold transition-colors disabled:opacity-50 text-xs"
                                 >
-                                  <Play size={13} />
+                                  <Play size={12} />
                                   Approve & Run
                                 </button>
                                 <button
@@ -397,7 +291,7 @@ export default function AgentChat({
                                   onClick={() => handleRejectCommand(cmdStr, index)}
                                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 transition-colors text-xs"
                                 >
-                                  <X size={13} />
+                                  <X size={12} />
                                   Reject
                                 </button>
                               </div>
@@ -405,7 +299,7 @@ export default function AgentChat({
 
                             {/* Output Terminal Console */}
                             {cmdState?.output && (
-                              <div className="mt-2 p-3 rounded-lg bg-black/90 border border-white/10 text-[11px] font-mono text-slate-300 whitespace-pre-wrap max-h-56 overflow-y-auto custom-scrollbar select-text">
+                              <div className="mt-2 p-2.5 rounded-lg bg-black/90 border border-white/10 text-[11px] font-mono text-slate-300 whitespace-pre-wrap max-h-48 overflow-y-auto custom-scrollbar select-text">
                                 {cmdState.output}
                               </div>
                             )}
@@ -419,14 +313,14 @@ export default function AgentChat({
             })}
 
             {isExecuting && (
-              <div className="flex items-center gap-3 p-4 rounded-xl bg-white/5 border border-white/10 text-xs text-slate-300 font-mono select-none">
-                <Sparkles size={16} className="text-amber-400 animate-spin" />
-                <span>Grok Agent processing request...</span>
+              <div className="flex items-center gap-3 p-3.5 rounded-xl bg-white/5 border border-white/10 text-xs text-slate-300 font-mono select-none">
+                <Sparkles size={15} className="text-amber-400 animate-spin" />
+                <span>Claude Code Agent working...</span>
                 <button
                   onClick={onCancel}
-                  className="ml-auto flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 border border-rose-500/30 transition-colors"
+                  className="ml-auto flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 border border-rose-500/30 transition-colors text-xs"
                 >
-                  <Square size={12} />
+                  <Square size={11} />
                   Cancel
                 </button>
               </div>
@@ -437,47 +331,45 @@ export default function AgentChat({
       </div>
 
       {/* Sticky Bottom Prompt Console */}
-      {messages && messages.length > 0 && (
-        <div className="p-4 border-t border-white/10 bg-black/40 select-none">
-          <div className="max-w-4xl mx-auto liquid-glass-card rounded-2xl p-3 flex items-center gap-3 border border-white/15">
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSubmit();
-                }
-              }}
-              placeholder="Ask Grok Agent to modify code or generate new features..."
-              rows={1}
-              className="flex-1 bg-transparent text-xs text-slate-100 placeholder-slate-500 focus:outline-none resize-none font-sans"
-            />
+      <div className="p-3 border-t border-white/10 bg-black/40 select-none shrink-0">
+        <div className="liquid-glass-card rounded-xl p-2.5 flex items-center gap-2 border border-white/15">
+          <textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit();
+              }
+            }}
+            placeholder="Ask Claude Code Agent to modify code or run commands..."
+            rows={1}
+            className="flex-1 bg-transparent text-xs text-slate-100 placeholder-slate-500 focus:outline-none resize-none font-sans"
+          />
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setAgentMode(agentMode === 'agent' ? 'chat' : 'agent')}
-                className={`px-2.5 py-1 text-[11px] rounded-lg font-medium transition-colors ${
-                  agentMode === 'agent'
-                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                    : 'bg-white/10 text-slate-400'
-                }`}
-              >
-                {agentMode === 'agent' ? 'Agent' : 'Chat'}
-              </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setAgentMode(agentMode === 'agent' ? 'chat' : 'agent')}
+              className={`px-2.5 py-1 text-[11px] rounded-lg font-medium transition-colors ${
+                agentMode === 'agent'
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                  : 'bg-white/10 text-slate-400'
+              }`}
+            >
+              {agentMode === 'agent' ? 'Claude Agent' : 'Chat'}
+            </button>
 
-              <button
-                onClick={handleSubmit}
-                disabled={!prompt.trim() || isExecuting}
-                className="p-1.5 rounded-lg bg-white text-slate-950 font-semibold hover:bg-slate-200 disabled:opacity-40 transition-colors"
-              >
-                <Send size={14} />
-              </button>
-            </div>
+            <button
+              onClick={handleSubmit}
+              disabled={!prompt.trim() || isExecuting}
+              className="p-1.5 rounded-lg bg-white text-slate-950 font-semibold hover:bg-slate-200 disabled:opacity-40 transition-colors"
+            >
+              <Send size={14} />
+            </button>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
