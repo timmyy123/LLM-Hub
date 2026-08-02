@@ -17,7 +17,7 @@
   </tr>
 </table>
 
-**💻 Desktop Versions Coming:** Windows and macOS native apps are planned, bringing desktop-class experiences with advanced cursor integration and Claude Code–like capabilities.
+**💻 Desktop Studio (macOS & Windows):** LLM Hub Studio is a local-first desktop app for macOS and Windows. It is a privacy-focused fork of Open Design that strips out cloud logins, account tracking, and telemetry for maximum privacy. All model downloads (Ollama) and operations run 100% locally. Original features and expanded capabilities will be added in future updates.
 
 
 ## 📸 Demo & Screenshots

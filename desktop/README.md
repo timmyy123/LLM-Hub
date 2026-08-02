@@ -1,5 +1,7 @@
 <h1 align="center">Open Design: The open-source Claude Design alternative</h1>
 
+> 🔒 **Privacy-First Fork Notice**: **LLM Hub Studio** is a local-first, privacy-focused desktop fork of Open Design. It strips out cloud logins, account tracking, and telemetry for maximum privacy, ensuring all local models (Ollama) and operations remain 100% on-device. Original features and expanded community capabilities will be re-integrated in future updates with strict privacy controls.
+>
 > ⚡ **Open Design Cloud — the official model service.** One recharge to use GPT, Claude, Gemini, and DeepSeek inside Open Design: 20+ flagship models, zero config, billed by real token usage. [Try Open Design Cloud](https://open-design.ai/cloud/?utm_source=github&utm_medium=referral&utm_content=readme_try_cloud)
 >
 > 🏅 **The Open Design Fellow program is now open.** If you also believe design should be open — become an Open Design Fellow, shape the product alongside the core team, and help more people take part in defining the future of design. Details → [`MAINTAINERS.md`](MAINTAINERS.md) and [Discord](https://discord.gg/mHAjSMV6gz).

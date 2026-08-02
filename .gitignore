@@ -11,6 +11,8 @@ dist/
 **/.next/
 out/
 **/.tmp/
+release-builds/
+**/release-builds/
 
 # Logs & Temporary files
 *.log
