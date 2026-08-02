@@ -51,7 +51,7 @@ export const RELEASE_PLATFORM_NAMESPACE_SUFFIXES = Object.freeze({
   win: "win",
 } as const satisfies Record<ReleasePlatform, string>);
 
-const PRODUCT_NAME = "Open Design";
+const PRODUCT_NAME = "LLM Hub Studio";
 const DEFAULT_NAMESPACE = "open-design";
 
 const descriptors: Record<ReleaseChannel, ReleaseChannelDescriptor> = {

@@ -16,11 +16,7 @@ export function resolveWhatsNewPrompt(
   info: Pick<WhatsNewResponse, 'id' | 'content'>,
   lastSeenId: string | null,
 ): WhatsNewPromptDecision {
-  // No valid highlight to show (empty, unreachable, or malformed document).
-  if (info.id == null || info.content == null) return 'none';
-  // Already shown for this highlight.
-  if (info.id === lastSeenId) return 'none';
-  return 'show';
+  return 'none';
 }
 
 export function readLastSeenWhatsNewId(storage: Pick<Storage, 'getItem'> = window.localStorage): string | null {
