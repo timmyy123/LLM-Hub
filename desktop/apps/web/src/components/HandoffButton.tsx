@@ -58,18 +58,13 @@ interface CliTarget {
 }
 
 const CLI_ORDER = [
-  'amr',
   'claude',
   'codex',
   'opencode',
   'cursor-agent',
   'gemini',
-  'qwen',
-  'qoder',
   'copilot',
   'grok-build',
-  'deepseek',
-  'kimi',
   'hermes',
   'devin',
   'kiro',
@@ -79,21 +74,15 @@ const CLI_ORDER = [
   'aider',
   'trae-cli',
   'pi',
-  'reasonix',
 ];
 
 const FALLBACK_CLI_TARGETS: CliTarget[] = [
-  { id: 'amr', name: 'Open Design', bin: 'vela', available: false },
   { id: 'claude', name: 'Claude Code', bin: 'claude', available: false },
   { id: 'codex', name: 'Codex CLI', bin: 'codex', available: false },
   { id: 'opencode', name: 'OpenCode', bin: 'opencode-cli', available: false },
   { id: 'cursor-agent', name: 'Cursor Agent', bin: 'cursor-agent', available: false },
-  { id: 'qwen', name: 'Qwen Code', bin: 'qwen', available: false },
-  { id: 'qoder', name: 'Qoder CLI', bin: 'qodercli', available: false },
   { id: 'copilot', name: 'GitHub Copilot CLI', bin: 'copilot', available: false },
   { id: 'grok-build', name: 'Grok Build', bin: 'grok', available: false },
-  { id: 'deepseek', name: 'DeepSeek TUI', bin: 'deepseek', available: false },
-  { id: 'kimi', name: 'Kimi CLI', bin: 'kimi', available: false },
   { id: 'hermes', name: 'Hermes', bin: 'hermes', available: false },
   { id: 'devin', name: 'Devin for Terminal', bin: 'devin', available: false },
   { id: 'kiro', name: 'Kiro CLI', bin: 'kiro-cli', available: false },
@@ -103,7 +92,6 @@ const FALLBACK_CLI_TARGETS: CliTarget[] = [
   { id: 'aider', name: 'Aider', bin: 'aider', available: false },
   { id: 'trae-cli', name: 'Trae CLI', bin: 'traecli', available: false },
   { id: 'pi', name: 'Pi', bin: 'pi', available: false },
-  { id: 'reasonix', name: 'DeepSeek Reasonix', bin: 'reasonix', available: false },
 ];
 
 interface Props {
@@ -758,17 +746,6 @@ export function HandoffButton({
             </section>
           ) : (
             <section className="handoff-menu-block" role="tabpanel">
-              <a
-                className="handoff-amr-link"
-                href={AMR_WEBSITE_URL}
-                target="_blank"
-                rel="noreferrer"
-                onClick={handleAmrWebsiteClick}
-              >
-                <AgentIcon id="amr" size={18} />
-                <span>{t('handoff.amrWebsite')}</span>
-                <Icon name="external-link" size={12} />
-              </a>
               <div className="handoff-framework-row" role="group" aria-label={t('handoff.framework')}>
                 <span className="handoff-framework-label">{t('handoff.framework')}</span>
                 {FRAMEWORKS.map((framework) => (
