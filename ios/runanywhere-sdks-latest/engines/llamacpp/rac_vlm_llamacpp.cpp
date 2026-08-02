@@ -804,6 +804,7 @@ rac_result_t prepare_vlm_context(LlamaCppVLMBackend* backend, const rac_vlm_imag
 
         mtmd_input_text text;
         text.text = full_prompt.c_str();
+        text.text_len = full_prompt.size();
         text.add_special = true;
         text.parse_special = true;
 
