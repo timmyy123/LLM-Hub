@@ -25,6 +25,7 @@ import {
 } from "../node-pty-runtime.js";
 import { copyBundledResourceTrees } from "../resources.js";
 import { copyOptionalVelaCliBinary } from "../vela-cli.js";
+import { copyBundledOllamaBinary } from "../ollama-cli.js";
 import { electronBuilderVersionForAppVersion } from "../versions.js";
 import { runEsbuild, runNpmInstall, runPnpm } from "./commands.js";
 import {
@@ -147,6 +148,10 @@ export async function copyResourceTree(config: ToolPackConfig, paths: MacPaths):
   await copyOptionalVelaCliBinary({
     platform: "mac",
     requireBundled: config.requireVelaCli,
+    resourceRoot: paths.resourceRoot,
+  });
+  await copyBundledOllamaBinary({
+    platform: "mac",
     resourceRoot: paths.resourceRoot,
   });
 }

@@ -1416,6 +1416,167 @@ export function registerChatRoutes(app: Express, ctx: RegisterChatRoutesDeps) {
     }
   });
 
+  /**
+   * Resolves the Ollama binary path.
+   * Prefers the binary bundled inside the package (OD_RESOURCE_ROOT/bin/ollama)
+   * so users never need to install Ollama separately.
+   * Falls back to the system PATH for development / non-packaged runs.
+   */
+  function resolveOllamaCmd(): string {
+    const resourceRoot = process.env.OD_RESOURCE_ROOT;
+    if (resourceRoot) {
+      const { join, existsSync } = require('node:path') as typeof import('node:path') & { existsSync: typeof import('node:fs').existsSync };
+      const { existsSync: fsExists } = require('node:fs') as typeof import('node:fs');
+      const bundled = join(
+        resourceRoot,
+        'bin',
+        process.platform === 'win32' ? 'ollama.exe' : 'ollama',
+      );
+      if (fsExists(bundled)) return bundled;
+    }
+    return process.platform === 'win32' ? 'ollama.exe' : 'ollama';
+  }
+
+  app.get('/api/ollama/models', async (_req, res) => {
+    try {
+      let response = await fetch('http://127.0.0.1:11434/api/tags').catch(() => null);
+      if (!response || !response.ok) {
+        response = await fetch('http://localhost:11434/api/tags').catch(() => null);
+      }
+      if (response && response.ok) {
+        const data = (await response.json()) as any;
+        return res.json({ ok: true, models: data.models || [] });
+      }
+
+      try {
+        const { spawn } = await import('node:child_process');
+        const ollamaCmd = resolveOllamaCmd();
+        const child = spawn(ollamaCmd, ['serve'], {
+          detached: true,
+          stdio: 'ignore',
+          env: { ...process.env, OLLAMA_ORIGINS: '*' },
+        });
+        child.unref();
+        await new Promise((r) => setTimeout(r, 1500));
+        let retry = await fetch('http://127.0.0.1:11434/api/tags').catch(() => null);
+        if (retry && retry.ok) {
+          const data = (await retry.json()) as any;
+          return res.json({ ok: true, models: data.models || [] });
+        }
+      } catch {}
+
+      return res.status(533).json({ ok: false, error: 'Ollama service is not running' });
+    } catch (err: any) {
+      return res.status(500).json({ ok: false, error: err?.message || String(err) });
+    }
+  });
+
+  app.post('/api/ollama/start', async (_req, res) => {
+    try {
+      const check = await fetch('http://127.0.0.1:11434/api/tags', { signal: AbortSignal.timeout(1000) }).catch(() => null);
+      if (check && check.ok) {
+        return res.json({ ok: true, running: true });
+      }
+      const { spawn } = await import('node:child_process');
+      const ollamaCmd = resolveOllamaCmd();
+      const child = spawn(ollamaCmd, ['serve'], {
+        detached: true,
+        stdio: 'ignore',
+        env: { ...process.env, OLLAMA_ORIGINS: '*' },
+      });
+      child.unref();
+      await new Promise((r) => setTimeout(r, 1500));
+      return res.json({ ok: true, spawned: true });
+    } catch (err: any) {
+      return res.status(500).json({ ok: false, error: err?.message || String(err) });
+    }
+  });
+
+  app.post('/api/ollama/pull', async (req, res) => {
+    const { name } = req.body || {};
+    if (!name) return res.status(400).json({ ok: false, error: 'Model name is required' });
+
+    try {
+      let upstream = await fetch('http://127.0.0.1:11434/api/pull', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, stream: true }),
+      }).catch(() => null);
+
+      if (!upstream || !upstream.ok) {
+        upstream = await fetch('http://localhost:11434/api/pull', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, stream: true }),
+        }).catch(() => null);
+      }
+
+      if (!upstream || !upstream.ok) {
+        // Try auto-starting the bundled Ollama background service if not running
+        try {
+          const { spawn } = await import('node:child_process');
+          const ollamaCmd = resolveOllamaCmd();
+          const child = spawn(ollamaCmd, ['serve'], {
+            detached: true,
+            stdio: 'ignore',
+            env: { ...process.env, OLLAMA_ORIGINS: '*' },
+          });
+          child.unref();
+          await new Promise((r) => setTimeout(r, 2000));
+          upstream = await fetch('http://127.0.0.1:11434/api/pull', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, stream: true }),
+          }).catch(() => null);
+        } catch {}
+      }
+
+      if (!upstream || !upstream.ok || !upstream.body) {
+        return res.status(502).json({ ok: false, error: `Failed to connect to Ollama service to pull "${name}".` });
+      }
+
+      res.setHeader('Content-Type', 'application/x-ndjson');
+      const reader = upstream.body.getReader();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        res.write(value);
+      }
+      res.end();
+    } catch (err: any) {
+      if (!res.headersSent) {
+        res.status(500).json({ ok: false, error: err?.message || String(err) });
+      } else {
+        res.end();
+      }
+    }
+  });
+
+  app.post('/api/ollama/delete', async (req, res) => {
+    const { name } = req.body || {};
+    if (!name) return res.status(400).json({ ok: false, error: 'Model name is required' });
+
+    try {
+      let upstream = await fetch('http://127.0.0.1:11434/api/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      }).catch(() => null);
+
+      if (!upstream || !upstream.ok) {
+        upstream = await fetch('http://localhost:11434/api/delete', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name }),
+        }).catch(() => null);
+      }
+
+      return res.json({ ok: true });
+    } catch (err: any) {
+      return res.status(500).json({ ok: false, error: err?.message || String(err) });
+    }
+  });
+
   // SenseAudio chat completions. Wire-compatible with OpenAI (POST
   // /v1/chat/completions, Bearer auth, SSE `data: {...}` + `data: [DONE]`)
   // plus a daemon-side tool loop: the handler injects an OpenAI

@@ -10,8 +10,8 @@ const AMR_MODELS_RETRY_DELAYS_MS = [250, 750] as const;
 export type VelaModelJsonSource = 'preset' | 'remote';
 
 const PREFERRED_AMR_CHAT_MODEL_ORDER = [
-  'deepseek-v4-flash',
-  'deepseek-v4-pro',
+  'claude-sonnet-4-5',
+  'gpt-4o',
 ] as const;
 
 const PREFERRED_AMR_CHAT_MODEL_RANK: ReadonlyMap<string, number> = new Map(

@@ -9,9 +9,10 @@ import {
   resolveOptionalVelaCliBinary,
   resolveOptionalVelaCliOpenCodeCompanionTree,
 } from "../vela-cli.js";
+import { copyBundledOllamaBinary } from "../ollama-cli.js";
 import type { WinPaths, ResourceTreeCacheMetadata } from "./types.js";
 
-const RESOURCE_TREE_CACHE_SCHEMA_VERSION = 6;
+const RESOURCE_TREE_CACHE_SCHEMA_VERSION = 7;
 
 async function createResourceTreeCacheKey(config: ToolPackConfig): Promise<string> {
   const velaCliBin = await resolveOptionalVelaCliBinary({
@@ -74,6 +75,10 @@ export async function prepareResourceTree(
       await copyOptionalVelaCliBinary({
         platform: "win",
         requireBundled: config.requireVelaCli,
+        resourceRoot,
+      });
+      await copyBundledOllamaBinary({
+        platform: "win",
         resourceRoot,
       });
       return { resourceName: "open-design" };

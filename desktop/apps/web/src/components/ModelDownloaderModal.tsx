@@ -33,22 +33,40 @@ export function ModelDownloaderModal({ isOpen, onClose }: ModelDownloaderModalPr
 
   const fetchInstalled = async () => {
     try {
-      const res = await fetch('http://localhost:11434/api/tags');
-      if (res.ok) {
+      let res = await fetch('/api/ollama/models').catch(() => null);
+      if (!res || !res.ok) {
+        res = await fetch('http://127.0.0.1:11434/api/tags').catch(() => null);
+      }
+      if (!res || !res.ok) {
+        res = await fetch('http://localhost:11434/api/tags').catch(() => null);
+      }
+      if (res && res.ok) {
         const data = await res.json();
         setInstalledModels(data.models || []);
+        setStatusMessage(null);
+      } else {
+        setStatusMessage('Ollama is not running. Launch the Ollama desktop app or run "ollama serve" in terminal.');
       }
     } catch {
-      setStatusMessage(t('modelDownloader.ollamaOffline'));
+      setStatusMessage('Ollama is not running. Launch the Ollama desktop app or run "ollama serve" in terminal.');
     }
   };
 
-  useEffect(() => {
-    if (isOpen) {
-      void fetchInstalled();
-      setStatusMessage(null);
+  const [startingOllama, setStartingOllama] = useState(false);
+
+  const handleStartOllama = async () => {
+    setStartingOllama(true);
+    setStatusMessage('Starting Ollama service…');
+    try {
+      await fetch('/api/ollama/start', { method: 'POST' }).catch(() => null);
+      await new Promise((r) => setTimeout(r, 1500));
+      await fetchInstalled();
+    } catch {
+      setStatusMessage('Could not start Ollama automatically. Please open Ollama app or run "ollama serve" in terminal.');
+    } finally {
+      setStartingOllama(false);
     }
-  }, [isOpen]);
+  };
 
   if (!isOpen) return null;
 
@@ -61,13 +79,24 @@ export function ModelDownloaderModal({ isOpen, onClose }: ModelDownloaderModalPr
     const ctrl = new AbortController();
     abortRef.current = ctrl;
     try {
-      const res = await fetch('http://localhost:11434/api/pull', {
+      let res = await fetch('/api/ollama/pull', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: tag, stream: true }),
+        body: JSON.stringify({ name: tag }),
         signal: ctrl.signal,
-      });
-      if (!res.ok || !res.body) throw new Error(`Pull failed for "${tag}"`);
+      }).catch(() => null);
+
+      if (!res || !res.ok) {
+        res = await fetch('http://127.0.0.1:11434/api/pull', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: tag, stream: true }),
+          signal: ctrl.signal,
+        }).catch(() => null);
+      }
+
+      if (!res || !res.ok || !res.body) throw new Error(`Pull failed for "${tag}"`);
+
       const reader = res.body.getReader();
       const dec = new TextDecoder();
       while (true) {
@@ -103,12 +132,21 @@ export function ModelDownloaderModal({ isOpen, onClose }: ModelDownloaderModalPr
 
   const handleDelete = async (tag: string) => {
     try {
-      const res = await fetch('http://localhost:11434/api/delete', {
-        method: 'DELETE',
+      let res = await fetch('/api/ollama/delete', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: tag }),
-      });
-      if (!res.ok) throw new Error(`Delete failed for "${tag}"`);
+      }).catch(() => null);
+
+      if (!res || !res.ok) {
+        res = await fetch('http://127.0.0.1:11434/api/delete', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: tag }),
+        }).catch(() => null);
+      }
+
+      if (!res || !res.ok) throw new Error(`Delete failed for "${tag}"`);
       setStatusMessage(`${t('modelDownloader.deleteSuccess')} ${tag}`);
       void fetchInstalled();
     } catch (err) {
@@ -184,11 +222,26 @@ export function ModelDownloaderModal({ isOpen, onClose }: ModelDownloaderModalPr
           {/* Status */}
           {statusMessage && (
             <div style={{
-              padding: '9px 14px', borderRadius: '8px', fontSize: '13px',
-              backgroundColor: statusMessage.startsWith('Error') ? 'rgba(239,68,68,0.12)' : statusMessage.startsWith('Cancelled') ? 'rgba(234,179,8,0.12)' : 'rgba(34,197,94,0.12)',
-              border: `1px solid ${statusMessage.startsWith('Error') ? 'rgba(239,68,68,0.3)' : statusMessage.startsWith('Cancelled') ? 'rgba(234,179,8,0.3)' : 'rgba(34,197,94,0.3)'}`,
+              padding: '10px 14px', borderRadius: '8px', fontSize: '13px',
+              backgroundColor: statusMessage.includes('not running') || statusMessage.startsWith('Error') ? 'rgba(239,68,68,0.12)' : statusMessage.startsWith('Cancelled') ? 'rgba(234,179,8,0.12)' : 'rgba(34,197,94,0.12)',
+              border: `1px solid ${statusMessage.includes('not running') || statusMessage.startsWith('Error') ? 'rgba(239,68,68,0.3)' : statusMessage.startsWith('Cancelled') ? 'rgba(234,179,8,0.3)' : 'rgba(34,197,94,0.3)'}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap'
             }}>
-              {statusMessage}
+              <span style={{ flex: 1, minWidth: 0 }}>{statusMessage}</span>
+              {statusMessage.includes('not running') && (
+                <button
+                  type="button"
+                  disabled={startingOllama}
+                  onClick={() => void handleStartOllama()}
+                  style={{
+                    padding: '4px 12px', borderRadius: '6px', backgroundColor: '#2563eb', color: '#fff',
+                    border: 'none', fontSize: '12px', fontWeight: 600, cursor: startingOllama ? 'not-allowed' : 'pointer',
+                    opacity: startingOllama ? 0.6 : 1, whiteSpace: 'nowrap'
+                  }}
+                >
+                  {startingOllama ? 'Starting…' : 'Start Ollama Service'}
+                </button>
+              )}
             </div>
           )}
 
