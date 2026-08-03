@@ -3517,7 +3517,9 @@ struct ChatScreen: View {
                         Image(systemName: "chevron.right")
                             .font(.system(size: 10, weight: .bold))
                             .foregroundColor(.white.opacity(0.78))
+                            .fixedSize()
                     }
+                    .frame(maxWidth: UIScreen.main.bounds.width * 0.55)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .background(vm.isBackendLoading ? Color.orange.opacity(0.26) : Color.white.opacity(0.12))
