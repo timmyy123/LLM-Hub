@@ -336,21 +336,15 @@ const CANONICAL_AGENT_ORDER = [
   'gemini',
   'opencode',
   'hermes',
-  'trae-cli',
   'grok-build',
-  'kimi',
   'cursor-agent',
-  'qwen',
-  'qoder',
   'copilot',
   'pi',
   'kiro',
   'kilo',
   'vibe',
-  'deepseek',
   'aider',
   'antigravity',
-  'reasonix',
 ] as const;
 
 const CANONICAL_AGENT_ORDER_INDEX = new Map<string, number>(

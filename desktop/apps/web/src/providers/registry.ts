@@ -103,16 +103,8 @@ function deployProviderQuery(providerId?: WebDeployProviderId): string {
 }
 
 const DISALLOWED_AGENT_IDS = new Set([
-  'deepseek',
-  'mimo',
-  'kimi',
   'opencode',
-  'qwen',
   'zhipu',
-  'minimax',
-  'doubao',
-  'stepfun',
-  'baidu',
   'vibe',
 ]);
 

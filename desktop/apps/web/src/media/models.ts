@@ -44,7 +44,6 @@ export type MediaProviderId =
   | 'google'
   | 'midjourney'
   | 'kling'
-  | 'minimax'
   | 'suno'
   | 'udio'
   | 'elevenlabs'
@@ -384,17 +383,6 @@ export const IMAGE_MODELS: MediaModel[] = [
     caps: ['t2i'],
   },
 
-  // MiniMax — synchronous /v1/image_generation, Bearer auth, base_resp envelope.
-  // The wire name `image-01` is mapped from the catalog id `minimax-image-01` in
-  // the renderer (see MINIMAX_IMAGE_MODEL_MAP in apps/daemon/src/media.ts).
-  {
-    id: 'minimax-image-01',
-    label: 'image-01',
-    hint: 'MiniMax · text + image-to-image',
-    provider: 'minimax',
-    caps: ['t2i', 'i2i'],
-  },
-
   // xAI Grok Imagine — text-to-image (1k/2k, 11+ aspect ratios).
   {
     id: 'grok-imagine-image',
@@ -587,8 +575,6 @@ export const VIDEO_MODELS: MediaModel[] = [
   { id: 'sora-2', label: 'sora-2', hint: 'Fal · OpenAI Sora 2', provider: 'fal', caps: ['t2v'] },
   { id: 'sora-2-pro', label: 'sora-2-pro', hint: 'Fal · OpenAI Sora 2 Pro', provider: 'fal', caps: ['t2v'] },
 
-  // MiniMax video.
-  { id: 'minimax-video-01', label: 'video-01', hint: 'MiniMax · Hailuo', provider: 'minimax', caps: ['t2v', 'i2v'] },
   { id: 'hyperframes-html', label: 'hyperframes-html', hint: 'HyperFrames · local HTML renderer', provider: 'hyperframes', caps: ['t2v'] },
 ];
 
@@ -600,7 +586,6 @@ export const AUDIO_MODELS_BY_KIND: Record<AudioKind, MediaModel[]> = {
     { id: 'lyria-2', label: 'lyria-2', hint: 'Google', provider: 'google', caps: ['music'] },
   ],
   speech: [
-    { id: 'minimax-tts', label: 'minimax-tts', hint: 'MiniMax', provider: 'minimax', caps: ['tts'], default: true },
     { id: 'fish-speech-2', label: 'fish-speech-2', hint: 'FishAudio', provider: 'fishaudio', caps: ['tts', 'voice-clone'] },
     { id: 'elevenlabs-v3', label: 'elevenlabs-v3', hint: 'ElevenLabs', provider: 'elevenlabs', caps: ['tts', 'voice-clone'] },
     { id: 'senseaudio-tts', label: 'senseaudio-tts', hint: 'SenseAudio', provider: 'senseaudio', caps: ['tts', 'voice-clone'] },

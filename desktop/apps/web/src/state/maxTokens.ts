@@ -22,24 +22,12 @@ export const MAX_MAX_TOKENS = 200000;
 const LITELLM_MODELS = litellmData.models as Record<string, number>;
 
 const OVERRIDES: Record<string, number> = {
-  // LiteLLM lists MiMo via OpenRouter and Novita aliases (16k / 32k) but
-  // not the canonical `mimo-v2.5-pro` id we hand to Xiaomi's direct API.
-  // 32k matches what issue #29 reports as the working ceiling.
-  'mimo-v2.5-pro': 32768,
-
-  // DeepSeek v4 models not tracked by LiteLLM as of 2026-05-07.
-  // Spec: https://platform.deepseek.com/docs/model-cards
-  'deepseek-v4-pro': 384000,
-  'deepseek-v4-flash': 384000,
-
   // Ollama Cloud models. LiteLLM keys this set under `ollama/`-prefixed
   // ids (many with `-cloud` suffixes), so the bare model-id lookups never
   // match. Add overrides so chat doesn't silently clip at 8192 tokens.
   // 131072 (128k) is a safe floor for all Ollama Cloud models.
   // Exception: cogito-2.1:671b caps at 65536 (confirmed via upstream 400).
   'cogito-2.1:671b': 65536,
-  'deepseek-v3.1:671b': 163840,
-  'deepseek-v3.2': 163840,
   'devstral-2:123b': 131072,
   'devstral-small-2:24b': 131072,
   'gemini-3-flash-preview': 131072,
@@ -47,23 +35,9 @@ const OVERRIDES: Record<string, number> = {
   'gemma3:12b': 131072,
   'gemma3:27b': 131072,
   'gemma4:31b': 131072,
-  'glm-4.6': 131072,
-  'glm-4.7': 131072,
-  'glm-5': 131072,
-  'glm-5.1': 131072,
-  'glm-5.2': 131072,
+
   'gpt-oss:20b': 131072,
   'gpt-oss:120b': 131072,
-  'kimi-k2:1t': 131072,
-  'kimi-k2-thinking': 131072,
-  'kimi-k2.5': 131072,
-  'kimi-k2.6': 131072,
-  'kimi-k2.7-code': 131072,
-  'minimax-m2': 131072,
-  'minimax-m2.1': 131072,
-  'minimax-m2.5': 131072,
-  'minimax-m2.7': 131072,
-  'minimax-m3': 131072,
   'ministral-3:3b': 131072,
   'ministral-3:8b': 131072,
   'ministral-3:14b': 131072,
@@ -71,12 +45,6 @@ const OVERRIDES: Record<string, number> = {
   'nemotron-3-nano:30b': 131072,
   'nemotron-3-super': 131072,
   'nemotron-3-ultra': 131072,
-  'qwen3-coder:480b': 262144,
-  'qwen3-coder-next': 131072,
-  'qwen3-next:80b': 131072,
-  'qwen3-vl:235b': 131072,
-  'qwen3-vl:235b-instruct': 131072,
-  'qwen3.5:397b': 131072,
   'rnj-1:8b': 131072,
 };
 

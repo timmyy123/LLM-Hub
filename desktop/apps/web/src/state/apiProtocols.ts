@@ -24,36 +24,12 @@ export const SUGGESTED_MODELS_BY_PROTOCOL: Record<ApiProtocol, readonly string[]
     'claude-opus-4-5',
     'claude-sonnet-4-5',
     'claude-haiku-4-5',
-    'deepseek-chat',
-    'deepseek-reasoner',
-    'deepseek-v4-flash',
-    'deepseek-v4-pro',
-    'MiniMax-M2.7-highspeed',
-    'MiniMax-M2.7',
-    'MiniMax-M2.5-highspeed',
-    'MiniMax-M2.5',
-    'MiniMax-M2.1-highspeed',
-    'MiniMax-M2.1',
-    'MiniMax-M2',
-    'mimo-v2.5-pro',
   ],
   openai: [
     'gpt-4o',
     'gpt-4o-mini',
     'o3',
     'o4-mini',
-    'deepseek-chat',
-    'deepseek-reasoner',
-    'deepseek-v4-flash',
-    'deepseek-v4-pro',
-    'MiniMax-M2.7-highspeed',
-    'MiniMax-M2.7',
-    'MiniMax-M2.5-highspeed',
-    'MiniMax-M2.5',
-    'MiniMax-M2.1-highspeed',
-    'MiniMax-M2.1',
-    'MiniMax-M2',
-    'mimo-v2.5-pro',
   ],
   azure: [
     'gpt-4o',
@@ -69,29 +45,11 @@ export const SUGGESTED_MODELS_BY_PROTOCOL: Record<ApiProtocol, readonly string[]
     'gemini-2.5-flash-lite',
   ],
   senseaudio: [
-    // SenseAudio is an OpenAI-compatible gateway that fronts both its own
-    // models (senseaudio-s2 family) and aggregator routes to deepseek /
-    // glm / kimi / minimax. Listing the headline house models first keeps
-    // the picker's default selection on a SenseAudio-native checkpoint;
-    // the aggregator IDs trail so users who arrived for a specific
-    // upstream still find it in this tab without retyping it.
     'senseaudio-s2',
     'senseaudio-s2-flash',
-    'deepseek-v4-flash',
-    'deepseek-v4-pro',
     'glm-5.1',
-    'kimi-k2.6',
-    'MiniMax-M2.7-highspeed',
-    'MiniMax-M2.7',
   ],
   aihubmix: [
-    // AIHubMix is an OpenAI-compatible aggregator that routes to OpenAI /
-    // Anthropic / Gemini / DeepSeek by model name on its side. Listing the
-    // headline cross-vendor checkpoints keeps the picker useful without
-    // pretending to enumerate the full catalogue — users can type any id
-    // AIHubMix exposes (or fetch the full live list). gpt-5.5 leads as the
-    // default chat model (an OpenAI-family model keeps in-chat generate_image
-    // working through the OpenAI tool loop after protocol routing lands).
     'gpt-5.5',
     'gpt-4o',
     'gpt-4o-mini',
@@ -99,8 +57,6 @@ export const SUGGESTED_MODELS_BY_PROTOCOL: Record<ApiProtocol, readonly string[]
     'claude-sonnet-4-5',
     'claude-haiku-4-5',
     'gemini-2.0-flash',
-    'deepseek-chat',
-    'deepseek-reasoner',
   ],
   bedrock: [
     'anthropic.claude-3-5-sonnet-20241022-v2:0',

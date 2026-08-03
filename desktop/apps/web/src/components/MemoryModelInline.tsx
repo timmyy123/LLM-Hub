@@ -111,9 +111,6 @@ function chatProtocolFromAgent(
   if (
     id === 'codex'
     || id === 'opencode'
-    || id === 'qwen'
-    || id === 'deepseek'
-    || id === 'kimi'
     || id === 'copilot'
     || id === 'pi'
     || id === 'kiro'
@@ -122,7 +119,6 @@ function chatProtocolFromAgent(
     || id === 'devin'
     || id === 'hermes'
     || id === 'cursor-agent'
-    || id === 'qoder'
   ) {
     return 'openai';
   }
@@ -143,15 +139,11 @@ function cliAgentLabel(agentId: string | null | undefined): string | null {
     codex: 'Codex CLI',
     gemini: 'Gemini CLI',
     opencode: 'OpenCode',
-    qwen: 'Qwen Code',
-    qoder: 'Qoder CLI',
     copilot: 'GitHub Copilot CLI',
     pi: 'Pi',
     kiro: 'Kiro CLI',
     kilo: 'Kilo',
     vibe: 'Mistral Vibe CLI',
-    deepseek: 'DeepSeek TUI',
-    kimi: 'Kimi',
     hermes: 'Hermes',
     devin: 'Devin',
     'cursor-agent': 'Cursor Agent',

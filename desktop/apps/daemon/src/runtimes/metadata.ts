@@ -31,25 +31,9 @@ const AGENT_INSTALL_LINKS: Record<
     installUrl: 'https://github.com/nexu-io/open-design/blob/main/docs/agent-adapters.md',
     docsUrl: 'https://hermes-agent.nousresearch.com/docs/',
   },
-  'trae-cli': {
-    installUrl: 'https://www.volcengine.com/docs/86677/2227861?lang=zh',
-    docsUrl: 'https://www.volcengine.com/docs/86677/2227861?lang=zh',
-  },
-  kimi: {
-    installUrl: 'https://github.com/MoonshotAI/kimi-cli',
-    docsUrl: 'https://www.kimi.com/code/docs/en/kimi-cli/guides/getting-started.html?aff=open-design',
-  },
   'cursor-agent': {
     installUrl: 'https://cursor.com/docs/cli/overview',
     docsUrl: 'https://docs.cursor.com/en/cli/overview',
-  },
-  qwen: {
-    installUrl: 'https://github.com/QwenLM/qwen-code',
-    docsUrl: 'https://qwenlm.github.io/qwen-code-docs/en/index',
-  },
-  qoder: {
-    installUrl: 'https://qoder.com/download',
-    docsUrl: 'https://docs.qoder.com',
   },
   copilot: {
     installUrl: 'https://github.com/github/copilot-cli',
@@ -67,25 +51,9 @@ const AGENT_INSTALL_LINKS: Record<
     installUrl: 'https://kilo.ai',
     docsUrl: 'https://kilo.ai/docs/cli',
   },
-  mimo: {
-    installUrl: 'https://mimo.ai',
-    docsUrl: 'https://mimo.ai/docs',
-  },
   vibe: {
     installUrl: 'https://docs.mistral.ai',
     docsUrl: 'https://github.com/mistralai/vibe-acp',
-  },
-  deepseek: {
-    installUrl: 'https://github.com/Hmbown/CodeWhale',
-    docsUrl: 'https://github.com/Hmbown/CodeWhale/blob/main/README.md',
-  },
-  codebuddy: {
-    installUrl: 'https://www.codebuddy.cn',
-    docsUrl: 'https://www.codebuddy.cn/docs/workbuddy/Overview',
-  },
-  atomcode: {
-    installUrl: 'https://atomcode.atomgit.com/docs/en/quickstart.html',
-    docsUrl: 'https://atomcode.atomgit.com/docs/en/index.html',
   },
 };
 
