@@ -3703,6 +3703,40 @@ export function SettingsDialog({
     providerModelsKey,
     visualStabilityMode,
   ]);
+  // Live-fetch installed Ollama models from the bundled service whenever the
+  // settings tab switches to Ollama mode. Uses the same shared cache key as
+  // InlineModelSwitcher so results are shared between both surfaces.
+  const ollamaFetchingRef = useRef(false);
+  useEffect(() => {
+    if (apiProtocol !== 'ollama' || cfg.mode !== 'api') return;
+    if (ollamaFetchingRef.current) return;
+    ollamaFetchingRef.current = true;
+    let active = true;
+    const key = providerModelsKey;
+    const fetchOllamaInstalled = async () => {
+      try {
+        let res = await fetch('/api/ollama/models').catch(() => null);
+        if (!res || !res.ok) {
+          await fetch('/api/ollama/start', { method: 'POST' }).catch(() => null);
+          await new Promise((r) => setTimeout(r, 2000));
+          res = await fetch('/api/ollama/models').catch(() => null);
+        }
+        if (active && res && res.ok) {
+          const data = await res.json() as { models?: Array<{ name: string }> };
+          const models = (data.models ?? []).map((m) => ({ id: m.name, label: m.name }));
+          if (models.length) {
+            activeSetProviderModelsCache((prev) => ({ ...prev, [key]: models }));
+          }
+        }
+      } catch {
+        // Non-fatal — user can still type a model name manually
+      } finally {
+        ollamaFetchingRef.current = false;
+      }
+    };
+    const timer = window.setTimeout(() => { void fetchOllamaInstalled(); }, 300);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [apiProtocol, cfg.mode, providerModelsKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const currentProviderModelsResult =
     providerModelsState.status === 'done' &&
     providerModelsState.cacheKey === providerModelsKey

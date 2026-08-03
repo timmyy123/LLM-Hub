@@ -319,6 +319,32 @@ export function AvatarMenu({
     fetchedByokModels.length,
   ]);
 
+  // Fetch installed Ollama models when the menu opens in Ollama mode.
+  useEffect(() => {
+    if (!open || config.mode !== 'api' || apiProtocol !== 'ollama') return;
+    if (fetchedByokModels.length > 0) return;
+    let cancelled = false;
+    const fetchOllamaModels = async () => {
+      let res = await fetch('/api/ollama/models').catch(() => null);
+      if (!res || !res.ok) {
+        await fetch('/api/ollama/start', { method: 'POST' }).catch(() => null);
+        await new Promise((r) => setTimeout(r, 2000));
+        res = await fetch('/api/ollama/models').catch(() => null);
+      }
+      if (cancelled || !res || !res.ok) return;
+      const data = await res.json() as { models?: Array<{ name: string }> };
+      const models = (data.models ?? []).map((m) => ({ id: m.name, label: m.name }));
+      if (models.length) {
+        setDiscoveredProviderModels((current) => ({
+          ...current,
+          [byokProviderModelsKey]: models,
+        }));
+      }
+    };
+    void fetchOllamaModels();
+    return () => { cancelled = true; };
+  }, [open, config.mode, apiProtocol, byokProviderModelsKey, fetchedByokModels.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const byokModelOptions = mergeProviderModelOptions(
     fetchedByokModels,
     byokProvider?.preferredModels.length

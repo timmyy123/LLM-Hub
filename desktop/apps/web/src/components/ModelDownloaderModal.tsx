@@ -32,27 +32,40 @@ export function ModelDownloaderModal({ isOpen, onClose }: ModelDownloaderModalPr
   const { t } = useI18n();
 
   const fetchInstalled = async () => {
-    try {
-      let res = await fetch('/api/ollama/models').catch(() => null);
+    // First try to fetch directly — if Ollama is already running this is instant.
+    let res = await fetch('/api/ollama/models').catch(() => null);
+    if (!res || !res.ok) {
+      res = await fetch('http://127.0.0.1:11434/api/tags').catch(() => null);
+    }
+    if (!res || !res.ok) {
+      // Ollama isn't running yet — ask the daemon to start the bundled binary
+      // then retry. This is the common path on app launch/restart.
+      await fetch('/api/ollama/start', { method: 'POST' }).catch(() => null);
+      await new Promise((r) => setTimeout(r, 2000));
+      res = await fetch('/api/ollama/models').catch(() => null);
       if (!res || !res.ok) {
         res = await fetch('http://127.0.0.1:11434/api/tags').catch(() => null);
       }
-      if (!res || !res.ok) {
-        res = await fetch('http://localhost:11434/api/tags').catch(() => null);
-      }
-      if (res && res.ok) {
-        const data = await res.json();
-        setInstalledModels(data.models || []);
-        setStatusMessage(null);
-      } else {
-        setStatusMessage('Ollama is not running. Launch the Ollama desktop app or run "ollama serve" in terminal.');
-      }
-    } catch {
-      setStatusMessage('Ollama is not running. Launch the Ollama desktop app or run "ollama serve" in terminal.');
+    }
+    if (res && res.ok) {
+      const data = await res.json();
+      setInstalledModels(data.models || []);
+      setStatusMessage(null);
+    } else {
+      setInstalledModels([]);
+      setStatusMessage(null); // Don't scare the user — Ollama starts on first pull
     }
   };
 
   const [startingOllama, setStartingOllama] = useState(false);
+
+  // Refresh installed model list every time the modal is opened.
+  // Also auto-starts the bundled Ollama service so the list is accurate
+  // immediately on first open after a restart (not just after a pull).
+  useEffect(() => {
+    if (!isOpen) return;
+    void fetchInstalled();
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleStartOllama = async () => {
     setStartingOllama(true);

@@ -771,6 +771,48 @@ export function InlineModelSwitcher({
   // public, so it needs no key; every other protocol needs one). Results are
   // keyed identically to Settings (`providerModelsKey`), so a single fetch
   // serves both surfaces and replaces any stale slot.
+  // Fetch live-installed Ollama models from the bundled service when the
+  // picker opens in Ollama mode. This replaces the old static suggestion list
+  // so the dropdown only shows what the user actually has downloaded.
+  useEffect(() => {
+    if (!open || config.mode !== 'api' || apiProtocol !== 'ollama') return;
+    if (!onProviderModelsCacheChange) return;
+    const key = providerModelsKey;
+    if (providerModelsFetchingRef.current.has(key)) return;
+    providerModelsFetchingRef.current.add(key);
+    let active = true;
+    const fetchOllamaInstalled = async () => {
+      try {
+        let res = await fetch('/api/ollama/models').catch(() => null);
+        if (!res || !res.ok) {
+          // Auto-start bundled Ollama then retry once
+          await fetch('/api/ollama/start', { method: 'POST' }).catch(() => null);
+          await new Promise((r) => setTimeout(r, 2000));
+          res = await fetch('/api/ollama/models').catch(() => null);
+        }
+        if (active && res && res.ok) {
+          const data = await res.json() as { models?: Array<{ name: string }> };
+          const models = (data.models ?? []).map((m) => ({ id: m.name, label: m.name }));
+          if (models.length) {
+            onProviderModelsCacheChange((current) => ({ ...current, [key]: models }));
+          }
+        }
+      } catch {
+        // Non-fatal: user can still type a custom model name
+      } finally {
+        providerModelsFetchingRef.current.delete(key);
+      }
+    };
+    void fetchOllamaInstalled();
+    return () => { active = false; };
+  }, [
+    open,
+    config.mode,
+    apiProtocol,
+    providerModelsKey,
+    onProviderModelsCacheChange,
+  ]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (!open || config.mode !== 'api' || !onProviderModelsCacheChange) return;
     if (apiProtocol === 'azure' || apiProtocol === 'ollama') return;
