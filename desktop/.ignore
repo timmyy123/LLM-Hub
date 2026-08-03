@@ -1,3 +1,0 @@
-# Keep deepwork progress readable by OpenCode while git-ignored
-!.slim/deepwork/
-!.slim/deepwork/**
