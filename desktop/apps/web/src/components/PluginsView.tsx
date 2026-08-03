@@ -81,22 +81,22 @@ const PLUGIN_SHARE_DETAILS: Record<PluginShareAction, {
     eyebrow: 'GitHub repository',
     fallbackTitle: 'Publish Plugin to GitHub',
     fallbackDescription:
-      'Creates a public GitHub repository for this local Open Design plugin.',
+      'Creates a public GitHub repository for this local LLM Hub plugin.',
     confirmLabel: 'Start publishing',
     steps: [
-      'Create a new Open Design project for the publish workflow.',
+      'Create a new LLM Hub project for the publish workflow.',
       'Copy this plugin into that project as isolated source context.',
       'Run the official publish action plugin against the local daemon.',
     ],
   },
   'contribute-open-design': {
-    eyebrow: 'Open Design pull request',
-    fallbackTitle: 'Contribute Plugin to Open Design',
+    eyebrow: 'LLM Hub pull request',
+    fallbackTitle: 'Contribute Plugin to LLM Hub',
     fallbackDescription:
-      'Opens a pull request that adds this plugin to the Open Design community catalog.',
+      'Opens a pull request that adds this plugin to the LLM Hub community catalog.',
     confirmLabel: 'Start contribution',
     steps: [
-      'Create a new Open Design project for the contribution workflow.',
+      'Create a new LLM Hub project for the contribution workflow.',
       'Copy this plugin into that project as isolated source context.',
       'Run the official contribution action plugin against the local daemon.',
     ],

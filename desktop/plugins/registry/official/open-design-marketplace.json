@@ -1,15 +1,15 @@
 {
   "$schema": "https://open-design.ai/schemas/marketplace.v1.json",
   "specVersion": "1.0.0",
-  "name": "open-design-official",
+  "name": "llm-hub-official",
   "version": "0.1.0",
   "owner": {
-    "name": "Open Design",
+    "name": "LLM Hub",
     "url": "https://open-design.ai"
   },
   "trust": "official",
   "metadata": {
-    "description": "Official Open Design plugin registry seed. The generated public catalog is served from open-design.ai/marketplace.",
+    "description": "Official LLM Hub plugin registry seed. The generated public catalog is served from open-design.ai/marketplace.",
     "version": "0.1.0",
     "generatedFrom": "plugins/_official",
     "bundledPreinstallCount": 414

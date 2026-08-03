@@ -1,10 +1,10 @@
 {
   "$schema": "https://open-design.ai/schemas/marketplace.v1.json",
   "specVersion": "1.0.0",
-  "name": "open-design-community",
+  "name": "llm-hub-community",
   "version": "0.2.3",
   "owner": {
-    "name": "Open Design Community",
+    "name": "LLM Hub Community",
     "url": "https://open-design.ai/marketplace/community"
   },
   "metadata": {
@@ -18,7 +18,7 @@
       "version": "0.1.0",
       "source": "github:nexu-io/open-design@main/plugins/community/registry-starter",
       "publisher": {
-        "id": "open-design-community",
+        "id": "llm-hub-community",
         "github": "nexu-io",
         "url": "https://github.com/nexu-io/open-design"
       },
@@ -40,7 +40,7 @@
       "version": "0.1.0",
       "source": "github:nexu-io/open-design@main/plugins/community/import-smoke-test",
       "publisher": {
-        "id": "open-design-community",
+        "id": "llm-hub-community",
         "github": "nexu-io",
         "url": "https://github.com/nexu-io/open-design"
       },
