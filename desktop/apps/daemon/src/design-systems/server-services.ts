@@ -52,6 +52,8 @@ type DesignSystemListOptions = {
   defaultStatus?: string;
 };
 
+const HIDDEN_BUILT_IN_DESIGN_SYSTEM_IDS = new Set(['ant', 'minimax', 'wechat', 'xiaohongshu']);
+
 export function createDesignSystemServerServices({
   roots,
   paths,
@@ -116,7 +118,7 @@ export function createDesignSystemServerServices({
       source: 'built-in',
       isEditable: false,
       status: 'published',
-    }));
+    })).filter((s) => !HIDDEN_BUILT_IN_DESIGN_SYSTEM_IDS.has(s.id));
     let installed: DesignSystemSummary[] = [];
     try {
       installed = await designSystems.listDesignSystems(paths.USER_DESIGN_SYSTEMS_DIR, {

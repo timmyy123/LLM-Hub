@@ -1,0 +1,257 @@
+/* ============================================================
+   Model Downloader Modal — matches application design system
+   (light/dark mode aware via CSS custom properties).
+   ============================================================ */
+
+.model-downloader-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 920;
+  background: rgba(28, 27, 26, 0.48);
+  backdrop-filter: blur(8px) saturate(1.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow: hidden;
+}
+
+.model-downloader-modal {
+  width: 100%;
+  max-width: 640px;
+  max-height: 88vh;
+  background: var(--bg-panel, #ffffff);
+  border: 1px solid color-mix(in srgb, var(--border, #e4e4e7) 60%, transparent);
+  border-radius: 20px;
+  box-shadow:
+    0 32px 80px -20px rgba(28, 27, 26, 0.32),
+    0 8px 24px -8px rgba(28, 27, 26, 0.12),
+    0 1px 2px rgba(28, 27, 26, 0.05);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--text, #18181b);
+  box-sizing: border-box;
+}
+
+.model-downloader__head {
+  padding: 18px 24px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border, #e4e4e7) 60%, transparent);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.model-downloader__icon-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--bg-subtle, #f4f4f5);
+  color: var(--text-strong, #09090b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.model-downloader__title {
+  font-family: var(--serif, inherit);
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 1.2;
+  color: var(--text-strong, #09090b);
+  margin: 0;
+}
+
+.model-downloader__subtitle {
+  font-size: 13px;
+  color: var(--text-muted, #71717a);
+  margin-top: 2px;
+}
+
+.model-downloader__close {
+  appearance: none;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill, 9999px);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted, #71717a);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 140ms ease, color 140ms ease;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.model-downloader__close:hover {
+  background: var(--bg-subtle, #f4f4f5);
+  color: var(--text-strong, #09090b);
+}
+
+.model-downloader__body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-sizing: border-box;
+}
+
+.model-downloader__section-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted, #71717a);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.model-downloader__card {
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--bg-subtle, #f4f4f5);
+  border: 1px solid color-mix(in srgb, var(--border, #e4e4e7) 50%, transparent);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.model-downloader__input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 14px;
+  border-radius: 10px;
+  background: var(--bg-subtle, #f4f4f5);
+  border: 1px solid var(--border, #e4e4e7);
+  color: var(--text-strong, #09090b);
+  font-size: 13px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 140ms ease;
+}
+
+.model-downloader__input:focus {
+  border-color: var(--accent, #2563eb);
+}
+
+.model-downloader__btn-primary {
+  flex-shrink: 0;
+  padding: 9px 18px;
+  border-radius: 10px;
+  background: var(--accent, #2563eb);
+  color: #ffffff;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 140ms ease;
+}
+
+.model-downloader__btn-primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.model-downloader__code-tag {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  background: color-mix(in srgb, var(--border, #e4e4e7) 40%, transparent);
+  padding: 3px 8px;
+  border-radius: 6px;
+  color: var(--text-strong, #09090b);
+  white-space: nowrap;
+}
+
+.model-downloader__desc {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text-muted, #71717a);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model-downloader__badge-installed {
+  flex-shrink: 0;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--success, #22c55e) 15%, transparent);
+  color: var(--success, #16a34a);
+  font-weight: 600;
+  border: 1px solid color-mix(in srgb, var(--success, #22c55e) 30%, transparent);
+  white-space: nowrap;
+}
+
+.model-downloader__btn-download {
+  flex-shrink: 0;
+  padding: 5px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  background: var(--accent, #2563eb);
+  color: #ffffff;
+  white-space: nowrap;
+  transition: opacity 140ms ease;
+}
+
+.model-downloader__btn-download:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.model-downloader__btn-delete {
+  flex-shrink: 0;
+  padding: 5px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid color-mix(in srgb, var(--danger, #ef4444) 30%, transparent);
+  cursor: pointer;
+  background: color-mix(in srgb, var(--danger, #ef4444) 12%, transparent);
+  color: var(--danger, #dc2626);
+  white-space: nowrap;
+  transition: opacity 140ms ease;
+}
+
+.model-downloader__btn-delete:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.model-downloader__installed-pill {
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: var(--bg-subtle, #f4f4f5);
+  border: 1px solid color-mix(in srgb, var(--border, #e4e4e7) 50%, transparent);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.model-downloader__installed-pill-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-strong, #09090b);
+  font-weight: 500;
+}
+
+.model-downloader__installed-pill-check {
+  color: var(--success, #16a34a);
+  flex-shrink: 0;
+  font-weight: 600;
+}

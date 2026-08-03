@@ -51,7 +51,6 @@ const OFFICIAL_PRESET_DOMAINS: Record<string, string> = {
   mastercard: 'mastercard.com',
   material: 'material.io',
   meta: 'meta.com',
-  minimax: 'minimax.io',
   miro: 'miro.com',
   mistral: 'mistral.ai',
   'mistral-ai': 'mistral.ai',
@@ -93,11 +92,9 @@ const OFFICIAL_PRESET_DOMAINS: Record<string, string> = {
   warp: 'warp.dev',
   webex: 'webex.com',
   webflow: 'webflow.com',
-  wechat: 'wechat.com',
   wired: 'wired.com',
   wise: 'wise.com',
   'x-ai': 'x.ai',
-  xiaohongshu: 'xiaohongshu.com',
   zapier: 'zapier.com',
 };
 
