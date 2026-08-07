@@ -1256,6 +1256,16 @@ class LLMBackend: ObservableObject {
         } else {
             rawPrompt = prompt
         }
+        let effectiveSystemPrompt: String?
+        if prompt.hasPrefix("__RAW_PROMPT__") {
+            effectiveSystemPrompt = nil
+        } else if isHarmonyModel {
+            effectiveSystemPrompt = nil
+        } else {
+            effectiveSystemPrompt = systemPrompt
+        }
+
+        let isLfmModel = loadedModelName.contains("LFM2.5-8B-A1B") || loadedModelName.contains("LFM-2.5 2.6B") || loadedModelName.contains("LFM-2.5 1.2B") || loadedModelName.lowercased().contains("lfm")
         var usePrompt: String
         do {
             let strippedPrompt: String
@@ -1266,27 +1276,25 @@ class LLMBackend: ObservableObject {
             } else {
                 strippedPrompt = rawPrompt
             }
-            if isHarmonyModel && strippedPrompt.contains("<|start|>") && !strippedPrompt.contains("<|begin_of_text|>") {
+
+            if isLfmModel {
+                if !strippedPrompt.contains("<|im_start|>") && !strippedPrompt.contains("[INST]") {
+                    let sys = (effectiveSystemPrompt ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !sys.isEmpty {
+                        usePrompt = "<|im_start|>system\n\(sys)\n<|im_end|>\n<|im_start|>user\n\(strippedPrompt)\n<|im_end|>\n<|im_start|>assistant\n<think>\n"
+                    } else {
+                        usePrompt = "<|im_start|>user\n\(strippedPrompt)\n<|im_end|>\n<|im_start|>assistant\n<think>\n"
+                    }
+                } else if !strippedPrompt.contains("<think>") {
+                    usePrompt = strippedPrompt + "\n<think>\n"
+                } else {
+                    usePrompt = strippedPrompt
+                }
+            } else if isHarmonyModel && strippedPrompt.contains("<|start|>") && !strippedPrompt.contains("<|begin_of_text|>") {
                 usePrompt = "<|begin_of_text|>" + strippedPrompt
             } else {
                 usePrompt = strippedPrompt
             }
-        }
-
-        let isLfmModel = loadedModelName.contains("LFM2.5-8B-A1B") || loadedModelName.contains("LFM-2.5 2.6B") || loadedModelName.contains("LFM-2.5 1.2B Thinking")
-        if isLfmModel {
-            if !usePrompt.contains("<think>") {
-                usePrompt += "\n<think>\n"
-            }
-        }
-
-        let effectiveSystemPrompt: String?
-        if prompt.hasPrefix("__RAW_PROMPT__") {
-            effectiveSystemPrompt = nil
-        } else if isHarmonyModel {
-            effectiveSystemPrompt = nil
-        } else {
-            effectiveSystemPrompt = systemPrompt
         }
 
         var options = RALLMGenerationOptions.defaults()

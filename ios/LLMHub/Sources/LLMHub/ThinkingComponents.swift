@@ -21,15 +21,19 @@ private func stripHarmonyAnalysisPrefix(_ text: String) -> String {
 
 /// Returns `true` when `content` contains any recognised thinking marker
 /// (even if the thinking text after the tag is still empty during streaming).
+private func isRawThinkPrefix(_ text: String) -> Bool {
+    let sanitized = text.replacingOccurrences(of: "\u{200B}", with: "")
+    let trimmed = sanitized.trimmingCharacters(in: .whitespacesAndNewlines)
+    return trimmed.hasPrefix("THINK (") || trimmed.hasPrefix("THINK:") || trimmed.hasPrefix("THINK\n") || trimmed.hasPrefix("THINK 1")
+}
+
 func contentHasThinkingMarkers(_ content: String) -> Bool {
     if content.contains(kRawOpenThink) || content.contains(kSentinelThink)
         || content.contains(kRawCloseThink) || content.contains(kSentinelEndThink)
         || content.contains("THINK\u{200B}\u{200B}") {
         return true
     }
-    let sanitized = content.replacingOccurrences(of: "\u{200B}", with: "")
-    let trimmed = sanitized.trimmingCharacters(in: .whitespacesAndNewlines)
-    return trimmed.hasPrefix("THINK")
+    return isRawThinkPrefix(content)
 }
 
 /// Split `content` into `(thinkingPart, answerPart)`.
@@ -90,13 +94,13 @@ func parseThinkingAndAnswer(_ content: String) -> (thinking: String, answer: Str
             .trimmingCharacters(in: .whitespacesAndNewlines)
         return (thinking, answer)
     }
-    // 5) Raw "THINK" prefix emitted by reasoning models
-    let sanitized = content.replacingOccurrences(of: "\u{200B}", with: "")
-    let trimmed = sanitized.trimmingCharacters(in: .whitespacesAndNewlines)
-    if trimmed.hasPrefix("THINK") {
+    // 5) Raw "THINK (...)" prefix emitted by reasoning models
+    if isRawThinkPrefix(content) {
+        let sanitized = content.replacingOccurrences(of: "\u{200B}", with: "")
+        let trimmed = sanitized.trimmingCharacters(in: .whitespacesAndNewlines)
         let afterThink: String
-        if trimmed.hasPrefix("THINK ") {
-            afterThink = String(trimmed.dropFirst(6))
+        if trimmed.hasPrefix("THINK (") {
+            afterThink = trimmed
         } else if trimmed.hasPrefix("THINK:") {
             afterThink = String(trimmed.dropFirst(6))
         } else if trimmed.hasPrefix("THINK\n") {
