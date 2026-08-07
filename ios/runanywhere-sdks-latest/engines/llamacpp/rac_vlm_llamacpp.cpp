@@ -633,7 +633,8 @@ void configure_sampler(LlamaCppVLMBackend* backend, const rac_vlm_options_t* opt
         // Repetition penalty is caller-controlled now; freq/pres
         // stay at the pre-IDL engine defaults until callers request a knob.
         llama_sampler_chain_add(backend->sampler,
-                                llama_sampler_init_penalties(256, repetition_penalty, 0.1f, 0.1f));
+                                llama_sampler_init_penalties(llama_vocab_n_tokens(llama_model_get_vocab(backend->model)),
+                                                             256, repetition_penalty, 0.1f, 0.1f));
 
         // DRY sampler: catches n-gram (sequence) repetition like "gó gó gó" where
         // individual tokens may alternate. Multiplier=0.8, base=1.75,
@@ -641,8 +642,7 @@ void configure_sampler(LlamaCppVLMBackend* backend, const rac_vlm_options_t* opt
         const llama_vocab* vocab = llama_model_get_vocab(backend->model);
         static const char* dry_breakers[] = {"\n", ":", "\"", "*"};
         llama_sampler_chain_add(
-            backend->sampler, llama_sampler_init_dry(vocab, llama_model_n_ctx_train(backend->model),
-                                                     0.8f, 1.75f, 2, 256, dry_breakers, 4));
+            backend->sampler, llama_sampler_init_dry(vocab, 0.8f, 1.75f, 2, 256, dry_breakers, 4));
 
         // top_k only when caller requested it; mirrors LLM backend's
         // build_sampler_chain() in engines/llamacpp/llamacpp_backend.cpp.

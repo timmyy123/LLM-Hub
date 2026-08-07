@@ -181,7 +181,8 @@ llama_sampler* build_sampler_chain(llama_model* model, const TextGenerationReque
         // (idl/llm_options.proto:100-101) into the penalty sampler; 0.0 leaves
         // each disabled exactly as before.
         llama_sampler_chain_add(
-            sampler, llama_sampler_init_penalties(kRepeatPenaltyWindow, request.repetition_penalty,
+            sampler, llama_sampler_init_penalties(llama_vocab_n_tokens(llama_model_get_vocab(model)),
+                                                  kRepeatPenaltyWindow, request.repetition_penalty,
                                                   request.frequency_penalty,
                                                   request.presence_penalty));
 

@@ -208,9 +208,9 @@ SHERPA_ONNX_COMMIT_WEB=142807252687d81b40d6315f23470a1512a00de3
 # =============================================================================
 # llama.cpp (LLM inference)
 # =============================================================================
-# Upstream release pin selected for the 2026-07-10 Web release cut. b9959
-# includes the ARMv7 table-lookup fallback required by Android builds.
-LLAMACPP_VERSION=b10217
+# Upstream release pin bumped to b10303 (2026-08-07).
+# b10303 is the latest release from ggml-org/llama.cpp.
+LLAMACPP_VERSION=b10303
 
 # =============================================================================
 # nlohmann/json
