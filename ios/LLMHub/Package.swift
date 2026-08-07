@@ -20,7 +20,7 @@ let package = Package(
         .package(url: "https://github.com/apple/ml-stable-diffusion", from: "1.1.1"),
         .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.20"),
         .package(path: "LocalPackages/media-generation-kit"),
-        .package(url: "https://github.com/google-ai-edge/LiteRT-LM", exact: "0.14.0"),
+        .package(path: "LocalPackages/LiteRT-LM"),
         .package(url: "https://github.com/ggerganov/whisper.spm", from: "1.6.2"),
     ],
     targets: [

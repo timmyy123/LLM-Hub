@@ -492,7 +492,7 @@
 				CODE_SIGN_ENTITLEMENTS = LLMHub.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 54;
+				CURRENT_PROJECT_VERSION = 55;
 				DEAD_CODE_STRIPPING = NO;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
@@ -538,7 +538,7 @@
 				CODE_SIGN_ENTITLEMENTS = LLMHub.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 54;
+				CURRENT_PROJECT_VERSION = 55;
 				DEVELOPMENT_TEAM = 76K65T869A;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "LLMHub-Info.plist";
@@ -665,6 +665,7 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = "LocalPackages/LiteRT-LM";
 		};
+
 		MGK00001000000000000MG03 /* XCLocalSwiftPackageReference "LocalPackages/media-generation-kit" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = "LocalPackages/media-generation-kit";
