@@ -433,7 +433,8 @@ public struct AgentScreen: View {
                     } else {
                         let isCurrentMsgGenerating = vm.isGenerating && msg.id == vm.messages.last?.id
                         let selectedModel = ModelData.allModels().first(where: { $0.name == agentModelName })
-                        let modelSupportsThinking = selectedModel?.supportsThinking ?? false
+                        let isLfm = agentModelName.lowercased().contains("lfm")
+                        let modelSupportsThinking = isLfm || (selectedModel?.supportsThinking ?? false)
                         let preferThinking = modelSupportsThinking && agentEnableThinking
                         ThinkingAwareResultContent(
                             content: content,

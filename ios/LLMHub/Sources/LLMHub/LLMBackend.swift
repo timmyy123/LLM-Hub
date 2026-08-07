@@ -1273,13 +1273,10 @@ class LLMBackend: ObservableObject {
             }
         }
 
-        let isLfmModel = loadedModelName.contains("LFM2.5-8B-A1B") || loadedModelName.contains("LFM-2.5 2.6B")
+        let isLfmModel = loadedModelName.contains("LFM2.5-8B-A1B") || loadedModelName.contains("LFM-2.5 2.6B") || loadedModelName.lowercased().contains("lfm")
         if isLfmModel {
-            let trimmedPrompt = usePrompt.trimmingCharacters(in: .whitespacesAndNewlines)
-            if trimmedPrompt.hasSuffix("<|im_start|>assistant") {
+            if !usePrompt.contains("<think>") {
                 usePrompt += "\n<think>\n"
-            } else if !usePrompt.contains("<think>") && (usePrompt.hasSuffix("<|im_start|>assistant\n") || usePrompt.hasSuffix("assistant:\n") || usePrompt.hasSuffix("assistant\n")) {
-                usePrompt += "<think>\n"
             }
         }
 

@@ -22,8 +22,14 @@ private func stripHarmonyAnalysisPrefix(_ text: String) -> String {
 /// Returns `true` when `content` contains any recognised thinking marker
 /// (even if the thinking text after the tag is still empty during streaming).
 func contentHasThinkingMarkers(_ content: String) -> Bool {
-    content.contains(kRawOpenThink) || content.contains(kSentinelThink)
+    if content.contains(kRawOpenThink) || content.contains(kSentinelThink)
         || content.contains(kRawCloseThink) || content.contains(kSentinelEndThink)
+        || content.contains("THINK\u{200B}\u{200B}") {
+        return true
+    }
+    let sanitized = content.replacingOccurrences(of: "\u{200B}", with: "")
+    let trimmed = sanitized.trimmingCharacters(in: .whitespacesAndNewlines)
+    return trimmed.hasPrefix("THINK")
 }
 
 /// Split `content` into `(thinkingPart, answerPart)`.
@@ -40,6 +46,18 @@ func parseThinkingAndAnswer(_ content: String) -> (thinking: String, answer: Str
             return (thinking, answer)
         }
         // Sentinel open but no close yet — still streaming thinking
+        return (stripHarmonyAnalysisPrefix(afterThink).trimmingCharacters(in: .whitespacesAndNewlines), "")
+    }
+    // 1b) ZWSP partially stripped sentinel (e.g. leading ZWSP removed by trim)
+    if content.contains("THINK\u{200B}\u{200B}") {
+        let afterThink = content.substringAfterFirst("THINK\u{200B}\u{200B}")
+        if afterThink.contains(kSentinelEndThink) {
+            let thinking = stripHarmonyAnalysisPrefix(afterThink.substringBeforeFirst(kSentinelEndThink))
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let answer   = afterThink.substringAfterFirst(kSentinelEndThink)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return (thinking, answer)
+        }
         return (stripHarmonyAnalysisPrefix(afterThink).trimmingCharacters(in: .whitespacesAndNewlines), "")
     }
     // 2) Closing sentinel only: everything before the close marker is thinking,
@@ -71,6 +89,29 @@ func parseThinkingAndAnswer(_ content: String) -> (thinking: String, answer: Str
         let answer = content.substringAfterFirst(kRawCloseThink)
             .trimmingCharacters(in: .whitespacesAndNewlines)
         return (thinking, answer)
+    }
+    // 5) Raw "THINK" prefix emitted by reasoning models
+    let sanitized = content.replacingOccurrences(of: "\u{200B}", with: "")
+    let trimmed = sanitized.trimmingCharacters(in: .whitespacesAndNewlines)
+    if trimmed.hasPrefix("THINK") {
+        let afterThink: String
+        if trimmed.hasPrefix("THINK ") {
+            afterThink = String(trimmed.dropFirst(6))
+        } else if trimmed.hasPrefix("THINK:") {
+            afterThink = String(trimmed.dropFirst(6))
+        } else if trimmed.hasPrefix("THINK\n") {
+            afterThink = String(trimmed.dropFirst(6))
+        } else {
+            afterThink = trimmed
+        }
+        if let range = afterThink.range(of: "\n\n") {
+            let thinking = String(afterThink[..<range.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+            let answer = String(afterThink[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+            if !answer.isEmpty {
+                return (thinking, answer)
+            }
+        }
+        return (afterThink.trimmingCharacters(in: .whitespacesAndNewlines), "")
     }
     return ("", content)
 }

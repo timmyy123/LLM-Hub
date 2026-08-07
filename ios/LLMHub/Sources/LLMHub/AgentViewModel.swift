@@ -243,8 +243,8 @@ public class AgentViewModel: ObservableObject {
                     } else {
                         let cleanText = text
                             .replacingOccurrences(of: "\\[?\\s*(?:TOOL|calc|calculator|math):?[^\\]]*\\]?", with: "", options: .regularExpression)
-                            .trimmingCharacters(in: .whitespacesAndNewlines)
-                        self.updateTextMessage(id: aiMsgId, newContent: cleanText)
+                        let formattedContent = cleanText.contains("\u{200B}") ? cleanText : cleanText.trimmingCharacters(in: .whitespacesAndNewlines)
+                        self.updateTextMessage(id: aiMsgId, newContent: formattedContent)
                     }
                 }
             }
