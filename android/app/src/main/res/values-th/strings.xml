@@ -72,7 +72,7 @@
     <string name="ai_thinking">AI กำลังคิด...</string>
     <string name="thinking_label">กำลังคิด</string>
     <string name="thinking_tokens">กำลังคิด (%1$dโทเค็น)</string>
-    <string name="version_number">เวอร์ชัน 4.1.0</string>
+    <string name="version_number">เวอร์ชัน 4.1.1</string>
     <string name="app_version">เวอร์ชันของแอป</string>
     <string name="terms_of_service">ข้อกำหนดในการให้บริการ</string>
     <string name="tos_last_updated">อัปเดตล่าสุด: 22 มิถุนายน 2569</string>
