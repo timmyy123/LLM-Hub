@@ -1273,7 +1273,7 @@ class LLMBackend: ObservableObject {
             }
         }
 
-        let isLfmModel = loadedModelName.contains("LFM2.5-8B-A1B") || loadedModelName.contains("LFM-2.5 2.6B") || loadedModelName.lowercased().contains("lfm")
+        let isLfmModel = loadedModelName.contains("LFM2.5-8B-A1B") || loadedModelName.contains("LFM-2.5 2.6B") || loadedModelName.contains("LFM-2.5 1.2B Thinking")
         if isLfmModel {
             if !usePrompt.contains("<think>") {
                 usePrompt += "\n<think>\n"
