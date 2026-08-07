@@ -1,5 +1,5 @@
 {
-  "originHash" : "d96905dff2d2143d39a359df3cbfadaeba5f8b92ddfb6603b4a3a00e0fe5b494",
+  "originHash" : "440e9c63d8d302f4d25f80dc754406008be40cb8fd1e0a0fb64ba418ae5acbd3",
   "pins" : [
     {
       "identity" : "ccv",
@@ -66,7 +66,7 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google-ai-edge/LiteRT-LM",
       "state" : {
-        "revision" : "80f301ff9a3b02c2c1e7be2dd1a567752f7b51b6",
+        "revision" : "f73637c57f0940b53da184e0d5adfc52a4e55eef",
         "version" : "0.14.0"
       }
     },
@@ -307,24 +307,6 @@
       "state" : {
         "revision" : "0c0290ff6b24942dadb83a929ffaaa1481df04a2",
         "version" : "1.1.1"
-      }
-    },
-    {
-      "identity" : "swift-package-manager-google-mobile-ads",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/googleads/swift-package-manager-google-mobile-ads",
-      "state" : {
-        "revision" : "7778cc1ab037c10dbbe026959e51e616bd961be9",
-        "version" : "11.13.0"
-      }
-    },
-    {
-      "identity" : "swift-package-manager-google-user-messaging-platform",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/googleads/swift-package-manager-google-user-messaging-platform",
-      "state" : {
-        "revision" : "708a282840c2171ee63bd93b87afa49fe507d70e",
-        "version" : "2.7.0"
       }
     },
     {

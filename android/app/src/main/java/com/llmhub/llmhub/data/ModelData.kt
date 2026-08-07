@@ -1967,6 +1967,99 @@ object ModelData {
             modelFormat = "gguf"
         ),
 
+        // LFM-2.5 2.6B Models (LiquidAI GGUF)
+        LLMModel(
+            name = "LFM-2.5 2.6B (Q4_0)",
+            description = "LiquidAI's 2.6B parameter hybrid model. Q4_0 quantization. 128k context. (1.59GB)",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-2.6B-GGUF/resolve/b421ad1d549afeda6a0fb2ad3a697cb5a7879adc/LFM2.5-2.6B-Q4_0.gguf?download=true",
+            category = "text",
+            sizeBytes = 1593894720L,
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 128000,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM-2.5 2.6B (Q4_K_M)",
+            description = "LiquidAI's 2.6B parameter hybrid model. Q4_K_M quantization, recommended. 128k context. (1.67GB)",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-2.6B-GGUF/resolve/b421ad1d549afeda6a0fb2ad3a697cb5a7879adc/LFM2.5-2.6B-Q4_K_M.gguf?download=true",
+            category = "text",
+            sizeBytes = 1674454848L,
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 128000,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM-2.5 2.6B (Q5_K_M)",
+            description = "LiquidAI's 2.6B parameter hybrid model. Q5_K_M quantization. 128k context. (1.94GB)",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-2.6B-GGUF/resolve/b421ad1d549afeda6a0fb2ad3a697cb5a7879adc/LFM2.5-2.6B-Q5_K_M.gguf?download=true",
+            category = "text",
+            sizeBytes = 1939744576L,
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 5),
+            contextWindowSize = 128000,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM-2.5 2.6B (Q6_K)",
+            description = "LiquidAI's 2.6B parameter hybrid model. Q6_K quantization. 128k context. (2.22GB)",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-2.6B-GGUF/resolve/b421ad1d549afeda6a0fb2ad3a697cb5a7879adc/LFM2.5-2.6B-Q6_K.gguf?download=true",
+            category = "text",
+            sizeBytes = 2221614912L,
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 128000,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM-2.5 2.6B (Q8_0)",
+            description = "LiquidAI's 2.6B parameter hybrid model. Q8_0 quantization. 128k context. (2.87GB)",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-2.6B-GGUF/resolve/b421ad1d549afeda6a0fb2ad3a697cb5a7879adc/LFM2.5-2.6B-Q8_0.gguf?download=true",
+            category = "text",
+            sizeBytes = 2874779456L,
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 128000,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM-2.5 2.6B (BF16)",
+            description = "LiquidAI's 2.6B parameter hybrid model. BF16 (bfloat16 precision) variant. 128k context. (5.40GB)",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-2.6B-GGUF/resolve/b421ad1d549afeda6a0fb2ad3a697cb5a7879adc/LFM2.5-2.6B-BF16.gguf?download=true",
+            category = "text",
+            sizeBytes = 5403158336L,
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 7, recommendedRamGB = 9),
+            contextWindowSize = 128000,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM-2.5 2.6B (F16)",
+            description = "LiquidAI's 2.6B parameter hybrid model. F16 (float16 precision) variant. 128k context. (5.40GB)",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-2.6B-GGUF/resolve/b421ad1d549afeda6a0fb2ad3a697cb5a7879adc/LFM2.5-2.6B-F16.gguf?download=true",
+            category = "text",
+            sizeBytes = 5403158336L,
+            source = "LiquidAI",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 7, recommendedRamGB = 9),
+            contextWindowSize = 128000,
+            modelFormat = "gguf"
+        ),
+
         // LFM-2.5 8B Models (LiquidAI GGUF - MoE, 8.3B total / 1.5B active params)
         LLMModel(
             name = "LFM2.5-8B-A1B (Q4_0)",

@@ -479,6 +479,16 @@ struct FeatureModelSettingsSheet: View {
             ?? selectedFeatureModel(named: selectedModelName)
     }
 
+    private var selectedModelSupportsThinking: Bool {
+        guard let model = selectedModel else { return false }
+        let name = model.name.lowercased()
+        if name.contains("lfm") { return false }
+        if name.contains("gemma-4") || name.contains("gemma 4") || name.contains("gemma_4") {
+            return model.modelFormat == .litertlm
+        }
+        return model.supportsThinking
+    }
+
     private var selectedModelSupportsVision: Bool {
         guard supportsVisionToggle, let model = selectedModel, model.supportsVision else { return false }
         return visionAvailableCheck?(model) ?? true
@@ -563,12 +573,7 @@ struct FeatureModelSettingsSheet: View {
                                 }
                             }
 
-                            let isThinkingModel = selectedModel?.supportsThinking == true ||
-                                selectedModel?.name.lowercased().contains("gemma-4") == true ||
-                                selectedModel?.name.lowercased().contains("gemma 4") == true ||
-                                selectedModel?.name.lowercased().contains("gemma_4") == true
-
-                            if isThinkingModel {
+                            if selectedModelSupportsThinking {
                                 Toggle(settings.localized("enable_thinking"), isOn: $enableThinking)
                                     .tint(ApolloPalette.accentStrong)
                                     .foregroundColor(.white)

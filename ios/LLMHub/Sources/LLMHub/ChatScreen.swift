@@ -2428,10 +2428,14 @@ struct MessageBubble: View {
                         let answer = hasMarkers ? getDisplayContentWithoutThinking(message.content) : message.content
                         if !hasMarkers || !answer.isEmpty {
                             Spacer()
-                            // The backend already provides responseTokens (answer-only count)
-                            // via result.responseTokens in the final callback, so tokenCount
-                            // is already the answer token count — no need to subtract an estimate.
-                            Label(String(format: settings.localized("tokens_per_second_format"), tokenCount, tps), systemImage: "bolt.fill")
+                            let displayedTokenCount: Int = {
+                                if hasMarkers && !answer.isEmpty {
+                                    let answerTokens = Int(ceil(Double(answer.count) / 4.0))
+                                    return max(1, min(tokenCount, answerTokens))
+                                }
+                                return tokenCount
+                            }()
+                            Label(String(format: settings.localized("tokens_per_second_format"), displayedTokenCount, tps), systemImage: "bolt.fill")
                                 .font(.caption2)
                                 .foregroundColor(.white.opacity(0.63))
                         }

@@ -143,11 +143,17 @@ fun FeatureModelSettingsSheet(
 
     val isThinkingOrHarmonyModel by remember(selectedModel) {
         derivedStateOf {
-            val name = selectedModel?.name?.lowercase() ?: ""
+            val model = selectedModel ?: return@derivedStateOf false
+            val name = model.name.lowercase()
+            if (name.contains("lfm2.5-8b-a1b") || name.contains("lfm-2.5 2.6b") || name.contains("lfm")) {
+                return@derivedStateOf false
+            }
+            if (name.contains("gemma-4") || name.contains("gemma 4") || name.contains("gemma_4")) {
+                return@derivedStateOf model.modelFormat == "litertlm"
+            }
             name.contains("thinking") || name.contains("reasoning") ||
                 name.contains("gpt-oss") || name.contains("gpt_oss") ||
-                name.contains("gemma-4") || name.contains("gemma 4") || name.contains("gemma_4") ||
-                selectedModel?.supportsThinking == true
+                model.supportsThinking
         }
     }
 

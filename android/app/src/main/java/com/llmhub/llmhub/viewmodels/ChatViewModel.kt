@@ -11,6 +11,7 @@ import androidx.lifecycle.SavedStateHandle
 import com.llmhub.llmhub.data.*
 import com.llmhub.llmhub.inference.InferenceService
 import com.llmhub.llmhub.repository.ChatRepository
+import com.llmhub.llmhub.components.parseThinkingAndAnswer
 import com.llmhub.llmhub.utils.FileUtils
 import com.llmhub.llmhub.utils.AudioConversionUtils
 import com.llmhub.llmhub.R
@@ -1891,9 +1892,12 @@ class ChatViewModel(
         // Only compute token statistics if we have any content to analyse.
         if (finalContent.isNotBlank()) {
 
-            val actualTokens = kotlin.math.ceil(finalContent.length / 4.0).toInt()
+            val (thinkingPart, answerPart) = parseThinkingAndAnswer(finalContent)
+            val answerContent = if (answerPart.isNotBlank()) answerPart else finalContent
+            val actualTokens = kotlin.math.ceil(answerContent.length / 4.0).toInt().coerceAtLeast(1)
+            val totalTokens = kotlin.math.ceil(finalContent.length / 4.0).toInt().coerceAtLeast(1)
             val tokensPerSecond = inferenceService.getLastDecodeSpeedTokPerSec()
-                ?: if (generationTimeMs > 0) (actualTokens * 1000.0) / generationTimeMs else 0.0
+                ?: if (generationTimeMs > 0) (totalTokens * 1000.0) / generationTimeMs else 0.0
 
             Log.d("ChatViewModel", "Saving stats for message $placeholderId: $actualTokens tokens, ${String.format("%.1f", tokensPerSecond)} tok/sec")
 

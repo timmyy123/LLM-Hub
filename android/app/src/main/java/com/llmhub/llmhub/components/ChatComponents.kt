@@ -713,18 +713,24 @@ private const val SENTINEL_ENDTHINK = "\u200B\u200BENDTHINK\u200B\u200B"
 private const val RAW_OPEN_THINK = "<think>"
 private const val RAW_CLOSE_THINK = "</think>"
 
-private fun parseThinkingAndAnswer(content: String): Pair<String, String> {
-    // 1) Same as chat: sentinels from OnnxInferenceService / GeniexInferenceService
+fun parseThinkingAndAnswer(content: String): Pair<String, String> {
+    // 1) Sentinels from OnnxInferenceService / GeniexInferenceService
     if (content.contains(SENTINEL_THINK)) {
         val afterThink = content.substringAfter(SENTINEL_THINK)
         if (afterThink.contains(SENTINEL_ENDTHINK)) {
-            val thinking = afterThink.substringBefore(SENTINEL_ENDTHINK)
-            val answer = afterThink.substringAfter(SENTINEL_ENDTHINK)
+            val thinking = afterThink.substringBefore(SENTINEL_ENDTHINK).trim()
+            val answer = afterThink.substringAfter(SENTINEL_ENDTHINK).trim()
             return thinking to answer
         }
-        return afterThink to ""
+        return afterThink.trim() to ""
     }
-    // 2) Raw <think>...</think>
+    // 2) Sentinel closing tag only
+    if (content.contains(SENTINEL_ENDTHINK)) {
+        val thinking = content.substringBefore(SENTINEL_ENDTHINK).trim()
+        val answer = content.substringAfter(SENTINEL_ENDTHINK).trim()
+        return thinking to answer
+    }
+    // 3) Raw <think>...</think>
     if (content.contains(RAW_OPEN_THINK)) {
         val afterThink = content.substringAfter(RAW_OPEN_THINK)
         if (afterThink.contains(RAW_CLOSE_THINK)) {
@@ -736,10 +742,11 @@ private fun parseThinkingAndAnswer(content: String): Pair<String, String> {
             return afterThink.trim() to ""
         }
     }
-    // 3) Closing tag only (e.g. "THINK I think ... </think>\n\nanswer" when no <think>)
+    // 4) Closing raw tag only (model emitted </think> without explicit <think>)
     if (content.contains(RAW_CLOSE_THINK)) {
+        val thinking = content.substringBefore(RAW_CLOSE_THINK).trim()
         val answer = content.substringAfter(RAW_CLOSE_THINK).trim()
-        if (answer.isNotEmpty()) return "" to answer
+        return thinking to answer
     }
     return "" to content
 }
@@ -754,7 +761,9 @@ fun getDisplayContentWithoutThinking(content: String): String {
     if (answer.isNotEmpty()) return answer
     // Don't show thinking as result: if we detected thinking (sentinels or THINK prefix / </think>) but no answer, show nothing
     val hasThinking = content.contains(SENTINEL_THINK) ||
-        (content.contains(RAW_CLOSE_THINK)) ||
+        content.contains(SENTINEL_ENDTHINK) ||
+        content.contains(RAW_OPEN_THINK) ||
+        content.contains(RAW_CLOSE_THINK) ||
         (content.trimStart().uppercase().startsWith("THINK"))
     return if (hasThinking) "" else content
 }

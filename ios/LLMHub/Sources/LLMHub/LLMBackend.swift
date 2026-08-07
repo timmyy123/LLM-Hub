@@ -1256,7 +1256,7 @@ class LLMBackend: ObservableObject {
         } else {
             rawPrompt = prompt
         }
-        let usePrompt: String
+        var usePrompt: String
         do {
             let strippedPrompt: String
             if rawPrompt.hasPrefix("__RAW_PROMPT__\n") {
@@ -1266,11 +1266,6 @@ class LLMBackend: ObservableObject {
             } else {
                 strippedPrompt = rawPrompt
             }
-            // Workaround: the C++ llamacpp_backend build_prompt only recognizes
-            // <|im_start|>, <|begin_of_text|>, and [INST] as pre-formatted markers.
-            // Harmony prompts use <|start|> which isn't in that list, causing the
-            // C++ to double-wrap the already-formatted prompt. Include <|begin_of_text|>
-            // so the C++ layer passes the prompt through verbatim.
             if isHarmonyModel && strippedPrompt.contains("<|start|>") && !strippedPrompt.contains("<|begin_of_text|>") {
                 usePrompt = "<|begin_of_text|>" + strippedPrompt
             } else {
@@ -1278,10 +1273,18 @@ class LLMBackend: ObservableObject {
             }
         }
 
+        let isLfmModel = loadedModelName.contains("LFM2.5-8B-A1B") || loadedModelName.contains("LFM-2.5 2.6B")
+        if isLfmModel {
+            let trimmedPrompt = usePrompt.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmedPrompt.hasSuffix("<|im_start|>assistant") {
+                usePrompt += "\n<think>\n"
+            } else if !usePrompt.contains("<think>") && (usePrompt.hasSuffix("<|im_start|>assistant\n") || usePrompt.hasSuffix("assistant:\n") || usePrompt.hasSuffix("assistant\n")) {
+                usePrompt += "<think>\n"
+            }
+        }
+
         let effectiveSystemPrompt: String?
         if prompt.hasPrefix("__RAW_PROMPT__") {
-            // System prompt is already embedded in the formatted multi-turn prompt — don't pass it
-            // again via options or the SDK will prepend it a second time, breaking conversation history.
             effectiveSystemPrompt = nil
         } else if isHarmonyModel {
             effectiveSystemPrompt = nil
@@ -1296,6 +1299,9 @@ class LLMBackend: ObservableObject {
         options.stopSequences = stopSequences
         options.streamingEnabled = true
         options.systemPrompt = effectiveSystemPrompt ?? ""
+        if !isLfmModel {
+            options.disableThinking = !enableThinking
+        }
 
         do {
 
@@ -1518,7 +1524,12 @@ class LLMBackend: ObservableObject {
                 currentOutput = currentOutput.replacingOccurrences(
                     of: #"<unused\d+>"#, with: "", options: .regularExpression)
             }
-            let displayOutput = isGemma4 ? Self.cleanGemma4Output(currentOutput) : currentOutput
+            var displayOutput = isGemma4 ? Self.cleanGemma4Output(currentOutput) : currentOutput
+            if isLfmModel {
+                if !displayOutput.contains("<think>") && !displayOutput.contains(Self.thinkingSentinelOpen) && !displayOutput.contains("</think>") {
+                    displayOutput = Self.thinkingSentinelOpen + displayOutput
+                }
+            }
             let normalizedOutput = isHarmonyModel ? Self.normalizeHarmonyOutput(displayOutput) : (displayOutput, false)
 
             if chunkCount == 1 {

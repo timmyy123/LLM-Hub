@@ -157,6 +157,7 @@ fun ChatSettingsSheet(
     val isThinkingOrHarmonyModel by remember(selectedModel) {
         derivedStateOf {
             selectedModel?.let { model ->
+                model.supportsThinking ||
                 model.name.contains("Thinking", ignoreCase = true) ||
                 model.name.contains("Reasoning", ignoreCase = true) ||
                 model.name.contains("gpt-oss", ignoreCase = true) ||

@@ -34,34 +34,35 @@ func parseThinkingAndAnswer(_ content: String) -> (thinking: String, answer: Str
         let afterThink = content.substringAfterFirst(kSentinelThink)
         if afterThink.contains(kSentinelEndThink) {
             let thinking = stripHarmonyAnalysisPrefix(afterThink.substringBeforeFirst(kSentinelEndThink))
+                .trimmingCharacters(in: .whitespacesAndNewlines)
             let answer   = afterThink.substringAfterFirst(kSentinelEndThink)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
             return (thinking, answer)
         }
         // Sentinel open but no close yet — still streaming thinking
-        return (stripHarmonyAnalysisPrefix(afterThink), "")
+        return (stripHarmonyAnalysisPrefix(afterThink).trimmingCharacters(in: .whitespacesAndNewlines), "")
     }
-    // 2) Raw <think>…</think>
+    // 2) Closing sentinel only: everything before the close marker is thinking,
+    // everything after it is the visible answer.
+    if content.contains(kSentinelEndThink) {
+        let thinking = stripHarmonyAnalysisPrefix(content.substringBeforeFirst(kSentinelEndThink))
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let answer = content.substringAfterFirst(kSentinelEndThink)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return (thinking, answer)
+    }
+    // 3) Raw <think>…</think>
     if content.contains(kRawOpenThink) {
         let afterOpen = content.substringAfterFirst(kRawOpenThink)
         if afterOpen.contains(kRawCloseThink) {
             let thinking = afterOpen.substringBeforeFirst(kRawCloseThink)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
             let answer   = afterOpen.substringAfterFirst(kRawCloseThink)
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             return (thinking, answer)
         }
         // <think> open but no </think> yet — still streaming
-        return (afterOpen, "")
-    }
-    // 3) Closing sentinel only: everything before the close marker is thinking,
-    // everything after it is the visible answer.
-    if content.contains(kSentinelEndThink) {
-        let thinking = content.substringBeforeFirst(kSentinelEndThink)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        let answer = content.substringAfterFirst(kSentinelEndThink)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        if !thinking.isEmpty || !answer.isEmpty {
-            return (thinking, answer)
-        }
+        return (afterOpen.trimmingCharacters(in: .whitespacesAndNewlines), "")
     }
     // 4) Only a closing tag (model emitted </think> without explicit <think>)
     if content.contains(kRawCloseThink) {
@@ -69,7 +70,7 @@ func parseThinkingAndAnswer(_ content: String) -> (thinking: String, answer: Str
             .trimmingCharacters(in: .whitespacesAndNewlines)
         let answer = content.substringAfterFirst(kRawCloseThink)
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        if !thinking.isEmpty || !answer.isEmpty { return (thinking, answer) }
+        return (thinking, answer)
     }
     return ("", content)
 }

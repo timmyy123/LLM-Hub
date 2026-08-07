@@ -264,7 +264,8 @@ class GeniexInferenceService @Inject constructor(
 
                 val isThinkingModelForConfig = model.name.contains("Thinking", ignoreCase = true) ||
                     model.name.contains("Reasoning", ignoreCase = true) ||
-                    model.name.contains("LFM2.5-8B-A1B", ignoreCase = true)
+                    model.name.contains("LFM2.5-8B-A1B", ignoreCase = true) ||
+                    model.name.contains("LFM-2.5 2.6B", ignoreCase = true)
 
                 val modelConfig = ModelConfig(
                     nCtx = nCtx,
@@ -623,7 +624,8 @@ class GeniexInferenceService @Inject constructor(
 
         val isThinkingModel = model.name.contains("Thinking", ignoreCase = true) ||
                               model.name.contains("Reasoning", ignoreCase = true) ||
-                              model.name.contains("LFM2.5-8B-A1B", ignoreCase = true)
+                              model.name.contains("LFM2.5-8B-A1B", ignoreCase = true) ||
+                              model.name.contains("LFM-2.5 2.6B", ignoreCase = true)
         val isHarmonyModel = model.name.contains("gpt-oss", ignoreCase = true) ||
                              model.name.contains("gpt_oss", ignoreCase = true)
 
@@ -757,6 +759,7 @@ class GeniexInferenceService @Inject constructor(
                     }
 
                     val llmStart = System.currentTimeMillis()
+                    sentInitialThinkingSentinel = false
                     var firstTokenAt = 0L
                     var tokenCount = 0L
                     try {
@@ -778,7 +781,14 @@ class GeniexInferenceService @Inject constructor(
                                         val decodeMs = if (firstTokenAt > 0L) end - firstTokenAt else 0L
                                         val totalMs = end - requestStart
                                         if (decodeMs > 0 && tokenCount > 0) {
-                                            lastDecodeSpeedTokPerSec = tokenCount * 1000.0 / decodeMs
+                                            val sdkSpeed = runCatching {
+                                                val cls = streamResult::class.java
+                                                cls.declaredFields.firstOrNull { it.name.contains("decoding", true) || it.name.contains("speed", true) }?.let {
+                                                    it.isAccessible = true
+                                                    (it.get(streamResult) as? Number)?.toDouble()
+                                                }
+                                            }.getOrNull()
+                                            lastDecodeSpeedTokPerSec = sdkSpeed ?: (tokenCount * 1000.0 / decodeMs)
                                         }
                                         Log.i(TAG, "GEN[$requestId] LLM completed total=${totalMs}ms decode=${decodeMs}ms tokens=$tokenCount")
                                     }
@@ -833,6 +843,8 @@ class GeniexInferenceService @Inject constructor(
      * Handle a single stream result token, applying thinking tag normalization.
      * For Harmony-format models (GPT-OSS), routes through [emitTokenForHarmony].
      */
+    private var sentInitialThinkingSentinel = false
+
     private fun kotlinx.coroutines.channels.ProducerScope<String>.handleStreamResult(
         streamResult: LlmStreamResult,
         isThinkingModel: Boolean,
@@ -845,14 +857,24 @@ class GeniexInferenceService @Inject constructor(
                     isHarmonyModel -> emitTokenForHarmony(text) { trySend(it) }
                     isThinkingModel -> {
                         var t = text
-                        if (t.contains("<think>")) t = t.replace("<think>", SENTINEL_THINK)
+                        if (!sentInitialThinkingSentinel && !t.contains("<think>")) {
+                            sentInitialThinkingSentinel = true
+                            t = SENTINEL_THINK + t
+                        }
+                        if (t.contains("<think>")) {
+                            sentInitialThinkingSentinel = true
+                            t = t.replace("<think>", SENTINEL_THINK)
+                        }
                         if (t.contains("</think>")) t = t.replace("</think>", SENTINEL_ENDTHINK)
                         trySend(t)
                     }
                     else -> trySend(text)
                 }
             }
-            is LlmStreamResult.Completed -> close()
+            is LlmStreamResult.Completed -> {
+                sentInitialThinkingSentinel = false
+                close()
+            }
             is LlmStreamResult.Error -> {
                 // Log detailed SDK error fields (field names vary by GenieX SDK builds)
                 val cls = streamResult::class.java
