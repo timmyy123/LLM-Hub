@@ -2317,7 +2317,7 @@ object ModelData {
             category = "multimodal",
             sizeBytes = 2340000000L, // 2.34 GB from HuggingFace
             source = "LiquidAI",
-            supportsVision = false,
+            supportsVision = true,
             supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
             contextWindowSize = 128000,
@@ -2330,7 +2330,7 @@ object ModelData {
             category = "multimodal",
             sizeBytes = 696000000L, // 696 MB from HuggingFace
             source = "LiquidAI",
-            supportsVision = false,
+            supportsVision = true,
             supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
             contextWindowSize = 128000,

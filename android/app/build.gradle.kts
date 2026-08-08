@@ -25,7 +25,7 @@ android {
         applicationId = "com.llmhub.llmhub"
         minSdk = 27
         targetSdk = 37
-        versionCode = 138
+        versionCode = 139
         versionName = "4.1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -399,7 +399,7 @@ dependencies {
 }
 
 // ── Extract QNN HTP .so files from GenieX AAR into geniex_npu_pack ──────────────
-// GenieX 0.3.18 bundles ~175 MB of QNN HTP runtime libs (libQnn*, libPlatformValidator,
+// GenieX 0.3.19 bundles ~175 MB of QNN HTP runtime libs (libQnn*, libPlatformValidator,
 // libCalculator, libhta*) in its jni/arm64-v8a/ folder. We extract them into the
 // geniex_npu_pack asset pack source directory so Play Asset Delivery can serve them
 // at install time. This keeps the base module well under Play Store's 200 MB limit.
@@ -412,7 +412,7 @@ val geniexAarConfig by configurations.creating {
     isCanBeConsumed = false
     isCanBeResolved = true
 }
-dependencies { geniexAarConfig(files("libs/geniex-android-0.3.18.aar")) }
+dependencies { geniexAarConfig(files("libs/geniex-android-aar-v0.3.19.aar")) }
 
 val npuPackAssetsDir = rootProject.file("geniex_npu_pack/src/main/assets/npu")
 
