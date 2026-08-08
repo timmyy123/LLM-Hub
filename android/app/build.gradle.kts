@@ -369,7 +369,7 @@ dependencies {
     implementation("com.github.medavox:IPA-Transcribers:v0.2")
 
     // GenieX SDK for GGUF model support (LLM/VLM inference on CPU/GPU/NPU)
-    implementation(files("libs/geniex-android-0.3.18.aar"))
+    implementation(files("libs/geniex-android-aar-v0.3.19.aar"))
 
     // WhisperKit for fast on-device ASR (TFLite + QNN NPU acceleration)
     implementation("com.argmaxinc:whisperkit:0.3.3")
