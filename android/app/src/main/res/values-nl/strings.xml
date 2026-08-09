@@ -417,6 +417,8 @@
     <string name="premium_subtitle">Ontgrendel de volledige ervaring</string>
     <string name="premium_feature_vibe_coder">VibeCoder – AI-codebouwer</string>
     <string name="premium_feature_image_gen">Image Generator – AI-kunst op het apparaat</string>
+    <string name="premium_feature_creaitors">creAItors – AI-metgezellen genereren</string>
+    <string name="premium_feature_vibevoice">VibeVoice – handsfree AI-voicechat</string>
     <string name="premium_feature_tts">Automatische voorlezing van tekst-naar-spraak</string>
     <string name="premium_feature_import_models">Externe modellen importeren</string>
     <string name="premium_feature_web_search">Zoeken op internet – live internetresultaten</string>

@@ -810,6 +810,8 @@
     <string name="premium_subtitle">Tam deneyimin kilidini aç</string>
     <string name="premium_feature_vibe_coder">VibeCoder – Yapay Zeka Kod Üreteci</string>
     <string name="premium_feature_image_gen">Görsel Üreteci – Cihazda Yapay Zeka Sanatı</string>
+    <string name="premium_feature_creaitors">creAItors – Yapay Zeka yoldaşları oluşturun</string>
+    <string name="premium_feature_vibevoice">VibeVoice – eller serbest Yapay Zeka sesli sohbet</string>
     <string name="premium_feature_tts">Otomatik Metinden Sese Okuma</string>
     <string name="premium_feature_import_models">Harici Modelleri İçe Aktar</string>
     <string name="premium_feature_web_search">Web Araması – canlı internet sonuçları</string>

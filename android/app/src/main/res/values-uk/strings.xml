@@ -811,6 +811,8 @@
     <string name="premium_subtitle">Відкрийте повний доступ</string>
     <string name="premium_feature_vibe_coder">VibeCoder — генератор коду на ШІ</string>
     <string name="premium_feature_image_gen">Генератор зображень — ШІ-арт на пристрої</string>
+    <string name="premium_feature_creaitors">creAItors — створення ШІ-компаньйонів</string>
+    <string name="premium_feature_vibevoice">VibeVoice — голосовий ШІ-чат у режимі «вільні руки»</string>
     <string name="premium_feature_tts">Автоматичне озвучення тексту</string>
     <string name="premium_feature_import_models">Імпорт зовнішніх моделей</string>
     <string name="premium_feature_web_search">Веб-пошук – результати в реальному часі</string>

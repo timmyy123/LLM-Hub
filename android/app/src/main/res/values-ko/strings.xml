@@ -811,6 +811,8 @@
     <string name="premium_subtitle">전체 기능을 잠금 해제하세요</string>
     <string name="premium_feature_vibe_coder">VibeCoder – AI 코드 생성기</string>
     <string name="premium_feature_image_gen">이미지 생성기 – 디바이스의 AI 아트</string>
+    <string name="premium_feature_creaitors">creAItors – AI 동반자 생성</string>
+    <string name="premium_feature_vibevoice">VibeVoice – 핸즈프리 AI 음성 채팅</string>
     <string name="premium_feature_tts">텍스트 음성 변환 자동 읽기</string>
     <string name="premium_feature_import_models">외부 모델 가져오기</string>
     <string name="premium_feature_web_search">웹 검색 – 실시간 인터넷 결과</string>

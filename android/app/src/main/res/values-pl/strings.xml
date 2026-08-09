@@ -815,6 +815,8 @@
     <string name="premium_subtitle">Odblokuj pełne doświadczenie</string>
     <string name="premium_feature_vibe_coder">VibeCoder – Generator kodu AI</string>
     <string name="premium_feature_image_gen">Generator obrazów – sztuka AI na urządzeniu</string>
+    <string name="premium_feature_creaitors">creAItors – generuj towarzyszy AI</string>
+    <string name="premium_feature_vibevoice">VibeVoice – czat głosowy AI bez użycia rąk</string>
     <string name="premium_feature_tts">Automatyczne czytanie tekstu na głos</string>
     <string name="premium_feature_import_models">Importuj zewnętrzne modele</string>
     <string name="premium_feature_web_search">Wyszukiwanie w sieci – wyniki na żywo</string>

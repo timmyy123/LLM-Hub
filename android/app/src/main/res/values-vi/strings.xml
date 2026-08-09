@@ -417,6 +417,8 @@
     <string name="premium_subtitle">Mở khóa trải nghiệm trọn vẹn</string>
     <string name="premium_feature_vibe_coder">VibeCoder – Trình tạo mã AI</string>
     <string name="premium_feature_image_gen">Trình tạo hình ảnh – nghệ thuật AI trên thiết bị</string>
+    <string name="premium_feature_creaitors">creAItors – tạo bạn đồng hành AI</string>
+    <string name="premium_feature_vibevoice">VibeVoice – trò chuyện giọng nói AI rảnh tay</string>
     <string name="premium_feature_tts">Tự động đọc văn bản thành giọng nói</string>
     <string name="premium_feature_import_models">Nhập mô hình bên ngoài</string>
     <string name="premium_feature_web_search">Tìm kiếm trên web – kết quả internet trực tiếp</string>

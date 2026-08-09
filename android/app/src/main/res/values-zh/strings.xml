@@ -817,6 +817,8 @@
     <string name="premium_subtitle">解锁完整体验</string>
     <string name="premium_feature_vibe_coder">代码生成器 – AI 代码构建</string>
     <string name="premium_feature_image_gen">图像生成器 – 设备端 AI 绘画</string>
+    <string name="premium_feature_creaitors">creAItors – 生成 AI 伴侣</string>
+    <string name="premium_feature_vibevoice">VibeVoice – 免提 AI 语音聊天</string>
     <string name="premium_feature_tts">文字转语音自动朗读</string>
     <string name="premium_feature_import_models">导入外部模型</string>
     <string name="premium_feature_web_search">网络搜索 – 实时互联网结果</string>

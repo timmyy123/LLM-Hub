@@ -813,6 +813,8 @@
     <string name="premium_subtitle">Buka pengalaman penuh</string>
     <string name="premium_feature_vibe_coder">VibeCoder – Generator kode AI</string>
     <string name="premium_feature_image_gen">Generator gambar – seni AI di perangkat</string>
+    <string name="premium_feature_creaitors">creAItors – buat pendamping AI</string>
+    <string name="premium_feature_vibevoice">VibeVoice – obrolan suara AI bebas genggam</string>
     <string name="premium_feature_tts">Pembacaan otomatis teks ke suara</string>
     <string name="premium_feature_import_models">Import model eksternal</string>
     <string name="premium_feature_web_search">Pencarian Web – hasil internet langsung</string>

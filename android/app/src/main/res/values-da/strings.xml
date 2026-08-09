@@ -429,6 +429,8 @@
     <string name="premium_subtitle">Lås op for den fulde oplevelse</string>
     <string name="premium_feature_vibe_coder">VibeCoder – AI-kodebygger</string>
     <string name="premium_feature_image_gen">Image Generator – AI-kunst på enheden</string>
+    <string name="premium_feature_creaitors">creAItors – generer AI-ledsagere</string>
+    <string name="premium_feature_vibevoice">VibeVoice – håndfri AI-stemmechat</string>
     <string name="premium_feature_tts">Tekst-til-tale automatisk udlæsning</string>
     <string name="premium_feature_import_models">Importer eksterne modeller</string>
     <string name="premium_feature_web_search">Websøgning – live internetresultater</string>

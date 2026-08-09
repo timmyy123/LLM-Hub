@@ -195,6 +195,16 @@ fun PremiumScreen(
                                 text = stringResource(R.string.premium_feature_image_gen)
                             )
                             PremiumFeatureRow(
+                                icon = Icons.Default.Face,
+                                tint = Color(0xFFE91E63),
+                                text = stringResource(R.string.premium_feature_creaitors)
+                            )
+                            PremiumFeatureRow(
+                                icon = Icons.Default.GraphicEq,
+                                tint = Color(0xFFFF5722),
+                                text = stringResource(R.string.premium_feature_vibevoice)
+                            )
+                            PremiumFeatureRow(
                                 icon = Icons.Default.VolumeUp,
                                 tint = Color(0xFF4CAF50),
                                 text = stringResource(R.string.premium_feature_tts)

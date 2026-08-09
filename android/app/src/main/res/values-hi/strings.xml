@@ -490,6 +490,8 @@
     <string name="premium_subtitle">सभी सुविधाओं और मॉडलों को अनलॉक करें</string>
     <string name="premium_feature_vibe_coder">VibeCoder – एआई कोड बिल्डर</string>
     <string name="premium_feature_image_gen">छवि जनरेटर – ऑन-डिवाइस एआई आर्ट</string>
+    <string name="premium_feature_creaitors">creAItors – एआई साथी बनाएं</string>
+    <string name="premium_feature_vibevoice">VibeVoice – हैंड्स-फ्री एआई वॉयस चैट</string>
     <string name="premium_feature_tts">पाठ से वाक् (TTS) ऑटो रीडआउट</string>
     <string name="premium_feature_import_models">बाहरी मॉडल इम्पोर्ट करें</string>
     <string name="premium_feature_web_search">वेब खोज – लाइव इंटरनेट परिणाम</string>

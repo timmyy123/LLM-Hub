@@ -811,6 +811,8 @@
     <string name="premium_subtitle">تجربه کامل را باز کنید</string>
     <string name="premium_feature_vibe_coder">VibeCoder – مولد کد هوش مصنوعی</string>
     <string name="premium_feature_image_gen">مولد تصویر – هنر هوش مصنوعی روی دستگاه</string>
+    <string name="premium_feature_creaitors">creAItors – ایجاد همراهان هوش مصنوعی</string>
+    <string name="premium_feature_vibevoice">VibeVoice – چت صوتی بدون دست هوش مصنوعی</string>
     <string name="premium_feature_tts">خواندن خودکار متن به گفتار</string>
     <string name="premium_feature_import_models">وارد کردن مدل‌های خارجی</string>
     <string name="premium_feature_web_search">جستجوی وب – نتایج زنده اینترنتی</string>

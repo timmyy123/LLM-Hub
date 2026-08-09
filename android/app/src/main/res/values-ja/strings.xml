@@ -808,6 +808,8 @@
     <string name="premium_subtitle">フル機能を解除する</string>
     <string name="premium_feature_vibe_coder">VibeCoder – AIコードジェネレーター</string>
     <string name="premium_feature_image_gen">画像ジェネレーター – デバイス上のAIアート</string>
+    <string name="premium_feature_creaitors">creAItors – AIコンパニオンの生成</string>
+    <string name="premium_feature_vibevoice">VibeVoice – ハンズフリーAIボイスチャット</string>
     <string name="premium_feature_tts">テキスト読み上げ自動再生</string>
     <string name="premium_feature_import_models">外部モデルのインポート</string>
     <string name="premium_feature_web_search">ウェブ検索 – リアルタイム結果</string>

@@ -799,6 +799,8 @@
     <string name="premium_subtitle">Déverrouillez l’expérience complète</string>
     <string name="premium_feature_vibe_coder">VibeCoder – Générateur de code IA</string>
     <string name="premium_feature_image_gen">Générateur d’images – art IA sur l’appareil</string>
+    <string name="premium_feature_creaitors">creAItors – générer des compagnons IA</string>
+    <string name="premium_feature_vibevoice">VibeVoice – chat vocal IA mains libres</string>
     <string name="premium_feature_tts">Lecture automatique texte-parole</string>
     <string name="premium_feature_import_models">Importer des modèles externes</string>
     <string name="premium_feature_web_search">Recherche web – résultats en direct</string>

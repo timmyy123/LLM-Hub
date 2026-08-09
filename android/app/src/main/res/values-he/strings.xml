@@ -810,6 +810,8 @@
     <string name="premium_subtitle">פתח את החווייה המלאה</string>
     <string name="premium_feature_vibe_coder">VibeCoder – מחולל קוד AI</string>
     <string name="premium_feature_image_gen">מחולל תמונות – אמנות AI במכשיר</string>
+    <string name="premium_feature_creaitors">creAItors – יצירת מלווי AI</string>
+    <string name="premium_feature_vibevoice">VibeVoice – צ׳אט קולי AI ללא ידיים</string>
     <string name="premium_feature_tts">קריאה אוטומטית טקסט לדיבור</string>
     <string name="premium_feature_import_models">ייבוא מודלים חיצוניים</string>
     <string name="premium_feature_web_search">חיפוש ברשת – תוצאות חיות</string>

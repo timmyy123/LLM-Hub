@@ -777,6 +777,8 @@
     <string name="premium_subtitle">Vollständige Erfahrung freischalten</string>
     <string name="premium_feature_vibe_coder">VibeCoder – KI-Code-Generator</string>
     <string name="premium_feature_image_gen">Bildgenerator – KI-Kunst auf dem Gerät</string>
+    <string name="premium_feature_creaitors">creAItors – KI-Begleiter generieren</string>
+    <string name="premium_feature_vibevoice">VibeVoice – freihändiger KI-Sprachchat</string>
     <string name="premium_feature_tts">Text-zu-Sprache automatisch vorlesen</string>
     <string name="premium_feature_import_models">Externe Modelle importieren</string>
     <string name="premium_feature_web_search">Web-Suche – Live-Internetergebnisse</string>

@@ -417,6 +417,8 @@
     <string name="premium_subtitle">ปลดล็อคประสบการณ์เต็มรูปแบบ</string>
     <string name="premium_feature_vibe_coder">VibeCoder – เครื่องมือสร้างโค้ด AI</string>
     <string name="premium_feature_image_gen">Image Generator – ศิลปะ AI บนอุปกรณ์</string>
+    <string name="premium_feature_creaitors">creAItors – สร้างสหาย AI</string>
+    <string name="premium_feature_vibevoice">VibeVoice – แชทเสียง AI แบบแฮนด์ฟรี</string>
     <string name="premium_feature_tts">การอ่านออกเสียงข้อความอัตโนมัติ</string>
     <string name="premium_feature_import_models">นำเข้าโมเดลภายนอก</string>
     <string name="premium_feature_web_search">ค้นหาเว็บ – ผลลัพธ์ทางอินเทอร์เน็ตสด</string>

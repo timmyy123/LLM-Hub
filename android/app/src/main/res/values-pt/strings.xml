@@ -764,6 +764,8 @@
     <string name="premium_subtitle">Desbloqueie a experiência completa</string>
     <string name="premium_feature_vibe_coder">VibeCoder – Gerador de código IA</string>
     <string name="premium_feature_image_gen">Gerador de imagens – arte IA no dispositivo</string>
+    <string name="premium_feature_creaitors">creAItors – gerar companheiros de IA</string>
+    <string name="premium_feature_vibevoice">VibeVoice – chat de voz IA viva-voz</string>
     <string name="premium_feature_tts">Leitura automática texto para fala</string>
     <string name="premium_feature_import_models">Importar modelos externos</string>
     <string name="premium_feature_web_search">Pesquisa web – resultados em tempo real</string>
