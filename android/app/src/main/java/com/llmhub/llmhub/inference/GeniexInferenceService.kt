@@ -184,7 +184,15 @@ class GeniexInferenceService @Inject constructor(
     /**
      * Expose availability so callers (UnifiedInferenceService) can fall back when needed.
      */
-    fun isAvailable(): Boolean = ensureGeniexInitialized()
+    fun isAvailable(): Boolean {
+        // DO NOT call ensureGeniexInitialized() here — that triggers sdk.init() which calls
+        // ggml_backend_load_all_from_path and crashes via SIGILL on incompatible Hexagon hardware.
+        // If already initialized, return the cached result.
+        if (isInitialized) return geniexAvailable
+        // Otherwise do a cheap disk check: if the plugin SO doesn't exist, GenieX can't work.
+        val nativeLibDir = context.applicationInfo.nativeLibraryDir
+        return File(nativeLibDir, "libgeniex_plugin_llama_cpp.so").exists()
+    }
 
     override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?, deviceId: String?): Boolean {
         // Default to vision enabled for the two-arg load; clear any previous override
