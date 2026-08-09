@@ -91,29 +91,66 @@ class GeniexInferenceService @Inject constructor(
     private var harmonyState = HarmonyState.BEFORE_HEADER
 
     // Whether the GenieX native SDK and its JNI bindings successfully initialized on this device.
-    // UnsatisfiedLinkError is an Error (not Exception), so catch Throwable to avoid crashing the app
-    // on platforms that do not provide GenieX native libraries (emulators, non‑NPU devices).
-    private var geniexAvailable: Boolean = true
+    private var geniexAvailable: Boolean = false
+    @Volatile
+    private var isInitialized: Boolean = false
 
-    init {
+    private fun tryLoadOpenCL() {
+        val candidates = listOf(
+            "OpenCL",
+            "/vendor/lib64/libOpenCL.so",
+            "/system/vendor/lib64/libOpenCL.so",
+            "/system/lib64/libOpenCL.so"
+        )
+        for (candidate in candidates) {
+            try {
+                if (candidate.startsWith("/")) {
+                    val f = File(candidate)
+                    if (f.exists()) {
+                        System.load(candidate)
+                        Log.i(TAG, "Loaded OpenCL vendor library from $candidate")
+                        break
+                    }
+                } else {
+                    System.loadLibrary(candidate)
+                    Log.i(TAG, "Loaded OpenCL library: $candidate")
+                    break
+                }
+            } catch (t: Throwable) {
+                // Ignore candidate paths where OpenCL is unavailable
+            }
+        }
+    }
+
+    @Synchronized
+    private fun ensureGeniexInitialized(): Boolean {
+        if (isInitialized) return geniexAvailable
         try {
             extractQnnHtpLibsFromAssetPack()
+            tryLoadOpenCL()
             val nativeLibDir = context.applicationInfo.nativeLibraryDir
             Log.i(TAG, "nativeLibraryDir=$nativeLibDir")
-            Log.i(TAG, "libgeniex_plugin_llama_cpp.so exists=${java.io.File(nativeLibDir, "libgeniex_plugin_llama_cpp.so").exists()}")
+            Log.i(TAG, "libgeniex_plugin_llama_cpp.so exists=${File(nativeLibDir, "libgeniex_plugin_llama_cpp.so").exists()}")
             val sdk = GenieXSdk.getInstance()
             sdk.init(context)
             val rcLlama = sdk.registerPlugin("llama_cpp")
             Log.i(TAG, "registerPlugin(llama_cpp) rc=$rcLlama")
             val rcQairt = sdk.registerPlugin("qairt")
             Log.i(TAG, "registerPlugin(qairt) rc=$rcQairt")
-            Log.i(TAG, "Plugin versions: llama_cpp=${sdk.getPluginVersion("llama_cpp")}, qairt=${sdk.getPluginVersion("qairt")}")
-            cleanupStaleCacheFiles()
-            geniexAvailable = true
+            val llamaVer = try { sdk.getPluginVersion("llama_cpp") } catch (_: Throwable) { null }
+            val qairtVer = try { sdk.getPluginVersion("qairt") } catch (_: Throwable) { null }
+            geniexAvailable = (!llamaVer.isNullOrBlank() || !qairtVer.isNullOrBlank() || rcLlama == 0 || rcQairt == 0)
         } catch (t: Throwable) {
             Log.e(TAG, "GenieX SDK unavailable on this device — disabling GenieX backend", t)
             geniexAvailable = false
+        } finally {
+            isInitialized = true
         }
+        return geniexAvailable
+    }
+
+    init {
+        // Lightweight constructor — native GenieX JNI plugins are registered lazily in ensureGeniexInitialized()
     }
 
     private fun extractQnnHtpLibsFromAssetPack() {
@@ -147,7 +184,7 @@ class GeniexInferenceService @Inject constructor(
     /**
      * Expose availability so callers (UnifiedInferenceService) can fall back when needed.
      */
-    fun isAvailable(): Boolean = geniexAvailable
+    fun isAvailable(): Boolean = ensureGeniexInitialized()
 
     override suspend fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend?, deviceId: String?): Boolean {
         // Default to vision enabled for the two-arg load; clear any previous override
@@ -172,7 +209,7 @@ class GeniexInferenceService @Inject constructor(
     private suspend fun loadModelInternal(model: LLMModel, preferredBackend: LlmInference.Backend?, disableVision: Boolean = false, deviceId: String? = null): Boolean {
         // If GenieX is unavailable (emulator / missing native libs), bail out immediately so the
         // UnifiedInferenceService can choose a different backend instead of crashing the app.
-        if (!geniexAvailable) {
+        if (!ensureGeniexInitialized()) {
             Log.w(TAG, "GenieX backend not available on this device — refusing to load model: ${model.name}")
             return false
         }

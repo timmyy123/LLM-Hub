@@ -13,10 +13,10 @@ import javax.inject.Inject
  */
 class UnifiedInferenceService(private val context: Context) : InferenceService {
 
-    private val mediaPipeService = MediaPipeInferenceService(context)
-    private val liteRtLmService = LiteRtLmInferenceService(context)
-    private val onnxService = OnnxInferenceService(context)
-    private val geniexService = GeniexInferenceService(context)
+    private val mediaPipeService by lazy { MediaPipeInferenceService(context) }
+    private val liteRtLmService by lazy { LiteRtLmInferenceService(context) }
+    private val onnxService by lazy { OnnxInferenceService(context) }
+    private val geniexService by lazy { GeniexInferenceService(context) }
     
     private var currentService: InferenceService = mediaPipeService
     private var currentModel: LLMModel? = null
