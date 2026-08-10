@@ -848,3 +848,23 @@
 "huggingface_search_failed" = "Ricerca Hugging Face non riuscita";
 
 "language_hindi" = "हिन्दी";
+
+
+/* Music Generator */
+"feature_music_generator" = "Generatore di Musica";
+"feature_music_generator_desc" = "Genera musica ed effetti sonori sul dispositivo";
+"music_generation_models" = "Modelli di Generazione Musicale";
+"music_generation_models_description" = "Modelli IA sul dispositivo per la creazione di brani ed effetti sonori.";
+"music_prompt_label" = "Descrizione della musica";
+"prompt_hint_music" = "Descrivi la musica o l'effetto sonoro da generare...";
+"music_style_presets" = "Stili predefiniti";
+"music_tier_select" = "Livello del generatore";
+"music_duration_label" = "Durata";
+"generate_music" = "Genera Musica";
+"generating_music" = "Generazione musica in corso...";
+"music_prompt_empty_warning" = "Inserisci una descrizione per la musica che desideri generare.";
+"music_generated_success" = "Musica generata con successo!";
+"music_saved_toast" = "File audio salvato nella libreria locale!";
+
+"music_generator_download_model" = "Scarica Prima il Modello";
+"music_generator_download_model_desc" = "Scarica un modello di generazione musicale dalla schermata Modelli per iniziare.";

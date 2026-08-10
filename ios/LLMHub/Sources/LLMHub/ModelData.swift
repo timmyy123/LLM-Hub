@@ -28,6 +28,7 @@ public enum ModelCategory: String, Codable, CaseIterable, Sendable {
     case videoGeneration = "Video Generation"
     case imageUpscale = "Image Upscale"
     case asr = "ASR Models"
+    case musicGeneration = "Music Generation"
 
     public var icon: String {
         switch self {
@@ -38,6 +39,7 @@ public enum ModelCategory: String, Codable, CaseIterable, Sendable {
         case .videoGeneration: return "video.fill"
         case .imageUpscale: return "sparkles"
         case .asr: return "waveform.and.mic"
+        case .musicGeneration: return "music.note"
         }
     }
 
@@ -50,6 +52,7 @@ public enum ModelCategory: String, Codable, CaseIterable, Sendable {
         case .videoGeneration: return "video_generation_models"
         case .imageUpscale: return "image_upscale_models"
         case .asr: return "asr_models"
+        case .musicGeneration: return "music_generation_models"
         }
     }
 
@@ -62,6 +65,7 @@ public enum ModelCategory: String, Codable, CaseIterable, Sendable {
         case .videoGeneration: return "video_generation_models_description"
         case .imageUpscale: return "image_upscale_models_description"
         case .asr: return "asr_models_description"
+        case .musicGeneration: return "music_generation_models_description"
         }
     }
 }
@@ -3515,7 +3519,52 @@ public static let models: [AIModel] = [
         contextWindowSize: 0,
         modelFormat: .task,
         additionalFiles: []
+    ),
+    AIModel(
+        id: "magenta_realtime_2_small",
+        name: "Magenta RealTime 2 Small",
+        description: "Google DeepMind Magenta RealTime 2 Small with mapped local MusicCoCa text prompting. Pinned to commit 010aa0d. (~1.04 GB)",
+        url: "https://huggingface.co/google/magenta-realtime-2/resolve/010aa0dcb0dfd27b24f0ad07b4dad63e8f9521cc/models/mrt2_small/mrt2_small.mlxfn",
+        category: .musicGeneration,
+        sizeBytes: 1_042_112_092,
+        source: "Google DeepMind",
+        supportsVision: false,
+        supportsAudio: true,
+        supportsThinking: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 4, recommendedRamGB: 6),
+        contextWindowSize: 0,
+        modelFormat: .platform,
+        additionalFiles: [
+            "https://huggingface.co/google/magenta-realtime-2/resolve/010aa0dcb0dfd27b24f0ad07b4dad63e8f9521cc/models/mrt2_small/mrt2_small_state.safetensors",
+            "https://huggingface.co/google/magenta-realtime-2/resolve/010aa0dcb0dfd27b24f0ad07b4dad63e8f9521cc/resources/musiccoca/text_encoder.tflite",
+            "https://huggingface.co/google/magenta-realtime-2/resolve/010aa0dcb0dfd27b24f0ad07b4dad63e8f9521cc/resources/musiccoca/mapper.tflite",
+            "https://huggingface.co/google/magenta-realtime-2/resolve/010aa0dcb0dfd27b24f0ad07b4dad63e8f9521cc/resources/musiccoca/pretrained_vector_quantizer.tflite",
+            "https://huggingface.co/google/magenta-realtime-2/resolve/010aa0dcb0dfd27b24f0ad07b4dad63e8f9521cc/resources/musiccoca/spm.model"
+        ]
+    ),
+    AIModel(
+        id: "magenta_realtime_2_base",
+        name: "Magenta RealTime 2 Base",
+        description: "Google DeepMind Magenta RealTime 2 Base with mapped local MusicCoCa text prompting. Pinned to commit 010aa0d. (~3.37 GB)",
+        url: "https://huggingface.co/google/magenta-realtime-2/resolve/010aa0dcb0dfd27b24f0ad07b4dad63e8f9521cc/models/mrt2_base/mrt2_base.mlxfn",
+        category: .musicGeneration,
+        sizeBytes: 3_366_135_259,
+        source: "Google DeepMind",
+        supportsVision: false,
+        supportsAudio: true,
+        supportsThinking: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 8, recommendedRamGB: 12),
+        contextWindowSize: 0,
+        modelFormat: .platform,
+        additionalFiles: [
+            "https://huggingface.co/google/magenta-realtime-2/resolve/010aa0dcb0dfd27b24f0ad07b4dad63e8f9521cc/models/mrt2_base/mrt2_base_state.safetensors",
+            "https://huggingface.co/google/magenta-realtime-2/resolve/010aa0dcb0dfd27b24f0ad07b4dad63e8f9521cc/resources/musiccoca/text_encoder.tflite",
+            "https://huggingface.co/google/magenta-realtime-2/resolve/010aa0dcb0dfd27b24f0ad07b4dad63e8f9521cc/resources/musiccoca/mapper.tflite",
+            "https://huggingface.co/google/magenta-realtime-2/resolve/010aa0dcb0dfd27b24f0ad07b4dad63e8f9521cc/resources/musiccoca/pretrained_vector_quantizer.tflite",
+            "https://huggingface.co/google/magenta-realtime-2/resolve/010aa0dcb0dfd27b24f0ad07b4dad63e8f9521cc/resources/musiccoca/spm.model"
+        ]
     )
 ]
 }
-

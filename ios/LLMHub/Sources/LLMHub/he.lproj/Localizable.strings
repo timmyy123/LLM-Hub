@@ -858,3 +858,23 @@
 "huggingface_search_failed" = "חיפוש Hugging Face נכשל";
 
 "language_hindi" = "हिन्दी";
+
+
+/* Music Generator */
+"feature_music_generator" = "מחולל מוזיקה";
+"feature_music_generator_desc" = "צור מוזיקה ואפקטים קוליים ישירות על המכשיר";
+"music_generation_models" = "מודלים ליצירת מוזיקה";
+"music_generation_models_description" = "מודלי בינה מלאכותית ליצירת קטעי שמע ואפקטים קוליים.";
+"music_prompt_label" = "תיאור המוזיקה";
+"prompt_hint_music" = "תאר את המוזיקה או אפקט הקול שברצונך ליצור...";
+"music_style_presets" = "סגנונות מוגדרים מראש";
+"music_tier_select" = "רמת המחולל";
+"music_duration_label" = "משך";
+"generate_music" = "צור מוזיקה";
+"generating_music" = "יוצר מוזיקה...";
+"music_prompt_empty_warning" = "אנא הזן תיאור למוזיקה שברצונך ליצור.";
+"music_generated_success" = "המוזיקה נוצרה בהצלחה!";
+"music_saved_toast" = "קובץ השמע נשמר בספרייה!";
+
+"music_generator_download_model" = "הורד מודל תחילה";
+"music_generator_download_model_desc" = "הורד מודל מחולל מוזיקה ממסך המודלים כדי להתחיל ליצור מוזיקה.";

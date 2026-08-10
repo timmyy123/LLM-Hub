@@ -164,6 +164,14 @@ fun HomeScreen(
                 gradient = Pair(Color(0xFFF093FB), Color(0xFFF5576C)),
                 darkColor = Color(0xFF5E2B48),
                 route = "text_to_speech"
+            ),
+            FeatureCard(
+                title = R.string.feature_music_generator,
+                description = R.string.feature_music_generator_desc,
+                icon = Icons.Filled.MusicNote,
+                gradient = Pair(Color(0xFFFF9A9E), Color(0xFFFECFEF)),
+                darkColor = Color(0xFF5C2D41),
+                route = "music_generator"
             )
         )
     }

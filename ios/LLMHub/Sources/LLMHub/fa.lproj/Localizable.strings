@@ -858,3 +858,23 @@
 "huggingface_search_failed" = "جستجوی Hugging Face ناموفق بود";
 
 "language_hindi" = "हिन्दी";
+
+
+/* Music Generator */
+"feature_music_generator" = "سازنده موسیقی";
+"feature_music_generator_desc" = "تولید موسیقی و جلوه‌های صوتی روی دستگاه";
+"music_generation_models" = "مدل‌های تولید موسیقی";
+"music_generation_models_description" = "مدل‌های هوش مصنوعی آفلاین برای ساخت قطعات موسیقی و افکت‌های صوتی.";
+"music_prompt_label" = "توضیحات موسیقی";
+"prompt_hint_music" = "موسیقی یا افکت صوتی مورد نظر خود را توصیف کنید...";
+"music_style_presets" = "سبک‌های پیش‌فرض";
+"music_tier_select" = "سطح تولیدکننده";
+"music_duration_label" = "مدت زمان";
+"generate_music" = "تولید موسیقی";
+"generating_music" = "در حال تولید موسیقی...";
+"music_prompt_empty_warning" = "لطفاً توضیحی برای موسیقی مورد نظر وارد کنید.";
+"music_generated_success" = "موسیقی با موفقیت تولید شد!";
+"music_saved_toast" = "فایل صوتی در کتابخانه ذخیره شد!";
+
+"music_generator_download_model" = "ابتدا مدل را دانلود کنید";
+"music_generator_download_model_desc" = "یک مدل تولید موسیقی را از صفحه مدل‌ها دانلود کنید تا شروع به تولید موسیقی کنید.";

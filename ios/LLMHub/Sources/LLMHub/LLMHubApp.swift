@@ -114,7 +114,7 @@ struct LLMHubApp: App {
                         return .imageGeneration // or .videoGeneration if RunAnywhere has it
                     case .imageUpscale:
                         return .imageGeneration
-                    case .asr:
+                    case .asr, .musicGeneration:
                         return .language
                     }
                 }(),
@@ -147,7 +147,7 @@ struct LLMHubApp: App {
                     return .imageGeneration
                 case .imageUpscale:
                     return .imageGeneration
-                case .asr:
+                case .asr, .musicGeneration:
                     return .language
                 }
             }(),

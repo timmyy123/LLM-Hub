@@ -31,7 +31,7 @@ fun ModelSelectorCard(
     onModelSelected: (LLMModel) -> Unit,
     selectedBackend: LlmInference.Backend?,
     selectedNpuDeviceId: String? = null,
-    onBackendSelected: (LlmInference.Backend, String?) -> Unit,
+    onBackendSelected: ((LlmInference.Backend, String?) -> Unit)?,
     onLoadModel: () -> Unit,
     isLoading: Boolean,
     isModelLoaded: Boolean = false,
@@ -316,7 +316,7 @@ fun ModelSelectorCard(
                             selectedModel.name.contains("Gemma 4 12B", ignoreCase = true))
                 }
                 AnimatedVisibility(
-                    visible = selectedModel != null && selectedBackend != null && !isLiteRtLmGemma4_12B,
+                    visible = onBackendSelected != null && selectedModel != null && selectedBackend != null && !isLiteRtLmGemma4_12B,
                     enter = fadeIn() + expandVertically()
                 ) {
                     ExposedDropdownMenuBox(
@@ -359,7 +359,7 @@ fun ModelSelectorCard(
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.backend_cpu)) },
                                 onClick = {
-                                    onBackendSelected(LlmInference.Backend.CPU, null)
+                                    onBackendSelected?.invoke(LlmInference.Backend.CPU, null)
                                     showBackendMenu = false
                                 },
                                 leadingIcon = {
@@ -394,7 +394,7 @@ fun ModelSelectorCard(
                                 onClick = {
                                     if (gpuSupported) {
                                         // GPU selection clears any previously selected NPU device
-                                        onBackendSelected(LlmInference.Backend.GPU, null)
+                                        onBackendSelected?.invoke(LlmInference.Backend.GPU, null)
                                         showBackendMenu = false
                                     }
                                 },
@@ -420,7 +420,7 @@ fun ModelSelectorCard(
                                     text = { Text(stringResource(R.string.backend_npu)) },
                                     onClick = {
                                         // Represent NPU by selecting GPU backend + deviceId="dev0"
-                                        onBackendSelected(LlmInference.Backend.GPU, "dev0")
+                                        onBackendSelected?.invoke(LlmInference.Backend.GPU, "dev0")
                                         showBackendMenu = false
                                     },
                                     leadingIcon = { Icon(Icons.Default.Bolt, contentDescription = null) },

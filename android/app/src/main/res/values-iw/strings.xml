@@ -942,4 +942,20 @@
     <string name="download_vision_projector">הורדת מקרן ראייה</string>
     <string name="huggingface_search_failed">חיפוש Hugging Face נכשל</string>
     <string name="language_hindi">हिन्दी</string>
+    <string name="feature_music_generator">מחולל מוזיקה</string>
+    <string name="feature_music_generator_desc">צור מוזיקה ואפקטים קוליים ישירות על המכשיר</string>
+    <string name="music_generation_models">מודלים ליצירת מוזיקה</string>
+    <string name="music_generation_models_description">מודלי בינה מלאכותית ליצירת קטעי שמע ואפקטים קוליים.</string>
+    <string name="music_prompt_label">תיאור המוזיקה</string>
+    <string name="prompt_hint_music">תאר את המוזיקה או אפקט הקול שברצונך ליצור...</string>
+    <string name="music_style_presets">סגנונות מוגדרים מראש</string>
+    <string name="music_tier_select">רמת המחולל</string>
+    <string name="music_duration_label">משך</string>
+    <string name="generate_music">צור מוזיקה</string>
+    <string name="generating_music">יוצר מוזיקה...</string>
+    <string name="music_prompt_empty_warning">אנא הזן תיאור למוזיקה שברצונך ליצור.</string>
+    <string name="music_generated_success">המוזיקה נוצרה בהצלחה!</string>
+    <string name="music_saved_toast">קובץ השמע נשמר בספרייה!</string>
+    <string name="music_generator_download_model">הורד מודל תחילה</string>
+    <string name="music_generator_download_model_desc">הורד מודל מחולל מוזיקה ממסך המודלים כדי להתחיל ליצור מוזיקה.</string>
 </resources>

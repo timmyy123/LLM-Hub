@@ -866,3 +866,23 @@
 "huggingface_search_failed" = "ค้นหา Hugging Face ไม่สำเร็จ";
 
 "language_hindi" = "हिन्दी";
+
+
+/* Music Generator */
+"feature_music_generator" = "เครื่องมือสร้างเพลง";
+"feature_music_generator_desc" = "สร้างเพลงและเอฟเฟกต์เสียงบนอุปกรณ์";
+"music_generation_models" = "โมเดลสร้างเพลง";
+"music_generation_models_description" = "โมเดล AI บนอุปกรณ์สำหรับการสร้างดนตรีและเอฟเฟกต์เสียง";
+"music_prompt_label" = "คำอธิบายเพลง";
+"prompt_hint_music" = "อธิบายดนตรีหรือเอฟเฟกต์เสียงที่คุณต้องการสร้าง...";
+"music_style_presets" = "สไตล์สำเร็จรูป";
+"music_tier_select" = "ระดับเครื่องมือสร้าง";
+"music_duration_label" = "ความยาว";
+"generate_music" = "สร้างเพลง";
+"generating_music" = "กำลังสร้างเพลง...";
+"music_prompt_empty_warning" = "กรุณาใส่คำอธิบายสำหรับเพลงที่คุณต้องการสร้าง";
+"music_generated_success" = "สร้างเพลงสำเร็จแล้ว!";
+"music_saved_toast" = "บันทึกไฟล์เสียงลงคลังแล้ว!";
+
+"music_generator_download_model" = "ดาวน์โหลดโมเดลก่อน";
+"music_generator_download_model_desc" = "ดาวน์โหลดโมเดลสร้างเพลงจากหน้าจอโมเดลเพื่อเริ่มสร้างเพลง";

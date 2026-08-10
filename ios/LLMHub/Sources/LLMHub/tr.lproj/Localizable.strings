@@ -858,3 +858,23 @@
 "huggingface_search_failed" = "Hugging Face araması başarısız";
 
 "language_hindi" = "हिन्दी";
+
+
+/* Music Generator */
+"feature_music_generator" = "Müzik Oluşturucu";
+"feature_music_generator_desc" = "Cihaz üzerinde müzik ve ses efektleri oluşturun";
+"music_generation_models" = "Müzik Oluşturma Modelleri";
+"music_generation_models_description" = "Müzik parçaları ve ses efektleri oluşturmak için cihaz içi Yapay Zeka modelleri.";
+"music_prompt_label" = "Müzik Açıklaması";
+"prompt_hint_music" = "Oluşturmak istediğiniz müziği veya ses efektini tanımlayın...";
+"music_style_presets" = "Hazır Stiller";
+"music_tier_select" = "Oluşturucu Seviyesi";
+"music_duration_label" = "Süre";
+"generate_music" = "Müzik Oluştur";
+"generating_music" = "Müzik oluşturuluyor...";
+"music_prompt_empty_warning" = "Lütfen oluşturmak istediğiniz müzik için bir açıklama girin.";
+"music_generated_success" = "Müzik başarıyla oluşturuldu!";
+"music_saved_toast" = "Ses klibi yerel kitaplığa kaydedildi!";
+
+"music_generator_download_model" = "Önce Model İndirin";
+"music_generator_download_model_desc" = "Müzik oluşturmaya başlamak için Modeller ekranından bir müzik oluşturma modeli indirin.";

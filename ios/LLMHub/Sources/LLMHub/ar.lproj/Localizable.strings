@@ -858,3 +858,23 @@
 "huggingface_search_failed" = "فشل البحث في Hugging Face";
 
 "language_hindi" = "हिन्दी";
+
+
+/* Music Generator */
+"feature_music_generator" = "مولد الموسيقى";
+"feature_music_generator_desc" = "إنشاء الموسيقى والمؤثرات الصوتية على الجهاز";
+"music_generation_models" = "نماذج إنشاء الموسيقى";
+"music_generation_models_description" = "نماذج الذكاء الاصطناعي لإنشاء الموسيقى والمؤثرات الصوتية محلياً.";
+"music_prompt_label" = "وصف الموسيقى";
+"prompt_hint_music" = "صف الموسيقى أو المؤثرات الصوتية المراد إنشاؤها...";
+"music_style_presets" = "أنماط جاهزة";
+"music_tier_select" = "مستوى المولد";
+"music_duration_label" = "المدة";
+"generate_music" = "إنشاء الموسيقى";
+"generating_music" = "جاري إنشاء الموسيقى...";
+"music_prompt_empty_warning" = "يرجى إدخال وصف للموسيقى المراد إنشاؤها.";
+"music_generated_success" = "تم إنشاء الموسيقى بنجاح!";
+"music_saved_toast" = "تم حفظ المقطع الصوتي في المكتبة!";
+
+"music_generator_download_model" = "قم بتنزيل النموذج أولاً";
+"music_generator_download_model_desc" = "قم بتنزيل نموذج إنشاء الموسيقى من شاشة النماذج لبدء إنشاء الموسيقى.";

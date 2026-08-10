@@ -858,3 +858,23 @@
 "huggingface_search_failed" = "Hugging Face の検索に失敗しました";
 
 "language_hindi" = "हिन्दी";
+
+
+/* Music Generator */
+"feature_music_generator" = "音楽ジェネレーター";
+"feature_music_generator_desc" = "オンデバイスで音楽や効果音を生成";
+"music_generation_models" = "音楽生成モデル";
+"music_generation_models_description" = "音楽トラックや効果音を生成するためのオンデバイスAIモデル。";
+"music_prompt_label" = "音楽の説明・プロンプト";
+"prompt_hint_music" = "生成したい音楽や効果音の説明を入力してください...";
+"music_style_presets" = "スタイルプリセット";
+"music_tier_select" = "ジェネレーターティア";
+"music_duration_label" = "再生時間";
+"generate_music" = "音楽を生成";
+"generating_music" = "音楽を生成中...";
+"music_prompt_empty_warning" = "生成したい音楽の説明を入力してください。";
+"music_generated_success" = "音楽が正常に生成されました！";
+"music_saved_toast" = "ライブラリに保存されました！";
+
+"music_generator_download_model" = "最初にモデルをダウンロード";
+"music_generator_download_model_desc" = "モデル画面から音楽生成モデルをダウンロードして、音楽の生成を開始してください。";

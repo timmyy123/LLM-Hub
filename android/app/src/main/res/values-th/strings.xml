@@ -849,4 +849,20 @@
     <string name="download_vision_projector">ดาวน์โหลดโปรเจคเตอร์วิชัน</string>
     <string name="huggingface_search_failed">ค้นหา Hugging Face ไม่สำเร็จ</string>
     <string name="language_hindi">हिन्दी</string>
+    <string name="feature_music_generator">เครื่องมือสร้างเพลง</string>
+    <string name="feature_music_generator_desc">สร้างเพลงและเอฟเฟกต์เสียงบนอุปกรณ์</string>
+    <string name="music_generation_models">โมเดลสร้างเพลง</string>
+    <string name="music_generation_models_description">โมเดล AI บนอุปกรณ์สำหรับการสร้างดนตรีและเอฟเฟกต์เสียง</string>
+    <string name="music_prompt_label">คำอธิบายเพลง</string>
+    <string name="prompt_hint_music">อธิบายดนตรีหรือเอฟเฟกต์เสียงที่คุณต้องการสร้าง...</string>
+    <string name="music_style_presets">สไตล์สำเร็จรูป</string>
+    <string name="music_tier_select">ระดับเครื่องมือสร้าง</string>
+    <string name="music_duration_label">ความยาว</string>
+    <string name="generate_music">สร้างเพลง</string>
+    <string name="generating_music">กำลังสร้างเพลง...</string>
+    <string name="music_prompt_empty_warning">กรุณาใส่คำอธิบายสำหรับเพลงที่คุณต้องการสร้าง</string>
+    <string name="music_generated_success">สร้างเพลงสำเร็จแล้ว!</string>
+    <string name="music_saved_toast">บันทึกไฟล์เสียงลงคลังแล้ว!</string>
+    <string name="music_generator_download_model">ดาวน์โหลดโมเดลก่อน</string>
+    <string name="music_generator_download_model_desc">ดาวน์โหลดโมเดลสร้างเพลงจากหน้าจอโมเดลเพื่อเริ่มสร้างเพลง</string>
 </resources>

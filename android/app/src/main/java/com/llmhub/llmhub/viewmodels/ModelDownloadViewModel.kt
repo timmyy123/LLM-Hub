@@ -25,6 +25,7 @@ import com.llmhub.llmhub.data.localFileName
 import android.content.Context
 import com.llmhub.llmhub.BuildConfig
 import com.llmhub.llmhub.data.isModelFileValid
+import com.llmhub.llmhub.data.hasCompleteDownloadedBundle
 import com.google.gson.Gson
 import android.net.Uri
 import com.google.gson.JsonParser
@@ -146,7 +147,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         if (!modelsDir.exists()) modelsDir.mkdirs()
 
         // Prepare list with real downloaded/partial state
-        val baseModels = ModelData.models.map { model ->
+        val baseModels: MutableList<LLMModel> = ModelData.models.map { model ->
             // Handle Stable Diffusion NPU models (QNN format)
             if (model.modelFormat == "qnn_npu") {
                 val sdModelsDir = File(context.filesDir, "sd_models")
@@ -315,16 +316,16 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                 } else {
                     model.copy(isDownloaded = false, isDownloading = false, downloadProgress = 0f, downloadedBytes = 0, totalBytes = model.sizeBytes)
                 }
-            } else if (model.modelFormat == "gguf" && model.additionalFiles.isNotEmpty()) {
-                // GGUF models with additional files (e.g., mmproj vision projector)
+            } else if ((model.modelFormat == "gguf" || model.modelFormat == "tflite") && model.additionalFiles.isNotEmpty()) {
+                // GGUF or TFLite models with additional files
                 val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
                 val modelDir = File(modelsDir, modelDirName)
                 if (!modelDir.exists()) modelDir.mkdirs()
                 val primaryFile = File(modelDir, model.localFileName())
 
                 // Calculate total size of all files found on disk (within model dir)
-                var totalFoundBytes = if (primaryFile.exists()) primaryFile.length() else 0L
-                var allFilesFound = primaryFile.exists()
+                var totalFoundBytes = if (primaryFile.isFile) primaryFile.length() else 0L
+                var allFilesFound = primaryFile.isFile && primaryFile.length() > 0L
 
                 // Check additional files
                 val baseUrl = model.url.substringBefore("?").substringBeforeLast("/") + "/"
@@ -332,7 +333,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                     val fileUrl = if (fileUrlOrPath.startsWith("http")) fileUrlOrPath else baseUrl + fileUrlOrPath
                     val fileName = fileUrl.substringAfterLast("/").substringBefore("?")
                     val file = File(modelDir, fileName)
-                    if (file.exists()) {
+                    if (file.isFile && file.length() > 0L) {
                         totalFoundBytes += file.length()
                         android.util.Log.d("ModelDownloadViewModel", "Found additional file in model dir: ${fileName} (${file.length()} bytes)")
                     } else {
@@ -727,21 +728,21 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                         return@onCompletion
                     }
                     
-                    // GGUF models with additional files (like mmproj)
-                    if (model.modelFormat == "gguf" && model.additionalFiles.isNotEmpty()) {
+                    // GGUF or TFLite models with additional files
+                    if ((model.modelFormat == "gguf" || model.modelFormat == "tflite") && model.additionalFiles.isNotEmpty()) {
                         val modelsDir = File(context.filesDir, "models")
                         val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
                         val modelDir = File(modelsDir, modelDirName)
                         val primaryFile = File(modelDir, model.localFileName())
 
-                        var totalDownloadedOnDisk = if (primaryFile.exists()) primaryFile.length() else 0L
+                        var totalDownloadedOnDisk = if (primaryFile.isFile) primaryFile.length() else 0L
                         val baseUrl = model.url.substringBefore("?").substringBeforeLast("/") + "/"
 
                         for (fileUrlOrPath in model.additionalFiles) {
                             val fileUrl = if (fileUrlOrPath.startsWith("http")) fileUrlOrPath else baseUrl + fileUrlOrPath
                             val fileName = fileUrl.substringAfterLast("/").substringBefore("?")
                             val file = File(modelDir, fileName)
-                            if (file.exists()) {
+                            if (file.isFile && file.length() > 0L) {
                                 totalDownloadedOnDisk += file.length()
                                 android.util.Log.d("ModelDownloadViewModel", "Found additional file in model dir on completion: ${fileName} (${file.length()} bytes)")
                             } else {
@@ -753,15 +754,16 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                         val expectedTotal = if (latestStatus != null && latestStatus!!.totalBytes > 0) latestStatus!!.totalBytes else model.sizeBytes
 
                         // If expectedTotal is zero or unknown, fall back to comparing against actual bytes (exact equality)
+                        val allFilesFound = model.hasCompleteDownloadedBundle(context)
                         val completeEnough = if (expectedTotal > 0) {
-                            totalDownloadedOnDisk >= (expectedTotal * 0.995).toLong()
+                            allFilesFound && totalDownloadedOnDisk >= (expectedTotal * 0.995).toLong()
                         } else {
-                            // If downloader reported nothing, require the files to be non-empty and at least 90% of previously known size
-                            totalDownloadedOnDisk > 0 && (model.sizeBytes <= 0 || totalDownloadedOnDisk >= (model.sizeBytes * 0.95).toLong())
+                            // If downloader reported nothing, still require every declared component.
+                            allFilesFound && (model.sizeBytes <= 0 || totalDownloadedOnDisk >= (model.sizeBytes * 0.95).toLong())
                         }
 
                         if (completeEnough && cause == null) {
-                            android.util.Log.i("ModelDownloadViewModel", "GGUF model download completed for ${model.name}: size=$totalDownloadedOnDisk, expected=$expectedTotal")
+                            android.util.Log.i("ModelDownloadViewModel", "Multi-file model download completed for ${model.name}: size=$totalDownloadedOnDisk, expected=$expectedTotal")
                             updateModel(model.name) {
                                 it.copy(
                                     isDownloaded = true,
@@ -773,7 +775,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                                 )
                             }
                         } else {
-                            android.util.Log.w("ModelDownloadViewModel", "GGUF model download incomplete for ${model.name}: found=$totalDownloadedOnDisk expected=$expectedTotal")
+                            android.util.Log.w("ModelDownloadViewModel", "Multi-file model download incomplete for ${model.name}: filesComplete=$allFilesFound found=$totalDownloadedOnDisk expected=$expectedTotal")
                             // Partial
                             updateModel(model.name) {
                                 val progress = if (expectedTotal > 0) (totalDownloadedOnDisk.toFloat() / expectedTotal).coerceIn(0f, 1f) else -1f
@@ -873,8 +875,8 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         val modelsDir = File(context.filesDir, "models")
         if (modelsDir.exists() && modelsDir.isDirectory) {
             try {
-                // Determine if this is a directory-based model (ONNX or GGUF multi-file)
-                if ((model.modelFormat == "onnx" || model.modelFormat == "whisperkit" || model.modelFormat == "gguf") && model.additionalFiles.isNotEmpty()) {
+                // Determine if this is a directory-based model (ONNX, WhisperKit, GGUF, or Music Generation multi-file)
+                if ((model.modelFormat == "onnx" || model.modelFormat == "whisperkit" || model.modelFormat == "gguf" || model.category == "music_generation") && model.additionalFiles.isNotEmpty()) {
                     val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
                     val modelDir = File(modelsDir, modelDirName)
                     if (modelDir.exists() && modelDir.isDirectory) {
@@ -999,9 +1001,10 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                 // build the list (e.g. after an app restart).
                 val modelsDir = File(context.filesDir, "models")
 
-                // Delete subdirectory for multi-file formats (onnx, whisperkit, gguf with additionalFiles)
+                // Delete subdirectory for multi-file formats (onnx, whisperkit, gguf, or music_generation with additionalFiles)
                 if ((model.modelFormat == "onnx" || model.modelFormat == "whisperkit" ||
-                            (model.modelFormat == "gguf" && model.additionalFiles.isNotEmpty())) &&
+                            (model.modelFormat == "gguf" && model.additionalFiles.isNotEmpty()) ||
+                            (model.category == "music_generation" && model.additionalFiles.isNotEmpty())) &&
                     model.additionalFiles.isNotEmpty()) {
                     val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
                     val modelSubDir = File(modelsDir, modelDirName)
@@ -1011,7 +1014,9 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                     }
                 }
 
-                val primaryFile = File(modelsDir, model.localFileName())
+                val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
+                val modelSubDir = File(modelsDir, modelDirName)
+                val primaryFile = if (model.category == "music_generation" && model.additionalFiles.isNotEmpty()) File(modelSubDir, model.localFileName()) else File(modelsDir, model.localFileName())
                 val legacyFile = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
                 
                 var deletedPrimary = false

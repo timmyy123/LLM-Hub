@@ -866,3 +866,23 @@
 "huggingface_search_failed" = "Hugging Face 搜尋失敗";
 
 "language_hindi" = "हिन्दी";
+
+
+/* Music Generator */
+"feature_music_generator" = "音乐生成器";
+"feature_music_generator_desc" = "在设备端生成音乐和音效";
+"music_generation_models" = "音乐生成模型";
+"music_generation_models_description" = "用于创作音乐片段、音效和完整曲目的端侧 AI 模型。";
+"music_prompt_label" = "音乐描述 / 提示词";
+"prompt_hint_music" = "描述要生成的音乐或音效（例如：充满活力的电子乐、舒缓的钢琴伴奏）...";
+"music_style_presets" = "预设风格";
+"music_tier_select" = "生成器级别";
+"music_duration_label" = "时长";
+"generate_music" = "生成音乐";
+"generating_music" = "正在生成音乐...";
+"music_prompt_empty_warning" = "请输入您想生成的音乐描述。";
+"music_generated_success" = "音乐生成成功！";
+"music_saved_toast" = "音频已保存至本地媒体库！";
+
+"music_generator_download_model" = "請先下載模型";
+"music_generator_download_model_desc" = "從模型列表下載音樂生成模型，開始創作音樂。";

@@ -849,4 +849,20 @@
     <string name="download_vision_projector">Vision-projector downloaden</string>
     <string name="huggingface_search_failed">Zoeken op Hugging Face mislukt</string>
     <string name="language_hindi">हिन्दी</string>
+    <string name="feature_music_generator">Muziekgenerator</string>
+    <string name="feature_music_generator_desc">Genereer muziek en geluidseffecten op het apparaat</string>
+    <string name="music_generation_models">Muziekgeneratiemodellen</string>
+    <string name="music_generation_models_description">On-device AI-modellen voor het maken van muziek en geluidseffecten.</string>
+    <string name="music_prompt_label">Muziekbeschrijving</string>
+    <string name="prompt_hint_music">Beschrijf de muziek of het geluidseffect dat u wilt genereren...</string>
+    <string name="music_style_presets">Stijlvoorinstellingen</string>
+    <string name="music_tier_select">Generatortype</string>
+    <string name="music_duration_label">Duur</string>
+    <string name="generate_music">Muziek genereren</string>
+    <string name="generating_music">Muziek genereren...</string>
+    <string name="music_prompt_empty_warning">Voer een beschrijving in voor de muziek die u wilt genereren.</string>
+    <string name="music_generated_success">Muziek succesvol gegenereerd!</string>
+    <string name="music_saved_toast">Audioclip opgeslagen in lokale bibliotheek!</string>
+    <string name="music_generator_download_model">Download eerst het model</string>
+    <string name="music_generator_download_model_desc">Download een muziekgeneratiemodel vanuit het scherm Modellen om muziek te generieren.</string>
 </resources>

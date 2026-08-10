@@ -939,4 +939,20 @@
     <string name="download_vision_projector">ビジョンプロジェクターをダウンロード</string>
     <string name="huggingface_search_failed">Hugging Face の検索に失敗しました</string>
     <string name="language_hindi">हिन्दी</string>
+    <string name="feature_music_generator">音楽ジェネレーター</string>
+    <string name="feature_music_generator_desc">オンデバイスで音楽や効果音を生成</string>
+    <string name="music_generation_models">音楽生成モデル</string>
+    <string name="music_generation_models_description">音楽トラックや効果音を生成するためのオンデバイスAIモデル。</string>
+    <string name="music_prompt_label">音楽の説明・プロンプト</string>
+    <string name="prompt_hint_music">生成したい音楽や効果音の説明を入力してください...</string>
+    <string name="music_style_presets">スタイルプリセット</string>
+    <string name="music_tier_select">ジェネレーターティア</string>
+    <string name="music_duration_label">再生時間</string>
+    <string name="generate_music">音楽を生成</string>
+    <string name="generating_music">音楽を生成中...</string>
+    <string name="music_prompt_empty_warning">生成したい音楽の説明を入力してください。</string>
+    <string name="music_generated_success">音楽が正常に生成されました！</string>
+    <string name="music_saved_toast">ライブラリに保存されました！</string>
+    <string name="music_generator_download_model">最初にモデルをダウンロード</string>
+    <string name="music_generator_download_model_desc">モデル画面から音楽生成モデルをダウンロードして、音楽の生成を開始してください。</string>
 </resources>

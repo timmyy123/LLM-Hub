@@ -40,7 +40,8 @@ struct HomeScreen: View {
             FeatureCard(titleKey: "feature_scam_detector", descriptionKey: "feature_scam_detector_desc", iconSystemName: "shield.fill", gradient: [Color(hex: "ffb08a"), Color(hex: "d77c59")], route: "scam_detector"),
             FeatureCard(titleKey: "feature_vibe_coder", descriptionKey: "feature_vibe_coder_desc", iconSystemName: "chevron.left.slash.chevron.right", gradient: [Color(hex: "a8bcff"), Color(hex: "5f76be")], route: "vibe_coder"),
             FeatureCard(titleKey: "feature_vibevoice", descriptionKey: "feature_vibevoice_desc", iconSystemName: "waveform.circle.fill", gradient: [Color(hex: "89d3f7"), Color(hex: "3a68cc")], route: "vibe_voice"),
-            FeatureCard(titleKey: "feature_agent", descriptionKey: "feature_agent_desc", iconSystemName: "cpu.fill", gradient: [Color(hex: "a78bfa"), Color(hex: "ec4899")], route: "agent")
+            FeatureCard(titleKey: "feature_agent", descriptionKey: "feature_agent_desc", iconSystemName: "cpu.fill", gradient: [Color(hex: "a78bfa"), Color(hex: "ec4899")], route: "agent"),
+            FeatureCard(titleKey: "feature_music_generator", descriptionKey: "feature_music_generator_desc", iconSystemName: "music.note", gradient: [Color(hex: "ff9a9e"), Color(hex: "fecfef")], route: "music_generator")
         ]
     }
 

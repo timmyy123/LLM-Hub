@@ -956,6 +956,23 @@
     <string name="download_vision_projector">Download vision projector</string>
     <string name="huggingface_search_failed">Hugging Face search failed</string>
     <string name="language_hindi">हिन्दी</string>
+    <string name="feature_music_generator">Music Generator</string>
+    <string name="feature_music_generator_desc">Generate music and sound effects on-device</string>
+    <string name="music_generation_models">Music Generation Models</string>
+    <string name="music_generation_models_description">On-device AI music &amp; sound generation models for creating audio clips, sound effects, and full tracks.</string>
+    <string name="music_prompt_label">Music Description / Prompt</string>
+    <string name="prompt_hint_music">Describe the music or sound effect to generate (e.g. upbeat synthwave, ambient pads)...</string>
+    <string name="music_style_presets">Style Presets</string>
+    <string name="music_tier_select">Generator Tier</string>
+    <string name="music_duration_label">Duration</string>
+    <string name="generate_music">Generate Music</string>
+    <string name="generating_music">Generating Music...</string>
+    <string name="music_prompt_empty_warning">Please enter a description for the music you want to generate.</string>
+    <string name="music_generated_success">Music generated successfully!</string>
+    <string name="music_saved_toast">Audio clip saved to local library!</string>
+    <string name="download_models_title">Download Models</string>
+    <string name="music_generator_download_model">Download Model First</string>
+    <string name="music_generator_download_model_desc">Download a Music Generation model from the Models screen to start generating music.</string>
 </resources>
 
 

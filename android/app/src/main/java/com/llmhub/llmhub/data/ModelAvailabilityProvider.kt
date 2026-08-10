@@ -22,6 +22,7 @@ object ModelAvailabilityProvider {
                 model.category != "imageUpscale" &&
                 model.category != "tts" &&
                 model.category != "textToSpeech" &&
+                model.category != "music_generation" &&
                 (includeAsr || model.category != "asr") &&
                 !model.name.contains("Kokoro", ignoreCase = true) &&
                 // Exclude GGUF vision projectors and dependency files (mmproj files are not LLMs)
@@ -79,7 +80,9 @@ object ModelAvailabilityProvider {
                     Log.d("ModelAvailability", "  ✗ ONNX dir does not exist: ${model.name}")
                 }
             } else {
-                val primaryFile = File(modelsDir, model.localFileName())
+                val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
+                val modelDir = File(modelsDir, modelDirName)
+                val primaryFile = if (model.category == "music_generation" && model.additionalFiles.isNotEmpty()) File(modelDir, model.localFileName()) else File(modelsDir, model.localFileName())
                 val legacyFile = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
                 Log.d("ModelAvailability", "Checking for model: ${model.name} (format: ${model.modelFormat})")
                 Log.d("ModelAvailability", "  Primary path: ${primaryFile.absolutePath}, exists: ${primaryFile.exists()}")

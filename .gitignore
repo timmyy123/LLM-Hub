@@ -27,9 +27,14 @@ pnpm-debug.log*
 .idea/
 .vscode/
 .gradle/
+**/.build/
 
 # Repository specific
 temp_status.txt
 rebase_editor.py
 .claude/worktrees/
 desktop_ollama_backup.js
+
+# Local reference repository clones
+scratch_repos/
+temp_repos/

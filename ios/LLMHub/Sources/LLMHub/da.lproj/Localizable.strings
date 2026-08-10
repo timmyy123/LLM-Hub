@@ -866,3 +866,23 @@
 "huggingface_search_failed" = "Hugging Face-søgning mislykkedes";
 
 "language_hindi" = "हिन्दी";
+
+
+/* Music Generator */
+"feature_music_generator" = "Musikgenerator";
+"feature_music_generator_desc" = "Generer musik og lydeffekter direkte på enheden";
+"music_generation_models" = "Musikgenereringsmodeller";
+"music_generation_models_description" = "On-device AI-modeller til skabelse af musik og lydeffekter.";
+"music_prompt_label" = "Beskrivelse af musik";
+"prompt_hint_music" = "Beskriv musikken eller lydeffekten der skal genereres...";
+"music_style_presets" = "Stilskabeloner";
+"music_tier_select" = "Generatortype";
+"music_duration_label" = "Varighed";
+"generate_music" = "Generer musik";
+"generating_music" = "Genererer musik...";
+"music_prompt_empty_warning" = "Indtast venligst en beskrivelse af den musik, du vil generere.";
+"music_generated_success" = "Musik genereret succesfuldt!";
+"music_saved_toast" = "Lydklip gemt i lokalt bibliotek!";
+
+"music_generator_download_model" = "Download Model First";
+"music_generator_download_model_desc" = "Download en musikgenereringsmodel fra skærmen Modeller for at begynde at generere musik.";

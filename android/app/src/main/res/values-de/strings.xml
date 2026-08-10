@@ -908,4 +908,20 @@
     <string name="download_vision_projector">Vision-Projektor herunterladen</string>
     <string name="huggingface_search_failed">Hugging-Face-Suche fehlgeschlagen</string>
     <string name="language_hindi">हिन्दी</string>
+    <string name="feature_music_generator">Musik-Generator</string>
+    <string name="feature_music_generator_desc">Musik und Soundeffekte direkt auf dem Gerät generieren</string>
+    <string name="music_generation_models">Musik-Generierungsmodelle</string>
+    <string name="music_generation_models_description">On-Device KI-Modelle zur Erstellung von Musikstücken und Soundeffekten.</string>
+    <string name="music_prompt_label">Musikbeschreibung</string>
+    <string name="prompt_hint_music">Beschreiben Sie die gewünschte Musik oder den Soundeffekt...</string>
+    <string name="music_style_presets">Stil-Voreinstellungen</string>
+    <string name="music_tier_select">Generator-Stufe</string>
+    <string name="music_duration_label">Dauer</string>
+    <string name="generate_music">Musik generieren</string>
+    <string name="generating_music">Musik wird generiert...</string>
+    <string name="music_prompt_empty_warning">Bitte geben Sie eine Beschreibung der gewünschten Musik ein.</string>
+    <string name="music_generated_success">Musik erfolgreich generiert!</string>
+    <string name="music_saved_toast">Audiodatei in lokaler Bibliothek gespeichert!</string>
+    <string name="music_generator_download_model">Modell zuerst herunterladen</string>
+    <string name="music_generator_download_model_desc">Lade ein Musikgenerierungsmodell vom Modellbildschirm herunter, um Musik zu generieren.</string>
 </resources>

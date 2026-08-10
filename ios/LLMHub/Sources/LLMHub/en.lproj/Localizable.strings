@@ -871,3 +871,23 @@
 "huggingface_search_failed" = "Hugging Face search failed";
 
 "language_hindi" = "हिन्दी";
+
+
+/* Music Generator */
+"feature_music_generator" = "Music Generator";
+"feature_music_generator_desc" = "Generate music and sound effects on-device";
+"music_generation_models" = "Music Generation Models";
+"music_generation_models_description" = "On-device AI music & sound generation models for creating audio clips, sound effects, and full tracks.";
+"music_prompt_label" = "Music Description / Prompt";
+"prompt_hint_music" = "Describe the music or sound effect to generate (e.g. upbeat synthwave, ambient pads)...";
+"music_style_presets" = "Style Presets";
+"music_tier_select" = "Generator Tier";
+"music_duration_label" = "Duration";
+"generate_music" = "Generate Music";
+"generating_music" = "Generating Music...";
+"music_prompt_empty_warning" = "Please enter a description for the music you want to generate.";
+"music_generated_success" = "Music generated successfully!";
+"music_saved_toast" = "Audio clip saved to local library!";
+
+"music_generator_download_model" = "Download Model First";
+"music_generator_download_model_desc" = "Download a Music Generation model from the Models screen to start generating music.";

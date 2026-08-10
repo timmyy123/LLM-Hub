@@ -65,7 +65,7 @@ enum class ModelFormat {
 }
 
 enum class DownloadCategory {
-    MULTIMODAL, TEXT, ASR, TTS, EMBEDDING, IMAGE_GENERATION, IMAGE_UPSCALE
+    MULTIMODAL, TEXT, ASR, TTS, EMBEDDING, IMAGE_GENERATION, IMAGE_UPSCALE, MUSIC_GENERATION
 }
 
 /**
@@ -133,6 +133,8 @@ fun ModelDownloadScreen(
     val imageGenGrouped = imageGenerationModels.groupBy { it.name.substringBefore("(").trim() }
     val imageUpscaleModels = models.filter { it.category == "image_upscale" }
     val imageUpscaleGrouped = imageUpscaleModels.groupBy { it.name.substringBefore("(").trim() }
+    val musicGenModels = models.filter { it.category == "music_generation" }
+    val musicGenGrouped = musicGenModels.groupBy { it.name.substringBefore("(").trim() }
 
     var showImportDialog by remember { mutableStateOf(false) }
     var errorDialogInfo by remember { mutableStateOf<Pair<String, String>?>(null) }
@@ -144,7 +146,8 @@ fun ModelDownloadScreen(
         DownloadCategory.TTS,
         DownloadCategory.EMBEDDING,
         DownloadCategory.IMAGE_GENERATION,
-        DownloadCategory.IMAGE_UPSCALE
+        DownloadCategory.IMAGE_UPSCALE,
+        DownloadCategory.MUSIC_GENERATION
     )
 
     LaunchedEffect(downloadViewModel) {
@@ -231,6 +234,7 @@ fun ModelDownloadScreen(
                         DownloadCategory.EMBEDDING -> stringResource(R.string.embedding_models)
                         DownloadCategory.IMAGE_GENERATION -> stringResource(R.string.image_generation_models)
                         DownloadCategory.IMAGE_UPSCALE -> stringResource(R.string.image_upscale_models_title)
+                        DownloadCategory.MUSIC_GENERATION -> stringResource(R.string.music_generation_models)
                     }
                     val count = when (category) {
                         DownloadCategory.MULTIMODAL -> multimodalModels.size
@@ -240,6 +244,7 @@ fun ModelDownloadScreen(
                         DownloadCategory.EMBEDDING -> embeddingModels.size
                         DownloadCategory.IMAGE_GENERATION -> imageGenerationModels.size
                         DownloadCategory.IMAGE_UPSCALE -> imageUpscaleModels.size
+                        DownloadCategory.MUSIC_GENERATION -> musicGenModels.size
                     }
                     Tab(
                         selected = selectedTab == index,
@@ -371,6 +376,23 @@ fun ModelDownloadScreen(
                             Text(stringResource(R.string.image_upscale_models_description), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         imageUpscaleGrouped.forEach { (family, variants) ->
+                            item {
+                                ModelFamilyCard(
+                                    family = family,
+                                    variants = variants,
+                                    context = context,
+                                    viewModel = downloadViewModel,
+                                    isMultimodal = false,
+                                    onDownload = { downloadViewModel.downloadModel(it) }
+                                )
+                            }
+                        }
+                    }
+                    DownloadCategory.MUSIC_GENERATION -> {
+                        item {
+                            Text(stringResource(R.string.music_generation_models_description), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        musicGenGrouped.forEach { (family, variants) ->
                             item {
                                 ModelFamilyCard(
                                     family = family,

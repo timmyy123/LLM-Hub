@@ -346,7 +346,15 @@ dependencies {
     // LiteRT-LM: native Kotlin API for .litertlm models (Gemma-3n, Gemma-4, etc.)
     // Replaces tasks-genai for litertlm format models. GPU enabled once 0.10.1 hits Maven.
     implementation("com.google.ai.edge.litertlm:litertlm-android:0.15.0")
-    
+
+    // CompiledModel API used by the local SoundGen text/core/decoder pipeline.
+    // CompiledModel runtime used by SoundGen. Keep this pinned to the latest
+    // tested LiteRT release; 2.1.0 fails while invoking the DiT on Samsung OpenCL.
+    implementation("com.google.ai.edge.litert:litert:2.1.6")
+
+    // TensorFlow Lite interpreter used by other legacy TFLite features.
+    implementation("org.tensorflow:tensorflow-lite:2.17.0")
+
     // Protobuf - required for MediaPipe
     implementation("com.google.protobuf:protobuf-java:3.25.1")
     // Provide a no-op SLF4J binder so R8 finds org.slf4j.impl.StaticLoggerBinder

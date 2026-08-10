@@ -1,0 +1,49 @@
+{
+  "originHash" : "7fea1a89336fa9aff8ce692768874236c78d2940c6afa188d3986452d8d3f420",
+  "pins" : [
+    {
+      "identity" : "mlx-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ml-explore/mlx-swift",
+      "state" : {
+        "revision" : "0bb916c67f4b9e5c682cbe02a42c701c93ab5021",
+        "version" : "0.31.6"
+      }
+    },
+    {
+      "identity" : "swift-argument-parser",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-argument-parser",
+      "state" : {
+        "revision" : "6a52f3251125d74daf04fcbd5e6f08a75d074382",
+        "version" : "1.8.2"
+      }
+    },
+    {
+      "identity" : "swift-numerics",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-numerics",
+      "state" : {
+        "revision" : "0c0290ff6b24942dadb83a929ffaaa1481df04a2",
+        "version" : "1.1.1"
+      }
+    },
+    {
+      "identity" : "swift-package-support-sentencepiece",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/weiyanlin117/swift-package-support-sentencepiece",
+      "state" : {
+        "revision" : "a39a5be0b3e3ad9bcb19b085af7dd891c00aa3d2"
+      }
+    },
+    {
+      "identity" : "swift-sentencepiece",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/liuliu/swift-sentencepiece",
+      "state" : {
+        "revision" : "8d17bf2e017c97563e8805545d676be9739b6c0e"
+      }
+    }
+  ],
+  "version" : 3
+}

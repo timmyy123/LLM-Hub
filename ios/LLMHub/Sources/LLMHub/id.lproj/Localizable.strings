@@ -858,3 +858,23 @@
 "huggingface_search_failed" = "Pencarian Hugging Face gagal";
 
 "language_hindi" = "हिन्दी";
+
+
+/* Music Generator */
+"feature_music_generator" = "Generator Musik";
+"feature_music_generator_desc" = "Hasilkan musik dan efek suara langsung di perangkat";
+"music_generation_models" = "Model Generasi Musik";
+"music_generation_models_description" = "Model AI di perangkat untuk membuat trek musik dan efek suara.";
+"music_prompt_label" = "Deskripsi Musik";
+"prompt_hint_music" = "Jelaskan musik atau efek suara yang ingin dibuat...";
+"music_style_presets" = "Preset Gaya";
+"music_tier_select" = "Tingkat Generator";
+"music_duration_label" = "Durasi";
+"generate_music" = "Hasilkan Musik";
+"generating_music" = "Menghasilkan Musik...";
+"music_prompt_empty_warning" = "Masukkan deskripsi musik yang ingin Anda hasilkan.";
+"music_generated_success" = "Musik berhasil dihasilkan!";
+"music_saved_toast" = "Klip audio disimpan ke perpustakaan lokal!";
+
+"music_generator_download_model" = "Unduh Model Terlebih Dahulu";
+"music_generator_download_model_desc" = "Unduh model Generator Musik dari layar Model untuk mulai menghasilkan musik.";

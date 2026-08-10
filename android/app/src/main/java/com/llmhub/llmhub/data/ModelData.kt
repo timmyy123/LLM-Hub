@@ -920,7 +920,7 @@ object ModelData {
         )
     )
 
-    val models = listOf(
+    val baseModels = listOf(
         // Gemma-3 1B Models
         LLMModel(
             name = "Gemma-3 1B (INT4, 2k)",
@@ -4092,8 +4092,70 @@ object ModelData {
                 "https://huggingface.co/openai/whisper-base/resolve/main/config.json"
             )
         )
-        // Note: Gecko tokenizer removed - Gecko models have built-in tokenizers
-    ) + upscalerModels + ttsModels + (if (DeviceInfo.getChipsetSuffix() in setOf("8gen3", "8gen4", "8gen5")) sdxlModels else emptyList())
+    )
+
+    val musicGenerationModels = listOf(
+        LLMModel(
+            name = "SoundGen Quick (LiteRT)",
+            description = "Fast local sound effects and music generation. Pinned to commit e50bf9d. ~1.1 GB download.",
+            url = "https://huggingface.co/jegly/audio/resolve/e50bf9dff759c8622371a9c43ede989ea2d04b32/dit_model.tflite",
+            category = "music_generation",
+            sizeBytes = 1097863704L,
+            source = "jegly/audio via HuggingFace",
+            supportsVision = false,
+            supportsAudio = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 0,
+            modelFormat = "tflite",
+            additionalFiles = listOf(
+                "https://huggingface.co/jegly/audio/resolve/e50bf9dff759c8622371a9c43ede989ea2d04b32/autoencoder_model.tflite",
+                "https://huggingface.co/jegly/audio/resolve/e50bf9dff759c8622371a9c43ede989ea2d04b32/conditioners_float32.tflite",
+                "https://huggingface.co/jegly/audio/resolve/e50bf9dff759c8622371a9c43ede989ea2d04b32/spiece.model"
+            )
+        ),
+        LLMModel(
+            name = "SoundGen HD (LiteRT)",
+            description = "Higher quality local audio generation (L256 model). Pinned to commit 43a3e87. ~2.0 GB download.",
+            url = "https://huggingface.co/jegly/noise/resolve/43a3e8771f62bfc9257276c7e2adee9c76d601dd/dit_L256_int8.tflite",
+            category = "music_generation",
+            sizeBytes = 2042553968L,
+            source = "jegly/noise via HuggingFace",
+            supportsVision = false,
+            supportsAudio = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 8),
+            contextWindowSize = 0,
+            modelFormat = "tflite",
+            additionalFiles = listOf(
+                "https://huggingface.co/jegly/noise/resolve/43a3e8771f62bfc9257276c7e2adee9c76d601dd/ae_dec_L256_int8.tflite",
+                "https://huggingface.co/jegly/noise/resolve/43a3e8771f62bfc9257276c7e2adee9c76d601dd/t5gemma_enc_int8.tflite",
+                "https://huggingface.co/jegly/noise/resolve/43a3e8771f62bfc9257276c7e2adee9c76d601dd/tokenizer.model"
+            )
+        ),
+        LLMModel(
+            name = "SoundGen HD Long (AudioGen)",
+            description = "Longer high-quality local audio generation (L2048 model). Pinned to commit 43a3e87. ~2.1 GB download.",
+            url = "https://huggingface.co/jegly/noise/resolve/43a3e8771f62bfc9257276c7e2adee9c76d601dd/dit_L2048_int8.tflite",
+            category = "music_generation",
+            sizeBytes = 2107289483L,
+            source = "jegly/noise via HuggingFace",
+            supportsVision = false,
+            supportsAudio = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 8),
+            contextWindowSize = 0,
+            modelFormat = "tflite",
+            additionalFiles = listOf(
+                "https://huggingface.co/jegly/noise/resolve/43a3e8771f62bfc9257276c7e2adee9c76d601dd/ae_dec_L2048_int8.tflite",
+                "https://huggingface.co/jegly/noise/resolve/43a3e8771f62bfc9257276c7e2adee9c76d601dd/t5gemma_enc_int8.tflite",
+                "https://huggingface.co/jegly/noise/resolve/43a3e8771f62bfc9257276c7e2adee9c76d601dd/tokenizer.model"
+            )
+        )
+    )
+
+    val models: List<LLMModel> = baseModels + upscalerModels + ttsModels + musicGenerationModels + (if (DeviceInfo.getChipsetSuffix() in setOf("8gen3", "8gen4", "8gen5")) sdxlModels else emptyList())
+
 
     /**
      * Helper to detect model type based on its registry details (URL) or path keywords.

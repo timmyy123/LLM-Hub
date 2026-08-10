@@ -776,9 +776,9 @@ class ChatViewModel(
      * Load downloaded models synchronously so callers can rely on the result immediately.
      */
     private suspend fun loadAvailableModelsSync(context: Context) {
-        val downloadedModels = ModelData.models
-            .filter { it.category != "embedding" && it.category != "asr" && it.category != "tts" && !it.name.contains("Projector", ignoreCase = true) }
-            .mapNotNull { model ->
+        val downloadedModels: List<LLMModel> = ModelData.models
+            .filter { it.category != "embedding" && it.category != "asr" && it.category != "tts" && it.category != "music_generation" && !it.name.contains("Projector", ignoreCase = true) }
+            .mapNotNull { model: LLMModel ->
             var isAvailable = false
             var actualSize = model.sizeBytes
 
@@ -844,10 +844,9 @@ class ChatViewModel(
                         } else {
                             Log.d("ChatViewModel", "Ignoring incomplete/invalid model file: ${primaryFile.absolutePath} sizeOk=$sizeOk valid=$valid size=${primaryFile.length()}/${model.sizeBytes}")
                         }
-                        }
                     }
                 }
-
+            }
 
             if (isAvailable) {
                 model.copy(isDownloaded = true, sizeBytes = actualSize)
@@ -869,7 +868,7 @@ class ChatViewModel(
             }
         } catch (e: Exception) {
             Log.w("ChatViewModel", "Could not get imported models: ${e.message}")
-            emptyList()
+            emptyList<LLMModel>()
         }
         
         // Combine downloaded and imported models

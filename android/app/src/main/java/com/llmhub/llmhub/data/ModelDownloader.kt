@@ -252,6 +252,12 @@ class ModelDownloader(
             return@flow
         }
 
+        // Handle Music Generation multi-file models (e.g. SoundGen)
+        if (model.category == "music_generation" && model.additionalFiles.isNotEmpty()) {
+            downloadGgufMultiFile(model).collect { emit(it) }
+            return@flow
+        }
+
         // Handle image_generator models specially (multi-file format)
         if (model.modelFormat == "image_generator") {
             downloadImageGeneratorModel(model).collect { emit(it) }

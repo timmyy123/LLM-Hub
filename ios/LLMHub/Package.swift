@@ -17,6 +17,7 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../runanywhere-sdks-latest"),
+        .package(path: "LocalPackages/magenta-runtime"),
         .package(url: "https://github.com/apple/ml-stable-diffusion", from: "1.1.1"),
         .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.20"),
         .package(path: "LocalPackages/media-generation-kit"),
@@ -30,6 +31,8 @@ let package = Package(
                 .product(name: "RunAnywhere", package: "runanywhere-sdks-latest"),
                 .product(name: "RunAnywhereLlamaCPP", package: "runanywhere-sdks-latest"),
                 .product(name: "RunAnywhereONNX", package: "runanywhere-sdks-latest"),
+                .product(name: "RunAnywhereMLX", package: "runanywhere-sdks-latest"),
+                .product(name: "MagentaRuntime", package: "magenta-runtime"),
                 .product(name: "StableDiffusion", package: "ml-stable-diffusion"),
                 .product(name: "ZIPFoundation", package: "ZIPFoundation"),
                 .product(name: "LiteRTLM", package: "LiteRT-LM"),

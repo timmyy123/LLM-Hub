@@ -944,4 +944,20 @@
     <string name="download_vision_projector">Unduh proyektor visi</string>
     <string name="huggingface_search_failed">Pencarian Hugging Face gagal</string>
     <string name="language_hindi">हिन्दी</string>
+    <string name="feature_music_generator">Generator Musik</string>
+    <string name="feature_music_generator_desc">Hasilkan musik dan efek suara langsung di perangkat</string>
+    <string name="music_generation_models">Model Generasi Musik</string>
+    <string name="music_generation_models_description">Model AI di perangkat untuk membuat trek musik dan efek suara.</string>
+    <string name="music_prompt_label">Deskripsi Musik</string>
+    <string name="prompt_hint_music">Jelaskan musik atau efek suara yang ingin dibuat...</string>
+    <string name="music_style_presets">Preset Gaya</string>
+    <string name="music_tier_select">Tingkat Generator</string>
+    <string name="music_duration_label">Durasi</string>
+    <string name="generate_music">Hasilkan Musik</string>
+    <string name="generating_music">Menghasilkan Musik...</string>
+    <string name="music_prompt_empty_warning">Masukkan deskripsi musik yang ingin Anda hasilkan.</string>
+    <string name="music_generated_success">Musik berhasil dihasilkan!</string>
+    <string name="music_saved_toast">Klip audio disimpan ke perpustakaan lokal!</string>
+    <string name="music_generator_download_model">Unduh Model Terlebih Dahulu</string>
+    <string name="music_generator_download_model_desc">Unduh model Generator Musik dari layar Model untuk mulai menghasilkan musik.</string>
 </resources>

@@ -968,6 +968,22 @@
     <string name="download_vision_projector">विज़न प्रोजेक्टर डाउनलोड करें</string>
     <string name="huggingface_search_failed">Hugging Face खोज विफल रही</string>
     <string name="language_hindi">हिन्दी</string>
+    <string name="feature_music_generator">म्यूजिक जनरेटर</string>
+    <string name="feature_music_generator_desc">ऑन-डिवाइस संगीत और साउंड इफेक्ट उत्पन्न करें</string>
+    <string name="music_generation_models">म्यूजिक जनरेशन मॉडल</string>
+    <string name="music_generation_models_description">ऑडियो क्लिप और साउंड इफेक्ट्स बनाने के लिए एआई मॉडल।</string>
+    <string name="music_prompt_label">संगीत का विवरण</string>
+    <string name="prompt_hint_music">उस संगीत या साउंड इफेक्ट का वर्णन करें जिसे आप बनाना चाहते हैं...</string>
+    <string name="music_style_presets">स्टाइल प्रीसेट</string>
+    <string name="music_tier_select">जनरेटर स्तर</string>
+    <string name="music_duration_label">अवधि</string>
+    <string name="generate_music">संगीत बनाएं</string>
+    <string name="generating_music">संगीत बन रहा है...</string>
+    <string name="music_prompt_empty_warning">कृपया उस संगीत का विवरण दर्ज करें जिसे आप बनाना चाहते हैं।</string>
+    <string name="music_generated_success">संगीत सफलतापूर्वक बनाया गया!</string>
+    <string name="music_saved_toast">ऑडियो क्लिप लोकल लाइब्रेरी में सहेजा गया!</string>
+    <string name="music_generator_download_model">पहले मॉडल डाउनलोड करें</string>
+    <string name="music_generator_download_model_desc">संगीत बनाना शुरू करने के लिए मॉडल स्क्रीन से म्यूजिक जनरेटर मॉडल डाउनलोड करें।</string>
 </resources>
 
 

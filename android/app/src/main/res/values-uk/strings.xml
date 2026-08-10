@@ -942,4 +942,20 @@
     <string name="download_vision_projector">Завантажити проєктор зору</string>
     <string name="huggingface_search_failed">Пошук Hugging Face не вдався</string>
     <string name="language_hindi">हिन्दी</string>
+    <string name="feature_music_generator">Генератор музики</string>
+    <string name="feature_music_generator_desc">Створюйте музику та звукові ефекти на пристрої</string>
+    <string name="music_generation_models">Моделі генерації музики</string>
+    <string name="music_generation_models_description">Локальні ШІ-моделі для створення музики та звукових ефектів.</string>
+    <string name="music_prompt_label">Опис музики</string>
+    <string name="prompt_hint_music">Опишіть музику або звуковий ефект для генерації...</string>
+    <string name="music_style_presets">Пресети стилів</string>
+    <string name="music_tier_select">Рівень генератора</string>
+    <string name="music_duration_label">Тривалість</string>
+    <string name="generate_music">Створити музику</string>
+    <string name="generating_music">Створення музики...</string>
+    <string name="music_prompt_empty_warning">Будь ласка, введіть опис музики, яку ви хочете створити.</string>
+    <string name="music_generated_success">Музику успішно створено!</string>
+    <string name="music_saved_toast">Аудіокліп збережено у локальну бібліотеку!</string>
+    <string name="music_generator_download_model">Спочатку Завантажте Модель</string>
+    <string name="music_generator_download_model_desc">Завантажте модель генератора музики з екрана Моделей, щоб почати створення музики.</string>
 </resources>

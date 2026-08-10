@@ -866,3 +866,23 @@
 "huggingface_search_failed" = "Zoeken op Hugging Face mislukt";
 
 "language_hindi" = "हिन्दी";
+
+
+/* Music Generator */
+"feature_music_generator" = "Muziekgenerator";
+"feature_music_generator_desc" = "Genereer muziek en geluidseffecten op het apparaat";
+"music_generation_models" = "Muziekgeneratiemodellen";
+"music_generation_models_description" = "On-device AI-modellen voor het maken van muziek en geluidseffecten.";
+"music_prompt_label" = "Muziekbeschrijving";
+"prompt_hint_music" = "Beschrijf de muziek of het geluidseffect dat u wilt genereren...";
+"music_style_presets" = "Stijlvoorinstellingen";
+"music_tier_select" = "Generatortype";
+"music_duration_label" = "Duur";
+"generate_music" = "Muziek genereren";
+"generating_music" = "Muziek genereren...";
+"music_prompt_empty_warning" = "Voer een beschrijving in voor de muziek die u wilt genereren.";
+"music_generated_success" = "Muziek succesvol gegenereerd!";
+"music_saved_toast" = "Audioclip opgeslagen in lokale bibliotheek!";
+
+"music_generator_download_model" = "Download eerst het model";
+"music_generator_download_model_desc" = "Download een muziekgeneratiemodel vanuit het scherm Modellen om muziek te generieren.";

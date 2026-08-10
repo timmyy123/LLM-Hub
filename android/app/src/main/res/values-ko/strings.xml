@@ -942,4 +942,20 @@
     <string name="download_vision_projector">비전 프로젝터 다운로드</string>
     <string name="huggingface_search_failed">Hugging Face 검색에 실패했습니다</string>
     <string name="language_hindi">हिन्दी</string>
+    <string name="feature_music_generator">음악 생성기</string>
+    <string name="feature_music_generator_desc">기기에서 직접 음악 및 음향 효과 생성</string>
+    <string name="music_generation_models">음악 생성 모델</string>
+    <string name="music_generation_models_description">음악 트랙 및 음향 효과를 생성하기 위한 온디바이스 AI 모델.</string>
+    <string name="music_prompt_label">음악 설명 / 프롬프트</string>
+    <string name="prompt_hint_music">생성하려는 음악이나 음향 효과를 설명하세요...</string>
+    <string name="music_style_presets">스타일 프리셋</string>
+    <string name="music_tier_select">생성기 등급</string>
+    <string name="music_duration_label">재생 시간</string>
+    <string name="generate_music">음악 생성</string>
+    <string name="generating_music">음악 생성 중...</string>
+    <string name="music_prompt_empty_warning">생성하려는 음악에 대한 설명을 입력하세요.</string>
+    <string name="music_generated_success">음악이 성공적으로 생성되었습니다!</string>
+    <string name="music_saved_toast">로컬 라이브러리에 저장되었습니다!</string>
+    <string name="music_generator_download_model">먼저 모델 다운로드</string>
+    <string name="music_generator_download_model_desc">모델 화면에서 음악 생성 모델을 다운로드하여 음악 생성을 시작하세요.</string>
 </resources>

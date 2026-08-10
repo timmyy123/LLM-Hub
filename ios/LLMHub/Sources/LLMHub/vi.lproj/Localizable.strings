@@ -866,3 +866,23 @@
 "huggingface_search_failed" = "Tìm kiếm Hugging Face thất bại";
 
 "language_hindi" = "हिन्दी";
+
+
+/* Music Generator */
+"feature_music_generator" = "Trình tạo nhạc";
+"feature_music_generator_desc" = "Tạo nhạc và hiệu ứng âm thanh trực tiếp trên thiết bị";
+"music_generation_models" = "Mô hình tạo nhạc";
+"music_generation_models_description" = "Các mô hình AI trên thiết bị để tạo đoạn nhạc và hiệu ứng âm thanh.";
+"music_prompt_label" = "Mô tả âm nhạc";
+"prompt_hint_music" = "Mô tả âm nhạc hoặc hiệu ứng âm thanh bạn muốn tạo...";
+"music_style_presets" = "Mẫu phong cách";
+"music_tier_select" = "Cấp độ trình tạo";
+"music_duration_label" = "Thời lượng";
+"generate_music" = "Tạo nhạc";
+"generating_music" = "Đang tạo nhạc...";
+"music_prompt_empty_warning" = "Vui lòng nhập mô tả cho bản nhạc bạn muốn tạo.";
+"music_generated_success" = "Tạo nhạc thành công!";
+"music_saved_toast" = "Đã lưu đoạn âm thanh vào thư viện!";
+
+"music_generator_download_model" = "Tải xuống mẫu đầu tiên";
+"music_generator_download_model_desc" = "Tải xuống mô hình tạo nhạc từ màn hình Mô hình để bắtดัน tạo nhạc.";

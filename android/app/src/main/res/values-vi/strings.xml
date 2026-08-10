@@ -849,4 +849,20 @@
     <string name="download_vision_projector">Tải bộ chiếu thị giác</string>
     <string name="huggingface_search_failed">Tìm kiếm Hugging Face thất bại</string>
     <string name="language_hindi">हिन्दी</string>
+    <string name="feature_music_generator">Trình tạo nhạc</string>
+    <string name="feature_music_generator_desc">Tạo nhạc và hiệu ứng âm thanh trực tiếp trên thiết bị</string>
+    <string name="music_generation_models">Mô hình tạo nhạc</string>
+    <string name="music_generation_models_description">Các mô hình AI trên thiết bị để tạo đoạn nhạc và hiệu ứng âm thanh.</string>
+    <string name="music_prompt_label">Mô tả âm nhạc</string>
+    <string name="prompt_hint_music">Mô tả âm nhạc hoặc hiệu ứng âm thanh bạn muốn tạo...</string>
+    <string name="music_style_presets">Mẫu phong cách</string>
+    <string name="music_tier_select">Cấp độ trình tạo</string>
+    <string name="music_duration_label">Thời lượng</string>
+    <string name="generate_music">Tạo nhạc</string>
+    <string name="generating_music">Đang tạo nhạc...</string>
+    <string name="music_prompt_empty_warning">Vui lòng nhập mô tả cho bản nhạc bạn muốn tạo.</string>
+    <string name="music_generated_success">Tạo nhạc thành công!</string>
+    <string name="music_saved_toast">Đã lưu đoạn âm thanh vào thư viện!</string>
+    <string name="music_generator_download_model">Tải xuống mẫu đầu tiên</string>
+    <string name="music_generator_download_model_desc">Tải xuống mô hình tạo nhạc từ màn hình Mô hình để bắt đầu tạo nhạc.</string>
 </resources>

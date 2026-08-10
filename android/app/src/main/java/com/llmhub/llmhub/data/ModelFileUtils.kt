@@ -52,6 +52,36 @@ fun LLMModel.requiresExternalVisionProjector(): Boolean {
 }
 
 /**
+ * Returns true only when every file declared by a model is present and non-empty.
+ *
+ * Multi-file models are stored in a model-specific directory by ModelDownloader.
+ * Checking only the primary file is unsafe: older app versions may have downloaded
+ * that file before the rest of the model bundle was added to the manifest.
+ */
+fun LLMModel.hasCompleteDownloadedBundle(context: Context): Boolean {
+    val modelsDir = File(context.filesDir, "models")
+    val targetDir = if (additionalFiles.isNotEmpty()) {
+        val safeName = name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
+        File(modelsDir, safeName)
+    } else {
+        modelsDir
+    }
+
+    val primaryFile = File(targetDir, localFileName())
+    if (!primaryFile.isFile || !isModelFileValid(primaryFile, modelFormat)) return false
+
+    val additional = additionalFiles.map { urlOrPath ->
+        val fileName = urlOrPath.substringAfterLast('/').substringBefore('?').substringBefore('#')
+        if (fileName.isBlank()) return false
+        File(targetDir, fileName)
+    }
+    if (additional.any { !it.isFile || it.length() <= 0L }) return false
+
+    val downloadedBytes = primaryFile.length() + additional.sumOf { it.length() }
+    return sizeBytes <= 0L || downloadedBytes >= (sizeBytes * 0.98).toLong()
+}
+
+/**
  * Mirrors GeniexInferenceService mmproj lookup logic to determine if vision can be enabled.
  */
 fun LLMModel.hasDownloadedVisionProjector(context: Context): Boolean {

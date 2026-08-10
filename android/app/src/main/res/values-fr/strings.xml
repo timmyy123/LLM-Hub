@@ -928,4 +928,20 @@
     <string name="download_vision_projector">Télécharger le projecteur de vision</string>
     <string name="huggingface_search_failed">Échec de la recherche Hugging Face</string>
     <string name="language_hindi">हिन्दी</string>
+    <string name="feature_music_generator">Générateur de Musique</string>
+    <string name="feature_music_generator_desc">Générez de la musique et des effets sonores sur l\'appareil</string>
+    <string name="music_generation_models">Modèles de Génération Musicale</string>
+    <string name="music_generation_models_description">Modèles d\'IA hors ligne pour créer des pistes musicales et des effets sonores.</string>
+    <string name="music_prompt_label">Description de la musique</string>
+    <string name="prompt_hint_music">Décrivez la musique ou l\'effet sonore à générer...</string>
+    <string name="music_style_presets">Styles prédéfinis</string>
+    <string name="music_tier_select">Niveau du générateur</string>
+    <string name="music_duration_label">Durée</string>
+    <string name="generate_music">Générer de la Musique</string>
+    <string name="generating_music">Génération en cours...</string>
+    <string name="music_prompt_empty_warning">Veuillez saisir une description pour la musique à générer.</string>
+    <string name="music_generated_success">Musique générée avec succès !</string>
+    <string name="music_saved_toast">Fichier audio enregistré dans la bibliothèque locale !</string>
+    <string name="music_generator_download_model">Télécharger le Modèle d\'Abord</string>
+    <string name="music_generator_download_model_desc">Téléchargez un modèle de génération de musique depuis l\'écran Modèles pour commencer.</string>
 </resources>

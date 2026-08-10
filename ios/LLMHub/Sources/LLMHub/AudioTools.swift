@@ -1,4 +1,5 @@
 import AVFoundation
+import MagentaRuntime
 import SwiftUI
 
 @MainActor
@@ -313,5 +314,211 @@ private extension View {
                 RoundedRectangle(cornerRadius: cornerRadius)
                     .stroke(Color.white.opacity(0.16), lineWidth: 1)
             )
+    }
+}
+
+@MainActor
+public final class MusicGeneratorBackend: ObservableObject {
+    public static let shared = MusicGeneratorBackend()
+
+    @Published public var isGenerating: Bool = false
+    @Published public var progress: Double = 0.0
+    @Published public var generatedAudioURL: URL? = nil
+    @Published public var errorMessage: String? = nil
+    @Published public private(set) var isLoaded: Bool = false
+    @Published public private(set) var loadedModelName: String? = nil
+
+    private var loadedSession: MagentaRealtimeEngine.Session?
+    private var loadedResourceDirectory: URL?
+
+    private struct ModelArtifacts: Sendable {
+        let functionURL: URL
+        let stateURL: URL
+        let resourceDirectory: URL
+    }
+
+    private init() {}
+
+    public func loadModel(modelName: String) async -> Bool {
+        if isLoaded, loadedModelName == modelName, loadedSession != nil {
+            return true
+        }
+        errorMessage = nil
+        do {
+            let artifacts = try Self.resolveArtifacts(modelName: modelName)
+            let session = try await Task.detached(priority: .userInitiated) {
+                try MagentaRealtimeEngine.load(
+                    functionURL: artifacts.functionURL,
+                    stateURL: artifacts.stateURL
+                )
+            }.value
+            loadedSession = session
+            loadedResourceDirectory = artifacts.resourceDirectory
+            loadedModelName = modelName
+            isLoaded = true
+            NSLog("[LLMHub][MusicGen] Loaded model: \(modelName)")
+            return true
+        } catch {
+            unloadModel()
+            errorMessage = error.localizedDescription
+            NSLog("[LLMHub][MusicGen] Load error: \(error.localizedDescription)")
+            return false
+        }
+    }
+
+    public func unloadModel() {
+        loadedSession = nil
+        loadedResourceDirectory = nil
+        loadedModelName = nil
+        isLoaded = false
+        progress = 0
+        NSLog("[LLMHub][MusicGen] Unloaded model")
+    }
+
+    public func generateMusic(
+        modelName: String,
+        prompt: String,
+        durationSeconds: Double
+    ) async -> URL? {
+        guard await loadModel(modelName: modelName),
+              let session = loadedSession,
+              let resourceDirectory = loadedResourceDirectory else {
+            return nil
+        }
+        isGenerating = true
+        progress = 0.05
+        errorMessage = nil
+        generatedAudioURL = nil
+
+        let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let outputURL = documentsDir.appendingPathComponent("generated_music_\(Int(Date().timeIntervalSince1970)).wav")
+
+        let result = await Task.detached(priority: .userInitiated) { () -> URL? in
+            do {
+                let sampleRate = MagentaRealtimeEngine.sampleRate
+                let numChannels: Int = 2
+
+                NSLog("[LLMHub][MusicGen] Running loaded stateful MRT2 MLX model: \(modelName)")
+                NSLog("[LLMHub][MusicGen] requestedPrompt=%@ duration=%.2fs", prompt, durationSeconds)
+                let pcmData = try MagentaRealtimeEngine.generate(
+                    session: session,
+                    prompt: prompt,
+                    resourceDirectory: resourceDirectory,
+                    durationSeconds: durationSeconds,
+                    progress: { fraction in
+                        Task { @MainActor in
+                            MusicGeneratorBackend.shared.progress = 0.05 + fraction * 0.90
+                        }
+                    }
+                )
+
+                let wavData = MusicGeneratorBackend.createWAVHeader(dataSize: pcmData.count, sampleRate: sampleRate, channels: numChannels) + pcmData
+                try wavData.write(to: outputURL)
+                return outputURL
+
+            } catch {
+                NSLog("[LLMHub][MusicGen] Generation error: \(error.localizedDescription)")
+                return nil
+            }
+        }.value
+
+        isGenerating = false
+        if let result {
+            progress = 1.0
+            generatedAudioURL = result
+            return result
+        } else {
+            errorMessage = "Failed to generate music audio"
+            return nil
+        }
+    }
+
+    nonisolated private static func resolveArtifacts(modelName: String) throws -> ModelArtifacts {
+        let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let modelDirName = modelName.replacingOccurrences(of: " ", with: "_")
+            .replacingOccurrences(of: "[^a-zA-Z0-9_.-]", with: "", options: .regularExpression)
+        let selectedModelID = modelName.lowercased().contains("base")
+            ? "magenta_realtime_2_base"
+            : "magenta_realtime_2_small"
+        let searchDirs = [
+            documentsDir.appendingPathComponent("RunAnywhere/Models/FoundationModels/\(selectedModelID)"),
+            documentsDir.appendingPathComponent("RunAnywhere/Models/FoundationModels/\(modelDirName)"),
+            documentsDir.appendingPathComponent("RunAnywhere/Models/FoundationModels"),
+            documentsDir.appendingPathComponent("RunAnywhere/Models/\(modelDirName)"),
+            documentsDir.appendingPathComponent("RunAnywhere/Models"),
+            documentsDir
+        ]
+        var functionURL: URL?
+        var stateURL: URL?
+        var resourceDirectory: URL?
+        for directory in searchDirs where FileManager.default.fileExists(atPath: directory.path) {
+            guard let enumerator = FileManager.default.enumerator(
+                at: directory,
+                includingPropertiesForKeys: nil
+            ) else { continue }
+            while let fileURL = enumerator.nextObject() as? URL {
+                if fileURL.pathExtension == "mlxfn", functionURL == nil { functionURL = fileURL }
+                if fileURL.lastPathComponent.hasSuffix("_state.safetensors"), stateURL == nil { stateURL = fileURL }
+                if fileURL.lastPathComponent == "spm.model", resourceDirectory == nil {
+                    resourceDirectory = fileURL.deletingLastPathComponent()
+                }
+            }
+            if functionURL != nil, stateURL != nil, resourceDirectory != nil { break }
+        }
+        guard let functionURL, let stateURL, let resourceDirectory else {
+            throw NSError(
+                domain: "LLMHubMusic",
+                code: -404,
+                userInfo: [NSLocalizedDescriptionKey: "Magenta model, state, or MusicCoCa prompt resources are missing"]
+            )
+        }
+        return ModelArtifacts(
+            functionURL: functionURL,
+            stateURL: stateURL,
+            resourceDirectory: resourceDirectory
+        )
+    }
+
+
+    nonisolated private static func createWAVHeader(dataSize: Int, sampleRate: Int, channels: Int) -> Data {
+        var data = Data()
+        let bitsPerSample = 16
+        let byteRate = sampleRate * channels * (bitsPerSample / 8)
+        let blockAlign = channels * (bitsPerSample / 8)
+        let chunkSize = 36 + dataSize
+
+        data.append(contentsOf: "RIFF".utf8)
+        var chunkSize32 = UInt32(chunkSize).littleEndian
+        withUnsafeBytes(of: &chunkSize32) { data.append(contentsOf: $0) }
+
+        data.append(contentsOf: "WAVE".utf8)
+        data.append(contentsOf: "fmt ".utf8)
+
+        var subchunk1Size = UInt32(16).littleEndian
+        withUnsafeBytes(of: &subchunk1Size) { data.append(contentsOf: $0) }
+
+        var audioFormat = UInt16(1).littleEndian
+        withUnsafeBytes(of: &audioFormat) { data.append(contentsOf: $0) }
+
+        var numChannels16 = UInt16(channels).littleEndian
+        withUnsafeBytes(of: &numChannels16) { data.append(contentsOf: $0) }
+
+        var sampleRate32 = UInt32(sampleRate).littleEndian
+        withUnsafeBytes(of: &sampleRate32) { data.append(contentsOf: $0) }
+
+        var byteRate32 = UInt32(byteRate).littleEndian
+        withUnsafeBytes(of: &byteRate32) { data.append(contentsOf: $0) }
+
+        var blockAlign16 = UInt16(blockAlign).littleEndian
+        withUnsafeBytes(of: &blockAlign16) { data.append(contentsOf: $0) }
+
+        var bitsPerSample16 = UInt16(bitsPerSample).littleEndian
+        withUnsafeBytes(of: &bitsPerSample16) { data.append(contentsOf: $0) }
+
+        data.append(contentsOf: "data".utf8)
+        var dataSize32 = UInt32(dataSize).littleEndian
+        withUnsafeBytes(of: &dataSize32) { data.append(contentsOf: $0) }
+
+        return data
     }
 }

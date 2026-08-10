@@ -221,6 +221,10 @@ private func isNonTranslatorFeatureModel(_ model: AIModel) -> Bool {
     !model.name.hasPrefix("Translate Gemma") && model.category != .asr
 }
 
+private func isMusicGenerationFeatureModel(_ model: AIModel) -> Bool {
+    model.category == .musicGeneration
+}
+
 private func translatorQuantizationTag(for modelName: String) -> String? {
     guard let leftParen = modelName.lastIndex(of: "("),
           let rightParen = modelName.lastIndex(of: ")"),
@@ -501,16 +505,18 @@ struct FeatureModelSettingsSheet: View {
 
     private var maxContextCap: Double {
         let advertised = selectedModel?.contextWindowSize ?? 4096
-        return Double(max(1, advertised))
+        return Double(max(2, advertised))
     }
 
-
-
     @ObservedObject private var whisperBackend = WhisperBackend.shared
+    @ObservedObject private var musicBackend = MusicGeneratorBackend.shared
 
     private var isSelectedModelLoaded: Bool {
         if let model = selectedModel, model.isWhisperModel {
             return whisperBackend.isLoaded && whisperBackend.currentModelName == model.name
+        }
+        if selectedModel?.category == .musicGeneration {
+            return musicBackend.isLoaded && musicBackend.loadedModelName == selectedModelName
         }
         return llm.isLoaded && llm.currentlyLoadedModel == selectedModelName
     }
@@ -546,7 +552,7 @@ struct FeatureModelSettingsSheet: View {
                                 }
                             }
 
-                            if selectedModel?.isWhisperModel != true {
+                            if selectedModel?.isWhisperModel != true && selectedModel?.category != .musicGeneration {
                                 HStack {
                                     Text(settings.localized("context_window_size"))
                                         .foregroundColor(.white)
@@ -555,12 +561,14 @@ struct FeatureModelSettingsSheet: View {
                                         .foregroundColor(.white.opacity(0.9))
                                         .monospacedDigit()
                                 }
-                                Slider(value: $maxTokens, in: 1...maxContextCap, step: 1) { editing in
-                                    if !editing {
-                                        maxTokens = min(max(1, maxTokens), maxContextCap)
+                                if maxContextCap > 1 {
+                                    Slider(value: $maxTokens, in: 1...maxContextCap, step: 1) { editing in
+                                        if !editing {
+                                            maxTokens = min(max(1, maxTokens), maxContextCap)
+                                        }
                                     }
+                                    .tint(ApolloPalette.accentStrong)
                                 }
-                                .tint(ApolloPalette.accentStrong)
 
                                 if let model = selectedModel, model.modelFormat == .gguf {
                                     GPULayersSlider(
@@ -624,7 +632,7 @@ struct FeatureModelSettingsSheet: View {
                                     if isLoading {
                                         ProgressView()
                                     } else {
-                                        Text(settings.localized("load_model"))
+                                        Text(settings.localized(isSelectedModelLoaded ? "reload_model" : "load_model"))
                                     }
                                     Spacer()
                                 }
@@ -7042,6 +7050,377 @@ private struct ImageGeneratorSettingsSheet: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(settings.localized("close")) { dismiss() }
+                }
+            }
+        }
+    }
+}
+
+private struct GeneratedMusicTrack: Identifiable {
+    let id = UUID()
+    let prompt: String
+    let requestedDurationSeconds: Int
+    let url: URL
+}
+
+public struct MusicGeneratorScreen: View {
+    @EnvironmentObject private var modelManager: ModelManager
+    @EnvironmentObject var settings: AppSettings
+    var onNavigateBack: (() -> Void)?
+    var onNavigateToModels: (() -> Void)?
+
+    @AppStorage("feature_music_model_name") private var selectedModelName: String = ""
+    @State private var maxTokens: Double = 2048
+    @State private var enableThinking: Bool = false
+    @State private var enableVision: Bool = false
+    @State private var prompt: String = ""
+    @State private var isGenerating: Bool = false
+    @State private var generatedTracks: [GeneratedMusicTrack] = []
+    @State private var durationSeconds: Double = 10.0
+    @State private var showSettings: Bool = false
+    @State private var isLoading: Bool = false
+    @State private var errorMessage: String? = nil
+
+    @ObservedObject private var musicBackend = MusicGeneratorBackend.shared
+
+    private var isCurrentModelLoaded: Bool {
+        musicBackend.isLoaded && musicBackend.loadedModelName == selectedModelName
+    }
+
+    private let presetPrompts = [
+        "Upbeat 80s Synthwave synth bass & drums",
+        "Ambient relaxing acoustic piano & warm pads",
+        "Epic cinematic trailer orchestral battle motif",
+        "Chill Lo-Fi hip hop beat with rain sounds",
+        "Energetic rock guitar riff with upbeat rhythm",
+        "Smooth jazz saxophone melody with acoustic bass"
+    ]
+
+    public init(onNavigateBack: (() -> Void)? = nil, onNavigateToModels: (() -> Void)? = nil) {
+        self.onNavigateBack = onNavigateBack
+        self.onNavigateToModels = onNavigateToModels
+    }
+
+    private func ensureModelLoaded(force _: Bool = false) async -> Bool {
+        guard !selectedModelName.isEmpty else { return false }
+        guard let model = selectedFeatureModel(named: selectedModelName) else { return false }
+        let managerReportsDownloaded: Bool
+        if case .downloaded? = ModelManager.shared.modelStatuses[model.id] {
+            managerReportsDownloaded = true
+        } else {
+            managerReportsDownloaded = false
+        }
+        guard ModelData.isModelFullyAvailableLocally(model) || managerReportsDownloaded else { return false }
+        return await musicBackend.loadModel(modelName: selectedModelName)
+    }
+
+    public var body: some View {
+        Group {
+            if selectedModelName.isEmpty {
+                VStack(spacing: 16) {
+                    Image(systemName: "music.note")
+                        .font(.system(size: 48, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                    Text(settings.localized("music_generator_download_model"))
+                        .font(.title3.weight(.bold))
+                        .multilineTextAlignment(.center)
+                    Text(settings.localized("music_generator_download_model_desc"))
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.7))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                    Button {
+                        if let onNavigateToModels {
+                            onNavigateToModels()
+                        } else {
+                            showSettings = true
+                        }
+                    } label: {
+                        HStack {
+                            Spacer()
+                            Image(systemName: "arrow.down.circle")
+                            Text(settings.localized("download_models"))
+                            Spacer()
+                        }
+                        .frame(height: 50)
+                        .contentShape(Rectangle())
+                    }
+                    .frame(maxWidth: 260)
+                    .liquidGlassPrimaryButton(cornerRadius: 12)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                VStack(spacing: 0) {
+                    ScrollViewReader { scrollProxy in
+                        ScrollView {
+                            VStack(spacing: 14) {
+                            // Prompt Input Card
+                            promptInputCard
+
+                            // Duration Controls
+                            VStack(alignment: .leading, spacing: 12) {
+                                HStack {
+                                    Text(settings.localized("music_duration_label"))
+                                        .font(.subheadline)
+                                    Spacer()
+                                    Text("\(Int(durationSeconds))s")
+                                        .font(.subheadline)
+                                        .bold()
+                                        .foregroundStyle(ApolloPalette.accentStrong)
+                                }
+                                Slider(value: $durationSeconds, in: 1...600, step: 1)
+                                    .tint(ApolloPalette.accentStrong)
+                            }
+                            .padding(.horizontal)
+                            .padding(.vertical, 12)
+                            .background(.ultraThinMaterial)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(Color.white.opacity(0.14), lineWidth: 1)
+                            )
+
+                            if let errorMessage {
+                                Text(errorMessage)
+                                    .foregroundColor(.red)
+                                    .font(.caption)
+                                    .padding(.horizontal)
+                            }
+
+                            ForEach(generatedTracks) { track in
+                                VStack(spacing: 14) {
+                                    HStack {
+                                        Image(systemName: "waveform.circle.fill")
+                                            .font(.title2)
+                                            .foregroundStyle(ApolloPalette.accentStrong)
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(track.prompt)
+                                                .font(.subheadline)
+                                                .bold()
+                                                .lineLimit(1)
+                                            Text("\(track.requestedDurationSeconds)s Audio Clip")
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                        Spacer()
+                                        ShareLink(item: track.url) {
+                                            Image(systemName: "square.and.arrow.down")
+                                                .font(.system(size: 16, weight: .semibold))
+                                                .frame(width: 40, height: 40)
+                                        }
+                                        .featureActionIconButtonStyle()
+                                        .accessibilityLabel(settings.localized("save"))
+                                        AudioPlaybackButton(url: track.url)
+                                    }
+                                }
+                                .padding()
+                                .background(.ultraThinMaterial)
+                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color.white.opacity(0.14), lineWidth: 1)
+                                )
+                                .id(track.id)
+                            }
+                            }
+                            .padding()
+                        }
+                        .onChange(of: generatedTracks.count) { _, _ in
+                            if let latest = generatedTracks.last {
+                                withAnimation { scrollProxy.scrollTo(latest.id, anchor: .bottom) }
+                            }
+                        }
+                    }
+
+                    if isGenerating {
+                        ProgressView(value: musicBackend.progress)
+                            .tint(ApolloPalette.accentStrong)
+                            .padding(.horizontal)
+                            .padding(.bottom, 10)
+                    }
+
+                    Button {
+                        generateMusic()
+                    } label: {
+                        HStack(spacing: 8) {
+                            if isGenerating || isLoading {
+                                ProgressView()
+                                    .tint(.white)
+                                    .scaleEffect(0.85)
+                            } else {
+                                Image(systemName: "sparkles")
+                                    .font(.system(size: 13, weight: .bold))
+                            }
+                            Text(isLoading ? settings.localized("model_loading") : isGenerating ? settings.localized("generating_music") : settings.localized("generate_music"))
+                                .lineLimit(1)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                    }
+                    .foregroundStyle(.white)
+                    .liquidGlassPrimaryButton(cornerRadius: 12)
+                    .disabled(prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isGenerating || isLoading)
+                    .padding(.horizontal)
+                    .padding(.bottom, 8)
+                }
+            }
+        }
+        .navigationTitle(settings.localized("feature_music_generator"))
+        .navigationBarTitleDisplayMode(.inline)
+        .apolloScreenBackground()
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    musicBackend.unloadModel()
+                    onNavigateBack?()
+                } label: {
+                    Image(systemName: "arrow.left")
+                }
+                .tint(.white)
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    showSettings = true
+                } label: {
+                    Image(systemName: "slider.horizontal.3")
+                }
+                .tint(.white)
+            }
+        }
+        .sheet(isPresented: $showSettings) {
+            FeatureModelSettingsSheet(
+                selectedModelName: $selectedModelName,
+                maxTokens: $maxTokens,
+                enableThinking: .constant(false),
+                enableVision: .constant(false),
+                enableAudio: nil,
+                isLoading: $isLoading,
+                errorMessage: $errorMessage,
+                supportsVisionToggle: false,
+                visionToggleTitleKey: "",
+                audioToggleTitleKey: nil,
+                visionAvailableCheck: nil,
+                writingMode: nil,
+                modelFilter: isMusicGenerationFeatureModel,
+                onLoad: {
+                    isLoading = true
+                    defer { isLoading = false }
+                    _ = await ensureModelLoaded(force: true)
+                },
+                onUnload: { musicBackend.unloadModel() }
+            )
+            .environmentObject(settings)
+        }
+        .onAppear {
+            Task {
+                await syncRunAnywhereModelDiscovery()
+                let available = downloadableFeatureModels().filter(isMusicGenerationFeatureModel)
+                if selectedModelName.isEmpty || !available.contains(where: { $0.name == selectedModelName }) {
+                    selectedModelName = available.first?.name ?? ""
+                }
+            }
+        }
+        .onDisappear {
+            musicBackend.unloadModel()
+        }
+    }
+
+    @ViewBuilder
+    private var promptInputCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(settings.localized("music_prompt_label"))
+                .font(.headline)
+
+            ZStack(alignment: .topLeading) {
+                if prompt.isEmpty {
+                    Text(settings.localized("prompt_hint_music"))
+                        .foregroundStyle(.white.opacity(0.35))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 12)
+                }
+                TextEditor(text: $prompt)
+                    .frame(minHeight: 120)
+                    .padding(8)
+                    .scrollContentBackground(.hidden)
+                    .background(Color.white.opacity(0.02))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+
+            Text(settings.localized("music_style_presets"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.top, 4)
+
+            presetChipsView
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 12)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.white.opacity(0.14), lineWidth: 1)
+        )
+    }
+
+    @ViewBuilder
+    private var presetChipsView: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(presetPrompts, id: \.self) { preset in
+                    Button {
+                        prompt = preset
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "waveform")
+                            Text(preset)
+                        }
+                        .font(.caption)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Capsule().fill(.ultraThinMaterial))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private func generateMusic() {
+        let requestedPrompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !requestedPrompt.isEmpty else { return }
+        let requestedDuration = Int(durationSeconds)
+        Task {
+            if !isCurrentModelLoaded {
+                let success = await ensureModelLoaded(force: false)
+                guard success else { return }
+            }
+            await MainActor.run {
+                isGenerating = true
+                errorMessage = nil
+            }
+
+            let backend = MusicGeneratorBackend.shared
+            if let outputURL = await backend.generateMusic(
+                modelName: selectedModelName,
+                prompt: requestedPrompt,
+                durationSeconds: Double(requestedDuration)
+            ) {
+                await MainActor.run {
+                    generatedTracks.append(
+                        GeneratedMusicTrack(
+                            prompt: requestedPrompt,
+                            requestedDurationSeconds: requestedDuration,
+                            url: outputURL
+                        )
+                    )
+                    isGenerating = false
+                }
+            } else {
+                await MainActor.run {
+                    isGenerating = false
+                    errorMessage = backend.errorMessage ?? "Failed to generate music audio"
                 }
             }
         }

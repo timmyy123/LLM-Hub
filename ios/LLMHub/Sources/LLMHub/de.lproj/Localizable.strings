@@ -830,3 +830,23 @@
 "huggingface_search_failed" = "Hugging-Face-Suche fehlgeschlagen";
 
 "language_hindi" = "हिन्दी";
+
+
+/* Music Generator */
+"feature_music_generator" = "Musik-Generator";
+"feature_music_generator_desc" = "Musik und Soundeffekte direkt auf dem Gerät generieren";
+"music_generation_models" = "Musik-Generierungsmodelle";
+"music_generation_models_description" = "On-Device KI-Modelle zur Erstellung von Musikstücken und Soundeffekten.";
+"music_prompt_label" = "Musikbeschreibung";
+"prompt_hint_music" = "Beschreiben Sie die gewünschte Musik oder den Soundeffekt...";
+"music_style_presets" = "Stil-Voreinstellungen";
+"music_tier_select" = "Generator-Stufe";
+"music_duration_label" = "Dauer";
+"generate_music" = "Musik generieren";
+"generating_music" = "Musik wird generiert...";
+"music_prompt_empty_warning" = "Bitte geben Sie eine Beschreibung der gewünschten Musik ein.";
+"music_generated_success" = "Musik erfolgreich generiert!";
+"music_saved_toast" = "Audiodatei in lokaler Bibliothek gespeichert!";
+
+"music_generator_download_model" = "Modell zuerst herunterladen";
+"music_generator_download_model_desc" = "Lade ein Musikgenerierungsmodell vom Modellbildschirm herunter, um Musik zu generieren.";

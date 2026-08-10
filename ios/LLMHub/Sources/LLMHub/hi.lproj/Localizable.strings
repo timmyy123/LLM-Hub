@@ -871,3 +871,23 @@
 "huggingface_search_failed" = "Hugging Face खोज विफल रही";
 
 "language_hindi" = "हिन्दी";
+
+
+/* Music Generator */
+"feature_music_generator" = "म्यूजिक जनरेटर";
+"feature_music_generator_desc" = "ऑन-डिवाइस संगीत और साउंड इफेक्ट उत्पन्न करें";
+"music_generation_models" = "म्यूजिक जनरेशन मॉडल";
+"music_generation_models_description" = "ऑडियो क्लिप और साउंड इफेक्ट्स बनाने के लिए एआई मॉडल।";
+"music_prompt_label" = "संगीत का विवरण";
+"prompt_hint_music" = "उस संगीत या साउंड इफेक्ट का वर्णन करें जिसे आप बनाना चाहते हैं...";
+"music_style_presets" = "स्टाइल प्रीसेट";
+"music_tier_select" = "जनरेटर स्तर";
+"music_duration_label" = "अवधि";
+"generate_music" = "संगीत बनाएं";
+"generating_music" = "संगीत बन रहा है...";
+"music_prompt_empty_warning" = "कृपया उस संगीत का विवरण दर्ज करें जिसे आप बनाना चाहते हैं।";
+"music_generated_success" = "संगीत सफलतापूर्वक बनाया गया!";
+"music_saved_toast" = "ऑडियो क्लिप लोकल लाइब्रेरी में सहेजा गया!";
+
+"music_generator_download_model" = "पहले मॉडल डाउनलोड करें";
+"music_generator_download_model_desc" = "संगीत बनाना शुरू करने के लिए मॉडल स्क्रीन से म्यूजिक जनरेटर मॉडल डाउनलोड करें।";

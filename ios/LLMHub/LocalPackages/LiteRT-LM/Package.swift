@@ -13,6 +13,10 @@ let package = Package(
             name: "LiteRTLM",
             targets: ["LiteRTLM"]
         ),
+        .library(
+            name: "CLiteRTLMRuntime",
+            targets: ["CLiteRTLM"]
+        ),
     ],
     targets: [
         // The Prebuilt Binary Target for iOS
