@@ -7388,6 +7388,7 @@ public struct MusicGeneratorScreen: View {
     }
 
     private func generateMusic() {
+        dismissKeyboard()
         let requestedPrompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !requestedPrompt.isEmpty else { return }
         let requestedDuration = Int(durationSeconds)
