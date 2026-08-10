@@ -247,12 +247,19 @@ object MusicGeneratorBackend {
                         mask[index] = 1L
                     }
 
-                    val (conditioning, conditioningMask) = textModel.buffers { inputs, outputs ->
+                    val conditioning = textModel.buffers { inputs, outputs ->
                         inputs[0].writeLong(ids)
                         inputs[1].writeLong(mask)
                         textModel.run(inputs, outputs)
-                        outputs[0].readFloat() to outputs[1].readFloat().copyOf(256)
+                        require(outputs.size == 1) {
+                            "SoundGen HD encoder returned ${outputs.size} outputs; expected 1"
+                        }
+                        outputs[0].readFloat()
                     }
+                    // The pinned T5Gemma encoder exports only the hidden states.
+                    // The DiT's [1, 256] conditioning mask is the encoder attention
+                    // mask converted from INT64 to FLOAT32, not a second encoder output.
+                    val conditioningMask = FloatArray(mask.size) { mask[it].toFloat() }
                     onProgress(0.05f)
 
                     val shift = exp(-((((frameCount - 256) * 0.65f) / 3840f) + 0.5f).toDouble()).toFloat()

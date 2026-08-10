@@ -51,6 +51,9 @@ fun MusicGeneratorScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    val musicPreferences = remember(context) {
+        context.getSharedPreferences("music_generator_prefs", Context.MODE_PRIVATE)
+    }
 
     var promptText by remember { mutableStateOf("") }
     var durationSeconds by remember { mutableFloatStateOf(10f) }
@@ -78,7 +81,11 @@ fun MusicGeneratorScreen(
     // Model settings state
     var showSettingsSheet by remember { mutableStateOf(false) }
     var selectedModel by remember(downloadedModelNames) {
-        mutableStateOf<LLMModel?>(downloadedModels.firstOrNull())
+        val savedModelName = musicPreferences.getString("selected_model_name", null)
+        mutableStateOf(
+            downloadedModels.firstOrNull { it.name == savedModelName }
+                ?: downloadedModels.firstOrNull()
+        )
     }
     var isModelLoaded by remember { mutableStateOf(false) }
     var isLoadingModel by remember { mutableStateOf(false) }
@@ -195,6 +202,9 @@ fun MusicGeneratorScreen(
                     onModelSelected = {
                         if (selectedModel?.name != it.name) {
                             selectedModel = it
+                            musicPreferences.edit()
+                                .putString("selected_model_name", it.name)
+                                .apply()
                             isModelLoaded = false
                             coroutineScope.launch { MusicGeneratorBackend.unloadModel() }
                         }
@@ -206,9 +216,7 @@ fun MusicGeneratorScreen(
                             val model = selectedModel
                             isModelLoaded = model != null && MusicGeneratorBackend.loadModel(context, model.name)
                             isLoadingModel = false
-                            if (isModelLoaded) {
-                                snackbarHostState.showSnackbar(context.getString(R.string.model_loaded))
-                            } else {
+                            if (!isModelLoaded) {
                                 snackbarHostState.showSnackbar("Failed to load SoundGen model")
                             }
                         }
