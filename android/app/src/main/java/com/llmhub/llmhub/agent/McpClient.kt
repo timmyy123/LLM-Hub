@@ -1,6 +1,7 @@
 package com.llmhub.llmhub.agent
 
 import android.content.Context
+import com.llmhub.llmhub.BuildConfig
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.Dispatchers
@@ -69,6 +70,9 @@ class McpClient(private val context: Context) {
     var tools: List<McpTool> = emptyList()
         private set
 
+    private fun clientInfo(name: String = "LLM Hub Android") =
+        JSONObject().put("name", name).put("version", BuildConfig.VERSION_NAME)
+
     fun loadSettings() = McpSettings(
         enabled = prefs.getBoolean("enabled", false),
         transport = prefs.getString("transport", "termux") ?: "termux",
@@ -115,7 +119,7 @@ class McpClient(private val context: Context) {
                 JSONObject()
                     .put("protocolVersion", LEGACY_PROTOCOL)
                     .put("capabilities", JSONObject())
-                    .put("clientInfo", JSONObject().put("name", "LLM Hub").put("version", "4.1.2")),
+                    .put("clientInfo", clientInfo("LLM Hub")),
                 LEGACY_PROTOCOL,
                 includeProtocolHeader = false
             )
@@ -168,7 +172,7 @@ class McpClient(private val context: Context) {
         val messages = listOf(
             JSONObject().put("jsonrpc", "2.0").put("id", initId).put("method", "initialize").put(
                 "params", JSONObject().put("protocolVersion", LEGACY_PROTOCOL).put("capabilities", JSONObject())
-                    .put("clientInfo", JSONObject().put("name", "LLM Hub Android").put("version", "4.1.2"))
+                    .put("clientInfo", clientInfo())
             ),
             JSONObject().put("jsonrpc", "2.0").put("method", "notifications/initialized"),
             JSONObject().put("jsonrpc", "2.0").put("id", requestId).put("method", method).put("params", params)
@@ -242,7 +246,7 @@ class McpClient(private val context: Context) {
     ): JSONObject {
         val id = ids.getAndIncrement()
         if (version == CURRENT_PROTOCOL) {
-            params.put("_meta", JSONObject().put("io.modelcontextprotocol/clientInfo", JSONObject().put("name", "LLM Hub Android").put("version", "4.1.2")))
+            params.put("_meta", JSONObject().put("io.modelcontextprotocol/clientInfo", clientInfo()))
         }
         val body = JSONObject().put("jsonrpc", "2.0").put("id", id).put("method", method).put("params", params)
         val response = execute(settings, body, method, version, includeProtocolHeader, mcpName)

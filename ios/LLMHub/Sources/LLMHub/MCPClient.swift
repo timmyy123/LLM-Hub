@@ -70,6 +70,14 @@ final class MCPClient {
     private var requestID = 1
     private(set) var tools: [MCPTool] = []
 
+    private var appVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
+    }
+
+    private var clientInfo: [String: String] {
+        ["name": "LLM Hub iOS", "version": appVersion]
+    }
+
     func loadSettings() -> MCPSettings {
         MCPSettings(
             enabled: UserDefaults.standard.bool(forKey: "agent_mcp_enabled"),
@@ -97,7 +105,7 @@ final class MCPClient {
         let result: [String: Any]
         do {
             result = try await rpc(settings: settings, method: "tools/list", params: [:], version: currentProtocol)
-        } catch {
+        } catch {4.2.0
             protocolVersion = legacyProtocol
             let initialized = try await rpc(
                 settings: settings,
@@ -105,7 +113,7 @@ final class MCPClient {
                 params: [
                     "protocolVersion": legacyProtocol,
                     "capabilities": [:],
-                    "clientInfo": ["name": "LLM Hub iOS", "version": "4.1.2"]
+                    "clientInfo": clientInfo
                 ],
                 version: legacyProtocol,
                 includeProtocolHeader: false
@@ -154,7 +162,7 @@ final class MCPClient {
         }
         guard scheme == "https" || (scheme == "http" && ["localhost", "127.0.0.1"].contains(host)) else {
             throw MCPClientError.message("MCP servers must use HTTPS")
-        }
+        }4.2.0
     }
 
     private func rpc(settings: MCPSettings, method: String, params: [String: Any], version: String, includeProtocolHeader: Bool = true, mcpName: String? = nil) async throws -> [String: Any] {
@@ -162,7 +170,7 @@ final class MCPClient {
         requestID += 1
         var requestParams = params
         if version == currentProtocol {
-            requestParams["_meta"] = ["io.modelcontextprotocol/clientInfo": ["name": "LLM Hub iOS", "version": "4.1.2"]]
+            requestParams["_meta"] = ["io.modelcontextprotocol/clientInfo": clientInfo]
         }
         let response = try await execute(
             settings: settings,

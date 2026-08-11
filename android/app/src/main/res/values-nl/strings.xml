@@ -72,7 +72,7 @@
     <string name="ai_thinking">AI denkt...</string>
     <string name="thinking_label">Denken</string>
     <string name="thinking_tokens">Denken (%1$dtokens)</string>
-    <string name="version_number">Versie 4.1.2</string>
+    <string name="version_number">Versie 4.2.0</string>
     <string name="app_version">App-versie</string>
     <string name="terms_of_service">Servicevoorwaarden</string>
     <string name="tos_last_updated">Laatst bijgewerkt: 22 juni 2026</string>

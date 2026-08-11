@@ -38,7 +38,7 @@
 | Tool | Description |
 |------|-------------|
 | **💬 Chat** | Multi-turn conversations with RAG memory, web search, TTS auto-readout, and multimodal input |
-| **🤖 AI Agent** | **[NEW]** Autonomous device agent with function calling, interactive maps, device tools, and Termux terminal command generation on Android |
+| **🤖 AI Agent** | **[NEW]** Autonomous device agent with function calling, interactive maps, device tools, MCP tools, and Termux terminal command generation on Android |
 | **🤖 creAItor** | **[NEW]** Design custom AI personas with specialized system prompts (PCTF) in seconds |
 | **💻 Vibe Coder** | **[NEW]** Explain your app idea and watch it be built in real-time with live HTML/JS preview |
 | **✍️ Writing Aid** | Summarize, expand, rewrite, improve grammar, or generate code from descriptions |
@@ -54,6 +54,7 @@
 ### 🤖 AI Agent & Termux Terminal Command Generation
 The **AI Agent** turns on-device LLMs into autonomous assistants with device function calling capabilities:
 - **Device Actions & Function Calling**: Embedded interactive maps (OpenStreetMap), calendar management, alarm setup, flashlight toggle, SMS & Email composition, cryptographic hashing (SHA-256/MD5), and math calculation.
+- **MCP Tools**: Connect Model Context Protocol (MCP) servers so the Agent can discover and use external tools such as filesystem, search, document, memory, or custom hosted tools. MCP calls require user approval before execution.
 - **Termux Command Generation (Android)**: Automatically drafts shell/CLI commands targeting Termux environment execution (`RUN_COMMAND_SERVICE` intent interface).
 - **Interactive Pre-Execution Editing**: Users can inspect and edit AI-generated shell commands before execution.
 - **Live Dark Terminal Container**: Formats and streams live command outputs (`stdout`/`stderr`) in a dark monospace terminal UI block.
@@ -208,7 +209,6 @@ Support
 
 Notes
 - This README is intentionally concise — consult `ModelData.kt` for exact model variants, sizes, and format details.
-
 
 
 
