@@ -109,8 +109,11 @@ struct HomeScreen: View {
                                         openGithubRepository()
                                     } label: {
                                         HStack(spacing: 4) {
-                                            Image(systemName: "star.fill")
-                                                .font(.caption)
+                                            Image("GitHubMark")
+                                                .renderingMode(.template)
+                                                .resizable()
+                                                .scaledToFit()
+                                                .frame(width: 20, height: 20)
                                             Text("\(githubStars)")
                                                 .font(.subheadline.bold())
                                                 .lineLimit(1)
