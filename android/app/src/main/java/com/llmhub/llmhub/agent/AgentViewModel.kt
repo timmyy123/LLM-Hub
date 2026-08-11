@@ -546,17 +546,53 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun parseToolCall(text: String): ParsedTool? {
-        val regex = Regex("""\[?\s*(?:TOOL:)?\s*([a-zA-Z0-9._]+)\s*\(([^)]*)\)\s*\]?""", RegexOption.IGNORE_CASE)
-        val match = regex.find(text) ?: return null
-        val groups = match.groupValues
-        val name = groups[1]
-        val args = groups[2]
+        val marker = Regex("""\[\s*TOOL:\s*([a-zA-Z0-9._]+)\s*\(""", RegexOption.IGNORE_CASE)
+            .find(text) ?: return null
+        val name = marker.groupValues[1]
+        val argsStart = marker.range.last + 1
+        var parenthesisDepth = 1
+        var inString = false
+        var quote = '\u0000'
+        var escaped = false
+        var cursor = argsStart
+
+        while (cursor < text.length) {
+            val character = text[cursor]
+            if (inString) {
+                when {
+                    escaped -> escaped = false
+                    character == '\\' -> escaped = true
+                    character == quote -> inString = false
+                }
+            } else {
+                when (character) {
+                    '"', '\'' -> {
+                        inString = true
+                        quote = character
+                    }
+                    '(' -> parenthesisDepth += 1
+                    ')' -> {
+                        parenthesisDepth -= 1
+                        if (parenthesisDepth == 0) break
+                    }
+                }
+            }
+            cursor += 1
+        }
+
+        if (parenthesisDepth != 0) return null
+        var closingBracket = cursor + 1
+        while (closingBracket < text.length && text[closingBracket].isWhitespace()) {
+            closingBracket += 1
+        }
+        if (closingBracket >= text.length || text[closingBracket] != ']') return null
+
+        val args = text.substring(argsStart, cursor).trim()
         var cleanName = name.replace(".", "_").replace("/", "_").lowercase()
-        val cleanArgs = args.trim('"', '\'', ' ', ')', ']', '[')
         if (cleanName == "c" || cleanName == "calc" || cleanName == "math" || cleanName == "calculate") {
             cleanName = "calculate_math"
         }
-        return ParsedTool(cleanName, cleanArgs)
+        return ParsedTool(cleanName, args)
     }
 
     private suspend fun handleParsedToolCall(tool: ParsedTool, originalPrompt: String) {
