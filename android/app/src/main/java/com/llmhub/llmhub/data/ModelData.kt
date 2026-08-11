@@ -1870,6 +1870,159 @@ object ModelData {
             modelFormat = "gguf"
         ),
 
+        /*
+        // Muse Glimmer 30B Models (Meta via Unsloth GGUF)
+        // Disabled on Android until the bundled GenieX AAR supports the
+        // muse-glimmer architecture. KQuant/DFlash sidecars are intentionally
+        // excluded because GenieX does not expose DFlash for multimodal GGUFs.
+        LLMModel(
+            name = "Muse Glimmer 30B (UD-IQ2_XXS)",
+            description = "Meta's 30B vision-language agent model. UD-IQ2_XXS quantization. 131k context. Requires a separate Muse Glimmer Vision Projector for image input. 10.75 GB download.",
+            url = "https://huggingface.co/unsloth/Muse-Glimmer-30B-GGUF/resolve/faa5b025c584459c13febfa5c59883516710ae39/Muse-Glimmer-30B-UD-IQ2_XXS.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 10746373152L,
+            source = "Meta via Unsloth",
+            supportsVision = true,
+            supportsThinking = true,
+            supportsGpu = true,
+            supportsMtp = false,
+            requirements = ModelRequirements(minRamGB = 18, recommendedRamGB = 24),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Muse Glimmer 30B (UD-IQ2_XS)",
+            description = "Meta's 30B vision-language agent model. UD-IQ2_XS quantization. 131k context. Requires a separate Muse Glimmer Vision Projector for image input. 11.51 GB download.",
+            url = "https://huggingface.co/unsloth/Muse-Glimmer-30B-GGUF/resolve/faa5b025c584459c13febfa5c59883516710ae39/Muse-Glimmer-30B-UD-IQ2_XS.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 11513104416L,
+            source = "Meta via Unsloth",
+            supportsVision = true,
+            supportsThinking = true,
+            supportsGpu = true,
+            supportsMtp = false,
+            requirements = ModelRequirements(minRamGB = 18, recommendedRamGB = 24),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Muse Glimmer 30B (UD-IQ2_M)",
+            description = "Meta's 30B vision-language agent model. UD-IQ2_M quantization. 131k context. Requires a separate Muse Glimmer Vision Projector for image input. 12.26 GB download.",
+            url = "https://huggingface.co/unsloth/Muse-Glimmer-30B-GGUF/resolve/faa5b025c584459c13febfa5c59883516710ae39/Muse-Glimmer-30B-UD-IQ2_M.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 12255421472L,
+            source = "Meta via Unsloth",
+            supportsVision = true,
+            supportsThinking = true,
+            supportsGpu = true,
+            supportsMtp = false,
+            requirements = ModelRequirements(minRamGB = 20, recommendedRamGB = 24),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Muse Glimmer 30B (UD-Q2_K_XL)",
+            description = "Meta's 30B vision-language agent model. UD-Q2_K_XL quantization. 131k context. Requires a separate Muse Glimmer Vision Projector for image input. 12.44 GB download.",
+            url = "https://huggingface.co/unsloth/Muse-Glimmer-30B-GGUF/resolve/faa5b025c584459c13febfa5c59883516710ae39/Muse-Glimmer-30B-UD-Q2_K_XL.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 12444212256L,
+            source = "Meta via Unsloth",
+            supportsVision = true,
+            supportsThinking = true,
+            supportsGpu = true,
+            supportsMtp = false,
+            requirements = ModelRequirements(minRamGB = 20, recommendedRamGB = 24),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Muse Glimmer 30B (UD-IQ3_XXS)",
+            description = "Meta's 30B vision-language agent model. UD-IQ3_XXS quantization. 131k context. Requires a separate Muse Glimmer Vision Projector for image input. 13.13 GB download.",
+            url = "https://huggingface.co/unsloth/Muse-Glimmer-30B-GGUF/resolve/faa5b025c584459c13febfa5c59883516710ae39/Muse-Glimmer-30B-UD-IQ3_XXS.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 13130658848L,
+            source = "Meta via Unsloth",
+            supportsVision = true,
+            supportsThinking = true,
+            supportsGpu = true,
+            supportsMtp = false,
+            requirements = ModelRequirements(minRamGB = 20, recommendedRamGB = 24),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Muse Glimmer 30B (UD-Q3_K_XL)",
+            description = "Meta's 30B vision-language agent model. UD-Q3_K_XL quantization. 131k context. Requires a separate Muse Glimmer Vision Projector for image input. 13.36 GB download.",
+            url = "https://huggingface.co/unsloth/Muse-Glimmer-30B-GGUF/resolve/faa5b025c584459c13febfa5c59883516710ae39/Muse-Glimmer-30B-UD-Q3_K_XL.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 13360983072L,
+            source = "Meta via Unsloth",
+            supportsVision = true,
+            supportsThinking = true,
+            supportsGpu = true,
+            supportsMtp = false,
+            requirements = ModelRequirements(minRamGB = 20, recommendedRamGB = 24),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Muse Glimmer 30B (UD-IQ3_M)",
+            description = "Meta's 30B vision-language agent model. UD-IQ3_M quantization. 131k context. Requires a separate Muse Glimmer Vision Projector for image input. 14.12 GB download.",
+            url = "https://huggingface.co/unsloth/Muse-Glimmer-30B-GGUF/resolve/faa5b025c584459c13febfa5c59883516710ae39/Muse-Glimmer-30B-UD-IQ3_M.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 14122705696L,
+            source = "Meta via Unsloth",
+            supportsVision = true,
+            supportsThinking = true,
+            supportsGpu = true,
+            supportsMtp = false,
+            requirements = ModelRequirements(minRamGB = 20, recommendedRamGB = 24),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Muse Glimmer 30B (UD-Q4_K_XL)",
+            description = "Meta's 30B vision-language agent model. UD-Q4_K_XL quantization. 131k context. Requires a separate Muse Glimmer Vision Projector for image input. 15.88 GB download.",
+            url = "https://huggingface.co/unsloth/Muse-Glimmer-30B-GGUF/resolve/faa5b025c584459c13febfa5c59883516710ae39/Muse-Glimmer-30B-UD-Q4_K_XL.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 15878222368L,
+            source = "Meta via Unsloth",
+            supportsVision = true,
+            supportsThinking = true,
+            supportsGpu = true,
+            supportsMtp = false,
+            requirements = ModelRequirements(minRamGB = 24, recommendedRamGB = 32),
+            contextWindowSize = 131072,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Muse Glimmer 30B (Vision Projector, BF16)",
+            description = "Vision Projector (mmproj) required to enable image input for Muse Glimmer 30B GGUF models. BF16 variant. 3.85 GB download.",
+            url = "https://huggingface.co/unsloth/Muse-Glimmer-30B-GGUF/resolve/faa5b025c584459c13febfa5c59883516710ae39/mmproj-Muse-Glimmer-30B-BF16.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 3849173728L,
+            source = "Meta via Unsloth",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 0,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Muse Glimmer 30B (Vision Projector, Q8_0)",
+            description = "Vision Projector (mmproj) required to enable image input for Muse Glimmer 30B GGUF models. Q8_0 variant for a smaller download. 2.05 GB download.",
+            url = "https://huggingface.co/unsloth/Muse-Glimmer-30B-GGUF/resolve/faa5b025c584459c13febfa5c59883516710ae39/mmproj-Muse-Glimmer-30B-Q8_0.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 2051685088L,
+            source = "Meta via Unsloth",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 0,
+            modelFormat = "gguf"
+        ),
+        */
+
         // Phi-4 Mini updated to user-provided litertlm link
         LLMModel(
             name = "Phi-4 Mini (INT8, 4k)",

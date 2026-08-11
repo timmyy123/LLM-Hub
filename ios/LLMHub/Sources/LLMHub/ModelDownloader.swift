@@ -65,6 +65,226 @@ private final class ThroughputTracker: @unchecked Sendable {
     }
 }
 
+private struct ChunkedDownloadResult: Sendable {
+    let statusCode: Int
+    let contentRange: String?
+    let fileBytes: Int64
+}
+
+/// Streams URLSession-delivered Data chunks directly to disk. URLSession.AsyncBytes
+/// exposes a byte-at-a-time iterator, which is prohibitively expensive for multi-GB
+/// model files. This delegate buffers network chunks into 1 MB writes and limits UI
+/// progress callbacks to five per second.
+private final class ChunkedFileDownloader: NSObject, URLSessionDataDelegate, @unchecked Sendable {
+    private let destinationURL: URL
+    private let requestedOffset: Int64
+    private let progressHandler: @Sendable (Int64, Double) -> Void
+    private let writeBufferSize = 1024 * 1024
+    private let progressInterval: TimeInterval = 0.2
+    private let speedWindow: TimeInterval = 3.0
+
+    private let stateLock = NSLock()
+    private var continuation: CheckedContinuation<ChunkedDownloadResult, Error>?
+    private var session: URLSession?
+    private var task: URLSessionDataTask?
+    private var cancellationRequested = false
+    private var hasFinished = false
+
+    // Accessed only by the serial URLSession delegate queue.
+    private var fileHandle: FileHandle?
+    private var pendingData = Data()
+    private var baseOffset: Int64 = 0
+    private var receivedBytes: Int64 = 0
+    private var statusCode = 0
+    private var contentRange: String?
+    private var streamError: Error?
+    private var lastProgressTime = Date.distantPast
+    private var throughputSamples: [(time: Date, bytes: Int64)] = []
+
+    init(
+        destinationURL: URL,
+        requestedOffset: Int64,
+        progressHandler: @Sendable @escaping (Int64, Double) -> Void
+    ) {
+        self.destinationURL = destinationURL
+        self.requestedOffset = requestedOffset
+        self.progressHandler = progressHandler
+    }
+
+    func start(request: URLRequest, configuration: URLSessionConfiguration) async throws -> ChunkedDownloadResult {
+        try Task.checkCancellation()
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                let delegateQueue = OperationQueue()
+                delegateQueue.name = "com.llmhub.model-download"
+                delegateQueue.maxConcurrentOperationCount = 1
+
+                let session = URLSession(
+                    configuration: configuration,
+                    delegate: self,
+                    delegateQueue: delegateQueue
+                )
+                let task = session.dataTask(with: request)
+
+                stateLock.lock()
+                self.continuation = continuation
+                self.session = session
+                self.task = task
+                let shouldCancel = cancellationRequested
+                stateLock.unlock()
+
+                if shouldCancel {
+                    task.cancel()
+                } else {
+                    task.resume()
+                }
+            }
+        } onCancel: {
+            self.cancel()
+        }
+    }
+
+    private func cancel() {
+        stateLock.lock()
+        cancellationRequested = true
+        let task = self.task
+        stateLock.unlock()
+        task?.cancel()
+    }
+
+    func urlSession(
+        _ session: URLSession,
+        dataTask: URLSessionDataTask,
+        didReceive response: URLResponse,
+        completionHandler: @escaping @Sendable (URLSession.ResponseDisposition) -> Void
+    ) {
+        guard let httpResponse = response as? HTTPURLResponse else {
+            streamError = NSError(
+                domain: "ModelDownloader",
+                code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "No HTTP response"]
+            )
+            completionHandler(.cancel)
+            return
+        }
+
+        statusCode = httpResponse.statusCode
+        contentRange = httpResponse.value(forHTTPHeaderField: "Content-Range")
+
+        guard (200...299).contains(statusCode) else {
+            // Preserve any partial file for 4xx/5xx handling and resume logic.
+            completionHandler(.allow)
+            return
+        }
+
+        do {
+            let fileManager = FileManager.default
+            if !fileManager.fileExists(atPath: destinationURL.path) {
+                fileManager.createFile(atPath: destinationURL.path, contents: nil)
+            }
+
+            let handle = try FileHandle(forWritingTo: destinationURL)
+            if statusCode == 206 && requestedOffset > 0 {
+                try handle.seekToEnd()
+                baseOffset = requestedOffset
+            } else {
+                try handle.truncate(atOffset: 0)
+                baseOffset = 0
+            }
+            fileHandle = handle
+            completionHandler(.allow)
+        } catch {
+            streamError = error
+            completionHandler(.cancel)
+        }
+    }
+
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+        guard (200...299).contains(statusCode), streamError == nil else { return }
+
+        receivedBytes += Int64(data.count)
+        pendingData.append(data)
+
+        let now = Date()
+        throughputSamples.append((time: now, bytes: Int64(data.count)))
+        let cutoff = now.addingTimeInterval(-speedWindow)
+        throughputSamples.removeAll { $0.time < cutoff }
+
+        do {
+            if pendingData.count >= writeBufferSize {
+                try fileHandle?.write(contentsOf: pendingData)
+                pendingData.removeAll(keepingCapacity: true)
+            }
+        } catch {
+            streamError = error
+            dataTask.cancel()
+            return
+        }
+
+        if now.timeIntervalSince(lastProgressTime) >= progressInterval {
+            lastProgressTime = now
+            progressHandler(baseOffset + receivedBytes, currentSpeed(at: now))
+        }
+    }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        if streamError == nil, (200...299).contains(statusCode), !pendingData.isEmpty {
+            do {
+                try fileHandle?.write(contentsOf: pendingData)
+                pendingData.removeAll(keepingCapacity: true)
+            } catch {
+                streamError = error
+            }
+        }
+
+        try? fileHandle?.close()
+        fileHandle = nil
+
+        let finalError = streamError ?? error
+        if finalError == nil, (200...299).contains(statusCode) {
+            progressHandler(baseOffset + receivedBytes, currentSpeed(at: Date()))
+        }
+
+        finish(
+            with: finalError.map(Result.failure)
+                ?? .success(
+                    ChunkedDownloadResult(
+                        statusCode: statusCode,
+                        contentRange: contentRange,
+                        fileBytes: baseOffset + receivedBytes
+                    )
+                )
+        )
+    }
+
+    private func currentSpeed(at now: Date) -> Double {
+        let cutoff = now.addingTimeInterval(-speedWindow)
+        throughputSamples.removeAll { $0.time < cutoff }
+        guard let first = throughputSamples.first else { return 0 }
+        let bytes = throughputSamples.reduce(Int64(0)) { $0 + $1.bytes }
+        let duration = max(0.1, now.timeIntervalSince(first.time))
+        return Double(bytes) / duration
+    }
+
+    private func finish(with result: Result<ChunkedDownloadResult, Error>) {
+        stateLock.lock()
+        guard !hasFinished else {
+            stateLock.unlock()
+            return
+        }
+        hasFinished = true
+        let continuation = self.continuation
+        self.continuation = nil
+        let session = self.session
+        self.session = nil
+        self.task = nil
+        stateLock.unlock()
+
+        continuation?.resume(with: result)
+        session?.finishTasksAndInvalidate()
+    }
+}
+
 public actor ModelDownloader {
     public static let shared = ModelDownloader()
     
