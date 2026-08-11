@@ -1,6 +1,6 @@
 # LLM Hub 🤖
 
-**LLM Hub** is an open-source mobile app for on-device LLM chat, image generation, and video generation, available for both **Android** and **iOS**. It's optimized for mobile usage (CPU/GPU/NPU acceleration) and supports multiple model formats so you can run powerful models locally and privately.
+**LLM Hub** is an open-source mobile app for on-device LLM chat, image generation, video generation, and music generation, available for both **Android** and **iOS**. It's optimized for mobile usage (CPU/GPU/NPU acceleration) and supports multiple model formats so you can run powerful models locally and privately.
 
 🌟 **Featured:** Featured by **RunAnywhere** on their website — read the [LLM Hub iOS Case Study](https://www.runanywhere.ai/blog/llm-hub-ios-case-study)!
 
@@ -27,10 +27,10 @@
 | <img src="vibecode_demo.gif" width="300" style="border-radius:8px;" /> | <img src="android_image_generation_demo.gif" width="300" style="border-radius:8px;" /> |
 | Vibe Coder using Gemma 4 model on iPhone (HTML preview) | Stable Diffusion image generation on Android |
 
-| AI Agent Termux Command Execution on Android |
-| :-: |
-| <img src="android_agent_termux_demo.gif" width="340" style="border-radius:8px;" /> |
-| Autonomous AI Agent executing Termux shell commands (`ls` list files) with live terminal output on Android |
+| AI Agent Termux Command Execution on Android | Music Generation on iOS |
+| :-: | :-: |
+| <img src="android_agent_termux_demo.gif" width="300" style="border-radius:8px;" /> | <img src="music_generator_demo.gif" width="300" style="border-radius:8px;" /> |
+| Autonomous AI Agent executing Termux shell commands (`ls` list files) with live terminal output on Android | On-device music generation with Magenta Realtime 2 on iPhone |
 
 ## 🚀 Features
 
@@ -43,6 +43,7 @@
 | **💻 Vibe Coder** | **[NEW]** Explain your app idea and watch it be built in real-time with live HTML/JS preview |
 | **✍️ Writing Aid** | Summarize, expand, rewrite, improve grammar, or generate code from descriptions |
 | **🎨 Image Generator** | Create images from text prompts using Stable Diffusion 1.5 with swipeable gallery |
+| **🎵 Music Generator** | **[NEW]** Generate music and sound effects locally with SoundGen on Android and Magenta Realtime 2 on iOS |
 | **🔍 Image Upscale** | **[NEW]** Upscale images up to 4× using AI super-resolution models (RealESRGAN, UltraSharp) with NPU acceleration |
 | **🎥 Video Generator** | **[NEW]** Generate videos from text prompts or images using Stable Video Diffusion on iOS |
 | **🌍 Translator** | Translate text, images (OCR), and audio across 50+ languages - offline |
@@ -95,6 +96,7 @@ Technology
 - **iOS**: Swift + SwiftUI, [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks), [Draw Things (MediaGenerationKit)](https://drawthings.ai/), Apple Foundation Model, [whisper.cpp](https://github.com/ggml-org/whisper.cpp) for on-device ASR
 - **LLM & ASR Runtime**: MediaPipe, LiteRT, GenieX SDK (GGUF on Android), WhisperKit (ASR with TFLite + QNN NPU on Android), Llama.cpp (via [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks) on iOS), whisper.cpp on iOS for transcription
 - **Image & Video Gen**: [Draw Things (MediaGenerationKit)](https://drawthings.ai/) (iOS), Qualcomm QNN (Android)
+- **Music Gen**: Magenta Realtime 2 with MLX/LiteRT (iOS), SoundGen with LiteRT (Android)
 
 
 Acknowledgments
@@ -206,7 +208,6 @@ Support
 
 Notes
 - This README is intentionally concise — consult `ModelData.kt` for exact model variants, sizes, and format details.
-
 
 
 
