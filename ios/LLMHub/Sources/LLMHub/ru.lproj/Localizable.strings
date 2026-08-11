@@ -867,6 +867,7 @@
 "agent_mcp_connecting" = "Подключение…";
 "agent_mcp_connected_tools" = "Подключено инструментов: %d";
 "agent_mcp_error" = "Ошибка MCP: %@";
+"agent_mcp_missing_required_arguments" = "Отсутствуют обязательные аргументы MCP: %@";
 "agent_mcp_connect" = "Подключить";
 "agent_mcp_disconnect" = "Отключить";
 "agent_mcp_tool_request" = "Инструмент MCP: %@";

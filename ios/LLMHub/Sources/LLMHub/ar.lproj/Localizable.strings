@@ -895,6 +895,7 @@
 "agent_mcp_connecting" = "جارٍ الاتصال…";
 "agent_mcp_connected_tools" = "تم توصيل %d من الأدوات";
 "agent_mcp_error" = "خطأ MCP: %@";
+"agent_mcp_missing_required_arguments" = "وسائط MCP المطلوبة مفقودة: %@";
 "agent_mcp_connect" = "اتصال";
 "agent_mcp_disconnect" = "قطع الاتصال";
 "agent_mcp_tool_request" = "أداة MCP: %@";

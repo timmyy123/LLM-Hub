@@ -882,6 +882,7 @@
 "agent_mcp_connecting" = "Connexion…";
 "agent_mcp_connected_tools" = "%d outils connectés";
 "agent_mcp_error" = "Erreur MCP : %@";
+"agent_mcp_missing_required_arguments" = "Arguments MCP obligatoires manquants : %@";
 "agent_mcp_connect" = "Connecter";
 "agent_mcp_disconnect" = "Déconnecter";
 "agent_mcp_tool_request" = "Outil MCP : %@";

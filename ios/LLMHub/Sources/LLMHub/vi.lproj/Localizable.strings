@@ -903,6 +903,7 @@
 "agent_mcp_connecting" = "Đang kết nối…";
 "agent_mcp_connected_tools" = "Đã kết nối %d công cụ";
 "agent_mcp_error" = "Lỗi MCP: %@";
+"agent_mcp_missing_required_arguments" = "Thiếu đối số MCP bắt buộc: %@";
 "agent_mcp_connect" = "Kết nối";
 "agent_mcp_disconnect" = "Ngắt kết nối";
 "agent_mcp_tool_request" = "Công cụ MCP: %@";

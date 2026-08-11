@@ -895,6 +895,7 @@
 "agent_mcp_connecting" = "接続中…";
 "agent_mcp_connected_tools" = "%d個のツールに接続済み";
 "agent_mcp_error" = "MCPエラー: %@";
+"agent_mcp_missing_required_arguments" = "必須のMCP引数が不足しています: %@";
 "agent_mcp_connect" = "接続";
 "agent_mcp_disconnect" = "切断";
 "agent_mcp_tool_request" = "MCPツール: %@";

@@ -895,6 +895,7 @@
 "agent_mcp_connecting" = "מתחבר…";
 "agent_mcp_connected_tools" = "%d כלים מחוברים";
 "agent_mcp_error" = "שגיאת MCP: %@";
+"agent_mcp_missing_required_arguments" = "ארגומנטים נדרשים של MCP חסרים: %@";
 "agent_mcp_connect" = "התחברות";
 "agent_mcp_disconnect" = "ניתוק";
 "agent_mcp_tool_request" = "כלי MCP: %@";

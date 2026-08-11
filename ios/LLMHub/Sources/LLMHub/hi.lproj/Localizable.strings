@@ -908,6 +908,7 @@
 "agent_mcp_connecting" = "कनेक्ट हो रहा है…";
 "agent_mcp_connected_tools" = "%d टूल कनेक्ट हैं";
 "agent_mcp_error" = "MCP त्रुटि: %@";
+"agent_mcp_missing_required_arguments" = "आवश्यक MCP आर्ग्युमेंट गायब हैं: %@";
 "agent_mcp_connect" = "कनेक्ट करें";
 "agent_mcp_disconnect" = "डिस्कनेक्ट करें";
 "agent_mcp_tool_request" = "MCP टूल: %@";

@@ -903,6 +903,7 @@
 "agent_mcp_connecting" = "Opretter forbindelse…";
 "agent_mcp_connected_tools" = "%d værktøjer forbundet";
 "agent_mcp_error" = "MCP-fejl: %@";
+"agent_mcp_missing_required_arguments" = "Manglende påkrævede MCP-argumenter: %@";
 "agent_mcp_connect" = "Forbind";
 "agent_mcp_disconnect" = "Afbryd";
 "agent_mcp_tool_request" = "MCP-værktøj: %@";

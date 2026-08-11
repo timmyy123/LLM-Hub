@@ -895,6 +895,7 @@
 "agent_mcp_connecting" = "연결 중…";
 "agent_mcp_connected_tools" = "%d개 도구 연결됨";
 "agent_mcp_error" = "MCP 오류: %@";
+"agent_mcp_missing_required_arguments" = "필수 MCP 인수가 누락됨: %@";
 "agent_mcp_connect" = "연결";
 "agent_mcp_disconnect" = "연결 해제";
 "agent_mcp_tool_request" = "MCP 도구: %@";

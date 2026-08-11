@@ -424,48 +424,95 @@ struct AgentToolCallCell: View {
     let onDeny: (() -> Void)?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Image(systemName: statusIcon)
-                    .foregroundColor(statusColor)
+        let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("\(name)(\(args))")
-                        .font(.caption)
-                        .bold()
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: statusIcon)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(statusColor)
+                    .frame(width: 22)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(name)
+                        .font(.caption.weight(.semibold))
                         .foregroundColor(.white)
+                        .lineLimit(1)
+
+                    if !args.isEmpty {
+                        Text(args)
+                            .font(.caption2.monospaced())
+                            .foregroundColor(.white.opacity(0.68))
+                            .lineLimit(3)
+                    }
+
                     if let res = result {
                         Text(res)
                             .font(.caption2)
                             .foregroundColor(.white.opacity(0.7))
-                            .lineLimit(2)
+                            .lineLimit(3)
                     }
                 }
 
-                Spacer()
+                Spacer(minLength: 8)
 
                 Text(statusText)
-                    .font(.system(size: 10))
-                    .foregroundColor(.white.opacity(0.6))
+                    .font(.caption2.weight(.medium))
+                    .foregroundColor(.white.opacity(0.55))
+                    .lineLimit(1)
             }
+
             if status == .pendingApproval {
-                HStack(spacing: 8) {
-                    Button(settings.localized("agent_mcp_allow")) { onApprove?() }
-                        .buttonStyle(.borderedProminent)
-                        .tint(Color(hex: "10B981"))
-                    Button(settings.localized("agent_mcp_deny"), role: .cancel) { onDeny?() }
-                        .buttonStyle(.bordered)
-                }
-                .font(.caption.bold())
+                approvalButtons
             }
         }
         .padding(12)
-        .background(Color.white.opacity(0.1))
-        .cornerRadius(14)
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(Color(hex: "A78BFA").opacity(0.3), lineWidth: 1)
-        )
+        .background(.ultraThinMaterial)
+        .clipShape(shape)
+        .overlay(shape.stroke(Color.white.opacity(0.14), lineWidth: 1))
+    }
+
+    private var approvalButtons: some View {
+        HStack(spacing: 10) {
+            Button {
+                onApprove?()
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 11, weight: .bold))
+                    Text(settings.localized("agent_mcp_allow"))
+                        .font(.caption.weight(.semibold))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .contentShape(Rectangle())
+            }
+            .liquidGlassPrimaryButton(cornerRadius: 12)
+            .tint(ApolloPalette.accentStrong)
+
+            Button(role: .cancel) {
+                onDeny?()
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 11, weight: .bold))
+                    Text(settings.localized("agent_mcp_deny"))
+                        .font(.caption.weight(.semibold))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .contentShape(Rectangle())
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(ApolloPalette.destructive.opacity(0.10))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(ApolloPalette.destructive.opacity(0.55), lineWidth: 1)
+            )
+            .foregroundStyle(ApolloPalette.destructive.opacity(0.98))
+        }
     }
 
     private var statusIcon: String {

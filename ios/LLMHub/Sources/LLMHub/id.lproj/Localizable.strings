@@ -895,6 +895,7 @@
 "agent_mcp_connecting" = "Menghubungkan…";
 "agent_mcp_connected_tools" = "%d alat terhubung";
 "agent_mcp_error" = "Kesalahan MCP: %@";
+"agent_mcp_missing_required_arguments" = "Argumen MCP wajib hilang: %@";
 "agent_mcp_connect" = "Hubungkan";
 "agent_mcp_disconnect" = "Putuskan";
 "agent_mcp_tool_request" = "Alat MCP: %@";

@@ -852,6 +852,7 @@
 "agent_mcp_connecting" = "A ligar…";
 "agent_mcp_connected_tools" = "%d ferramentas ligadas";
 "agent_mcp_error" = "Erro de MCP: %@";
+"agent_mcp_missing_required_arguments" = "Argumentos MCP obrigatórios ausentes: %@";
 "agent_mcp_connect" = "Ligar";
 "agent_mcp_disconnect" = "Desligar";
 "agent_mcp_tool_request" = "Ferramenta MCP: %@";

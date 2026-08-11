@@ -895,6 +895,7 @@
 "agent_mcp_connecting" = "در حال اتصال…";
 "agent_mcp_connected_tools" = "%d ابزار متصل شد";
 "agent_mcp_error" = "خطای MCP: %@";
+"agent_mcp_missing_required_arguments" = "آرگومان‌های ضروری MCP وجود ندارد: %@";
 "agent_mcp_connect" = "اتصال";
 "agent_mcp_disconnect" = "قطع اتصال";
 "agent_mcp_tool_request" = "ابزار MCP: %@";

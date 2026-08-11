@@ -903,6 +903,7 @@
 "agent_mcp_connecting" = "กำลังเชื่อมต่อ…";
 "agent_mcp_connected_tools" = "เชื่อมต่อเครื่องมือ %d รายการ";
 "agent_mcp_error" = "ข้อผิดพลาด MCP: %@";
+"agent_mcp_missing_required_arguments" = "อาร์กิวเมนต์ MCP ที่จำเป็นขาดหายไป: %@";
 "agent_mcp_connect" = "เชื่อมต่อ";
 "agent_mcp_disconnect" = "ยกเลิกการเชื่อมต่อ";
 "agent_mcp_tool_request" = "เครื่องมือ MCP: %@";

@@ -256,13 +256,15 @@ public class AgentViewModel: ObservableObject {
 
         Instructions:
         - ALWAYS call a tool when the user asks to perform an action supported by the tools.
-        - For any request to find, show, search for, or locate a place, business, venue, address, or directions (e.g. "find bar near me"), YOU MUST call show_map.
+        - Use show_map ONLY for physical places, venues, businesses, addresses, points of interest, or directions.
+        - Use MCP tools for requests that match their tool names, descriptions, and schemas.
         - For any request about weather (e.g. "How's the weather", "Is it cold outside?"), YOU MUST call check_weather(location: "my location").
         - For any request to calculate a hash or hash a text (e.g. "Calculate SHA-256 hash for 'Hello World'"), YOU MUST call calculate_hash(text: "Hello World", algorithm: "SHA-256").
         - For any request to evaluate or solve a math expression or calculation (e.g. "1+1", "What's 15*8"), YOU MUST call calculate_math(expression: "expression string").
         - Output tool calls in this format ONLY:
         [TOOL: tool_name(arguments)]
-        - For MCP tools, pass exactly one JSON object, for example: [TOOL: mcp_search({"query":"example"})]
+        - For MCP tools, pass exactly one valid JSON object using the shown argument keys.
+        - MCP arguments marked REQUIRED must be present. If a required MCP argument is unknown, ask a short question instead of calling the tool.
 
         User Request: \(prompt)
         """
@@ -315,7 +317,16 @@ public class AgentViewModel: ObservableObject {
     }
 
     private func parseToolCall(from text: String) -> ParsedTool? {
-        let pattern = "\\[\\s*TOOL:\\s*([a-zA-Z0-9._]+)\\s*\\("
+        if let explicitTool = parseBracketedToolCall(from: text, requireToolPrefix: true) {
+            return explicitTool
+        }
+        return parseBracketedToolCall(from: text, requireToolPrefix: false)
+    }
+
+    private func parseBracketedToolCall(from text: String, requireToolPrefix: Bool) -> ParsedTool? {
+        let pattern = requireToolPrefix
+            ? "\\[\\s*TOOL:\\s*([a-zA-Z0-9._]+)\\s*\\("
+            : "\\[\\s*([a-zA-Z0-9._]+)\\s*\\("
         guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else {
             return nil
         }
@@ -370,6 +381,10 @@ public class AgentViewModel: ObservableObject {
             rawName = "calculate_math"
         }
 
+        if !requireToolPrefix, !isKnownToolName(rawName) {
+            return nil
+        }
+
         return ParsedTool(name: rawName, args: rawArgs)
     }
 
@@ -415,10 +430,7 @@ public class AgentViewModel: ObservableObject {
                 canonicalToolName($0.exposedName) == canonicalRequestedName
         }) {
             let arguments = parseMCPArguments(tool.args)
-            pendingMCPCalls[toolId] = (mcpTool, arguments)
-            let data = try? JSONSerialization.data(withJSONObject: arguments, options: [.sortedKeys])
-            let displayArgs = data.flatMap { String(data: $0, encoding: .utf8) } ?? tool.args
-            messages.append(.toolCall(id: toolId, name: mcpTool.exposedName, args: displayArgs, status: .pendingApproval, result: nil))
+            queueMCPToolCall(mcpTool, arguments: arguments, fallbackArgs: tool.args, toolId: toolId)
             return
         }
         let isAlarmIntent = originalPrompt.lowercased().contains("alarm") || tool.args.lowercased().contains("alarm")
@@ -517,12 +529,97 @@ public class AgentViewModel: ObservableObject {
         String(name.lowercased().filter { $0.isLetter || $0.isNumber })
     }
 
+    private func isKnownToolName(_ name: String) -> Bool {
+        let canonicalName = canonicalToolName(name)
+        let knownDeviceTools = [
+            "showmap", "sendemail", "sendsms", "addcalendarevent", "createcalendarevent",
+            "checkweather", "getcurrentweather", "setalarm", "toggleflashlight",
+            "calculatehash", "calculatemath"
+        ]
+        if knownDeviceTools.contains(canonicalName) { return true }
+        return mcpTools.contains {
+            canonicalToolName($0.exposedName) == canonicalName || canonicalToolName($0.name) == canonicalName
+        }
+    }
+
+    private func queueMCPToolCall(_ mcpTool: MCPTool, arguments: [String: Any], fallbackArgs: String, toolId: String = UUID().uuidString) {
+        let repairedArguments = repairMCPArguments(for: mcpTool, arguments: arguments)
+        let missing = missingRequiredMCPArguments(for: mcpTool, arguments: repairedArguments)
+        guard missing.isEmpty else {
+            let data = try? JSONSerialization.data(withJSONObject: repairedArguments, options: [.sortedKeys])
+            let displayArgs = data.flatMap { String(data: $0, encoding: .utf8) } ?? fallbackArgs
+            messages.append(.toolCall(
+                id: toolId,
+                name: mcpTool.exposedName,
+                args: displayArgs,
+                status: .failed,
+                result: String(format: NSLocalizedString("agent_mcp_missing_required_arguments", comment: ""), missing.joined(separator: ", "))
+            ))
+            return
+        }
+        pendingMCPCalls[toolId] = (mcpTool, repairedArguments)
+        let data = try? JSONSerialization.data(withJSONObject: repairedArguments, options: [.sortedKeys])
+        let displayArgs = data.flatMap { String(data: $0, encoding: .utf8) } ?? fallbackArgs
+        messages.append(.toolCall(id: toolId, name: mcpTool.exposedName, args: displayArgs, status: .pendingApproval, result: nil))
+    }
+
+    private func repairMCPArguments(for mcpTool: MCPTool, arguments: [String: Any]) -> [String: Any] {
+        var repaired = arguments
+        let required = mcpTool.inputSchema["required"] as? [String] ?? []
+        let properties = mcpTool.inputSchema["properties"] as? [String: Any] ?? [:]
+        for (key, schemaValue) in properties {
+            let schema = schemaValue as? [String: Any]
+            if key.lowercased() == "path",
+               schema?["type"] as? String == "string",
+               let path = repaired[key] as? String,
+               let normalized = normalizedMCPPathPlaceholder(path) {
+                repaired[key] = normalized
+            }
+        }
+        for key in required where repaired[key] == nil || repaired[key] is NSNull {
+            let schema = properties[key] as? [String: Any]
+            let type = schema?["type"] as? String
+            if key.lowercased() == "path", type == "string" {
+                repaired[key] = "."
+            }
+        }
+        return repaired
+    }
+
+    private func normalizedMCPPathPlaceholder(_ value: String) -> String? {
+        let lower = value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let placeholders: Set<String> = [
+            "", ".", "./", "here", "this folder", "this directory",
+            "current folder", "current directory", "current location",
+            "working folder", "working directory", "cwd", "my location"
+        ]
+        return placeholders.contains(lower) ? "." : nil
+    }
+
+    private func missingRequiredMCPArguments(for mcpTool: MCPTool, arguments: [String: Any]) -> [String] {
+        let required = mcpTool.inputSchema["required"] as? [String] ?? []
+        return required.filter { key in
+            guard let value = arguments[key], !(value is NSNull) else { return true }
+            if let string = value as? String { return string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            return false
+        }
+    }
+
     private func parseMCPArguments(_ raw: String) -> [String: Any] {
         let clean = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         if let data = clean.data(using: .utf8), let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
             return object
         }
         var result: [String: Any] = [:]
+        for item in parseCommaSeparatedArguments(clean) {
+            let parts = item.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
+            guard parts.count == 2 else { continue }
+            let key = String(parts[0]).trimmingCharacters(in: .whitespacesAndNewlines)
+            let value = parseLooseMCPValue(String(parts[1]).trimmingCharacters(in: .whitespacesAndNewlines))
+            if !key.isEmpty { result[key] = value }
+        }
+        if !result.isEmpty { return result }
+
         let pattern = "([A-Za-z0-9_.-]+)\\s*[:=]\\s*(?:\\\"([^\\\"]*)\\\"|'([^']*)'|([^,}]+))"
         if let regex = try? NSRegularExpression(pattern: pattern) {
             let ns = clean as NSString
@@ -535,6 +632,78 @@ public class AgentViewModel: ObservableObject {
             }
         }
         return result
+    }
+
+    private func parseCommaSeparatedArguments(_ raw: String) -> [String] {
+        var items: [String] = []
+        var current = ""
+        var squareDepth = 0
+        var braceDepth = 0
+        var parenDepth = 0
+        var inString = false
+        var quote: Character = "\0"
+        var escaped = false
+
+        for character in raw {
+            if inString {
+                current.append(character)
+                if escaped {
+                    escaped = false
+                } else if character == "\\" {
+                    escaped = true
+                } else if character == quote {
+                    inString = false
+                }
+                continue
+            }
+            switch character {
+            case "\"", "'":
+                inString = true
+                quote = character
+                current.append(character)
+            case "[":
+                squareDepth += 1
+                current.append(character)
+            case "]":
+                squareDepth = max(0, squareDepth - 1)
+                current.append(character)
+            case "{":
+                braceDepth += 1
+                current.append(character)
+            case "}":
+                braceDepth = max(0, braceDepth - 1)
+                current.append(character)
+            case "(":
+                parenDepth += 1
+                current.append(character)
+            case ")":
+                parenDepth = max(0, parenDepth - 1)
+                current.append(character)
+            case "," where squareDepth == 0 && braceDepth == 0 && parenDepth == 0:
+                items.append(current)
+                current = ""
+            default:
+                current.append(character)
+            }
+        }
+        if !current.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            items.append(current)
+        }
+        return items
+    }
+
+    private func parseLooseMCPValue(_ raw: String) -> Any {
+        let clean = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let data = clean.data(using: .utf8),
+           let value = try? JSONSerialization.jsonObject(with: data) {
+            return value
+        }
+        if (clean.hasPrefix("'") && clean.hasSuffix("'")) || (clean.hasPrefix("\"") && clean.hasSuffix("\"")) {
+            return String(clean.dropFirst().dropLast())
+        }
+        if clean.caseInsensitiveCompare("true") == .orderedSame { return true }
+        if clean.caseInsensitiveCompare("false") == .orderedSame { return false }
+        return clean
     }
 
     func approveMCPTool(id: String) {

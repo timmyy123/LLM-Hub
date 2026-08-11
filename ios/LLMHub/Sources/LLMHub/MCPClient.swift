@@ -15,12 +15,34 @@ struct MCPTool: Identifiable, Equatable {
     var promptLine: String {
         let properties = inputSchema["properties"] as? [String: Any] ?? [:]
         let required = Set(inputSchema["required"] as? [String] ?? [])
-        let arguments = properties.keys.sorted().map { key in
+        let arguments = properties.keys.sorted { lhs, rhs in
+            if required.contains(lhs) != required.contains(rhs) { return required.contains(lhs) }
+            return lhs < rhs
+        }.map { key in
             let schema = properties[key] as? [String: Any]
-            let type = schema?["type"] as? String ?? "value"
-            return "\(key): \(type)\(required.contains(key) ? " (required)" : "")"
+            return "\"\(key)\": \(Self.argumentExample(for: schema, required: required.contains(key)))"
         }.joined(separator: ", ")
         return "- \(exposedName)({\(arguments)}): \((description.isEmpty ? name : description).prefix(300))"
+    }
+
+    private static func argumentExample(for schema: [String: Any]?, required: Bool) -> String {
+        let suffix = required ? " REQUIRED" : ""
+        let type = schema?["type"] as? String ?? "value"
+        switch type {
+        case "string":
+            return "\"<string\(suffix)>\""
+        case "number", "integer":
+            return "\"<number\(suffix)>\""
+        case "boolean":
+            return required ? "true" : "false"
+        case "array":
+            let itemType = (schema?["items"] as? [String: Any])?["type"] as? String ?? "value"
+            return itemType == "string" ? "[\"<string>\"]" : "[\"<\(itemType)>\"]"
+        case "object":
+            return "{}"
+        default:
+            return "\"<\(type)\(suffix)>\""
+        }
     }
 }
 

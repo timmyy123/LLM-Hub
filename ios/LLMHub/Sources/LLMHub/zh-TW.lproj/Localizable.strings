@@ -903,6 +903,7 @@
 "agent_mcp_connecting" = "連接中…";
 "agent_mcp_connected_tools" = "已連接 %d 個工具";
 "agent_mcp_error" = "MCP 錯誤：%@";
+"agent_mcp_missing_required_arguments" = "缺少必要的 MCP 引數：%@";
 "agent_mcp_connect" = "連接";
 "agent_mcp_disconnect" = "中斷連接";
 "agent_mcp_tool_request" = "MCP 工具：%@";

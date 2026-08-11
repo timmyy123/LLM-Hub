@@ -895,6 +895,7 @@
 "agent_mcp_connecting" = "Bağlanıyor…";
 "agent_mcp_connected_tools" = "%d araç bağlandı";
 "agent_mcp_error" = "MCP hatası: %@";
+"agent_mcp_missing_required_arguments" = "Gerekli MCP bağımsız değişkenleri eksik: %@";
 "agent_mcp_connect" = "Bağlan";
 "agent_mcp_disconnect" = "Bağlantıyı kes";
 "agent_mcp_tool_request" = "MCP aracı: %@";

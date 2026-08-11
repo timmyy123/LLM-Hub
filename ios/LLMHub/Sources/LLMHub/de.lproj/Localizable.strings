@@ -867,6 +867,7 @@
 "agent_mcp_connecting" = "Verbindung wird hergestellt…";
 "agent_mcp_connected_tools" = "%d Werkzeuge verbunden";
 "agent_mcp_error" = "MCP-Fehler: %@";
+"agent_mcp_missing_required_arguments" = "Erforderliche MCP-Argumente fehlen: %@";
 "agent_mcp_connect" = "Verbinden";
 "agent_mcp_disconnect" = "Trennen";
 "agent_mcp_tool_request" = "MCP-Werkzeug: %@";
