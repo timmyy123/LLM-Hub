@@ -24,6 +24,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import org.json.JSONArray
 import org.json.JSONObject
 
 sealed class AgentMessage(val id: String) {
@@ -599,7 +600,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
         val toolId = UUID.randomUUID().toString()
         val mcpTool = _mcpTools.value.firstOrNull { it.exposedName.equals(tool.name, ignoreCase = true) }
         if (mcpTool != null) {
-            val arguments = parseMcpArguments(tool.args)
+            val arguments = repairMcpArguments(mcpTool, parseMcpArguments(tool.args))
             pendingMcpCalls[toolId] = mcpTool to arguments
             addMessage(
                 AgentMessage.ToolCall(
@@ -784,10 +785,81 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
             Regex("""([A-Za-z0-9_.-]+)\s*[:=]\s*(?:\"([^\"]*)\"|'([^']*)'|([^,}]+))""")
                 .findAll(clean).forEach { match ->
                     val value = match.groupValues[2].ifEmpty { match.groupValues[3] }.ifEmpty { match.groupValues[4] }.trim()
-                    result.put(match.groupValues[1], value)
+                    result.put(match.groupValues[1], parseLooseMcpValue(value))
                 }
             result
         }
+    }
+
+    private fun parseLooseMcpValue(raw: String): Any {
+        val clean = raw.trim()
+        if (clean.startsWith("[") && clean.endsWith("]")) {
+            return runCatching { JSONArray(clean) }.getOrElse { JSONArray() }
+        }
+        if (clean.startsWith("{") && clean.endsWith("}")) {
+            return runCatching { JSONObject(clean) }.getOrElse { clean }
+        }
+        if (clean.equals("true", ignoreCase = true)) return true
+        if (clean.equals("false", ignoreCase = true)) return false
+        return clean.trim('"', '\'')
+    }
+
+    private fun repairMcpArguments(tool: McpTool, arguments: JSONObject): JSONObject {
+        val repaired = JSONObject(arguments.toString())
+        val properties = tool.inputSchema.optJSONObject("properties") ?: JSONObject()
+        val required = tool.inputSchema.optJSONArray("required")?.let { array ->
+            (0 until array.length()).mapNotNull { array.optString(it).takeIf(String::isNotBlank) }
+        } ?: emptyList()
+
+        properties.keys().asSequence().forEach { key ->
+            val schema = properties.optJSONObject(key) ?: JSONObject()
+            when (schema.optString("type")) {
+                "array" -> {
+                    val value = repaired.opt(key)
+                    if (value is String) {
+                        val parsedArray = if (value.trim().startsWith("[") && value.trim().endsWith("]")) {
+                            runCatching { JSONArray(value.trim()) }.getOrElse { JSONArray() }
+                        } else if (value.isBlank()) {
+                            JSONArray()
+                        } else {
+                            JSONArray().put(value)
+                        }
+                        repaired.put(key, parsedArray)
+                    }
+                }
+                "boolean" -> {
+                    val value = repaired.opt(key)
+                    if (value is String && (value.equals("true", true) || value.equals("false", true))) {
+                        repaired.put(key, value.equals("true", true))
+                    }
+                }
+            }
+
+            if (key.equals("path", ignoreCase = true) && schema.optString("type") == "string") {
+                val path = repaired.optString(key, "")
+                normalizedMcpPathPlaceholder(path)?.let { repaired.put(key, it) }
+            }
+        }
+
+        required.forEach { key ->
+            if (!repaired.has(key) || repaired.isNull(key)) {
+                val schema = properties.optJSONObject(key)
+                if (key.equals("path", ignoreCase = true) && schema?.optString("type") == "string") {
+                    repaired.put(key, ".")
+                }
+            }
+        }
+        return repaired
+    }
+
+    private fun normalizedMcpPathPlaceholder(value: String): String? {
+        val lower = value.trim().lowercase()
+        val placeholders = setOf(
+            "", ".", "./", "here", "this folder", "this directory",
+            "current folder", "current directory", "current location",
+            "working folder", "working directory", "cwd", "my location"
+        )
+        return if (lower in placeholders) "." else null
     }
 
     fun approveMcpTool(callId: String) {

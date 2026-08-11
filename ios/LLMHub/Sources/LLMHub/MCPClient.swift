@@ -105,7 +105,7 @@ final class MCPClient {
         let result: [String: Any]
         do {
             result = try await rpc(settings: settings, method: "tools/list", params: [:], version: currentProtocol)
-        } catch {4.2.0
+        } catch {
             protocolVersion = legacyProtocol
             let initialized = try await rpc(
                 settings: settings,
@@ -162,7 +162,7 @@ final class MCPClient {
         }
         guard scheme == "https" || (scheme == "http" && ["localhost", "127.0.0.1"].contains(host)) else {
             throw MCPClientError.message("MCP servers must use HTTPS")
-        }4.2.0
+        }
     }
 
     private func rpc(settings: MCPSettings, method: String, params: [String: Any], version: String, includeProtocolHeader: Bool = true, mcpName: String? = nil) async throws -> [String: Any] {

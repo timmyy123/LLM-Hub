@@ -28,11 +28,27 @@ data class McpTool(
         val required = inputSchema.optJSONArray("required")?.let { array ->
             (0 until array.length()).mapNotNull { array.optString(it) }.toSet()
         } ?: emptySet()
-        val args = properties.keys().asSequence().map { key ->
-            val type = properties.optJSONObject(key)?.optString("type", "value") ?: "value"
-            "$key: $type${if (key in required) " (required)" else ""}"
-        }.joinToString(", ")
+        val args = properties.keys().asSequence().toList().sortedWith(
+            compareByDescending<String> { it in required }.thenBy { it }
+        ).joinToString(", ") { key ->
+            "\"$key\": ${argumentExample(properties.optJSONObject(key), key in required)}"
+        }
         return "- $exposedName({$args}): ${description.ifBlank { name }.take(300)}"
+    }
+
+    private fun argumentExample(schema: JSONObject?, required: Boolean): String {
+        val suffix = if (required) " REQUIRED" else ""
+        return when (val type = schema?.optString("type", "value") ?: "value") {
+            "string" -> "\"<string$suffix>\""
+            "number", "integer" -> "\"<number$suffix>\""
+            "boolean" -> if (required) "true" else "false"
+            "array" -> {
+                val itemType = schema?.optJSONObject("items")?.optString("type", "value") ?: "value"
+                if (itemType == "string") "[\"<string>\"]" else "[\"<$itemType>\"]"
+            }
+            "object" -> "{}"
+            else -> "\"<$type$suffix>\""
+        }
     }
 }
 
